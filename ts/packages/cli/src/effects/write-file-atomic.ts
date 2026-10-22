@@ -1,5 +1,4 @@
-import { FileSystem } from '@effect/platform';
-import { Effect, Random } from 'effect';
+import { Effect, FileSystem, Random } from 'effect';
 
 /**
  * Writes `content` to a sibling temp file and renames it over `filePath`.

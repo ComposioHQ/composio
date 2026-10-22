@@ -153,16 +153,18 @@ Global tags to filter tools by their behavior hints. Tags can be overridden per 
 const session = await composio.create('user_123', {
   toolkits: ['gmail', 'github'],
   // Global tags applied to all toolkits
-  tags: ['readOnlyHint', 'idempotentHint'],
+  tags: ['readOnlyHint', 'createHint'],
 });
 ```
 
-Available tags:
+Every tool has a tag for the type of action it takes:
 
-- `readOnlyHint` - Tools that only read data
-- `destructiveHint` - Tools that modify or delete data
-- `idempotentHint` - Tools that can be safely retried
-- `openWorldHint` - Tools that operate in an open world context
+- `readOnlyHint` - reads data and changes nothing
+- `createHint` - adds something new
+- `updateHint` - changes something that already exists
+- `destructiveHint` - deletes something
+
+See [Tool tags](https://docs.composio.dev/docs/tool-tags) for how tools get their tags.
 
 ### `authConfigs`
 
@@ -904,7 +906,7 @@ These types include the `sessionId` in their parameters, allowing you to track a
 
 3. **Connection Management**: Use `manageConnections: true` (default) for interactive applications where users can be prompted to connect accounts.
 
-4. **Tag Filtering**: Use global `tags` to filter tools by their behavior (readOnlyHint, destructiveHint, idempotentHint, openWorldHint) and override per toolkit when needed.
+4. **Tag Filtering**: Use global `tags` to filter tools by their behavior (readOnlyHint, destructiveHint, createHint, updateHint) and override per toolkit when needed.
 
 5. **Session Reuse**: Store and reuse `sessionId` to maintain user sessions across requests.
 
@@ -932,9 +934,9 @@ interface ToolRouterCreateSessionConfig {
     | string[]
     | { enable: string[] }
     | { disable: string[] }
-    | { tags: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[] }
+    | { tags: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint')[] }
   >;
-  tags?: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[];
+  tags?: ('readOnlyHint' | 'destructiveHint' | 'createHint' | 'updateHint')[];
   authConfigs?: Record<string, string>;
   connectedAccounts?: Record<string, string>;
   manageConnections?:

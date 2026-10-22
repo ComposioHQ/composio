@@ -14,6 +14,12 @@ const OPENAPI_SPEC_FILES = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  experimental: {
+    // Static generation starts one worker per core (29 on Vercel's build
+    // machine), and each toolkit page holds megabytes of tool and trigger data,
+    // so the build ran out of memory. Half as many workers keeps it within the limit.
+    cpus: 15,
+  },
   turbopack: {
     root: __dirname,
     resolveAlias: {
@@ -36,13 +42,17 @@ const config = {
   // manifest data, so relying on automatic tracing would make those bundles
   // fragile if their path construction changes.
   outputFileTracingIncludes: {
+    '/sitemap.xml': ['./.generated/content-freshness.json'],
     '/reference/**': [...OPENAPI_SPEC_FILES],
     '/reference/v3/**': [...OPENAPI_SPEC_FILES],
-    '/llms.mdx/**': [...OPENAPI_SPEC_FILES],
+    '/llms.mdx/**': [...OPENAPI_SPEC_FILES, './.generated/content-freshness.json'],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
+    '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
     '/kb/**': ['./kb/**'],
     '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
+    // The OG route reads its fonts and wordmark from disk at request time.
+    '/api/og/**': ['./app/fonts/Geist*.ttf', './public/Composio Logo*.svg', './public/og/*'],
   },
   images: {
     // Enable modern image formats for better compression
@@ -83,8 +93,13 @@ const config = {
         permanent: true,
       },
       {
-        source: '/toolkits/premium-tools',
-        destination: '/toolkits/pro-tools',
+        source: '/toolkits/:legacy(pro-tools|premium-tools)',
+        destination: '/docs/instant-tools',
+        permanent: true,
+      },
+      {
+        source: '/toolkits/:legacy(pro-tools|premium-tools).:format(md|mdx)',
+        destination: '/docs/instant-tools.md',
         permanent: true,
       },
       // Deleted/merged pages -> closest surviving page (semantically resolved + verified)
@@ -222,6 +237,17 @@ const config = {
       {
         source: '/docs/sandbox',
         destination: '/docs/sandbox/remote',
+        permanent: true,
+      },
+      // Preserve machine-readable release notes before the legacy HTML redirects.
+      {
+        source: '/docs/changelog/:path*.md',
+        destination: '/llms.mdx/docs/changelog/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:path*.mdx',
+        destination: '/llms.mdx/docs/changelog/:path*',
         permanent: true,
       },
       {
@@ -814,6 +840,11 @@ const config = {
         permanent: true,
       },
       // Docs pages that moved or don't exist
+      {
+        source: '/docs/getting-started',
+        destination: '/docs/quickstart',
+        permanent: true,
+      },
       {
         source: '/docs/resources/:path*',
         destination: '/docs',

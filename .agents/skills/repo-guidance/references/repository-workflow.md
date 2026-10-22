@@ -17,7 +17,7 @@
 
 ## Tooling
 
-Use `mise install` for Node, Bun, Deno, pnpm, Python, and uv. pnpm is managed through mise.
+Use `mise install` for Node, Bun, pnpm, Python, and uv. pnpm is managed through mise.
 
 Common root commands:
 
@@ -48,7 +48,7 @@ make build
 ## Changesets
 
 - Add a changeset for changes to published TypeScript packages.
-- `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never target them in a changeset while they remain ignored; use the `cli-release` skill for beta builds and stable promotion.
+- `@composio/cli` is ignored by Changesets. Never target it in a changeset while it remains ignored; use the `cli-release` skill for beta builds and stable promotion.
 - Do not add a changeset for repo guidance, docs-only, tests-only, or validation-only changes unless release metadata changes.
 
 ## Generated And Vendor Files

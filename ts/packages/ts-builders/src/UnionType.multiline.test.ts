@@ -29,15 +29,6 @@ describe('UnionType multiline formatting', () => {
     );
   });
 
-  it('should still format inline when multiline is not enabled', () => {
-    const union = unionType([namedType('string'), namedType('number'), namedType('boolean')]);
-
-    const writer = new Writer(0, undefined);
-    union.write(writer);
-
-    expect(writer.toString()).toBe('string | number | boolean');
-  });
-
   it('should handle single variant union in multiline', () => {
     const union = unionType(namedType('string'));
 

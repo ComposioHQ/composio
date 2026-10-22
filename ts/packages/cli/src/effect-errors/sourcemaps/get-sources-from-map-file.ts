@@ -1,6 +1,6 @@
-import type { PlatformError } from '@effect/platform/Error';
-import { FileSystem } from '@effect/platform/FileSystem';
-import { Path } from '@effect/platform/Path';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
+import type { PlatformError } from 'effect/PlatformError';
 import { Data, Effect, Option, Schema, pipe } from 'effect';
 import { SourceMapConsumer } from 'source-map-js';
 
@@ -19,9 +19,9 @@ import { type ErrorRelatedSources, MappedSources, type RawErrorLocation } from '
  * downgrade a perfectly usable map to an unenriched location.
  */
 const SourceMapSchema = Schema.Struct({
-  version: Schema.Literal(3, '3'),
+  version: Schema.Literals([3, '3']),
   sources: Schema.Array(Schema.String),
-  names: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
+  names: Schema.optional(Schema.Array(Schema.String)),
   mappings: Schema.String,
   file: Schema.optional(Schema.NullOr(Schema.String)),
   sourceRoot: Schema.optional(Schema.NullOr(Schema.String)),
@@ -54,7 +54,7 @@ const resolveOriginalPosition = (sourceMap: typeof SourceMapSchema.Type, locatio
       new SourceMapConsumer({
         version: String(sourceMap.version),
         sources: [...sourceMap.sources],
-        names: [...sourceMap.names],
+        names: [...(sourceMap.names ?? [])],
         mappings: sourceMap.mappings,
         file: sourceMap.file ?? undefined,
         sourceRoot: sourceMap.sourceRoot ?? undefined,
@@ -93,7 +93,7 @@ const enrichFromMapFile = (
     }
 
     const sourceMap = yield* readJsonEffect(`${location.filePath}.map`).pipe(
-      Effect.map(Option.fromNullable),
+      Effect.map(Option.fromNullOr),
       Effect.map(Option.flatMap(decodeSourceMap)),
       Effect.catchTag('JsonParsingError', () => Effect.succeed(Option.none()))
     );

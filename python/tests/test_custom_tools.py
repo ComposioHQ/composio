@@ -12,6 +12,7 @@ Covers:
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+import sys
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -28,19 +29,25 @@ from pydantic import BaseModel, Field
 
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
+    assert_no_custom_tool_slugs_in_preload,
     build_custom_tools_map,
     build_custom_tools_map_from_response,
     serialize_custom_toolkits,
     serialize_custom_tools,
 )
 from composio.core.models.custom_tool_execution import (
+    assert_unambiguous_custom_tool_slug,
     execute_custom_tool,
     find_custom_tool,
 )
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
-from composio.core.models.tool_router_session import ToolRouterSession
+from composio.core.models.tool_router_session import (
+    ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+)
 from composio.exceptions import ValidationError
+from tests.conftest import mock_http_client
 
 # ────────────────────────────────────────────────────────────────
 # Fixtures
@@ -72,6 +79,21 @@ def grep_tool():
         return {"matches": [input.pattern], "path": input.path}
 
     return grep
+
+
+@pytest.fixture
+def duplicate_slug_tools():
+    @exp.tool(slug="GREP")
+    def alpha_grep(input: GrepInput, ctx):
+        """Search Alpha."""
+        return {"toolkit": "alpha", "matches": [input.pattern]}
+
+    @exp.tool(slug="GREP")
+    def beta_grep(input: GrepInput, ctx):
+        """Search Beta."""
+        return {"toolkit": "beta", "matches": [input.pattern]}
+
+    return alpha_grep, beta_grep
 
 
 @pytest.fixture
@@ -292,6 +314,150 @@ def future_tool(input: FutureInput, ctx):
         local_tool, local_input = build_tool()
         assert local_tool.input_params is local_input
 
+    def test_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # https://github.com/ComposioHQ/composio/issues/5022
+        with pytest.raises(
+            ValidationError,
+            match=(
+                r"could not resolve the annotation 'LaterInput' .*"
+                r"NameError: name 'LaterInput' is not defined.*"
+                r"Define LaterInput before the tool"
+            ),
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+@exp.tool()
+def later_tool(input: LaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LaterInput(BaseModel):
+    query: str
+""",
+                {"exp": exp},
+            )
+
+    def test_input_model_imported_under_type_checking_names_unresolved_annotation(
+        self,
+    ):
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'GrepInput' .*TYPE_CHECKING",
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tests.test_custom_tools import GrepInput
+
+
+@exp.tool()
+def type_checking_tool(input: GrepInput, ctx):
+    '''Input model only imported for type checkers.'''
+    return {}
+""",
+                {"exp": exp},
+            )
+
+    def test_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        namespace = {"exp": exp}
+        exec(
+            """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class TypedInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def typed_ctx_tool(input: TypedInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            namespace,
+        )
+
+        assert namespace["typed_ctx_tool"].input_params is namespace["TypedInput"]
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # dont_inherit keeps this module's compiler flags out, so the
+        # annotations stay lazy instead of becoming strings.
+        code = compile(
+            """
+from pydantic import BaseModel
+
+
+@exp.tool()
+def lazy_later_tool(input: LazyLaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LazyLaterInput(BaseModel):
+    query: str
+""",
+            "<lazy_later_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'LazyLaterInput' .*NameError",
+        ):
+            exec(code, {"exp": exp})
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        code = compile(
+            """
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class LazyInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def lazy_ctx_tool(input: LazyInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            "<lazy_ctx_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        namespace = {"exp": exp}
+        exec(code, namespace)
+
+        assert namespace["lazy_ctx_tool"].input_params is namespace["LazyInput"]
+
     def test_async_function_rejected(self):
         with pytest.raises(ValidationError, match="async"):
 
@@ -459,9 +625,61 @@ class TestCustomToolsMap:
         m = build_custom_tools_map([], [role_toolkit])
         assert "LOCAL_ROLE_MANAGER_SET_ROLE" in m.by_final_slug
 
+    def test_allows_same_slug_in_different_toolkits(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+
+        m = build_custom_tools_map([], [alpha, beta])
+
+        assert set(m.by_final_slug) == {"LOCAL_ALPHA_GREP", "LOCAL_BETA_GREP"}
+        assert "GREP" not in m.by_original_slug
+        assert m.ambiguous_original_slugs == {"GREP"}
+
+    def test_ambiguous_original_slug_requires_final_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        m = build_custom_tools_map([], [alpha, beta])
+
+        assert find_custom_tool(m, "LOCAL_ALPHA_GREP").toolkit == "ALPHA"
+        assert find_custom_tool(m, "LOCAL_BETA_GREP").toolkit == "BETA"
+        assert find_custom_tool(m, "GREP") is None
+        with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
+            assert_unambiguous_custom_tool_slug(m, "GREP")
+
+    def test_preload_rejects_ambiguous_original_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        m = build_custom_tools_map([], [alpha, beta])
+
+        with pytest.raises(ValidationError, match="not supported in preload.tools"):
+            assert_no_custom_tool_slugs_in_preload(["grep"], m)
+
     def test_collision_detection(self, grep_tool):
         with pytest.raises(ValidationError, match="collision"):
             build_custom_tools_map([grep_tool, grep_tool])
+
+    def test_rejects_standalone_and_toolkit_same_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+
+        with pytest.raises(ValidationError, match="collision"):
+            build_custom_tools_map([alpha_tool], [beta])
 
 
 class TestFindCustomTool:
@@ -506,6 +724,138 @@ class TestBuildMapFromResponse:
         assert "LOCAL_GMAIL_GET_EMAILS" in m.by_final_slug
         assert "LOCAL_ROLE_MANAGER_SET_ROLE" in m.by_final_slug
 
+    def test_allows_same_slug_in_different_toolkits(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP")],
+            ),
+            MagicMock(
+                slug="BETA",
+                tools=[MagicMock(slug="LOCAL_BETA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        m = build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
+        assert set(m.by_final_slug) == {"LOCAL_ALPHA_GREP", "LOCAL_BETA_GREP"}
+        assert m.by_final_slug["LOCAL_ALPHA_GREP"].toolkit == "ALPHA"
+        assert m.by_final_slug["LOCAL_BETA_GREP"].toolkit == "BETA"
+        assert m.ambiguous_original_slugs == {"GREP"}
+
+    def _duplicate_toolkits(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        return alpha, beta
+
+    def test_rejects_toolkit_child_without_exact_match(self, duplicate_slug_tools):
+        alpha, beta = self._duplicate_toolkits(duplicate_slug_tools)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="GAMMA",
+                tools=[MagicMock(slug="LOCAL_GAMMA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        with pytest.raises(ValidationError, match="no exact local match"):
+            build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
+    def test_never_binds_toolkit_child_to_another_toolkit(self, duplicate_slug_tools):
+        alpha_tool, _ = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="BETA",
+                tools=[MagicMock(slug="LOCAL_BETA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        with pytest.raises(ValidationError, match='for toolkit "BETA"'):
+            build_custom_tools_map_from_response([], [alpha], mock_exp)
+
+    def test_standalone_falls_back_to_unique_bare_match(self, email_tool):
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = [
+            MagicMock(
+                slug="LOCAL_GMAIL_GET_EMAILS",
+                original_slug="GET_EMAILS",
+                extends_toolkit=None,
+            )
+        ]
+        mock_exp.custom_toolkits = []
+
+        m = build_custom_tools_map_from_response([email_tool], None, mock_exp)
+
+        assert m.by_final_slug["LOCAL_GMAIL_GET_EMAILS"].toolkit == "gmail"
+
+    def test_skips_response_tools_not_defined_locally(self, grep_tool):
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = [
+            MagicMock(slug="LOCAL_GREP", original_slug="GREP", extends_toolkit=None),
+            MagicMock(slug="LOCAL_STALE", original_slug="STALE", extends_toolkit=None),
+        ]
+        mock_exp.custom_toolkits = []
+
+        m = build_custom_tools_map_from_response([grep_tool], None, mock_exp)
+
+        assert set(m.by_final_slug) == {"LOCAL_GREP"}
+
+    def test_ambiguity_follows_local_definitions(self, duplicate_slug_tools):
+        alpha, beta = self._duplicate_toolkits(duplicate_slug_tools)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP")],
+            ),
+        ]
+
+        m = build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
+        assert set(m.by_final_slug) == {"LOCAL_ALPHA_GREP"}
+        assert "GREP" not in m.by_original_slug
+        assert m.ambiguous_original_slugs == {"GREP"}
+        assert find_custom_tool(m, "GREP") is None
+
+    def test_rejects_duplicate_qualified_response_entries(self, duplicate_slug_tools):
+        alpha, beta = self._duplicate_toolkits(duplicate_slug_tools)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[
+                    MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP"),
+                    MagicMock(slug="LOCAL_ALPHA_GREP_2", original_slug="GREP"),
+                ],
+            ),
+        ]
+
+        with pytest.raises(ValidationError, match="already registered for toolkit"):
+            build_custom_tools_map_from_response([], [alpha, beta], mock_exp)
+
 
 # ────────────────────────────────────────────────────────────────
 # Execution tests
@@ -548,7 +898,10 @@ class TestSessionContextImpl:
     def test_sibling_routing(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
         ctx = SessionContextImpl(
-            client=MagicMock(), user_id="u", session_id="s", custom_tools_map=m
+            client=mock_http_client(MagicMock),
+            user_id="u",
+            session_id="s",
+            custom_tools_map=m,
         )
         result = ctx.execute("GREP", {"pattern": "test"})
         assert isinstance(result, SessionExecuteResponse)
@@ -556,11 +909,32 @@ class TestSessionContextImpl:
         assert result.log_id == ""
         assert result.data["matches"] == ["test"]
 
+    def test_sibling_routing_rejects_ambiguous_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        m = build_custom_tools_map([], [alpha, beta])
+        mock_client = mock_http_client(MagicMock)
+        ctx = SessionContextImpl(
+            client=mock_client, user_id="u", session_id="s", custom_tools_map=m
+        )
+
+        with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
+            ctx.execute("GREP", {"pattern": "x"})
+        mock_client.tool_router.session.execute.assert_not_called()
+
+        result = ctx.execute("LOCAL_BETA_GREP", {"pattern": "x"})
+        assert result.data["toolkit"] == "beta"
+
     def test_remote_fallback(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         ctx = SessionContextImpl(
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
@@ -574,9 +948,9 @@ class TestSessionContextImpl:
         )
 
     def test_remote_fallback_passes_inline_custom_tools(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         inline_payload = {
             "custom_tools": [
@@ -603,7 +977,7 @@ class TestSessionContextImpl:
         )
 
     def test_proxy_execute(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200, data={"ok": True}, headers={}, binary_data=None
@@ -613,7 +987,12 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
         assert "binary_data" not in result
 
     def test_proxy_execute_narrows_status_to_int(self):
@@ -622,7 +1001,7 @@ class TestSessionContextImpl:
         Equality alone cannot catch the leak, because ``200 == 200.0``. Only the
         type assertion distinguishes ``200`` from the ``200.0`` a raw read returns.
         """
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200, data=None, headers=None, binary_data=None
@@ -632,11 +1011,17 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
-        assert result == {"status": 200, "data": None, "headers": None}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": None,
+            "headers": None,
+        }
 
     def test_proxy_execute_projects_binary_data(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200,
@@ -655,6 +1040,7 @@ class TestSessionContextImpl:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -669,7 +1055,7 @@ class TestSessionContextImpl:
 
     def test_proxy_execute_binary_data_without_expiry(self):
         """``expires_at`` is optional on the generated model; the key stays present."""
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200,
@@ -702,7 +1088,7 @@ class TestSessionContextImpl:
 @pytest.fixture
 def mock_session_deps(grep_tool, email_tool, role_toolkit):
     return {
-        "client": MagicMock(),
+        "client": mock_http_client(MagicMock),
         "provider": MagicMock(),
         "experimental": MagicMock(),
         "tools_map": build_custom_tools_map([grep_tool, email_tool], [role_toolkit]),
@@ -725,6 +1111,28 @@ def _session(deps, **overrides):
 
 
 class TestToolRouterSessionCustomTools:
+    def test_execute_local_failure_without_message_is_failed(self):
+        @exp.tool()
+        def silent(input: GrepInput, ctx):
+            """Raises an error with no message."""
+            raise RuntimeError("")
+
+        s = ToolRouterSession(
+            client=mock_http_client(MagicMock),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=build_custom_tools_map([silent]),
+            user_id="u",
+        )
+
+        result = s.execute("SILENT", arguments={"pattern": "x"})
+
+        assert result.error == ""
+        assert result.result_type == "failed"
+
     def test_execute_local(self, mock_session_deps):
         s = _session(mock_session_deps)
         result = s.execute("GREP", arguments={"pattern": "x"})
@@ -732,12 +1140,13 @@ class TestToolRouterSessionCustomTools:
         assert isinstance(result, SessionExecuteResponse)
         assert result.error is None
         assert result.log_id == ""
+        assert result.result_type == "completed"
         assert result.data["matches"] == ["x"]
         mock_session_deps["client"].tool_router.session.execute.assert_not_called()
 
     def test_execute_remote(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -756,9 +1165,47 @@ class TestToolRouterSessionCustomTools:
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 
+    def test_execute_remote_exposes_instant_charge(self, mock_session_deps):
+        charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
+        mock_session_deps[
+            "client"
+        ].tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "completed",
+                    "data": {"sent": True},
+                    "error": None,
+                    "log_id": "log_123",
+                    "instant_charge": charge,
+                }
+            )
+        )
+        s = _session(mock_session_deps)
+
+        result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
+
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
+        assert isinstance(result, SessionExecuteResponse)
+        assert result.instant_charge is not None
+        assert result.instant_charge.model_dump() == charge
+        assert result.data == {"sent": True}
+        assert result.log_id == "log_123"
+
+    def test_execute_remote_without_instant_charge(self, mock_session_deps):
+        mock_session_deps[
+            "client"
+        ].tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
+        )
+        s = _session(mock_session_deps)
+
+        result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
+
+        assert result.instant_charge is None
+
     def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -789,7 +1236,13 @@ class TestToolRouterSessionCustomTools:
         result = s.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
         assert "binary_data" not in result
 
@@ -812,6 +1265,7 @@ class TestToolRouterSessionCustomTools:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -838,9 +1292,103 @@ class TestToolRouterSessionCustomTools:
         assert len(tks) == 1
         assert tks[0].slug == "ROLE_MANAGER"
 
+    def test_custom_toolkits_list_uses_qualified_slugs(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        custom_tools_map = build_custom_tools_map([], [alpha, beta])
+        s = ToolRouterSession(
+            client=mock_http_client(MagicMock),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=custom_tools_map,
+            user_id="u",
+        )
+
+        toolkits = s.custom_toolkits()
+
+        assert [tk.tools[0].slug for tk in toolkits] == [
+            "LOCAL_ALPHA_GREP",
+            "LOCAL_BETA_GREP",
+        ]
+
+    def test_custom_toolkits_list_never_borrows_other_toolkit_slug(
+        self, duplicate_slug_tools
+    ):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        mock_exp = MagicMock()
+        mock_exp.custom_tools = []
+        mock_exp.custom_toolkits = [
+            MagicMock(
+                slug="ALPHA",
+                tools=[MagicMock(slug="LOCAL_ALPHA_GREP", original_slug="GREP")],
+            ),
+        ]
+        custom_tools_map = build_custom_tools_map_from_response(
+            [], [alpha, beta], mock_exp
+        )
+        s = ToolRouterSession(
+            client=mock_http_client(MagicMock),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=custom_tools_map,
+            user_id="u",
+        )
+
+        assert [tk.tools[0].slug for tk in s.custom_toolkits()] == [
+            "LOCAL_ALPHA_GREP",
+            "GREP",
+        ]
+
+    def test_execute_rejects_ambiguous_original_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        custom_tools_map = build_custom_tools_map([], [alpha, beta])
+        client = mock_http_client(MagicMock)
+        s = ToolRouterSession(
+            client=client,
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=custom_tools_map,
+            user_id="u",
+        )
+
+        with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
+            s.execute("GREP", arguments={"pattern": "x"})
+        client.tool_router.session.execute.assert_not_called()
+
+        alpha_result = s.execute("LOCAL_ALPHA_GREP", arguments={"pattern": "x"})
+        beta_result = s.execute("LOCAL_BETA_GREP", arguments={"pattern": "x"})
+        assert alpha_result.data["toolkit"] == "alpha"
+        assert beta_result.data["toolkit"] == "beta"
+
     def test_empty_when_no_map(self):
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -859,7 +1407,7 @@ class TestMultiExecuteRouting:
     def _make_session(self, *tools, inline_custom_tools_payload=None):
         m = build_custom_tools_map(list(tools))
         return ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -878,6 +1426,43 @@ class TestMultiExecuteRouting:
         )
         assert result["successful"] is True
         assert result["data"]["matches"] == ["x"]
+
+    def test_rejects_ambiguous_original_slug(self, duplicate_slug_tools):
+        alpha_tool, beta_tool = duplicate_slug_tools
+        alpha = ExperimentalToolkit(
+            slug="ALPHA", name="Alpha", description="Alpha tools"
+        )
+        alpha._tools.append(alpha_tool)
+        beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
+        beta._tools.append(beta_tool)
+        s = ToolRouterSession(
+            client=mock_http_client(MagicMock),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=build_custom_tools_map([], [alpha, beta]),
+            user_id="u",
+        )
+        tm = MagicMock()
+        backend = MagicMock()
+        tm._wrap_execute_tool_for_tool_router.return_value = backend
+
+        with pytest.raises(ValidationError, match="Ambiguous custom tool slug"):
+            s._route_multi_execute(
+                {
+                    "tools": [
+                        {
+                            "tool_slug": "LOCAL_ALPHA_GREP",
+                            "arguments": {"pattern": "x"},
+                        },
+                        {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    ]
+                },
+                tm,
+            )
+        backend.assert_not_called()
 
     def test_all_remote(self, grep_tool):
         s = self._make_session(grep_tool)
@@ -941,12 +1526,42 @@ class TestMultiExecuteRouting:
         )
         results = result["data"]["results"]
         assert len(results) == 2
-        # Remotes first, locals appended (matches TS)
-        assert results[0]["tool_slug"] == "R"
-        assert results[1]["tool_slug"] == "GREP"
+        # Results preserve the original request order.
+        assert results[0]["tool_slug"] == "GREP"
+        assert results[1]["tool_slug"] == "R"
+        assert results[0]["index"] == 0
+        assert results[1]["index"] == 1
         assert result["data"]["total_count"] == 2
         assert result["data"]["success_count"] == 2
         assert result["data"]["error_count"] == 0
+        assert "instant_charge" not in result
+
+    def test_mixed_preserves_remote_instant_charge(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+        charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
+        remote = {
+            "data": {
+                "results": [
+                    {"tool_slug": "R", "response": {"successful": True, "data": {}}},
+                ],
+            },
+            "error": None,
+            "successful": True,
+            "instant_charge": charge,
+        }
+        tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+
+        assert result["instant_charge"] == charge
 
     def test_failure_propagated(self):
         @exp.tool()
@@ -988,6 +1603,83 @@ class TestMultiExecuteRouting:
         )
         assert result["successful"] is True
         assert result["data"]["results"][0]["tool_slug"] == "GREP"
+
+    def test_remote_transport_failure_keeps_local_results(self, grep_tool):
+        """A raised backend error becomes per-tool failures (matches TS)."""
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+
+        def failing_backend(slug, args):
+            raise RuntimeError("remote unavailable")
+
+        tm._wrap_execute_tool_for_tool_router.return_value = failing_backend
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                    {"tool_slug": "OTHER_REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["error"] == "2 out of 3 tools failed"
+        results = result["data"]["results"]
+        assert [r["tool_slug"] for r in results] == ["GREP", "REMOTE", "OTHER_REMOTE"]
+        assert [r["index"] for r in results] == [0, 1, 2]
+        assert results[0]["response"] == {
+            "successful": True,
+            "data": {"matches": ["x"], "path": "."},
+        }
+        assert "error" not in results[0]
+        for entry in results[1:]:
+            assert entry["error"] == "remote unavailable"
+            assert entry["response"] == {
+                "successful": False,
+                "data": {},
+                "error": "remote unavailable",
+            }
+        assert result["data"]["total_count"] == 3
+        assert result["data"]["success_count"] == 1
+        assert result["data"]["error_count"] == 2
+
+    def test_remote_transport_failure_uses_fallback_message(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+
+        def failing_backend(slug, args):
+            raise RuntimeError()
+
+        tm._wrap_execute_tool_for_tool_router.return_value = failing_backend
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["data"]["results"][1]["error"] == "Remote tool execution failed"
+
+    def test_failed_remote_batch_without_error_text_is_unsuccessful(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+        remote = {"data": {}, "error": None, "successful": False}
+        tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["error"] is None
 
     def test_remote_batch_error_without_item_errors_uses_batch_message(self, grep_tool):
         s = self._make_session(grep_tool)

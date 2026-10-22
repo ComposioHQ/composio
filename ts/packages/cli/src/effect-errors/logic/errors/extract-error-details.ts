@@ -1,11 +1,31 @@
-import { isFunction } from 'effect/Function';
-import { hasProperty } from 'effect/Predicate';
+import { hasProperty, isFunction } from 'effect/Predicate';
+import {
+  describeDecodeError,
+  isClientApiError,
+  isClientConnectionError,
+  isClientDecodeError,
+  type ClientApiError,
+} from 'src/utils/api-error-extraction';
 
 interface ErrorDetails {
   isPlainString: boolean;
   type?: unknown;
   message: unknown;
 }
+
+// A client error has no cause chain: its own message is the status line and
+// response body, and a connection error's description is the transport's text.
+// A response that failed decoding is reported by operation and request id.
+const clientApiErrorDetail = (error: ClientApiError): string => {
+  if (isClientDecodeError(error)) {
+    const { message, hint } = describeDecodeError(error);
+    return `${message}\n${hint}`;
+  }
+  if (isClientConnectionError(error)) {
+    return error.description ?? error.message;
+  }
+  return error.message;
+};
 
 // Wrappers like UpgradeBinaryError carry the actionable specifics (a
 // ParseError path, an HTTP body) in `cause`; surface the deepest message so
@@ -20,6 +40,8 @@ const causeDetail = (cause: unknown): string | undefined => {
       if (seen.has(current)) break;
       seen.add(current);
     }
+
+    if (isClientApiError(current)) return clientApiErrorDetail(current);
 
     if (typeof current === 'string' && current.length > 0) {
       detail = current;
@@ -39,14 +61,28 @@ const causeDetail = (cause: unknown): string | undefined => {
 
 const withCauseDetail = (message: string, cause: unknown): string => {
   const detail = causeDetail(cause);
-  return detail !== undefined && detail !== message ? `${message}\nCaused by: ${detail}` : message;
+  if (detail === undefined || detail === message) return message;
+  return `${message}\nCaused by: ${detail}`;
 };
+
+const clientApiErrorMessage = (error: ClientApiError): string =>
+  isClientDecodeError(error)
+    ? clientApiErrorDetail(error)
+    : withCauseDetail('', clientApiErrorDetail(error));
 
 export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (typeof error === 'string') {
     return {
       isPlainString: true,
       message: error,
+    };
+  }
+
+  if (isClientApiError(error)) {
+    return {
+      isPlainString: false,
+      type: error.name,
+      message: clientApiErrorMessage(error),
     };
   }
 

@@ -9,6 +9,9 @@ boolean schemas (true/false values that are valid in JSON Schema draft-06+).
 We handle those by pre-filtering them before passing to the library.
 """
 
+import decimal
+import functools
+import importlib
 import re
 import types
 import typing as t
@@ -22,19 +25,25 @@ from json_schema_to_pydantic import (
 from json_schema_to_pydantic import (
     create_model as create_model_from_schema,
 )
+from jsonschema import exceptions as jsonschema_exceptions
 from jsonschema import validators as jsonschema_validators
 from jsonschema.protocols import Validator
 from pydantic import (
+    AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     TypeAdapter,
+    ValidationError,
+    WithJsonSchema,
     model_validator,
 )
 from pydantic import (
     create_model as create_pydantic_model,
 )
 from pydantic_core import core_schema
+from referencing import Registry
 
 from composio.utils.logging import get as get_logger
 
@@ -45,7 +54,14 @@ _EXPLICIT_DEFAULT_FIELDS_ATTRIBUTE = "__composio_explicit_default_fields__"
 
 
 class _UnsatisfiableSchema:
-    """Pydantic type for JSON schemas that reject every value."""
+    """Pydantic type for JSON schemas that reject every value.
+
+    JSON Schema (draft-06+) allows the literal ``false`` anywhere a schema is
+    expected, meaning "no value is valid". This marker stands in for it during
+    conversion so combiners can tell an always-rejecting member apart from an
+    absent one, and so the exact validator can turn it back into ``false``.
+    The literal ``true`` ("any value is valid") simply becomes ``t.Any``.
+    """
 
     @staticmethod
     def _reject(_value: t.Any) -> t.NoReturn:
@@ -80,10 +96,127 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "boolean": bool,
     "array": t.List,
     "object": t.Dict,
-    "null": t.Optional[t.Any],
+    "null": type(None),
 }
 
 CONTAINER_TYPE = ("array", "object")
+
+# Keywords that constrain which instances a schema accepts. A schema whose keys
+# are all outside this set (title, description, default, examples, ...) is pure
+# annotation and accepts every value, exactly like the empty schema.
+_ASSERTION_KEYWORDS = frozenset(
+    {
+        "type",
+        "enum",
+        "const",
+        "anyOf",
+        "allOf",
+        "oneOf",
+        "not",
+        "if",
+        "then",
+        "else",
+        "$ref",
+        "properties",
+        "patternProperties",
+        "additionalProperties",
+        "propertyNames",
+        "required",
+        "dependencies",
+        "minProperties",
+        "maxProperties",
+        "items",
+        "additionalItems",
+        "contains",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+    }
+)
+
+_SCALAR_CONSTRAINT_KEYWORDS = frozenset(
+    {
+        "minLength",
+        "maxLength",
+        "pattern",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+    }
+)
+
+_STRUCTURAL_KEYWORDS = frozenset(
+    {"anyOf", "allOf", "oneOf", "not", "if", "$ref", "properties", "items"}
+)
+
+_TYPELESS_TYPE_SCOPED_KEYWORDS = frozenset(
+    {
+        "properties",
+        "patternProperties",
+        "additionalProperties",
+        "propertyNames",
+        "required",
+        "dependencies",
+        "minProperties",
+        "maxProperties",
+        "items",
+        "additionalItems",
+        "contains",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+    }
+)
+
+# Keywords each type-array member keeps when the array is rewritten to anyOf.
+_TYPE_SCOPED_KEYWORDS: t.Dict[str, frozenset] = {
+    "string": frozenset({"minLength", "maxLength", "pattern"}),
+    "integer": frozenset(
+        {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"}
+    ),
+    "number": frozenset(
+        {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"}
+    ),
+    "array": frozenset(
+        {
+            "items",
+            "additionalItems",
+            "contains",
+            "minItems",
+            "maxItems",
+            "uniqueItems",
+        }
+    ),
+    "object": frozenset(
+        {
+            "properties",
+            "patternProperties",
+            "additionalProperties",
+            "propertyNames",
+            "required",
+            "dependencies",
+            "minProperties",
+            "maxProperties",
+        }
+    ),
+    "boolean": frozenset(),
+    "null": frozenset(),
+}
+
+_TYPE_ARRAY_SHARED_KEYWORDS = frozenset({"enum", "const", "format"})
+_TYPE_ARRAY_WRAPPER_KEYWORDS = frozenset(
+    {"title", "description", "default", "examples"}
+)
 
 # Should be deprecated,
 # required values will always be provided by users
@@ -137,6 +270,12 @@ def _filter_boolean_schemas(
 
     if not isinstance(schema, dict):
         return schema
+
+    # A schema that enumerates no acceptable values rejects everything, exactly
+    # like `false`. Normalizing here routes both spellings through the same
+    # unsatisfiable-property handling (which tolerates the property's absence).
+    if schema.get("enum") == [] or schema.get("type") == []:
+        return _UnsatisfiableSchema
 
     # Make a copy to avoid mutating the original
     result = {}
@@ -299,7 +438,9 @@ class _ObjectPolicy(t.NamedTuple):
     """
 
     declared: t.FrozenSet[str]
-    patterns: t.Tuple[t.Tuple[t.Pattern[str], _DynamicKeyValidator], ...]
+    # Key matchers come from `_linear_pattern_matcher`, never Python `re`: keys
+    # are attacker-influenced and the schema's patterns are untrusted.
+    patterns: t.Tuple[t.Tuple[t.Callable[[str], bool], _DynamicKeyValidator], ...]
     additional: t.Optional[_DynamicKeyValidator]
     rejects_unmatched: bool
 
@@ -442,6 +583,10 @@ def _mark_explicit_default_fields(
     """Attach recursive default-presence metadata to generated model classes."""
     origin = t.get_origin(annotation)
     arguments = t.get_args(annotation)
+    if origin is t.Annotated:
+        # Exact-validation wrappers must not hide the materialized type below.
+        _mark_explicit_default_fields(arguments[0], schema, root_schema, visiting)
+        return
     if origin in (t.Union, types.UnionType):
         options: t.List[t.Dict[str, t.Any]] = []
         resolved_schema = _resolve_default_metadata_schema(schema, root_schema)
@@ -673,13 +818,32 @@ def _dynamic_key_validator(
     )
 
 
-def _compile_pattern_property(pattern: str) -> t.Pattern[str]:
+def _compile_pattern_property(pattern: str) -> t.Callable[[str], bool]:
+    """Compile a `patternProperties` key on the linear-time engine only.
+
+    A key pattern decides which subschema validates a value, so it cannot be
+    dropped the way an unenforceable `pattern` constraint is. Patterns that
+    engine rejects (look-around, backreferences) fail conversion instead of
+    running on Python's backtracking `re` against attacker-chosen keys.
+    """
+    matcher = _linear_pattern_matcher(pattern)
+    if matcher is not None:
+        return matcher
     try:
-        return re.compile(pattern)
-    except re.error as exc:
+        re.compile(pattern)
+    except (re.error, OverflowError, RecursionError, TypeError) as exc:
         raise ValueError(
             f"Invalid patternProperties regular expression: {pattern!r}"
         ) from exc
+    raise ValueError(_unsupported_pattern_property_message(pattern))
+
+
+def _unsupported_pattern_property_message(pattern: t.Any) -> str:
+    return (
+        f"Unsupported patternProperties regular expression: {pattern!r}; "
+        "only patterns the linear-time regex engine accepts are supported "
+        "(look-around and backreferences can backtrack catastrophically)"
+    )
 
 
 def _validate_object_policy_schema(
@@ -687,9 +851,11 @@ def _validate_object_policy_schema(
     root_schema: t.Dict[str, t.Any],
 ) -> None:
     """Validate a dynamic object policy without materializing defaults."""
-    validator_type = jsonschema_validators.validator_for(
-        root_schema,
-        default=jsonschema_validators.Draft7Validator,
+    validator_type = _with_safe_regex_keywords(
+        jsonschema_validators.validator_for(
+            root_schema,
+            default=jsonschema_validators.Draft7Validator,
+        )
     )
     root_validator = validator_type(root_schema)
 
@@ -713,9 +879,11 @@ def _compile_object_policy(
     document_root = root_schema if root_schema is not None else schema
     declared = frozenset(schema.get("properties") or {})
     additional = schema.get("additionalProperties", _MISSING)
-    validator_type = jsonschema_validators.validator_for(
-        document_root,
-        default=jsonschema_validators.Draft7Validator,
+    validator_type = _with_safe_regex_keywords(
+        jsonschema_validators.validator_for(
+            document_root,
+            default=jsonschema_validators.Draft7Validator,
+        )
     )
     root_validator = validator_type(document_root)
 
@@ -748,18 +916,32 @@ def _compile_object_policy(
 def _iter_reachable_schemas(
     schema: t.Any,
     root_schema: t.Dict[str, t.Any],
-    visited: t.Optional[t.Set[int]] = None,
+    visited: t.Optional[t.Set[t.Tuple[int, t.Any]]] = None,
+    validator_class: t.Any = None,
 ) -> t.Iterator[t.Dict[str, t.Any]]:
-    """Yield schema nodes reached through Draft 7 schema-valued keywords."""
+    """Yield schema nodes and local targets under their effective dialect."""
     if visited is None:
         visited = set()
+    if validator_class is None:
+        validator_class = jsonschema_validators.validator_for(
+            root_schema, default=jsonschema_validators.Draft7Validator
+        )
     if isinstance(schema, list):
         for item in schema:
-            yield from _iter_reachable_schemas(item, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                item, root_schema, visited, validator_class
+            )
         return
-    if not isinstance(schema, dict) or id(schema) in visited:
+    if not isinstance(schema, dict):
         return
-    visited.add(id(schema))
+    if "$schema" in schema:
+        validator_class = jsonschema_validators.validator_for(
+            schema, default=validator_class
+        )
+    visit_key = (id(schema), validator_class)
+    if visit_key in visited:
+        return
+    visited.add(visit_key)
     yield schema
 
     reference = schema.get("$ref")
@@ -772,33 +954,52 @@ def _iter_reachable_schemas(
             # validated.
             resolved = None
         if isinstance(resolved, (dict, list)):
-            yield from _iter_reachable_schemas(resolved, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                resolved, root_schema, visited, validator_class
+            )
 
-    for keyword in ("properties", "patternProperties"):
+    for keyword in ("properties", "patternProperties", "dependentSchemas"):
+        if keyword == "dependentSchemas" and keyword not in validator_class.VALIDATORS:
+            continue
         values = schema.get(keyword)
         if isinstance(values, dict):
             for child in values.values():
-                yield from _iter_reachable_schemas(child, root_schema, visited)
+                yield from _iter_reachable_schemas(
+                    child, root_schema, visited, validator_class
+                )
 
-    for keyword in _SCHEMA_VALUED_KEYWORDS:
+    value_keywords = _SCHEMA_VALUED_KEYWORDS | (
+        {"unevaluatedItems", "unevaluatedProperties"}
+        & validator_class.VALIDATORS.keys()
+    )
+    for keyword in value_keywords:
         child = schema.get(keyword)
         if isinstance(child, (dict, list)):
-            yield from _iter_reachable_schemas(child, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                child, root_schema, visited, validator_class
+            )
 
-    for keyword in _SCHEMA_LIST_KEYWORDS:
+    list_keywords = _SCHEMA_LIST_KEYWORDS | (
+        {"prefixItems"} & validator_class.VALIDATORS.keys()
+    )
+    for keyword in list_keywords:
         children = schema.get(keyword)
         if isinstance(children, list):
-            yield from _iter_reachable_schemas(children, root_schema, visited)
+            yield from _iter_reachable_schemas(
+                children, root_schema, visited, validator_class
+            )
 
     items = schema.get("items")
     if isinstance(items, (dict, list)):
-        yield from _iter_reachable_schemas(items, root_schema, visited)
+        yield from _iter_reachable_schemas(items, root_schema, visited, validator_class)
 
     dependencies = schema.get("dependencies")
     if isinstance(dependencies, dict):
         for child in dependencies.values():
             if isinstance(child, (dict, bool)):
-                yield from _iter_reachable_schemas(child, root_schema, visited)
+                yield from _iter_reachable_schemas(
+                    child, root_schema, visited, validator_class
+                )
 
 
 def _has_dynamic_object_policy(schema: t.Dict[str, t.Any]) -> bool:
@@ -900,8 +1101,8 @@ class _DynamicObjectModel(BaseModel):
         unrecognized = []
         for key, item in value.items():
             matched = False
-            for regex, validator in policy.patterns:
-                if regex.search(key):
+            for matches_key, validator in policy.patterns:
+                if matches_key(key):
                     matched = True
                     validator.validate(item)
 
@@ -934,8 +1135,8 @@ class _DynamicObjectModel(BaseModel):
 
         for key, value in list(extra.items()):
             matched = False
-            for regex, validator in policy.patterns:
-                if regex.search(key):
+            for matches_key, validator in policy.patterns:
+                if matches_key(key):
                     matched = True
                     extra[key] = validator.materialize(extra[key])
 
@@ -999,22 +1200,40 @@ def json_schema_to_pydantic_type(
     :param root_schema: Full schema document used to resolve nested local references.
     :return: A Pydantic type.
     """
-    # Handle boolean schemas (JSON Schema draft-06+)
+    # A schema may be the literal `true` or `false` instead of an object
+    # (JSON Schema draft-06+), e.g. `additionalProperties: false` or a member
+    # of `anyOf`. `true` accepts every value; `false` rejects every value.
     if isinstance(json_schema, bool):
         if json_schema:
-            return t.Any  # true schema accepts any value
-        else:
-            return None  # false schema - will be filtered out in union processing
+            return t.Any
+        return _UnsatisfiableSchema
 
     # Pre-filter boolean schemas from combiners
     filtered_schema = _filter_boolean_schemas(json_schema)
     filtered_schema = _resolve_unsatisfiable_references(filtered_schema)
     document_root = root_schema if root_schema is not None else json_schema
     _validate_dynamic_object_policies(json_schema, document_root)
-    return _filtered_schema_to_pydantic_type(
+    annotation = _filtered_schema_to_pydantic_type(
         filtered_schema,
         root_schema=document_root,
     )
+    # Two layers: Pydantic materializes the value (defaults, aliases, models),
+    # while the source schema decides acceptance. Keywords Pydantic cannot
+    # express get a Draft 7 "exact" check that runs before Pydantic coercion.
+    # Generated models already carry that check (see `_with_exact_validation`),
+    # so only non-model annotations are wrapped here. When Pydantic would
+    # narrow a valid value (e.g. `$ref`, `allOf`), the value is kept as-is.
+    if (
+        _requires_whole_schema_validation(json_schema)
+        and not _is_unsatisfiable_schema(annotation)
+        and not (isinstance(annotation, type) and issubclass(annotation, BaseModel))
+    ):
+        return _with_exact_validation_annotation(
+            t.Any if _needs_permissive_materialization(json_schema) else annotation,
+            json_schema,
+            document_root,
+        )
+    return annotation
 
 
 def _filtered_schema_to_pydantic_type(
@@ -1025,6 +1244,33 @@ def _filtered_schema_to_pydantic_type(
     """Convert a schema after boolean-schema normalization."""
     if schema is None or _is_unsatisfiable_schema(schema):
         return _UnsatisfiableSchema
+
+    if not _ASSERTION_KEYWORDS.intersection(schema):
+        # Pure-annotation schemas (only title/description/default/...) accept
+        # every value, exactly like the empty schema.
+        return t.Any
+
+    schema_type = schema.get("type")
+    if isinstance(schema_type, list):
+        if not schema_type:
+            return _UnsatisfiableSchema
+        return _build_union_from_options(
+            [
+                {**schema, "type": member, "x-composio-strict-type": True}
+                for member in schema_type
+            ],
+            root_schema=root_schema,
+        )
+
+    if schema_type is None and (
+        "enum" in schema
+        or "const" in schema
+        or (
+            _SCALAR_CONSTRAINT_KEYWORDS.intersection(schema)
+            and not _STRUCTURAL_KEYWORDS.intersection(schema)
+        )
+    ):
+        return _apply_scalar_constraints(t.Any, schema)
 
     # Handle simple primitive types without complex combiners
     if _is_simple_primitive(schema):
@@ -1048,10 +1294,1223 @@ def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
     )
 
 
+def _matches_json_type(type_: str, value: t.Any) -> bool:
+    """JSON type membership per Draft 7 (booleans are not numbers, 2.0 is an integer)."""
+    if type_ == "string":
+        return isinstance(value, str)
+    if type_ == "boolean":
+        return isinstance(value, bool)
+    if type_ == "null":
+        return value is None
+    if type_ == "integer":
+        if isinstance(value, bool):
+            return False
+        return isinstance(value, int) or (
+            isinstance(value, float) and value.is_integer()
+        )
+    if type_ == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if type_ == "array":
+        return isinstance(value, list)
+    if type_ == "object":
+        return isinstance(value, dict)
+    return True
+
+
+def _json_type_guard(type_: str) -> t.Callable[[t.Any], t.Any]:
+    def validate(value: t.Any) -> t.Any:
+        if not _matches_json_type(type_, value):
+            raise ValueError(f"value is not of JSON type {type_!r}")
+        return value
+
+    return validate
+
+
+def _strict_json_type_annotation(type_: str) -> t.Any:
+    """A type-checked annotation that still coerces integral floats for `integer`."""
+    if type_ == "null":
+        return type(None)
+    base = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str)
+    return t.Annotated[base, BeforeValidator(_json_type_guard(type_))]
+
+
 def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
     """Convert simple primitive types directly."""
     type_ = schema.get("type", "string")
-    return t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
+    use_strict_type = (
+        schema.get("x-composio-strict-type") is True
+        or "enum" in schema
+        or "const" in schema
+    )
+    base_type = (
+        _strict_json_type_annotation(type_)
+        if use_strict_type
+        else t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
+    )
+    return _apply_scalar_constraints(base_type, schema)
+
+
+def _json_values_equal(left: t.Any, right: t.Any) -> bool:
+    """Compare JSON values without treating booleans as numbers."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _json_values_equal(left_item, right_item)
+            for left_item, right_item in zip(left, right)
+        )
+
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(
+            _json_values_equal(left[key], right[key]) for key in left
+        )
+
+    return bool(left == right)
+
+
+def _allowed_values_validator(
+    allowed: t.Tuple[t.Any, ...],
+) -> t.Callable[[t.Any], t.Any]:
+    """Create a Pydantic validator for JSON Schema enum/const values."""
+
+    def validate(value: t.Any) -> t.Any:
+        if not any(_json_values_equal(value, candidate) for candidate in allowed):
+            raise ValueError(f"value must be one of {allowed!r}")
+        return value
+
+    return validate
+
+
+def _is_numeric(value: t.Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_json_multiple_of(value: t.Any, multiple: t.Any) -> bool:
+    """Decimal-scaled multipleOf, matching the Zod and Effect converters.
+
+    Raw float modulo misreports common decimal steps (0.3 % 0.1 != 0 in
+    binary floating point); comparing through `Decimal(str(...))` recovers the
+    author's decimal intent.
+    """
+    try:
+        return (decimal.Decimal(str(value)) % decimal.Decimal(str(multiple))) == 0
+    except (decimal.InvalidOperation, decimal.DivisionByZero):
+        return False
+
+
+def _multiple_of_validator(multiple: t.Any) -> t.Callable[[t.Any], t.Any]:
+    def validate(value: t.Any) -> t.Any:
+        if _is_numeric(value) and not _is_json_multiple_of(value, multiple):
+            raise ValueError(f"value is not a multiple of {multiple!r}")
+        return value
+
+    return validate
+
+
+def _with_string_constraints(annotation: t.Any, schema: t.Dict[str, t.Any]) -> t.Any:
+    field_constraints: t.Dict[str, t.Any] = {}
+    if "minLength" in schema:
+        field_constraints["min_length"] = schema["minLength"]
+    if "maxLength" in schema:
+        field_constraints["max_length"] = schema["maxLength"]
+    if field_constraints:
+        annotation = t.Annotated[annotation, Field(**field_constraints)]
+    if "pattern" in schema:
+        annotation = _with_pattern_constraint(annotation, schema["pattern"])
+    return annotation
+
+
+def _with_pattern_constraint(annotation: t.Any, pattern: str) -> t.Any:
+    """Prefer pydantic's native pattern; otherwise use the guarded matcher,
+    which covers ECMA constructs such as look-around (legal in Draft 7, whose
+    regex dialect is ECMA-262) only when they cannot backtrack catastrophically.
+    """
+    candidate = t.Annotated[annotation, Field(pattern=pattern)]
+    try:
+        TypeAdapter(candidate)
+        return candidate
+    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
+        pass
+
+    matcher = _string_pattern_matcher(pattern)
+    if matcher is None:
+        return annotation
+
+    def validate(value: t.Any) -> t.Any:
+        if isinstance(value, str) and not matcher(value):
+            raise ValueError(f"string does not match pattern {pattern!r}")
+        return value
+
+    return t.Annotated[annotation, AfterValidator(validate)]
+
+
+def _with_numeric_constraints(annotation: t.Any, schema: t.Dict[str, t.Any]) -> t.Any:
+    field_constraints: t.Dict[str, t.Any] = {}
+    if "minimum" in schema:
+        field_constraints["gt" if schema.get("exclusiveMinimum") is True else "ge"] = (
+            schema["minimum"]
+        )
+    if _is_numeric(schema.get("exclusiveMinimum")):
+        field_constraints["gt"] = schema["exclusiveMinimum"]
+
+    if "maximum" in schema:
+        field_constraints["lt" if schema.get("exclusiveMaximum") is True else "le"] = (
+            schema["maximum"]
+        )
+    if _is_numeric(schema.get("exclusiveMaximum")):
+        field_constraints["lt"] = schema["exclusiveMaximum"]
+
+    if field_constraints:
+        annotation = t.Annotated[annotation, Field(**field_constraints)]
+    if "multipleOf" in schema:
+        annotation = t.Annotated[
+            annotation, AfterValidator(_multiple_of_validator(schema["multipleOf"]))
+        ]
+    return annotation
+
+
+def _check_numeric_keywords(schema: t.Dict[str, t.Any], value: t.Any) -> None:
+    minimum = schema.get("minimum")
+    if _is_numeric(minimum):
+        if schema.get("exclusiveMinimum") is True:
+            if value <= minimum:
+                raise ValueError(f"value must be greater than {minimum!r}")
+        elif value < minimum:
+            raise ValueError(f"value must be at least {minimum!r}")
+    exclusive_minimum = schema.get("exclusiveMinimum")
+    if _is_numeric(exclusive_minimum) and value <= exclusive_minimum:
+        raise ValueError(f"value must be greater than {exclusive_minimum!r}")
+
+    maximum = schema.get("maximum")
+    if _is_numeric(maximum):
+        if schema.get("exclusiveMaximum") is True:
+            if value >= maximum:
+                raise ValueError(f"value must be less than {maximum!r}")
+        elif value > maximum:
+            raise ValueError(f"value must be at most {maximum!r}")
+    exclusive_maximum = schema.get("exclusiveMaximum")
+    if _is_numeric(exclusive_maximum) and value >= exclusive_maximum:
+        raise ValueError(f"value must be less than {exclusive_maximum!r}")
+
+    if "multipleOf" in schema and not _is_json_multiple_of(value, schema["multipleOf"]):
+        raise ValueError(f"value is not a multiple of {schema['multipleOf']!r}")
+
+
+def _typeless_constraint_validator(
+    schema: t.Dict[str, t.Any],
+) -> t.Optional[t.Callable[[t.Any], t.Any]]:
+    """Draft 7 applies scalar constraints per instance type even without `type`."""
+    if not _SCALAR_CONSTRAINT_KEYWORDS.intersection(schema):
+        return None
+
+    pattern_matcher = (
+        _string_pattern_matcher(schema["pattern"]) if "pattern" in schema else None
+    )
+
+    def validate(value: t.Any) -> t.Any:
+        if isinstance(value, str):
+            if "minLength" in schema and len(value) < schema["minLength"]:
+                raise ValueError(
+                    f"string must contain at least {schema['minLength']} characters"
+                )
+            if "maxLength" in schema and len(value) > schema["maxLength"]:
+                raise ValueError(
+                    f"string must contain at most {schema['maxLength']} characters"
+                )
+            if pattern_matcher is not None and not pattern_matcher(value):
+                raise ValueError(f"string does not match pattern {schema['pattern']!r}")
+        if _is_numeric(value):
+            _check_numeric_keywords(schema, value)
+        return value
+
+    return validate
+
+
+def _apply_scalar_constraints(
+    base_type: t.Type[t.Any],
+    schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Apply scalar JSON Schema validation keywords to a Python annotation."""
+    type_ = schema.get("type")
+    annotation: t.Any = base_type
+
+    if type_ == "string":
+        annotation = _with_string_constraints(annotation, schema)
+    elif type_ in ("integer", "number"):
+        annotation = _with_numeric_constraints(annotation, schema)
+    elif type_ is None:
+        validator = _typeless_constraint_validator(schema)
+        if validator is not None:
+            annotation = t.Annotated[annotation, AfterValidator(validator)]
+
+    allowed: t.Optional[t.Tuple[t.Any, ...]] = None
+    if "const" in schema and "enum" in schema:
+        # Both keywords assert independently, so only their intersection is
+        # acceptable; a const outside the enum makes the schema unsatisfiable.
+        allowed = tuple(
+            candidate
+            for candidate in (schema["const"],)
+            if any(_json_values_equal(candidate, member) for member in schema["enum"])
+        )
+    elif "const" in schema:
+        allowed = (schema["const"],)
+    elif "enum" in schema:
+        allowed = tuple(schema["enum"])
+
+    if allowed is not None:
+        if not allowed:
+            return _UnsatisfiableSchema
+        annotation = t.Annotated[
+            annotation,
+            AfterValidator(_allowed_values_validator(allowed)),
+        ]
+
+    return t.cast(t.Type[t.Any], annotation)
+
+
+def _schema_for_exact_validation(value: t.Any) -> t.Any:
+    """Turn internal boolean-schema markers back into JSON Schema values.
+
+    Conversion replaces the literal ``false`` with `_UnsatisfiableSchema`; the
+    `jsonschema` validator needs the original ``false`` back.
+    """
+    if _is_unsatisfiable_schema(value):
+        return False
+    if isinstance(value, dict):
+        return {key: _schema_for_exact_validation(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_schema_for_exact_validation(item) for item in value]
+    return value
+
+
+_EXACT_SCHEMA_MAP_KEYWORDS = frozenset(
+    {
+        "$defs",
+        "definitions",
+        "dependencies",
+        "patternProperties",
+        "properties",
+    }
+)
+_EXACT_SCHEMA_ARRAY_KEYWORDS = frozenset({"allOf", "anyOf", "oneOf"})
+_EXACT_SCHEMA_VALUE_KEYWORDS = frozenset(
+    {
+        "additionalItems",
+        "additionalProperties",
+        "contains",
+        "else",
+        "if",
+        "items",
+        "not",
+        "propertyNames",
+        "then",
+    }
+)
+
+_REQUIRES_WHOLE_SCHEMA_VALIDATION = frozenset(
+    {
+        "$ref",
+        "additionalItems",
+        "contains",
+        "dependencies",
+        "else",
+        "if",
+        "maxItems",
+        "maxProperties",
+        "minItems",
+        "minProperties",
+        "not",
+        "propertyNames",
+        "required",
+        "then",
+        "uniqueItems",
+    }
+)
+
+
+def _contains_compound_literal(schema: t.Dict[str, t.Any]) -> bool:
+    values: t.List[t.Any] = []
+    if "const" in schema:
+        values.append(schema["const"])
+    enum = schema.get("enum")
+    if isinstance(enum, list):
+        values.extend(enum)
+    return any(isinstance(value, (dict, list)) for value in values)
+
+
+def _one_of_needs_exact_validation(options: t.Any) -> bool:
+    """Return whether two oneOf branches can accept the same JSON type."""
+    if not isinstance(options, list) or len(options) < 2:
+        return False
+
+    branch_types: t.List[t.Set[str]] = []
+    all_types = {"array", "boolean", "integer", "null", "number", "object", "string"}
+    for option in options:
+        if option is True or not isinstance(option, dict) or "type" not in option:
+            branch_types.append(set(all_types))
+            continue
+        if option is False:
+            branch_types.append(set())
+            continue
+        declared = option["type"]
+        types = {declared} if isinstance(declared, str) else set(declared)
+        if "number" in types:
+            types.add("integer")
+        branch_types.append(types)
+
+    return any(
+        left.intersection(right)
+        for index, left in enumerate(branch_types)
+        for right in branch_types[index + 1 :]
+    )
+
+
+def _combiner_has_assertion_siblings(schema: t.Dict[str, t.Any], keyword: str) -> bool:
+    return bool(_ASSERTION_KEYWORDS.intersection(schema) - {keyword})
+
+
+def _requires_whole_schema_validation(schema: t.Any) -> bool:
+    """Whether the materializing converter needs an authoritative final guard.
+
+    True when the schema (or any nested schema) uses a keyword that Pydantic
+    field constraints cannot express faithfully: `required`, `contains`,
+    `if`/`then`/`else`, `not`, `$ref`, unions (which Pydantic coerces across),
+    and so on. Those schemas get a Draft 7 check on the raw value first.
+    """
+    if isinstance(schema, bool) or not isinstance(schema, dict):
+        return False
+    if (
+        _REQUIRES_WHOLE_SCHEMA_VALIDATION.intersection(schema)
+        or "allOf" in schema
+        or (
+            schema.get("type") is None
+            and _TYPELESS_TYPE_SCOPED_KEYWORDS.intersection(schema)
+        )
+        # Pydantic unions coerce across members (`True` satisfies `integer |
+        # null`), so every combiner needs the exact check, not only those with
+        # sibling assertions or overlapping branches.
+        or "anyOf" in schema
+        or "oneOf" in schema
+        or _contains_compound_literal(schema)
+    ):
+        return True
+
+    for key, child in schema.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            if any(
+                _requires_whole_schema_validation(value) for value in child.values()
+            ):
+                return True
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
+            if any(_requires_whole_schema_validation(value) for value in child):
+                return True
+        elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            values = child if isinstance(child, list) else [child]
+            if any(_requires_whole_schema_validation(value) for value in values):
+                return True
+
+    return False
+
+
+def _needs_permissive_materialization(
+    schema: t.Any,
+    visited: t.Optional[t.Set[int]] = None,
+) -> bool:
+    """Detect schemas whose exact validator must not pipe into a narrower type.
+
+    For `$ref`, `allOf`, and typeless assertions the Pydantic type the library
+    builds can be narrower than what the schema accepts. Once the Draft 7 check
+    has accepted the raw value, it is passed through as `t.Any` rather than
+    risk a second, stricter rejection or a lossy coercion.
+    """
+    if isinstance(schema, bool) or not isinstance(schema, dict):
+        return False
+    if visited is None:
+        visited = set()
+    if id(schema) in visited:
+        return False
+    visited.add(id(schema))
+
+    if "$ref" in schema or "allOf" in schema:
+        return True
+    if schema.get("type") is None and (
+        _TYPELESS_TYPE_SCOPED_KEYWORDS.intersection(schema)
+        or {"if", "then", "else", "not"}.intersection(schema)
+    ):
+        return True
+    for key, child in schema.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            if any(
+                _needs_permissive_materialization(value, visited)
+                for value in child.values()
+            ):
+                return True
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
+            if any(
+                _needs_permissive_materialization(value, visited) for value in child
+            ):
+                return True
+        elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            values = child if isinstance(child, list) else [child]
+            if any(
+                _needs_permissive_materialization(value, visited) for value in values
+            ):
+                return True
+    return False
+
+
+def _relax_exact_model_fields(
+    schema: t.Dict[str, t.Any],
+    base_model: t.Type[BaseModel],
+) -> t.Type[BaseModel]:
+    """Let exact source validation own fields the library would over-narrow."""
+    properties = schema.get("properties")
+    if not isinstance(properties, dict):
+        return base_model
+
+    field_definitions = {}
+    for internal_name, model_field in base_model.model_fields.items():
+        external_name = (
+            model_field.alias if isinstance(model_field.alias, str) else internal_name
+        )
+        property_schema = properties.get(external_name)
+        if not _needs_permissive_materialization(property_schema):
+            continue
+
+        default = ... if model_field.is_required() else model_field.default
+        field_definitions[internal_name] = (
+            t.Any,
+            Field(
+                default,
+                alias=model_field.alias,
+                description=model_field.description,
+                examples=model_field.examples,
+                title=model_field.title,
+            ),
+        )
+
+    if not field_definitions:
+        return base_model
+    return create_pydantic_model(  # type: ignore[call-overload]
+        base_model.__name__,
+        __base__=base_model,
+        **field_definitions,
+    )
+
+
+def _normalize_draft4_exclusive_bounds(value: t.Any) -> t.Any:
+    """Translate OpenAPI 3.0 boolean bounds without changing nearby keywords."""
+    if isinstance(value, bool) or not isinstance(value, dict):
+        return value
+
+    normalized: t.Dict[str, t.Any] = {}
+    for key, child in value.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(child, dict):
+            normalized[key] = {
+                name: _normalize_draft4_exclusive_bounds(schema)
+                for name, schema in child.items()
+            }
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS and isinstance(child, list):
+            normalized[key] = [
+                _normalize_draft4_exclusive_bounds(schema) for schema in child
+            ]
+        elif key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            if isinstance(child, list):
+                normalized[key] = [
+                    _normalize_draft4_exclusive_bounds(schema) for schema in child
+                ]
+            else:
+                normalized[key] = _normalize_draft4_exclusive_bounds(child)
+        else:
+            # Values under enum/const/default/examples are instance data, not
+            # schemas, and must remain byte-for-byte equivalent.
+            normalized[key] = child
+
+    if normalized.get("exclusiveMinimum") is True and _is_numeric(
+        normalized.get("minimum")
+    ):
+        normalized["exclusiveMinimum"] = normalized.pop("minimum")
+    elif isinstance(normalized.get("exclusiveMinimum"), bool):
+        normalized.pop("exclusiveMinimum")
+
+    if normalized.get("exclusiveMaximum") is True and _is_numeric(
+        normalized.get("maximum")
+    ):
+        normalized["exclusiveMaximum"] = normalized.pop("maximum")
+    elif isinstance(normalized.get("exclusiveMaximum"), bool):
+        normalized.pop("exclusiveMaximum")
+
+    return normalized
+
+
+def _exact_validation_multiple_of(
+    _validator: t.Any,
+    multiple: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    if _is_numeric(instance) and not _is_json_multiple_of(instance, multiple):
+        yield jsonschema_exceptions.ValidationError(
+            f"{instance!r} is not a multiple of {multiple!r}"
+        )
+
+
+# Schema-supplied regular expressions.
+#
+# Tool schemas are third-party input, and so are the strings matched against
+# their patterns: LLM tool arguments, including object keys. Python's `re`
+# backtracks, so a schema pattern such as `^(a+)+$` can freeze a worker on a
+# short argument. Every schema regex is evaluated through one of two helpers:
+#
+# - `_linear_pattern_matcher`: pydantic-core's Rust regex engine, which runs in
+#   time linear in the input. `patternProperties` keys use only this, because a
+#   key pattern decides routing and cannot be dropped.
+# - `_string_pattern_matcher`: the same engine, plus a guarded Python `re`
+#   fallback for the ECMA constructs the Rust engine rejects (look-around,
+#   backreferences). The fallback runs only when `_fallback_pattern_is_safe`
+#   proves the pattern cannot backtrack catastrophically, and only on input of
+#   at most `_BACKTRACKING_FALLBACK_MAX_INPUT` characters. Anything else is not
+#   enforced. Widening is safe: a hostile schema could omit the pattern.
+#
+# The static check matches the TypeScript SDK's fallback check.
+
+_PATTERN_CACHE_SIZE = 1024
+
+# Longer input is treated as matching on the `re` fallback. This bounds the
+# quadratic scan over start positions that unanchored search performs.
+_BACKTRACKING_FALLBACK_MAX_INPUT = 1000
+
+# A quantifier is "large" when it is unbounded or spans more than this many
+# repetitions (`m - n` in `{n,m}`).
+_LARGE_QUANTIFIER_SPAN = 16
+
+# Polynomial degree budget: one implicit factor for unanchored search, plus
+# the large quantifiers outside look-around, plus the most in one look-around.
+_MAX_FALLBACK_DEGREE = 2
+
+# Budget for the product of small quantifier spans and alternation widths.
+_MAX_FALLBACK_CHOICES = 64
+
+# Absolute explicit repeat bounds also limit zero-width assertion work.
+_MAX_FALLBACK_REPEAT_COUNT = 64
+
+
+@functools.lru_cache(maxsize=_PATTERN_CACHE_SIZE)
+def _linear_pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
+    """Unanchored (search) matcher on pydantic's linear-time Rust regex, or
+    None when that engine cannot compile `pattern`."""
+    try:
+        adapter = TypeAdapter(t.Annotated[str, Field(pattern=pattern)])
+    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses
+        return None
+
+    def match_with_pydantic(value: str) -> bool:
+        try:
+            adapter.validate_python(value, strict=True)
+        except ValidationError:
+            return False
+        return True
+
+    return match_with_pydantic
+
+
+def _pattern_supported_by_pydantic(pattern: str) -> bool:
+    return _linear_pattern_matcher(pattern) is not None
+
+
+def _load_regex_parser() -> t.Tuple[t.Any, t.Any]:
+    try:  # Python 3.11+
+        return (
+            importlib.import_module("re._parser"),
+            importlib.import_module("re._constants"),
+        )
+    except ImportError:  # Python 3.10; deprecated aliases from 3.11 on
+        return (
+            importlib.import_module("sre_parse"),
+            importlib.import_module("sre_constants"),
+        )
+
+
+_REGEX_PARSER, _REGEX_CONSTANTS = _load_regex_parser()
+_REGEX_REPEATS = frozenset(
+    op
+    for op in (
+        _REGEX_CONSTANTS.MAX_REPEAT,
+        _REGEX_CONSTANTS.MIN_REPEAT,
+        getattr(_REGEX_CONSTANTS, "POSSESSIVE_REPEAT", None),
+    )
+    if op is not None
+)
+_REGEX_LOOKAROUNDS = frozenset({_REGEX_CONSTANTS.ASSERT, _REGEX_CONSTANTS.ASSERT_NOT})
+_REGEX_ATOMS = frozenset(
+    {
+        _REGEX_CONSTANTS.ANY,
+        _REGEX_CONSTANTS.AT,
+        _REGEX_CONSTANTS.CATEGORY,
+        _REGEX_CONSTANTS.IN,
+        _REGEX_CONSTANTS.LITERAL,
+        _REGEX_CONSTANTS.NOT_LITERAL,
+    }
+)
+_REGEX_ATOMIC_GROUP = getattr(_REGEX_CONSTANTS, "ATOMIC_GROUP", None)
+
+
+class _BacktrackingRisk(Exception):
+    """The pattern may backtrack catastrophically under Python `re`."""
+
+
+class _FallbackPatternCheck:
+    """Conservative static check over a `re` parse tree.
+
+    False positives only leave a pattern unenforced, so every construct that
+    is not clearly bounded counts as a risk.
+    """
+
+    def __init__(self) -> None:
+        self.max_large_in_lookaround = 0
+        self.choices = 1
+
+    def multiply_choices(self, factor: int) -> None:
+        self.choices *= factor
+        if self.choices > _MAX_FALLBACK_CHOICES:
+            raise _BacktrackingRisk("too many backtracking choices")
+
+    def visit(
+        self,
+        subpattern: t.Any,
+        *,
+        in_repeat: bool,
+        in_lookaround: bool,
+    ) -> int:
+        """Return the large quantifiers in `subpattern` outside look-around."""
+        large = 0
+        for op, av in subpattern.data:
+            if op in _REGEX_REPEATS:
+                if in_repeat:
+                    raise _BacktrackingRisk("quantified group contains a quantifier")
+                low, high, body = av
+                if low > _MAX_FALLBACK_REPEAT_COUNT or (
+                    high != _REGEX_CONSTANTS.MAXREPEAT
+                    and high > _MAX_FALLBACK_REPEAT_COUNT
+                ):
+                    raise _BacktrackingRisk("repeat count exceeds the work budget")
+                if high == _REGEX_CONSTANTS.MAXREPEAT or (
+                    high - low > _LARGE_QUANTIFIER_SPAN
+                ):
+                    large += 1
+                elif high > low:
+                    self.multiply_choices(high - low + 1)
+                large += self.visit(body, in_repeat=True, in_lookaround=in_lookaround)
+            elif op == _REGEX_CONSTANTS.BRANCH:
+                if in_repeat:
+                    raise _BacktrackingRisk("quantified group contains alternation")
+                _, alternatives = av
+                self.multiply_choices(len(alternatives))
+                for alternative in alternatives:
+                    large += self.visit(
+                        alternative,
+                        in_repeat=in_repeat,
+                        in_lookaround=in_lookaround,
+                    )
+            elif op in _REGEX_LOOKAROUNDS:
+                if in_lookaround:
+                    raise _BacktrackingRisk("nested look-around")
+                _, body = av
+                self.max_large_in_lookaround = max(
+                    self.max_large_in_lookaround,
+                    self.visit(body, in_repeat=in_repeat, in_lookaround=True),
+                )
+            elif op == _REGEX_CONSTANTS.SUBPATTERN:
+                large += self.visit(
+                    av[-1], in_repeat=in_repeat, in_lookaround=in_lookaround
+                )
+            elif _REGEX_ATOMIC_GROUP is not None and op == _REGEX_ATOMIC_GROUP:
+                large += self.visit(
+                    av, in_repeat=in_repeat, in_lookaround=in_lookaround
+                )
+            elif op not in _REGEX_ATOMS:
+                # Backreferences (GROUPREF, GROUPREF_EXISTS) and anything this
+                # check does not model.
+                raise _BacktrackingRisk(f"unsupported regex construct {op}")
+        return large
+
+
+def _fallback_pattern_is_safe(pattern: str) -> bool:
+    """Whether Python `re` cannot backtrack catastrophically on `pattern`.
+
+    Rejects backreferences, quantified groups (look-around included) that
+    contain a quantifier or alternation, excessive explicit repeat bounds,
+    nested look-around, more than
+    `_MAX_FALLBACK_DEGREE` nested polynomial factors, and more than
+    `_MAX_FALLBACK_CHOICES` combined small-quantifier and alternation choices.
+
+    :raises re.error: `pattern` is not a valid Python regular expression.
+    """
+    parsed = _REGEX_PARSER.parse(pattern)
+    check = _FallbackPatternCheck()
+    try:
+        large_outside = check.visit(parsed, in_repeat=False, in_lookaround=False)
+    except _BacktrackingRisk:
+        return False
+    anchored = (
+        bool(parsed.data)
+        and parsed.data[0]
+        == (
+            _REGEX_CONSTANTS.AT,
+            _REGEX_CONSTANTS.AT_BEGINNING,
+        )
+        and not parsed.state.flags & re.MULTILINE
+    )
+    degree = (0 if anchored else 1) + large_outside + check.max_large_in_lookaround
+    return degree <= _MAX_FALLBACK_DEGREE
+
+
+@functools.lru_cache(maxsize=_PATTERN_CACHE_SIZE)
+def _string_pattern_matcher(pattern: str) -> t.Optional[t.Callable[[str], bool]]:
+    """Search-semantics matcher for a `pattern` string constraint, or None
+    (with a warning) when it cannot be enforced in bounded time."""
+    linear = _linear_pattern_matcher(pattern)
+    if linear is not None:
+        return linear
+
+    try:
+        safe = _fallback_pattern_is_safe(pattern)
+        compiled = re.compile(pattern)
+    except (re.error, OverflowError, RecursionError):
+        logger.warning(
+            "Ignoring JSON Schema pattern %r: not a valid Python regular expression",
+            pattern,
+        )
+        return None
+    if not safe:
+        logger.warning(
+            "Ignoring JSON Schema pattern %r: the linear-time regex engine does "
+            "not support it and Python's backtracking engine could stall on it",
+            pattern,
+        )
+        return None
+
+    def match_with_re(value: str) -> bool:
+        if len(value) > _BACKTRACKING_FALLBACK_MAX_INPUT:
+            return True
+        return compiled.search(value) is not None
+
+    return match_with_re
+
+
+def _exact_validation_pattern(
+    _validator: Validator,
+    pattern: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    if not isinstance(instance, str) or not isinstance(pattern, str):
+        return
+    matcher = _string_pattern_matcher(pattern)
+    if matcher is not None and not matcher(instance):
+        yield jsonschema_exceptions.ValidationError(
+            f"{instance!r} does not match {pattern!r}"
+        )
+
+
+def _safe_pattern_properties(
+    validator: t.Any,
+    pattern_properties: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    """jsonschema's `patternProperties` with keys matched in linear time."""
+    if not validator.is_type(instance, "object"):
+        return
+
+    for pattern, subschema in pattern_properties.items():
+        matches_key = _linear_pattern_matcher(pattern)
+        if matches_key is None:
+            # Conversion rejects these first; fail closed if one slips past.
+            yield jsonschema_exceptions.ValidationError(
+                _unsupported_pattern_property_message(pattern)
+            )
+            continue
+        for key, value in instance.items():
+            if matches_key(key):
+                yield from validator.descend(
+                    value,
+                    subschema,
+                    path=key,
+                    schema_path=pattern,
+                )
+
+
+def _extras_msg(extras: t.Sequence[t.Any]) -> t.Tuple[str, str]:
+    verb = "was" if len(extras) == 1 else "were"
+    return ", ".join(repr(extra) for extra in extras), verb
+
+
+def _safe_additional_properties(
+    validator: t.Any,
+    additional: t.Any,
+    instance: t.Any,
+    schema: t.Any,
+) -> t.Iterator[t.Any]:
+    """jsonschema's `additionalProperties` with keys matched in linear time."""
+    if not validator.is_type(instance, "object"):
+        return
+
+    properties = schema.get("properties", {})
+    patterns = list(schema.get("patternProperties", {}))
+    matchers = []
+    # jsonschema searches the `|`-joined patterns, so a lone "" matches nothing.
+    if "|".join(patterns):
+        for pattern in patterns:
+            matches_key = _linear_pattern_matcher(pattern)
+            if matches_key is None:
+                yield jsonschema_exceptions.ValidationError(
+                    _unsupported_pattern_property_message(pattern)
+                )
+                return
+            matchers.append(matches_key)
+    extras = {
+        key
+        for key in instance
+        if key not in properties
+        and not any(matches_key(key) for matches_key in matchers)
+    }
+
+    if validator.is_type(additional, "object"):
+        for extra in extras:
+            yield from validator.descend(instance[extra], additional, path=extra)
+    elif not additional and extras:
+        if "patternProperties" in schema:
+            verb = "does" if len(extras) == 1 else "do"
+            joined = ", ".join(repr(each) for each in sorted(extras))
+            joined_patterns = ", ".join(
+                repr(each) for each in sorted(schema["patternProperties"])
+            )
+            yield jsonschema_exceptions.ValidationError(
+                f"{joined} {verb} not match any of the regexes: {joined_patterns}"
+            )
+        else:
+            error = "Additional properties are not allowed (%s %s unexpected)"
+            yield jsonschema_exceptions.ValidationError(
+                error % _extras_msg(sorted(extras, key=str))
+            )
+
+
+class _LinearRegexModule:
+    """Stands in for `re` inside jsonschema's evaluated-property helpers, whose
+    only regex use is `re.search(pattern, key)` over `patternProperties`."""
+
+    @staticmethod
+    def search(pattern: t.Any, string: t.Any) -> t.Optional[bool]:
+        matches_key = _linear_pattern_matcher(pattern)
+        if matches_key is None:
+            raise ValueError(_unsupported_pattern_property_message(pattern))
+        return True if matches_key(string) else None
+
+
+def _unsupported_unevaluated_properties(
+    validator: t.Any,
+    _unevaluated: t.Any,
+    instance: t.Any,
+    _schema: t.Any,
+) -> t.Iterator[t.Any]:
+    if validator.is_type(instance, "object"):
+        yield jsonschema_exceptions.ValidationError(
+            "unevaluatedProperties is not supported with the installed jsonschema"
+        )
+
+
+def _linear_unevaluated_properties(keyword: t.Any) -> t.Any:
+    """Rebind jsonschema's `unevaluatedProperties` (2019-09 and 2020-12) so its
+    `patternProperties` key matching uses `_LinearRegexModule`.
+
+    The keyword's semantics are long and version-specific, so the original
+    code objects run unchanged against copied module globals; nothing global
+    is patched. If the helper no longer reaches regexes through a module-level
+    `re`, the keyword fails closed instead of silently using `re`.
+    """
+    module_globals = getattr(keyword, "__globals__", None)
+    finder = (module_globals or {}).get("find_evaluated_property_keys_by_schema")
+    finder_globals = getattr(finder, "__globals__", None)
+    if (
+        not isinstance(keyword, types.FunctionType)
+        or not isinstance(finder, types.FunctionType)
+        or keyword.__closure__ is not None
+        or finder.__closure__ is not None
+        or finder_globals is None
+        or finder_globals.get("re") is not re
+        or "re" not in finder.__code__.co_names
+        or "re" in keyword.__code__.co_names
+    ):
+        return _unsupported_unevaluated_properties
+
+    linear_finder_globals = dict(finder_globals)
+    linear_finder = types.FunctionType(
+        finder.__code__,
+        linear_finder_globals,
+        finder.__name__,
+        finder.__defaults__,
+    )
+    linear_finder_globals["re"] = _LinearRegexModule
+    linear_finder_globals["find_evaluated_property_keys_by_schema"] = linear_finder
+
+    linear_keyword_globals = dict(keyword.__globals__)
+    linear_keyword_globals["re"] = _LinearRegexModule
+    linear_keyword_globals["find_evaluated_property_keys_by_schema"] = linear_finder
+    return types.FunctionType(
+        keyword.__code__,
+        linear_keyword_globals,
+        keyword.__name__,
+        keyword.__defaults__,
+    )
+
+
+_SAFE_REGEX_VALIDATOR_CLASSES: t.Set[t.Any] = set()
+
+
+@functools.lru_cache(maxsize=None)
+def _with_safe_regex_keywords(validator_class: t.Any) -> t.Any:
+    """Extend a jsonschema validator class so no keyword evaluates a schema
+    regex with Python `re` on unbounded input.
+
+    jsonschema's `evolve` (used by `descend` for every subschema) switches to
+    the stock class of any subschema that declares `$schema`, which would drop
+    these overrides. The returned class keeps the dialect switch but re-applies
+    the regex overrides to the class it switches to.
+    """
+    if validator_class in _SAFE_REGEX_VALIDATOR_CLASSES:
+        return validator_class
+    overrides = {
+        "additionalProperties": _safe_additional_properties,
+        "pattern": _exact_validation_pattern,
+        "patternProperties": _safe_pattern_properties,
+    }
+    unevaluated = validator_class.VALIDATORS.get("unevaluatedProperties")
+    if unevaluated is not None:
+        overrides["unevaluatedProperties"] = _linear_unevaluated_properties(unevaluated)
+    return _install_safe_regex_evolve(
+        jsonschema_validators.extend(validator_class, overrides)
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def _exact_validator_class() -> t.Any:
+    # Align multipleOf with the decimal-scaled checks in the Zod and Effect
+    # converters instead of raw float modulo.
+    return _install_safe_regex_evolve(
+        jsonschema_validators.extend(
+            _with_safe_regex_keywords(jsonschema_validators.Draft7Validator),
+            {"multipleOf": _exact_validation_multiple_of},
+        )
+    )
+
+
+def _install_safe_regex_evolve(validator_class: t.Any) -> t.Any:
+    stock_evolve = validator_class.evolve
+
+    def evolve(self: t.Any, **changes: t.Any) -> t.Any:
+        evolved = stock_evolve(self, **changes)
+        evolved_class: t.Any = type(evolved)
+        if evolved_class in _SAFE_REGEX_VALIDATOR_CLASSES:
+            return evolved
+        # Rebuild on the safe variant, copying init fields exactly as
+        # jsonschema's own `evolve` does.
+        safe_class = _with_safe_regex_keywords(evolved_class)
+        return safe_class(
+            **{
+                field.alias: getattr(evolved, field.name)
+                for field in evolved_class.__attrs_attrs__
+                if field.init
+            }
+        )
+
+    validator_class.evolve = evolve
+    _SAFE_REGEX_VALIDATOR_CLASSES.add(validator_class)
+    return validator_class
+
+
+# A bare registry resolves only references inside the schema document and
+# raises on anything else; jsonschema's default registry falls back to
+# fetching unknown URIs over the network.
+_LOCAL_ONLY_REGISTRY: Registry[t.Any] = Registry()
+
+
+def _reject_external_references(schema: t.Any) -> None:
+    """Fail at conversion time on any `$ref` that is not a local JSON Pointer.
+
+    Only schema positions are walked; `const`, `default`, `enum`, and
+    `examples` hold instance data.
+    """
+    if isinstance(schema, list):
+        for item in schema:
+            _reject_external_references(item)
+        return
+    if not isinstance(schema, dict):
+        return
+    reference = schema.get("$ref")
+    if isinstance(reference, str) and not reference.startswith("#"):
+        raise ValueError(
+            f"External schema reference {reference!r} is not supported; "
+            "only local references (#/...) are resolved"
+        )
+    for keyword, value in schema.items():
+        if keyword in _SCHEMA_VALUED_KEYWORDS or keyword in _SCHEMA_LIST_KEYWORDS:
+            _reject_external_references(value)
+        elif keyword in _SCHEMA_MAP_KEYWORDS:
+            if isinstance(value, dict):
+                for entry in value.values():
+                    _reject_external_references(entry)
+        elif keyword == "items":
+            _reject_external_references(value)
+        elif keyword == "dependencies" and isinstance(value, dict):
+            for entry in value.values():
+                if isinstance(entry, (dict, bool)):
+                    _reject_external_references(entry)
+
+
+def _is_closed_object_branch(branch: t.Any) -> bool:
+    return (
+        isinstance(branch, dict)
+        and isinstance(branch.get("properties"), dict)
+        and len(branch["properties"]) > 0
+        and "additionalProperties" not in branch
+        and "patternProperties" not in branch
+        and "$ref" not in branch
+    )
+
+
+def _close_all_of_branches(schema: t.Any) -> t.Any:
+    """Apply the omitted-`additionalProperties` strictness rule once per `allOf`.
+
+    Draft 7 already lets sibling object branches accept each other's keys, so
+    the exact validator only needs the strictness a lone named-property object
+    would have had: the union of every branch's declared keys, applied at the
+    `allOf` node. Mirrors `parseAllOf` in @composio/json-schema-to-zod and
+    `openAllOfBranches` in @composio/json-schema-to-effect-schema.
+    """
+    if isinstance(schema, list):
+        return [_close_all_of_branches(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+
+    result: t.Dict[str, t.Any] = {}
+    for key, value in schema.items():
+        if key in _EXACT_SCHEMA_MAP_KEYWORDS and isinstance(value, dict):
+            result[key] = {
+                name: _close_all_of_branches(child) for name, child in value.items()
+            }
+        elif key in _EXACT_SCHEMA_ARRAY_KEYWORDS or key in _EXACT_SCHEMA_VALUE_KEYWORDS:
+            result[key] = _close_all_of_branches(value)
+        else:
+            result[key] = value
+
+    branches = schema.get("allOf")
+    if (
+        isinstance(branches, list)
+        and len(branches) >= 2
+        and all(_is_closed_object_branch(branch) for branch in branches)
+        and not {"properties", "patternProperties", "additionalProperties"}
+        & set(schema)
+    ):
+        result["properties"] = {
+            name: True for branch in branches for name in branch["properties"]
+        }
+        result["additionalProperties"] = False
+    return result
+
+
+def _reject_unsupported_pattern_properties(
+    schema: t.Any,
+    root_schema: t.Dict[str, t.Any],
+) -> None:
+    """Fail at conversion time on any reachable `patternProperties` key the
+    linear-time engine cannot match."""
+    for candidate in _iter_reachable_schemas(schema, root_schema):
+        pattern_properties = candidate.get("patternProperties")
+        if isinstance(pattern_properties, dict):
+            for pattern in pattern_properties:
+                _compile_pattern_property(pattern)
+
+
+def _validate_json_schema(
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Callable[[t.Any], t.Any]:
+    """Compile an exact JSON Schema acceptance check for a Pydantic model."""
+    validation_schema = _close_all_of_branches(
+        _normalize_draft4_exclusive_bounds(_schema_for_exact_validation(schema))
+    )
+    validation_root = _close_all_of_branches(
+        _normalize_draft4_exclusive_bounds(_schema_for_exact_validation(root_schema))
+    )
+    _reject_external_references(validation_root)
+    _reject_external_references(validation_schema)
+    # The SDK contract is Draft 7 plus the OpenAPI 3.0 boolean spelling for
+    # exclusive bounds. Falling the entire document back to Draft 4 would make
+    # `contains`, `const`, `if`/`then`/`else`, and `propertyNames` disappear.
+    # Schema regexes (`pattern`, `patternProperties`, `additionalProperties`
+    # key matching) never run on unbounded Python `re`, which is exponential
+    # on inputs such as `(a+)+$`.
+    _reject_unsupported_pattern_properties(validation_schema, validation_root)
+    validator_class = _exact_validator_class()
+    validator = validator_class(
+        validation_root,
+        registry=_LOCAL_ONLY_REGISTRY,
+    ).evolve(schema=validation_schema)
+
+    def validate(value: t.Any) -> t.Any:
+        error = next(validator.iter_errors(value), None)
+        if error is not None:
+            location = ".".join(str(part) for part in error.path)
+            message = f"{location}: {error.message}" if location else error.message
+            raise ValueError(message)
+        return value
+
+    return validate
+
+
+def _with_exact_validation_annotation(
+    annotation: t.Any,
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Validate the raw value before Pydantic coercion or default handling."""
+    validate_schema = _validate_json_schema(schema, root_schema)
+    return t.cast(
+        t.Type[t.Any],
+        t.Annotated[annotation, BeforeValidator(validate_schema)],
+    )
+
+
+def _with_exact_validation(
+    model: t.Type[BaseModel],
+    schema: t.Dict[str, t.Any],
+    root_schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Keep model materialization while enforcing the source schema first."""
+    validate_schema = _validate_json_schema(schema, root_schema)
+
+    def validate_source_schema(cls, value: t.Any) -> t.Any:
+        return validate_schema(value)
+
+    validator = model_validator(mode="before")(
+        t.cast(t.Any, classmethod(validate_source_schema))
+    )
+
+    name = model.__name__
+    return t.cast(
+        t.Type[BaseModel],
+        type(
+            name,
+            (model,),
+            {
+                "__module__": __name__,
+                "__qualname__": name,
+                "_validate_source_schema": validator,
+            },
+        ),
+    )
 
 
 def _convert_object_with_unsatisfiable_properties(
@@ -1083,7 +2542,7 @@ def _convert_object_with_unsatisfiable_properties(
         ],
     }
     base_model = create_model_from_schema(
-        base_schema,
+        _normalize_schema_for_library(base_schema),
         allow_undefined_array_items=True,
         allow_undefined_type=True,
     )
@@ -1118,6 +2577,114 @@ def _convert_object_with_unsatisfiable_properties(
     )
 
 
+_TYPE_ARRAY_CHILD_KEYWORDS_MAPS = (
+    "properties",
+    "patternProperties",
+    "$defs",
+    "definitions",
+)
+_TYPE_ARRAY_CHILD_KEYWORDS_LISTS = ("anyOf", "allOf", "oneOf")
+_TYPE_ARRAY_CHILD_KEYWORDS_SCHEMAS = (
+    "items",
+    "additionalItems",
+    "additionalProperties",
+    "contains",
+    "propertyNames",
+    "not",
+    "if",
+    "then",
+    "else",
+)
+
+
+def _normalize_schema_for_library(schema: t.Any) -> t.Any:
+    """Rewrite constructs the json-schema-to-pydantic library mishandles.
+
+    - `type: [...]` becomes an equivalent `anyOf` of single-type schemas: the
+      library applies every sibling constraint to every union member, so
+      `{"type": ["string", "number"], "minLength": 2, "minimum": 10}` raises
+      `TypeError` at validation time when a valid string hits the numeric
+      constraint. Scoping constraints per member is semantically identical
+      under Draft 7 (mismatched-type keywords are ignored).
+    - `pattern` values the Rust regex crate rejects (ECMA look-around) are
+      dropped from the library input; the exact-validation layer still
+      enforces them through Python `re`.
+    """
+    if not isinstance(schema, dict):
+        return schema
+
+    result: t.Dict[str, t.Any] = {}
+    for key, value in schema.items():
+        if key in _TYPE_ARRAY_CHILD_KEYWORDS_MAPS and isinstance(value, dict):
+            result[key] = {
+                name: _normalize_schema_for_library(child)
+                for name, child in value.items()
+            }
+        elif key in _TYPE_ARRAY_CHILD_KEYWORDS_LISTS and isinstance(value, list):
+            result[key] = [_normalize_schema_for_library(child) for child in value]
+        elif key in _TYPE_ARRAY_CHILD_KEYWORDS_SCHEMAS:
+            result[key] = _normalize_schema_for_library(value)
+        else:
+            result[key] = value
+
+    pattern = result.get("pattern")
+    if isinstance(pattern, str) and not _pattern_supported_by_pydantic(pattern):
+        del result["pattern"]
+
+    # Draft-4 boolean exclusive flags: the library reads the boolean itself as
+    # the numeric bound (lt=True becomes "less than 1"). Translate them to the
+    # Draft 7 numeric spelling before the library sees them.
+    if result.get("exclusiveMinimum") is True and _is_numeric(result.get("minimum")):
+        result["exclusiveMinimum"] = result.pop("minimum")
+    elif isinstance(result.get("exclusiveMinimum"), bool):
+        del result["exclusiveMinimum"]
+    if result.get("exclusiveMaximum") is True and _is_numeric(result.get("maximum")):
+        result["exclusiveMaximum"] = result.pop("maximum")
+    elif isinstance(result.get("exclusiveMaximum"), bool):
+        del result["exclusiveMaximum"]
+
+    # A one-member type array is the same as the bare type, and collapsing it
+    # lets the constraint scoping below apply.
+    if isinstance(result.get("type"), list) and len(result["type"]) == 1:
+        result["type"] = result["type"][0]
+
+    # The library applies scalar keywords unconditionally, so a keyword that
+    # does not scope to the declared type (or any keyword on a typeless
+    # schema) raises TypeError at validation time on mismatched instances.
+    # Drop them from the library input; the exact-validation layer that wraps
+    # every object conversion still enforces them per Draft 7.
+    declared_type = result.get("type")
+    if isinstance(declared_type, str):
+        scoped_keywords = _TYPE_SCOPED_KEYWORDS.get(declared_type)
+        if scoped_keywords is not None:
+            for keyword in _SCALAR_CONSTRAINT_KEYWORDS - scoped_keywords:
+                result.pop(keyword, None)
+    elif declared_type is None:
+        for keyword in _SCALAR_CONSTRAINT_KEYWORDS:
+            result.pop(keyword, None)
+
+    type_ = result.get("type")
+    if not isinstance(type_, list) or len(type_) < 2:
+        return result
+
+    members = []
+    for member in type_:
+        member_schema: t.Dict[str, t.Any] = {"type": member}
+        scoped = _TYPE_SCOPED_KEYWORDS.get(member, frozenset())
+        for keyword in scoped | _TYPE_ARRAY_SHARED_KEYWORDS:
+            if keyword in result:
+                member_schema[keyword] = result[keyword]
+        members.append(member_schema)
+
+    wrapper: t.Dict[str, t.Any] = {
+        key: value
+        for key, value in result.items()
+        if key in _TYPE_ARRAY_WRAPPER_KEYWORDS
+    }
+    wrapper["anyOf"] = members
+    return wrapper
+
+
 def _convert_with_library(
     schema: t.Dict[str, t.Any],
     *,
@@ -1129,6 +2696,17 @@ def _convert_with_library(
     # references must fail closed instead of silently changing the field to str.
     if schema.get("type") == "object":
         document_root = root_schema if root_schema is not None else schema
+        if "const" in schema or "enum" in schema:
+            # Object literals must retain their exact value; model defaults
+            # would change it, and RootModel cannot use the extra-key mixin.
+            return _with_exact_validation_annotation(
+                t.Annotated[
+                    t.Dict[str, t.Any],
+                    WithJsonSchema(_schema_for_exact_validation(schema)),
+                ],
+                schema,
+                document_root,
+            )
         if _contains_unsatisfiable_schema(schema.get("properties", {})):
             try:
                 base_model = _convert_object_with_unsatisfiable_properties(
@@ -1137,18 +2715,30 @@ def _convert_with_library(
                 )
             except (SchemaError, CombinerError) as e:
                 logger.debug(
-                    f"Library schema conversion failed: {e}, falling back to string"
+                    f"Library schema conversion failed: {e}, preserving exact validation"
                 )
-                return str
+                return _with_exact_validation_annotation(
+                    t.Any,
+                    schema,
+                    document_root,
+                )
             except Exception as e:
                 logger.debug(
-                    f"Unexpected error in schema conversion: {e}, falling back to string"
+                    f"Unexpected error in schema conversion: {e}, preserving exact validation"
                 )
-                return str
-            return apply_object_policy(
+                return _with_exact_validation_annotation(
+                    t.Any,
+                    schema,
+                    document_root,
+                )
+            return _with_exact_validation(
+                apply_object_policy(
+                    schema,
+                    _apply_nested_object_policies(schema, base_model, document_root),
+                    root_schema=document_root,
+                ),
                 schema,
-                _apply_nested_object_policies(schema, base_model, document_root),
-                root_schema=document_root,
+                document_root,
             )
         # A property-less object with no dynamic-key constraints accepts and
         # preserves arbitrary content. Modelling it as an empty Pydantic
@@ -1160,25 +2750,38 @@ def _convert_with_library(
 
         try:
             base_model = create_model_from_schema(
-                schema,
+                _normalize_schema_for_library(schema),
                 allow_undefined_array_items=True,
                 allow_undefined_type=True,
             )
         except (SchemaError, CombinerError) as e:
             logger.debug(
-                f"Library schema conversion failed: {e}, falling back to string"
+                f"Library schema conversion failed: {e}, preserving exact validation"
             )
-            return str
+            return _with_exact_validation_annotation(
+                t.Any,
+                schema,
+                document_root,
+            )
         except Exception as e:
             logger.debug(
-                f"Unexpected error in schema conversion: {e}, falling back to string"
+                f"Unexpected error in schema conversion: {e}, preserving exact validation"
             )
-            return str
+            return _with_exact_validation_annotation(
+                t.Any,
+                schema,
+                document_root,
+            )
 
-        return apply_object_policy(
+        base_model = _relax_exact_model_fields(schema, base_model)
+        return _with_exact_validation(
+            apply_object_policy(
+                schema,
+                _apply_nested_object_policies(schema, base_model, document_root),
+                root_schema=document_root,
+            ),
             schema,
-            _apply_nested_object_policies(schema, base_model, document_root),
-            root_schema=document_root,
+            document_root,
         )
 
     try:
@@ -1206,13 +2809,17 @@ def _convert_with_library(
         return _convert_simple_type(schema)
 
     except (SchemaError, CombinerError) as e:
-        logger.debug(f"Library schema conversion failed: {e}, falling back to string")
-        return str
+        logger.debug(
+            f"Library schema conversion failed: {e}, preserving exact validation"
+        )
+        document_root = root_schema if root_schema is not None else schema
+        return _with_exact_validation_annotation(t.Any, schema, document_root)
     except Exception as e:
         logger.debug(
-            f"Unexpected error in schema conversion: {e}, falling back to string"
+            f"Unexpected error in schema conversion: {e}, preserving exact validation"
         )
-        return str
+        document_root = root_schema if root_schema is not None else schema
+        return _with_exact_validation_annotation(t.Any, schema, document_root)
 
 
 def _handle_toplevel_combiner(
@@ -1228,14 +2835,34 @@ def _handle_toplevel_combiner(
     try:
         # Try direct conversion - library handles anyOf/oneOf/allOf at top level
         result = create_model_from_schema(
-            schema,
+            _normalize_schema_for_library(schema),
             allow_undefined_array_items=True,
             allow_undefined_type=True,
         )
         if result is type(None):
-            return t.Optional[t.Any]
-        # If result is a type (like a Union or Optional), return it directly
-        # If result is a model class, return it
+            return type(None)
+        if "allOf" in schema:
+            options = schema.get("allOf")
+            requires_object = isinstance(options, list) and any(
+                isinstance(option, dict) and option.get("type") == "object"
+                for option in options
+            )
+            if (
+                requires_object
+                and isinstance(result, type)
+                and issubclass(result, BaseModel)
+            ):
+                document_root = root_schema if root_schema is not None else schema
+                return _with_exact_validation(result, schema, document_root)
+
+            # The library models scalar intersections as object models.
+            # Preserve the JSON value and let exact validation own acceptance.
+            return t.Any
+        # A library model for anyOf/oneOf drops sibling assertions such as
+        # `required` and exclusive oneOf matching; let the source schema own it.
+        if isinstance(result, type) and issubclass(result, BaseModel):
+            document_root = root_schema if root_schema is not None else schema
+            return _with_exact_validation(result, schema, document_root)
         return result
     except (SchemaError, CombinerError):
         pass
@@ -1277,7 +2904,7 @@ def _build_union_from_options(
         pydantic_types.append(ptype)
 
     if len(pydantic_types) == 0:
-        return t.Optional[t.Any] if has_null else _UnsatisfiableSchema  # type: ignore
+        return type(None) if has_null else _UnsatisfiableSchema
 
     if len(pydantic_types) == 1:
         base_type = pydantic_types[0]

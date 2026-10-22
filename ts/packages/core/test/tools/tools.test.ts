@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ComposioClient from '@composio/client';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { Tool, ToolListParams, ToolExecuteParams } from '../../src/types/tool.types';
@@ -12,6 +13,7 @@ import {
 } from '../utils/toolExecuteUtils';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+import { ComposioToolFetchError, ComposioToolNotFoundError } from '../../src/errors/ToolErrors';
 
 // Minimal structural shape for a ComposioError-like value (possibly wrapping
 // another error as its `cause`), used to narrow `catch (error: unknown)`
@@ -150,7 +152,7 @@ describe('Tools', () => {
         {
           toolkit_slug: 'github',
           limit: 10,
-          search: 'test',
+          query: 'test',
           toolkit_versions: 'latest',
         },
         undefined
@@ -200,7 +202,7 @@ describe('Tools', () => {
         {
           toolkit_slug: 'todoist',
           limit: 10,
-          search: 'add task',
+          query: 'add task',
           scopes: ['task:add'],
           toolkit_versions: 'latest',
         },
@@ -455,14 +457,67 @@ describe('Tools', () => {
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
     });
 
-    it('should throw an error if tool is not found', async () => {
+    it('should throw ComposioToolNotFoundError when the API returns 404', async () => {
       const slug = 'NONEXISTENT_TOOL';
+      const notFound = new ComposioClient.NotFoundError(404, undefined, undefined, new Headers());
 
-      mockClient.tools.retrieve.mockRejectedValue(null);
+      mockClient.tools.retrieve.mockRejectedValueOnce(notFound);
 
-      await expect(context.tools.getRawComposioToolBySlug(slug)).rejects.toThrow(
-        `Unable to retrieve tool with slug ${slug}`
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolNotFoundError);
+      expect(error.message).toBe(`Tool with slug ${slug} not found`);
+      expect(error.cause).toBe(notFound);
+    });
+
+    it('should throw ComposioToolNotFoundError when the API returns 400', async () => {
+      const slug = 'malformed slug';
+      const badRequest = new ComposioClient.BadRequestError(
+        400,
+        undefined,
+        undefined,
+        new Headers()
       );
+
+      mockClient.tools.retrieve.mockRejectedValueOnce(badRequest);
+
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolNotFoundError);
+      expect(error.cause).toBe(badRequest);
+    });
+
+    it('should not report an invalid API key (401) as tool not found', async () => {
+      const slug = 'SLACK_FETCH_CONVERSATION_HISTORY';
+      const unauthorized = new ComposioClient.AuthenticationError(
+        401,
+        { error: { message: 'Invalid API key', code: 801, status: 401 } },
+        undefined,
+        new Headers()
+      );
+
+      mockClient.tools.retrieve.mockRejectedValueOnce(unauthorized);
+
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolFetchError);
+      expect(error).not.toBeInstanceOf(ComposioToolNotFoundError);
+      expect(error.name).toBe('ComposioToolFetchError');
+      expect(error.message).toBe(`Unable to retrieve tool with slug ${slug}`);
+      expect(error.cause).toBe(unauthorized);
+      expect(error.cause.status).toBe(401);
+    });
+
+    it('should wrap non-API failures in ComposioToolFetchError', async () => {
+      const slug = 'TOOL_SLUG';
+      const networkError = new Error('socket hang up');
+
+      mockClient.tools.retrieve.mockRejectedValueOnce(networkError);
+
+      const error = await context.tools.getRawComposioToolBySlug(slug).catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolFetchError);
+      expect(error.cause).toBe(networkError);
     });
 
     it('should apply schema modifiers when provided', async () => {
@@ -841,7 +896,7 @@ describe('Tools', () => {
           version: 'latest',
           text: undefined,
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -871,7 +926,7 @@ describe('Tools', () => {
           version: 'latest',
           text: undefined,
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -910,7 +965,7 @@ describe('Tools', () => {
           version: 'latest',
           text: undefined,
         },
-        undefined
+        { maxRetries: 0 }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -943,7 +998,7 @@ describe('Tools', () => {
         expect.objectContaining({
           version: explicitVersion,
         }),
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -1062,10 +1117,27 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
+    });
+
+    it('should forward userId as user_id', async () => {
+      const expectedProxyResponse = { data: { ok: true }, status: 200 };
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      await context.tools.proxyExecute({
+        endpoint: '/api/test',
+        method: 'GET',
+        connectedAccountId: 'test-account-id',
+        userId: 'user-123',
+      });
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        expect.objectContaining({ connected_account_id: 'test-account-id', user_id: 'user-123' }),
+        { maxRetries: 0 }
+      );
     });
 
     it('should handle proxy request with only header parameters', async () => {
@@ -1114,7 +1186,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1166,7 +1238,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1197,7 +1269,7 @@ describe('Tools', () => {
           connected_account_id: 'test-account-id',
           parameters: [],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1249,7 +1321,7 @@ describe('Tools', () => {
             },
           ],
         },
-        undefined
+        { maxRetries: 0 }
       );
 
       expect(result).toEqual(expectedProxyResponse);
@@ -1286,6 +1358,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1300,7 +1373,7 @@ describe('Tools', () => {
             arguments: body.arguments,
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
         expect(result).toEqual({
           data: { results: true },
@@ -1308,6 +1381,23 @@ describe('Tools', () => {
           successful: true,
           logId: '123',
         });
+      });
+
+      it('returns the Instant charge for provider-wrapped session tools', async () => {
+        mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
+          data: {},
+          error: null,
+          log_id: '123',
+          instant_charge: { amount: '0.01', currency: 'USD' },
+        });
+
+        const result = await context.tools.executeSessionTool('EXA_SEARCH', {
+          sessionId,
+          arguments: {},
+        });
+
+        expect(result.instantCharge).toEqual({ amount: '0.01', currency: 'USD' });
       });
 
       it('should pass inline custom tools to tool router session execute', async () => {
@@ -1318,6 +1408,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1346,7 +1437,7 @@ describe('Tools', () => {
               custom_tools: [expect.objectContaining({ slug: 'GREP' })],
             },
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1386,6 +1477,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1417,7 +1509,7 @@ describe('Tools', () => {
             arguments: { query: 'modified' },
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1434,6 +1526,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1474,6 +1567,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'failed',
           data: null,
           error: 'Something went wrong',
           log_id: '456',
@@ -1502,6 +1596,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1565,6 +1660,7 @@ describe('Tools', () => {
         context.tools.wrapToolsForToolRouter(sessionId, tools);
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1580,7 +1676,7 @@ describe('Tools', () => {
             arguments: { query: 'test' },
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
         expect(result).toEqual({
           data: { results: true },
@@ -1612,6 +1708,7 @@ describe('Tools', () => {
         context.tools.wrapToolsForToolRouter(sessionId, tools, modifiers);
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1628,7 +1725,7 @@ describe('Tools', () => {
             arguments: { query: 'test', modified: true },
             enable_auto_workbench_offload: true,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1783,7 +1880,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith(
           {
-            search: 'create issue',
+            query: 'create issue',
             toolkit_versions: 'latest',
           },
           undefined
@@ -1882,7 +1979,7 @@ describe('Tools', () => {
             version: 'latest', // should use latest as default
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1913,7 +2010,7 @@ describe('Tools', () => {
             version: '20251201_03', // should use global version
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -1958,7 +2055,7 @@ describe('Tools', () => {
             version: '20251201_01', // should use test-toolkit-specific version
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2001,7 +2098,7 @@ describe('Tools', () => {
             version: 'latest', // should fallback to latest for unknown toolkit
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2037,7 +2134,7 @@ describe('Tools', () => {
             version: '20251201_03', // explicit version takes precedence
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2099,7 +2196,7 @@ describe('Tools', () => {
             version: 'latest', // should fallback to latest for unknown toolkit
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
     });
@@ -2269,7 +2366,7 @@ describe('Tools', () => {
             version: 'latest',
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2312,7 +2409,7 @@ describe('Tools', () => {
             version: '20251201_01', // specific version should work without skip flag
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2342,7 +2439,7 @@ describe('Tools', () => {
             version: '20251201_03',
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2459,7 +2556,7 @@ describe('Tools', () => {
             version: 'latest',
             text: undefined,
           },
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2525,7 +2622,7 @@ describe('Tools', () => {
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
           unknownToolSlug,
           expect.objectContaining({ user_id: userId, version: 'latest' }),
-          undefined
+          { maxRetries: 0 }
         );
       });
 
@@ -2566,68 +2663,9 @@ describe('Tools', () => {
         expect(mockClient.tools.execute).toHaveBeenCalledWith(
           toolSlug,
           expect.objectContaining({ version: '20250101_00' }),
-          undefined
+          { maxRetries: 0 }
         );
       });
     });
-  });
-});
-
-describe('retries disabled on non-idempotent writes', () => {
-  // Regression: a timed-out, non-idempotent tools.execute / tools.proxy must not
-  // be silently retried — a retry after a server-side success duplicates the side
-  // effect (e.g. sends the same email up to 3 times). Both route through a sibling
-  // client built with maxRetries: 0; reads keep the client's default retries.
-  // See https://github.com/ComposioHQ/composio/issues/3586 (TS parity with Python).
-  const context = createTestContext();
-  setupTest(context);
-
-  it('routes tools.execute through a client with maxRetries: 0', async () => {
-    await mockToolExecution(context.tools);
-
-    await context.tools.execute('COMPOSIO_TOOL', {
-      userId: 'test-user',
-      arguments: { query: 'test' },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    expect(mockClient.withOptions).toHaveBeenCalledWith({ maxRetries: 0 });
-    expect(mockClient.tools.execute).toHaveBeenCalledTimes(1);
-  });
-
-  it('routes tools.proxyExecute through a client with maxRetries: 0', async () => {
-    mockClient.tools.proxy.mockResolvedValueOnce({ data: {}, successful: true });
-
-    await context.tools.proxyExecute({
-      endpoint: '/api/test',
-      method: 'POST' as const,
-      body: { data: 'test' },
-      connectedAccountId: 'test-account-id',
-    });
-
-    expect(mockClient.withOptions).toHaveBeenCalledWith({ maxRetries: 0 });
-    expect(mockClient.tools.proxy).toHaveBeenCalledTimes(1);
-  });
-
-  it('reuses one no-retries sibling client across executes (cached per instance)', async () => {
-    const { getRawComposioToolBySlugSpy } = await mockToolExecution(context.tools);
-
-    await context.tools.execute('COMPOSIO_TOOL', {
-      userId: 'test-user',
-      arguments: { query: 'test' },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    // Queue a second execute; mockToolExecution only primed one response.
-    getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
-    mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
-    await context.tools.execute('COMPOSIO_TOOL', {
-      userId: 'test-user',
-      arguments: { query: 'test again' },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    expect(mockClient.tools.execute).toHaveBeenCalledTimes(2);
-    expect(mockClient.withOptions).toHaveBeenCalledTimes(1);
   });
 });

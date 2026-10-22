@@ -1,7 +1,7 @@
 {
   "name": "mastra-example",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.11",
   "type": "module",
   "description": "Example project for Mastra",
   "main": "src/index.ts",
@@ -25,18 +25,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "catalog:",
+    "@ai-sdk/openai": "^3.0.125",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "ai": "^6.0.263",
+    "ai": "^6.0.302",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.4",
     "typescript": "catalog:",
     "wrangler": "catalog:"
   }

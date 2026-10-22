@@ -24,6 +24,8 @@ class TestGuess:
             ("a.css", "text/css"),
             ("a.js", "application/javascript"),
             ("a.png", "image/png"),
+            ("a.jpg", "image/jpeg"),
+            ("a.jpeg", "image/jpeg"),
             ("a.gif", "image/gif"),
             ("a.mp4", "video/mp4"),
             ("a.zip", "application/zip"),
@@ -32,6 +34,16 @@ class TestGuess:
     def test_known_extensions(self, filename: str, expected: str) -> None:
         """A known extension resolves to its MIME type."""
         assert guess(filename) == expected
+
+    def test_jpg_uses_the_standard_mime_type(self) -> None:
+        """``.jpg`` resolves to the IANA-registered ``image/jpeg``, matching
+        its ``.jpeg``/``.jpe`` siblings and ``mimetypes.guess_type`` in the
+        standard library, rather than the non-standard ``image/jpg``. The
+        reverse ``_MIME_TO_EXT`` map still accepts ``image/jpg`` from servers
+        that send it."""
+        assert guess("a.jpg") == "image/jpeg"
+        assert guess("a.jpeg") == "image/jpeg"
+        assert guess("a.jpe") == "image/jpeg"
 
     def test_extension_lookup_is_case_insensitive(self) -> None:
         """Suffixes are normalized to lower case, matching the sibling

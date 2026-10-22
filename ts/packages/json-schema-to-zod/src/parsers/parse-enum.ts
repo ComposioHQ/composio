@@ -1,22 +1,15 @@
-import { z } from 'zod/v3';
-
+import { parseLiteralValues } from './parse-literal-values';
+import { parseSchema } from './parse-schema';
+import type { ParseContext } from '../context';
 import type { JsonSchemaObject, Serializable } from '../types';
 
-export const parseEnum = (jsonSchema: JsonSchemaObject & { enum: Serializable[] }) => {
-  if (jsonSchema.enum.length === 0) {
-    return z.never();
-  }
-
-  if (jsonSchema.enum.length === 1) {
-    // union does not work when there is only one element
-    return z.literal(jsonSchema.enum[0] as z.Primitive);
-  }
-
-  if (jsonSchema.enum.every(x => typeof x === 'string')) {
-    return z.enum(jsonSchema.enum as [string]);
-  }
-
-  return z.union(
-    jsonSchema.enum.map(x => z.literal(x as z.Primitive)) as unknown as [z.ZodTypeAny, z.ZodTypeAny]
+export const parseEnum = <S>(
+  jsonSchema: JsonSchemaObject & { enum: Serializable[] },
+  ctx: ParseContext<S>
+): S => {
+  const { enum: values, ...baseSchema } = jsonSchema;
+  return ctx.backend.intersection(
+    parseSchema(baseSchema, { ...ctx, seen: new Map(ctx.seen) }, true),
+    parseLiteralValues(values, ctx.backend)
   );
 };

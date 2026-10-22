@@ -55,6 +55,13 @@ function workflowSteps(path: string, job: string): WorkflowStep[] {
 }
 
 describe('support knowledge refresh workflow', () => {
+  test('allows stale embeddings in PR checks without ignoring artifact errors', () => {
+    const check = workflowSteps(docsTestsWorkflowPath, 'test')
+      .find(step => step.name === 'Check KB semantic artifact');
+    expect(check?.run).toBe('bun run check:kb-semantic --allow-stale');
+    expect(check?.['continue-on-error']).not.toBe(true);
+  });
+
   test('rebuilds stale semantic artifacts from default-branch code only for trusted current pull requests', () => {
     const workflow = existsSync(semanticRefreshWorkflowPath)
       ? Bun.YAML.parse(readFileSync(semanticRefreshWorkflowPath, 'utf8')) as {
@@ -190,9 +197,11 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(checkout?.with?.ref).toBe('${{ needs.authorize.outputs.head_sha }}');
     expect(checkout?.with?.['persist-credentials']).toBe(false);
     expect(freshness?.['continue-on-error']).toBe(true);
+    expect(freshness?.run).toBe('bun run check:kb-semantic');
     expect(build?.if).toBe("steps.freshness.outcome == 'failure'");
     expect(build?.env).toEqual({ OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}' });
     expect(verify?.if).toBe("steps.freshness.outcome == 'failure'");
+    expect(verify?.run).toBe('bun run check:kb-semantic');
     expect(writeToken?.if).toBe("steps.freshness.outcome == 'failure'");
     expect(writeToken?.with).toEqual({
       'client-id': '${{ vars.RELEASE_BOT_CLIENT_ID }}',
@@ -252,12 +261,43 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(workflow).toContain('actions/download-artifact@');
   });
 
-  test('can refresh immediately or discover upstream changes on a schedule', () => {
-    const workflow = readFileSync(workflowPath, 'utf8');
+  test('passes dispatched source context to the tested resolver script', () => {
+    const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
+      on?: {
+        repository_dispatch?: { types?: string[] };
+        workflow_dispatch?: unknown;
+      };
+      jobs?: Record<string, WorkflowJob>;
+    };
+    const steps = workflow.jobs?.refresh?.steps ?? [];
+    const checkout = steps.find(step => step.name === 'Checkout support knowledge');
+    const resolveSource = steps.find(step => step.name === 'Resolve upstream change');
 
-    expect(workflow).toContain('support-knowledge-updated');
-    expect(workflow).toContain('schedule:');
-    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow.on?.repository_dispatch?.types).toEqual(['support-knowledge-updated']);
+    expect(workflow.on).toHaveProperty('workflow_dispatch');
+    expect(checkout?.with?.ref).toBe(
+      "${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source_commit || 'main' }}",
+    );
+    expect(resolveSource?.env?.REQUESTED_SOURCE_COMMIT).toBe(
+      "${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source_commit || '' }}",
+    );
+    expect(resolveSource?.run).toBe('bash scripts/resolve-kb-refresh-source.sh');
+  });
+
+  test('serializes refreshes and checks complete upstream history', () => {
+    const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
+      concurrency?: { group?: string; 'cancel-in-progress'?: boolean };
+      jobs?: Record<string, WorkflowJob>;
+    };
+    const checkout = workflow.jobs?.refresh?.steps?.find(
+      step => step.name === 'Checkout support knowledge',
+    );
+
+    expect(workflow.concurrency).toEqual({
+      group: 'docs-support-knowledge-refresh',
+      'cancel-in-progress': true,
+    });
+    expect(checkout?.with?.['fetch-depth']).toBe(0);
   });
 
   test('tracks failures until both refresh and PR proposal recover', () => {

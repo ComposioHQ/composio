@@ -1,5 +1,5 @@
-import { Config, ConfigError, Effect, HashMap, Option, pipe, String } from 'effect';
-import { BaseConfigProviderLive } from 'src/services/config';
+import { Config, Effect, Option, String } from 'effect';
+import { APP_CONFIG } from 'src/config';
 
 /**
  * Represents a toolkit with its version specification.
@@ -9,23 +9,6 @@ export interface ToolkitVersionSpec {
   readonly toolkitSlug: Lowercase<string>;
   readonly toolkitVersion: string;
 }
-
-/**
- * Config that reads COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>=<version> env vars.
- * Uses Effect's Config.hashMap with Config.nested to read all env vars
- * `COMPOSIO_TOOLKIT_VERSION_${TOOLKIT}` with a wildcard suffix.
- *
- * @example
- * // Given: COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00
- * // Returns: HashMap { "GMAIL" => "20250901_00" }
- */
-export const TOOLKIT_VERSION_OVERRIDES_CONFIG = pipe(
-  Config.hashMap(Config.string()),
-  Config.nested('VERSION'),
-  Config.nested('TOOLKIT'),
-  Config.nested('COMPOSIO'),
-  Config.option // Optional, so missing env vars don't fail the config
-);
 
 /**
  * Map type with lowercase toolkit slugs as keys.
@@ -59,16 +42,8 @@ export const sanitizeVersionString = (version: string): string | null => {
 };
 
 /**
- * Reads toolkit version overrides from environment variables.
- *
- * Uses Effect's Config system to read env vars matching the pattern
- * COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>=<version>.
- *
- * This function uses `BaseConfigProviderLive` directly (bypassing `extendConfigProvider`)
- * to correctly parse the nested path structure of the environment variable names.
- *
- * @returns Effect that yields a Map<Lowercase<string>, string> where keys are lowercase toolkit slugs
- *          and values are version strings
+ * Reads `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>=<version>` pins into a map keyed by lowercase
+ * toolkit slug. `latest` and blank values are skipped; versions are sanitized.
  *
  * @example
  * // Given: COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00
@@ -76,28 +51,18 @@ export const sanitizeVersionString = (version: string): string | null => {
  */
 export const getToolkitVersionOverrides: Effect.Effect<
   ToolkitVersionOverrides,
-  ConfigError.ConfigError
-> = Effect.gen(function* () {
-  const maybeOverrides = yield* TOOLKIT_VERSION_OVERRIDES_CONFIG;
-
-  return Option.match(maybeOverrides, {
-    onNone: () => new Map<Lowercase<string>, string>(),
-    onSome: hashMap => {
-      const result = new Map<Lowercase<string>, string>();
-      for (const [key, value] of HashMap.toEntries(hashMap)) {
-        // Normalize toolkit name to lowercase and skip 'latest' values
-        if (value && value !== 'latest') {
-          // Sanitize version string to only allow valid characters
-          const sanitizedVersion = sanitizeVersionString(value);
-          if (sanitizedVersion) {
-            result.set(String.toLowerCase(key), sanitizedVersion);
-          }
-        }
-      }
-      return result;
-    },
-  });
-}).pipe(Effect.withConfigProvider(BaseConfigProviderLive));
+  Config.ConfigError
+> = Effect.map(APP_CONFIG.TOOLKIT_VERSIONS, maybeOverrides => {
+  const result = new Map<Lowercase<string>, string>();
+  for (const [key, value] of Object.entries(Option.getOrElse(maybeOverrides, () => ({})))) {
+    if (!value || value === 'latest') continue;
+    const sanitizedVersion = sanitizeVersionString(value);
+    if (sanitizedVersion) {
+      result.set(String.toLowerCase(key), sanitizedVersion);
+    }
+  }
+  return result;
+});
 
 /**
  * Builds an array of ToolkitVersionSpec from toolkit slugs and version overrides.

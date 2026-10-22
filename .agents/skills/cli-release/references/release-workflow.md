@@ -17,7 +17,7 @@
 - `.github/scripts/cli-release/resolve-release-target.sh` decides the tag and source commit.
 - `.github/scripts/cli-release/verify-assets.sh` defines the required asset set.
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
-- `.changeset/config.json` ignores `@composio/cli` and `@composio/cli-local-tools`.
+- `.changeset/config.json` ignores `@composio/cli`.
 
 `ts.release.yml` is the TypeScript SDK/npm release train. It is not the normal CLI binary release path.
 
@@ -36,7 +36,7 @@ dispatch an explicitly versioned beta, verify it, and promote that exact beta.
 
 ## Changeset Rule
 
-Never create a `.changeset/*.md` entry for `@composio/cli` or `@composio/cli-local-tools` while those packages remain in `.changeset/config.json#ignore`.
+Never create a `.changeset/*.md` entry for `@composio/cli` while it remains in `.changeset/config.json#ignore`.
 
 An ignored-package changeset makes `changesets/action` enter version-PR mode, while `changeset version` emits no commit. The action then fails with `No commits between next and changeset-release/next` and blocks unrelated SDK publishing.
 

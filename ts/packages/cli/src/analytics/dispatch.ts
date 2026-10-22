@@ -1,28 +1,31 @@
+import { cliRequestHeaders } from 'src/services/client-provenance';
 import process from 'node:process';
-import { FileSystem, HttpClient, HttpClientRequest, Path } from '@effect/platform';
-import type { PlatformError } from '@effect/platform/Error';
+import type { PlatformError } from 'effect/PlatformError';
 import {
   Cause,
   Clock,
-  Config,
-  ConfigProvider,
   DateTime,
   Effect,
-  Encoding,
+  FileSystem,
   Option,
+  Path,
+  Predicate,
   Schema,
 } from 'effect';
+import { Base64Url } from 'effect/encoding';
+import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
+import { resolveBackend, withoutTrailingSlashes } from 'src/config/backend';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
-import { extendConfigProvider } from 'src/services/config';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
+import { detectPluginHost, rawHostEnvironment } from 'src/services/agent-host-env';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
-import { CliRunId } from 'src/services/runtime-cli-context';
+import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
@@ -71,56 +74,14 @@ type ConsumerShortTermCacheState = Record<
   }
 >;
 
-// Workers start before the CLI's prefixed ConfigProvider is assembled, so this
-// module names and reads the actual environment variables from a raw provider.
-const environmentProvider = ConfigProvider.fromEnv();
-const optionalString = (name: string) => Config.option(Config.string(name));
-const booleanWithDefault = (name: string) => Config.boolean(name).pipe(Config.withDefault(false));
-const configuredString = (value: Option.Option<string>): string | undefined =>
-  value.pipe(
-    Option.map(value => value.trim()),
-    Option.filter(value => value.length > 0),
-    Option.getOrUndefined
-  );
+const analyticsDisabled = Effect.orDie(TELEMETRY_CONFIG.DISABLED);
 
-const analyticsDisabled = environmentProvider.load(
-  Config.all({
-    cliTelemetryDisabled: booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DISABLED'),
-    telemetryDisabled: booleanWithDefault('TELEMETRY_DISABLED'),
-    composioTelemetryDisabled: booleanWithDefault('COMPOSIO_DISABLE_TELEMETRY'),
-    nodeEnvironment: Config.string('NODE_ENV').pipe(Config.withDefault('')),
-    ci: booleanWithDefault('CI'),
-  }).pipe(
-    Config.map(
-      ({
-        cliTelemetryDisabled,
-        telemetryDisabled,
-        composioTelemetryDisabled,
-        nodeEnvironment,
-        ci,
-      }) =>
-        cliTelemetryDisabled ||
-        telemetryDisabled ||
-        composioTelemetryDisabled ||
-        nodeEnvironment === 'test' ||
-        ci
-    )
-  )
+const getPostHogConfig = Effect.orDie(
+  Effect.all({
+    ingestUrl: TELEMETRY_CONFIG.POSTHOG_INGEST_URL,
+    projectKey: TELEMETRY_CONFIG.POSTHOG_PROJECT_API_KEY,
+  })
 );
-
-const getPostHogConfig = environmentProvider
-  .load(
-    Config.all({
-      ingestUrl: optionalString('COMPOSIO_POSTHOG_INGEST_URL'),
-      projectKey: optionalString('COMPOSIO_POSTHOG_PROJECT_API_KEY'),
-    })
-  )
-  .pipe(
-    Effect.map(({ ingestUrl, projectKey }) => ({
-      ingestUrl: configuredString(ingestUrl) ?? constants.COMPOSIO_POSTHOG_INGEST_URL,
-      projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_API_KEY,
-    }))
-  );
 
 const postHogEnabled = Effect.gen(function* () {
   if (yield* analyticsDisabled) {
@@ -132,11 +93,14 @@ const postHogEnabled = Effect.gen(function* () {
 
 export const analyticsIdentityLinkingEnabled = postHogEnabled;
 
-const jsonFromString = Schema.parseJson();
-const prettyJsonFromString = Schema.parseJson({ space: 2 });
-const decodeJson = Schema.decodeUnknown(jsonFromString);
-const encodeJson = Schema.encode(jsonFromString);
-const encodePrettyJson = Schema.encode(prettyJsonFromString);
+const jsonError = (error: unknown): Error =>
+  Predicate.isError(error) ? error : new Error(String(error));
+const decodeJson = (str: string) =>
+  Effect.try({ try: (): unknown => JSON.parse(str), catch: jsonError });
+const encodeJson = (value: unknown) =>
+  Effect.try({ try: () => JSON.stringify(value), catch: jsonError });
+const encodePrettyJson = (value: unknown) =>
+  Effect.try({ try: () => JSON.stringify(value, null, 2), catch: jsonError });
 
 const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
   Effect.gen(function* () {
@@ -151,7 +115,7 @@ const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
 
 const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, string> => {
   const squashed = Cause.squash(cause);
-  const error = Cause.isUnknownException(squashed) ? squashed.error : squashed;
+  const error = Cause.isUnknownError(squashed) ? squashed.cause : squashed;
   return error instanceof Error
     ? { name: error.name, message: error.message }
     : { message: String(error) };
@@ -160,16 +124,9 @@ const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, stri
 const getAnalyticsPaths = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
-  const cacheDirectories = yield* environmentProvider.load(
-    Config.all({
-      composio: optionalString('COMPOSIO_CACHE_DIR'),
-      legacy: optionalString('CACHE_DIR'),
-    })
-  );
   const analyticsDir = path.join(os.homedir, COMPOSIO_DIR);
   const cacheDir =
-    configuredString(cacheDirectories.composio) ??
-    configuredString(cacheDirectories.legacy) ??
+    (yield* Effect.orDie(APP_CONFIG.CACHE_DIR)) ??
     path.join(os.homedir, constants.USER_COMPOSIO_DIR);
 
   return {
@@ -189,7 +146,7 @@ const readOptionalJson = <A>(filePath: string) =>
     const fs = yield* FileSystem.FileSystem;
     const raw = yield* fs.readFileString(filePath, 'utf8');
     return (yield* decodeJson(raw)) as A;
-  }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
+  }).pipe(Effect.catch(() => Effect.succeed(undefined)));
 
 type AnalyticsState = {
   readonly install_id?: string;
@@ -208,6 +165,21 @@ const readAnalyticsState = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
   return yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
 });
+
+/**
+ * The stored analytics install ID, for first-party requests that should join
+ * the CLI's own events. `None` when telemetry is disabled or no ID is stored or
+ * readable. Read-only: it never creates an ID, takes no lock, and cannot fail.
+ */
+export const readInstallIdWhenTelemetryEnabled = Effect.gen(function* () {
+  if (!(yield* postHogEnabled)) {
+    return Option.none<string>();
+  }
+  const state = yield* readAnalyticsState;
+  return typeof state?.install_id === 'string' && state.install_id.length > 0
+    ? Option.some(state.install_id)
+    : Option.none<string>();
+}).pipe(Effect.catch(() => Effect.succeed(Option.none<string>())));
 
 const recoverStaleAnalyticsStateLock = (
   fs: FileSystem.FileSystem,
@@ -228,7 +200,7 @@ const recoverStaleAnalyticsStateLock = (
     const stalePath = `${lockPath}.stale-${crypto.randomUUID().slice(0, 8)}`;
     yield* fs.rename(lockPath, stalePath);
     yield* fs.remove(stalePath, { force: true });
-  }).pipe(Effect.catchAll(() => Effect.void));
+  }).pipe(Effect.catch(() => Effect.void));
 
 const acquireAnalyticsStateLock = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
@@ -249,15 +221,13 @@ const acquireAnalyticsStateLock = Effect.gen(function* () {
   );
   const tryAcquire = (): Effect.Effect<void, PlatformError, never> =>
     fs.writeFileString(paths.analyticsStateLockPath, token, { flag: 'wx' }).pipe(
-      Effect.catchTag('SystemError', error => {
-        if (error.reason !== 'AlreadyExists') {
+      Effect.catchTag('PlatformError', error => {
+        if (!Predicate.isTagged(error.reason, 'AlreadyExists')) {
           return Effect.fail(error);
         }
         return recoverStaleAnalyticsStateLock(fs, paths.analyticsStateLockPath).pipe(
           Effect.andThen(
-            fs
-              .exists(paths.analyticsStateLockPath)
-              .pipe(Effect.catchAll(() => Effect.succeed(true)))
+            fs.exists(paths.analyticsStateLockPath).pipe(Effect.catch(() => Effect.succeed(true)))
           ),
           Effect.flatMap(lockStillExists => {
             if (lockStillExists && Date.now() >= deadline) {
@@ -275,13 +245,13 @@ const acquireAnalyticsStateLock = Effect.gen(function* () {
   return { fs, lockPath: paths.analyticsStateLockPath, token };
 });
 
-const releaseAnalyticsStateLock = (lock: Effect.Effect.Success<typeof acquireAnalyticsStateLock>) =>
+const releaseAnalyticsStateLock = (lock: Effect.Success<typeof acquireAnalyticsStateLock>) =>
   Effect.gen(function* () {
     const currentToken = yield* lock.fs.readFileString(lock.lockPath, 'utf8');
     if (currentToken === lock.token) {
       yield* lock.fs.remove(lock.lockPath, { force: true });
     }
-  }).pipe(Effect.catchAll(() => Effect.void));
+  }).pipe(Effect.catch(() => Effect.void));
 
 const withAnalyticsStateLock = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.acquireUseRelease(acquireAnalyticsStateLock, () => effect, releaseAnalyticsStateLock);
@@ -301,7 +271,7 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
 
   yield* fs
     .makeDirectory(paths.analyticsDir, { recursive: true })
-    .pipe(Effect.catchAll(() => Effect.void));
+    .pipe(Effect.catch(() => Effect.void));
 
   const state = yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
   if (typeof state?.install_id === 'string' && state.install_id.length > 0) {
@@ -319,8 +289,21 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
   return installId;
 });
 
+// A process whose bounded lock wait expired (a live lock held elsewhere) must
+// still adopt an install_id another process already persisted, so concurrent
+// first-run events converge on one identity instead of each racer minting its
+// own. The fallback only reads: persistence stays exclusive to the lock-holding
+// path, and an unlocked write here could clobber a concurrent state merge.
+const adoptOrMintInstallId = Effect.gen(function* () {
+  const state = yield* readAnalyticsState;
+  if (typeof state?.install_id === 'string' && state.install_id.length > 0) {
+    return state.install_id;
+  }
+  return yield* makeInstallId;
+});
+
 const getOrCreateInstallId = withAnalyticsStateLock(getOrCreateInstallIdUnlocked).pipe(
-  Effect.catchAll(() => makeInstallId)
+  Effect.catch(() => adoptOrMintInstallId)
 );
 
 const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<AnalyticsState>) =>
@@ -330,7 +313,7 @@ const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<Analytics
 
     yield* fs
       .makeDirectory(paths.analyticsDir, { recursive: true })
-      .pipe(Effect.catchAll(() => Effect.void));
+      .pipe(Effect.catch(() => Effect.void));
 
     const state = yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
     const contents = yield* encodeJson({
@@ -354,9 +337,7 @@ const getOrgId = Effect.map(readUserConfig, config =>
 );
 
 const getUserApiKey = Effect.gen(function* () {
-  const envApiKey = configuredString(
-    yield* environmentProvider.load(optionalString('COMPOSIO_USER_API_KEY'))
-  );
+  const envApiKey = yield* Effect.orDie(APP_CONFIG.USER_API_KEY);
   if (envApiKey) {
     return envApiKey;
   }
@@ -488,7 +469,7 @@ export const getCurrentCwdSessionId = (cwd = process.cwd()) =>
     }
 
     return best?.id;
-  }).pipe(Effect.catchAllCause(() => Effect.succeed(undefined)));
+  }).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
 
 const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string): TrackEvent => ({
   ...event,
@@ -499,22 +480,30 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
   },
 });
 
+// A stored login in user_data.json: its key and the backend that issued it. The keychain
+// modes keep the key out of the file, and then this reports no key to send either.
+const decodeStoredLogin = Schema.decodeUnknownOption(
+  Schema.Struct({ api_key: Schema.NonEmptyString, base_url: Schema.NonEmptyString })
+);
+
+// The same URL the CLI itself talks to, resolved like `ComposioUserContext` does: an env var
+// that selects a backend, else the stored login's backend, else production.
 export const readApiBaseUrl = Effect.gen(function* () {
-  const envBaseUrl = configuredString(
-    yield* environmentProvider.load(optionalString('COMPOSIO_BASE_URL'))
-  );
-  if (envBaseUrl) {
-    return envBaseUrl.replace(/\/+$/u, '');
-  }
+  const env = yield* Effect.orDie(APP_CONFIG.BACKEND);
+  const envApiKey = yield* Effect.orDie(APP_CONFIG.USER_API_KEY);
+  const stored =
+    envApiKey === undefined
+      ? Option.map(decodeStoredLogin(yield* readUserConfig), login => ({
+          baseURL: login.base_url,
+          webURL: Option.none<string>(),
+        }))
+      : Option.none();
+  return withoutTrailingSlashes(resolveBackend(env, stored).baseURL);
+});
 
-  const userConfig = yield* readUserConfig;
-  return typeof userConfig?.base_url === 'string' && userConfig.base_url.trim().length > 0
-    ? userConfig.base_url.trim().replace(/\/+$/u, '')
-    : null;
-}).pipe(Effect.catchAllCause(() => Effect.succeed(null)));
-
-const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
-  baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
+const getCliCodactFailuresEndpoint = Effect.map(
+  readApiBaseUrl,
+  baseUrl => `${baseUrl}${CLI_CODACT_FAILURES_PATH}`
 );
 
 // Effect's Command processes are scoped and die with their scope; telemetry
@@ -596,17 +585,12 @@ type CliInvocationContext = {
 // The COMPOSIO_CLI_PARENT_RUN_ID handshake only exists in processes `composio run` spawned. The
 // root run process holds its freshly minted id in the CliRunId service instead, so failures it
 // reports carry the same run id its children stamp from the environment.
-const getCliInvocationContext = Effect.gen(function* () {
-  const environment = yield* environmentProvider.pipe(extendConfigProvider).load(
-    Config.all({
-      origin: APP_CONFIG.CLI_INVOCATION_ORIGIN,
-      parentRunId: APP_CONFIG.CLI_PARENT_RUN_ID,
-    })
-  );
+const getCliInvocationContext: Effect.Effect<CliInvocationContext> = Effect.gen(function* () {
+  const { invocationOrigin, parentRunId } = yield* cliInvocationContext;
   const mintedRunId = Option.flatten(yield* Effect.serviceOption(CliRunId));
   return {
-    origin: environment.origin,
-    parentRunId: environment.parentRunId ?? Option.getOrUndefined(mintedRunId),
+    origin: invocationOrigin,
+    parentRunId: parentRunId ?? Option.getOrUndefined(mintedRunId),
   };
 });
 
@@ -633,9 +617,9 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const disabled = yield* analyticsDisabled;
-    if (!endpoint || disabled) {
+    if (disabled) {
       yield* telemetryDebugLog('codact_delivery_skipped', {
-        reason: disabled ? 'disabled' : 'missing_endpoint',
+        reason: 'disabled',
         endpoint,
         failureType: failure.failureType,
       });
@@ -657,6 +641,7 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     const invocation = yield* getCliInvocationContext;
     const body = createCliCodactFailureBody(failure, cliSessionId, invocation);
     const request = yield* HttpClientRequest.post(endpoint).pipe(
+      HttpClientRequest.setHeaders(cliRequestHeaders()),
       HttpClientRequest.setHeader('x-user-api-key', userApiKey),
       HttpClientRequest.bodyJson(body)
     );
@@ -687,7 +672,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
 
     yield* telemetryDebugLog('enqueue', { envelope });
     const serializedEnvelope = yield* encodeJson(envelope);
-    const encodedPayload = Encoding.encodeBase64Url(serializedEnvelope);
+    const encodedPayload = Base64Url.encode(serializedEnvelope);
     const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
@@ -718,10 +703,12 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     const installId = yield* getOrCreateInstallId;
     const distinctId = yield* getDistinctId(installId);
     const orgId = yield* getOrgId;
+    const hostEnv = yield* rawHostEnvironment;
     const sentAt = DateTime.formatIso(yield* DateTime.now);
     const properties = scrubSecrets({
       ...(enrichedEvent.properties ?? {}),
       ...(orgId ? { org_id: orgId } : {}),
+      agent_host_env: detectPluginHost(hostEnv) ?? 'none',
     }) as Record<string, unknown>;
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
@@ -732,7 +719,7 @@ export const trackCliEventEffect = (event: TrackEvent) =>
       installId,
     };
     yield* enqueuePostHogEnvelope(envelope);
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));
 
 export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
   Effect.gen(function* () {
@@ -755,7 +742,7 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
       installId,
     };
     return yield* enqueuePostHogEnvelope(envelope);
-  }).pipe(Effect.catchAllCause(() => Effect.succeed(false)));
+  }).pipe(Effect.catchCause(() => Effect.succeed(false)));
 
 export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: string) =>
   Effect.gen(function* () {
@@ -854,7 +841,7 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: st
         })
       );
     }
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));
 
 export const clearApolloIdentityForAnalytics = withAnalyticsStateLock(
   Effect.gen(function* () {
@@ -867,16 +854,16 @@ export const clearApolloIdentityForAnalytics = withAnalyticsStateLock(
       api_key_fingerprint: undefined,
     });
   })
-).pipe(Effect.catchAllCause(() => Effect.void));
+).pipe(Effect.catchCause(() => Effect.void));
 
 export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const userApiKey = yield* getUserApiKey;
     const disabled = yield* analyticsDisabled;
-    if (disabled || !endpoint || !userApiKey) {
+    if (disabled || !userApiKey) {
       yield* telemetryDebugLog('codact_skip', {
-        reason: disabled ? 'disabled' : !endpoint ? 'missing_endpoint' : 'missing_user_api_key',
+        reason: disabled ? 'disabled' : 'missing_user_api_key',
         failureType: failure.failureType,
         endpoint,
       });
@@ -886,13 +873,13 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     const cliSessionId = yield* getCurrentCwdSessionId();
     const invocation = yield* getCliInvocationContext;
     const body = yield* encodeJson(createCliCodactFailureBody(failure, cliSessionId, invocation));
-    const encodedPayload = Encoding.encodeBase64Url(body);
+    const encodedPayload = Base64Url.encode(body);
     const { command, args } = yield* getDetachedWorkerSpawnArgs(
       INTERNAL_CODACT_FAILURE_WORKER_FLAG,
       encodedPayload
     );
     yield* spawnWorker(command, args);
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));
 
 const getWorkerFlagIndex = (argv: ReadonlyArray<string>, flag: string): number =>
   argv.findIndex(token => token === flag);
@@ -903,7 +890,7 @@ export const isBackgroundWorkerInvocation = (argv: ReadonlyArray<string>): boole
 
 const decodeWorkerPayload = <A>(encodedPayload: string) =>
   Effect.gen(function* () {
-    const serialized = yield* Encoding.decodeBase64UrlString(encodedPayload);
+    const serialized = yield* Effect.fromResult(Base64Url.decodeString(encodedPayload));
     return (yield* decodeJson(serialized)) as A;
   });
 
@@ -930,7 +917,7 @@ const settlePostHogAlias = (envelope: AnalyticsEnvelope, delivered: boolean) => 
         pending_alias_attempted_at: undefined,
       });
     })
-  ).pipe(Effect.catchAllCause(() => Effect.void));
+  ).pipe(Effect.catchCause(() => Effect.void));
 };
 
 const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
@@ -950,7 +937,7 @@ const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
       return true;
     }
     const delivered = yield* captureToPostHog(envelope).pipe(
-      Effect.catchAllCause(cause =>
+      Effect.catchCause(cause =>
         telemetryDebugLog('delivery_error', { error: telemetryErrorDetails(cause) }).pipe(
           Effect.as(false)
         )
@@ -958,7 +945,7 @@ const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
     );
     yield* settlePostHogAlias(envelope, delivered);
     return true;
-  }).pipe(Effect.catchAllCause(() => Effect.succeed(true)));
+  }).pipe(Effect.catchCause(() => Effect.succeed(true)));
 };
 
 const runCodactFailureWorker = (argv: ReadonlyArray<string>) => {
@@ -990,7 +977,7 @@ const runCodactFailureWorker = (argv: ReadonlyArray<string>) => {
       requestId: body.request_id,
     });
   }).pipe(
-    Effect.catchAllCause(cause =>
+    Effect.catchCause(cause =>
       telemetryDebugLog('codact_delivery_error', { error: telemetryErrorDetails(cause) })
     )
   );
@@ -1002,4 +989,4 @@ export const runBackgroundWorkerFromArgv = (argv: ReadonlyArray<string>) =>
     if (!handledAnalytics) {
       yield* runCodactFailureWorker(argv);
     }
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+  }).pipe(Effect.catchCause(() => Effect.void));

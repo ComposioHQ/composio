@@ -1,8 +1,10 @@
-import { Command } from '@effect/cli';
-import { toolkitsCmd$List } from './commands/toolkits.list.cmd';
-import { toolkitsCmd$Info } from './commands/toolkits.info.cmd';
-import { toolkitsCmd$Search } from './commands/toolkits.search.cmd';
-import { toolkitsCmd$Version } from './commands/toolkits.version.cmd';
+import { requireLogin } from 'src/effects/require-auth';
+import { Command } from 'effect/cli';
+import { rejectsSharedFlags } from 'src/commands/surface';
+import { toolkitsCmd$List } from './list/toolkits.list.cmd';
+import { toolkitsCmd$Info } from './info/toolkits.info.cmd';
+import { toolkitsCmd$Search } from './search/toolkits.search.cmd';
+import { toolkitsCmd$Version } from './version/toolkits.version.cmd';
 
 /**
  * CLI entry point for toolkit discovery commands.
@@ -17,7 +19,8 @@ export const toolkitsCmd = Command.make('toolkits').pipe(
   Command.withSubcommands([
     toolkitsCmd$List,
     toolkitsCmd$Info,
-    toolkitsCmd$Search,
-    toolkitsCmd$Version,
-  ])
+    toolkitsCmd$Search.pipe(rejectsSharedFlags('dev toolkits search')),
+    toolkitsCmd$Version.pipe(rejectsSharedFlags('dev toolkits version')),
+  ]),
+  requireLogin
 );

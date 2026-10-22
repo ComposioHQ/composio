@@ -1,4 +1,7 @@
 import { isIP } from 'node:net';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { Readable } from 'node:stream';
 import type { Agent } from 'undici';
 
 /**
@@ -36,6 +39,37 @@ const GLOBAL_DISPATCHER_SYMBOLS = [
 let undici: Promise<typeof import('undici')> | undefined;
 const loadUndici = (): Promise<typeof import('undici')> => (undici ??= import('undici'));
 
+const lookupPinnedAddresses = (
+  addresses: ReadonlyArray<string>,
+  options: { all?: boolean },
+  callback: (
+    error: NodeJS.ErrnoException | null,
+    address: string | Array<{ address: string; family: number }>,
+    family?: number
+  ) => void
+) => {
+  if (options.all) {
+    callback(
+      null,
+      addresses.map(address => ({ address, family: isIP(address) }))
+    );
+    return;
+  }
+
+  const [address] = addresses;
+  callback(null, address, isIP(address));
+};
+
+const knownBodyLength = (body: BodyInit | null | undefined): number | undefined => {
+  if (body === null || body === undefined) return undefined;
+  if (typeof body === 'string') return new TextEncoder().encode(body).byteLength;
+  if (body instanceof URLSearchParams) return new TextEncoder().encode(body.toString()).byteLength;
+  if (body instanceof ArrayBuffer) return body.byteLength;
+  if (ArrayBuffer.isView(body)) return body.byteLength;
+  if (body instanceof Blob) return body.size;
+  return undefined;
+};
+
 /**
  * A `fetch` dispatcher that connects to `addresses` instead of resolving the
  * hostname again.
@@ -71,21 +105,83 @@ export const createPinnedDispatcher = async (addresses: ReadonlyArray<string>): 
         // off, or a `family`/`localAddress` was requested. Answering in the
         // wrong shape is rejected as an invalid address, which would fail
         // every pinned fetch in such a process.
-        if (options.all) {
-          // All of them, in resolver order: handing over a single address of a
-          // dual-stack host would strand callers whose network cannot reach
-          // that family, where the runtime would otherwise have fallen back.
-          callback(
-            null,
-            addresses.map(address => ({ address, family: isIP(address) }))
-          );
-          return;
-        }
-
-        const [address] = addresses;
-        callback(null, address, isIP(address));
+        lookupPinnedAddresses(addresses, options, callback);
       },
     },
+  });
+};
+
+/**
+ * Fetch through the Node-compatible HTTP client while pinning DNS resolution.
+ *
+ * Bun implements the Node HTTP client and its `lookup` hook, but its native
+ * `fetch` ignores undici's `dispatcher` option. This transport preserves the
+ * original hostname for Host and TLS SNI while making the socket use an
+ * address that the SSRF guard already validated.
+ */
+export const pinnedHttpFetch = async (
+  rawUrl: string,
+  init: RequestInit,
+  addresses: ReadonlyArray<string>
+): Promise<Response> => {
+  const normalized = new Request(rawUrl, init);
+  const url = new URL(rawUrl);
+  const request = url.protocol === 'https:' ? httpsRequest : httpRequest;
+  const headers = new Headers(normalized.headers);
+  const bodyLength = knownBodyLength(init.body);
+  if (bodyLength !== undefined && !headers.has('content-length')) {
+    headers.set('content-length', String(bodyLength));
+  }
+
+  return new Promise<Response>((resolve, reject) => {
+    const outgoing = request(
+      url,
+      {
+        method: normalized.method,
+        headers: Object.fromEntries(headers.entries()),
+        signal: normalized.signal,
+        lookup: (_hostname, options, callback) =>
+          lookupPinnedAddresses(addresses, options, callback),
+      },
+      incoming => {
+        const headers = new Headers();
+        for (let index = 0; index < incoming.rawHeaders.length; index += 2) {
+          headers.append(incoming.rawHeaders[index], incoming.rawHeaders[index + 1]);
+        }
+
+        const status = incoming.statusCode ?? 500;
+        const body = [101, 103, 204, 205, 304].includes(status)
+          ? null
+          : (Readable.toWeb(incoming) as ReadableStream<Uint8Array>);
+        resolve(
+          new Response(body, {
+            status,
+            statusText: incoming.statusMessage,
+            headers,
+          })
+        );
+      }
+    );
+
+    outgoing.once('error', reject);
+
+    void (async () => {
+      try {
+        if (normalized.body) {
+          const reader = normalized.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (!outgoing.write(value)) {
+              await new Promise<void>(resolveDrain => outgoing.once('drain', resolveDrain));
+            }
+          }
+        }
+        outgoing.end();
+      } catch (error) {
+        outgoing.destroy(error instanceof Error ? error : new Error(String(error)));
+      }
+    })();
   });
 };
 

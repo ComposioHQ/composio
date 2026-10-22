@@ -3,7 +3,7 @@ import {
   analyticsIdentityLinkingEnabled,
   linkApolloIdentityForAnalytics,
 } from 'src/analytics/dispatch';
-import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 
 type KnownOrgIdentity = {
   readonly orgId: string;
@@ -12,7 +12,6 @@ type KnownOrgIdentity = {
 
 export const linkAnalyticsIdentityForOrg = (params: {
   readonly apiKey: string;
-  readonly baseURL: string;
   readonly orgId: string;
   readonly knownIdentity?: KnownOrgIdentity;
 }) =>
@@ -25,12 +24,11 @@ export const linkAnalyticsIdentityForOrg = (params: {
     const orgMemberId = knownIdentity
       ? knownIdentity.orgMemberId
       : yield* getSessionInfoByUserApiKey({
-          baseURL: params.baseURL,
           userApiKey: params.apiKey,
           orgId: params.orgId,
         }).pipe(
           Effect.map(sessionInfo => sessionInfo.org_member.id),
-          Effect.catchAll(error =>
+          Effect.catch(error =>
             Effect.logDebug('Failed to resolve analytics identity for selected org:', error).pipe(
               Effect.as(undefined)
             )

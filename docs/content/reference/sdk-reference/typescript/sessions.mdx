@@ -20,6 +20,13 @@ Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`.
 
+The session's MCP config carries the session credential only when the
+MCP URL shares the origin of the configured API base URL. When it does
+not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+(naming both origins, never a key); without `mcp: true` the session is
+returned with `session.mcp.headers` empty and a warning naming both
+origins is logged, so native tools keep working.
+
 **Overload 1**
 
 ```typescript
@@ -71,6 +78,12 @@ const session = await composio.sessions.create('user_123', {
     customToolkits: [myToolkit],
   },
 });
+
+// Start from a saved Session config instead of inline access fields
+const configured = await composio.sessions.create('user_123', {
+  authConfigs: { github: 'ac_123' },
+  experimental: { sessionConfigId: 'sc_123' },
+});
 ```
 
 ---
@@ -102,6 +115,13 @@ async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolR
 ### use()
 
 Use an existing session
+
+The session's MCP config carries the session credential only when the
+MCP URL shares the origin of the configured API base URL. When it does
+not, `mcp: true` makes the call throw `ComposioMCPDestinationError`
+(naming both origins, never a key); without `mcp: true` the session is
+returned with `session.mcp.headers` empty and a warning naming both
+origins is logged, so native tools keep working.
 
 **Overload 1**
 

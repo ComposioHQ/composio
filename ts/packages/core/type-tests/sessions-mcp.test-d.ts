@@ -48,6 +48,30 @@ async function requestOptionsArg(): Promise<void> {
   await composio.use('session_123', { mcp: true }, { signal: ctrl.signal });
 }
 
+// `update()` accepts null for clearable blocks, an empty allowlist, a null
+// callback URL, and `expectedConfigVersion` as a positive integer (explicit
+// precondition) or `false` (opt out of the default precondition), never a
+// string.
+async function updateContract(): Promise<void> {
+  const session = await composio.use('session_123');
+  await session.update({
+    toolkits: [],
+    manageConnections: { callbackUrl: null },
+    multiAccount: { maxAccountsPerToolkit: null },
+    preload: null,
+    search: null,
+    execute: { enableMultiExecute: false },
+    experimental: null,
+    expectedConfigVersion: session.configVersion,
+  });
+  await session.update({ toolkits: null, expectedConfigVersion: false });
+  // @ts-expect-error expectedConfigVersion is a positive integer or false
+  await session.update({ expectedConfigVersion: '3' });
+  // @ts-expect-error expectedConfigVersion: true has no meaning
+  await session.update({ expectedConfigVersion: true });
+}
+
 void createGating;
 void useGating;
 void requestOptionsArg;
+void updateContract;

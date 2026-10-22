@@ -126,6 +126,73 @@ const cases = [
     obj({ name: { type: 'string', examples: ['a'], default: 'x' } }, ['name']),
   ],
   [
+    'string-format-outside-accepted-list-stripped',
+    'A string `format` the API rejects is stripped and reported, including on a schema without `type` and for an accepted value in the wrong case; formats on numbers and a property named `format` stay.',
+    obj(
+      {
+        url: { type: 'string', format: 'uri' },
+        file: { type: ['string', 'null'], format: 'path' },
+        repos: { type: 'array', items: { type: 'string', format: 'repo.nwo' } },
+        untyped: { format: 'uri' },
+        shouted: { type: 'string', format: 'DATE-TIME' },
+        count: { type: 'integer', format: 'int64' },
+        format: { type: 'string', enum: ['json', 'csv'] },
+      },
+      ['url', 'file', 'repos', 'untyped', 'shouted', 'count', 'format']
+    ),
+  ],
+  [
+    'accepted-string-formats-kept',
+    'Every string `format` the API accepts is kept unchanged.',
+    obj(
+      Object.fromEntries(
+        ['date-time', 'time', 'date', 'duration', 'email', 'hostname', 'ipv4', 'ipv6', 'uuid'].map(
+          format => [format, { type: 'string', format }]
+        )
+      ),
+      ['date-time', 'time', 'date', 'duration', 'email', 'hostname', 'ipv4', 'ipv6', 'uuid'],
+      { additionalProperties: false }
+    ),
+  ],
+  [
+    'openapi-nullable-folded',
+    'OpenAPI `nullable`, which Anthropic rejects on an object, is removed; `true` widens the node to accept null the way the Zod conversion reads it, including on a typed enum, and `false` is dropped.',
+    obj(
+      {
+        cfg: {
+          type: 'object',
+          nullable: true,
+          properties: { a: { type: 'string' } },
+          required: ['a'],
+        },
+        note: { type: 'string', nullable: true },
+        mode: { type: 'string', enum: ['asc', 'desc'], nullable: true },
+        untyped: { nullable: true, description: 'anything' },
+        count: { type: 'integer', nullable: false },
+        rows: {
+          type: 'array',
+          items: { type: 'object', nullable: true, properties: { id: { type: 'string' } } },
+        },
+      },
+      ['cfg', 'mode', 'count', 'rows']
+    ),
+  ],
+  [
+    'recursive-nullable-union-gets-null-branch',
+    'A `nullable: true` union that refers back to itself, or a nullable reference to the root, gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.',
+    obj(
+      { a: { $ref: '#/$defs/A' }, b: { $ref: '#/$defs/B' }, self: { $ref: '#', nullable: true } },
+      ['a', 'b', 'self'],
+      {
+        $defs: {
+          A: { anyOf: [{ $ref: '#/$defs/A' }, { type: 'string' }], nullable: true },
+          B: { anyOf: [{ $ref: '#/$defs/Nullable' }, { type: 'string' }], nullable: true },
+          Nullable: { type: ['string', 'null'] },
+        },
+      }
+    ),
+  ],
+  [
     'enum-values-are-data-not-keywords',
     'Keys inside enum/const values are data and must not be treated as keywords.',
     obj({ opts: { enum: [{ default: 1, properties: {} }, null] } }, ['opts']),
@@ -452,8 +519,99 @@ const cases = [
       $defs: { Alias: { $ref: '#/$defs/Real' }, Real: obj({ x: { type: 'string' } }, ['x']) },
     }),
   ],
+  [
+    'optional-typed-enum-wrapped',
+    'A typed enum is wrapped whole: adding null to its type would leave the enum rejecting it.',
+    obj({ direction: { type: 'string', enum: ['asc', 'desc'], description: 'sort order' } }),
+  ],
+  [
+    'optional-nullable-typed-enum-wrapped',
+    'A null in `type` does not make an enum without null nullable.',
+    obj({ direction: { type: ['string', 'null'], enum: ['asc', 'desc'] } }),
+  ],
+  [
+    'optional-typed-const-wrapped',
+    'A typed const is wrapped whole, like a typed enum.',
+    obj({ mode: { type: 'string', const: 'asc' } }),
+  ],
+  [
+    'optional-typed-enum-with-null-unchanged',
+    'A typed enum that lists null under a nullable type already accepts null.',
+    obj({ direction: { type: ['string', 'null'], enum: ['asc', null] } }),
+  ],
+  [
+    'optional-any-of-with-sibling-enum-wrapped',
+    'A null branch in anyOf does not lift a sibling enum, so the node is wrapped.',
+    obj({ direction: { enum: ['asc', 'desc'], anyOf: [{ type: 'string' }, { type: 'null' }] } }),
+  ],
+  [
+    'optional-ref-with-sibling-type-wrapped',
+    'Keywords beside a $ref apply together with its target.',
+    obj({ direction: { $ref: '#/$defs/Direction', type: 'string' } }, undefined, {
+      $defs: { Direction: { enum: ['asc', null] } },
+    }),
+  ],
+  [
+    'optional-ref-to-nullable-definition-unchanged',
+    'A $ref whose target accepts null needs no extra null branch.',
+    obj({ note: { $ref: '#/$defs/Note' } }, undefined, {
+      $defs: { Note: { type: ['string', 'null'] } },
+    }),
+  ],
+  [
+    'optional-ref-to-typeless-object-wrapped',
+    'A definition with properties but no type is typed as an object by the rewrite, so a $ref to it needs a null branch.',
+    obj({ cfg: { $ref: '#/$defs/Config' } }, undefined, {
+      $defs: { Config: { properties: { url: { type: 'string' } }, required: ['url'] } },
+    }),
+  ],
+  [
+    'ref-into-wrapped-property-unsupported',
+    'Wrapping a property moves what is nested in it; a $ref into it would dangle.',
+    obj(
+      {
+        value: { type: 'string', enum: ['asc'], $defs: { Text: { type: 'string' } } },
+        alias: { $ref: '#/properties/value/$defs/Text' },
+      },
+      ['alias']
+    ),
+  ],
 ];
 const argumentCases = {
+  'recursive-nullable-union-gets-null-branch': [
+    { input: { a: null, b: null, self: null }, output: { a: null, b: null, self: null } },
+  ],
+  'openapi-nullable-folded': [
+    {
+      input: {
+        cfg: null,
+        note: null,
+        mode: null,
+        untyped: null,
+        count: null,
+        rows: [null, { id: null }],
+      },
+      output: { cfg: null, note: null, mode: null, untyped: null, rows: [null, {}] },
+    },
+  ],
+  'optional-ref-to-typeless-object-wrapped': [
+    { input: { cfg: null }, output: { cfg: null } },
+    { input: { cfg: { url: 'u' } }, output: { cfg: { url: 'u' } } },
+  ],
+  'optional-typed-enum-wrapped': [
+    { input: { direction: null }, output: {} },
+    { input: { direction: 'asc' }, output: { direction: 'asc' } },
+  ],
+  'optional-nullable-typed-enum-wrapped': [{ input: { direction: null }, output: {} }],
+  'optional-typed-const-wrapped': [{ input: { mode: null }, output: {} }],
+  'optional-typed-enum-with-null-unchanged': [
+    { input: { direction: null }, output: { direction: null } },
+  ],
+  'optional-any-of-with-sibling-enum-wrapped': [{ input: { direction: null }, output: {} }],
+  'optional-ref-with-sibling-type-wrapped': [{ input: { direction: null }, output: {} }],
+  'optional-ref-to-nullable-definition-unchanged': [
+    { input: { note: null }, output: { note: null } },
+  ],
   'nested-optional-property-widened': [
     { input: { cfg: { url: 'u', note: null } }, output: { cfg: { url: 'u' } } },
   ],

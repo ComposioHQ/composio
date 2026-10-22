@@ -9,7 +9,7 @@ Access this class through the `composio.toolkits` property:
 
 ```typescript
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.toolkits.list();
+const result = await composio.toolkits.get({});
 ```
 
 ## Methods
@@ -40,6 +40,35 @@ async authorize(userId: string, toolkitSlug: string, authConfigId?: string, requ
 
 ```typescript
 const connectionRequest = await composio.toolkits.authorize(userId, 'github');
+```
+
+---
+
+### changelog()
+
+Retrieves the version changelog of every toolkit (the last 10 versions
+per toolkit).
+
+```typescript
+async changelog(requestOptions?: ComposioRequestOptions): Promise<ToolkitChangelogResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ToolkitChangelogResponse>` — Toolkits with their recent version changelogs
+
+**Example**
+
+```typescript
+const { items } = await composio.toolkits.changelog();
+const github = items.find(item => item.slug === 'github');
+console.log(github?.versions[0]); // { version: '20250909_00', changelog: '...' }
 ```
 
 ---
@@ -98,7 +127,7 @@ console.log(githubToolkit.authConfigDetails); // Authentication configuration de
 Retrieves the fields required for creating an auth config for a toolkit.
 
 ```typescript
-async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
+async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
 **Parameters**
@@ -107,7 +136,7 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 |------|------|-------------|
 | `toolkitSlug` | `string` | The slug of the toolkit to retrieve the fields for |
 | `authScheme` | `AuthSchemeType` | The auth scheme to retrieve the fields for |
-| `options` | `\{ requiredOnly?: boolean \}` |  |
+| `options?` | `\{ requiredOnly?: boolean \}` |  |
 
 **Returns**
 
@@ -120,7 +149,7 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 Retrieves the fields required for initiating a connected account for a toolkit.
 
 ```typescript
-async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
+async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
 **Parameters**
@@ -129,11 +158,43 @@ async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthS
 |------|------|-------------|
 | `toolkitSlug` | `string` | The slug of the toolkit to retrieve the fields for |
 | `authScheme` | `AuthSchemeType` | The auth scheme to retrieve the fields for |
-| `options` | `\{ requiredOnly?: boolean \}` |  |
+| `options?` | `\{ requiredOnly?: boolean \}` |  |
 
 **Returns**
 
 `Promise<ToolkitAuthFieldsResponse>` — The fields required for initiating a connected account
+
+---
+
+### getMany()
+
+Retrieves several toolkits by slug in a single request.
+
+Returns the same transformed shape as `composio.toolkits.get({ ... })`.
+Unknown slugs are simply absent from the result.
+
+```typescript
+async getMany(slugs: string[], params?: ToolkitGetManyParams, requestOptions?: ComposioRequestOptions): Promise<ToolKitListResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slugs` | `string[]` | The toolkit slugs to retrieve (at least one) |
+| `params?` | `ToolkitGetManyParams` | Optional filters and pagination, as for `list` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolKitListResponse>` — The matching toolkits
+
+**Example**
+
+```typescript
+const toolkits = await composio.toolkits.getMany(['github', 'slack']);
+console.log(toolkits.map(toolkit => toolkit.name)); // ['GitHub', 'Slack']
+```
 
 ---
 
@@ -164,6 +225,82 @@ async listCategories(requestOptions?: ComposioRequestOptions): Promise<ToolkitRe
 // Get all toolkit categories
 const categories = await composio.toolkits.listCategories();
 console.log(categories.items); // Array of category objects
+```
+
+---
+
+### listGrantContexts()
+
+Lists the grant-context dimensions a toolkit's scope recommendation
+depends on (for example the Google account type), with their allowed
+values and the default the API assumes.
+**Experimental — the API marks this endpoint beta; shape may change.**
+
+Pass a dimension and a value as `grantContext` to
+`composio.toolkits.recommendScopes()` to tailor the recommendation.
+
+```typescript
+async listGrantContexts(toolkitSlug: string, params?: ToolkitListGrantContextsParams, requestOptions?: ComposioRequestOptions): Promise<ToolkitListGrantContextsResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkitSlug` | `string` | The toolkit to list grant contexts for |
+| `params?` | `ToolkitListGrantContextsParams` | Optional auth scheme and toolkit version |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolkitListGrantContextsResponse>` — The dimensions and the default grant context
+
+**Example**
+
+```typescript
+const { grantContextDimensions } = await composio.toolkits.listGrantContexts('gmail');
+const [accountType] = grantContextDimensions;
+const { scopes } = await composio.toolkits.recommendScopes('gmail', {
+  tools: ['GMAIL_SEND_EMAIL'],
+  grantContext: { [accountType.dimension]: accountType.values[0] },
+});
+```
+
+---
+
+### recommendScopes()
+
+Recommends the OAuth scopes to request so a connection can run the given
+tools.
+**Experimental — the API marks this endpoint beta; shape may change.**
+
+The answer comes in two variants: `leastPrivilege` (narrowest documented
+scope per requirement) and `fewest` (smallest set covering everything).
+Pass `toolkitVersion` from a previous answer to pin the computation.
+
+```typescript
+async recommendScopes(toolkitSlug: string, params: ToolkitRecommendScopesParams, requestOptions?: ComposioRequestOptions): Promise<ToolkitRecommendScopesResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkitSlug` | `string` | The toolkit to recommend scopes for |
+| `params` | `ToolkitRecommendScopesParams` | Tools to cover (`[]` for the whole toolkit), auth scheme, grant context and scope constraints |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolkitRecommendScopesResponse>` — The recommended scope sets
+
+**Example**
+
+```typescript
+const { scopes } = await composio.toolkits.recommendScopes('gmail', {
+  tools: ['GMAIL_SEND_EMAIL', 'GMAIL_FETCH_EMAILS'],
+});
+console.log(scopes.leastPrivilege);
 ```
 
 ---

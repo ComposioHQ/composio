@@ -1,11 +1,11 @@
 import { Data, Effect } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
 import { TerminalUI } from 'src/services/terminal-ui';
-import type {
-  ComposioToolkitsRepository,
-  InvalidVersionDetail,
-} from 'src/services/composio-clients';
+import type { ComposioToolkitsRepositoryShape } from 'src/services/composio-clients';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
+import type { InvalidVersionDetail } from 'src/services/toolkit-version-validation';
 import type { ToolkitVersionOverrides } from './toolkit-version-overrides';
 
 /**
@@ -25,6 +25,10 @@ export class InvalidToolkitVersionsValidationError extends Data.TaggedError(
     });
   }
 
+  get [ExpectedFailure]() {
+    return true;
+  }
+
   /**
    * Returns a JSON-serializable representation of the error for programmatic access.
    */
@@ -42,7 +46,12 @@ export class ToolkitVersionValidationError extends Data.TaggedError(
   readonly cause?: unknown;
   readonly message: string;
   readonly reason: 'invalid-toolkit' | 'request' | 'decode' | 'client-unavailable';
-}> {}
+}> {
+  /** Only an override naming an unknown toolkit; request, decoding, and client failures are defects. */
+  get [ExpectedFailure]() {
+    return this.reason === 'invalid-toolkit';
+  }
+}
 
 const MAX_VERSIONS_TO_SHOW = 5;
 const S_CORNER_BOTTOM_LEFT = unicodeOr('╰', '+');
@@ -119,7 +128,7 @@ export interface ValidateVersionsOptions {
   /** Optional array of toolkit slugs to filter (from --toolkits flag) */
   readonly toolkitSlugsFilter: ReadonlyArray<string> | null;
   /** The ComposioToolkitsRepository client */
-  readonly client: ComposioToolkitsRepository;
+  readonly client: ComposioToolkitsRepositoryShape;
 }
 
 /**
@@ -189,7 +198,7 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('services/HttpServerError', error =>
+        Effect.catchTag(CLIENT_API_ERROR_TAGS, error =>
           Effect.fail(
             new ToolkitVersionValidationError({
               cause: error,
@@ -207,13 +216,24 @@ export const validateToolkitVersionOverrides = ({
             })
           )
         ),
-        Effect.catchTag('NoSuchElementException', () =>
+        Effect.catchTag('NoSuchElementError', () =>
           Effect.fail(
             new ToolkitVersionValidationError({
               message: 'API client not initialized',
               reason: 'client-unavailable',
             })
           )
+        ),
+        Effect.catchTag(
+          ['services/ComposioClientConfigurationError', '@composio/client/ConfigurationError'],
+          error =>
+            Effect.fail(
+              new ToolkitVersionValidationError({
+                cause: error,
+                message: error.message,
+                reason: 'client-unavailable',
+              })
+            )
         )
       );
 

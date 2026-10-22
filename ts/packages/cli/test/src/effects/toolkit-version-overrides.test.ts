@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
+import { liveEnvConfigProvider } from 'test/__utils__';
 import {
   getToolkitVersionOverrides,
   buildToolkitVersionSpecs,
@@ -19,7 +20,9 @@ describe('toolkit-version-overrides', () => {
   describe('getToolkitVersionOverrides', () => {
     it.effect('should return empty map when no env vars set', () =>
       Effect.gen(function* () {
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.size).toBe(0);
       })
     );
@@ -27,7 +30,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should parse single env var with COMPOSIO_ prefix', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.get('gmail')).toBe('20250901_00');
         expect(result.size).toBe(1);
       })
@@ -37,7 +42,9 @@ describe('toolkit-version-overrides', () => {
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.get('gmail')).toBe('20250901_00');
         expect(result.get('slack')).toBe('20250815_00');
         expect(result.size).toBe(2);
@@ -47,7 +54,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should lowercase toolkit name from env var', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.has('gmail')).toBe(true);
         // Cast to bypass type check - we're testing runtime behavior that uppercase keys are not stored
         expect(result.has('GMAIL' as Lowercase<string>)).toBe(false);
@@ -57,7 +66,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should ignore "latest" as explicit value', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', 'latest');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.size).toBe(0);
       })
     );
@@ -65,7 +76,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should ignore empty string values', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.size).toBe(0);
       })
     );
@@ -73,7 +86,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should not read env vars without COMPOSIO_ prefix', () =>
       Effect.gen(function* () {
         vi.stubEnv('TOOLKIT_VERSION_GMAIL', '20250901_00');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.size).toBe(0);
       })
     );
@@ -84,7 +99,9 @@ describe('toolkit-version-overrides', () => {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', 'latest'); // Should be ignored
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GITHUB', ''); // Should be ignored
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_NOTION', '20250815_00');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.size).toBe(2);
         expect(result.get('gmail')).toBe('20250901_00');
         expect(result.get('notion')).toBe('20250815_00');
@@ -286,7 +303,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should sanitize version strings with invalid characters', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00!@#');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.get('gmail')).toBe('20250901_00');
         expect(result.size).toBe(1);
       })
@@ -295,7 +314,9 @@ describe('toolkit-version-overrides', () => {
     it.effect('should ignore version strings that become empty after sanitization', () =>
       Effect.gen(function* () {
         vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '$$$');
-        const result = yield* getToolkitVersionOverrides;
+        const result = yield* getToolkitVersionOverrides.pipe(
+          Effect.provide(ConfigProvider.layer(liveEnvConfigProvider))
+        );
         expect(result.size).toBe(0);
       })
     );

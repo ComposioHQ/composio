@@ -16,7 +16,10 @@
     "noUnusedParameters": false,
     "plugins": [
       {
-        "name": "@effect/language-service"
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "floatingEffect": "error"
+        }
       }
     ]
   },

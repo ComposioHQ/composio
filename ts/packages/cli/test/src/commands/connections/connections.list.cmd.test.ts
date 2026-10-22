@@ -1,24 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
+import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { extendConfigProvider } from 'src/services/config';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-
-const parseJsonFromLines = (lines: ReadonlyArray<string>) => {
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i];
-    if (!line) continue;
-    try {
-      return JSON.parse(line) as Record<string, Array<Record<string, unknown>>>;
-    } catch {
-      // continue
-    }
-  }
-  throw new Error('Expected JSON output but none found');
-};
 
 const testConnections: ConnectedAccountItem[] = [
   {
@@ -84,9 +72,9 @@ const connectedAccountsData = {
   items: testConnections,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+});
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
@@ -132,14 +120,14 @@ const terminalUIWithConfirm = (confirmed: boolean) =>
 
 describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
-    it.scoped('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
+    it.effect('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE', permission_group: null }],
@@ -159,14 +147,14 @@ describe('CLI: composio connections list', () => {
       stdin: { isTTY: true, data: '' },
     })
   )(it => {
-    it.scoped('[Given] interactive stdout [Then] still prints the JSON payload', () =>
+    it.effect('[Given] interactive stdout [Then] still prints the JSON payload', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE', permission_group: null }],
@@ -180,14 +168,14 @@ describe('CLI: composio connections list', () => {
   });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
-    it.scoped('[Given] --toolkit github [Then] filters the JSON output', () =>
+    it.effect('[Given] --toolkit github [Then] filters the JSON output', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           github: [
@@ -228,14 +216,14 @@ describe('CLI: composio connections list', () => {
       },
     })
   )(it => {
-    it.scoped('[Given] mixed user scopes [Then] only consumer-project connections are listed', () =>
+    it.effect('[Given] mixed user scopes [Then] only consumer-project connections are listed', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).not.toHaveProperty('slack');
       })
@@ -255,7 +243,7 @@ describe('CLI: composio connections remove', () => {
       terminalUI: terminalUIWithConfirm(true),
     })
   )(it => {
-    it.scoped('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
+    it.effect('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
       Effect.gen(function* () {
         confirmedDeleteCalls.length = 0;
 
@@ -271,6 +259,48 @@ describe('CLI: composio connections remove', () => {
     );
   });
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      terminalUI: terminalUIWithConfirm(true),
+    })
+  )(it => {
+    it.effect('[Given] the API rejects the removal [Then] fails naming the connected account', () =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(
+          ['connectedAccounts'],
+          routeRequests(
+            [
+              {
+                method: 'DELETE',
+                path: '/api/v3.1/connected_accounts/',
+                respond: () =>
+                  Response.json(
+                    {
+                      error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 },
+                    },
+                    { status: 403 }
+                  ),
+              },
+            ],
+            () => Response.json({ items: testConnections, next_cursor: null })
+          )
+        );
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const failure = yield* cli(['connections', 'remove', 'gmail']).pipe(
+          Effect.provide(stub.layer),
+          Effect.flip
+        );
+
+        expect(failure).toMatchObject({ _tag: 'commands/ConnectionsRemovalRequestError' });
+        expect(extractErrorDetails(failure).message).toBe(
+          'Failed to remove connected account "con_gmail_active".\nCaused by: 403 {"error":{"message":"Not allowed","code":1403,"slug":"Forbidden","status":403}}'
+        );
+      })
+    );
+  });
+
   const deniedDeleteCalls: string[] = [];
   layer(
     TestLive({
@@ -282,7 +312,7 @@ describe('CLI: composio connections remove', () => {
       terminalUI: terminalUIWithConfirm(false),
     })
   )(it => {
-    it.scoped('[Given] consent is denied [Then] does not remove the connection', () =>
+    it.effect('[Given] consent is denied [Then] does not remove the connection', () =>
       Effect.gen(function* () {
         deniedDeleteCalls.length = 0;
 
@@ -309,7 +339,7 @@ describe('CLI: composio connections remove', () => {
       terminalUI: terminalUIWithConfirm(true),
     })
   )(it => {
-    it.scoped(
+    it.effect(
       '[Given] a selector matches multiple accounts [Then] asks for a unique selector',
       () =>
         Effect.gen(function* () {

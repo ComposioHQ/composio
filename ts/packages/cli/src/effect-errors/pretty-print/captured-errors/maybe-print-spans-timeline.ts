@@ -1,16 +1,15 @@
 import * as color from 'src/ui/colors';
 
 import { stripCwdPath } from 'effect-errors/logic/path';
-import {
-  formatSpanAttributes,
-  formatSpanDuration,
-  missingSpansWarning,
-  spanStackTrailingChar,
-} from 'effect-errors/pretty-print/common';
+import { missingSpansWarning, spanStackTrailingChar } from 'effect-errors/pretty-print/common';
 import type { ErrorSpan, PrettyPrintOptions } from 'effect-errors/types';
 
+// Recovered from the `Cause.StackTrace` reason annotation (see
+// `logic/errors/span-annotation.ts`) — only span names and call-site
+// locations are available in v4, not the v3 timeline's per-span duration or
+// attributes, so each entry renders just those two lines.
 export const maybePrintSpansTimeline = (
-  spans: ErrorSpan[] | undefined,
+  spans: ReadonlyArray<ErrorSpan> | undefined,
   isPlainString: boolean,
   { stripCwd }: PrettyPrintOptions
 ): string[] => {
@@ -18,21 +17,20 @@ export const maybePrintSpansTimeline = (
     return isPlainString === false ? [' ', missingSpansWarning, ' '] : [];
   }
 
-  return spans.reduce<string[]>((output, { name, durationInMilliseconds, attributes }, index) => {
+  return spans.reduce<string[]>((output, { name, location }, index) => {
     const isFirstEntry = index === 0;
     const isLastEntry = index === spans.length - 1;
 
     const maybeCircle = isFirstEntry ? `\r\n${color.gray('◯')}\r\n` : '';
     const trailing = spanStackTrailingChar(isLastEntry);
-    const filePath = ` ${stripCwd !== undefined ? color.underline(color.bold(stripCwdPath(name))) : color.underline(name)}`;
-    const duration =
-      durationInMilliseconds !== undefined
-        ? color.gray(formatSpanDuration(durationInMilliseconds, isLastEntry))
+    const spanName = ` ${stripCwd !== undefined ? color.underline(color.bold(stripCwdPath(name))) : color.underline(name)}`;
+    const formattedLocation =
+      location !== undefined
+        ? `\r\n${isLastEntry ? ' ' : color.gray('│')}  ${color.gray(stripCwd !== undefined ? stripCwdPath(location) : location)}`
         : '';
-    const formattedAttributes = formatSpanAttributes(attributes, isLastEntry);
 
     const timelineEntry = color.white(
-      `${maybeCircle}${trailing}${color.gray('─')}${filePath}${duration}${formattedAttributes}`
+      `${maybeCircle}${trailing}${color.gray('─')}${spanName}${formattedLocation}`
     );
 
     return [...output, timelineEntry];

@@ -1,10 +1,12 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
-import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import { Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
-import { APP_VERSION, GITHUB_REPO } from '../constants';
-import { NodeOs } from './node-os';
+import { GITHUB_CONFIG } from 'src/config';
+import { APP_VERSION } from '../constants';
+import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
@@ -47,14 +49,23 @@ export interface UpdateStatus {
   lastChecked: string | null;
 }
 
-const UpdateCheckStateSchema = Schema.parseJson(
+const toCheckStatus = (params: {
+  readonly updateAvailable: boolean;
+  readonly versionsKnown: boolean;
+}): UpdateStatus['checkStatus'] => {
+  if (params.updateAvailable) return 'update-available';
+  if (!params.versionsKnown) return 'unknown';
+  return 'up-to-date';
+};
+
+const UpdateCheckStateSchema = Schema.fromJsonString(
   Schema.Struct({
     lastChecked: Schema.String,
     latestVersion: Schema.String,
   })
 );
 
-const UpdateCheckAttemptSchema = Schema.parseJson(
+const UpdateCheckAttemptSchema = Schema.fromJsonString(
   Schema.Struct({
     lastAttempted: Schema.String,
   })
@@ -84,7 +95,7 @@ const defaultStateFile = Effect.gen(function* () {
   return path.join(os.homedir, '.composio', 'update-check.json');
 });
 
-function getCurrentBinaryAssetName(os: Pick<NodeOs, 'platform' | 'arch'>): string | undefined {
+function getCurrentBinaryAssetName(os: Pick<NodeOsShape, 'platform' | 'arch'>): string | undefined {
   const { platform } = os;
   const rawArch: string = os.arch;
   if (platform !== 'darwin' && platform !== 'linux') return undefined;
@@ -99,18 +110,14 @@ const defaultConfig = (stateFile: string) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     const currentVersion = yield* resolveRunningCliVersion(process.execPath, APP_VERSION);
-    const accessToken = yield* Effect.orDie(
-      Config.option(Config.string('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
-        Config.map(Option.getOrUndefined)
-      )
-    );
+    const github = yield* Effect.orDie(GITHUB_CONFIG);
     return {
       stateFile,
       currentVersion,
       checkIntervalMs: CHECK_INTERVAL_MS,
-      releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
+      releasesUrl: `${github.apiBaseUrl}/repos/${github.owner}/${github.repo}/releases?per_page=100`,
       binaryAssetName: getCurrentBinaryAssetName(os),
-      accessToken,
+      accessToken: github.accessToken,
       fetchFn: fetch,
     } satisfies UpdateCheckConfig;
   });
@@ -126,7 +133,7 @@ export function parseLatestVersionFromReleases(
 
   let latest: string | undefined;
   for (const release of releases) {
-    if (!Predicate.isRecord(release)) continue;
+    if (!Predicate.isObject(release)) continue;
 
     const candidate = release;
     if (typeof candidate.tag_name !== 'string') continue;
@@ -158,13 +165,13 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawState = yield* fs.readFileString(config.stateFile);
-    return yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
+    return yield* Schema.decodeUnknownEffect(UpdateCheckStateSchema)(rawState);
   });
 
   const readAttempt = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawAttempt = yield* fs.readFileString(attemptFile);
-    return yield* Schema.decodeUnknown(UpdateCheckAttemptSchema)(rawAttempt);
+    return yield* Schema.decodeUnknownEffect(UpdateCheckAttemptSchema)(rawAttempt);
   });
 
   /**
@@ -297,11 +304,8 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
         validLatest && semver.prerelease(validLatest) === null ? validLatest : null;
       const updateAvailable =
         validCurrent !== null && latestStable !== null && semver.gt(latestStable, validCurrent);
-      const checkStatus = updateAvailable
-        ? 'update-available'
-        : refreshFailed || validCurrent === null || latestStable === null
-          ? 'unknown'
-          : 'up-to-date';
+      const versionsKnown = !refreshFailed && validCurrent !== null && latestStable !== null;
+      const checkStatus = toCheckStatus({ updateAvailable, versionsKnown });
 
       return {
         current: config.currentVersion,

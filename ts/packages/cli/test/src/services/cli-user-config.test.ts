@@ -3,18 +3,21 @@ import * as tempy from 'tempy';
 import fs from 'node:fs';
 import { describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 
 describe('ComposioCliUserConfig', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
-    Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)));
+    Layer.succeed(
+      ConfigProvider.ConfigProvider,
+      ConfigProvider.fromEnv({ env: Object.fromEntries(map) })
+    );
 
-  it.scoped('defaults experimental features off in stable releases', () => {
+  it.effect('defaults experimental features off in stable releases', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
@@ -30,7 +33,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
-      assertEquals(config.data.experimentalSubagentTarget, 'auto');
       assertEquals(config.data.artifactDirectory, undefined);
 
       const fs = yield* FileSystem.FileSystem;
@@ -38,7 +40,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('uses installed beta release metadata for experimental defaults', () => {
+  it.effect('uses installed beta release metadata for experimental defaults', () => {
     const cwd = tempy.temporaryDirectory();
     const installDir = tempy.temporaryDirectory();
     const fakeExecPath = path.join(installDir, 'composio');
@@ -53,18 +55,16 @@ describe('ComposioCliUserConfig', () => {
     );
 
     return Effect.gen(function* () {
-      try {
-        const config = yield* ComposioCliUserConfig;
-        assertEquals(config.channel, 'beta');
-        assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
-        assertEquals(config.isExperimentalFeatureEnabled('local_tools'), true);
-      } finally {
-        execPathSpy.mockRestore();
-      }
-    }).pipe(Effect.provide(CliUserConfigTest));
+      const config = yield* ComposioCliUserConfig;
+      assertEquals(config.channel, 'beta');
+      assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
+    }).pipe(
+      Effect.provide(CliUserConfigTest),
+      Effect.ensuring(Effect.sync(() => execPathSpy.mockRestore()))
+    );
   });
 
-  it.scoped('defaults experimental features on in beta releases', () => {
+  it.effect('defaults experimental features on in beta releases', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
@@ -80,11 +80,10 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
-      assertEquals(config.data.experimentalSubagentTarget, 'auto');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('respects explicit persisted cli settings from config.json', () => {
+  it.effect('respects explicit persisted cli settings from config.json', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
@@ -100,9 +99,6 @@ describe('ComposioCliUserConfig', () => {
           multi_account: false,
         },
         artifact_directory: '/tmp/composio-artifacts',
-        experimental_subagent: {
-          target: 'claude',
-        },
       })
     );
 
@@ -122,7 +118,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.experimentalFeatures.multi_account, false);
       assertEquals(config.isExperimentalFeatureEnabled('multi_account'), false);
       assertEquals(config.data.artifactDirectory, '/tmp/composio-artifacts');
-      assertEquals(config.data.experimentalSubagentTarget, 'claude');
 
       const persisted = yield* fileSystem.readFileString(
         path.join(cwd, '.composio', 'config.json'),
@@ -135,7 +130,6 @@ describe('ComposioCliUserConfig', () => {
         };
         experimental_features: { listen: boolean; multi_account: boolean };
         artifact_directory: string;
-        experimental_subagent: { target: string };
       };
 
       assertEquals(parsed.developer.enabled, false);
@@ -143,11 +137,10 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(parsed.experimental_features.listen, false);
       assertEquals(parsed.experimental_features.multi_account, false);
       assertEquals(parsed.artifact_directory, '/tmp/composio-artifacts');
-      assertEquals(parsed.experimental_subagent.target, 'claude');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('loads legacy flat developer keys and persists nested developer config', () => {
+  it.effect('loads legacy flat developer keys and persists nested developer config', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
@@ -198,7 +191,95 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('replaces malformed persisted config with safe defaults', () => {
+  it.effect('preserves unknown settings across read-modify-write updates', () => {
+    const cwd = tempy.temporaryDirectory();
+    const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+    fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, '.composio', 'config.json'),
+      JSON.stringify({
+        future_setting: {
+          enabled: true,
+          modes: ['fast', 'safe'],
+        },
+      })
+    );
+
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const config = yield* ComposioCliUserConfig;
+
+      yield* config.update({ security: 'json' });
+
+      const persisted = yield* fileSystem.readFileString(
+        path.join(cwd, '.composio', 'config.json'),
+        'utf8'
+      );
+      const parsed = JSON.parse(persisted) as {
+        security: string;
+        future_setting: { enabled: boolean; modes: Array<string> };
+      };
+
+      assertEquals(parsed.security, 'json');
+      assertEquals(parsed.future_setting, {
+        enabled: true,
+        modes: ['fast', 'safe'],
+      });
+    }).pipe(Effect.provide(CliUserConfigTest));
+  });
+
+  it.effect.each([{ storedSubagent: { target: 'gemini' } }, { storedSubagent: null }])(
+    'ignores a stored experimental_subagent of $storedSubagent and writes it back unchanged',
+    ({ storedSubagent }) => {
+      const cwd = tempy.temporaryDirectory();
+      const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+      fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+      fs.writeFileSync(
+        path.join(cwd, '.composio', 'config.json'),
+        JSON.stringify({
+          developer: { enabled: false, destructive_actions: true },
+          experimental_subagent: storedSubagent,
+          security: 'json',
+        })
+      );
+
+      const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+      const CliUserConfigTest = Layer.provideMerge(
+        ComposioCliUserConfigLive,
+        Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
+      );
+
+      return Effect.gen(function* () {
+        const fileSystem = yield* FileSystem.FileSystem;
+        const config = yield* ComposioCliUserConfig;
+        assertEquals(config.data.developerModeEnabled, false);
+        assertEquals(config.data.developerDangerousCommandsEnabled, true);
+        assertEquals(config.data.security, 'json');
+
+        yield* config.update({ experimentalFeatures: { listen: true } });
+
+        const persisted = yield* fileSystem.readFileString(
+          path.join(cwd, '.composio', 'config.json'),
+          'utf8'
+        );
+        const parsed = JSON.parse(persisted) as Record<string, unknown>;
+
+        assertEquals(parsed.developer, { enabled: false, destructive_actions: true });
+        assertEquals(parsed.security, 'json');
+        assertEquals(parsed.experimental_features, { listen: true });
+        assertEquals('experimental_subagent' in parsed, true);
+        assertEquals(parsed.experimental_subagent, storedSubagent);
+      }).pipe(Effect.provide(CliUserConfigTest));
+    }
+  );
+
+  it.effect('replaces malformed persisted config with safe defaults', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });

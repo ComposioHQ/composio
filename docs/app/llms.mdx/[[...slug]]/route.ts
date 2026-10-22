@@ -1,3 +1,4 @@
+import { instantDiscount, instantPricingDescription, toolkitSupportsInstant } from '@/lib/instant';
 import {
   source,
   getReferenceSource,
@@ -19,7 +20,8 @@ import {
   isToolVersionPath,
   toolVersionParameterDescription,
 } from '@/lib/api-version-guidance';
-import { notFound } from 'next/navigation';
+import { getPageLastUpdated } from '@/lib/content-freshness';
+import { missingMarkdownResponse, withMarkdownMetadata } from '@/lib/markdown-response';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
@@ -55,7 +57,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=${API_FETCH_LIMIT}`,
+      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=${API_FETCH_LIMIT}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -854,7 +856,7 @@ function toolkitToMarkdown(
     '',
     `- **Category:** ${toolkit.category || 'Uncategorized'}`,
     `- **Auth:** ${toolkit.authSchemes.join(', ') || 'None'}`,
-    `- **Composio Managed App Available?** ${
+    `- **Composio-managed OAuth available?** ${
       toolkit.authSchemes?.some(s => s.toUpperCase().includes('OAUTH'))
         ? toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
           ? 'Yes'
@@ -870,6 +872,10 @@ function toolkitToMarkdown(
     lines.push(`- **Version:** ${toolkit.version}`);
   }
 
+  if (toolkitSupportsInstant(toolkit.instant, tools)) {
+    lines.push('- **Instant:** Supported on the latest version. Support varies by tool.');
+  }
+
   if (faqMarkdown && faqMarkdown.trim()) {
     lines.push('', '## Frequently Asked Questions', '');
     // Bump ## headings to ### so FAQ questions are children of the FAQ section
@@ -882,6 +888,12 @@ function toolkitToMarkdown(
       lines.push(`### ${tool.name}`, '');
       lines.push(`**Slug:** \`${tool.slug}\``, '');
       lines.push(tool.description, '');
+      if (tool.instant?.supported === true) {
+        lines.push('**Instant:** Supported on the latest version.', '',
+          `**Instant pricing:** ${instantPricingDescription(tool.instant)}`, '');
+        const discount = instantDiscount(tool.instant);
+        if (discount !== undefined) lines.push(`**Discount:** ${discount}`, '');
+      }
 
       // Input parameters
       if (tool.input_parameters && Object.keys(tool.input_parameters).length > 0) {
@@ -949,20 +961,26 @@ async function generateManagedAuthIndex(): Promise<string> {
     .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
 
   const lines: string[] = [
-    '# Composio Managed Auth',
+    '# Managed OAuth apps',
     '',
-    'Toolkits with managed auth work out of the box with no OAuth setup. For toolkits without managed auth, you need to provide your own credentials.',
+    'Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.',
     '',
-    'You can also check programmatically whether a toolkit has managed auth:',
+    'This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.',
+    '',
+    'Call the toolkit endpoint and read `composio_managed_auth_schemes`:',
     '',
     '```bash',
-    "curl 'https://backend.composio.dev/api/v3/toolkits/posthog' \\",
+    "curl 'https://backend.composio.dev/api/v3.1/toolkits/gmail' \\",
     "  -H 'x-api-key: YOUR_API_KEY'",
     '```',
     '',
-    'See [When to use your own developer credentials](/docs/authentication/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    'If `composio_managed_auth_schemes` contains the toolkit\'s OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.',
     '',
-    `## Composio Managed App Available (${managed.length})`,
+    'Some toolkits support more than one authentication method. A toolkit appears under **Composio-managed OAuth available** when Composio manages at least one OAuth method. Open the toolkit page to check each method.',
+    '',
+    'See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app.md) for setup steps and trade-offs.',
+    '',
+    `## Composio-managed OAuth available (${managed.length})`,
     '',
     '| Toolkit | Slug |',
     '|---------|------|',
@@ -975,7 +993,7 @@ async function generateManagedAuthIndex(): Promise<string> {
   }
 
   lines.push('');
-  lines.push(`## Requires Your Own Credentials (${unmanaged.length})`);
+  lines.push(`## Bring your own OAuth app (${unmanaged.length})`);
   lines.push('');
   lines.push('| Toolkit | Slug |');
   lines.push('|---------|------|');
@@ -1003,8 +1021,8 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Pro Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
-    '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
+    '- [Instant Tools](/docs/instant-tools.md) - Run supported tools on Composio accounts and control usage charges',
+    '- [Managed OAuth apps](/toolkits/managed-auth.md) - Check whether Composio provides the OAuth app for a toolkit',
     '',
     '## All Toolkits',
     '',
@@ -1190,7 +1208,23 @@ function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
   return lines.join('\n') + LLM_FOOTER;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
+export async function GET(req: Request, context: { params: Promise<{ slug?: string[] }> }) {
+  const { slug = [] } = await context.params;
+  const pathname = `/${slug.join('/')}`;
+  const response = await renderMarkdown(req, context);
+  if (!response.headers.get('Content-Type')?.startsWith('text/markdown')) {
+    response.headers.set('Vary', 'Accept');
+    return response;
+  }
+  return withMarkdownMetadata(
+    await response.text(),
+    pathname,
+    response.ok ? await getPageLastUpdated(pathname) : null,
+    { status: response.status, statusText: response.statusText, headers: response.headers },
+  );
+}
+
+async function renderMarkdown(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
   try {
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
@@ -1261,8 +1295,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
           });
         }
       }
-      // If no entries found, fall through to notFound
-      notFound();
+      return missingMarkdownResponse();
     }
 
     // Special handling for meta tools - /toolkits/meta-tools and /toolkits/meta-tools/{slug}.
@@ -1303,7 +1336,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       }
     } else {
       const match = sources.find(s => s.prefix === prefix);
-      if (!match) notFound();
+      if (!match) return missingMarkdownResponse();
       pageSource = match.source;
     }
 
@@ -1397,12 +1430,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       }
     }
 
-    notFound();
+    return missingMarkdownResponse();
   } catch (e) {
-    // Don't catch notFound - let it propagate
-    if (e && typeof e === 'object' && 'digest' in e) {
-      throw e;
-    }
     console.error('Unexpected error in llms.mdx route:', e);
     return new Response(`# Error\n\nAn error occurred while generating the markdown content.`, {
       status: 500,

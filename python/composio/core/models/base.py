@@ -3,14 +3,22 @@ Base resource class for representing resources in the composio client.
 """
 
 import contextvars
+from collections.abc import Mapping
 import functools
 import os
 import time
 import traceback
 import typing as t
 
+from composio_client import AutoAuth, NoAuth, ProjectAuth, Scope, UserAuth
+
 from composio.__version__ import __version__
 from composio.client import HttpClient
+from composio.core.models.tool_router_constants import (
+    ORG_ID_HEADER,
+    PROJECT_ID_HEADER,
+    USER_API_KEY_HEADER,
+)
 from composio.utils.redaction import redact_sensitive_text
 from composio.utils.logging import WithLogger
 
@@ -90,3 +98,64 @@ class Resource(WithLogger, metaclass=ResourceMeta):
     def __init__(self, client: HttpClient):
         super().__init__()
         self._client = client
+
+
+def header_value(headers: t.Mapping[str, t.Any], name: str) -> t.Optional[str]:
+    """The non-empty value of ``name`` in ``headers``, matched case-insensitively."""
+    if not isinstance(headers, Mapping):
+        return None
+    wanted = name.lower()
+    for key, value in headers.items():
+        if isinstance(key, str) and key.lower() == wanted:
+            if isinstance(value, str) and value:
+                return value
+    return None
+
+
+def credential_headers(client: HttpClient) -> t.Dict[str, str]:
+    """The single credential header the client puts on its own requests.
+
+    For the destinations the SDK hands a credential to outside the client (the
+    session MCP config, the realtime channel auth). Read from the ``auth`` the
+    SDK constructed the client with, never from the client's read-back
+    properties: a project key (``ProjectAuth``, or ``AutoAuth`` holding one)
+    travels as ``x-api-key``, otherwise a user key (``UserAuth``, or
+    ``AutoAuth`` holding only a user key) as ``x-user-api-key``. Under
+    ``NoAuth`` a caller-placed ``x-user-api-key`` default header is the
+    credential. Empty when no such key is held as a string. The environment is
+    never consulted here.
+    """
+    auth = client.sdk_auth
+    project: object = None
+    user: object = None
+    if isinstance(auth, NoAuth):
+        user = header_value(client.default_headers, USER_API_KEY_HEADER)
+    elif isinstance(auth, ProjectAuth):
+        project = auth.credential
+    elif isinstance(auth, UserAuth):
+        user = auth.credential
+    elif isinstance(auth, AutoAuth):
+        project, user = auth.project, auth.user
+    if isinstance(project, str) and project:
+        return {"x-api-key": project}
+    if isinstance(user, str) and user:
+        return {USER_API_KEY_HEADER: user}
+    return {}
+
+
+def scope_headers(client: HttpClient) -> t.Dict[str, str]:
+    """The ``x-org-id`` / ``x-project-id`` the client sends to its API origin:
+    its ``scope``, or without one the caller-placed default headers."""
+    scope = client.scope
+    if isinstance(scope, Scope):
+        pairs = (
+            (ORG_ID_HEADER, scope.organization_id),
+            (PROJECT_ID_HEADER, scope.project_id),
+        )
+    else:
+        default_headers: t.Mapping[str, t.Any] = client.default_headers
+        pairs = (
+            (ORG_ID_HEADER, header_value(default_headers, ORG_ID_HEADER)),
+            (PROJECT_ID_HEADER, header_value(default_headers, PROJECT_ID_HEADER)),
+        )
+    return {name: value for name, value in pairs if value}

@@ -1,0 +1,192 @@
+---
+title: Restrict Gmail connections to an email domain
+description: Check the connected Gmail address before giving an agent access, and disable connections outside your allowed domain.
+keywords: [gmail, email domain, allowlist, account identity, authentication, python, typescript]
+gallery:
+  categories: [General agents]
+  logos: [gmail]
+---
+
+Accept a Gmail connection only when its mailbox address belongs to your allowed domain. This example connects an account, checks its address on the server, and prepares agent tools only after approval.
+
+The check runs **after Google authentication**. It doesn't restrict Google's account picker or prove Google Workspace membership. For an organization-membership policy, follow [Google's guidance on the validated `hd` claim](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).
+
+## Set up the project
+
+Use Python 3.12 or Node.js 24.17 or newer. Install in a new project, using a virtual environment for Python:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+<PackageInstall packages="composio" ecosystem="python" />
+</Tab>
+<Tab value="TypeScript">
+<PackageInstall packages="@composio/core zod" />
+</Tab>
+</Tabs>
+
+Set a [Composio project key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-restrict-gmail-domain) and a fresh application user ID for this demo:
+
+```bash
+export COMPOSIO_API_KEY="your-composio-api-key"
+export COMPOSIO_USER_ID="domain-check-demo"
+```
+
+In your application, derive the user ID from your authenticated session. Keep the API key and this code on the server. If you use a scoped project key, enable [Proxy execute](/reference/authenticating-to-composio/project-api-key-permissions).
+
+The script calls Gmail's [`users.getProfile`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users/getProfile) endpoint with `me`, which selects the authenticated mailbox. It reads the returned `emailAddress`. The endpoint requires a Gmail scope such as `https://www.googleapis.com/auth/gmail.readonly`; `openid` and `email` alone don't grant this access. Ensure your Gmail auth config requests `gmail.readonly` if the agent will also read messages. See [Controlling scopes](/docs/authentication/controlling-scopes) to configure scopes and reconnect after changing them.
+
+## Connect and check the account
+
+Replace `example.com` in the script with your allowed domain. Run the script, open the printed Connect Link, and complete authentication within five minutes. The script polls its own connection request, so it doesn't need an HTTP callback handler.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+
+Save as `restrict_gmail.py`:
+
+```python title="restrict_gmail.py"
+import os
+from email.headerregistry import Address
+
+from composio import Composio
+
+ALLOWED_DOMAIN = "example.com"
+
+
+def approved_email(data):
+    email = data["emailAddress"]
+    address = Address(addr_spec=email)
+    if (
+        not address.username
+        or address.addr_spec != email
+        or address.domain.lower() != ALLOWED_DOMAIN.lower()
+    ):
+        raise ValueError("Mailbox address is not allowed")
+    return email
+
+
+composio = Composio()
+user_id = os.environ["COMPOSIO_USER_ID"]
+onboarding = composio.create(
+    user_id=user_id,
+    toolkits=["gmail"],
+    manage_connections=False,
+    sandbox={"enable": False},
+)
+request = onboarding.authorize("gmail")
+print(f"Connect Gmail: {request.redirect_url}", flush=True)
+
+try:
+    account = request.wait_for_connection(timeout=300)  # Python uses seconds.
+    response = composio.tools.proxy(
+        endpoint="https://gmail.googleapis.com/gmail/v1/users/me/profile",
+        method="GET",
+        connected_account_id=account.id,
+    )
+    if response["status"] != 200:
+        raise RuntimeError("Gmail profile request failed")
+    email = approved_email(response["data"])
+except Exception:
+    # Also reject missing identity, insufficient scopes, and timeouts.
+    composio.connected_accounts.disable(request.id)
+    raise SystemExit(
+        f"Connection disabled. Rerun and connect a Gmail account at {ALLOWED_DOMAIN}. "
+        "If you used that domain, check the Gmail scopes and try again."
+    ) from None
+
+session = composio.create(
+    user_id=user_id,
+    toolkits=["gmail"],
+    connected_accounts={"gmail": [account.id]},
+    manage_connections=False,
+    sandbox={"enable": False},
+)
+tools = session.tools()
+print(f"Connected as {email}. Agent tools are ready for this account.")
+```
+
+```bash
+python restrict_gmail.py
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+Save as `restrict-gmail.ts`:
+
+```typescript title="restrict-gmail.ts"
+import { Composio } from '@composio/core';
+import { z } from 'zod';
+
+const ALLOWED_DOMAIN = 'example.com';
+const gmailProfile = z.object({ emailAddress: z.string().email() });
+
+function approvedEmail(data: unknown) {
+  const { emailAddress } = gmailProfile.parse(data);
+  const domain = emailAddress.split('@')[1].toLowerCase();
+  if (domain !== ALLOWED_DOMAIN.toLowerCase()) {
+    throw new Error('Mailbox address is not allowed');
+  }
+  return emailAddress;
+}
+
+const userId = process.env.COMPOSIO_USER_ID;
+if (!userId) throw new Error('Set COMPOSIO_USER_ID');
+const composio = new Composio();
+const onboarding = await composio.create(userId, {
+  toolkits: ['gmail'],
+  manageConnections: false,
+  sandbox: { enable: false },
+});
+const request = await onboarding.authorize('gmail');
+console.log(`Connect Gmail: ${request.redirectUrl}`);
+
+let email: string;
+try {
+  const account = await request.waitForConnection(300_000); // TypeScript uses milliseconds.
+  const response = await composio.tools.proxyExecute({
+    endpoint: 'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+    method: 'GET',
+    connectedAccountId: account.id,
+  });
+  if (response.status !== 200) {
+    throw new Error('Gmail profile request failed');
+  }
+  email = approvedEmail(response.data);
+} catch {
+  // Also reject missing identity, insufficient scopes, and timeouts.
+  await composio.connectedAccounts.disable(request.id);
+  throw new Error(
+    `Connection disabled. Rerun and connect a Gmail account at ${ALLOWED_DOMAIN}. ` +
+    'If you used that domain, check the Gmail scopes and try again.',
+  );
+}
+
+const session = await composio.create(userId, {
+  toolkits: ['gmail'],
+  connectedAccounts: { gmail: [request.id] },
+  manageConnections: false,
+  sandbox: { enable: false },
+});
+const tools = await session.tools();
+console.log(`Connected as ${email}. Agent tools are ready for this account.`);
+```
+
+```bash
+node restrict-gmail.ts
+```
+
+</Tab>
+</Tabs>
+
+For an approved account, the script prints `Connected as alice@example.com. Agent tools are ready for this account.` Pass the returned `tools` to your [agent framework](/docs/providers) using this approved session. The default SDK provider returns OpenAI-compatible tools; configure your framework's provider when constructing `Composio` if needed.
+
+For a rejected account, the script disables the connection and exits before creating the agent session. If disabling fails, the script stops with that error and still doesn't create the agent session. Resolve the failure before retrying. Disabling a connection blocks Composio tool execution; it doesn't revoke Google's OAuth grant.
+
+## Keep the check in the execution path
+
+The onboarding session never supplies tools to an agent. The second session selects the approved account explicitly and disables in-chat connection management, so the agent can't connect another account through that session. Don't expose the onboarding session to clients or reuse other sessions that can select unchecked accounts. Apply the same validation whenever you accept a new or replacement connection.
+
+The domain comparison ignores case and requires an exact match. `alice@EXAMPLE.COM` passes; `alice@gmail.com`, `alice@sub.example.com`, and `alice@notexample.com` don't. Missing or malformed profile data and failed profile requests also prevent approval. An alias such as `work-gmail` or the account's `displayName` isn't the input to this decision.
+
+To display identity without a domain policy, see [Identify the connected account](/docs/authentication/manually-authenticating#identify-the-connected-account). For session account selection, see [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts#selecting-a-specific-account-for-a-session).

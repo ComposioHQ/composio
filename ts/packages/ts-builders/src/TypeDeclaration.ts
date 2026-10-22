@@ -1,6 +1,7 @@
 import type { BasicBuilder } from './BasicBuilder';
 import { DocComment } from './DocComment';
 import { GenericParameter } from './GenericParameter';
+import { isValidJsIdentifier } from './isValidJsIdentifier';
 import { TypeBuilder } from './TypeBuilder';
 import { Writer } from './Writer';
 
@@ -40,6 +41,13 @@ export class TypeDeclaration<InnerType extends TypeBuilder = TypeBuilder> implem
     if (typeof this.type === 'string') {
       writer.write(this.type);
       return;
+    }
+
+    // A type name has no quoted form, so a non-identifier cannot be emitted safely.
+    if (!isValidJsIdentifier(this.name)) {
+      throw new TypeError(
+        `Type declaration name is not a valid TypeScript identifier: ${JSON.stringify(this.name)}`
+      );
     }
 
     writer.write('type ').write(this.name);

@@ -1,22 +1,50 @@
-# Single source of truth for Node, Bun, Deno, Python, uv, and pnpm versions.
+# Single source of truth for Node, Bun, Python, uv, and pnpm versions.
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
 # CI:         exact versions are read from `mise.lock` by the composite actions
-#             under `.github/actions/` and installed with allowlisted setup actions
+#             under `.github/actions/`; Bun is installed directly by mise
 #
 # pnpm is pinned through mise's npm backend so mise owns the full local and CI
 # toolchain. We do not rely on Corepack because Node.js no longer distributes it
 # starting with v25.
 
-min_version = "2026.1.0"
+min_version = "2026.8.15"
+
+[tool_alias]
+bun = "http:bun"
 
 [tools]
 "npm:pnpm" = "11.8.0"
-node = "24.17.0"
-bun = "1.4.0"
-deno = "2.6.7"
+node = "24.22.1"
 python = "3.12"
 uv = "0.8.19"
+
+# These immutable npm platform packages contain Bun's stable release binaries;
+# mise extracts the matching one directly, with no npm lifecycle involved.
+#
+# `version` is the full value reported by `bun --revision`, while the tarballs
+# use Bun's package version. When bumping Bun, change the URLs and `version`
+# together, then run `mise install`. `pnpm run test:toolchain` verifies the
+# declared revision against the installed binary.
+[tools.bun]
+version = "1.4.3+c6da4a4d3"
+bin_path = "package/bin"
+
+[tools.bun.platforms.macos-arm64]
+url = "https://registry.npmjs.org/@oven/bun-darwin-aarch64/-/bun-darwin-aarch64-1.4.3.tgz"
+checksum = "sha512:bb6c0033d473ab21786da3b9a0556170551558ed4208c2c6eb20b9fda3d60981993df2f950b31b787b7ed3fdc8d21df268fc759be3ca48034effad633ed0d971"
+
+[tools.bun.platforms.macos-x64]
+url = "https://registry.npmjs.org/@oven/bun-darwin-x64/-/bun-darwin-x64-1.4.3.tgz"
+checksum = "sha512:c1119e72258ec8ac86fc17d31eae02032aa839fbb38f950990a03c1652444d6db286d0e1f816b71203e7b15725172cc8c3b1341c9c69b289e88f5ee0dc73cafd"
+
+[tools.bun.platforms.linux-arm64]
+url = "https://registry.npmjs.org/@oven/bun-linux-aarch64/-/bun-linux-aarch64-1.4.3.tgz"
+checksum = "sha512:ca5a200c5c430fe69128ed1325abb00f309633ead42ef73ce6044d650f429d8eab9b6054e060b65d40e2db46e1ebb088b81e16b7fd0f2f5c69b09da1aa994cc3"
+
+[tools.bun.platforms.linux-x64]
+url = "https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-1.4.3.tgz"
+checksum = "sha512:440ae09e98de5e3686ce3a7987b46cf3d714609bad3bc232a91de2b44f0e05a07312df0a366da3a7f628cf1047ab8785a2fc2b40baf2792c1301c9a24fecdca0"
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]

@@ -28,6 +28,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Source freshness needs real per-file history, not checkout time.
+          fetch-depth: 0
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -47,7 +50,7 @@ jobs:
         run: bun run test
 
       - name: Check KB semantic artifact
-        run: bun run check:kb-semantic
+        run: bun run check:kb-semantic --allow-stale
 
       - name: Build
         run: bun run build

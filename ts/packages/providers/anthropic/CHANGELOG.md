@@ -1,5 +1,37 @@
 # @composio/anthropic
 
+## 0.11.6
+
+### Patch Changes
+
+- ba7c9a1: Remove the unused `@mastra/mcp` peer dependency. The provider never imported it, but package managers that install peers automatically pulled in about 234 extra packages.
+
+## 0.11.5
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+
+## 0.11.4
+
+### Patch Changes
+
+- 72fbd00: Fix `cacheTools: true` exceeding Anthropic's 4-breakpoint-per-request limit (shared with the system prompt and messages), which causes the whole request to be rejected. `wrapTools` now places a single breakpoint on the last tool, which caches the entire tool list since a breakpoint covers everything up to and including it, instead of one on every tool. `handleToolCalls` no longer marks `tool_result` blocks, because they accumulate in the message history and would exceed the limit after a few turns.
+
+## 0.11.3
+
+### Patch Changes
+
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
+## 0.11.2
+
+### Patch Changes
+
+- 62e51e8: Refresh runtime dependencies and extend provider peer compatibility to the latest supported Anthropic and OpenAI Agents SDK releases.
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
 ## 0.11.1
 
 ### Patch Changes

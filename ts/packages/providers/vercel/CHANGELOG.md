@@ -1,5 +1,29 @@
 # @composio/vercel
 
+## 0.13.0
+
+### Minor Changes
+
+- adf6b02: Show the model each tool's JSON Schema as is. The provider now passes the schema to the AI SDK with `jsonSchema()`, so keywords a Zod schema cannot carry, such as `format: "binary"`, `contentEncoding`, `contentMediaType`, `title`, `default`, and `examples`, reach the model. Internal `$ref`s are still inlined first. Tool-call arguments are validated with the same Zod schema as before, so the values a tool accepts and rejects are unchanged.
+
+  In strict mode the model now sees the output of the strict rewrite itself rather than a Zod rendering of it. Zod adds a `pattern` next to formats such as `email`, and strict structured outputs reject the one it adds for `email`, so a strict request with an email parameter would have failed once Zod forwarded more of the schema.
+
+  `tool.inputSchema` is now an AI SDK `Schema` instead of a Zod schema. Code that called `inputSchema.safeParse()` directly can validate with `asSchema(tool.inputSchema).validate(value)` from `ai`.
+
+## 0.12.1
+
+### Patch Changes
+
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
+## 0.12.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
 ## 0.11.2
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @composio/mastra
 
+## 0.10.6
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+
+## 0.10.5
+
+### Patch Changes
+
+- 62e51e8: Refresh runtime dependencies and extend provider peer compatibility to the latest supported Anthropic and OpenAI Agents SDK releases.
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
 ## 0.10.4
 
 ### Patch Changes

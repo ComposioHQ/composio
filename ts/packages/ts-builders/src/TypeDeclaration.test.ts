@@ -33,3 +33,26 @@ test('with multiple generic parameters', () => {
     .addGenericParameter(genericParameter('U'));
   expect(stringify(decl)).toMatchInlineSnapshot(`"type B<T, U> = A"`);
 });
+
+// A slug reaches this builder as a type-declaration name. Written verbatim it can
+// terminate the declaration and inject top-level statements that run at import.
+// A type name has no computed-key form, so the only safe response is to refuse.
+test('refuses a type name that is not a valid identifier', () => {
+  const malicious = 'X = any;\nconst __pwned = (() => { globalThis.__PWNED__ = 1; })();\ntype Y';
+
+  expect(() => stringify(typeDeclaration(malicious, A))).toThrow(
+    /not a valid TypeScript identifier/
+  );
+});
+
+test('refuses a type name with a dash', () => {
+  expect(() => stringify(typeDeclaration('FOO-BAR', A))).toThrow(
+    /not a valid TypeScript identifier/
+  );
+});
+
+test('a string type body still short-circuits without touching the name', () => {
+  expect(stringify(typeDeclaration('B', 'export type B = A'))).toMatchInlineSnapshot(
+    `"export type B = A"`
+  );
+});

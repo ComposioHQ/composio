@@ -1,4 +1,4 @@
-import ComposioClient from '@composio/client';
+import ComposioClient, { APIError } from '@composio/client';
 import { FileToolModifier } from '#file_tool_modifier';
 import {
   Tool,
@@ -42,6 +42,7 @@ import logger from '../utils/logger';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
   ComposioInvalidModifierError,
+  ComposioToolFetchError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
   ComposioToolVersionRequiredError,
@@ -61,6 +62,11 @@ import {
 import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { withoutRetries } from '../utils/retries';
+import {
+  isExecutionSuccessful,
+  transformExecuteResponse,
+} from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
@@ -118,11 +124,6 @@ export class Tools<
    */
   private readonly warnedAutoUploadDisabledForTool = new Set<string>();
 
-  /**
-   * Lazily-built sibling client with retries disabled; see `clientWithoutRetries`.
-   */
-  private clientWithoutRetriesCache?: ComposioClient;
-
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
       throw new Error('ComposioClient is required');
@@ -153,27 +154,6 @@ export class Tools<
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
 
     telemetry.instrument(this, 'Tools');
-  }
-
-  /**
-   * A cached sibling client that never retries requests, mirroring Python's
-   * `client.without_retries`.
-   *
-   * Used for non-idempotent writes (`tools.execute` / `tools.proxy`), where a
-   * silent retry after a read timeout can duplicate a side effect (e.g. send an
-   * email twice). Reads keep the default retry behaviour, and so do other writes
-   * (`toolRouter.session.execute`, auth-config and connected-account mutations):
-   * the durable fix there is backend-honoured idempotency keys, tracked
-   * separately.
-   *
-   * Cached rather than rebuilt per call because `withOptions` constructs a fresh
-   * client; its options never change, so one per `Tools` instance suffices.
-   */
-  private get clientWithoutRetries(): ComposioClient {
-    if (!this.clientWithoutRetriesCache) {
-      this.clientWithoutRetriesCache = this.client.withOptions({ maxRetries: 0 });
-    }
-    return this.clientWithoutRetriesCache;
   }
 
   /**
@@ -540,7 +520,9 @@ export class Tools<
       ...(limit ? { limit } : {}),
       ...('tags' in queryParams.data ? { tags: queryParams.data.tags } : {}),
       ...('scopes' in queryParams.data ? { scopes: queryParams.data.scopes } : {}),
-      ...('search' in queryParams.data ? { search: queryParams.data.search } : {}),
+      // `search` is the SDK's public option; the API deprecated the `search`
+      // wire param in favour of `query`, so send the replacement.
+      ...('search' in queryParams.data ? { query: queryParams.data.search } : {}),
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
@@ -710,7 +692,17 @@ export class Tools<
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
       }
-      throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
+      // The tools endpoint reports an unknown slug as 404 (or 400 for a
+      // malformed one). Anything else (401, 5xx, network) is not "not found",
+      // so keep the client error reachable as `cause` under a generic error.
+      if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
+        throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`, {
+          meta: { slug },
+          cause: error,
+        });
+      }
+      throw new ComposioToolFetchError(`Unable to retrieve tool with slug ${slug}`, {
+        meta: { slug },
         cause: error,
       });
     }
@@ -1000,17 +992,14 @@ export class Tools<
          * @deprecated The `customConnectionData` execute param is deprecated and will be
          * removed in a future release. Use `customAuthParams` instead.
          */
-        custom_connection_data:
-          body.customConnectionData as ComposioToolExecuteParams['custom_connection_data'],
+        custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
         version: toolkitVersion,
         text: body.text,
       };
       const result = await withCancellation(
-        // Disable retries: tool execution is a non-idempotent write, and a
-        // silent retry after a read timeout can duplicate the side effect.
-        () => this.clientWithoutRetries.tools.execute(tool.slug, executeBody, requestOptions),
+        () => this.client.tools.execute(tool.slug, executeBody, withoutRetries(requestOptions)),
         requestOptions?.signal
       );
       // transform the response to the ToolExecuteResponse format
@@ -1097,6 +1086,10 @@ export class Tools<
    *
    * @example Execute with a specific version (recommended for production)
    * ```typescript
+   * // Look up the tool's current version once, then pin that string in your code or config
+   * const { version } = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_REPOS');
+   * console.log(version); // e.g. '20250909_00'
+   *
    * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
    *   userId: 'default',
    *   version: '20250909_00',
@@ -1236,16 +1229,25 @@ export class Tools<
     }
 
     const response = await withCancellation(
-      () => this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions),
+      () =>
+        this.client.toolRouter.session.execute(
+          body.sessionId,
+          executePayload,
+          withoutRetries(requestOptions)
+        ),
       requestOptions?.signal
     );
 
-    // Prepare the result
+    const { data, error, logId, resultType, instantCharge } = transformExecuteResponse(
+      response,
+      toolSlug
+    );
     let result: ToolExecuteResponse = {
-      data: response.data,
-      error: response.error,
-      successful: !response.error,
-      logId: response.log_id,
+      data,
+      error,
+      successful: isExecutionSuccessful({ resultType }),
+      logId,
+      ...(instantCharge !== undefined && { instantCharge }),
     };
 
     // Apply afterExecute modifier if provided
@@ -1283,21 +1285,27 @@ export class Tools<
   }
 
   /**
-   * Fetches the input parameters for a given tool.
+   * Generates arguments for a tool from a natural-language description of the task.
    *
-   * This method is used to get the input parameters for a tool before executing it.
+   * Composio uses an LLM to fill the tool's input parameters from `text`. Review the
+   * generated arguments before passing them to `tools.execute()`.
    *
-   * @param {string} slug - The ID of the tool to find input for
-   * @param {ToolGetInputParams} body - The parameters to be passed to the tool
-   * @returns {Promise<ToolGetInputResponse>} The input parameters schema for the specified tool
+   * @param {string} slug - The slug of the tool to generate arguments for
+   * @param {ToolGetInputParams} body - The generation request
+   * @param {string} body.text - What you want the tool to do, in natural language
+   * @param {string} [body.custom_description] - Extra context about the tool for the LLM
+   * @param {string} [body.system_prompt] - System prompt that steers the LLM
+   * @param {string} [body.version] - Tool version to generate arguments for
+   * @returns {Promise<ToolGetInputResponse>} The generated `arguments`, or an `error` when generation fails
    *
    * @example
    * ```typescript
-   * // Get input parameters for a specific tool
-   * const inputParams = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
-   *   userId: 'default'
+   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+   *   text: 'Open an issue in composiohq/composio titled "Docs typo" describing the broken link',
+   *   version: '20250909_00',
    * });
-   * console.log(inputParams.schema);
+   * if (error) throw new Error(error);
+   * console.log(args); // { owner: 'composiohq', repo: 'composio', title: 'Docs typo', ... }
    * ```
    */
   async getInput(
@@ -1312,26 +1320,36 @@ export class Tools<
   }
 
   /**
-   * Proxies a custom request to a toolkit/integration.
+   * Sends an HTTP request to a toolkit's API, authenticated as a connected account.
    *
-   * This method allows sending custom requests to a specific toolkit or integration
-   * when you need more flexibility than the standard tool execution methods provide.
+   * Use it to call an endpoint that no predefined tool covers. Composio injects the
+   * connected account's credentials on the server side.
    *
-   * @param {ToolProxyParams} body - The parameters for the proxy request including toolkit slug and custom data
-   * @returns {Promise<ToolProxyResponse>} The response from the proxied request
+   * A relative `endpoint` is appended to the toolkit's base URL, and that base URL can
+   * already include a path. Google Calendar's base URL is
+   * `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`, not
+   * `/calendar/v3/users/me/calendarList` (which resolves to `/calendar/v3/calendar/v3/...`
+   * and returns a 404 from Google). An absolute URL on the same domain is sent as-is.
+   *
+   * @param {ToolProxyParams} body - The proxy request
+   * @param {string} body.endpoint - Path relative to the toolkit's base URL, or an absolute URL
+   * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'} body.method - HTTP method
+   * @param {string} [body.connectedAccountId] - The connected account to authenticate as
+   * @param {string} [body.userId] - The user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it
+   * @param {unknown} [body.body] - JSON request body
+   * @param {Array<{ in: 'query' | 'header'; name: string; value: string | number }>} [body.parameters] - Extra query parameters or headers
+   * @returns {Promise<ToolProxyResponse>} The upstream status, headers, and parsed body
    *
    * @example
    * ```typescript
-   * // Send a custom request to a toolkit
-   * const response = await composio.tools.proxyExecute({
-   *   toolkitSlug: 'github',
-   *   userId: 'default',
-   *   data: {
-   *     endpoint: '/repos/owner/repo/issues',
-   *     method: 'GET'
-   *   }
+   * // Google Calendar's base URL is https://www.googleapis.com/calendar/v3
+   * const { status, data } = await composio.tools.proxyExecute({
+   *   endpoint: '/users/me/calendarList',
+   *   method: 'GET',
+   *   connectedAccountId: 'ca_...',
+   *   parameters: [{ in: 'query', name: 'maxResults', value: 10 }],
    * });
-   * console.log(response.data);
+   * console.log(status, data);
    * ```
    */
   async proxyExecute(
@@ -1365,19 +1383,16 @@ export class Tools<
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
+      user_id: toolProxyParams.data.userId,
       parameters: parameters,
       /**
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // oxlint-disable-next-line typescript/ban-ts-comment -- generated client versions disagree about this deprecated field
-      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(
-      // Disable retries: a proxied call is a non-idempotent write, and a silent
-      // retry after a read timeout can duplicate the side effect.
-      () => this.clientWithoutRetries.tools.proxy(proxyBody, requestOptions),
+      () => this.client.tools.proxy(proxyBody, withoutRetries(requestOptions)),
       requestOptions?.signal
     );
   }

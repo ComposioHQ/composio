@@ -1,5 +1,25 @@
 # @composio/llamaindex
 
+## 0.11.2
+
+### Patch Changes
+
+- adf6b02: Show the model each tool's JSON Schema as is. The provider now builds the `FunctionTool` with the JSON Schema as its parameters and the Zod schema as its validator, instead of letting LlamaIndex render the Zod schema back to JSON Schema. Keywords such as `format: "binary"`, `contentEncoding`, `contentMediaType`, and `title` reach the model. Internal `$ref`s are still inlined first, and the values a tool accepts and rejects are unchanged.
+
+## 0.11.1
+
+### Patch Changes
+
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
+## 0.11.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
 ## 0.10.2
 
 ### Patch Changes

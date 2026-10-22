@@ -1,14 +1,16 @@
 import process from 'node:process';
 import { Effect, Layer } from 'effect';
-import { FetchHttpClient } from '@effect/platform';
-import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
+import { FetchHttpClient } from 'effect/http';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUILive } from 'src/services/terminal-ui';
-import { stripTelemetryDebugFlag, telemetryDebugModeLayer } from 'src/services/runtime-flags';
+import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 
-const bootstrap = stripTelemetryDebugFlag(process.argv);
-process.argv = [...bootstrap.argv];
+// Read process.argv once and pass it unchanged to the worker or command framework.
+const argv = process.argv;
 
 const workerLayers = Layer.mergeAll(
   BunFileSystem.layer,
@@ -18,10 +20,10 @@ const workerLayers = Layer.mergeAll(
   TerminalUILive
 );
 
-if (isBackgroundWorkerInvocation(bootstrap.argv)) {
-  runBackgroundWorkerFromArgv(bootstrap.argv).pipe(
+if (isBackgroundWorkerInvocation(argv)) {
+  runBackgroundWorkerFromArgv(argv).pipe(
     Effect.provide(
-      bootstrap.telemetryDebug
+      readTelemetryDebugOverride(argv) === true
         ? Layer.merge(workerLayers, telemetryDebugModeLayer(true))
         : workerLayers
     ),
@@ -32,7 +34,5 @@ if (isBackgroundWorkerInvocation(bootstrap.argv)) {
       })
   );
 } else {
-  void import('./cli-main').then(({ runCli }) =>
-    runCli({ telemetryDebug: bootstrap.telemetryDebug })
-  );
+  void import('./cli-main').then(({ runCli }) => runCli({ argv }));
 }

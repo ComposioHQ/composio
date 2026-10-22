@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_google",
-    version="0.21.0",
+    version="0.30.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Google AI Python Gemini model.",
@@ -20,9 +20,9 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.10,<4",
+    python_requires=">=3.11,<3.16",
     install_requires=[
-        "google-cloud-aiplatform>=1.162.0",
+        "google-cloud-aiplatform>=1.162.0,<3",
         "composio",
     ],
     include_package_data=True,

@@ -4,6 +4,10 @@
     "composio",
     "auth-configs",
     "connected-accounts",
+    "custom-toolkits",
+    "keyring",
+    "logs",
+    "session-configs",
     "experimental",
     "mcp",
     "remote-file",
@@ -12,6 +16,10 @@
     "session",
     "session-files",
     "tools",
-    "triggers"
+    "triggers",
+    "usage",
+    "webhook-endpoints",
+    "webhooks",
+    "webhook-subscriptions"
   ]
 }

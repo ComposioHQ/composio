@@ -31,14 +31,6 @@ class TestToolkitVersion:
         result = get_toolkit_version("github", None)
         assert result == "latest"
 
-    def test_get_toolkit_version_with_env_var(self):
-        """Test get_toolkit_version with environment variable."""
-        with pytest.MonkeyPatch().context():
-            # The function doesn't directly use COMPOSIO_TOOLKIT_VERSION env var
-            # It only looks at the toolkit_versions parameter
-            result = get_toolkit_version("github", None)
-            assert result == "latest"
-
     def test_get_toolkit_versions_with_string(self):
         """Test get_toolkit_versions with string parameter."""
         result = get_toolkit_versions("v1.0.0")

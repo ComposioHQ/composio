@@ -1,9 +1,13 @@
 import { Effect, Layer } from 'effect';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import type { Toolkits } from 'src/models/toolkits';
 
-export type GetToolkitsError = Effect.Effect.Error<
-  ReturnType<ComposioToolkitsRepository['getToolkits']>
+export type GetToolkitsError = Effect.Error<
+  ReturnType<ComposioToolkitsRepositoryShape['getToolkits']>
 >;
 
 const notUsed = (method: string) => () => Effect.die(`${method} is not used in this test`);
@@ -34,38 +38,60 @@ const unusedRepositoryMethods = {
   listAuthConfigs: notUsed('listAuthConfigs'),
   getAuthConfig: notUsed('getAuthConfig'),
   createAuthConfig: notUsed('createAuthConfig'),
-  deleteAuthConfig: notUsed('deleteAuthConfig'),
-  listConnectedAccounts: notUsed('listConnectedAccounts'),
   getConnectedAccount: notUsed('getConnectedAccount'),
-  deleteConnectedAccount: notUsed('deleteConnectedAccount'),
-  createConnectedAccountLink: notUsed('createConnectedAccountLink'),
   listActiveTriggers: notUsed('listActiveTriggers'),
   createTrigger: notUsed('createTrigger'),
   enableTrigger: notUsed('enableTrigger'),
   disableTrigger: notUsed('disableTrigger'),
-  deleteTrigger: notUsed('deleteTrigger'),
 } as const;
+
+export type GetProjectToolkitsError = Effect.Error<
+  ReturnType<ComposioToolkitsRepositoryShape['getProjectToolkits']>
+>;
+
+/**
+ * A repository whose every method dies unless the test overrides it.
+ */
+export const makeToolkitsRepositoryStub = (
+  overrides: Partial<ComposioToolkitsRepositoryShape>
+): ComposioToolkitsRepositoryShape =>
+  ComposioToolkitsRepository.of({
+    ...unusedRepositoryMethods,
+    getToolkits: notUsed('getToolkits'),
+    getProjectToolkits: notUsed('getProjectToolkits'),
+    ...overrides,
+  });
 
 /**
  * A `ComposioToolkitsRepository` layer that counts catalog fetches, so a test
- * can assert not just what was resolved but what it cost.
+ * can assert not just what was resolved but what it cost. The native and
+ * project-managed catalogs are counted separately.
  */
 export const countingToolkitsRepository = (
-  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>
+  getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
+  getProjectToolkits: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError> = () => Effect.succeed([])
 ) => {
   let calls = 0;
+  let projectCalls = 0;
 
   const layer = Layer.succeed(
     ComposioToolkitsRepository,
-    new ComposioToolkitsRepository({
+    ComposioToolkitsRepository.of({
       ...unusedRepositoryMethods,
       getToolkits: () =>
         Effect.suspend(() => {
           calls += 1;
           return getToolkits();
         }),
+      getProjectToolkits: scope =>
+        Effect.suspend(() => {
+          projectCalls += 1;
+          return getProjectToolkits(scope);
+        }),
     })
   );
 
-  return { layer, calls: () => calls };
+  return { layer, calls: () => calls, projectCalls: () => projectCalls };
 };

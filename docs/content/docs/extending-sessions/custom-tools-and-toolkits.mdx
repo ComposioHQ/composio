@@ -5,6 +5,8 @@ keywords: [custom tools, custom toolkits, experimental, local tools, proxy execu
 experimental: true
 ---
 
+For a complete agent that combines an internal lookup with a public API, follow [Combine your own tools with Composio](/examples/custom-tools).
+
 Custom tools let you define tools that run in-process alongside remote Composio tools within a session. You have three patterns:
 
 - **Standalone tools**: internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules).
@@ -695,6 +697,11 @@ Slugs exposed to the agent are automatically prefixed with `LOCAL_` and the tool
 - `ASSIGN_ROLE` in `USER_MANAGEMENT` becomes `LOCAL_USER_MANAGEMENT_ASSIGN_ROLE`
 
 Your slugs cannot start with `LOCAL_`. This prefix is reserved.
+
+Use the final `LOCAL_*` slug when you call a custom tool directly. The original slug still works
+when it identifies exactly one local tool. If two custom toolkits both define `SEARCH`, call
+`LOCAL_CATALOG_SEARCH` or `LOCAL_SUPPORT_SEARCH`. Calling `SEARCH` directly raises an error with the
+qualified slugs instead of choosing one toolkit silently.
 
 ## Next
 

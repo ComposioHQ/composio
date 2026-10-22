@@ -1,8 +1,10 @@
-import { Command, Options } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
-import { Deferred, Effect, Option, Runtime } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
-import { requireAuth } from 'src/effects/require-auth';
+import { requireLogin } from 'src/effects/require-auth';
+import { Command, Flag } from 'effect/cli';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { Deferred, Effect, Option } from 'effect';
+import { APP_CONFIG } from 'src/config';
+import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { matchesTriggerListenFilters } from '../filter';
@@ -14,67 +16,54 @@ import {
 import { parseCsv } from '../parse-csv';
 import { parseTriggerListenEvent } from '../parse';
 import type { TriggerListenFilters } from '../types';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription(
-    'Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'
-  ),
-  Options.optional
+const toolkits = Flag.String('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
+  Flag.optional
 );
 
-const triggerId = Options.text('trigger-id').pipe(
-  Options.withDescription('Filter by trigger id'),
-  Options.optional
+const triggerId = Flag.String('trigger-id').pipe(
+  Flag.withDescription('Filter by trigger id'),
+  Flag.optional
 );
 
-const connectedAccountId = Options.text('connected-account-id').pipe(
-  Options.withDescription('Filter by connected account id'),
-  Options.optional
+const connectedAccountId = Flag.String('connected-account-id').pipe(
+  Flag.withDescription('Filter by connected account id'),
+  Flag.optional
 );
 
-const triggerSlug = Options.text('trigger-slug').pipe(
-  Options.withDescription(
-    'Filter by trigger slug, comma-separated (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'
-  ),
-  Options.optional
+const triggerSlug = Flag.String('trigger-slug').pipe(
+  Flag.withDescription('Filter by trigger slug, comma-separated (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.withDescription('Filter by user id'),
-  Options.optional
+const json = Flag.Boolean('json').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Show raw event payload as JSON in interactive mode')
 );
 
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Show raw event payload as JSON in interactive mode')
-);
-
-const table = Options.boolean('table').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const table = Flag.Boolean('table').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Show compact table rows: timestamp, trigger_id, trigger_slug, toolkit, user_id, connected_account_id'
   )
 );
 
-const maxEvents = Options.integer('max-events').pipe(
-  Options.withDescription('Stop after receiving N matching events'),
-  Options.optional
+const maxEvents = Flag.Int('max-events').pipe(
+  Flag.withDescription('Stop after receiving N matching events'),
+  Flag.optional
 );
 
-const forward = Options.text('forward').pipe(
-  Options.withDescription(
+const forward = Flag.String('forward').pipe(
+  Flag.withDescription(
     'Forward each matching event to the given URL (signed with COMPOSIO_WEBHOOK_SECRET)'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const out = Options.text('out').pipe(
-  Options.withDescription('Append each matching event to this file'),
-  Options.optional
+const out = Flag.String('out').pipe(
+  Flag.withDescription('Append each matching event to this file'),
+  Flag.optional
 );
 
 const randomUUID = () => crypto.randomUUID();
@@ -153,7 +142,6 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
@@ -165,7 +153,6 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
@@ -173,16 +160,14 @@ export const triggersCmd$Listen = Command.make(
     out,
   }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
+      const surface = yield* CommandSurface;
+      const { userId } = surface;
       const ui = yield* TerminalUI;
-      yield* resolveCommandProject({ mode: 'developer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      const project = yield* resolveSurfaceProject('developer');
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
-      const runtime = yield* Effect.runtime<never>();
+      const services = yield* Effect.context<never>();
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
       const configuredWebhookSecret = yield* APP_CONFIG.WEBHOOK_SECRET;
@@ -237,7 +222,7 @@ export const triggersCmd$Listen = Command.make(
       }
 
       const onEvent = (eventData: Record<string, unknown>) => {
-        Runtime.runFork(runtime)(
+        Effect.runForkWith(services)(
           Effect.gen(function* () {
             const parsed = parseTriggerListenEvent(eventData);
             if (!matchesTriggerListenFilters(filters, parsed)) {
@@ -276,7 +261,7 @@ export const triggersCmd$Listen = Command.make(
             if (outputFilePath) {
               yield* fs
                 .writeFileString(outputFilePath, logLine, { flag: 'a' })
-                .pipe(Effect.catchAll(error => ui.log.warn(String(error))));
+                .pipe(Effect.catch(error => ui.log.warn(String(error))));
             }
 
             if (forwardUrl && webhookSecret) {
@@ -318,7 +303,7 @@ export const triggersCmd$Listen = Command.make(
                   catch: error =>
                     new Error(`Failed forwarding event to ${forwardUrl}: ${String(error)}`),
                 });
-              }).pipe(Effect.catchAll(error => ui.log.warn(String(error))));
+              }).pipe(Effect.catch(error => ui.log.warn(String(error))));
             }
 
             if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
@@ -328,16 +313,21 @@ export const triggersCmd$Listen = Command.make(
         );
       };
 
-      const listenEffect = realtime
-        .listen(onEvent)
-        .pipe(
-          Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
-        );
+      // The default credentials serve the configured project; a named one needs its own.
+      const listenEffect = (
+        Option.isSome(surface.projectName)
+          ? realtime.listenInProject(
+              { orgId: project.orgId, projectId: project.projectId },
+              onEvent
+            )
+          : realtime.listen(onEvent)
+      ).pipe(
+        Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
+      );
 
       yield* Effect.gen(function* () {
         if (maxEventsLimit === undefined) {
-          yield* listenEffect;
-          return;
+          return yield* listenEffect;
         }
 
         yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
@@ -356,5 +346,6 @@ export const triggersCmd$Listen = Command.make(
 ).pipe(
   Command.withDescription(
     'Listen to realtime trigger events for your developer project and optionally forward them into your local dev environment.'
-  )
+  ),
+  requireLogin
 );

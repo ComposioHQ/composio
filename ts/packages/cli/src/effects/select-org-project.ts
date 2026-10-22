@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { listOrganizations, type OrganizationSummary } from 'src/services/composio-clients';
+import { listOrganizations, type OrganizationSummary } from 'src/services/composio-account';
 import { clampLimit } from 'src/ui/clamp-limit';
 
 const DEFAULT_LIMIT = 50;
@@ -38,14 +38,13 @@ const selectOrganization = (params: {
 
 export const runOrgSelection = (params: {
   apiKey: string;
-  baseURL: string;
   explicitOrgId?: string;
   currentOrgId?: string;
   limit?: number;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { apiKey, baseURL, explicitOrgId, currentOrgId, limit = DEFAULT_LIMIT } = params;
+    const { apiKey, explicitOrgId, currentOrgId, limit = DEFAULT_LIMIT } = params;
     const clampedLimit = clampLimit(limit);
 
     const selectedOrganization =
@@ -53,7 +52,6 @@ export const runOrgSelection = (params: {
         ? ({ id: explicitOrgId, name: explicitOrgId } satisfies OrganizationSummary)
         : yield* Effect.gen(function* () {
             const organizations = yield* listOrganizations({
-              baseURL,
               apiKey,
               limit: clampedLimit,
             });

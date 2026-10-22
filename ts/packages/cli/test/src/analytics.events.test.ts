@@ -1,9 +1,11 @@
+import { VERSION as clientLibraryVersion } from '@composio/client/effect';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { it } from '@effect/vitest';
 import { afterEach, describe, expect, vi } from 'vitest';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Layer } from 'effect';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
@@ -12,6 +14,7 @@ import {
   CLI_JOURNEY_STAGES,
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
+  getPluginHintShownEvent,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
   getPrimaryLifecycleFailedEvent,
@@ -33,6 +36,7 @@ import {
   DEFAULT_CLI_INVOCATION_ORIGIN,
   type CliInvocationContext,
 } from 'src/services/runtime-cli-context';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
 
@@ -55,6 +59,23 @@ describe('CLI analytics execute failure events', () => {
     expect(event?.properties).toMatchObject({
       stdout_is_tty: true,
       stderr_is_tty: false,
+    });
+  });
+
+  it('keeps CLI product and installed library separate on tool-router command events', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'execute', 'GITHUB_GET_ME'],
+      '0.4.2',
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+    expect(getPrimaryLifecycleSucceededEvent(context)?.properties).toMatchObject({
+      client_name: '@composio/cli',
+      client_version: '0.4.2',
+      client_library: '@composio/client',
+      client_library_version: clientLibraryVersion,
+      execution_channel: 'tool_router',
+      duration_ms: expect.any(Number),
     });
   });
 
@@ -304,6 +325,99 @@ describe('CLI analytics setup runtime-context events', () => {
     });
   });
 
+  it('records host presence signals only for an undetected host', () => {
+    const missing = getSetupHostDetectedEvent({
+      operation: 'setup',
+      requestedTarget: 'auto',
+      target: 'codex',
+      available: false,
+      supported: false,
+      hostConfigDirPresent: true,
+      hostBinaryInKnownPaths: false,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+      cliVersion: APP_VERSION,
+    });
+    expect(missing?.properties).toMatchObject({
+      agent_host: 'codex',
+      available: false,
+      host_config_dir_present: true,
+      host_binary_in_known_paths: false,
+    });
+
+    const detected = getSetupHostDetectedEvent({
+      operation: 'setup',
+      requestedTarget: 'auto',
+      target: 'claude',
+      available: true,
+      supported: true,
+      invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+      cliVersion: APP_VERSION,
+    });
+    expect(detected?.properties?.host_config_dir_present).toBeUndefined();
+    expect(detected?.properties?.host_binary_in_known_paths).toBeUndefined();
+  });
+
+  it('tracks a printed plugin hint as a setup-stage event', () => {
+    expect(
+      getPluginHintShownEvent({
+        invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cliVersion: APP_VERSION,
+        commandPath: 'whoami',
+        agentHost: 'claude',
+      })
+    ).toEqual({
+      name: CLI_ANALYTICS_EVENTS.CLI_PLUGIN_HINT_SHOWN,
+      properties: {
+        source: 'cli',
+        invocation_origin: DEFAULT_CLI_INVOCATION_ORIGIN,
+        cli_version: APP_VERSION,
+        command_path: 'whoami',
+        agent_host: 'claude',
+        client_name: '@composio/cli',
+        client_version: APP_VERSION,
+        client_language: 'typescript',
+        client_runtime: 'nodejs',
+        client_runtime_version: process.versions.node,
+        client_library: '@composio/client',
+        client_library_version: clientLibraryVersion,
+        client_framework: 'cli',
+        execution_channel: 'unknown',
+        journey_stage: 'setup',
+        cli_channel: inferSkillReleaseChannel(APP_VERSION),
+      },
+    });
+  });
+
+  it('records the setup failure reason code carried by SetupCommandError', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'setup'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+    const error = new SetupCommandError({
+      message: 'Non-interactive setup requires `--yes` to approve local changes.',
+      operation: 'setup',
+      reasonCode: 'non_interactive_requires_yes',
+    });
+
+    expect(getPrimaryLifecycleFailedEvent(context, error)?.properties).toMatchObject({
+      error_name: 'services/SetupCommandError',
+      failure_reason_code: 'non_interactive_requires_yes',
+    });
+    const unknown = new SetupCommandError({
+      message: 'native failure',
+      operation: 'setup',
+      reasonCode: 'unknown',
+    });
+    expect(getPrimaryLifecycleFailedEvent(context, unknown)?.properties?.failure_reason_code).toBe(
+      'unknown'
+    );
+    expect(
+      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties
+    ).not.toHaveProperty('failure_reason_code');
+  });
+
   it('tracks an unsupported host with a normalized reason code', () => {
     expect(
       getSetupHostDetectedEvent({
@@ -430,11 +544,12 @@ describe('CLI analytics journey taxonomy', () => {
     ).toBe(stage);
   });
 
-  it('maps every analytics event name to a declared journey stage', () => {
-    for (const name of Object.values(CLI_ANALYTICS_EVENTS)) {
+  it.each(Object.values(CLI_ANALYTICS_EVENTS))(
+    'maps analytics event %s to a declared journey stage',
+    name => {
       expect(CLI_JOURNEY_STAGES).toContain(CLI_EVENT_JOURNEY_STAGES[name]);
     }
-  });
+  );
 
   it('stamps standalone setup and tool-invocation events with their stages', () => {
     expect(
@@ -517,6 +632,31 @@ describe('CLI analytics journey taxonomy', () => {
     });
   });
 
+  it.each([
+    { flags: ['--telemetry-debug'] },
+    { flags: ['--telemetry-debug=false'] },
+    { flags: ['--no-telemetry-debug'] },
+    { flags: ['--tool-debug', '--perf-debug'] },
+    { flags: ['--log-level', 'Debug'] },
+    { flags: ['--log-level=Debug', '--telemetry-debug'] },
+  ])('identifies run and execute after shared options: $flags', ({ flags }) => {
+    const runArgs = [...flags, 'run', 'console.log("hi")'];
+    const run = contextFor(runArgs);
+    expect(run.argv).toEqual(['bun', 'composio', ...runArgs]);
+    expect(run.commandPath).toBe('run');
+    expect(run.runId).toEqual(expect.any(String));
+    expect(getPrimaryLifecycleInvokedEvent(run)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
+      properties: { run_id: run.runId, command_path: 'run' },
+    });
+
+    const execute = contextFor([...flags, 'execute', 'GMAIL_SEND_EMAIL', '--get-schema']);
+    expect(getPrimaryLifecycleInvokedEvent(execute)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
+      properties: { command_path: 'execute', tool_slug: 'GMAIL_SEND_EMAIL' },
+    });
+  });
+
   it('uses the configured parent run id for nested run telemetry', () => {
     const context = contextFor(['run', 'console.log("hi")'], {
       invocationOrigin: 'run',
@@ -549,17 +689,21 @@ describe('CLI analytics journey taxonomy', () => {
     expect(shellDelegations).toHaveLength(1);
     expect(installInvocations).toHaveLength(2);
     expect(shellDelegations[0]).toContain('COMPOSIO_CLI_INVOCATION_ORIGIN=installer');
+  });
 
-    for (const shell of ['zsh', 'bash', 'fish']) {
+  it.each(['zsh', 'bash', 'fish'])(
+    'keeps the %s installer variant from invoking the CLI itself',
+    shell => {
       const variantScript = readFileSync(
         new URL(`../../../../../install/${shell}.sh`, import.meta.url),
         'utf8'
       );
       // Variants never invoke the CLI themselves: they re-exec the base installer with the
-      // shell pinned, so the delegation asserted above stays the only CLI install call.
+      // shell pinned, so the base installer's shell-setup delegation stays the only CLI
+      // install call.
       expect(variantScript).not.toContain('"$exe"');
       expect(variantScript).not.toContain(' install --shell');
       expect(variantScript).toContain('COMPOSIO_INSTALL_SHELL="$variant_shell"');
     }
-  });
+  );
 });

@@ -1,5 +1,40 @@
 # @composio/claude-code-agents
 
+## 0.13.0
+
+### Minor Changes
+
+- adf6b02: Build tool input schemas with the Zod v4 builder from `@composio/json-schema-to-zod/v4`, so `format`, `contentEncoding`, `contentMediaType`, and `type: "integer"` survive the SDK's conversion to the JSON Schema the model sees. Before, a field such as `{ type: "string", format: "binary" }` reached the model as `{ type: "string" }`. The values a tool accepts and rejects are unchanged.
+
+  The `zod` peer dependency is now `^4.1.13` (was `^4.0.0`): the v4 builder needs the metadata registry zod shares across copies from 4.1.13 on, and throws at load time on an older zod. Upgrade zod to 4.1.13 or newer before upgrading this package.
+
+### Patch Changes
+
+- Updated dependencies [f119f05]
+- Updated dependencies [04fdb41]
+  - @composio/json-schema-to-zod@0.4.0
+
+## 0.12.2
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+
+## 0.12.1
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 20aaa95: Accept the upcoming core prerelease and the upstream versions already used to build and test providers.
+
+## 0.12.0
+
+### Minor Changes
+
+- 9447932: Dereference internal $ref/$defs in tool input schemas before provider translation, so properties reachable only through a reference keep their types and validation instead of degrading to untyped (z.any) or being emitted as a dangling reference.
+
+  This changes the JSON Schema these providers emit for $ref-using tools. Downstream snapshot tests on tool definitions will see diffs. Schemas the Composio API ships with a $ref but no $defs block (e.g. GMAIL_FETCH_EMAILS) degrade to a permissive object schema rather than throwing. The strict-structured-outputs path of @composio/openai-agents is unchanged — OpenAI supports $defs/$ref natively, including recursion.
+
 ## 0.11.1
 
 ### Patch Changes

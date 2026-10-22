@@ -1,18 +1,20 @@
 ---
 title: Executing tools directly
-description: Maintain legacy code that calls composio.tools.execute() and other direct tool APIs
-keywords: [execute, run, tool calling, function calling, direct execution]
+description: Maintain legacy integrations that call composio.tools.execute(); prefer sessions for new integrations
+keywords: [execute, run, tool calling, function calling, direct execution, version, pin version]
 llmGuardrails: "direct-execution"
 legacy: true
 ---
 
-<Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically. See [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) to understand the tradeoffs.
+<Callout type="info" title="Legacy API: prefer sessions">
+This guide covers legacy direct-execution methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/configuring-sessions) to manage tool fetching, authentication, and execution. If you use direct execution today, consider [migrating to sessions](/docs/migration-guide/direct-to-sessions). See [Sessions vs direct execution](/docs/sessions-vs-direct-execution) for the tradeoffs.
 </Callout>
 
 LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, act, observe, and adapt.
 
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like Gmail, Slack, or GitHub, and Composio handles authentication and user scoping.
+
+To run a specific tool version, pass `version` directly to `composio.tools.execute()`. See [Pin a version](#pin-a-version) for complete Python and TypeScript examples.
 
 ## Canceling TypeScript requests
 
@@ -212,13 +214,13 @@ If you just want to call a tool without using any framework or LLM provider, you
 **A toolkit version is required for direct execution** — calling `tools.execute()` without one raises `ToolVersionRequiredError`, and `"latest"` alone is not accepted here. Two ways to satisfy it:
 
 - **An LLM or agent consumes the outputs:** keep `"latest"` and pass `dangerously_skip_version_check=True` (TypeScript: `dangerouslySkipVersionCheck: true`) on the execute call — you always run the newest tools, and the flag's name is the reminder that output schemas can change between releases.
-- **Your code parses the outputs:** pin a dated version — look it up with `composio.toolkits.get(slug="...").meta.version` or in the [Toolkits catalog](/toolkits), and pass it at SDK initialization or per call via `version="..."`.
+- **Your code parses the outputs:** pin a dated version: look it up in the [Toolkits catalog](/toolkits) or from the SDK (see [Pin a version](#pin-a-version)), and pass it at SDK initialization or per call via `version`.
 
 See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for the full tradeoffs.
 </Callout>
 
 <Callout type="info">
-**Finding a toolkit and tool:** browse the [Toolkits catalog](/toolkits) — each toolkit page lists its tool slugs and current version — or search by task from the CLI: `composio search "send an email"`. You can also [search tools semantically](/docs/tools-direct/fetching-tools#by-search-experimental) from the SDK.
+**Finding a toolkit and tool:** browse the [Toolkits catalog](/toolkits) — each toolkit page lists its tool slugs and current version — or search by task from the CLI: `composio search "send an email"`. You can also [search tools by action keywords](/docs/tools-direct/fetching-tools#by-search-experimental) from the SDK.
 
 **Finding tool parameters and types:**
 
@@ -227,6 +229,50 @@ See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for the full tra
 **CLI**: For Python and TypeScript projects, run `composio generate` to generate types. [Learn more →](/docs/cli#generate-type-definitions)
 </Callout>
 
+### Pin a version
+
+Pass `version` on the `tools.execute()` call to select a specific tool version. This overrides SDK initialization and environment defaults for that call without changing other executions.
+
+Choose an available version from the [GitHub toolkit page](/toolkits/github) or [look it up with the SDK](/docs/tools-direct/toolkit-versioning#managing-versions). The examples below use `20250909_00`. Replace it with the version you have tested, and keep that string in your code or configuration.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_composio_key")
+
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    user_id="user-k7334",
+    version="20250909_00",
+    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your_composio_key" });
+
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+  userId: "user-k7334",
+  version: "20250909_00",
+  arguments: { owner: "ComposioHQ", repo: "composio", page: 1, per_page: 5 },
+});
+console.log(result);
+```
+  </Tab>
+</Tabs>
+
+A dated `version` satisfies the direct-execution version check. To set a default for all calls to a toolkit, configure [SDK initialization or environment variables](/docs/tools-direct/toolkit-versioning#configuration-methods).
+
+### Use the latest version
+
+If an LLM consumes the output and can handle schema changes, you can use `latest`. Direct execution requires the explicit opt-in shown below.
+
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -234,7 +280,7 @@ from composio import Composio
 
 user_id = "user-k7334"
 # Configure toolkit versions at SDK level for every toolkit you execute.
-# Use "latest", or pin a version — find them with composio.toolkits.get(slug="github").meta.available_versions
+# Use "latest", or pin a version (see "Pin a version" above)
 composio = Composio(
     api_key="your_composio_key",
     toolkit_versions={"github": "latest"}
@@ -245,7 +291,7 @@ result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
     user_id=user_id,
     arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
-    # "latest" requires this opt-in; to pin instead, pass version=composio.toolkits.get(slug="github").meta.version
+    # "latest" requires this opt-in; to pin instead, pass version (see "Pin a version" above)
     dangerously_skip_version_check=True,
 )
 print(result)
@@ -257,7 +303,7 @@ import { Composio } from "@composio/core";
 
 const userId = "user-k7334";
 // Configure toolkit versions at SDK level for every toolkit you execute.
-// Use "latest", or pin a version — find them with (await composio.toolkits.get("github")).meta.availableVersions
+// Use "latest", or pin a version (see "Pin a version" above)
 const composio = new Composio({
     apiKey: "your_composio_key",
     toolkitVersions: { github: "latest" }
@@ -272,7 +318,7 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
     "page": 1,
     "per_page": 5
   },
-  // "latest" requires this opt-in; to pin instead, pass version from (await composio.toolkits.get("github")).meta.version
+  // "latest" requires this opt-in; to pin instead, pass `version` (see "Pin a version" above)
   dangerouslySkipVersionCheck: true,
 });
 console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
@@ -280,24 +326,20 @@ console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
   </Tab>
 </Tabs>
 
-<Callout>
-The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for all configuration options.
-</Callout>
-
-<Callout type="info">
-**Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
-</Callout>
-
 ### Proxy Execute
 
 You can proxy requests to any supported toolkit API and let Composio inject the authentication state. This is useful when you need an API endpoint that isn't available as a predefined tool.
 
 Proxy execute requires auth context. Pass `connected_account_id` / `connectedAccountId`, or provide `custom_connection_data` if you're supplying auth manually.
 
+On projects with 2FA enabled, also pass `user_id` / `userId`. Composio checks it against the connected account and may reject a call that omits it.
+
 The `endpoint` can be a relative path or absolute URL. Relative paths are resolved against the connected account's base URL. Absolute URLs are only accepted when they use the same scheme and registrable domain as that base URL. Cross-subdomain requests on the same registrable domain still work.
 
 <Callout type="warn">
 Prefer relative endpoints when possible. They resolve against the connected account's base URL and avoid same-domain validation issues.
+
+A relative endpoint is appended to the base URL, and many base URLs already include a path. Google Calendar's base URL is `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`. Passing `/calendar/v3/users/me/calendarList` requests `/calendar/v3/calendar/v3/users/me/calendarList` and returns a `404`.
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -490,6 +532,23 @@ console.log(result);
 ```
   </Tab>
 </Tabs>
+
+Python names each downloaded file after the name in the tool response, made safe to write first:
+characters Windows reserves become `_`, an over-long name is truncated with its extension kept, and
+trailing dots and spaces are dropped. A name any of those rules changed also carries a short digest
+of the original, so two names that clean up the same way stay distinct. A name that can't be
+written at all, one containing a NUL byte or with nothing usable left, fails the download instead.
+An existing file in the download directory is never replaced — the new download gets a number
+before its extension, so a second `report.pdf` lands as `report-1.pdf`. TypeScript names automatic downloads after the tool
+slug and a timestamp instead, so its names are already unique.
+
+Automatic S3 downloads stop at 100 MiB, even when the server omits or reports an incorrect
+`Content-Length`. Python removes partial files for transport and filesystem failures and raises
+`ErrorDownloadingFile`; oversized responses raise `ResponseTooLargeError`. In TypeScript, failed
+automatic S3 downloads return `file_downloaded: false`. `RemoteFile` connection failures and
+streamed-body failures raise `RemoteFileDownloadError`.
+
+URL-based file fetches validate the resolved address at each redirect and reject internal, reserved, and transition-network address ranges. Both SDKs follow standard HTTP redirect method and body rules and strip credentials on cross-origin redirects.
 
 ## Security for local file paths
 

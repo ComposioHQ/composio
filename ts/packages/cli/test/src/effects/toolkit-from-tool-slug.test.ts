@@ -1,16 +1,20 @@
 import { describe, expect, it } from '@effect/vitest';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
-import { ConfigProvider, DateTime, Effect, Layer, Schedule } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import { ConfigProvider, DateTime, Deferred, Effect, FileSystem, Layer, Schedule } from 'effect';
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { Toolkits } from 'src/models/toolkits';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
+import { InternalServerError } from '@composio/client/effect';
+import {
+  ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
 import { KNOWN_TOOLKIT_SLUGS_FILE } from 'src/services/known-toolkit-slugs';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import {
   countingToolkitsRepository,
+  type GetProjectToolkitsError,
   type GetToolkitsError,
 } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -21,8 +25,24 @@ import {
  */
 const UNRELEASED_TOOLKIT = 'acme_analytics';
 
+/**
+ * A project-scoped custom toolkit. Custom toolkits never ship in the baked
+ * catalog, and their slugs share the `custom` prefix with nothing baked.
+ */
+const CUSTOM_TOOLKIT = 'custom_grain';
+
 const failingFetch = () =>
-  Effect.fail(new HttpServerError({ cause: 'catalog unavailable', status: 503 }));
+  Effect.fail(
+    new InternalServerError({
+      message: 'catalog unavailable',
+      method: 'GET',
+      url: 'https://backend.composio.dev/api/v3.1/toolkits',
+      status: 503,
+      requestId: undefined,
+      details: undefined,
+      body: undefined,
+    })
+  );
 
 /**
  * A learned-slugs file recorded `daysAgo` days ago. Anything under a week old
@@ -32,11 +52,33 @@ const failingFetch = () =>
 const learnedFileContent = (slugs: ReadonlyArray<string>, daysAgo = 0) =>
   JSON.stringify({
     slugs,
-    refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.unsafeNow(), { days: daysAgo })),
+    refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.nowUnsafe(), { days: daysAgo })),
   });
+
+/**
+ * A project catalog that lists each named project's toolkits. Unscoped
+ * lookups, and projects it does not name, list nothing.
+ */
+const projectCatalog =
+  (toolkitsByProject: Readonly<Record<string, ReadonlyArray<string>>>) =>
+  (scope?: ToolkitProjectScope) =>
+    Effect.succeed(
+      Object.entries(toolkitsByProject)
+        .filter(([projectId]) => projectId === scope?.projectId)
+        .flatMap(([, slugs]) => slugs.map(slug => makeToolkitFixture(slug)))
+    );
+
+interface ResolverOptions {
+  readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
+  readonly getProjectToolkits?: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError>;
+  readonly seedLearnedFile?: string;
+}
 
 interface ResolverContext {
   readonly calls: () => number;
+  readonly projectCalls: () => number;
   readonly waitForLearnedFile: (
     predicate: (content: string) => boolean
   ) => Effect.Effect<string, unknown, FileSystem.FileSystem>;
@@ -48,10 +90,7 @@ interface ResolverContext {
  * is written verbatim — including deliberately corrupt content.
  */
 const withResolver = <A>(
-  options: {
-    readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
-    readonly seedLearnedFile?: string;
-  },
+  options: ResolverOptions,
   program: (
     context: ResolverContext
   ) => Effect.Effect<
@@ -67,10 +106,7 @@ const withResolver = <A>(
 
 const runInCacheDir = <A>(
   cacheDir: string,
-  options: {
-    readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
-    readonly seedLearnedFile?: string;
-  },
+  options: ResolverOptions,
   program: (
     context: ResolverContext
   ) => Effect.Effect<
@@ -88,19 +124,21 @@ const runInCacheDir = <A>(
     }
 
     const repository = countingToolkitsRepository(
-      options.getToolkits ?? (() => Effect.succeed([] as Toolkits))
+      options.getToolkits ?? (() => Effect.succeed([] as Toolkits)),
+      options.getProjectToolkits
     );
 
     const readLearnedFile = fs.readFileString(learnedFile);
 
     return yield* program({
       calls: repository.calls,
+      projectCalls: repository.projectCalls,
       // The resolver records what it learns in the background, so a test that
       // asserts on the file has to wait for it rather than read once.
       waitForLearnedFile: predicate =>
         readLearnedFile.pipe(
           Effect.filterOrFail(predicate, () => 'learned file has not caught up yet' as const),
-          Effect.retry(Schedule.spaced('10 millis').pipe(Schedule.intersect(Schedule.recurs(200))))
+          Effect.retry(Schedule.max([Schedule.spaced('10 millis'), Schedule.recurs(200)]))
         ),
     }).pipe(
       // Built inside this test's cache directory, and fresh per test: the
@@ -115,7 +153,9 @@ const runInCacheDir = <A>(
     );
   }).pipe(
     Effect.provide(BunFileSystem.layer),
-    Effect.withConfigProvider(ConfigProvider.fromMap(new Map([['CACHE_DIR', cacheDir]])))
+    Effect.provide(
+      ConfigProvider.layer(ConfigProvider.fromEnvRecord({ COMPOSIO_CACHE_DIR: cacheDir }))
+    )
   );
 
 describe('toolkitFromToolSlug', () => {
@@ -130,7 +170,7 @@ describe('toolkitFromToolSlug', () => {
   );
 
   it.effect('gives meta tools no toolkit, even when one shadows their slug', () =>
-    withResolver({ seedLearnedFile: learnedFileContent([]) }, ({ calls }) =>
+    withResolver({ seedLearnedFile: learnedFileContent([]) }, ({ calls, projectCalls }) =>
       Effect.gen(function* () {
         // `composio_search` is a real, linkable toolkit whose slug is a prefix
         // of this session meta tool. Attributing the meta tool to it would
@@ -138,6 +178,7 @@ describe('toolkitFromToolSlug', () => {
         expect(yield* toolkitFromToolSlug('COMPOSIO_SEARCH_TOOLS')).toBeUndefined();
         expect(yield* toolkitFromToolSlug('COMPOSIO_MANAGE_CONNECTIONS')).toBeUndefined();
         expect(calls()).toBe(0);
+        expect(projectCalls()).toBe(0);
       })
     )
   );
@@ -202,18 +243,18 @@ describe('toolkitFromToolSlug', () => {
     )
   );
 
-  it.live('records learned slugs at most once per run', () =>
+  it.live('merges later recordings in a run instead of dropping them', () =>
     withResolver({ seedLearnedFile: learnedFileContent([]) }, ({ waitForLearnedFile }) =>
       Effect.gen(function* () {
         const catalog = yield* ToolkitSlugCatalog;
-        // Every miss in a run merges the same memoized fetch, so a second
-        // recording could only rewrite the same file. Passing a different list
-        // here makes the gate observable: its slugs must never land.
+        // Misses in one run can see different catalogs — an unscoped startup
+        // lookup, then the command's project — so a later recording that
+        // brings new slugs must land alongside the first one.
         yield* catalog.remember([UNRELEASED_TOOLKIT]);
-        yield* catalog.remember(['slug_from_a_second_recording']);
+        yield* catalog.remember([UNRELEASED_TOOLKIT, CUSTOM_TOOLKIT]);
 
-        const learned = yield* waitForLearnedFile(content => content.includes(UNRELEASED_TOOLKIT));
-        expect(learned).not.toContain('slug_from_a_second_recording');
+        const learned = yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+        expect(learned).toContain(UNRELEASED_TOOLKIT);
       })
     )
   );
@@ -257,7 +298,7 @@ describe('toolkitFromToolSlug', () => {
           const learned = yield* waitForLearnedFile(content =>
             content.includes(UNRELEASED_TOOLKIT)
           );
-          expect(learned).not.toContain('stale_toolkit');
+          expect(learned).toContain('stale_toolkit');
         })
     )
   );
@@ -298,4 +339,264 @@ describe('toolkitFromToolSlug', () => {
         })
     )
   );
+  describe('project-managed custom toolkits', () => {
+    it.live('resolves a custom toolkit from the project catalog, and remembers it', () =>
+      withResolver(
+        {
+          getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        ({ calls, projectCalls, waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
+            expect(calls()).toBe(1);
+            expect(projectCalls()).toBe(1);
+
+            yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+          })
+      )
+    );
+
+    it.live('uses a remembered custom toolkit when the project catalog is unreachable', () =>
+      withResolver(
+        {
+          getToolkits: failingFetch,
+          getProjectToolkits: failingFetch,
+          seedLearnedFile: learnedFileContent([CUSTOM_TOOLKIT]),
+        },
+        ({ calls, projectCalls }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
+            expect(calls()).toBe(1);
+            expect(projectCalls()).toBe(1);
+          })
+      )
+    );
+
+    it.live.each(['custom_grain', 'custom_grain_search_persons'])(
+      "uses the active project's prefix instead of learned %s",
+      learned =>
+        withResolver(
+          {
+            seedLearnedFile: learnedFileContent([learned]),
+            getProjectToolkits: projectCatalog({ proj_b: ['custom_grain_search'] }),
+          },
+          () =>
+            Effect.gen(function* () {
+              expect(
+                yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS_LIST', {
+                  orgId: 'org_1',
+                  projectId: 'proj_b',
+                })
+              ).toBe('custom_grain_search');
+              expect(
+                yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS_LIST', {
+                  orgId: 'org_1',
+                  projectId: 'proj_empty',
+                })
+              ).toBe('custom');
+            })
+        )
+    );
+
+    it.live('keeps a scoped discovery when an older background fetch completes later', () =>
+      Effect.gen(function* () {
+        const releaseRefresh = yield* Deferred.make<void>();
+        yield* withResolver(
+          {
+            seedLearnedFile: learnedFileContent([], 8),
+            getToolkits: () =>
+              Deferred.await(releaseRefresh).pipe(
+                Effect.as([makeToolkitFixture(UNRELEASED_TOOLKIT)])
+              ),
+          },
+          ({ waitForLearnedFile }) =>
+            Effect.gen(function* () {
+              expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+              const catalog = yield* ToolkitSlugCatalog;
+              yield* catalog.remember([CUSTOM_TOOLKIT]);
+              yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+              yield* Deferred.succeed(releaseRefresh, undefined);
+              const learned = yield* waitForLearnedFile(content =>
+                content.includes(UNRELEASED_TOOLKIT)
+              );
+              expect(learned).toContain(CUSTOM_TOOLKIT);
+            })
+        );
+      })
+    );
+
+    it.live('retries a stale native catalog after remembering a partial project result', () =>
+      Effect.gen(function* () {
+        const cacheDir = tempy.temporaryDirectory();
+        const seed = learnedFileContent([], 8);
+        yield* runInCacheDir(
+          cacheDir,
+          {
+            seedLearnedFile: seed,
+            getToolkits: failingFetch,
+            getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          },
+          ({ waitForLearnedFile }) =>
+            Effect.gen(function* () {
+              expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(
+                CUSTOM_TOOLKIT
+              );
+              const learned = yield* waitForLearnedFile(content =>
+                content.includes(CUSTOM_TOOLKIT)
+              );
+              expect(JSON.parse(learned).refreshedAt).toBe(JSON.parse(seed).refreshedAt);
+            })
+        );
+        yield* runInCacheDir(
+          cacheDir,
+          {
+            getToolkits: () => Effect.succeed([makeToolkitFixture(UNRELEASED_TOOLKIT)]),
+          },
+          ({ waitForLearnedFile }) =>
+            Effect.gen(function* () {
+              expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+              const learned = yield* waitForLearnedFile(content =>
+                content.includes(UNRELEASED_TOOLKIT)
+              );
+              expect(learned).toContain(CUSTOM_TOOLKIT);
+              expect(JSON.parse(learned).refreshedAt).not.toBe(JSON.parse(seed).refreshedAt);
+            })
+        );
+      })
+    );
+
+    it.live('preserves learned custom slugs when an unscoped refresh cannot list them', () =>
+      withResolver(
+        {
+          seedLearnedFile: learnedFileContent([CUSTOM_TOOLKIT], 8),
+          getToolkits: () => Effect.succeed([makeToolkitFixture(UNRELEASED_TOOLKIT)]),
+          getProjectToolkits: failingFetch,
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+            const learned = yield* waitForLearnedFile(content =>
+              content.includes(UNRELEASED_TOOLKIT)
+            );
+            expect(learned).toContain(CUSTOM_TOOLKIT);
+          })
+      )
+    );
+
+    it.live('keeps resolving baked `custom*` toolkits locally', () =>
+      withResolver(
+        { seedLearnedFile: learnedFileContent([CUSTOM_TOOLKIT]) },
+        ({ calls, projectCalls }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOMERIO_SEND_EVENT')).toBe('customerio');
+            expect(calls()).toBe(0);
+            expect(projectCalls()).toBe(0);
+          })
+      )
+    );
+
+    it.live('prefers the longest custom toolkit prefix', () =>
+      withResolver(
+        {
+          getProjectToolkits: () =>
+            Effect.succeed([
+              makeToolkitFixture(CUSTOM_TOOLKIT),
+              makeToolkitFixture(`${CUSTOM_TOOLKIT}_search`),
+            ]),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        () =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(
+              `${CUSTOM_TOOLKIT}_search`
+            );
+          })
+      )
+    );
+
+    it.live('still resolves native toolkits when the project catalog is unreachable', () =>
+      withResolver(
+        {
+          getToolkits: () => Effect.succeed([makeToolkitFixture(UNRELEASED_TOOLKIT)]),
+          getProjectToolkits: failingFetch,
+          seedLearnedFile: learnedFileContent([]),
+        },
+        () =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('ACME_ANALYTICS_RUN_REPORT')).toBe(
+              UNRELEASED_TOOLKIT
+            );
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe('custom');
+          })
+      )
+    );
+
+    it.live('resolves custom toolkits when only the native catalog is unreachable', () =>
+      withResolver(
+        {
+          getToolkits: failingFetch,
+          getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        () =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe(CUSTOM_TOOLKIT);
+          })
+      )
+    );
+
+    it.live('guesses, and records nothing, when both catalogs are unreachable', () => {
+      const seed = learnedFileContent([]);
+      return withResolver(
+        {
+          getToolkits: failingFetch,
+          getProjectToolkits: failingFetch,
+          seedLearnedFile: seed,
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe('custom');
+            yield* Effect.sleep('50 millis');
+            expect(yield* waitForLearnedFile(() => true)).toBe(seed);
+          })
+      );
+    });
+
+    it.live('learns a custom toolkit found by a scoped lookup after an unscoped one', () =>
+      withResolver(
+        {
+          getProjectToolkits: projectCatalog({ proj_1: [CUSTOM_TOOLKIT] }),
+          seedLearnedFile: learnedFileContent([]),
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            // Startup telemetry resolves before the command knows its project.
+            expect(yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS')).toBe('custom');
+            expect(
+              yield* toolkitFromToolSlug('CUSTOM_GRAIN_SEARCH_PERSONS', {
+                orgId: 'org_1',
+                projectId: 'proj_1',
+              })
+            ).toBe(CUSTOM_TOOLKIT);
+
+            yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+          })
+      )
+    );
+
+    it.live('includes project toolkits in the background refresh', () =>
+      withResolver(
+        {
+          getProjectToolkits: () => Effect.succeed([makeToolkitFixture(CUSTOM_TOOLKIT)]),
+          seedLearnedFile: learnedFileContent(['stale_toolkit'], 8),
+        },
+        ({ waitForLearnedFile }) =>
+          Effect.gen(function* () {
+            expect(yield* toolkitFromToolSlug('GMAIL_SEND_EMAIL')).toBe('gmail');
+            yield* waitForLearnedFile(content => content.includes(CUSTOM_TOOLKIT));
+          })
+      )
+    );
+  });
 });

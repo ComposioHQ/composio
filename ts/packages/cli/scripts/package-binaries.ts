@@ -15,25 +15,18 @@
  */
 
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
-import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
+import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
+import { teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import {
-  collectExpectedRunCompanionAssetRelativePaths,
-  RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
-} from '../src/services/run-companion-modules';
-import {
-  archiveCompanionEntries,
-  ARTIFACT_NAMES,
-  releaseArtifactTargetFor,
-} from './_release-artifacts';
+import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
+import { archiveCompanionEntries, ARTIFACT_NAMES } from './_release-artifacts';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
-const LOCAL_TOOLS_BINARY_ASSETS_DIR = path.join(BINARIES_DIR, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
 const RELEASE_TAG = process.env.RELEASE_TAG?.trim();
 
 export function packageBinaries() {
@@ -48,13 +41,11 @@ export function packageBinaries() {
       return;
     }
 
-    // One packaging host produces all four archives, so `COMPANIONS_DIR` must hold
-    // every platform's codex-acp binary before packaging starts.
-    const allCompanionRelativePaths = yield* collectExpectedRunCompanionAssetRelativePaths(
-      COMPANIONS_DIR,
-      { staticAssetRelativePaths: RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS }
-    );
-    for (const relativePath of allCompanionRelativePaths) {
+    // Only the live companions come from `COMPANIONS_DIR`. The legacy placeholders
+    // are written straight into each archive and exist nowhere else.
+    const liveCompanionRelativePaths =
+      yield* collectExpectedRunCompanionAssetRelativePaths(COMPANIONS_DIR);
+    for (const relativePath of liveCompanionRelativePaths) {
       const companionPath = path.join(COMPANIONS_DIR, relativePath);
       const exists = yield* Effect.tryPromise(() => Bun.file(companionPath).exists());
       if (!exists) {
@@ -68,16 +59,10 @@ export function packageBinaries() {
 
     yield* Console.log(`Packaging ${binaries.length} binaries...`);
 
-    for (const binary of binaries) {
-      // Every archive names all four codex-acp paths, but carries real bytes
-      // only for the one its own `composio` binary can execute. See
-      // `archiveCompanionEntries` for why the other three are present but empty.
-      const target = yield* releaseArtifactTargetFor(binary);
-      const companionEntries = archiveCompanionEntries({
-        allRelativePaths: allCompanionRelativePaths,
-        target,
-      });
+    // See `archiveCompanionEntries` for why the legacy paths are present but empty.
+    const companionEntries = archiveCompanionEntries(liveCompanionRelativePaths);
 
+    for (const binary of binaries) {
       const binaryPath = path.join(BINARIES_DIR, binary);
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
       const absoluteZipPath = path.resolve(zipPath);
@@ -87,6 +72,8 @@ export function packageBinaries() {
       const nestedDir = path.join(tempDir, binary);
 
       yield* Effect.tryPromise(async () => {
+        await $`rm -f ${zipPath}`.quiet();
+        await $`rm -rf ${tempDir}`.quiet();
         await $`mkdir -p ${nestedDir}`.quiet();
         await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
         for (const { relativePath, kind } of companionEntries) {
@@ -97,12 +84,6 @@ export function packageBinaries() {
             continue;
           }
           await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${destinationPath}`.quiet();
-        }
-        const hasLocalToolsBinaryAssets = await stat(LOCAL_TOOLS_BINARY_ASSETS_DIR)
-          .then(stats => stats.isDirectory())
-          .catch(() => false);
-        if (hasLocalToolsBinaryAssets) {
-          await $`cp -R ${LOCAL_TOOLS_BINARY_ASSETS_DIR} ${path.join(nestedDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`.quiet();
         }
         if (RELEASE_TAG) {
           await writeFile(path.join(nestedDir, 'release-tag.txt'), `${RELEASE_TAG}\n`, 'utf8');
@@ -127,18 +108,16 @@ export function packageBinaries() {
 }
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(
-    Config.withDefault(LogLevel.Info)
-  );
+  const logLevel = yield* Config.LogLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
-  return Logger.minimumLogLevel(logLevel);
-}).pipe(Layer.unwrapEffect, Layer.merge(Layer.setConfigProvider(ConfigProvider.fromEnv())));
+  return Layer.succeed(References.MinimumLogLevel, logLevel);
+}).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));
 
 if (require.main === module) {
   packageBinaries().pipe(
     Effect.provide(ConfigLive),
-    Effect.provide(Logger.pretty),
-    Effect.provide(BunContext.layer),
+    Effect.provide(Logger.layer([Logger.consolePretty()])),
+    Effect.provide(BunServices.layer),
     Effect.scoped,
     Effect.map(() => ({ message: 'Process completed successfully.' })),
     BunRuntime.runMain({

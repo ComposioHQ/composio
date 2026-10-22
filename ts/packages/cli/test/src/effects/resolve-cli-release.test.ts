@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Effect } from 'effect';
-import { HttpClient, HttpClientResponse } from '@effect/platform';
+import { HttpClient, HttpClientResponse } from 'effect/http';
 import { fetchLatestCliRelease, type GitHubRelease } from 'src/effects/resolve-cli-release';
 
 const githubConfig = {
-  API_BASE_URL: 'https://api.github.test',
-  OWNER: 'ComposioHQ',
-  REPO: 'composio',
+  apiBaseUrl: 'https://api.github.test',
+  owner: 'ComposioHQ',
+  repo: 'composio',
 };
 
 const stubHttpClient = (body: unknown) =>

@@ -1,5 +1,7 @@
+import { getEnvVariable } from './utils/env';
 import type { BaseComposioProvider } from './provider/BaseProvider';
-import ComposioClient from '@composio/client';
+import ComposioClient, { createFetchTransport } from '@composio/client';
+import type { LogLevel as ClientLogLevel } from '@composio/client';
 import { Tools } from './models/Tools';
 import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
@@ -7,30 +9,99 @@ import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { Experimental } from './models/Experimental';
 import { MCP } from './models/MCP';
+import { Webhooks } from './models/Webhooks';
+import { Logs } from './models/Logs';
+import { SessionConfigs } from './models/SessionConfigs';
+import { Keyring } from './models/Keyring';
 import { telemetry } from './telemetry/Telemetry';
-import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
+import {
+  getSDKConfig,
+  getToolkitVersionsFromEnv,
+  resolveSDKCredentials,
+  resolveSDKScope,
+  toClientAuth,
+  toClientScope,
+  withoutSDKOwnedHeaders,
+} from './utils/sdk';
 import logger from './utils/logger';
-import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
+import type { ComposioLogger, LogLevel } from './utils/logger';
+import { IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
 import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
-import { getDefaultHeaders } from './utils/session';
+import { getClientIdentity } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { Sessions } from './models/Sessions';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
+import { createToolkitDeprecationFetch } from './utils/toolkitDeprecation';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
   /**
-   * The API key for the Composio API.
-   * @example 'sk-1234567890'
+   * The project API key for the Composio API, sent as the `x-api-key` header.
+   *
+   * - A string is used as-is; the environment and the CLI user config file are not consulted.
+   * - Omitted: falls back to `COMPOSIO_API_KEY`, then to the project key stored by the Composio
+   *   CLI in `~/.composio/user_data.json`. A stored user key (`uak_...`) is never used as a
+   *   project key; the SDK throws instead of sending it.
+   * - `null`: disables project-key authentication entirely, including both fallbacks. The SDK
+   *   then requires another credential (`userApiKey`, `orgApiKey`, or an `x-user-api-key`
+   *   or `x-org-api-key` entry in `defaultHeaders`) and sends no `x-api-key`; an `x-api-key` entry in
+   *   `defaultHeaders` is rejected, also on `createSession()` clones. The user API key
+   *   then authenticates every request; the organization API key does when it is the
+   *   only credential held.
+   *
+   * @example 'ak_1234567890'
    */
   apiKey?: string | null;
+  /**
+   * User API key (`uak_*`) for the organization, consumer, and user-scoped
+   * endpoints reached through `getClient()` (for example `client.org.list()`).
+   * Sent as `x-user-api-key` only on operations whose security scheme accepts
+   * it, never alongside the project key. Falls back to
+   * `process.env['COMPOSIO_USER_API_KEY']`; `null` disables that fallback.
+   * Combine with `apiKey: null` to authenticate with the user key alone.
+   * @example 'uak_1234567890'
+   */
+  userApiKey?: string | null;
+  /**
+   * Organization API key (`oak_*`) for the organization-owner endpoints reached
+   * through `getClient()` (for example `client.org.owner.project.list()`).
+   * Sent as `x-org-api-key` only on operations whose security scheme accepts
+   * it, never alongside the project key. Falls back to
+   * `process.env['COMPOSIO_ORG_API_KEY']`; `null` disables that fallback.
+   * Combine with `apiKey: null` (and no user API key) to authenticate every
+   * request with the organization key alone.
+   * @example 'oak_1234567890'
+   */
+  orgApiKey?: string | null;
+  /**
+   * Organization nano ID that scopes user-key requests, sent as the
+   * `x-org-id` header on every request and exported with the session MCP
+   * config. This is the short public identifier the API returns as `org_id`
+   * (for example from the consumer project resolve endpoint), not a UUID.
+   * Must be supplied together with `projectId`; without an explicit scope a
+   * user API key addresses the API default (the developer project). May also
+   * be supplied as the `x-org-id` entry in `defaultHeaders`; the two must
+   * agree.
+   * @example 'org_9f2k1x'
+   */
+  orgId?: string;
+  /**
+   * Project nano ID that scopes user-key requests, sent as the
+   * `x-project-id` header on every request and exported with the session MCP
+   * config. This is the short public identifier the API returns as
+   * `project_nano_id`, not the project UUID. Must be supplied together with
+   * `orgId`. May also be supplied as the `x-project-id` entry in
+   * `defaultHeaders`; the two must agree.
+   * @example 'proj_4b8m2q'
+   */
+  projectId?: string;
   /**
    * The base URL of the Composio API.
    * @example 'https://backend.composio.dev'
@@ -100,8 +171,24 @@ export type ComposioConfig<
    */
   host?: string;
   /**
-   * Request options to be passed to the Composio API client.
-   * This is useful for passing in a custom fetch implementation.
+   * Default headers attached to every request made through this instance.
+   *
+   * Credential and scope headers are not forwarded as headers: the SDK folds
+   * them into its own options, which `getConfig()` then reports.
+   * A non-empty `x-user-api-key` (or `x-org-api-key`) entry becomes the
+   * credential every request carries, in place of the configured keys; together
+   * with `apiKey: null` it authenticates with that key instead of a project key.
+   * An `x-api-key` entry replaces the project key, and is rejected when `apiKey`
+   * is `null`. At most one of the three may be set. `x-org-id` / `x-project-id`
+   * entries supply `orgId` / `projectId`.
+   *
+   * The SDK reports itself through the API client's identity headers
+   * (`x-client-provenance`, `x-client-version`, `x-client-library`,
+   * `x-client-library-version`, `x-client-language`, `x-client-runtime`,
+   * `x-sdk-version`, `x-source`, `x-framework`, `x-runtime` and
+   * `x-runtime-version`); an entry naming one of them is rejected with a
+   * `ComposioError` from `@composio/client`. Every other header is passed
+   * through untouched.
    * @example
    * ```typescript
    * const composio = new Composio({
@@ -156,6 +243,68 @@ export type ComposioConfig<
    * ```
    */
   toolkitVersions?: ToolkitVersionParam;
+  /**
+   * Destination for SDK log output. Messages are formatted and have
+   * credential-shaped values redacted before they reach the sink, so any
+   * object with `error`/`warn`/`info`/`debug` methods works (`console`, pino,
+   * winston, ...).
+   *
+   * Runtime deprecation warnings raised by the underlying API client (response
+   * `Deprecation`/`Sunset` headers and deprecated request inputs) are routed
+   * through this logger as well.
+   *
+   * The SDK logger is process-wide: configuring it on one `Composio` instance
+   * affects every instance, and the last configured instance wins.
+   *
+   * @default console
+   * @example
+   * ```typescript
+   * const composio = new Composio({
+   *   apiKey: 'your-api-key',
+   *   logger: pino(),
+   *   logLevel: 'warn',
+   * });
+   * ```
+   */
+  logger?: ComposioLogger;
+  /**
+   * Minimum level to emit: `'silent' | 'error' | 'warn' | 'info' | 'debug'`.
+   * Takes precedence over the `COMPOSIO_LOG_LEVEL` environment variable.
+   * Also gates the API client's runtime deprecation warnings (`'silent'` turns
+   * them off). The client's per-request lifecycle logs are emitted at
+   * `'debug'` only.
+   *
+   * Like `logger`, this applies process-wide and the last configured instance
+   * wins. The API client's own level is fixed when each instance is created.
+   *
+   * @default 'info' (or `COMPOSIO_LOG_LEVEL` when set)
+   */
+  logLevel?: LogLevel;
+};
+
+/**
+ * Level for the API client given the SDK level. The client logs each request's
+ * lifecycle at `info`, which is debug-grade for SDK users, so the client stays
+ * at `warn` unless the SDK is at `debug`. The client's `LogLevel` has
+ * `'off'` where the SDK has `'silent'`.
+ */
+const toClientLogLevel = (level: LogLevel): ClientLogLevel => {
+  if (level === 'silent') return 'off';
+  if (level === 'info') return 'warn';
+  return level;
+};
+
+/**
+ * Forwards the API client's log records to the SDK singleton so they pick up
+ * the SDK's formatting, redaction, and configured sink. Methods are looked up
+ * at call time so a later `logger.configure()` is honoured. The client's
+ * `info` records (per-request lifecycle) are forwarded as SDK `debug`.
+ */
+const clientLogForwarder: Pick<Console, 'debug' | 'info' | 'warn' | 'error'> = {
+  error: (...args: unknown[]) => logger.error(...args),
+  warn: (...args: unknown[]) => logger.warn(...args),
+  info: (...args: unknown[]) => logger.debug(...args),
+  debug: (...args: unknown[]) => logger.debug(...args),
 };
 
 /**
@@ -196,6 +345,15 @@ export class Composio<
   /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
   /**
+   * Manage the project's webhook subscription (`webhooks.subscriptions`) and
+   * inbound per-toolkit webhook endpoints (`webhooks.endpoints`).
+   */
+  webhooks: Webhooks;
+  /** Search and inspect tool-execution logs */
+  logs: Logs;
+  /** Public transfer keys of the organization's customer-managed keyring */
+  keyring: Keyring;
+  /**
    * Experimental SDK methods whose shape may change in future releases.
    * Prefer domain-specific mounts (for example
    * `composio.connectedAccounts.updateAcl(...)`) when available; this
@@ -221,6 +379,12 @@ export class Composio<
    * `composio.create(...)` method is kept as an alias.
    */
   sessions: Sessions<unknown, unknown, TProvider>;
+  /**
+   * Read the project's saved Session configs. Apply one with
+   * `experimental.sessionConfigId` on `sessions.create()` or `session.update()`.
+   * Requires Session configs to be enabled for the project.
+   */
+  sessionConfigs: SessionConfigs;
   /**
    * Legacy alias for `composio.sessions`.
    * @deprecated Use `composio.sessions` instead — `toolRouter` was renamed to `sessions` and is kept only for backwards compatibility. Prefer `composio.sessions`; do not generate new code against `composio.toolRouter`.
@@ -302,10 +466,39 @@ export class Composio<
    * ```
    */
   constructor(config?: ComposioConfig<TProvider>) {
+    const scope = resolveSDKScope({
+      orgId: config?.orgId,
+      projectId: config?.projectId,
+      defaultHeaders: config?.defaultHeaders,
+    });
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseURL,
-      config?.apiKey
+      config?.apiKey,
+      {
+        defaultHeaders: config?.defaultHeaders,
+        userApiKey: config?.userApiKey,
+        orgApiKey: config?.orgApiKey,
+      }
     );
+
+    // The SDK owns the credential: it resolves the keys (with their
+    // environment fallbacks) and folds a credential default header into them,
+    // so the API client receives one `auth` and never a credential header.
+    // The resolved keys are stored on the config, so clones, the MCP export
+    // and trigger subscriptions read the same values.
+    const credentials = resolveSDKCredentials({
+      apiKey: apiKeyParsed,
+      userApiKey: config?.userApiKey,
+      orgApiKey: config?.orgApiKey,
+      defaultHeaders: config?.defaultHeaders,
+    });
+    // Credential and scope entries travel as `auth` and `scope`; the client
+    // refuses them in `defaultHeaders`.
+    const defaultHeaders = withoutSDKOwnedHeaders(config?.defaultHeaders);
+
+    if (config?.logger !== undefined || config?.logLevel !== undefined) {
+      logger.configure({ level: config.logLevel, sink: config.logger });
+    }
 
     if (IS_DEVELOPMENT_OR_CI) {
       logger.debug(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
@@ -323,7 +516,10 @@ export class Composio<
     this.config = {
       ...config,
       baseURL: baseURLParsed,
-      apiKey: apiKeyParsed,
+      apiKey: credentials.apiKey,
+      userApiKey: credentials.userApiKey,
+      orgApiKey: credentials.orgApiKey,
+      defaultHeaders,
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
       dangerouslyAllowAutoUploadDownloadFiles:
@@ -334,19 +530,35 @@ export class Composio<
       fileUploadDirs: expandHomeAndResolveMany(config?.fileUploadDirs),
       fileDownloadDir: expandHomeAndResolve(config?.fileDownloadDir),
       provider: config?.provider ?? this.provider,
+      orgId: scope.orgId,
+      projectId: scope.projectId,
     };
-
-    const defaultHeaders = getDefaultHeaders(this.config.defaultHeaders, this.provider);
 
     /**
      * Initialize the Composio SDK client.
-     * The client is used to make API calls to the Composio API.
+     * The client is used to make API calls to the Composio API. It sends the
+     * credential from `auth`, the resolved org/project scope from `scope`, and
+     * the SDK's identity headers from `identity`, and refuses all three in
+     * `defaultHeaders`.
      */
     this.client = new ComposioClient({
-      apiKey: apiKeyParsed,
+      auth: toClientAuth(credentials),
+      scope: toClientScope(scope),
       baseURL: baseURLParsed,
-      defaultHeaders: defaultHeaders,
-      logLevel: COMPOSIO_LOG_LEVEL,
+      // The client stopped reading the process environment in rc.18; this
+      // opt-in for a plain-HTTP development origin is the one setting of its
+      // own that core forwards.
+      ...(getEnvVariable('COMPOSIO_ALLOW_INSECURE_HTTP') === '1'
+        ? { allowInsecureHTTP: true }
+        : {}),
+      defaultHeaders,
+      identity: getClientIdentity(this.provider),
+      logger: clientLogForwarder,
+      logLevel: toClientLogLevel(logger.getLevel()),
+      // Warns once per deprecated toolkit version reported through the
+      // `Composio-Deprecated-Toolkits` response header. `createSession()`
+      // clones go through this same constructor and inherit it.
+      transport: createFetchTransport({ fetch: createToolkitDeprecationFetch() }),
     });
 
     this.tools = new Tools(this.client, this.config);
@@ -360,9 +572,13 @@ export class Composio<
       fileDownloadDir: this.config.fileDownloadDir,
     });
     this.connectedAccounts = new ConnectedAccounts(this.client);
+    this.webhooks = new Webhooks(this.client);
+    this.logs = new Logs(this.client);
+    this.keyring = new Keyring(this.client);
     this.experimental = new Experimental(this.client);
     this.sessions = new Sessions(this.client, this.config);
     this.toolRouter = this.sessions;
+    this.sessionConfigs = new SessionConfigs(this.client);
 
     /**
      * Initialize session aliases.
@@ -379,7 +595,7 @@ export class Composio<
      */
     if (this.config.allowTracking) {
       telemetry.setup({
-        apiKey: apiKeyParsed ?? '',
+        apiKey: credentials.apiKey ?? '',
         baseUrl: baseURLParsed ?? '',
         isAgentic: this.provider?._isAgentic || false,
         version: version,
@@ -444,8 +660,8 @@ export class Composio<
    *   instance directly with the headers you need: `new Composio({ ...existingConfig, defaultHeaders })`.
    *   For one-off overrides, pass per-call `requestOptions` where supported.
    *
-   * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
-   *                                          This follows the Fetch API RequestInit interface with additional options.
+   * @param {object} [options] - Options for the new instance.
+   * @param {ComposioRequestHeaders} [options.headers] - Headers sent with every API call the new instance makes.
    * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
    *
    * @example
@@ -469,10 +685,13 @@ export class Composio<
    * ```
    */
   createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
-    const sessionHeaders = getDefaultHeaders(options?.headers, this.provider);
+    // The clone inherits the resolved credentials and scope through
+    // `this.config`, where a credential or scope default header has already
+    // been folded in; `headers` replaces the default headers, and a
+    // credential or scope header in it is folded in the same way.
     return new Composio({
       ...this.config,
-      defaultHeaders: sessionHeaders,
+      defaultHeaders: options?.headers,
     });
   }
 

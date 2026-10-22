@@ -1,9 +1,9 @@
 [project]
 name = "composio-autogen"
-version = "0.21.0"
+version = "0.30.0"
 description = "Use Composio to get an array of tools with your autogen agent."
 readme = "README.md"
-requires-python = ">=3.10,<4"
+requires-python = ">=3.11,<3.16"
 authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]
@@ -15,8 +15,8 @@ classifiers = [
 dependencies = [
     # ag2 1.x removed the top-level `autogen` namespace this provider imports.
     "ag2>=0.14,<1.0",
-    "flaml==2.6.0",
-    "autogen_core>=0.7.5",
+    "flaml==2.7.0",
+    "autogen_core>=0.7.5,<1",
     "composio",
 ]
 

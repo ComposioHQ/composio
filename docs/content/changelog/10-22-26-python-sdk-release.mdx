@@ -1,0 +1,42 @@
+---
+title: 'Python SDK 0.29.0: toolkit warnings and provider argument fixes'
+description: 'Get toolkit sunset warnings, preserve tool arguments across Python providers, and migrate direct HTTP clients.'
+date: '2026-10-22'
+---
+
+The Python SDK now warns when the API reports that a toolkit version you use is deprecated. This release also fixes tool argument serialization and preserves more of your schemas across providers.
+
+### Release versions
+
+| SDK               | Version  |
+| ----------------- | -------- |
+| Python `composio` | `0.29.0` |
+
+All 13 Python provider packages are released at `0.29.0`.
+
+### What's new
+
+- **Toolkit deprecation warnings.** The SDK warns once per process for each deprecated toolkit version reported through the `Composio-Deprecated-Toolkits` response header. The warning names the version, its sunset date, and how to pin a newer version. See [toolkit versioning](/docs/tools-direct/toolkit-versioning#deprecation-and-sunset).
+
+### Migration notes
+
+<Callout type="warn">
+  Direct construction of `composio.client.HttpClient` now takes `auth` and `scope` instead of
+  credential keywords and scope headers. It no longer accepts `default_query`. The main
+  `Composio(api_key=...)` constructor keeps its credential options, and Python still reads
+  `COMPOSIO_CUSTOM_HEADERS`.
+</Callout>
+
+If you construct `HttpClient` directly, replace the credential keywords with an `auth` value:
+
+Before: `HttpClient(provider="openai", api_key=key)`.
+
+After: `HttpClient(provider="openai", auth=ProjectAuth(key))`, importing `ProjectAuth` from `composio_client`.
+
+For organization and project routing, replace scope headers with `scope=Scope(organization_id=org_id, project_id=project_id)`, importing `Scope` from `composio_client`. Remove `default_query` from direct client construction.
+
+### Bug fixes
+
+- **Pydantic aliases.** Tool execution serializes Pydantic arguments with their declared aliases, including nested models and explicit serialization aliases.
+- **Provider arguments.** AutoGen and Google ADK preserve and validate free-form arguments instead of dropping them. OpenAI Agents preserves the source schema's `additionalProperties`. See the [provider behavior changes and limitations](/docs/changelog/2026/10/20).
+- **Google ADK nested arrays.** The provider preserves nested array item schemas instead of replacing them with a flat string schema.

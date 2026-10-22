@@ -8,24 +8,40 @@ import {
   ToolRouterConfigToolsSchema,
   ToolRouterToolsParam,
   ToolRouterConfigManageConnectionsSchema,
-  ToolRouterCreateSessionConfig,
+  ToolRouterCreateSessionConfigSchema,
   ToolRouterToolkitsParamSchema,
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
-  ToolRouterUpdateSessionConfig,
+  ToolRouterUpdateSessionConfigSchema,
+  ToolRouterUpdateManageConnectionsConfig,
+  ToolRouterUpdateManageConnectionsSchema,
+  ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
+  ToolRouterInstant,
+  ToolRouterProxyExecute,
+  ToolRouterHook,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
+import type { TypeOf } from 'zod/v3';
+
+/** Parsed create input; the public `ToolRouterCreateSessionConfig` is a union over it. */
+type ParsedCreateSessionConfig = TypeOf<typeof ToolRouterCreateSessionConfigSchema>;
+/** Parsed update input; the public `ToolRouterUpdateSessionConfig` is a union over it. */
+type ParsedUpdateSessionConfig = TypeOf<typeof ToolRouterUpdateSessionConfigSchema>;
+
+/** A toolkit's entry in the session `tools` map, as sent on create and update. */
+type SessionToolsEntry = NonNullable<SessionCreateParams['tools']>[string];
+
+/** `require_approval` when the caller set an approval list, nothing otherwise. */
+const requireApprovalParam = <T extends string>(
+  requireApproval: T[] | undefined
+): { require_approval?: T[] } =>
+  requireApproval !== undefined ? { require_approval: requireApproval } : {};
 
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
-):
-  | Record<
-      string,
-      SessionCreateParams.Enable | SessionCreateParams.Disable | SessionCreateParams.Tags
-    >
-  | undefined => {
+): Record<string, SessionToolsEntry> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -42,14 +58,16 @@ export const transformToolRouterToolsParams = (
             if (Array.isArray(data)) {
               acc[key] = { enable: data };
             } else if ('enable' in data) {
-              acc[key] = { enable: data.enable };
+              acc[key] = { enable: data.enable, ...requireApprovalParam(data.requireApproval) };
             } else if ('disable' in data) {
-              acc[key] = { disable: data.disable };
+              acc[key] = { disable: data.disable, ...requireApprovalParam(data.requireApproval) };
             } else if ('tags' in data) {
               const tags = transformToolRouterTagsParams(data.tags);
               if (tags) {
-                acc[key] = { tags };
+                acc[key] = { tags, ...requireApprovalParam(data.requireApproval) };
               }
+            } else {
+              acc[key] = { require_approval: data.requireApproval };
             }
           } else {
             throw new ValidationError(parsedResult.error.message);
@@ -59,10 +77,7 @@ export const transformToolRouterToolsParams = (
         }
         return acc;
       },
-      {} as Record<
-        string,
-        SessionCreateParams.Enable | SessionCreateParams.Disable | SessionCreateParams.Tags
-      >
+      {} as Record<string, SessionToolsEntry>
     );
     return result;
   }
@@ -80,6 +95,7 @@ export const transformToolRouterTagsParams = (
     return {
       enable: params.enable,
       disable: params.disable,
+      ...requireApprovalParam(params.requireApproval),
     };
   }
 };
@@ -117,8 +133,8 @@ export const transformToolRouterManageConnectionsParams = (
 };
 
 export const resolveToolRouterSandboxConfig = (
-  config: Pick<ToolRouterCreateSessionConfig, 'sandbox' | 'workbench'>
-): ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench'] => {
+  config: Pick<ParsedCreateSessionConfig, 'sandbox' | 'workbench'>
+): ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench'] => {
   if (config.sandbox !== undefined && config.workbench !== undefined) {
     throw new ValidationError(
       'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.'
@@ -128,7 +144,7 @@ export const resolveToolRouterSandboxConfig = (
 };
 
 export const transformToolRouterSandboxParams = (
-  params?: ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench']
+  params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
 ): SessionCreateParams.Workbench | undefined => {
   if (!params) {
     return undefined;
@@ -149,14 +165,99 @@ export const transformToolRouterWorkbenchParams = transformToolRouterSandboxPara
  * PATCH-safe variant of transformToolRouterManageConnectionsParams.
  * Does NOT apply defaults — only includes fields explicitly present in the input.
  */
+/** Widens the listed keys of a generated request type so `null` can travel on the wire. */
+type WithNull<T, K extends keyof T> = Omit<T, K> & { [P in K]?: NonNullable<T[P]> | null };
+
+/**
+ * `manage_connections` as sent by `session.update()`. Only the supplied
+ * subfields travel; `callback_url: null` removes the stored callback, which
+ * the generated client types as string-only.
+ */
+export type SessionPatchManageConnectionsBody = WithNull<
+  SessionPatchParams.ManageConnections,
+  'callback_url'
+>;
+
+/** `multi_account` as sent by `session.update()`; `null` removes the stored maximum. */
+export type SessionPatchMultiAccountBody = WithNull<
+  SessionPatchParams.MultiAccount,
+  'max_accounts_per_toolkit'
+>;
+
+/** `experimental` as sent by `session.update()`; `null` removes a stored leaf. */
+export type SessionPatchExperimentalBody = WithNull<
+  SessionPatchParams.Experimental,
+  'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
+>;
+
+/** A hook as the API takes it, in snake_case. The generated client does not type `hooks` yet. */
+export type SessionHookBody = {
+  type: 'before_execute' | 'after_execute';
+  id: string;
+  name?: string;
+  applies_to: 'all' | { toolkits: string[] };
+  handler:
+    | { type: 'condition_check'; condition: string; action: 'block' }
+    | { type: 'prompt_injection_check'; action: 'block' };
+};
+
+/** Request body of `sessions.create()`: the generated `SessionCreateParams` plus `hooks`. */
+export type SessionCreateBody = SessionCreateParams & { hooks?: SessionHookBody[] };
+
+/** `hooks` as sent on create and update: `appliesTo` becomes `applies_to`. */
+export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHookBody[] =>
+  hooks.map(({ appliesTo, ...hook }) => ({ ...hook, applies_to: appliesTo }));
+
+/**
+ * Request body of `session.update()`. Extends the generated `SessionPatchParams`
+ * with the nullable policy blocks (`null` removes the stored override), `hooks`
+ * and the `expected_config_version` root precondition, none of which the
+ * generated client types yet.
+ */
+export type SessionPatchBody = Omit<
+  WithNull<
+    SessionPatchParams,
+    'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
+  >,
+  'manage_connections' | 'multi_account' | 'experimental'
+> & {
+  manage_connections?: SessionPatchManageConnectionsBody | null;
+  multi_account?: SessionPatchMultiAccountBody | null;
+  experimental?: SessionPatchExperimentalBody | null;
+  hooks?: SessionHookBody[] | null;
+  expected_config_version?: number;
+};
+
+/** `proxy_execute` as sent on create and update: a boolean becomes `{ enable }`. */
+export const transformToolRouterProxyExecuteParams = (
+  config: ToolRouterProxyExecute
+): NonNullable<SessionCreateParams['proxy_execute']> =>
+  typeof config === 'boolean' ? { enable: config } : config;
+
+export const transformToolRouterInstantParams = (
+  config: ToolRouterInstant
+): NonNullable<SessionCreateParams['instant']> => {
+  if (config === false) return false;
+  return {
+    ...(config.toolkits !== undefined && { toolkits: config.toolkits }),
+    ...(config.tools !== undefined && { tools: config.tools }),
+    ...(config.returnInstantCharge !== undefined && {
+      return_instant_charge: config.returnInstantCharge,
+    }),
+    ...(config.returnPricesInSearch !== undefined && {
+      return_prices_in_search: config.returnPricesInSearch,
+    }),
+  };
+};
+
 export const transformToolRouterUpdateManageConnectionsParams = (
-  params: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
-): SessionPatchParams.ManageConnections => {
+  params: boolean | ToolRouterUpdateManageConnectionsConfig
+): SessionPatchManageConnectionsBody => {
   if (typeof params === 'boolean') {
     return { enable: params };
   }
 
-  const parsedResult = ToolRouterConfigManageConnectionsSchema.safeParse(params);
+  const parsedResult = ToolRouterUpdateManageConnectionsSchema.safeParse(params);
   if (!parsedResult.success) {
     throw new ValidationError('Failed to parse manage connections config', {
       cause: parsedResult.error,
@@ -164,7 +265,7 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   }
 
   const config = parsedResult.data;
-  const result: Record<string, unknown> = {};
+  const result: SessionPatchManageConnectionsBody = {};
   if (config.enable !== undefined) {
     result.enable = config.enable;
   }
@@ -174,7 +275,35 @@ export const transformToolRouterUpdateManageConnectionsParams = (
   if (config.waitForConnections !== undefined) {
     result.enable_wait_for_connections = config.waitForConnections;
   }
-  return result as SessionPatchParams.ManageConnections;
+  if (config.enableConnectionRemoval !== undefined) {
+    result.enable_connection_removal = config.enableConnectionRemoval;
+  }
+  return result;
+};
+
+const transformToolRouterUpdateExperimentalParams = (
+  config: ToolRouterUpdateExperimentalConfig
+): SessionPatchExperimentalBody => {
+  const result: SessionPatchExperimentalBody = {};
+  if (config.permissions !== undefined) {
+    result.permissions = config.permissions;
+  }
+  if (config.linkUrlOverwrite !== undefined) {
+    result.link_url_overwrite = config.linkUrlOverwrite;
+  }
+  if (config.fastMode !== undefined) {
+    result.fast_mode = config.fastMode;
+  }
+  if (config.submitFeedback !== undefined) {
+    result.submit_feedback = config.submitFeedback;
+  }
+  if (config.sessionConfigId !== undefined) {
+    result.session_config_id = config.sessionConfigId;
+  }
+  if (config.noElicitationSupportFallback !== undefined) {
+    result.no_elicitation_support_fallback = config.noElicitationSupportFallback;
+  }
+  return result;
 };
 
 /**
@@ -204,7 +333,7 @@ export const transformToolRouterUpdateSandboxParams = (
 export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdateSandboxParams;
 
 export const transformToolRouterMultiAccountParams = (
-  params?: ToolRouterCreateSessionConfig['multiAccount']
+  params?: ParsedCreateSessionConfig['multiAccount']
 ): SessionCreateParams.MultiAccount | undefined => {
   if (!params) {
     return undefined;
@@ -229,8 +358,8 @@ export const transformToolRouterMultiAccountParams = (
 };
 
 export const transformToolRouterToolkitsParams = (
-  params?: ToolRouterCreateSessionConfig['toolkits']
-): SessionCreateParams.Enable | SessionCreateParams.Disable | undefined => {
+  params?: ParsedCreateSessionConfig['toolkits']
+): NonNullable<SessionCreateParams['toolkits']> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -240,66 +369,98 @@ export const transformToolRouterToolkitsParams = (
     return { enable: params };
   }
 
-  // Otherwise return as-is (already in enable/disable format)
-  return params as SessionCreateParams.Enable | SessionCreateParams.Disable;
+  if ('enable' in params) {
+    return { enable: params.enable, ...requireApprovalParam(params.requireApproval) };
+  }
+  if ('disable' in params) {
+    return { disable: params.disable, ...requireApprovalParam(params.requireApproval) };
+  }
+  return { require_approval: params.requireApproval };
 };
 
+/**
+ * Request body of `session.update()`. Every key present in `config` is sent,
+ * including `null` (remove the stored override) and empty collections (an
+ * empty toolkit allowlist denies every app toolkit). The
+ * `expectedConfigVersion` option is not a body field here: the session
+ * adds it only when the caller explicitly supplies a numeric version.
+ */
 export const transformToolRouterUpdateParams = (
-  config: ToolRouterUpdateSessionConfig
-): SessionPatchParams => {
-  const params: SessionPatchParams = {};
+  config: ParsedUpdateSessionConfig
+): SessionPatchBody => {
+  const params: SessionPatchBody = {};
 
   if (config.toolkits !== undefined) {
-    params.toolkits = transformToolRouterToolkitsParams(config.toolkits);
+    params.toolkits =
+      config.toolkits === null ? null : transformToolRouterToolkitsParams(config.toolkits);
+  }
+  if (config.instant !== undefined) {
+    params.instant = transformToolRouterInstantParams(config.instant);
   }
   if (config.tools !== undefined) {
-    params.tools = transformToolRouterToolsParams(config.tools);
+    params.tools = config.tools === null ? null : transformToolRouterToolsParams(config.tools);
   }
   if (config.tags !== undefined) {
-    params.tags = transformToolRouterTagsParams(config.tags);
+    params.tags = config.tags === null ? null : transformToolRouterTagsParams(config.tags);
   }
   if (config.authConfigs !== undefined) {
     params.auth_configs = config.authConfigs;
   }
   if (config.connectedAccounts !== undefined) {
-    const coerced: Record<string, string[]> = {};
-    for (const [k, v] of Object.entries(config.connectedAccounts)) {
-      coerced[k] = typeof v === 'string' ? [v] : v;
-    }
-    params.connected_accounts = coerced;
+    params.connected_accounts = config.connectedAccounts;
   }
   if (config.manageConnections !== undefined) {
-    if (config.manageConnections === null) {
-      params.manage_connections = null;
-    } else {
-      params.manage_connections = transformToolRouterUpdateManageConnectionsParams(
-        config.manageConnections
-      );
-    }
+    params.manage_connections =
+      config.manageConnections === null
+        ? null
+        : transformToolRouterUpdateManageConnectionsParams(config.manageConnections);
   }
   const sandboxConfig = config.sandbox !== undefined ? config.sandbox : config.workbench;
   if (sandboxConfig !== undefined) {
-    if (sandboxConfig === null) {
-      params.workbench = null;
-    } else {
-      params.workbench = transformToolRouterUpdateSandboxParams(sandboxConfig);
-    }
+    params.workbench =
+      sandboxConfig === null ? null : transformToolRouterUpdateSandboxParams(sandboxConfig);
   }
   if (config.multiAccount !== undefined) {
     if (config.multiAccount === null) {
       params.multi_account = null;
     } else {
-      const ma: Record<string, unknown> = {};
+      const ma: SessionPatchMultiAccountBody = {};
       if (config.multiAccount.enable !== undefined) ma.enable = config.multiAccount.enable;
       if (config.multiAccount.maxAccountsPerToolkit !== undefined)
         ma.max_accounts_per_toolkit = config.multiAccount.maxAccountsPerToolkit;
       if (config.multiAccount.requireExplicitSelection !== undefined)
         ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
-      params.multi_account = ma as SessionPatchParams.MultiAccount;
+      params.multi_account = ma;
     }
+  }
+  if (config.proxyExecute !== undefined) {
+    params.proxy_execute =
+      config.proxyExecute === null
+        ? null
+        : transformToolRouterProxyExecuteParams(config.proxyExecute);
+  }
+  if (config.hooks !== undefined) {
+    params.hooks = config.hooks === null ? null : transformToolRouterHooksParams(config.hooks);
   }
   if (config.preload !== undefined) {
     params.preload = config.preload;
+  }
+  if (config.search !== undefined) {
+    params.search = config.search;
+  }
+  if (config.execute !== undefined) {
+    params.execute =
+      config.execute === null
+        ? null
+        : config.execute.enableMultiExecute === undefined
+          ? {}
+          : { enable_multi_execute: config.execute.enableMultiExecute };
+  }
+  if (config.experimental !== undefined) {
+    params.experimental =
+      config.experimental === null
+        ? null
+        : transformToolRouterUpdateExperimentalParams(config.experimental);
   }
 
   return params;

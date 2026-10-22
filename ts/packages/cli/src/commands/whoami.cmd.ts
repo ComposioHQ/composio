@@ -1,6 +1,6 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
-import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -30,7 +30,6 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onSome: apiKey =>
             Effect.gen(function* () {
               const sessionInfo = yield* getSessionInfoByUserApiKey({
-                baseURL: ctx.data.baseURL,
                 userApiKey: apiKey,
                 // Reflect the org selected via `composio orgs switch`, not the key's home org.
                 orgId: Option.getOrUndefined(ctx.data.orgId),

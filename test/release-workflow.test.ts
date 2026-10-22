@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import semver from 'semver';
 import {
   findIgnoredChangesetReleases,
   validateChangesets,
@@ -26,6 +27,10 @@ const changesetConfig = JSON.parse(
 );
 const tsReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/ts.release.yml', import.meta.url),
+  'utf8'
+);
+const tsTestWorkflow = readFileSync(
+  new URL('../.github/workflows/ts.test.yml', import.meta.url),
   'utf8'
 );
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
@@ -93,7 +98,7 @@ function readPyprojectVersion(text, label) {
 function readSdkVersions(rows) {
   const versions = new Set();
   const pythonVersionPattern =
-    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
+    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)(?:[._-]?\d+)?)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
 
   for (const row of rows) {
     const cells = row
@@ -161,7 +166,12 @@ function readTypeScriptWorkspacePackages() {
   return workspacePackages;
 }
 
-function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
+function runPythonBuildFixture({
+  providers,
+  providerFiles = [],
+  failingProvider = '',
+  target = 'build',
+}) {
   const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-python-build-'));
   const buildLogPath = join(fixtureDir, 'build.log');
 
@@ -204,7 +214,7 @@ touch "$target/dist/provider.whl"
       writeFileSync(join(fixtureDir, 'providers', providerFile), 'not a provider package\n');
     }
 
-    const result = spawnSync('make', ['-f', pythonMakefilePath, 'build'], {
+    const result = spawnSync('make', ['-f', pythonMakefilePath, target], {
       cwd: fixtureDir,
       encoding: 'utf8',
       env: {
@@ -220,6 +230,25 @@ touch "$target/dist/provider.whl"
     };
   } finally {
     rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+{
+  const result = runPythonBuildFixture({
+    providers: ['provider-must-not-build'],
+    target: 'build-core',
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `Python core-only build fixture failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
+  }
+  if (!result.invocations.includes('<root>')) {
+    throw new Error('Python core-only build must build the root SDK package');
+  }
+  if (result.invocations.includes('providers/provider-must-not-build')) {
+    throw new Error('Python core-only build must not build provider packages');
   }
 }
 
@@ -268,6 +297,7 @@ touch "$target/dist/provider.whl"
     '| Python `composio` | `9.9.9.post1` |',
     '| Python `composio` | `9.9.9.dev1` |',
   ]);
+  const semverPrerelease = readSdkVersions(['| TypeScript `@composio/core` | `1.0.0-beta.0` |']);
 
   if (!directVersion.has('9.9.9') || !versionWithPrevious.has('9.9.9')) {
     throw new Error('Python SDK changelog version rows must recognize the released version');
@@ -284,6 +314,9 @@ touch "$target/dist/provider.whl"
       );
     }
   }
+  if (!semverPrerelease.has('1.0.0-beta.0')) {
+    throw new Error('SDK changelog version rows must recognize SemVer prerelease versions');
+  }
 }
 
 if (!tsReleaseWorkflow.includes('publish-script: pnpm changeset:release')) {
@@ -296,6 +329,25 @@ if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-re
 
 if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-changesets.mjs') {
   throw new Error('validate:changesets must use the ignored-package guard');
+}
+
+if (
+  packageJson.scripts?.['check:provider-compatibility'] !==
+  'tsx ts/scripts/check-provider-compatibility.ts'
+) {
+  throw new Error('check:provider-compatibility must use the packed consumer harness');
+}
+
+const tsTestBuildIdx = tsTestWorkflow.indexOf('run: pnpm run build:packages');
+const tsTestProviderCompatibilityIdx = tsTestWorkflow.indexOf(
+  'run: pnpm run check:provider-compatibility'
+);
+if (
+  tsTestBuildIdx === -1 ||
+  tsTestProviderCompatibilityIdx === -1 ||
+  tsTestBuildIdx > tsTestProviderCompatibilityIdx
+) {
+  throw new Error('ts.test.yml must build packages before checking packed provider compatibility');
 }
 
 {
@@ -364,7 +416,9 @@ if (
   throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
-if (!tsReleaseWorkflow.includes('changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1')) {
+if (
+  !tsReleaseWorkflow.includes('changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2')
+) {
   throw new Error('ts.release.yml must use changesets/action v2 with Changesets v3');
 }
 
@@ -401,8 +455,15 @@ if (
   const publicTsReleaseWorkspaces = readTypeScriptWorkspacePackages().filter(
     ({ manifest }) => manifest.private !== true
   );
+  // @typesafe-ai/sdk 0.6.0 terminates the process after a handled cancellation on Node
+  // releases before 24.17 (typesafe-ai/typesafe-sdk-js#2), so that provider advertises a
+  // higher floor until the SDK is fixed.
+  const NODE_VERSION_EXCEPTIONS = {
+    '@composio/typesafe': '>=24.17.0',
+  };
   const invalidNodeEngines = publicTsReleaseWorkspaces.filter(
-    ({ manifest }) => manifest.engines?.node !== MIN_NODE_VERSION
+    ({ manifest }) =>
+      manifest.engines?.node !== (NODE_VERSION_EXCEPTIONS[manifest.name] ?? MIN_NODE_VERSION)
   );
 
   if (publicTsReleaseWorkspaces.length === 0) {
@@ -413,15 +474,80 @@ if (
       .map(({ manifest, path }) => `- ${path}: ${manifest.engines?.node ?? '<missing>'}`)
       .join('\n');
     throw new Error(
-      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}:\n${details}`
+      `Public TypeScript workspaces must declare engines.node as ${MIN_NODE_VERSION}, or their documented exception:\n${details}`
     );
   }
 }
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
 
+// PEP 440 compact prereleases (0.23.1rc1) and the separator form that
+// python/scripts/bump.py --pre emits (0.23.1-rc.1) must both count as prereleases,
+// here and in the workflow's inline detector.
+const PYTHON_PRERELEASE_PATTERN = /(?:a|b|rc|dev)[-_.]?\d/i;
+const PYTHON_PRERELEASE_SAMPLES: ReadonlyArray<readonly [string, boolean]> = [
+  ['0.23.0', false],
+  ['0.23.1', false],
+  ['0.23.1rc1', true],
+  ['0.23.1-rc.1', true],
+  ['0.23.1b2', true],
+  ['0.23.1.dev3', true],
+  ['0.23.1a1', true],
+];
+const workflowPrereleaseDetector = requireMatch(
+  pythonReleaseWorkflow,
+  /is_prerelease = re\.search\(r"([^"]+)", version, re\.IGNORECASE\) is not None/,
+  'py.release.yml prerelease detector'
+);
+for (const [sample, expected] of PYTHON_PRERELEASE_SAMPLES) {
+  if (PYTHON_PRERELEASE_PATTERN.test(sample) !== expected) {
+    throw new Error(`release-workflow prerelease detector misclassifies ${sample}`);
+  }
+  if (new RegExp(workflowPrereleaseDetector, 'i').test(sample) !== expected) {
+    throw new Error(`py.release.yml prerelease detector misclassifies ${sample}`);
+  }
+}
+
 if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   throw new Error('py.release.yml must validate release metadata before publishing');
+}
+for (const input of ['id: release_mode', 'core_only=']) {
+  if (!pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must select the core-only build for prereleases: ${input}`);
+  }
+}
+if (
+  !/if \[\[ "\$\{\{ steps\.release_mode\.outputs\.core_only \}\}" == "true" \]\]; then\s+make build-core\s+else\s+make build\s+fi/.test(
+    pythonReleaseWorkflow
+  )
+) {
+  throw new Error(
+    'py.release.yml must build only the core package for prereleases and all Python packages for stable releases'
+  );
+}
+for (const input of ['run: uv sync --locked --only-group release', 'BUILD_ARGS: --no-isolation']) {
+  if (!pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must build from uv.lock: ${input}`);
+  }
+}
+{
+  // Only the publish job may request an OIDC token; build steps must never see it.
+  const workflow = Bun.YAML.parse(pythonReleaseWorkflow);
+  const grantsToken = permissions =>
+    typeof permissions === 'string'
+      ? permissions === 'write-all'
+      : permissions?.['id-token'] === 'write';
+  const tokenJobs = Object.entries(workflow.jobs)
+    .filter(([, job]) => grantsToken(job.permissions))
+    .map(([name]) => name);
+  if (grantsToken(workflow.permissions) || tokenJobs.join() !== 'publish') {
+    throw new Error('py.release.yml must grant id-token: write to the publish job only');
+  }
+}
+for (const input of ['make env', 'password:', 'PYPI_PASSWORD', 'PYPI_USERNAME']) {
+  if (pythonReleaseWorkflow.includes(input)) {
+    throw new Error(`py.release.yml must not install unlocked deps or use PyPI tokens: ${input}`);
+  }
 }
 
 {
@@ -446,6 +572,8 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
   }
 
   const providerDir = new URL('../python/providers/', import.meta.url);
+  const pythonIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(pythonVersion);
+  const providerVersions = new Map<string, string>();
   for (const entry of readdirSync(providerDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
 
@@ -460,7 +588,14 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
       readFileSync(pyprojectPath, 'utf8'),
       `python/providers/${entry.name}/pyproject.toml version`
     );
-    if (providerPyprojectVersion !== pythonVersion) {
+    providerVersions.set(entry.name, providerPyprojectVersion);
+    const providerIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(providerPyprojectVersion);
+    if (pythonIsPrerelease && providerIsPrerelease) {
+      throw new Error(
+        `python/providers/${entry.name}/pyproject.toml must remain stable during a composio prerelease (${providerPyprojectVersion})`
+      );
+    }
+    if (!pythonIsPrerelease && providerPyprojectVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/pyproject.toml must match python/pyproject.toml (${providerPyprojectVersion} !== ${pythonVersion})`
       );
@@ -473,11 +608,30 @@ if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
       /version\s*=\s*"([^"]+)"/,
       `python/providers/${entry.name}/setup.py version`
     );
-    if (providerSetupVersion !== pythonVersion) {
+    if (providerSetupVersion !== providerPyprojectVersion) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must match its pyproject.toml (${providerSetupVersion} !== ${providerPyprojectVersion})`
+      );
+    }
+    const providerSetupIsPrerelease = PYTHON_PRERELEASE_PATTERN.test(providerSetupVersion);
+    if (pythonIsPrerelease && providerSetupIsPrerelease) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must remain stable during a composio prerelease (${providerSetupVersion})`
+      );
+    }
+    if (!pythonIsPrerelease && providerSetupVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/setup.py must match python/pyproject.toml (${providerSetupVersion} !== ${pythonVersion})`
       );
     }
+  }
+
+  const distinctProviderVersions = new Set(providerVersions.values());
+  if (distinctProviderVersions.size > 1) {
+    const details = [...providerVersions]
+      .map(([provider, version]) => `- ${provider}: ${version}`)
+      .join('\n');
+    throw new Error(`Python providers must share one stable version:\n${details}`);
   }
 }
 
@@ -860,12 +1014,21 @@ const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));
 try {
   const fakePnpmPath = join(fakeBin, 'pnpm');
   const changesetsOutputPath = join(fakeBin, 'changesets-output.ndjson');
+  const commandLogPath = join(fakeBin, 'commands.log');
+  writeFileSync(commandLogPath, '');
   writeFileSync(
     fakePnpmPath,
     `#!/usr/bin/env bash
 set -euo pipefail
+printf '%s\n' "$*" >> "$COMMAND_LOG"
 case "$*" in
   "run build:packages")
+    exit 0
+    ;;
+  "run check:provider-compatibility")
+    if [[ "\${FAIL_PROVIDER_COMPATIBILITY:-}" == "1" ]]; then
+      exit 42
+    fi
     exit 0
     ;;
   "changeset publish")
@@ -888,6 +1051,7 @@ esac
     env: {
       ...process.env,
       CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
       PATH: `${fakeBin}:${process.env.PATH}`,
     },
   });
@@ -913,8 +1077,114 @@ esac
   if (!result.stderr.includes('release warning preserved')) {
     throw new Error('release script must preserve changeset publish stderr');
   }
+
+  const commands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (
+    JSON.stringify(commands) !==
+    JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
+  ) {
+    throw new Error(
+      `release script must run build → provider compatibility → publish: ${commands}`
+    );
+  }
+
+  writeFileSync(commandLogPath, '');
+  const failedCompatibility = spawnSync('bash', [releaseScriptPath], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      CHANGESETS_OUTPUT: changesetsOutputPath,
+      COMMAND_LOG: commandLogPath,
+      FAIL_PROVIDER_COMPATIBILITY: '1',
+      PATH: `${fakeBin}:${process.env.PATH}`,
+    },
+  });
+  const failedCommands = readFileSync(commandLogPath, 'utf8').trim().split('\n');
+  if (failedCompatibility.status !== 42) {
+    throw new Error('release script must preserve a provider compatibility gate failure');
+  }
+  if (failedCommands.includes('changeset publish')) {
+    throw new Error('release script must not publish after provider compatibility fails');
+  }
 } finally {
   rmSync(fakeBin, { recursive: true, force: true });
+}
+
+// Private workspaces still receive version bumps, but must never get release tags.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-private-release-'));
+  const packages = [
+    { directory: 'sdk', name: '@composio/core', private: false },
+    { directory: 'example', name: 'release-example', private: true },
+    { directory: 'test', name: '@e2e-tests/release', private: true },
+  ];
+  try {
+    mkdirSync(join(fixtureDir, '.changeset'), { recursive: true });
+    writeFileSync(
+      join(fixtureDir, 'package.json'),
+      JSON.stringify({ name: 'private-release-fixture', private: true, workspaces: ['packages/*'] })
+    );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    writeFileSync(
+      join(fixtureDir, '.changeset/config.json'),
+      JSON.stringify({ ...changesetConfig, changelog: false, fixed: [], ignore: [] })
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/release.md'),
+      ['---', ...packages.map(pkg => `"${pkg.name}": patch`), '---', '', 'Release fixture.'].join(
+        '\n'
+      )
+    );
+    for (const pkg of packages) {
+      const directory = join(fixtureDir, 'packages', pkg.directory);
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(
+        join(directory, 'package.json'),
+        JSON.stringify({ name: pkg.name, version: '0.1.0', private: pkg.private })
+      );
+    }
+    const commands = [
+      [changesetBinPath, ['version']],
+      ['git', ['init', '--quiet', '--initial-branch=next']],
+      ['git', ['config', 'user.name', 'Release test']],
+      ['git', ['config', 'user.email', 'release-test@example.invalid']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-qm', 'Prepare fixture']],
+      ['git', ['tag', '@e2e-tests/release@0.1.0']],
+      [changesetBinPath, ['tag']],
+    ] as const;
+    for (const [command, args] of commands) {
+      const result = spawnSync(command, args, { cwd: fixtureDir, encoding: 'utf8' });
+      if (result.status !== 0) {
+        throw new Error(
+          `private release fixture failed: ${command} ${args.join(' ')}\n${result.stderr}`
+        );
+      }
+    }
+    for (const pkg of packages) {
+      const manifest = JSON.parse(
+        readFileSync(join(fixtureDir, 'packages', pkg.directory, 'package.json'), 'utf8')
+      );
+      if (manifest.version !== '0.1.1') {
+        throw new Error(`release must still version ${pkg.name}, got ${manifest.version}`);
+      }
+    }
+    const tags = spawnSync('git', ['tag', '--list'], { cwd: fixtureDir, encoding: 'utf8' });
+    if (
+      tags.status !== 0 ||
+      tags.stdout.trim() !== '@composio/core@0.1.1\n@e2e-tests/release@0.1.0'
+    ) {
+      throw new Error(
+        `release must tag only public SDK updates and preserve existing tags, got:\n${tags.stdout}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+if (!tsReleaseWorkflow.includes('create-github-releases: false')) {
+  throw new Error('SDK publication must not create GitHub Releases; the CLI workflow owns them');
 }
 
 // A core minor release must not force every provider package to 1.0.0 while the
@@ -1032,6 +1302,132 @@ esac
     if (providerFixturePackage.peerDependencies['@composio/core'] !== '>=0.10.0 <1.0.0') {
       throw new Error(
         `fixture provider peer range should still accept core 0.11.0 without widening, got ${providerFixturePackage.peerDependencies['@composio/core']}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+// Entering the core 1.0 beta must leave stable providers unversioned when their
+// peer range explicitly accepts the prerelease. Providers should use the beta
+// only when consumers install it at the workspace root.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-changeset-beta-peer-'));
+  try {
+    mkdirSync(join(fixtureDir, '.changeset'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/core'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/openai'), { recursive: true });
+
+    writeFileSync(
+      join(fixtureDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: 'changeset-beta-peer-fixture',
+          private: true,
+          workspaces: ['packages/*'],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(join(fixtureDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    writeFileSync(
+      join(fixtureDir, '.changeset/config.json'),
+      JSON.stringify(
+        {
+          changelog: false,
+          commit: false,
+          fixed: [],
+          linked: [],
+          access: 'restricted',
+          baseBranch: 'next',
+          updateInternalDependencies: 'patch',
+          ___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH: {
+            onlyUpdatePeerDependentsWhenOutOfRange: true,
+          },
+          ignore: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/pre.json'),
+      JSON.stringify(
+        {
+          mode: 'pre',
+          tag: 'beta',
+          initialVersions: {
+            '@composio/core': '0.18.0',
+            '@composio/openai': '0.12.1',
+          },
+          changesets: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/core-beta.md'),
+      ['---', '"@composio/core": major', '---', '', 'Release the core 1.0 beta.', ''].join('\n')
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/core/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/core',
+          version: '0.18.0',
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/openai/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/openai',
+          version: '0.12.1',
+          peerDependencies: {
+            '@composio/core': '>=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0',
+          },
+          devDependencies: {
+            '@composio/core': 'workspace:*',
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const result = spawnSync(changesetBinPath, ['version'], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `changeset beta peer fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const coreFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/core/package.json'), 'utf8')
+    );
+    const providerFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/openai/package.json'), 'utf8')
+    );
+
+    if (coreFixturePackage.version !== '1.0.0-beta.0') {
+      throw new Error(
+        `fixture core version should be 1.0.0-beta.0, got ${coreFixturePackage.version}`
+      );
+    }
+    if (providerFixturePackage.version !== '0.12.1') {
+      throw new Error(
+        `fixture provider should stay at 0.12.1, got ${providerFixturePackage.version}`
       );
     }
   } finally {

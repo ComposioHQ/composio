@@ -1,7 +1,7 @@
 ---
 title: Toolkit Versioning
-description: Pin specific tool versions for consistent behavior in production
-keywords: [version, pin version, tool versioning]
+description: Pin a tool version per execute call or configure defaults for consistent behavior in production
+keywords: [version, pin version, tool versioning, tools.execute, per-execution override]
 llmGuardrails: "direct-execution"
 legacy: true
 ---
@@ -11,6 +11,54 @@ If you're building an agent, we recommend using [sessions](/docs/configuring-ses
 </Callout>
 
 Toolkit versioning ensures your tools behave consistently across deployments. You can pin specific versions in production, test new releases in development, and roll back when needed.
+
+## Per-execution override
+
+Pass `version` directly to `composio.tools.execute()` to pin one call. The per-call value takes precedence over SDK initialization and environment variables, and leaves the defaults for other calls unchanged.
+
+These examples use `20251027_00`. Replace it with an available version you have tested for your toolkit.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="YOUR_API_KEY")
+
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio"
+    },
+    user_id="user-k7334",
+    version="20251027_00",
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "YOUR_API_KEY" });
+
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+    userId: "user-k7334",
+    version: "20251027_00",
+    arguments: {
+        owner: "ComposioHQ",
+        repo: "composio"
+    }
+});
+console.log(result);
+```
+  </Tab>
+</Tabs>
+
+A dated version passes the direct-execution version check without a bypass flag. See [Direct Tool Execution](/docs/tools-direct/executing-tools#direct-tool-execution) for more examples.
+
+## Find available versions
 
 To view available versions, go to [Dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) > **All Toolkits** > select a toolkit. The version dropdown shows the latest and all available versions:
 
@@ -42,7 +90,7 @@ curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit
 
 ## Configuration methods
 
-Configure toolkit versions using one of three methods:
+To use the same version across calls, set a default at SDK initialization or through environment variables. A [per-execution override](#per-execution-override) takes precedence over either default.
 
 ### SDK initialization
 
@@ -87,48 +135,6 @@ export COMPOSIO_TOOLKIT_VERSION_GITHUB="20251027_00"
 export COMPOSIO_TOOLKIT_VERSION_SLACK="20251027_00"
 export COMPOSIO_TOOLKIT_VERSION_GMAIL="20251027_00"
 ```
-
-### Per-execution override
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio(api_key="YOUR_API_KEY")
-
-# Specify version directly in execute call
-result = composio.tools.execute(
-    "GITHUB_LIST_STARGAZERS",
-    arguments={
-        "owner": "ComposioHQ",
-        "repo": "composio"
-    },
-    user_id="user-k7334",
-    version="20251027_00"  # Override version for this execution
-)
-print(result)
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-
-const composio = new Composio({ apiKey: "YOUR_API_KEY" });
-
-// Specify version directly in execute call
-const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
-    userId: "user-k7334",
-    arguments: {
-        owner: "ComposioHQ",
-        repo: "composio"
-    },
-    version: "20251027_00"  // Override version for this execution
-});
-console.log(result);
-```
-  </Tab>
-</Tabs>
 
 ## Version format
 
@@ -196,6 +202,60 @@ console.log("Latest Version:", toolkit.meta.availableVersions?.[0]);
 ```
   </Tab>
 </Tabs>
+
+### Retrieve toolkit changelogs
+
+Call `composio.toolkits.changelog()` in Python or `await composio.toolkits.changelog()` in TypeScript to retrieve the last 10 versions for each toolkit. The response's `items` contain each toolkit's slug and version entries, which you can review before changing a pinned version.
+
+## Deprecation and sunset
+
+Composio-managed toolkit versions are deprecated 12 months after they're published and retired 3 months after that. The newest version of a toolkit is never deprecated, so pinning a current version and upgrading on your own schedule keeps you clear of both dates.
+
+When a request resolves to a deprecated version, the API adds a `Composio-Deprecated-Toolkits` response header alongside the normal response:
+
+```http
+Composio-Deprecated-Toolkits: "GMAIL";version="20250114_00";deprecated=@1779840000;sunset=@1787788800;reason="lifecycle"
+```
+
+The header is an RFC 9651 structured-field list. Each item names the toolkit slug and the resolved `version`, plus optional `deprecated` and `sunset` dates (Unix seconds, prefixed with `@`) and a `reason`. Versions deprecated by hand carry only `version`.
+
+Single-toolkit routes carry the header: toolkit get, tool get, tool execute, text-to-request, trigger type get, trigger upsert and setup, and trigger authorization entities. Listing endpoints never do.
+
+### SDK warning
+
+Both SDKs read the header and warn once per process for each deprecated toolkit version. The call still succeeds.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```text
+[Deprecation] Toolkit GMAIL version 20250114_00 was deprecated on 2026-05-27 (lifecycle) and will stop working on 2026-08-27. Pin a newer version with toolkit_versions={"gmail": "<version>"} or COMPOSIO_TOOLKIT_VERSION_GMAIL. See https://docs.composio.dev/docs/tools-direct/toolkit-versioning#deprecation-and-sunset.
+```
+
+The warning is a `ComposioDeprecationWarning` (a `UserWarning` subclass), so standard warning filters apply:
+
+```python
+import warnings
+from composio import ComposioDeprecationWarning
+
+warnings.filterwarnings("ignore", category=ComposioDeprecationWarning)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```text
+[Deprecation] Toolkit GMAIL version 20250114_00 was deprecated on 2026-05-27 (lifecycle) and will stop working on 2026-08-27. Pin a newer version with toolkitVersions: { gmail: '<version>' } or COMPOSIO_TOOLKIT_VERSION_GMAIL. See https://docs.composio.dev/docs/tools-direct/toolkit-versioning#deprecation-and-sunset.
+```
+
+The warning goes through the SDK logger at the `warn` level. Silence it with `logLevel: 'error'` in the constructor or `COMPOSIO_LOG_LEVEL=error` in the environment.
+  </Tab>
+</Tabs>
+
+When the header omits `reason` or `sunset`, the warning omits those clauses too.
+
+### Moving off a deprecated version
+
+Pick a newer version from the [dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) or `toolkits.get()`, then pin it the same way you pin any version: at [SDK initialization](#sdk-initialization), through an [environment variable](#environment-variables), or [per execute call](#per-execution-override). The warning stops as soon as requests resolve to a version that isn't deprecated.
+
+After the sunset date, requests for the retired version fail with HTTP `410 Gone` until you pin a supported version.
 
 ## Next
 

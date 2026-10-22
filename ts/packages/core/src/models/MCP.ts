@@ -24,6 +24,7 @@ import { McpUpdateResponse } from '@composio/client/resources.js';
 import { McpRetrieveResponse } from '@composio/client/resources';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import logger from '../utils/logger';
 
 function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveResponse): MCPItem {
   return transform(response)
@@ -40,6 +41,19 @@ function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveRespo
       toolkits: raw.toolkits,
     }));
 }
+
+// `managed_auth_by_composio` is deprecated upstream, but dropping it would strip
+// the connection-management tools from generated URLs. Keep sending it, silence
+// the API client's notice (it names an internal call), and warn once per process
+// in SDK terms instead.
+const MANAGED_AUTH_DEPRECATION =
+  '[Deprecation] composio.mcp.generate() returns URLs that rely on the deprecated ' +
+  'include_composio_helper_actions query parameter, which the API will remove in a ' +
+  'future version. Switch to a session MCP endpoint: composio.create(userId, { mcp: true }) ' +
+  'exposes session.mcp.url with connection-management tools built in. ' +
+  'https://docs.composio.dev/docs/sessions-via-mcp';
+let _managedAuthDeprecationWarned = false;
+
 /**
  * MCP (Model Control Protocol) class
  * Handles MCP server operations.
@@ -99,16 +113,19 @@ export class MCP {
 
     const toolkits: string[] = [];
     const auth_config_ids: string[] = [];
-    const custom_tools: string[] = config.data.allowedTools ?? [];
+    const allowed_tools: string[] = config.data.allowedTools ?? [];
 
     // extract all the toolkits, authconfigs, and allowed tools to separate slugs
     config.data.toolkits.forEach(toolkit => {
       if (typeof toolkit === 'string') {
         toolkits.push(toolkit);
-      } else if (toolkit.toolkit) {
-        toolkits.push(toolkit.toolkit);
-      } else if (toolkit.authConfigId) {
-        auth_config_ids.push(toolkit.authConfigId);
+      } else {
+        if (toolkit.toolkit) {
+          toolkits.push(toolkit.toolkit);
+        }
+        if (toolkit.authConfigId) {
+          auth_config_ids.push(toolkit.authConfigId);
+        }
       }
     });
 
@@ -116,7 +133,7 @@ export class MCP {
       name,
       toolkits,
       auth_config_ids,
-      custom_tools,
+      allowed_tools,
       // if manually manage account is set to true, disable composio account management tools
       managed_auth_via_composio: config.data.manuallyManageConnections ? false : true,
     };
@@ -380,28 +397,39 @@ export class MCP {
 
     const toolkits: string[] = [];
     const auth_config_ids: string[] = [];
-    const custom_tools: string[] | undefined = params.allowedTools ?? undefined;
 
     // extract all the toolkits, authconfigs, and allowed tools to separate slugs
     params.toolkits?.forEach(toolkit => {
       if (typeof toolkit === 'string') {
         toolkits.push(toolkit);
-      } else if (toolkit.toolkit) {
-        toolkits.push(toolkit.toolkit);
-      } else if (toolkit.authConfigId) {
-        auth_config_ids.push(toolkit.authConfigId);
+      } else {
+        if (toolkit.toolkit) {
+          toolkits.push(toolkit.toolkit);
+        }
+        if (toolkit.authConfigId) {
+          auth_config_ids.push(toolkit.authConfigId);
+        }
       }
     });
+
+    // Build a sparse PATCH body: only fields the caller provided are sent, so omitted
+    // fields keep their current server-side values. `allowed_tools` is sent whenever it
+    // is provided, independently of `toolkits` (tool-only updates are valid), and must
+    // use the API field `allowed_tools` — the update endpoint does not read the
+    // deprecated create-only alias `custom_tools`. `manuallyManageConnections` is
+    // inverted into `managed_auth_via_composio`, matching create() and generate().
     const updateBody = {
-      ...{ name: params.name ?? undefined },
-      ...(params.toolkits
+      ...(params.name !== undefined ? { name: params.name } : {}),
+      ...(params.toolkits !== undefined
         ? {
-            custom_tools: custom_tools,
             toolkits: toolkits,
             auth_config_ids: auth_config_ids,
           }
         : {}),
-      ...{ managed_auth_via_composio: params.manuallyManageConnections ?? undefined },
+      ...(params.allowedTools !== undefined ? { allowed_tools: params.allowedTools } : {}),
+      ...(params.manuallyManageConnections !== undefined
+        ? { managed_auth_via_composio: !params.manuallyManageConnections }
+        : {}),
     };
     const response = await withCancellation(
       () => this.client.mcp.update(serverId, updateBody, requestOptions),
@@ -451,8 +479,13 @@ export class MCP {
       user_ids: [userId],
       managed_auth_by_composio: options?.manuallyManageConnections ? false : true,
     };
+    if (urlBody.managed_auth_by_composio && !_managedAuthDeprecationWarned) {
+      _managedAuthDeprecationWarned = true;
+      logger.warn(MANAGED_AUTH_DEPRECATION);
+    }
     const urlResponse = await withCancellation(
-      () => this.client.mcp.generate.url(urlBody, requestOptions),
+      () =>
+        this.client.withOptions({ logLevel: 'error' }).mcp.generate.url(urlBody, requestOptions),
       requestOptions?.signal
     );
 

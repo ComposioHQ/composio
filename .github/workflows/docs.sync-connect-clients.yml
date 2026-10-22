@@ -63,10 +63,11 @@ jobs:
           echo "$(wc -l < /tmp/client-definitions.ts) lines"
 
       - name: Sync Connect clients
-        uses: anthropics/claude-code-action@dcb57747bfceeaa1fa72638cae52295d1d853d4a # v1.0.199
+        uses: anthropics/claude-code-action@58985842b834ed26087302ba27d07bc24ca8697a # v1.0.244
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: 'Read,Write,Edit,Glob,Grep,Bash(curl *)'
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(curl *)"
           prompt: |
             Sync the Composio Connect clients page from the dashboard repo.
 

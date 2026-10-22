@@ -23,6 +23,10 @@ def get_raw_composio_tool_by_slug(slug: str) -> Tool
 
 `Tool`
 
+**Raises**
+
+- `ToolNotFoundError` — when the backend reports the slug as unknown (404, or 400 for a malformed slug). Any other client error, such as an invalid API key, is re-raised unchanged.
+
 ---
 
 ### get_raw_composio_tools()
@@ -155,10 +159,10 @@ def execute(slug: str, arguments: Dict, connected_account_id: str | None = ..., 
 
 ### proxy()
 
-Proxy a tool call to the Composio API
+Proxy a tool call to the Composio API.  `user_id` is the user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it.
 
 ```python
-def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: object | None = ..., connected_account_id: str | None = ..., parameters: List[tool_proxy_params.Parameter | None] = ..., custom_connection_data: tool_proxy_params.CustomConnectionData | None = ...) -> tool_proxy_response.ToolProxyResponse
+def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: object | None = ..., connected_account_id: str | None = ..., parameters: List[tool_proxy_params.Parameter | None] = ..., custom_connection_data: tool_proxy_params.CustomConnectionData | None = ..., user_id: str | None = ...) -> tool_proxy_response.ToolProxyResponse
 ```
 
 **Parameters**
@@ -171,6 +175,7 @@ def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'
 | `connected_account_id?` | `str \| None` |
 | `parameters?` | `List[tool_proxy_params.Parameter \| None]` |
 | `custom_connection_data?` | `tool_proxy_params.CustomConnectionData \| None` |
+| `user_id?` | `str \| None` |
 
 **Returns**
 
@@ -178,4 +183,4 @@ def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py#L119)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py#L249)

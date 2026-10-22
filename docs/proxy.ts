@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  DOCS_PRODUCT_COOKIE,
+  DOCS_PRODUCT_HEADER,
+  resolveDocsProduct,
+} from './lib/home-navigation';
 
 /**
  * Convert kebab-case to camelCase
@@ -11,7 +16,8 @@ function kebabToCamel(str: string): string {
  * Proxy handles:
  * 1. Markdown content negotiation for AI agents (Accept: text/markdown)
  * 2. Redirects for old Fern API reference URLs (kebab-case → camelCase)
- * 3. Sets x-pathname header for 404 logging
+ * 3. Resolves the server-rendered docs product from URL + cookie
+ * 4. Sets x-pathname header for 404 logging
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -20,7 +26,9 @@ export function proxy(request: NextRequest) {
   // Handle markdown content negotiation for AI agents
   if (accept.includes('text/markdown') || accept.includes('text/plain')) {
     const mdUrl = new URL(`/llms.mdx${pathname}`, request.nextUrl.origin);
-    return NextResponse.rewrite(mdUrl);
+    const response = NextResponse.rewrite(mdUrl);
+    response.headers.append('Vary', 'Accept');
+    return response;
   }
 
   // Handle old Fern API reference URLs (kebab-case → camelCase)
@@ -45,12 +53,22 @@ export function proxy(request: NextRequest) {
     if (newPathname !== pathname) {
       const url = request.nextUrl.clone();
       url.pathname = newPathname;
-      return NextResponse.redirect(url, 301);
+      const response = NextResponse.redirect(url, 301);
+      response.headers.append('Vary', 'Accept');
+      return response;
     }
   }
 
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  const product = resolveDocsProduct(
+    pathname,
+    request.cookies.get(DOCS_PRODUCT_COOKIE)?.value,
+  );
+  requestHeaders.set(DOCS_PRODUCT_HEADER, product);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-pathname', pathname);
+  response.headers.append('Vary', 'Accept');
   return response;
 }
 

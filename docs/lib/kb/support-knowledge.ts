@@ -401,7 +401,7 @@ function guideFor(
     lastVerifiedAt: document.lastReviewed,
     reviewAfter: document.reviewBy,
     freshness: importedFreshness(document),
-    state: 'published',
+    state: previousGuide?.state === 'retired' ? 'retired' : 'published',
     featured: previousGuide?.featured ?? false,
     ...(previousGuide?.verifyIgnoreToolSlugs?.length
       ? { verifyIgnoreToolSlugs: previousGuide.verifyIgnoreToolSlugs }
@@ -536,6 +536,14 @@ export function writeSupportKnowledgeSnapshot(input: {
         throw new Error('KB external-sources must not be a symbolic link');
       }
       cpSync(externalSources, join(stagedRoot, 'external-sources'), { recursive: true });
+    }
+    const semanticIndex = join(targetRoot, 'semantic-index.json');
+    if (existsSync(semanticIndex)) {
+      const semanticIndexStats = lstatSync(semanticIndex);
+      if (semanticIndexStats.isSymbolicLink() || !semanticIndexStats.isFile()) {
+        throw new Error('KB semantic-index.json must be a regular file');
+      }
+      cpSync(semanticIndex, join(stagedRoot, 'semantic-index.json'));
     }
     input.validate(stagedRoot);
     if (existsSync(targetRoot)) {

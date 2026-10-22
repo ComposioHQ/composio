@@ -24,7 +24,6 @@ pnpm typecheck
 pnpm lint:packages
 pnpm test
 pnpm test:e2e:node
-pnpm test:e2e:deno
 pnpm test:e2e:cloudflare
 pnpm test:e2e:cli
 ```
@@ -34,6 +33,6 @@ pnpm test:e2e:cli
 - Do not edit `ts/vendor/`; those submodules are read-only references.
 - Keep generated outputs owned by their generator.
 - Add changesets only for changes to published TypeScript packages.
-- Never add changesets for `@composio/cli` or `@composio/cli-local-tools` while `.changeset/config.json` ignores them; record CLI notes in `ts/packages/cli/CHANGELOG.md` instead.
+- Never add changesets for `@composio/cli` while `.changeset/config.json` ignores it; record CLI notes in `ts/packages/cli/CHANGELOG.md` instead.
 - Prefer focused package tests before broad workspace tests.
 - Parse untyped or external data (API payloads, JSON, `unknown`) at the boundary with schemas and let inferred types flow downstream: zod in SDK packages (`@composio/core`, providers, shared packages), `effect/Schema` in `ts/packages/cli/`. Never hand-roll structural guards (`'x' in obj` / `typeof` chains) or cast parsed JSON with `as`.

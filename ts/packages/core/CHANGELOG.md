@@ -1,5 +1,270 @@
 # @composio/core
 
+## 0.27.0
+
+### Minor Changes
+
+- c2bbfa8: Add session hooks. A hook can block a tool call before it runs, or block its result before the agent sees it.
+
+  `create()` and `update()` accept `hooks`. On `update()`, `hooks` replaces the whole list and `null` removes every hook. `hooks` cannot be combined with `experimental.sessionConfigId`.
+
+  ```ts
+  const session = await composio.create('user_123', {
+    hooks: [
+      {
+        type: 'before_execute',
+        id: 'no_external_email',
+        name: 'No external email',
+        appliesTo: { toolkits: ['gmail'] },
+        handler: {
+          type: 'condition_check',
+          condition: 'Sending email to anyone outside example.org',
+          action: 'block',
+        },
+      },
+    ],
+  });
+  ```
+
+  A blocked call comes back from `session.execute()` and `session.executeMeta()` with `resultType: 'blocked'`, empty `data`, the hook's message in `error`, and `blockReason`. Provider integrations hand it to the agent as a failed call with that message. Every result also carries `hookResults` when a hook applied.
+
+  `session.proxyExecute()` and `ctx.proxyExecute()` now return `resultType: 'completed'` or `resultType: 'blocked'`. A blocked request has no HTTP response, so TypeScript code that reads `status` has to check `resultType` first.
+
+## 0.26.0
+
+### Minor Changes
+
+- e08c84f: Requires `@composio/client` `2.0.0-rc.18`. The SDK now hands the API client its credential as the client's `auth` option and its organization and project as `scope`, instead of placing them in default headers. The `apiKey`, `userApiKey`, `orgApiKey`, `orgId` and `projectId` options, their environment fallbacks and the credentials sent on each request are unchanged, with one exception: with `apiKey: null` and only an organization API key (the `orgApiKey` option, `COMPOSIO_ORG_API_KEY`, or an `x-org-api-key` default header), every request now carries `x-org-api-key`, and so do trigger channel authorization and `session.mcp.headers`. Before, only the organization-owner operations did, and every other request went out without a credential.
+
+  Credential and scope headers in `defaultHeaders` or `createSession({ headers })` keep working, but the SDK folds them into its own options instead of forwarding them: an `x-user-api-key` or `x-org-api-key` entry becomes the credential every request carries, an `x-api-key` entry becomes the project key, and `x-org-id` / `x-project-id` entries become `orgId` / `projectId`. `getConfig()` reports the folded values (for example `apiKey: null` and `userApiKey` for an `x-user-api-key` entry) and no longer lists those entries under `defaultHeaders`. Setting more than one of `x-api-key`, `x-user-api-key` and `x-org-api-key` now throws a `ComposioError`; the API rejected every such request.
+
+  On the client returned by `getClient()`, `apiKey`, `userApiKey` and `orgApiKey` are read-only and deprecated (read the keys from `getConfig()`, or `authMode` and `scope` from the client), and a per-call `headers` option can no longer name a credential or scope header. The API client no longer reads the environment itself: the SDK still honours `COMPOSIO_ALLOW_INSECURE_HTTP=1`, and no longer applies `COMPOSIO_CUSTOM_HEADERS`; pass `defaultHeaders` instead.
+
+  The deprecated `customConnectionData` now requires `val.access_token` for `S2S_OAUTH2`, as the API does.
+
+- 57de614: Requires `@composio/client` `2.0.0-rc.19`. The SDK forwards the API client's log lines through a `Console`-shaped object instead of the client's removed `Logger` interface; what is logged, and at which SDK level, is unchanged. With rc.19, the client returned by `getClient()` no longer has `apiKey`, `userApiKey`, `orgApiKey` or `logger`, and its `baseURL`, `maxRetries`, `timeout` and `logLevel` are read-only: read the keys from `getConfig()`, and derive a client with `withOptions()` to change the others.
+
+### Patch Changes
+
+- 9d26fb8: Fold OpenAPI `nullable` into the type in strict tool schemas
+
+  `toStrictJsonSchema` no longer passes OpenAPI `nullable` through. Anthropic strict tool use rejects it on an object schema with a 400 for the whole request. A node with `nullable: true` now accepts `null` through its `type` (`["object", "null"]`) or a null branch, matching how the tool's arguments are validated, and the rewrite is reported as a `nullable-converted` change. `nullable: false` is removed as an `unsupported-keyword-stripped` change. `omitNullToolArguments` now keeps a `null` for a property marked `nullable: true`, as it already does for one whose `type` includes `null`.
+
+- 3dd9a2c: Strip string `format` values that OpenAI structured outputs rejects from strict tool schemas
+
+  `toStrictJsonSchema` now removes a `format` on a string schema unless it is one of `date-time`, `time`, `date`, `duration`, `email`, `hostname`, `ipv4`, `ipv6`, or `uuid`. OpenAI rejects any other string format in strict mode with a 400 for the whole request, so a single tool with `format: "uri"`, a custom format such as `repo.nwo`, or the `format: "path"` that file uploads add made every strict request fail. The removal is reported as an `unsupported-keyword-stripped` change. Formats on number and integer schemas are kept, since the API does not check them.
+
+- 04fdb41: Check a string tool parameter as base64 only when its `contentEncoding` is `base64`. `format: "binary"` (raw octets in OpenAPI) and other encodings such as `base16` were validated as base64, so the Vercel, LangChain, LlamaIndex, and Claude Agent SDK providers rejected tool calls with plain text or hex in those fields, and the schema sent to the model described them as `contentEncoding: "base64"`. Those fields are now plain strings. `contentEncoding: "base64"` keeps its check, and `format: "byte"` stays unchecked.
+- be12ce1: Warn once per toolkit version when the API reports it as deprecated through the `Composio-Deprecated-Toolkits` response header. The warning names the version, the sunset date and how to pin a newer version. Silence it with `logLevel: 'error'` or `COMPOSIO_LOG_LEVEL=error`.
+- Updated dependencies [f119f05]
+- Updated dependencies [04fdb41]
+  - @composio/json-schema-to-zod@0.4.0
+
+## 0.25.0
+
+### Minor Changes
+
+- 79c2d1d: Requires `@composio/client` `2.0.0-rc.17`. The SDK now reports itself to the API client through the client's `identity` option instead of default headers. The headers sent with each request are unchanged, with one exception: on Cloudflare Workers and Vercel Edge with Node.js compatibility enabled, `x-client-runtime` now names that runtime instead of `nodejs`, and the polyfilled Node.js version is no longer sent as `x-runtime-version`. A `createSession()` clone no longer copies these headers into its `defaultHeaders`.
+
+  The API client owns these headers, so `defaultHeaders` and `createSession({ headers })` now reject `x-client-provenance`, `x-client-version`, `x-client-library`, `x-client-library-version`, `x-client-language`, `x-client-runtime`, `x-sdk-version`, `x-source`, `x-framework`, `x-runtime` and `x-runtime-version` with a `ComposioError` from `@composio/client`. The SDK used to overwrite such entries silently.
+
+  A custom provider whose `name` cannot be sent as a header value (anything other than printable ASCII with no leading or trailing whitespace) is reported as `unknown` in `x-framework`.
+
+- 40546c3: Add experimental support for tool calls that need the user's approval.
+
+  Sessions accept a `requireApproval` list next to the `toolkits`, `tools` and `tags` filters on `create()` and `update()`. A call to a matching tool doesn't run: `session.execute()` and `session.executeMeta()` throw `ComposioToolInputRequiredError` with the questions on `inputRequests`. To answer, repeat the same call with the user's answers in `inputResponses` and the error's `requestState`:
+
+  ```ts
+  const session = await composio.create('user_123', {
+    tools: { gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] } },
+  });
+
+  try {
+    await session.execute('GMAIL_SEND_EMAIL', args);
+  } catch (error) {
+    if (!(error instanceof ComposioToolInputRequiredError)) throw error;
+    const inputResponses = await promptUser(error.inputRequests);
+    await session.execute('GMAIL_SEND_EMAIL', args, {
+      inputResponses,
+      requestState: error.requestState,
+    });
+  }
+  ```
+
+  `promptUser` is a placeholder for your application's consent UI. Display each request, wait for the user's response, and return the answers keyed by request ID. Forward `decline` and `cancel` responses unchanged.
+
+  `experimental.noElicitationSupportFallback` (`'deny'` or `'allow'`) sets what happens to such a call when the session's MCP client can't ask the user.
+
+  `session.executeMeta()` now takes these answers as its third argument, so its request options move to the fourth.
+
+  The Python SDK gains the same `require_approval` lists, `experimental.no_elicitation_support_fallback`, and `input_responses` and `request_state` on `session.execute()` and `session.execute_meta()`.
+
+### Patch Changes
+
+- f9a972b: Update the owned API client to `@composio/client@2.0.0-rc.16`. The SDK's public API and runtime behavior are unchanged.
+- 04cd5c4: Fix the trigger subscription lifecycle and contain errors from trigger handlers.
+
+  - `triggers.unsubscribe()` now closes the realtime connection, so a Node process can exit once it has unsubscribed. A later `triggers.subscribe()` opens a new connection.
+  - `triggers.unsubscribe()` before any `subscribe()` no longer fetches realtime credentials or creates a client.
+  - Concurrent `subscribe()` calls share one connection, and `unsubscribe()` cancels a subscription that is still connecting, so it never opens a connection or delivers events afterwards.
+  - A rejected promise from an `async` trigger handler is logged like a synchronous throw instead of escaping as an unhandled rejection that ends the process. Handler failures log the error's message rather than `{}`.
+
+## 0.24.0
+
+### Minor Changes
+
+- 59935c0: Add `session.executeMeta()` to run a Composio meta tool (`COMPOSIO_*`) within a session. It takes a meta tool slug and optional arguments, and returns the same result as `session.execute()`, including `resultType`. Like `session.execute()`, it throws `ComposioToolInputRequiredError` when the tool needs user input and is not retried. The new `ToolRouterSessionMetaToolSlug` type lists the accepted slugs.
+
+  The Python SDK gains the matching `session.execute_meta()` and `ToolRouterSessionMetaToolSlug`.
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+- 79b4912: Update the owned API client to `@composio/client@2.0.0-rc.14`. OAuth connection data types now accept a `null` `id_token`. Session tag filters accept the `createHint` and `updateHint` tags. The experimental `instant.returnPricesInSearch` Session option returns each Instant tool's price in Session search results, under `toolkitConnectionStatuses[].instantAccount.prices`. `composio.mcp.generate()` now warns once that its URLs rely on the deprecated `include_composio_helper_actions` query parameter; switch to a Session's MCP endpoint.
+- 58bcde8: Add a `proxyExecute` session option. `composio.sessions.create(userId, { proxyExecute: true })` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool, which lets the agent call a toolkit's API directly with the user's connected account. A boolean is shorthand for `{ enable: boolean }`. `session.update()` accepts the same option, and `null` removes the stored value. `proxyExecute: false` also turns off the sandbox `proxy_execute()` helper, and the API rejects it at creation together with `sandbox.enableProxyExecution: true`.
+
+## 0.23.0
+
+### Minor Changes
+
+- 55ed9e2: Update the owned API client to `@composio/client@2.0.0-rc.11`.
+
+  A session tool can now ask for user input, such as an approval, instead of running: the API answers the call with `result_type: "input_required"`. `session.execute()`, `session.proxyExecute()`, provider-wrapped session tools, and the `execute` / `proxyExecute` helpers passed to custom tools throw the new `ComposioToolInputRequiredError` in that case. A local custom tool whose body makes such a call lets the error through instead of returning it as a failed result. The error carries the questions on `inputRequests` and the opaque `request_state` on `requestState`. `requestState` is continuation state, so it is a non-enumerable property: read it as `error.requestState`, and `console.error(error)`, `util.inspect(error)` and `JSON.stringify(error)` leave it out. Nothing was executed and the call is not retried. The SDK does not submit answers yet.
+
+  Every session tool that ran reports `result_type` as `completed` or `failed`, and a failed execution can carry a `null` or empty `error`. `session.execute()` and the custom tool `execute` helper return it as the new `resultType`, which is always present; read it rather than `error` to tell a failure from a success. Provider-wrapped session tools, provider tool calls bound to a session, and the merged `COMPOSIO_MULTI_EXECUTE_TOOL` result set `successful` from it alone, so a failure without error text is no longer reported as successful. `error` is returned as the API sent it. A session execute answer without `result_type`, or with a value this SDK does not know, throws `ValidationError` instead of being read as a success or a failure.
+
+  A `COMPOSIO_MULTI_EXECUTE_TOOL` batch that mixes local custom tools with remote tools now throws `ComposioToolInputRequiredError` when the remote half needs user input, as an all-remote batch already did. It used to report the input request as a failure message on each remote tool, without `inputRequests` or `requestState`. Local tools in that batch have already run by then, and their results are discarded by the throw.
+
+  Breaking changes:
+
+  - `ToolRouterSessionConfig` (`session.config`, the result of `session.update()`) and `ToolRouterSessionConfigHistoryConfig` (`session.listConfigHistory()`) are now the client's own config types. `instant` is always present (`false` or the policy object) instead of optional.
+  - In those config types, `toolkits` and each `tools` entry can be a `{ require_approval }`-only object, so a check for `enabled` or `disabled` no longer covers every case. `tags` can carry `require_approval`, and the config can carry `proxy_execute`.
+  - The session config is returned as the API sent it. The SDK no longer validates `instant` at runtime or removes a `premium_usage` key.
+  - `ToolRouterSessionExecuteResponse` requires `resultType`. A custom `ToolCallSession` passed to a provider must return it from `execute()`, because `successful` is no longer derived from `error`.
+  - Removed the unused `ToolRouterInstantResponseSchema` and `ToolRouterInstantResponse` exports. Use `ToolRouterSessionConfig['instant']` for the Instant policy the API returns.
+
+- ec55dd1: Add `userId` to `tools.proxyExecute()`. It is sent as `user_id`, which projects with 2FA enabled check against the connected account and may require. Python's `tools.proxy()` takes the same value as `user_id`.
+
+### Patch Changes
+
+- 67e80e3: Update the owned API client to `@composio/client@2.0.0-rc.9`.
+- a7b4943: Send product identity, product version, language, and runtime version with API requests. Identify installed core and slim packages separately while preserving existing telemetry headers.
+- 077ceb3: Fix tool schemas rejected by OpenAI and Anthropic when a parameter uses `anyOf`, `oneOf`, `allOf`, `$ref`, or similar keywords. The converted schema is a `ZodObject` again, so the LangChain, Vercel, LlamaIndex, and Claude Agent SDK providers send tool parameters with a top-level `type: "object"`. Patterns with escapes such as `\_` or `\:` no longer fail every call to the tool.
+- e3999c4: Stop retrying session tool executions and proxied calls. `session.execute()`, `session.proxyExecute()`, provider-wrapped session tools, and the `execute` / `proxyExecute` helpers passed to custom tools no longer retry after a timeout, connection error, or 408/409/429/5xx response, so a retry can no longer repeat a side effect such as sending the same email twice. This matches `tools.execute()` and `tools.proxyExecute()`.
+- 8c7e40a: `RemoteFile.save()` without a path no longer rejects ordinary file names. Names with characters Windows reserves, such as `report_2026-09-29T10:30:00.csv` or `What is this?.png`, are saved with those characters replaced by `_`. Names longer than 128 bytes are truncated with their extension kept, and reserved device names such as `NUL` get a `_` prefix. A name changed this way also gets a short digest of the original before its extension (`What is this_-9c68adf2da8b6e8d.png`). Default saves create a new file exclusively; if the destination exists, a copy number is added before its extension. Repeated default saves therefore return distinct paths and preserve earlier downloads. Names with a NUL byte or no usable basename are still refused.
+- d9f6291: Tool schema `pattern` and `patternProperties` regexes now run on a linear-time engine (RE2, via `re2js`), so a hostile pattern such as `^(a+)+$` can no longer hang argument validation. A `pattern` that needs lookaround still runs on the native engine when a static check shows it cannot backtrack catastrophically, on input up to 1000 characters; otherwise it is left unenforced. A `patternProperties` key that needs lookaround or a backreference now fails conversion with an `InvalidPatternError` (reason `unsupported`). Patterns now match astral characters (emoji) as single characters, as JSON Schema's Unicode regex dialect does.
+- 48d3559: Fix optional enum and const parameters under strict mode. A typed enum such as `{ "type": "string", "enum": ["asc", "desc"] }` was widened by adding `null` to its `type` only, so the enum still rejected `null` and the model could not omit the parameter. Such schemas are now wrapped whole in `anyOf` with a `null` branch, as are `type` beside `anyOf` and `$ref` with sibling keywords. `omitNullToolArguments` now keeps a `null` only when every keyword of the tool's schema accepts it, so a `null` that an `enum`, `const`, `$ref` sibling or `allOf` rejects is treated as an omitted argument. Schemas whose only obstacle to `null` is `type` or `anyOf` are emitted exactly as before. A tool whose schema holds a `$ref` into a property that wrapping moves is reported in `unsupported` and sent without strict mode. Null checks remember their answer per schema node and are bounded in depth and work, so a schema whose definitions fan out through shared references stays cheap.
+- Updated dependencies [077ceb3]
+- Updated dependencies [d9f6291]
+  - @composio/json-schema-to-zod@0.3.4
+
+## 0.22.0
+
+### Minor Changes
+
+- e7580cf: Align session creation and updates with `instant.return_instant_charge`, expose `instantCharge` on execution results, and rename search account metadata to `instantAccount`. Use `instant_account` for explicit account selection.
+- ae3c069: Expose the exact Instant charge as `instantCharge` in project usage summaries and as `metadata.instant_charge` in tool log metadata.
+- e182bc8: Remove the deprecated OpenAI Assistants API helpers from `OpenAIProvider`: `handleAssistantMessage`, `waitAndHandleAssistantToolCalls`, and `waitAndHandleAssistantStreamToolCalls`. OpenAI shut down the Assistants API on August 26, 2026, so these helpers could no longer complete a run. Use `OpenAIResponsesProvider` from `@composio/openai` with the Responses API instead.
+
+### Patch Changes
+
+- f478a3d: Keep `ConnectionRequest.status` in sync with `waitForConnection()`. The request now reports `ACTIVE` once the connection completes, or the terminal status (`FAILED`, `EXPIRED`, `REVOKED`) when it fails, matching `toJSON()` and the Python SDK.
+- f478a3d: Restore telemetry for `ConnectionRequest.waitForConnection()`. `telemetry.instrument()` now also instruments async methods defined directly on plain objects, such as the ones returned by `createConnectionRequest()`.
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
+## 0.21.0
+
+### Minor Changes
+
+- 461c6c3: Add experimental `premiumUsage` support when creating and updating Tool Router Sessions.
+- 0833c1b: Expose `hostedAccount.allowedToolSlugs` on `session.search()` toolkit connection statuses for toolkits served by a Composio hosted account.
+- de5e3f6: Add experimental support for saved Session configs. `composio.sessionConfigs.list()` and `composio.sessionConfigs.get()` read the project's saved `sc_…` configs, and `experimental.sessionConfigId` on `composio.sessions.create()` starts a session from one. Combining `sessionConfigId` with inline access fields now fails before any request: on create with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`, and on `session.update()` with `toolkits`, `tools` or `tags` (including `null`). TypeScript reports the mix at compile time and the SDK throws `ValidationError` at runtime; other invalid inputs keep throwing `ZodError`. `session.experimental.sourceSessionConfig` exposes the last config applied to the session after `create()`, `sessions.use()` and `update()`. A 409 while `update()` applies a config now says that the session or the config changed and to re-fetch and retry, instead of reporting a stale version.
+
+### Patch Changes
+
+- 3721d04: Validate the server-supplied mount path before `RemoteFile.save()` turns it into a filename. A `mountRelativePath` of `""`, `"."`, `"sub/."`, `"foo/.."` or `".."` made the default save path equal the download directory or its parent, which surfaced as an unhandled `EISDIR` from `writeFileSync` after the directory had already been created. These now throw a `ValidationError` naming the offending mount path, before any `mkdir` or write. An explicit `path` passed by the caller is unaffected.
+
+  The new `safeBasename` helper applies the filename safety checks used by the Python SDK: both `/` and `\` count as separators, and NUL or control characters, Windows-reserved characters and device names, trailing spaces or dots, invalid Unicode and names over 128 UTF-8 bytes are rejected. `RemoteFile.filename` now also splits on both separators, so a Windows-style mount path reduces to the same display name on every platform.
+
+  Drive-relative paths such as `C:report.txt` reduce to `report.txt`. Whitespace stripping follows Python rules, preserving U+FEFF. Both SDKs also reject trailing dots exposed by stripping Unicode whitespace.
+
+- 5ec0bdf: Validate the default destination in `RemoteFile.save()` before downloading content. Invalid mount paths now raise `ValidationError` without a network request, even when the download would fail.
+- de5e3f6: Remove experimental annotations from the top-level Session config read methods. Applying a config and reading its source metadata remain under `experimental`.
+- 5d07582: `session.update()` no longer sends `expected_config_version` by default. Since 0.20.0 it sent the session's last observed `configVersion` on every call, and the API rejects that field with a 400 (`Unrecognized key(s) in object: 'expected_config_version'`), so every default `update()` failed. The default is now last writer wins. Pass `expectedConfigVersion` (for example `session.configVersion`) to make an update conditional where the API supports it; `expectedConfigVersion: false` is the same as omitting it.
+
+## 0.20.0
+
+### Minor Changes
+
+- a4a40a1: Fix project API key resolution so the SDK never sends a Composio user API key (`uak_...`, as stored by `composio login`) as the `x-api-key` project credential. When that stored key is the only candidate, the constructor now throws a redacted `ComposioAPIKeyKindError` that explains the mismatch instead of making requests that fail with 401. `apiKey: null` now disables project-key authentication entirely, including the `COMPOSIO_API_KEY` and `~/.composio/user_data.json` fallbacks, and is accepted when the instance holds another credential: `userApiKey` or `orgApiKey` (explicit or from their environment variables), or an `x-user-api-key` entry in `defaultHeaders`. Requests then carry only that credential. Malformed or unexpectedly shaped user config files produce a diagnostic that names the file without echoing its contents, and cloned instances keep the credential they were resolved with instead of re-reading the environment. Code that resolves the key with `apiKey: process.env.COMPOSIO_API_KEY ?? null` (or any expression that yields `null` when the variable is unset) is affected: it used to fall back to the environment and the CLI config file and now throws unless another credential is configured; omit `apiKey` (or pass `undefined`) to keep the fallbacks. With `apiKey: null`, an `x-api-key` entry in `defaultHeaders` is rejected as well, including on `createSession()` clones: pass the project key as `apiKey` instead of a raw header.
+- 6c56b73: Add `userApiKey` and `orgApiKey` to `ComposioConfig`. Both are forwarded to the underlying API client, which sends each one only on operations whose security scheme requires it (organization, consumer, and user-scoped endpoints reached through `getClient()`), never alongside the project key. They fall back to `COMPOSIO_USER_API_KEY` and `COMPOSIO_ORG_API_KEY`. A project `apiKey` is still required unless it is set to `null`, which opts into user-only authentication.
+- 6c56b73: Expose the rest of the owned client surface on the `Composio` class:
+
+  - `composio.webhooks.subscriptions` (`list`, `get`, `set`, `update`, `delete`, `rotateSecret`, `listEventTypes`) and `composio.webhooks.endpoints` (`list`, `get`, `create`, `replace`, `update`). `composio.triggers.setWebhookSubscription()` now delegates to the same upsert as `webhooks.subscriptions.set()`. Its behaviour for well-formed API responses is unchanged; malformed responses are now rejected with a `ValidationError` instead of being read leniently.
+  - `composio.logs.search()` and `composio.logs.get()` for tool-execution logs.
+  - `composio.connectedAccounts.revoke()`, which surfaces the API's 400/409 as `ComposioConnectedAccountRevocationNotSupportedError` / `ComposioConnectedAccountNotRevokableError`. `connectedAccounts.refresh()` is marked `@deprecated` (the endpoint is deprecated upstream).
+  - `composio.toolkits.getMany(slugs)` and `composio.toolkits.changelog()`.
+  - `session.listConfigHistory()` on sessions.
+  - `composio.experimental.usage.summary()` and `composio.experimental.usage.breakdown()` (experimental, shape may change).
+  - `composio.toolkits.recommendScopes(toolkitSlug, { tools, ... })` and `composio.toolkits.listGrantContexts(toolkitSlug)` for OAuth scope recommendations (the API marks both beta).
+  - `composio.connectedAccounts.completeAuth({ userId, sessionUri })`, which completes a deferred OAuth connection after your OAuth callback verifier has confirmed the user's identity.
+  - `composio.keyring.listTransferKeys()`, which returns the public JWKs of the organization's customer-managed keyring.
+  - `composio.experimental.customToolkits` (`upsert`, `sync`, `delete`) for project-owned custom toolkits (in pilot, shape may change).
+  - `CIMD_OAUTH` joins `AuthSchemeTypes`.
+  - `triggers.listActive()` returns `{}` for `state` and `triggerConfig` when the API sends `null`.
+  - `ToolkitAuthField` gains `userVisible` (from `user_visible`) and `ToolkitAuthConfigDetails` gains `requiredScopes` (from `required_scopes`), both omitted when the API does not send them.
+  - `@composio/client` moves from the old autogenerated client to the new handrolled client. The API removed `validate_credentials` from the connected-account refresh, so `connectedAccounts.refresh()` now ignores `validateCredentials` and logs a warning when it is set.
+  - `logger` and `logLevel` options on `new Composio({...})`. `logger` accepts any `{ error, warn, info, debug }` sink (`console`, pino, winston, ...) and receives the SDK's formatted, credential-redacted output; `logLevel` (`'silent' | 'error' | 'warn' | 'info' | 'debug'`) overrides `COMPOSIO_LOG_LEVEL`. The owned client's runtime deprecation warnings (response `Deprecation`/`Sunset` headers and deprecated request inputs) are now routed through that SDK logger instead of `console`. The client's per-request lifecycle logs are emitted only at `'debug'`. `tools.get`/`getRawComposioTools` send the API's `query` parameter in place of the deprecated `search` wire parameter; the SDK's public `search` option is unchanged.
+
+- a4a40a1: Sessions now export their MCP config from the auth context the session request was actually made with: the project key as `x-api-key` when one is configured, otherwise the user API key (`userApiKey` or the `x-user-api-key` default header) as `x-user-api-key`, plus `x-org-id` / `x-project-id` when the instance is scoped. No other default header and no ambient `COMPOSIO_API_KEY` is ever copied. The headers are only attached when the MCP URL shares the origin of the configured API base URL (whatever its scheme). Any other destination (a different origin, an opaque origin such as a `data:` URL, or a URL that does not parse) never receives them: with `mcp: true`, `create()` / `use()` throw `ComposioMCPDestinationError`, which names both origins and never includes a key; without `mcp: true` the session is returned with `session.mcp.headers` empty and a warning naming both origins is logged, so native tools keep working. The SDK never connects to the MCP URL itself and does not follow redirects for it. Trigger subscriptions (Pusher channel auth) follow the same rule instead of falling back to the environment when the project key is disabled.
+
+  `ComposioConfig` gains `orgId` and `projectId`: the organization and consumer project nano IDs, sent together as the `x-org-id` / `x-project-id` headers on every request and with the session MCP config. They may also be supplied through `defaultHeaders`; a half-configured or disagreeing scope throws `ComposioScopeConfigError`. Without a scope, a user API key keeps addressing the API default project.
+
+  `session.update()` now sends the session's last observed `configVersion` as the `expected_config_version` precondition by default and never retries that request, so a concurrent change surfaces as `ComposioSessionConfigConflictError` (HTTP 409; re-fetch the session, then retry) while the local session object stays unchanged. Pass `expectedConfigVersion` to send another version or `expectedConfigVersion: false` to opt out (last writer wins). Every policy block (`toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `multiAccount`, `search`, `execute`, `experimental`) accepts `null` to remove the stored override, `manageConnections.callbackUrl: null` removes only the stored callback URL, `multiAccount.maxAccountsPerToolkit: null` removes the stored maximum, and an empty toolkit allowlist (`toolkits: []`) is sent as-is so it denies every app toolkit.
+
+- 6c56b73: Replace the old autogenerated `@composio/client` with the new handrolled client.
+
+## 0.19.0
+
+### Minor Changes
+
+- efc2e52: Keep TypeScript realtime subscription errors inside the SDK logging boundary so an asynchronous Pusher subscription failure cannot escape as an uncaught exception. The full subscription error payload is now logged, the success message is logged only once Pusher confirms the subscription, and `PusherService.subscribe` / `Triggers.subscribe` accept an optional `onSubscriptionError` callback so applications can react to subscription failures programmatically.
+- 4b5920b: Add `session.ensureConnected(toolkit, options?)`: it returns immediately when the session already resolves an active connection (or the toolkit is no-auth), and only when needed starts the authorization flow via `session.authorize()` and waits for the new connection to become active. This prevents `authorize()` from spawning duplicate pending connections for toolkits that are already connected. The `session.execute()` `account` option is now documented as accepted on every project — on single-account projects the identifier must match one of the session's active connections for the toolkit (matching the API behavior).
+- c7843d8: Expose the server-side session configuration on sessions and return it from `update()`. `session.config` now carries the toolkit/tool allowlists, tags, auth configs, connected accounts, `manage_connections`, preload and sandbox settings the API returned for the session (from `create()`, `use()` and after every `update()`), and `session.update()` resolves to that updated config instead of `void`. Previously the only `config` reachable on a session object at runtime was the SDK's own `ComposioConfig`, and reading the live allowlist after `sessions.use(id)` required dropping to the raw client.
+
+  `config` is a required member of the `Session` interface, so objects you construct yourself to satisfy `Session` (test doubles, wrappers) now need a `config` value. Callers of SDK-created sessions are unaffected. The read side is the raw API shape (`toolkits.enabled`, `manage_connections`), while `update()` keeps taking the SDK's camelCase input.
+
+### Patch Changes
+
+- 62e51e8: Refresh runtime dependencies and extend provider peer compatibility to the latest supported Anthropic and OpenAI Agents SDK releases.
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- b4b9fc4: Guard schema `pattern` and `patternProperties` compilation. A pattern that does not compile or exceeds 1024 characters now fails conversion with an `InvalidPatternError` that names the offending property path instead of a raw `SyntaxError`. `@composio/core` surfaces that path in the `JsonSchemaToZodError` message. No backtracking heuristic is applied: a hostile `pattern` that backtracks catastrophically remains a known limitation.
+- d4d3060: Fix `composio.mcp.update()` silently dropping parts of the requested configuration. Tool-only updates (`allowedTools` without `toolkits`) sent no tools field at all, updates with toolkits sent the deprecated create-time `custom_tools` alias that the update endpoint ignores instead of `allowed_tools`, and `manuallyManageConnections` was forwarded as-is instead of being inverted into `managed_auth_via_composio` (so `manuallyManageConnections: true` stored the opposite configuration). `create()` and `update()` now also keep the auth config of a `{ toolkit, authConfigId }` toolkit entry instead of discarding it, and `create()` sends `allowed_tools` rather than the deprecated `custom_tools` alias, matching the Python SDK.
+- 9d0cb2c: Export `readResponseBodyWithLimit` and `MAX_URL_UPLOAD_SIZE_BYTES` so downstream packages can apply the SDK's 100 MiB cap when they download a file from a user-supplied URL. The CLI's tool-input file uploads now use it instead of buffering the whole response.
+- ba85f4d: Apply the Fetch standard's redirect rules in `ssrfSafeFetch`, which following redirects manually meant `fetch` never applied: a `303` now retries as a bodiless `GET` instead of replaying an upload's method and body at a result URL, a `301`/`302` does the same for a `POST`, and `307`/`308` keep replaying both. Only `301`, `302`, `303`, `307` and `308` count as redirects to follow, so a `304` or `305` carrying a `Location` is returned to the caller rather than followed.
+- ba85f4d: Close the IPv6 transition ranges the SSRF guard's address blocklist let through: 6to4 (`2002::/16`), Teredo and the rest of `2001::/23`, local-use NAT64 (`64:ff9b:1::/48`), `100::/64`, `2001:db8::/32` and site-local `fec0::/10` each carry or reach an arbitrary IPv4 address, so `2002:7f00:1::` was a public-looking literal for `127.0.0.1`. IPv4 multicast and the `192.88.99.0/24` 6to4 relay range are blocked too.
+- 85996c4: Drop `Authorization`, `Proxy-Authorization`, and `Cookie` from the request headers when the SSRF guard follows a redirect to a different origin, as the Fetch standard does for automatic redirects. Same-origin redirects keep them.
+- eccb80e: Add an opt-in strict mode to `ssrfSafeFetch` that rejects configured network
+  routes when the connection cannot be pinned to the validated address.
+- 8bb1d29: Stop reporting every failed tool lookup as `ComposioToolNotFoundError`. `tools.getRawComposioToolBySlug`, and the `tools.get` / `tools.execute` paths that call it, now raise `ComposioToolNotFoundError` only when the API answers 404 or 400. Any other failure, such as an invalid API key (401), a server error, or a network fault, raises the new `ComposioToolFetchError` with the client error preserved as `cause`. `toolkits.get(slug)` now applies its 404/400 check against the Composio client's `APIError` instead of the OpenAI one, so an unknown toolkit raises `ComposioToolkitNotFoundError` as documented.
+- e9fcbe3: Stop dropping `is_secret`, `legacy_template_name` and `auth_hint_url` from toolkit auth config details. `transformToolkitRetrieveResponse` passed the auth field groups through unchanged, so the snake_case keys never matched `ToolkitAuthFieldSchema` and zod stripped them during validation; `auth_hint_url` was never mapped at all. Fields returned by `toolkits.getConnectedAccountInitiationFields()` and `toolkits.getAuthConfigCreationFields()` now carry `isSecret`, which the API documents as the signal for whether a client should mask the input, plus `legacyTemplateName`; auth config details returned by `toolkits.get()` now carry `authHintUrl`. Each of these keys is present only when the API sends it, so spreading a field no longer overwrites a caller's own fallback with `undefined`. An auth config detail that omits a field group entirely now yields empty lists for that group, matching how the docs pipeline defaults them, instead of failing validation and leaving the other group unusable.
+- 9a69683: Correct the JSDoc for `tools.getInput` and `tools.proxyExecute`. The `getInput` example now passes the required `text` field and reads the generated `arguments`. The `proxyExecute` example now uses the flat `endpoint` / `method` / `connectedAccountId` shape and explains that a relative endpoint is appended to the toolkit's base URL, which can already include a path. The `tools.execute` example shows where to find the version to pin.
+- Updated dependencies [b4b9fc4]
+  - @composio/json-schema-to-zod@0.3.3
+
+## 0.18.1
+
+### Patch Changes
+
+- 8a56383: Fix: automatic S3 file downloads are now capped at 100 MiB (configurable per call) to prevent memory exhaustion from oversized or streaming responses.
+- 7420927: Fix custom toolkit child slug mapping: reject response tools that have local handles but no exact toolkit match instead of silently dropping them or binding another toolkit's handler, derive bare-slug ambiguity from local definitions, and only reuse a same-toolkit bare alias in customToolkits().
+- 1d31c80: Redact credential-shaped values at the SDK log boundary.
+- 95f9d32: Expose the runtime-conditional SSRF-safe fetch helper for protected URL upload consumers.
+- 0d28bef: Map file-download transport failures to the SDK error contract and bound streamed response bodies.
+- 52efb5b: Fix trigger subscriptions ignoring the `authConfigId` filter.
+- Updated dependencies [ab289d6]
+  - @composio/json-schema-to-zod@0.3.2
+
 ## 0.18.0
 
 ### Minor Changes

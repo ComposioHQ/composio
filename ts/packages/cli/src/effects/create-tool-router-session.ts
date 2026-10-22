@@ -1,9 +1,6 @@
 import { Data, Effect, Option } from 'effect';
-import type { Composio } from '@composio/client';
-import {
-  createLocalToolRouterExperimentalPayload,
-  getAllLocalToolkitSlugs,
-} from '@composio/cli-local-tools';
+import type { ComposioClientShape } from '@composio/client/effect';
+import type { SessionCreateParams } from '@composio/client/resources/tool-router';
 import {
   getFreshConsumerToolRouterAuthConfigsFromCache,
   getFreshConsumerToolRouterConnectedAccountsFromCache,
@@ -13,13 +10,12 @@ import {
   resolveToolRouterSessionConnections,
   type ToolRouterSessionConnectionContext,
 } from 'src/services/tool-router-session-connections';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import {
   ENHANCED_LINK_URL_OVERWRITE,
   getConsumerPermissionSnapshot,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { nonEmptyOrUndefined } from 'src/utils/optional-params';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -42,27 +38,14 @@ export interface CreateToolRouterSessionOptions {
     readonly maxAccountsPerToolkit?: number;
     readonly requireExplicitSelection?: boolean;
   };
-  /** Include bundled local CLI toolkits as Tool Router custom toolkits. Default: true. */
-  readonly localTools?: {
-    readonly enable?: boolean;
-  };
 }
 
 export interface CreatedToolRouterSession {
   readonly sessionId: string;
-  /** Inline local-tool custom definitions that should be forwarded to v3.1 search/execute calls. */
-  readonly localExperimentalPayload?: ReturnType<typeof createLocalToolRouterExperimentalPayload>;
   readonly permissionSnapshot?: ConsumerPermissionSnapshot;
   readonly connectedAccounts?: Record<string, string>;
   readonly connectedAccountWordIds?: Record<string, string>;
 }
-
-export class LocalToolRouterDisabledError extends Data.TaggedError(
-  'effects/LocalToolRouterDisabledError'
-)<{
-  readonly message: string;
-  readonly requestedToolkits: ReadonlyArray<string>;
-}> {}
 
 export class ToolRouterSessionCreateError extends Data.TaggedError(
   'effects/ToolRouterSessionCreateError'
@@ -71,16 +54,22 @@ export class ToolRouterSessionCreateError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
+/** Everything a Tool Router session is built from, resolved before the session exists. */
+export interface ToolRouterSessionContext {
+  /** The session-create body, minus the user id. */
+  readonly sessionConfig: Omit<SessionCreateParams, 'user_id'>;
+  readonly permissionSnapshot?: ConsumerPermissionSnapshot;
+  readonly connectedAccounts?: Record<string, string>;
+  readonly connectedAccountWordIds?: Record<string, string>;
+}
+
 /**
- * Create an ephemeral Tool Router session for the given user ID.
- * Returns the session id plus any local-tool custom payload bound to the session.
- *
- * Accepts a pre-resolved client instance (from ComposioClientSingleton)
- * so callers can resolve the dependency at layer construction time.
- * Used by `ToolsExecutorLive` which already holds the client reference.
+ * Resolve the connections, permission snapshot and session settings for the
+ * given user ID without creating a session. Callers that execute through the
+ * Dashboard use only the connection context; the Dashboard owns the session.
  */
-export const createToolRouterSessionContext = (
-  client: Composio,
+export const resolveToolRouterSessionContext = (
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
@@ -90,33 +79,6 @@ export const createToolRouterSessionContext = (
       return Object.keys(merged).length > 0 ? merged : undefined;
     };
     const requestedToolkits = options?.toolkits ?? [];
-    const cliConfig = yield* ComposioCliUserConfig;
-    const localToolsEnabled =
-      options?.localTools?.enable ??
-      cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS);
-    const localToolkitSlugs = new Set(getAllLocalToolkitSlugs());
-    const requestedLocalToolkits = requestedToolkits.filter(toolkit =>
-      localToolkitSlugs.has(toolkit.toLowerCase())
-    );
-    const remoteToolkits = requestedToolkits.filter(
-      toolkit => !localToolkitSlugs.has(toolkit.toLowerCase())
-    );
-    const shouldIncludeLocalToolkits =
-      requestedToolkits.length === 0 || requestedLocalToolkits.length > 0;
-    if (!localToolsEnabled && requestedLocalToolkits.length > 0) {
-      return yield* Effect.fail(
-        new LocalToolRouterDisabledError({
-          message: `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before using toolkit filter(s): ${requestedLocalToolkits.join(', ')}.`,
-          requestedToolkits: requestedLocalToolkits,
-        })
-      );
-    }
-    const localExperimentalPayload =
-      !localToolsEnabled || !shouldIncludeLocalToolkits
-        ? undefined
-        : createLocalToolRouterExperimentalPayload({
-            toolkits: requestedToolkits.length > 0 ? requestedLocalToolkits : undefined,
-          });
     const excludedToolkits = new Set(
       (options?.excludeConnectedAccountsForToolkits ?? []).map(toolkit => toolkit.toLowerCase())
     );
@@ -147,20 +109,20 @@ export const createToolRouterSessionContext = (
       ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: remoteToolkits.length > 0 ? remoteToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
     const cachedConnectedAccounts = options?.cacheScope
       ? yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
-          toolkits: remoteToolkits.length > 0 ? remoteToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         })
       : Option.none();
 
     const connectionContext = Option.isSome(cachedAuthConfigs)
       ? {
-          connectedToolkits: remoteToolkits,
+          connectedToolkits: requestedToolkits,
           authConfigs: cachedAuthConfigs.value.authConfigs,
           connectedAccounts: mergeConnectedAccounts(
             filterConnectedAccounts(
@@ -175,7 +137,7 @@ export const createToolRouterSessionContext = (
             : undefined,
         }
       : yield* resolveToolRouterSessionConnections(client, userId, {
-          toolkits: remoteToolkits.length > 0 ? remoteToolkits : undefined,
+          toolkits: nonEmptyOrUndefined(requestedToolkits),
         }).pipe(
           Effect.map(connectionContext => ({
             ...connectionContext,
@@ -198,7 +160,7 @@ export const createToolRouterSessionContext = (
           connectedAccounts: connectionContext.connectedAccounts,
           availableConnectedAccounts: connectionContext.availableConnectedAccounts,
         },
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.catch(() => Effect.void));
     }
 
     const connectedAccountIds = Object.values(connectionContext.connectedAccounts ?? {}).filter(
@@ -212,70 +174,68 @@ export const createToolRouterSessionContext = (
           connectedAccountIds,
         })
       : undefined;
-    const experimentalPayload = {
-      ...(localExperimentalPayload ?? {}),
-      ...(permissionSnapshot?.enhancedControlsEnabled
-        ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
-        : {}),
-    };
+    return {
+      sessionConfig: {
+        auth_configs: connectionContext.authConfigs,
+        connected_accounts: connectionContext.connectedAccounts,
+        manage_connections: { enable: options?.manageConnections ?? false },
+        multi_account: options?.multiAccount
+          ? {
+              enable: options.multiAccount.enable,
+              max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
+              require_explicit_selection: options.multiAccount.requireExplicitSelection,
+            }
+          : undefined,
+        toolkits: requestedToolkits.length > 0 ? { enable: [...requestedToolkits] } : undefined,
+        instant: { return_instant_charge: true },
+        experimental: permissionSnapshot?.enhancedControlsEnabled
+          ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
+          : undefined,
+      },
+      permissionSnapshot,
+      connectedAccounts: connectionContext.connectedAccounts,
+      connectedAccountWordIds: resolveConnectedAccountWordIds(
+        connectionContext.connectedAccounts,
+        connectionContext.availableConnectedAccounts
+      ),
+    } satisfies ToolRouterSessionContext;
+  });
 
-    return yield* Effect.tryPromise({
-      try: () =>
-        client.toolRouter.session.create({
-          user_id: userId,
-          auth_configs: connectionContext.authConfigs,
-          connected_accounts: connectionContext.connectedAccounts,
-          manage_connections: { enable: options?.manageConnections ?? false },
-          multi_account: options?.multiAccount
-            ? {
-                enable: options.multiAccount.enable,
-                max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
-                require_explicit_selection: options.multiAccount.requireExplicitSelection,
-              }
-            : undefined,
-          toolkits: remoteToolkits.length > 0 ? { enable: [...remoteToolkits] } : undefined,
-          experimental:
-            Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
-        }),
-      catch: cause =>
+/** Create an ephemeral Tool Router session from an already resolved context. */
+export const createToolRouterSessionFromContext = (
+  client: ComposioClientShape,
+  userId: string,
+  { sessionConfig, ...context }: ToolRouterSessionContext
+) =>
+  client.toolRouter.session.create({ user_id: userId, ...sessionConfig }).pipe(
+    Effect.mapError(
+      cause =>
         new ToolRouterSessionCreateError({
           message: 'Failed to create a Tool Router session.',
           cause,
-        }),
-    }).pipe(
-      Effect.map((session): CreatedToolRouterSession => ({
-        sessionId: session.session_id,
-        localExperimentalPayload,
-        permissionSnapshot,
-        connectedAccounts: connectionContext.connectedAccounts,
-        connectedAccountWordIds: resolveConnectedAccountWordIds(
-          connectionContext.connectedAccounts,
-          connectionContext.availableConnectedAccounts
-        ),
-      }))
-    );
-  });
-
-/** Backward-compatible helper for callers that only need the session id. */
-export const createToolRouterSession = (
-  client: Composio,
-  userId: string,
-  options?: CreateToolRouterSessionOptions
-) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => session.sessionId)
+        })
+    ),
+    Effect.map((session): CreatedToolRouterSession => ({
+      sessionId: session.session_id,
+      ...context,
+    }))
   );
 
 /**
- * Resolve the Composio client and create a Tool Router session in one step.
- * Returns `{ client, sessionId }` — eliminates the 3-step boilerplate
- * (resolve singleton, get client, create session) repeated across commands.
+ * Create an ephemeral Tool Router session for the given user ID.
+ * Returns the session id plus the permission and connected-account context bound to it.
+ *
+ * Accepts a pre-resolved client instance (from ComposioClientSingleton)
+ * so callers can resolve the dependency at layer construction time.
  */
-export const resolveToolRouterSession = (
-  client: Composio,
+export const createToolRouterSessionContext = (
+  client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
-  createToolRouterSessionContext(client, userId, options).pipe(
-    Effect.map(session => ({ client, ...session }))
+  resolveToolRouterSessionContext(client, userId, options).pipe(
+    Effect.flatMap(context => createToolRouterSessionFromContext(client, userId, context))
   );
+
+/** The name commands create their Tool Router session by. */
+export const resolveToolRouterSession = createToolRouterSessionContext;

@@ -62,7 +62,16 @@ export default function ChangelogPage() {
       <PageActions path="/reference/changelog" />
       <DocsBody>
         <p className="text-fd-muted-foreground">
-          Latest updates and announcements for Composio.
+          Latest updates and announcements for Composio. Follow{' '}
+          <a
+            href="https://x.com/composiodevs"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+          >
+            @composiodevs on X
+          </a>{' '}
+          for product news and announcements.
         </p>
         <h2 id="latest">Latest</h2>
         <div className="relative">

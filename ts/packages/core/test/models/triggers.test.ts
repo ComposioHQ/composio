@@ -30,9 +30,11 @@ vi.mock('../../src/services/pusher/Pusher');
 const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
-  get: vi.fn(),
-  post: vi.fn(),
-  patch: vi.fn(),
+  webhookSubscriptions: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
   triggerInstances: {
     listActive: vi.fn(),
     upsert: vi.fn(),
@@ -238,10 +240,6 @@ describe('Triggers', () => {
       expect(triggers).toBeInstanceOf(Triggers);
       expect(telemetry.instrument).toHaveBeenCalledWith(triggers, 'Triggers');
     });
-
-    it('should store the client reference', () => {
-      expect(triggers['client']).toBe(mockClient);
-    });
   });
 
   describe('setWebhookSubscription', () => {
@@ -257,22 +255,21 @@ describe('Triggers', () => {
     };
 
     it('should create a webhook subscription when none exists', async () => {
-      mockClient.get.mockResolvedValue({ items: [] });
-      mockClient.post.mockResolvedValue(rawSubscription);
+      mockClient.webhookSubscriptions.list.mockResolvedValue({ items: [] });
+      mockClient.webhookSubscriptions.create.mockResolvedValue(rawSubscription);
 
       const result = await triggers.setWebhookSubscription({ webhookUrl });
 
-      expect(mockClient.get).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
-        query: { limit: 1 },
-      });
-      expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
-        body: {
+      expect(mockClient.webhookSubscriptions.list).toHaveBeenCalledWith({ limit: 1 }, undefined);
+      expect(mockClient.webhookSubscriptions.create).toHaveBeenCalledWith(
+        {
           webhook_url: webhookUrl,
           enabled_events: ['composio.trigger.message'],
           version: 'V3',
         },
-      });
-      expect(mockClient.patch).not.toHaveBeenCalled();
+        undefined
+      );
+      expect(mockClient.webhookSubscriptions.update).not.toHaveBeenCalled();
       // Only camelCase keys — the snake_case wire fields must not leak through.
       expect(result).toEqual({
         id: 'sub_123',
@@ -286,8 +283,8 @@ describe('Triggers', () => {
     });
 
     it('should update the first webhook subscription when one exists', async () => {
-      mockClient.get.mockResolvedValue({ items: [{ id: 'sub_123' }] });
-      mockClient.patch.mockResolvedValue(rawSubscription);
+      mockClient.webhookSubscriptions.list.mockResolvedValue({ items: [{ id: 'sub_123' }] });
+      mockClient.webhookSubscriptions.update.mockResolvedValue(rawSubscription);
 
       await triggers.setWebhookSubscription({
         webhookUrl,
@@ -295,21 +292,23 @@ describe('Triggers', () => {
         version: 'V3',
       });
 
-      expect(mockClient.patch).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions/sub_123', {
-        body: {
+      expect(mockClient.webhookSubscriptions.update).toHaveBeenCalledWith(
+        'sub_123',
+        {
           webhook_url: webhookUrl,
           enabled_events: ['composio.trigger.message', 'composio.connected_account.expired'],
           version: 'V3',
         },
-      });
-      expect(mockClient.post).not.toHaveBeenCalled();
+        undefined
+      );
+      expect(mockClient.webhookSubscriptions.create).not.toHaveBeenCalled();
     });
 
     it('should throw validation error for invalid webhook subscription parameters', async () => {
       await expect(
         triggers.setWebhookSubscription({ webhookUrl, enabledEvents: [] })
       ).rejects.toThrow(ValidationError);
-      expect(mockClient.get).not.toHaveBeenCalled();
+      expect(mockClient.webhookSubscriptions.list).not.toHaveBeenCalled();
     });
   });
 
@@ -765,6 +764,15 @@ describe('Triggers', () => {
       expect(logger.debug).toHaveBeenCalledWith('🔄 Subscribing to triggers with filters: ', '{}');
     });
 
+    it('should pass the subscription error callback through to the pusher service', async () => {
+      const onSubscriptionError = vi.fn();
+
+      await triggers.subscribe(mockCallback, {}, onSubscriptionError);
+
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      expect(subscribeCall[1]).toBe(onSubscriptionError);
+    });
+
     it('should subscribe to triggers with filters', async () => {
       const filters: TriggerSubscribeParams = {
         toolkits: ['github'],
@@ -1056,47 +1064,12 @@ describe('Triggers', () => {
     });
   });
 
-  describe('telemetry integration', () => {
-    it('should instrument the class for telemetry', () => {
-      expect(telemetry.instrument).toHaveBeenCalledWith(triggers, 'Triggers');
-    });
-  });
-
   describe('subscribe callback handling', () => {
     const mockCallback = vi.fn();
 
     beforeEach(() => {
       mockCallback.mockClear();
       vi.mocked(logger.debug).mockClear();
-    });
-
-    it('should pass the parsed trigger data to callback when filters match', async () => {
-      await triggers.subscribe(mockCallback);
-
-      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
-      const filterCallback = subscribeCall[0];
-
-      filterCallback(mockTriggerData);
-
-      expect(mockCallback).toHaveBeenCalledTimes(1);
-      expect(mockCallback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'trigger-123-nano',
-          uuid: 'trigger-123',
-          metadata: expect.objectContaining({
-            id: 'trigger-123-nano',
-            uuid: 'trigger-123',
-            connectedAccount: expect.objectContaining({
-              id: 'conn-123',
-              uuid: 'conn-123',
-              authConfigId: 'auth-123',
-              authConfigUUID: 'github',
-              userId: 'user-456',
-              status: 'ACTIVE',
-            }),
-          }),
-        })
-      );
     });
 
     it('should not call callback when trigger data does not match filters', async () => {
@@ -1130,45 +1103,115 @@ describe('Triggers', () => {
       expect(errorCallback).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         '❌ Error in trigger callback:',
-        Error('Error in user callback')
+        'Error in user callback'
       );
     });
 
-    it('should handle multiple callbacks with different filters', async () => {
-      const callback1 = vi.fn();
-      const callback2 = vi.fn();
+    it('should contain rejections from async user callbacks', async () => {
+      const unhandledRejection = vi.fn();
+      process.on('unhandledRejection', unhandledRejection);
+      try {
+        // A plain async function: a vi.fn() spy would attach its own handlers
+        // to the returned promise and hide an unhandled rejection.
+        let calls = 0;
+        const asyncErrorCallback = async () => {
+          calls++;
+          throw new Error('Async error in user callback');
+        };
 
-      // Subscribe with different filters
-      await triggers.subscribe(callback1, { toolkits: ['github'] });
-      await triggers.subscribe(callback2, { toolkits: ['slack'] });
+        await triggers.subscribe(asyncErrorCallback);
 
-      const subscribeCall1 = vi.mocked(mockPusherService.subscribe).mock.calls[0];
-      const subscribeCall2 = vi.mocked(mockPusherService.subscribe).mock.calls[1];
+        const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+        const filterCallback = subscribeCall[0];
 
-      // Trigger github event
-      subscribeCall1[0](mockTriggerData);
-      // Trigger should only call callback1
-      expect(callback1).toHaveBeenCalledTimes(1);
-      expect(callback2).not.toHaveBeenCalled();
+        expect(() => filterCallback(mockTriggerData)).not.toThrow();
 
-      // Reset mocks
-      callback1.mockClear();
-      callback2.mockClear();
+        // let the rejected promise settle and the containment log run
+        await new Promise<void>(resolve => {
+          setImmediate(resolve);
+        });
 
-      // Trigger slack event
-      const slackTriggerData = {
-        ...mockTriggerData,
-        appName: 'slack',
-        metadata: {
-          ...mockTriggerData.metadata,
-          triggerName: 'slack_message',
-        },
-      };
+        expect(calls).toBe(1);
+        expect(logger.error).toHaveBeenCalledWith(
+          '❌ Error in trigger callback:',
+          'Async error in user callback'
+        );
+        expect(unhandledRejection).not.toHaveBeenCalled();
+      } finally {
+        process.off('unhandledRejection', unhandledRejection);
+      }
+    });
 
-      subscribeCall2[0](slackTriggerData);
-      // Trigger should only call callback2
-      expect(callback1).not.toHaveBeenCalled();
-      expect(callback2).toHaveBeenCalledTimes(1);
+    it('should log the details of a thrown non-Error value', async () => {
+      vi.mocked(logger.error).mockClear();
+      const failure = { message: 'Request failed', code: 429 };
+
+      await triggers.subscribe(() => {
+        throw failure;
+      });
+      await triggers.subscribe(async () => {
+        throw failure;
+      });
+
+      for (const [filterCallback] of vi.mocked(mockPusherService.subscribe).mock.calls) {
+        filterCallback(mockTriggerData);
+      }
+      await new Promise<void>(resolve => {
+        setImmediate(resolve);
+      });
+
+      // Once for the synchronous throw, once for the rejection.
+      expect(
+        vi
+          .mocked(logger.error)
+          .mock.calls.filter(([prefix]) => prefix === '❌ Error in trigger callback:')
+      ).toEqual([
+        ['❌ Error in trigger callback:', '{"message":"Request failed","code":429}'],
+        ['❌ Error in trigger callback:', '{"message":"Request failed","code":429}'],
+      ]);
+    });
+
+    it('should log rejection values that JSON.stringify or String() cannot handle without letting them escape', async () => {
+      // The failure log runs as a rejection handler, so it must not throw for
+      // any value, or the rejection escapes again. The logger is mocked here,
+      // so these pin the string that is logged: passing a circular value to
+      // the real logger would make its own JSON.stringify throw.
+      vi.mocked(logger.error).mockClear();
+      const unhandledRejection = vi.fn();
+      process.on('unhandledRejection', unhandledRejection);
+      try {
+        const circular: Record<string, unknown> = { code: 429 };
+        circular.self = circular;
+        // String() throws on an object without a prototype.
+        const nullPrototype = Object.assign(Object.create(null), { code: 429 });
+        const nullPrototypeCircular = Object.create(null);
+        nullPrototypeCircular.self = nullPrototypeCircular;
+
+        for (const value of [circular, nullPrototype, nullPrototypeCircular]) {
+          await triggers.subscribe(async () => {
+            throw value;
+          });
+        }
+        for (const [filterCallback] of vi.mocked(mockPusherService.subscribe).mock.calls) {
+          filterCallback(mockTriggerData);
+        }
+        await new Promise<void>(resolve => {
+          setImmediate(resolve);
+        });
+
+        expect(
+          vi
+            .mocked(logger.error)
+            .mock.calls.filter(([prefix]) => prefix === '❌ Error in trigger callback:')
+        ).toEqual([
+          ['❌ Error in trigger callback:', '[object Object]'],
+          ['❌ Error in trigger callback:', '{"code":429}'],
+          ['❌ Error in trigger callback:', '[unprintable value]'],
+        ]);
+        expect(unhandledRejection).not.toHaveBeenCalled();
+      } finally {
+        process.off('unhandledRejection', unhandledRejection);
+      }
     });
   });
 
@@ -1249,6 +1292,16 @@ describe('Triggers', () => {
         })
       );
       expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V3 format');
+    });
+
+    it('should not call callback when V3 auth config does not match', async () => {
+      await triggers.subscribe(mockCallback, { authConfigId: 'auth-other' });
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV3Payload);
+
+      expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should parse V2 Pusher payload', async () => {

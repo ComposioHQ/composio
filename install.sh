@@ -55,7 +55,7 @@ print_usage() {
         '' \
         'Options:' \
         '  --agent       Sign up or log in as a Composio agent after installation.' \
-        '  --no-plugins  Skip agent plugin installation (the default).' \
+        '  --no-plugins  Skip agent plugin installation.' \
         '  -h, --help    Show this help.' \
         '' \
         'Set COMPOSIO_INSTALL_SHELL=auto|zsh|bash|fish|none to control automatic shell setup' \
@@ -318,6 +318,12 @@ install_bundle() {
     publish_staged_entry "$stage/composio"
     rmdir "$stage" || warn "Published CLI; retained recovery staging directory at $stage"
     stage=
+
+    # Remove legacy sidecars only when the selected release omits them.
+    if [ ! -d "$install_bundle_dir/local-tools-binaries" ]; then
+        rm -rf "$resolved_install_dir/local-tools-binaries" ||
+            warn "Could not remove obsolete $resolved_install_dir/local-tools-binaries"
+    fi
 }
 
 install_entry_point() {
@@ -394,7 +400,7 @@ compute_inherited_resolution() {
 # is only ever emitted inside double quotes -- `export PATH="<dir>:$PATH"` for
 # bash/zsh and `set --export PATH "<dir>" $PATH` for fish -- so the set is
 # deliberately narrow and mirrors UNSAFE_PATH_CHARS in
-# ts/packages/cli/src/commands/install.cmd.ts, keeping this inline fallback and
+# ts/packages/cli/src/services/shell-config.ts, keeping this inline fallback and
 # `composio install` on one contract:
 #
 #   ` $ " \  the only characters bash and zsh still expand inside double
@@ -418,7 +424,7 @@ is_unsafe_path() {
 }
 
 # Renders the home directory itself and paths under it with a literal $HOME
-# prefix. Must stay in lockstep with the CLI's renderWithHome (install.cmd.ts):
+# prefix. Must stay in lockstep with the CLI's renderWithHome (shell-config.ts):
 # delegated_setup_verified compares the CLI-written line against this rendering
 # byte for byte, so any disagreement makes every delegated install look stale
 # and forces a needless inline rewrite.
@@ -784,7 +790,7 @@ main() {
     inherited_path=${PATH:-}
 
     install_agent=0
-    install_plugins=${COMPOSIO_INSTALL_PLUGINS:-0}
+    install_plugins=${COMPOSIO_INSTALL_PLUGINS:-1}
     version_arg=
     requested_shell=${COMPOSIO_INSTALL_SHELL:-}
 

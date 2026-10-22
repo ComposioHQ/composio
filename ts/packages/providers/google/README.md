@@ -44,7 +44,7 @@ let response = await chat.sendMessage({
 while (response.functionCalls && response.functionCalls.length > 0) {
   const parts: Part[] = [];
   for (const fc of response.functionCalls) {
-    const result = await composio.provider.executeToolCall('user_123', {
+    const result = await composio.provider.executeToolCall(session, {
       name: fc.name || '',
       args: (fc.args || {}) as Record<string, unknown>,
     });
@@ -64,7 +64,7 @@ console.log(response.text);
 
 ## Tool execution
 
-Gemini function calling is non-agentic; the model returns function calls and you execute them. `GoogleProvider` exposes `executeToolCall(userId, functionCall, options?, modifiers?)`, which takes a `{ name, args }` pair and returns the tool result as a JSON string. The constructor takes no options.
+Gemini function calling is non-agentic; the model returns function calls and you execute them. `GoogleProvider` exposes `executeToolCall(session, functionCall)`, which takes a `{ name, args }` pair, executes it through the session that produced the tools, and returns the tool result as a JSON string. For tools fetched with `tools.get()`, call `executeToolCall(userId, functionCall, options?, modifiers?)` instead. The constructor takes no options.
 
 ## Links
 

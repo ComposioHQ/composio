@@ -7,12 +7,12 @@
   "access": "restricted",
   "privatePackages": {
     "version": true,
-    "tag": true
+    "tag": false
   },
   "baseBranch": "next",
   "updateInternalDependencies": "patch",
   "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
     "onlyUpdatePeerDependentsWhenOutOfRange": true
   },
-  "ignore": ["@composio/cli", "@composio/cli-local-tools"]
+  "ignore": ["@composio/cli"]
 }

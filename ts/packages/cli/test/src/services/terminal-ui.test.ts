@@ -2,8 +2,14 @@ import { Writable } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
-import { Array as Arr, Data, Effect, Exit, pipe } from 'effect';
-import { getTerminalCapabilities, makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import stringWidth from 'fast-string-width';
+import { Data, Effect } from 'effect';
+import {
+  clampSpinnerMessage,
+  getTerminalCapabilities,
+  makeTerminalUI,
+  TerminalUI,
+} from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
 vi.mock('@clack/prompts', async importOriginal => {
@@ -17,11 +23,8 @@ class TestFailure extends Data.TaggedError('test/TestFailure')<{
 
 const booleanStates = [false, true] as const;
 
-const ttyCombinations = pipe(
-  Arr.Do,
-  Arr.bind('stdin', () => booleanStates),
-  Arr.bind('stdout', () => booleanStates),
-  Arr.bind('stderr', () => booleanStates)
+const ttyCombinations = booleanStates.flatMap(stdin =>
+  booleanStates.flatMap(stdout => booleanStates.map(stderr => ({ stdin, stdout, stderr })))
 );
 
 /** An intentional Node.js Writable test double matching Clack's output contract. */
@@ -166,12 +169,209 @@ describe('TerminalUI', () => {
     );
   });
 
+  describe('clampSpinnerMessage keeps live spinner messages on one terminal row', () => {
+    it('leaves a message that fits untouched', () => {
+      expect(clampSpinnerMessage(80, 'Checking for updates')).toBe('Checking for updates');
+    });
+
+    it('truncates a message longer than the row budget with an ellipsis', () => {
+      const clamped = clampSpinnerMessage(40, 'x'.repeat(100));
+      expect(clamped).toBe(`${'x'.repeat(32)}…`);
+      expect(clamped).toHaveLength(40 - 7);
+    });
+
+    it('collapses embedded newlines into spaces', () => {
+      expect(clampSpinnerMessage(80, 'line one\nline two')).toBe('line one line two');
+    });
+
+    it('never slices a message containing ANSI escape sequences', () => {
+      const colored = `\u001b[32m${'x'.repeat(100)}\u001b[0m`;
+      expect(clampSpinnerMessage(40, colored)).toBe(colored);
+    });
+
+    it('measures display columns, not UTF-16 code units', () => {
+      // 20 CJK characters are 20 code units but 40 display columns, so at 40
+      // columns they sit under a `.length` budget of 33 and over a width one.
+      // A length-based clamp would pass them through and let the frame wrap.
+      const message = '\u4f60\u597d'.repeat(10);
+      expect(message).toHaveLength(20);
+      expect(stringWidth(message)).toBe(40);
+
+      const clamped = clampSpinnerMessage(40, message);
+      expect(clamped.endsWith('…')).toBe(true);
+      expect(stringWidth(clamped)).toBeLessThanOrEqual(40 - 7);
+    });
+
+    it('measures and truncates whole grapheme clusters', () => {
+      const keycap = '1\uFE0F\u20E3';
+      expect(stringWidth(keycap)).toBe(2);
+      expect([...keycap].reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
+
+      const clamped = clampSpinnerMessage(20, keycap.repeat(20));
+      expect(clamped).toMatch(/^(?:1\uFE0F\u20E3)*…$/u);
+      expect(stringWidth(clamped)).toBeLessThanOrEqual(20 - 7);
+    });
+
+    it('never cuts a surrogate pair in half', () => {
+      const clamped = clampSpinnerMessage(20, '\u{1f600}'.repeat(40));
+      expect(clamped).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+      expect(stringWidth(clamped)).toBeLessThanOrEqual(20 - 7);
+    });
+
+    it('degrades to the ellipsis on terminals narrower than the frame overhead', () => {
+      // Below SPINNER_RENDER_OVERHEAD + 1 columns no message length fits, so the
+      // budget bottoms out at one column rather than jumping back up to eight.
+      expect(clampSpinnerMessage(4, 'x'.repeat(100))).toBe('…');
+    });
+
+    it('keeps the rendered frame within the row at the exact budget boundary', () => {
+      const columns = 20;
+      const clamped = clampSpinnerMessage(columns, 'x'.repeat(100));
+      // frame (1) + two spaces (2) + message + three animated dots (3).
+      expect(1 + 2 + stringWidth(clamped) + 3).toBeLessThanOrEqual(columns);
+    });
+
+    // Clack ticks every 80ms and grows its animated dots by 0.125 per tick, so
+    // reaching the three dots SPINNER_RENDER_OVERHEAD reserves takes 24 ticks.
+    // A shorter advance renders a frame with no dots and never exercises them.
+    const TICKS_PAST_THREE_DOTS = 2000;
+
+    const LONG_UPGRADE_MESSAGE =
+      'New version available: @composio/cli@0.4.0 (current: @composio/cli@0.3.2). Downloading...';
+
+    const narrowUi = (columns: number) => {
+      const stdout = makeSink(true);
+      const stderr = Object.assign(makeSink(true), { columns });
+      const ui = makeTerminalUI({ stdin: { isTTY: true }, stdout, stderr });
+      return { ui, stderr };
+    };
+
+    /** Every frame clack redrew, i.e. the writes that carry the clamped message. */
+    const clampedFrames = (stderr: { chunks: string[] }) =>
+      stderr.chunks.filter(chunk => chunk.includes('…'));
+
+    /** Drives a real clack spinner with fake timers, then always restores them. */
+    const withFakeTimers = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+      Effect.acquireUseRelease(
+        Effect.sync(() => vi.useFakeTimers()),
+        () => effect,
+        () => Effect.sync(() => vi.useRealTimers())
+      );
+
+    it.live('renders live spinner frames without wrapping in a narrow terminal', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(40);
+
+          yield* ui.useMakeSpinner(LONG_UPGRADE_MESSAGE, spinner =>
+            Effect.gen(function* () {
+              yield* Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS));
+              yield* spinner.stop('Upgrade completed!');
+            })
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames[0]).toContain('New version available: @composio');
+          // A wrapped frame is what leaks lines on every redraw tick.
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+        })
+      )
+    );
+
+    it.live('clamps live message() updates, not just the start message', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(40);
+
+          yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+            Effect.gen(function* () {
+              // The upgrade flow drives its longest text through message(), not
+              // start() — reverting the clamp there must fail this test.
+              yield* spinner.message(LONG_UPGRADE_MESSAGE);
+              yield* Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS));
+              yield* spinner.stop('Upgrade completed!');
+            })
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames[0]).toContain('New version available: @composio');
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+        })
+      )
+    );
+
+    it.live('does not grow updates beyond the width Clack captured at construction', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(20);
+
+          yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+            Effect.gen(function* () {
+              stderr.columns = 80;
+              yield* spinner.message(LONG_UPGRADE_MESSAGE);
+              yield* Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS));
+              yield* spinner.stop('Upgrade completed!');
+            })
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames[0]).toContain('New version');
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+          expect(Math.max(...frames.map(frame => stringWidth(frame)))).toBeLessThanOrEqual(20);
+        })
+      )
+    );
+
+    it.live('respects a terminal that narrows after spinner construction', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(80);
+
+          yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+            Effect.gen(function* () {
+              stderr.columns = 20;
+              yield* spinner.message(LONG_UPGRADE_MESSAGE);
+              yield* Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS));
+              yield* spinner.stop('Upgrade completed!');
+            })
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames[0]).toContain('New version');
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+          expect(Math.max(...frames.map(frame => stringWidth(frame)))).toBeLessThanOrEqual(20);
+        })
+      )
+    );
+
+    it.live('clamps the withSpinner start message too', () =>
+      withFakeTimers(
+        Effect.gen(function* () {
+          const { ui, stderr } = narrowUi(40);
+
+          yield* ui.withSpinner(
+            LONG_UPGRADE_MESSAGE,
+            Effect.sync(() => vi.advanceTimersByTime(TICKS_PAST_THREE_DOTS))
+          );
+
+          const frames = clampedFrames(stderr);
+          expect(frames.length).toBeGreaterThan(0);
+          expect(frames).not.toContainEqual(expect.stringContaining('\n'));
+        })
+      )
+    );
+  });
+
   layer(TestLive())(it => {
     // -----------------------------------------------------------------------
     // Data output
     // -----------------------------------------------------------------------
 
-    it.scoped('output writes raw data capturable by MockConsole', () =>
+    it.effect('output writes raw data capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.output('ak_test123');
@@ -181,7 +381,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('error writes raw diagnostics capturable by MockConsole', () =>
+    it.effect('error writes raw diagnostics capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.error('diagnostic');
@@ -195,7 +395,7 @@ describe('TerminalUI', () => {
     // Log text capture
     // -----------------------------------------------------------------------
 
-    it.scoped('log.info writes text capturable by MockConsole', () =>
+    it.effect('log.info writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.info('hello from info');
@@ -205,7 +405,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.success writes text capturable by MockConsole', () =>
+    it.effect('log.success writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.success('operation succeeded');
@@ -215,7 +415,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.warn writes text capturable by MockConsole', () =>
+    it.effect('log.warn writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.warn('something is off');
@@ -225,7 +425,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.error writes text capturable by MockConsole', () =>
+    it.effect('log.error writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.error('something broke');
@@ -235,7 +435,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.step writes text capturable by MockConsole', () =>
+    it.effect('log.step writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.step('step completed');
@@ -245,7 +445,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('note writes title and message capturable by MockConsole', () =>
+    it.effect('note writes title and message capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.note('api_key_123', 'API Key');
@@ -257,7 +457,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('intro and outro write text capturable by MockConsole', () =>
+    it.effect('intro and outro write text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.intro('my command');
@@ -274,7 +474,7 @@ describe('TerminalUI', () => {
     // withSpinner lifecycle
     // -----------------------------------------------------------------------
 
-    it.scoped('withSpinner captures success message', () =>
+    it.effect('withSpinner captures success message', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         const result = yield* ui.withSpinner('loading', Effect.succeed(42), {
@@ -287,14 +487,14 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('withSpinner propagates errors', () =>
+    it.effect('withSpinner propagates errors', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        const exit = yield* Effect.exit(
-          ui.withSpinner('loading', Effect.fail(new TestFailure({ message: 'network error' })))
-        );
+        const failure = yield* ui
+          .withSpinner('loading', Effect.fail(new TestFailure({ message: 'network error' })))
+          .pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failure).toEqual(new TestFailure({ message: 'network error' }));
       })
     );
 
@@ -302,17 +502,17 @@ describe('TerminalUI', () => {
     // useMakeSpinner — auto-cleanup on error
     // -----------------------------------------------------------------------
 
-    it.scoped('useMakeSpinner auto-stops spinner on error', () =>
+    it.effect('useMakeSpinner auto-stops spinner on error', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
-        const exit = yield* Effect.exit(
-          ui.useMakeSpinner('fetching data', _spinner =>
+        const failure = yield* ui
+          .useMakeSpinner('fetching data', _spinner =>
             Effect.fail(new TestFailure({ message: 'API returned 400' }))
           )
-        );
+          .pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failure).toEqual(new TestFailure({ message: 'API returned 400' }));
 
         // The spinner error message should be captured
         const lines = yield* MockConsole.getLines();
@@ -320,7 +520,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('useMakeSpinner does NOT double-stop if user already stopped', () =>
+    it.effect('useMakeSpinner does NOT double-stop if user already stopped', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -338,7 +538,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('useMakeSpinner allows message updates before stop', () =>
+    it.effect('useMakeSpinner allows message updates before stop', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -355,7 +555,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('useMakeSpinner returns the value from the use callback', () =>
+    it.effect('useMakeSpinner returns the value from the use callback', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -370,23 +570,23 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped(
+    it.effect(
       'useMakeSpinner does NOT double-error when callback calls spinner.error then fails',
       () =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
 
-          const exit = yield* Effect.exit(
-            ui.useMakeSpinner('fetching', spinner =>
+          const failure = yield* ui
+            .useMakeSpinner('fetching', spinner =>
               Effect.gen(function* () {
                 // Simulate tapError pattern: callback calls spinner.error(), then the effect fails
                 yield* spinner.error('Login timed out. Please try again.');
                 return yield* new TestFailure({ message: 'timed out' });
               })
             )
-          );
+            .pipe(Effect.flip);
 
-          expect(Exit.isFailure(exit)).toBe(true);
+          expect(failure).toEqual(new TestFailure({ message: 'timed out' }));
 
           const lines = yield* MockConsole.getLines();
           // Should see the user's error message

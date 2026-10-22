@@ -14,6 +14,48 @@ const result = await composio.connectedAccounts.list();
 
 ## Methods
 
+### completeAuth()
+
+Complete a deferred OAuth connection once you have verified the user's
+identity.
+
+When your project has an OAuth callback verifier configured, Composio
+does not activate a new OAuth connection by itself: it redirects to your
+verifier with a single-use session URI. After confirming who the user is,
+redeem that session URI here; Composio checks that your project owns the
+pending connection and that `userId` is its owner, completes the token
+exchange, and the connection becomes `ACTIVE`.
+
+The session URI is single-use: redeeming it twice, or after it expires,
+fails with a 404 from the API.
+
+```typescript
+async completeAuth(params: ConnectedAccountCompleteAuthParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountCompleteAuthResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `ConnectedAccountCompleteAuthParams` | `userId` the connection was initiated for and the verifier's `sessionUri` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ConnectedAccountCompleteAuthResponse>` — The completed connection's ID and toolkit
+
+**Example**
+
+```typescript
+// In your verifier route, after authenticating the user:
+const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
+  userId: 'user_123',
+  sessionUri, // the session URI from the verifier redirect
+});
+```
+
+---
+
 ### delete()
 
 Deletes a connected account.
@@ -308,7 +350,14 @@ const githubAccounts = await composio.connectedAccounts.list({
 
 ---
 
-### refresh()
+### refresh() (deprecated)
+
+<Callout type="warn" title="Deprecated">
+The `POST /connected_accounts/\{id\}/refresh` endpoint is deprecated by the
+  Composio API. Re-initiate authentication instead: `composio.connectedAccounts.link(userId, authConfigId)`
+  for a fresh connection, or `session.authorize(toolkit)` from a session. Behaviour is unchanged
+  while the endpoint remains available; do not generate new code against `refresh`.
+</Callout>
 
 Refreshes a connected account's authentication credentials.
 
@@ -336,6 +385,40 @@ async refresh(nanoid: string, options?: ConnectedAccountRefreshOptions, requestO
 ```typescript
 // Refresh a connected account's credentials
 const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123');
+```
+
+---
+
+### revoke()
+
+Revoke a connected account at the upstream provider.
+
+Best-effort upstream revocation of the stored tokens/credentials; on
+success the connection status becomes `REVOKED`. Revoking an already
+revoked connection returns an empty `revokedTokens` list without an
+upstream call.
+
+```typescript
+async revoke(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRevokeResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `string` | The unique identifier of the connected account to revoke |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ConnectedAccountRevokeResponse>` — Which tokens were revoked and the resulting status
+
+**Example**
+
+```typescript
+const result = await composio.connectedAccounts.revoke('conn_abc123');
+console.log(result.connectedAccount.status); // 'REVOKED'
+console.log(result.revokedTokens); // e.g. ['access_token', 'refresh_token']
 ```
 
 ---

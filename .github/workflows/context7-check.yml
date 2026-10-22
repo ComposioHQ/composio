@@ -1,0 +1,35 @@
+name: Context7 Retrieval Check
+
+# Run after the owner confirms a production deploy and completed index refresh.
+# Never part of unit tests, and never refreshes or changes library settings.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up repository toolchain
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - name: Test runner offline
+        run: node --test test/context7-check.test.mjs
+      - name: Check public retrieval
+        env:
+          CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
+        run: node scripts/context7-check.mjs --output context7-baseline.json
+      - name: Retain retrieval evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: context7-${{ github.sha }}
+          path: context7-baseline.json
+          if-no-files-found: warn
+          retention-days: 30

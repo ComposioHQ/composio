@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
 import { ComposioSensitiveFilePathBlockedError } from '../../src/errors/FileModifierErrors';
@@ -64,6 +65,10 @@ const fetchedFileResponse = (contentType: string = 'application/pdf') =>
     status: 200,
     headers: { 'content-type': contentType },
   });
+
+/** A small, well-formed S3 download response (no `content-length` header). */
+const downloadedFileResponse = (body: Uint8Array = new Uint8Array(10)) =>
+  new Response(body, { status: 200 });
 
 describe('fileUtils', () => {
   let mockClient: ComposioClient;
@@ -314,10 +319,7 @@ describe('fileUtils', () => {
 
   describe('downloadFileFromS3', () => {
     it('should generate filename with tool slug prefix', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-      });
+      mockFetch.mockResolvedValue(downloadedFileResponse());
 
       const result = await downloadFileFromS3({
         toolSlug: 'github',
@@ -329,10 +331,7 @@ describe('fileUtils', () => {
     });
 
     it('should handle MIME types with + in downloadFileFromS3', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-      });
+      mockFetch.mockResolvedValue(downloadedFileResponse());
 
       const result = await downloadFileFromS3({
         toolSlug: 'api-tool',
@@ -364,10 +363,7 @@ describe('fileUtils', () => {
       // If a future change started reflecting the s3Url path or query into
       // the local filename, an attacker-controlled CDN response could write
       // outside the download dir or stomp on existing files.
-      mockFetch.mockResolvedValue({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-      });
+      mockFetch.mockResolvedValue(downloadedFileResponse());
 
       const result = await downloadFileFromS3({
         toolSlug: 'github',
@@ -390,10 +386,7 @@ describe('fileUtils', () => {
       // could in theory smuggle path components into the saved filename.
       // `saveFile` defends against that by running the assembled filename
       // through `path.basename` before joining with the download dir.
-      mockFetch.mockResolvedValue({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
-      });
+      mockFetch.mockResolvedValue(downloadedFileResponse());
 
       const result = await downloadFileFromS3({
         toolSlug: 'AAA/../etc/passwd',
@@ -408,6 +401,39 @@ describe('fileUtils', () => {
       expect(result.filePath).toBeDefined();
       expect(path.dirname(result.filePath as string)).not.toContain('etc');
       expect(path.basename(result.filePath as string)).toBe('passwd_1640995200000abc12345.txt');
+    });
+
+    it('rejects a stream that exceeds the download limit and writes nothing', async () => {
+      // `s3Url` is an API-response field, so the body behind it is untrusted:
+      // without a cap, a dishonest (or absent) Content-Length lets the server
+      // stream unbounded bytes into the host process's heap and onto disk.
+      mockFetch.mockResolvedValue(downloadedFileResponse(new Uint8Array(2048)));
+
+      await expect(
+        downloadFileFromS3({
+          toolSlug: 'github',
+          s3Url: 'https://s3.example.com/huge.bin',
+          mimeType: 'text/plain',
+          maxDownloadBytes: 1024,
+        })
+      ).rejects.toThrow(/exceeds maximum allowed size/);
+
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('downloads a body within the limit', async () => {
+      const body = new Uint8Array(512).fill(7);
+      mockFetch.mockResolvedValue(downloadedFileResponse(body));
+
+      const result = await downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/small.bin',
+        mimeType: 'text/plain',
+        maxDownloadBytes: 1024,
+      });
+
+      expect(result.filePath).toBeDefined();
+      expect(fs.writeFileSync).toHaveBeenCalledWith(result.filePath, body);
     });
   });
 

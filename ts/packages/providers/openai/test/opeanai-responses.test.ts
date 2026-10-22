@@ -263,6 +263,19 @@ describe('OpenAIResponsesProvider', () => {
     });
   });
 
+  describe('wrapMcpServerResponse', () => {
+    it('never logs MCP server URLs to stdout', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const mcpUrl = 'https://mcp.example.com/t/super-secret-token';
+      const result = provider.wrapMcpServerResponse([{ name: 'srv', url: mcpUrl }]);
+      expect(logSpy).not.toHaveBeenCalled();
+      logSpy.mockRestore();
+      expect(result).toEqual([
+        { type: 'mcp', server_label: 'srv', server_url: mcpUrl, require_approval: 'never' },
+      ]);
+    });
+  });
+
   describe('wrapTools', () => {
     it('should wrap multiple tools', () => {
       const anotherTool: Tool = {
@@ -431,7 +444,12 @@ describe('OpenAIResponsesProvider', () => {
       const session = {
         execute: vi
           .fn()
-          .mockResolvedValueOnce({ data: { index: 1 }, error: null, logId: 'log-1' })
+          .mockResolvedValueOnce({
+            data: { index: 1 },
+            error: null,
+            logId: 'log-1',
+            resultType: 'completed',
+          })
           .mockRejectedValueOnce(new Error('session execution failed')),
       };
       const toolCalls = [
@@ -468,6 +486,7 @@ describe('OpenAIResponsesProvider', () => {
             data: { index: 1 },
             error: null,
             logId: 'log-1',
+            resultType: 'completed',
             successful: true,
           }),
           status: 'completed',
@@ -674,6 +693,62 @@ describe('OpenAIResponsesProvider', () => {
 
       expect(handleToolCallsSpy).toHaveBeenCalledWith(userId, [], undefined, undefined);
       expect(results).toEqual([]);
+    });
+
+    it('executes the response tool calls through a Tool Router session', async () => {
+      const session = {
+        execute: vi.fn().mockResolvedValue({
+          data: { result: 'session-success' },
+          error: null,
+          logId: 'log-session',
+          resultType: 'completed',
+        }),
+      };
+      const response = {
+        output: [
+          { type: 'message', id: 'msg-1', content: [] },
+          {
+            id: 'fc-1',
+            type: 'function_call',
+            name: 'COMPOSIO_SEARCH_TOOLS',
+            arguments: JSON.stringify({ query: 'send an email' }),
+            call_id: 'call-1',
+          },
+        ],
+      } as unknown as OpenAI.Responses.Response;
+
+      const results = await provider.handleResponse(session, response);
+
+      expect(session.execute).toHaveBeenCalledWith('COMPOSIO_SEARCH_TOOLS', {
+        query: 'send an email',
+      });
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(results).toEqual([
+        {
+          call_id: 'call-1',
+          type: 'function_call_output',
+          output: JSON.stringify({
+            data: { result: 'session-success' },
+            error: null,
+            logId: 'log-session',
+            resultType: 'completed',
+            successful: true,
+          }),
+          status: 'completed',
+        },
+      ]);
+    });
+
+    it('rejects direct execution options with a session', async () => {
+      const session = { execute: vi.fn() };
+      const response = { output: [] } as unknown as OpenAI.Responses.Response;
+
+      await expect(
+        // @ts-expect-error direct execution options are not accepted with a session
+        provider.handleResponse(session, response, { connectedAccountId: 'conn-123' })
+      ).rejects.toThrow(
+        'Direct execution options and modifiers cannot be used with a Tool Router session'
+      );
     });
   });
 });

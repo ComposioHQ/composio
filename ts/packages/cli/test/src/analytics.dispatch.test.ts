@@ -1,10 +1,11 @@
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { Effect, Layer } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,
@@ -21,6 +22,7 @@ import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 
 const childProcessMocks = vi.hoisted(() => ({
   once: vi.fn(),
@@ -35,19 +37,40 @@ vi.mock('node:child_process', () => ({
 
 const originalArgv = [...process.argv];
 
-const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let index = 0; index < cwd.length; index += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(index);
-  }
-  return Math.abs(hash >>> 0).toString(36);
-};
+/** The cache key of `/workspace/project`: its djb2 hash in base 36. */
+const WORKSPACE_PROJECT_CWD_HASH = '1uj8qfp';
 
+// Design contract: `FetchHttpClient.Fetch` is an `effect` `Context.Reference`
+// whose default value (`globalThis.fetch`) is memoized on first read (see the
+// vendored `effect` source, `Context.ts`'s `getOrCreateDefaultValue`) — once
+// any test in this process reads the reference, later `vi.spyOn(globalThis,
+// 'fetch')` swaps are invisible to `FetchHttpClient`. Mutating the global is
+// therefore never a reliable way to observe or stub fetch calls made through
+// this reference, in this file or any other. Every test that asserts on fetch
+// — including tests asserting fetch was *not* called — must inject its own
+// mock explicitly via `Layer.succeed(FetchHttpClient.Fetch, fetchImpl)`,
+// which `makePlatformLayerWithFetch` below wires up. Tests that never
+// exercise a fetch-reaching code path use the plain `makePlatformLayer` and
+// don't touch `globalThis.fetch` at all.
+// `vi.stubEnv` drives every scenario, so config reads go through a provider that re-reads
+// the environment per lookup instead of the process-wide snapshot `ConfigProvider` defaults to.
 const makePlatformLayer = (home: string) =>
   Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    ConfigProvider.layer(liveEnvConfigProvider),
+    TerminalUITest,
+    Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
+  );
+
+const makePlatformLayerWithFetch = (home: string, fetchImpl: typeof fetch) =>
+  Layer.mergeAll(
+    BunFileSystem.layer,
+    BunPath.layer,
+    FetchHttpClient.layer,
+    ConfigProvider.layer(liveEnvConfigProvider),
+    Layer.succeed(FetchHttpClient.Fetch, fetchImpl),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
@@ -107,21 +130,17 @@ describe('CLI analytics dispatch', () => {
       const cacheDir = tempy.temporaryDirectory();
       const cwd = '/workspace/project';
       vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
-      vi.stubEnv('COMPOSIO_BASE_URL', '');
+      vi.stubEnv('COMPOSIO_BASE_URL', 'https://backend.example.test///');
 
       return Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         yield* fs.writeFileString(
-          path.join(cacheDir, USER_CONFIG_FILE_NAME),
-          JSON.stringify({ base_url: 'https://backend.example.test///' })
-        );
-        yield* fs.writeFileString(
           path.join(cacheDir, 'consumer-short-term-cache.json'),
           JSON.stringify({
             older: {
               probablyMyCliSessionsByCwdHash: {
-                [cwdHash(cwd)]: {
+                [WORKSPACE_PROJECT_CWD_HASH]: {
                   id: 'cli_s_older',
                   // The TestClock sits at epoch 0, so these fixed instants are
                   // deterministically 30s and 60s in the future.
@@ -131,7 +150,7 @@ describe('CLI analytics dispatch', () => {
             },
             newer: {
               probablyMyCliSessionsByCwdHash: {
-                [cwdHash(cwd)]: {
+                [WORKSPACE_PROJECT_CWD_HASH]: {
                   id: 'cli_s_newer',
                   expiresAt: '1970-01-01T00:01:00.000Z',
                 },
@@ -145,6 +164,26 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     }
   );
+
+  it.effect('sends failures to the backend the stored login was issued by', () => {
+    const home = tempy.temporaryDirectory();
+    const cacheDir = tempy.temporaryDirectory();
+    vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+    // Blank reads as unset, whatever the host environment holds.
+    vi.stubEnv('COMPOSIO_BASE_URL', '');
+    vi.stubEnv('COMPOSIO_ENVIRONMENT', '');
+    vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+    writeFileSync(
+      path.join(cacheDir, USER_CONFIG_FILE_NAME),
+      JSON.stringify({ api_key: 'uak_staging', base_url: 'https://staging-backend.composio.dev/' })
+    );
+
+    return Effect.gen(function* () {
+      expect(yield* readApiBaseUrl).toBe('https://staging-backend.composio.dev');
+      vi.stubEnv('COMPOSIO_ENVIRONMENT', 'production');
+      expect(yield* readApiBaseUrl).toBe('https://backend.composio.dev');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
 
   it.effect('ignores malformed worker payloads', () => {
     const home = tempy.temporaryDirectory();
@@ -177,9 +216,7 @@ describe('CLI analytics dispatch', () => {
     vi.stubEnv('COMPOSIO_BASE_URL', '');
     vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
     vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 200 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -187,7 +224,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__analytics-worker',
         encodedPayload,
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
@@ -272,6 +311,9 @@ describe('CLI analytics dispatch', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
     enableTelemetry();
+    vi.stubEnv('CLAUDECODE', '');
+    vi.stubEnv('CODEX_THREAD_ID', '');
+    vi.stubEnv('CODEX_SANDBOX', '');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
@@ -293,7 +335,7 @@ describe('CLI analytics dispatch', () => {
       expect(args).toHaveLength(3);
       expect(decodeWorkerPayload(args[2]!)).toMatchObject({
         event: 'producer_event',
-        properties: { cli_version: APP_VERSION, sample: 'value' },
+        properties: { cli_version: APP_VERSION, sample: 'value', agent_host_env: 'none' },
         source: 'cli',
       });
       expect(options).toMatchObject({
@@ -303,6 +345,25 @@ describe('CLI analytics dispatch', () => {
       expect(options).not.toHaveProperty('env');
       expect(childProcessMocks.once).toHaveBeenCalledWith('error', expect.any(Function));
       expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('stamps the enqueued envelope with the agent host it runs under', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry();
+    vi.stubEnv('CLAUDECODE', '1');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliEventEffect({ name: 'producer_event' });
+
+      const [, args] = childProcessMocks.spawn.mock.calls[0] as unknown as [string, string[]];
+      expect(decodeWorkerPayload(args[2]!)).toMatchObject({
+        properties: { agent_host_env: 'claude' },
+      });
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
@@ -566,6 +627,41 @@ describe('CLI analytics dispatch', () => {
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
+  it.effect('adopts the persisted install_id when the bounded lock wait expires', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = path.join(home, 'composio.ts');
+    const composioDir = path.join(home, '.composio');
+    const lockPath = path.join(composioDir, 'analytics.json.lock');
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+    mkdirSync(composioDir, { recursive: true });
+    writeFileSync(scriptPath, '');
+    // A live lock that is never released drives this process through the full
+    // bounded wait; the identity another run already persisted must still win
+    // over minting a fresh install_id, and the fallback must not rewrite state
+    // without holding the lock.
+    writeFileSync(lockPath, 'other-process');
+    writeFileSync(
+      path.join(composioDir, 'analytics.json'),
+      JSON.stringify({ install_id: 'install_persisted' })
+    );
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED });
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ installId: string }>(args[2]!);
+      expect(payload.installId).toBe('install_persisted');
+
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as { install_id: string };
+      expect(persisted.install_id).toBe('install_persisted');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('keys post-login events on the persisted apollo_user_id', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
@@ -648,13 +744,15 @@ describe('CLI analytics dispatch', () => {
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
 
       vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
       yield* runBackgroundWorkerFromArgv([
         process.execPath,
         'composio',
         '__analytics-worker',
         args[2]!,
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchMock as unknown as typeof fetch))
+      );
 
       const acknowledged = JSON.parse(
         yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
@@ -682,13 +780,15 @@ describe('CLI analytics dispatch', () => {
       const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
 
       vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
+      const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 500 }));
       yield* runBackgroundWorkerFromArgv([
         process.execPath,
         'composio',
         '__analytics-worker',
         args[2]!,
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchMock as unknown as typeof fetch))
+      );
 
       const afterFailure = JSON.parse(
         yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
@@ -816,9 +916,7 @@ describe('CLI analytics dispatch', () => {
       request_id: 'req_worker',
     };
     enableTelemetry('uak_worker');
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -826,7 +924,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
@@ -847,9 +947,7 @@ describe('CLI analytics dispatch', () => {
   it.effect('ignores malformed codact worker payloads', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry();
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -857,7 +955,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         'not-base64',
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).not.toHaveBeenCalled();
     });
@@ -866,9 +966,7 @@ describe('CLI analytics dispatch', () => {
   it.effect('skips codact worker delivery without a user key', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry('');
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     const failureBody = {
       failure_type: 'wrong_tool_slug',
       ctx: { slug: 'MISSING_TOOL' },
@@ -881,7 +979,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).not.toHaveBeenCalled();
     });

@@ -15,20 +15,8 @@ mock.module("next/navigation", () => ({
   usePathname: () => "/reference/api-reference/tasks",
   useSearchParams: () => new URLSearchParams(),
 }));
-mock.module("@/lib/toolkit-data", () => ({
-  getAllToolkits: async () => [],
-  getToolkitBySlug: async () => null,
-}));
-mock.module("@/lib/meta-tools-data", () => ({
-  getAllMetaTools: async () => [],
-  getMetaToolBySlug: async () => null,
-}));
-mock.module("@/lib/toolkit-schema", () => ({
-  apiToolListSchema: { safeParse: (value: unknown) => ({ success: true, data: value }) },
-  apiTriggerListSchema: { safeParse: (value: unknown) => ({ success: true, data: value }) },
-  processSchema: (schema: unknown) => schema,
-  toolFromApi: (tool: unknown) => tool,
-}));
+// Keep catalog loaders and schema helpers real: Bun module mocks persist across
+// files and can empty the knowledge catalog or replace transformations in later suites.
 
 let openapiPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").openapiPageToMarkdown;
 let degradedPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").degradedPageToMarkdown;
@@ -40,6 +28,15 @@ beforeAll(async () => {
 });
 
 describe("LLM OpenAPI markdown", () => {
+  test("preserves real toolkit schema helpers for subsequent suites", async () => {
+    const { processSchema, toolFromApi } = await import("../../lib/toolkit-schema");
+    expect(processSchema({
+      properties: { query: { type: "string" } },
+      required: ["query"],
+    })?.query.required).toBe(true);
+    expect(toolFromApi({ slug: "TEST_TOOL" }).name).toBe("TEST_TOOL");
+  });
+
   test("continues to render API operations with endpoint and cURL details", async () => {
     bundledSpec = {
       paths: {

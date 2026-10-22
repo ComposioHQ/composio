@@ -9,6 +9,8 @@ import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
 
+from pydantic import BaseModel
+
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
@@ -16,7 +18,9 @@ from composio.utils.shared import (
     ToolSchemaAliases,
     alias_tool_input_schema,
     get_pydantic_signature_format_from_schema_params,
+    json_schema_to_model,
     normalize_tool_arguments,
+    validate_and_serialize_tool_arguments,
 )
 
 # google-genai is only needed for handle_response (backward compat)
@@ -38,17 +42,69 @@ def _to_serializable(value: t.Any) -> t.Any:
     the Composio ``execute_tool`` call fails.  This helper normalises them back
     to plain Python primitives before handing off to the API.
     """
+    # Only fields the model returned: AFC fills omitted optional fields with
+    # ``None``, which the tool schema may not allow. Aliases restore reserved
+    # names such as ``from``.
     # Pydantic v2 BaseModel
     if hasattr(value, "model_dump"):
-        return value.model_dump()
+        return value.model_dump(exclude_unset=True, by_alias=True)
     # Pydantic v1 BaseModel
     if hasattr(value, "dict") and hasattr(value, "__fields__"):
-        return value.dict()
+        return value.dict(exclude_unset=True, by_alias=True)
     if isinstance(value, dict):
         return {k: _to_serializable(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_to_serializable(v) for v in value]
     return value
+
+
+def _literal_type(schema: t.Any) -> type:
+    """The Python type shared by a typeless property's ``const``/``enum``
+    values, or ``object`` when there is none."""
+    if not isinstance(schema, dict):
+        return object
+    if "const" in schema:
+        values = [schema["const"]]
+    elif isinstance(schema.get("enum"), list) and schema["enum"]:
+        values = schema["enum"]
+    else:
+        return object
+    # ``bool`` first: it is a subclass of ``int``.
+    for literal_type in (bool, str, int, float):
+        if all(type(value) is literal_type for value in values):
+            return literal_type
+    return object
+
+
+def _afc_annotation(annotation: t.Any, schema: t.Any = None) -> t.Any:
+    """Return an annotation google-genai AFC can convert arguments with.
+
+    AFC reads the callable's signature both to declare the function and to
+    convert the arguments the model returns, and the conversion calls
+    ``isinstance`` with the annotation. That raises on ``Annotated[...]``,
+    parameterized ``Dict`` and ``typing.Any``, so any tool using them failed
+    before it ran. The plain annotations declare the same function; the source
+    schema is still enforced by ``args_schema``.
+
+    A property without a ``type`` is ``typing.Any``. A bare ``const`` or
+    ``enum`` is declared with the type of its values, so ``{"enum": ["asc",
+    "desc"]}`` stays a string as it was before the signature carried
+    validators. Anything else becomes ``object``, which declares no type and
+    lets the conversion accept any value.
+    """
+    origin = t.get_origin(annotation)
+    args = t.get_args(annotation)
+    if origin is t.Annotated:
+        return _afc_annotation(args[0], schema)
+    if origin is list and args:
+        return t.List[_afc_annotation(args[0])]  # type: ignore[misc]
+    if origin is dict:
+        return dict
+    if origin in (t.Union, pytypes.UnionType):
+        return t.Union[tuple(_afc_annotation(arg) for arg in args)]
+    if annotation is t.Any:
+        return _literal_type(schema)
+    return annotation
 
 
 def _process_execution_result(result: t.Any) -> t.Dict:
@@ -83,7 +139,8 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
     def __init__(self, **kwargs: t.Any):
         super().__init__(**kwargs)
         self._executors: t.Dict[
-            str, t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases]
+            str,
+            t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases, t.Type[BaseModel]],
         ] = {}
 
     def wrap_tool(
@@ -100,14 +157,21 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         2. Store it in the AFC ``function_map`` for automatic execution
         """
         aliases = alias_tool_input_schema(schema=tool.input_parameters)
-        self._executors[tool.slug] = (execute_tool, aliases)
+        # Defaults stay out of the function declaration (see below), but the
+        # validation model needs them: without a default every optional field
+        # would be required.
+        args_schema = json_schema_to_model(aliases.schema, skip_default=False)
+        self._executors[tool.slug] = (execute_tool, aliases, args_schema)
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
             kwargs = _to_serializable(kwargs)
+            kwargs = validate_and_serialize_tool_arguments(
+                args_schema,
+                normalize_tool_arguments(kwargs),
+            )
             kwargs = aliases.restore_arguments(kwargs)
-            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
-            result = execute_tool(tool.slug, normalize_tool_arguments(kwargs))
+            result = execute_tool(tool.slug, kwargs)
             return _process_execution_result(result)
 
         # Create a real function object (passes inspect.isfunction)
@@ -125,10 +189,16 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # parameterized generics (e.g. List[str] instead of bare List).
         # The google-genai SDK requires parameterized array types — bare List
         # generates {"type": "ARRAY"} without "items", which the API rejects.
-        sig_params = get_pydantic_signature_format_from_schema_params(
-            schema_params=aliases.schema,
-            skip_default=True,
-        )
+        properties = aliases.schema.get("properties") or {}
+        sig_params = [
+            param.replace(
+                annotation=_afc_annotation(param.annotation, properties.get(param.name))
+            )
+            for param in get_pydantic_signature_format_from_schema_params(
+                schema_params=aliases.schema,
+                skip_default=True,
+            )
+        ]
         action_func.__signature__ = Signature(parameters=sig_params)  # type: ignore
         action_func.__doc__ = tool.description or f"Execute {tool.slug}"
 
@@ -186,11 +256,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             if fc.name not in self._executors:
                 continue
 
-            execute_tool, aliases = self._executors[fc.name]
-            arguments = aliases.restore_arguments(dict(fc.args))
-            result = execute_tool(
-                slug=fc.name, arguments=normalize_tool_arguments(arguments)
+            # Same validate -> serialize -> alias sequence as the AFC callable.
+            execute_tool, aliases, args_schema = self._executors[fc.name]
+            arguments = validate_and_serialize_tool_arguments(
+                args_schema,
+                normalize_tool_arguments(_to_serializable(dict(fc.args))),
             )
+            arguments = aliases.restore_arguments(arguments)
+            result = execute_tool(slug=fc.name, arguments=arguments)
             processed = _process_execution_result(result)
 
             function_responses.append(

@@ -73,7 +73,7 @@ print(f"Area: {area}")
 class Calculator:
     def __init__(self):
         self.result = 0
-    
+
     def add(self, x, y):
         self.result = x + y
         return self.result
@@ -196,7 +196,7 @@ from typing import List, Optional, Dict
 def process_items(items: List[str], config: Optional[Dict[str, bool]] = None) -> str:
     if config is None:
         config = {}
-    
+
     processed = [item.upper() for item in items if config.get("uppercase", True)]
     return ", ".join(processed)
 

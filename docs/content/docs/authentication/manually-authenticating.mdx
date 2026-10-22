@@ -50,6 +50,14 @@ Redirect the user to the `redirectUrl`. After they authenticate, they'll return 
 If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
 </Callout>
 
+## Reusing an active connection
+
+In TypeScript, call `session.ensureConnected("gmail")` to reuse the session's active connection. If none exists, it starts an authorization flow and waits for the connection to become active. The optional `timeout` sets how long to wait in milliseconds (default: `60000`).
+
+The result includes `toolkit`, `wasConnected`, and `connectedAccount`. `wasConnected` is `true` when an active connection already exists. Toolkits that don't require authentication also return `wasConnected: true`, with no `connectedAccount`.
+
+Use `session.authorize()` and `waitForConnection()` when you need to display or redirect to the Connect Link. `ensureConnected()` waits internally and doesn't return the redirect URL. Calling `authorize()` always starts a new authorization flow, even if an active connection exists.
+
 ## Redirecting users after authentication
 
 Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which `userID` or session triggered the connection.
@@ -90,6 +98,85 @@ After authentication, Composio redirects the user to your callback URL with the 
 ```
 https://your-app.com/callback?user_id=user_123&source=onboarding&status=success&connected_account_id=ca_abc123
 ```
+
+## Identify the connected account
+
+After authentication, use the account returned by `wait_for_connection()` or `waitForConnection()` to identify which provider account connected. If you use a callback instead, verify its `connected_account_id` against the connection attempt stored on your server and the signed-in application user before retrieving it. Callback query parameters alone aren't proof of ownership.
+
+These identifiers serve different purposes:
+
+| Value | Meaning |
+| --- | --- |
+| Application user ID | Your application's user, such as `user_123`. This doesn't identify their Gmail or GitHub account. |
+| Connected account ID | One connection in Composio, such as `ca_abc123`. Use it to select the account for a profile request. |
+| Alias | A label you assign, such as `work-gmail`. It doesn't prove which account connected. |
+| Provider identity | The email address, username, or ID returned by the provider for the authenticated account. |
+
+For a "Connected as…" label, read `state.val.displayName` when available. For additional profile fields, get the toolkit's current-user endpoint and call it through Composio's [authenticated proxy](/reference/api-reference/tools/postToolsExecuteProxy) with the same connected account ID:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Continue after connected_account = connection_request.wait_for_connection().
+account_id = connected_account.id
+state = connected_account.model_dump().get("state") or {}
+display_name = state.get("val", {}).get("displayName")
+print(f"Connected as {display_name}" if display_name else "Account connected")
+
+toolkit = composio.toolkits.get(connected_account.toolkit.slug)
+endpoint = toolkit.get_current_user_endpoint
+method = toolkit.get_current_user_endpoint_method
+if not endpoint or method not in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"):
+    raise ValueError("This toolkit doesn't publish a supported current-user endpoint")
+
+response = composio.tools.proxy(
+    endpoint=endpoint,
+    method=method,
+    connected_account_id=account_id,
+)
+if response["status"] != 200:
+    raise RuntimeError("Could not retrieve the connected account's profile")
+profile = response["data"]  # Parse the fields documented by this provider.
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+declare const connectedAccount: Awaited<ReturnType<typeof composio.connectedAccounts.get>>;
+// ---cut---
+import { z } from 'zod';
+
+// Continue after connectedAccount = await connectionRequest.waitForConnection().
+const accountId = connectedAccount.id;
+const label = z.object({ displayName: z.string().optional() })
+  .safeParse(connectedAccount.state?.val ?? {});
+const displayName = label.success ? label.data.displayName : undefined;
+console.log(displayName ? `Connected as ${displayName}` : 'Account connected');
+
+const toolkit = await composio.toolkits.get(connectedAccount.toolkit.slug);
+if (!toolkit.getCurrentUserEndpoint) {
+  throw new Error("This toolkit doesn't publish a current-user endpoint");
+}
+const method = z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+  .parse(toolkit.getCurrentUserEndpointMethod);
+const response = await composio.tools.proxyExecute({
+  endpoint: toolkit.getCurrentUserEndpoint,
+  method,
+  connectedAccountId: accountId,
+});
+if (response.status !== 200) {
+  throw new Error("Could not retrieve the connected account's profile");
+}
+const profile = z.record(z.string(), z.unknown()).parse(response.data);
+// Validate the provider-specific fields before using them in your application.
+```
+</Tab>
+</Tabs>
+
+Toolkit metadata describes where to request a profile; it doesn't contain the account owner's details. Endpoint availability, required scopes, and response fields vary by provider. If the metadata is absent, use a documented profile endpoint or tool for that provider. A GitHub username or display label isn't a verified email address.
+
+For an application policy, validate the provider's response before giving an agent access to the account. Follow [Restrict Gmail connections to an email domain](/examples/restrict-gmail-domain) for a complete example that checks the mailbox address and disables rejected connections. Return only the fields your UI needs, not the account's authentication state.
 
 ## Check connection status
 

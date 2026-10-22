@@ -52,6 +52,33 @@ await composio.triggers.subscribe(
 
 Filter the stream by `triggerId`, `triggerSlug`, `connectedAccountId`, `toolkits`, or `userId`, or pass no filters to receive every trigger event in the project.
 
+Subscription failures (for example a rejected auth request) do not reject the `subscribe()` promise — Pusher reports them asynchronously after it resolves. Pass an optional third callback to react to them programmatically:
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+// ---cut---
+await composio.triggers.subscribe(
+  data => {
+    console.log('Event received:', data);
+  },
+  {},
+  error => {
+    console.error('Trigger subscription failed:', error);
+  }
+);
+```
+
+In Python, pass the equivalent `on_subscription_error` keyword. Failures raised while establishing the subscription (such as an auth rejection) invoke the callback and then re-raise from `subscribe()` instead of timing out:
+
+```python
+subscription = composio.triggers.subscribe(
+    on_subscription_error=lambda error: print("Trigger subscription failed:", error)
+)
+```
+
 ### Forward to your local handler with the CLI (recommended)
 
 The Composio CLI streams realtime events and forwards each one to your local URL, signed exactly like production. No public URL, no tunnel, and it runs your real handler (and [`parse()`](#handling-events)) end to end.
@@ -117,6 +144,12 @@ console.log(`Delivering events to ${subscription.webhookUrl}`);
 </Tabs>
 
 Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
+
+### Manage project subscriptions
+
+Use `composio.webhooks.subscriptions` to manage outbound delivery from your project. Both SDKs provide `list()`, `get()`, `set()`, `update()`, and `delete()`. Rotate signing secrets with `rotate_secret()` in Python or `rotateSecret()` in TypeScript, and discover supported events with `list_event_types()` or `listEventTypes()`.
+
+For inbound events from a provider's OAuth app, use [webhook endpoints](/docs/setting-up-triggers/custom-oauth-webhooks).
 
 ## Handling events
 

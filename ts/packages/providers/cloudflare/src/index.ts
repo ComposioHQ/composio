@@ -16,6 +16,8 @@ import {
   BaseNonAgenticProvider,
   ToolExecuteParams,
   ExecuteToolFnOptions,
+  ToolCallExecutionTarget,
+  ToolCallSession,
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
@@ -186,10 +188,10 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    * This method processes a function call from Cloudflare's AI API,
    * executes the corresponding Composio tool, and returns the result.
    *
-   * @param userId - The user ID for authentication and tracking
+   * @param executionTarget - A user ID for direct tools or the session that produced session tools
    * @param tool - The tool call object with name and arguments
-   * @param options - Optional execution options like connected account ID
-   * @param modifiers - Optional execution modifiers for tool behavior
+   * @param options - Optional execution options like connected account ID (user ID targets only)
+   * @param modifiers - Optional execution modifiers for tool behavior (user ID targets only)
    * @returns The result of the tool execution as a JSON string
    *
    * @example
@@ -224,21 +226,47 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    *   ],
    *   tools: cloudflareTools
    * });
+   *
+   * // For tools from session.tools(), pass the session instead of a user ID
+   * const sessionResult = await provider.executeToolCall(session, toolCall);
    * ```
    */
   async executeToolCall(
+    session: ToolCallSession,
+    tool: { name: string; arguments: unknown }
+  ): Promise<string>;
+  async executeToolCall(
     userId: string,
     tool: { name: string; arguments: unknown },
-    options: ExecuteToolFnOptions,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<string>;
+  async executeToolCall(
+    executionTarget: ToolCallExecutionTarget,
+    tool: { name: string; arguments: unknown },
+    options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Models occasionally emit tool arguments as a JSON string rather than an object (issue #2406).
+    const toolArguments = normalizeToolArguments(tool.arguments, tool.name);
+    if (typeof executionTarget !== 'string') {
+      const result = await this.executeToolForTarget(
+        executionTarget,
+        tool.name,
+        toolArguments,
+        options,
+        modifiers
+      );
+      return JSON.stringify(result);
+    }
+
+    // Keep direct execution on `executeTool`, which every supported @composio/core provides.
     const payload: ToolExecuteParams = {
-      // Models occasionally emit tool arguments as a JSON string rather than an object (issue #2406).
-      arguments: normalizeToolArguments(tool.arguments, tool.name),
-      connectedAccountId: options.connectedAccountId,
-      customAuthParams: options.customAuthParams,
-      customConnectionData: options.customConnectionData,
-      userId: userId,
+      arguments: toolArguments,
+      connectedAccountId: options?.connectedAccountId,
+      customAuthParams: options?.customAuthParams,
+      customConnectionData: options?.customConnectionData,
+      userId: executionTarget,
     };
 
     const result = await this.executeTool(tool.name, payload, modifiers);

@@ -3,6 +3,8 @@
   "defaultOpen": false,
   "pages": [
     "overview",
-    "data-retention"
+    "token-custody",
+    "data-retention",
+    "zero-data-retention"
   ]
 }

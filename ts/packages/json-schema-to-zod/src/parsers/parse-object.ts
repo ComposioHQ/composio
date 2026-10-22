@@ -1,10 +1,11 @@
-import * as z from 'zod/v3';
-
 import { parseAllOf } from './parse-all-of';
 import { parseAnyOf } from './parse-any-of';
 import { parseOneOf } from './parse-one-of';
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
+import { applyPropertyPresence } from './property-presence';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject } from '../types';
+import { compilePattern } from '../utils/compile-pattern';
 import { its } from '../utils/its';
 
 /**
@@ -18,7 +19,10 @@ import { its } from '../utils/its';
  * is the defect it was masking, and the OpenAI provider suite is part of this
  * package's verification precisely so the claim stays checked.
  */
-function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object' }, refs: Refs) {
+function parseObjectProperties<S>(
+  objectSchema: JsonSchemaObject & { type?: 'object' },
+  ctx: ParseContext<S>
+): Record<string, S> | undefined {
   if (!objectSchema.properties) {
     return undefined;
   }
@@ -28,64 +32,25 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object
     return undefined;
   }
 
-  const properties: Record<string, z.ZodTypeAny> = {};
+  const { backend } = ctx;
+  const properties: Record<string, S> = {};
 
   for (const key of propertyKeys) {
     const propJsonSchema = objectSchema.properties[key];
 
     const propZodSchema = parseSchema(propJsonSchema, {
-      ...refs,
-      path: [...refs.path, 'properties', key],
+      ...ctx,
+      path: [...ctx.path, 'properties', key],
     });
 
     const required = Array.isArray(objectSchema.required)
       ? objectSchema.required.includes(key)
       : false;
 
-    // Handle default values for optional properties
-    if (
-      !required &&
-      propJsonSchema &&
-      typeof propJsonSchema === 'object' &&
-      'default' in propJsonSchema
-    ) {
-      // If default is null, make the field nullable with the null default
-      // But don't make it nullable if it's already an anyOf/oneOf that includes null
-      if (propJsonSchema.default === null) {
-        const hasAnyOfWithNull =
-          propJsonSchema.anyOf &&
-          Array.isArray(propJsonSchema.anyOf) &&
-          propJsonSchema.anyOf.some(
-            (schema: JsonSchema) =>
-              typeof schema === 'object' && schema !== null && schema.type === 'null'
-          );
-        const hasOneOfWithNull =
-          propJsonSchema.oneOf &&
-          Array.isArray(propJsonSchema.oneOf) &&
-          propJsonSchema.oneOf.some(
-            (schema: JsonSchema) =>
-              typeof schema === 'object' && schema !== null && schema.type === 'null'
-          );
-        const isNullable =
-          'nullable' in propJsonSchema &&
-          (propJsonSchema as JsonSchemaObject & { nullable?: boolean }).nullable === true;
-
-        if (hasAnyOfWithNull || hasOneOfWithNull || isNullable) {
-          // The schema already handles null through anyOf/oneOf/nullable, just make it optional with default
-          properties[key] = propZodSchema.optional().default(null);
-        } else {
-          // Make the field nullable with the null default
-          properties[key] = propZodSchema.nullable().optional().default(null);
-        }
-      } else {
-        properties[key] = propZodSchema.optional().default(propJsonSchema.default);
-      }
-    } else {
-      properties[key] = required ? propZodSchema : propZodSchema.optional();
-    }
+    properties[key] = applyPropertyPresence(backend, propJsonSchema, propZodSchema, required);
   }
 
-  return z.object(properties);
+  return properties;
 }
 
 /**
@@ -96,34 +61,35 @@ function parseObjectProperties(objectSchema: JsonSchemaObject & { type?: 'object
  * property claims the key. A catch-all union would instead let a key sneak past
  * its own pattern by satisfying an unrelated one.
  */
-function parseDynamicKeyObject(
+function parseDynamicKeyObject<S>(
   normalizedSchema: JsonSchemaObject & { type?: 'object' },
-  propertiesSchema: z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny> | undefined,
-  additionalProperties: z.ZodTypeAny | undefined,
-  refs: Refs
-): z.ZodTypeAny {
+  shape: Record<string, S> | undefined,
+  additionalProperties: S | undefined,
+  ctx: ParseContext<S>
+): S {
+  const { backend } = ctx;
   const patterns = Object.entries(normalizedSchema.patternProperties ?? {}).map(
     ([pattern, schema]) => ({
-      regex: new RegExp(pattern),
+      regex: compilePattern('patternProperties', pattern, ctx),
       parser: parseSchema(schema, {
-        ...refs,
-        path: [...refs.path, 'patternProperties', pattern],
+        ...ctx,
+        path: [...ctx.path, 'patternProperties', pattern],
       }),
     })
   );
 
   const declaredKeys = new Set(Object.keys(normalizedSchema.properties ?? {}));
   const rejectsUnmatched =
-    additionalProperties instanceof z.ZodNever ||
+    (additionalProperties !== undefined && backend.isNever(additionalProperties)) ||
     (additionalProperties === undefined && declaredKeys.size > 0);
   const validatesUnmatched =
     additionalProperties !== undefined &&
-    !(additionalProperties instanceof z.ZodNever) &&
+    !backend.isNever(additionalProperties) &&
     normalizedSchema.additionalProperties !== true;
 
-  const base = (propertiesSchema ?? z.object({})).passthrough();
+  const base = backend.object(shape ?? {}, { kind: 'loose' });
 
-  return base.transform((value: Record<string, unknown>, ctx) => {
+  return backend.rewrite<Record<string, unknown>>(base, (value, issues) => {
     const result: Record<string, unknown> = { ...value };
     const unrecognizedKeys: string[] = [];
 
@@ -131,13 +97,11 @@ function parseDynamicKeyObject(
       const matching = patterns.filter(({ regex }) => regex.test(key));
 
       for (const { parser } of matching) {
-        const parsed = parser.safeParse(value[key]);
+        const parsed = backend.run(parser, value[key]);
         if (!parsed.success) {
-          ctx.addIssue({
-            path: [...ctx.path, key],
-            code: 'custom',
-            message: `Invalid input: key "${key}" must match its patternProperties schema`,
-            params: { issues: parsed.error.issues },
+          issues.custom(`Invalid input: key "${key}" must match its patternProperties schema`, {
+            path: [key],
+            params: { issues: parsed.failure.issues },
           });
         } else if (!declaredKeys.has(key)) {
           result[key] = parsed.data;
@@ -151,13 +115,11 @@ function parseDynamicKeyObject(
       if (rejectsUnmatched) {
         unrecognizedKeys.push(key);
       } else if (validatesUnmatched) {
-        const parsed = additionalProperties!.safeParse(value[key]);
+        const parsed = backend.run(additionalProperties!, value[key]);
         if (!parsed.success) {
-          ctx.addIssue({
-            path: [...ctx.path, key],
-            code: 'custom',
-            message: `Invalid input: key "${key}" must match the additionalProperties schema`,
-            params: { issues: parsed.error.issues },
+          issues.custom(`Invalid input: key "${key}" must match the additionalProperties schema`, {
+            path: [key],
+            params: { issues: parsed.failure.issues },
           });
         } else {
           result[key] = parsed.data;
@@ -166,81 +128,79 @@ function parseDynamicKeyObject(
     }
 
     if (unrecognizedKeys.length > 0) {
-      ctx.addIssue({
-        path: [...ctx.path],
-        code: 'unrecognized_keys',
-        keys: unrecognizedKeys,
-        message: `Unrecognized key(s) in object: ${unrecognizedKeys.map(key => `'${key}'`).join(', ')}`,
-      });
+      issues.unrecognizedKeys(
+        unrecognizedKeys,
+        `Unrecognized key(s) in object: ${unrecognizedKeys.map(key => `'${key}'`).join(', ')}`
+      );
     }
 
     return result;
   });
 }
 
-export function parseObject(
+export function parseObject<S>(
   objectSchema: JsonSchemaObject & { type?: 'object' },
-  refs: Refs
-): z.ZodTypeAny {
+  ctx: ParseContext<S>
+): S {
+  const { backend } = ctx;
   const hasPatternProperties = Object.keys(objectSchema.patternProperties ?? {}).length > 0;
 
   // Ensure type is set to 'object' if not already
   const normalizedSchema =
     objectSchema.type === 'object' ? objectSchema : { ...objectSchema, type: 'object' as const };
 
-  const propertiesSchema:
-    z.ZodObject<Record<string, z.ZodTypeAny>, 'strip', z.ZodTypeAny> | undefined =
-    parseObjectProperties(normalizedSchema, refs);
+  const shape = parseObjectProperties(normalizedSchema, ctx);
 
   const additionalProperties =
     normalizedSchema.additionalProperties !== undefined
       ? parseSchema(normalizedSchema.additionalProperties, {
-          ...refs,
-          path: [...refs.path, 'additionalProperties'],
+          ...ctx,
+          path: [...ctx.path, 'additionalProperties'],
         })
       : undefined;
 
   // Track if additionalProperties was explicitly set to true
   const isAdditionalPropertiesTrue = normalizedSchema.additionalProperties === true;
 
-  let output: z.ZodTypeAny;
+  let output: S;
   if (hasPatternProperties) {
-    output = parseDynamicKeyObject(normalizedSchema, propertiesSchema, additionalProperties, refs);
-  } else if (propertiesSchema) {
+    output = parseDynamicKeyObject(normalizedSchema, shape, additionalProperties, ctx);
+  } else if (shape) {
     if (additionalProperties) {
-      if (additionalProperties instanceof z.ZodNever) {
-        output = propertiesSchema.strict();
+      if (backend.isNever(additionalProperties)) {
+        output = backend.object(shape, { kind: 'strict' });
       } else if (isAdditionalPropertiesTrue) {
         // When additionalProperties was explicitly true, use passthrough
-        output = propertiesSchema.passthrough();
+        output = backend.object(shape, { kind: 'loose' });
       } else {
-        output = propertiesSchema.catchall(additionalProperties);
+        output = backend.object(shape, { kind: 'catchall', schema: additionalProperties });
       }
     } else {
       // Named properties with an omitted `additionalProperties` stay strict for
       // tool inputs, even though JSON Schema itself would allow unknown keys.
-      output = propertiesSchema.strict();
+      output = backend.object(shape, { kind: 'strict' });
     }
   } else {
     if (additionalProperties) {
-      if (additionalProperties instanceof z.ZodNever) {
+      if (backend.isNever(additionalProperties)) {
         // When additionalProperties is false, create strict empty object
-        output = z.object({}).strict();
+        output = backend.object({}, { kind: 'strict' });
       } else if (isAdditionalPropertiesTrue) {
         // When additionalProperties was explicitly true, use empty object with passthrough
-        output = z.object({}).passthrough();
+        output = backend.object({}, { kind: 'loose' });
       } else {
-        output = z.record(additionalProperties);
+        output = backend.record(additionalProperties);
       }
     } else {
       // A property-less object with no `additionalProperties` keyword is open:
       // arbitrary content is accepted and preserved verbatim.
-      output = z.object({}).passthrough();
+      output = backend.object({}, { kind: 'loose' });
     }
   }
 
   if (its.an.anyOf(objectSchema)) {
-    output = output.and(
+    output = backend.intersection(
+      output,
       parseAnyOf(
         {
           ...objectSchema,
@@ -252,13 +212,14 @@ export function parseObject(
               : x
           ),
         },
-        refs
+        ctx
       )
     );
   }
 
   if (its.a.oneOf(objectSchema)) {
-    output = output.and(
+    output = backend.intersection(
+      output,
       parseOneOf(
         {
           ...objectSchema,
@@ -270,13 +231,14 @@ export function parseObject(
               : x
           ),
         },
-        refs
+        ctx
       )
     );
   }
 
   if (its.an.allOf(objectSchema)) {
-    output = output.and(
+    output = backend.intersection(
+      output,
       parseAllOf(
         {
           ...objectSchema,
@@ -288,7 +250,7 @@ export function parseObject(
               : x
           ),
         },
-        refs
+        ctx
       )
     );
   }

@@ -100,7 +100,9 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * @returns OpenAI-specific MCP server response format
    */
   override wrapMcpServerResponse(data: McpUrlResponse): OpenAiMcpTool[] {
-    console.log('Wrapping MCP server response', data);
+    logger.debug(
+      `Wrapping MCP server response for ${data.length} server(s): ${data.map(server => server.name).join(', ')}`
+    );
     return data.map(item => ({
       type: 'mcp',
       server_label: item.name,
@@ -394,11 +396,11 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * This method processes tool calls from an OpenAI Responses request,
    * executes each tool call, and returns the tool outputs for submission.
    *
-   * @param {string} userId - The user ID for authentication and tracking
+   * @param {string | ToolCallSession} executionTarget - A user ID for direct tools or the session that produced session tools
    * @param {OpenAI.Responses.Response} response - The Responses request object containing tool calls
    * @param {ExecuteToolFnOptions} [options] - Optional execution options
    * @param {ExecuteToolModifiers} [modifiers] - Optional execution modifiers
-   * @returns {Promise<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[]>} Array of tool outputs for submission
+   * @returns {Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>} Tool outputs to send back as Responses input items
    *
    * @example
    * ```typescript
@@ -421,13 +423,26 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   async handleResponse(
+    session: ToolCallSession,
+    response: OpenAI.Responses.Response
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+  async handleResponse(
     userId: string,
+    response: OpenAI.Responses.Response,
+    options?: ExecuteToolFnOptions,
+    modifiers?: ExecuteToolModifiers
+  ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]>;
+  async handleResponse(
+    executionTarget: ToolCallExecutionTarget,
     response: OpenAI.Responses.Response,
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.Responses.ResponseInputItem.FunctionCallOutput[]> {
     const tool_calls = response.output?.filter(output => output.type === 'function_call') || [];
-    const tool_outputs = await this.handleToolCalls(userId, tool_calls, options, modifiers);
-    return tool_outputs;
+    if (typeof executionTarget === 'string') {
+      return this.handleToolCalls(executionTarget, tool_calls, options, modifiers);
+    }
+    this.assertToolCallExecutionOptions(executionTarget, options, modifiers);
+    return this.handleToolCalls(executionTarget, tool_calls);
   }
 }

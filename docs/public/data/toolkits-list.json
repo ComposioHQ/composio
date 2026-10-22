@@ -20,15 +20,15 @@
     "name": "GitHub",
     "logo": "https://logos.composio.dev/api/github",
     "category": "developer tools",
-    "toolCount": 893,
-    "triggerCount": 20
+    "toolCount": 899,
+    "triggerCount": 46
   },
   {
     "slug": "googlecalendar",
     "name": "Google Calendar",
     "logo": "https://logos.composio.dev/api/googlecalendar",
     "category": "scheduling & booking",
-    "toolCount": 49,
+    "toolCount": 50,
     "triggerCount": 7
   },
   {
@@ -36,7 +36,7 @@
     "name": "Notion",
     "logo": "https://logos.composio.dev/api/notion",
     "category": "notes",
-    "toolCount": 56,
+    "toolCount": 60,
     "triggerCount": 8
   },
   {
@@ -44,7 +44,7 @@
     "name": "Google Sheets",
     "logo": "https://logos.composio.dev/api/googlesheets",
     "category": "spreadsheets",
-    "toolCount": 53,
+    "toolCount": 58,
     "triggerCount": 16
   },
   {
@@ -52,7 +52,7 @@
     "name": "Slack",
     "logo": "https://logos.composio.dev/api/slack",
     "category": "team chat",
-    "toolCount": 167,
+    "toolCount": 171,
     "triggerCount": 9
   },
   {
@@ -60,7 +60,7 @@
     "name": "Supabase",
     "logo": "https://logos.composio.dev/api/supabase",
     "category": "developer tools",
-    "toolCount": 129,
+    "toolCount": 131,
     "triggerCount": 0
   },
   {
@@ -68,7 +68,7 @@
     "name": "Outlook",
     "logo": "https://logos.composio.dev/api/outlook",
     "category": "email",
-    "toolCount": 305,
+    "toolCount": 327,
     "triggerCount": 5
   },
   {
@@ -84,7 +84,7 @@
     "name": "Twitter",
     "logo": "https://logos.composio.dev/api/twitter",
     "category": "social media accounts",
-    "toolCount": 79,
+    "toolCount": 83,
     "triggerCount": 0
   },
   {
@@ -92,7 +92,7 @@
     "name": "Google Drive",
     "logo": "https://logos.composio.dev/api/googledrive",
     "category": "file management & storage",
-    "toolCount": 90,
+    "toolCount": 105,
     "triggerCount": 7
   },
   {
@@ -100,7 +100,7 @@
     "name": "Google Docs",
     "logo": "https://logos.composio.dev/api/googledocs",
     "category": "documents",
-    "toolCount": 43,
+    "toolCount": 48,
     "triggerCount": 10
   },
   {
@@ -108,7 +108,7 @@
     "name": "HubSpot",
     "logo": "https://logos.composio.dev/api/hubspot",
     "category": "crm",
-    "toolCount": 245,
+    "toolCount": 294,
     "triggerCount": 2
   },
   {
@@ -116,7 +116,7 @@
     "name": "Linear",
     "logo": "https://logos.composio.dev/api/linear",
     "category": "project management",
-    "toolCount": 47,
+    "toolCount": 48,
     "triggerCount": 12
   },
   {
@@ -124,7 +124,7 @@
     "name": "Airtable",
     "logo": "https://logos.composio.dev/api/airtable",
     "category": "productivity",
-    "toolCount": 26,
+    "toolCount": 28,
     "triggerCount": 6
   },
   {
@@ -139,40 +139,49 @@
     "slug": "serpapi",
     "name": "SerpApi",
     "logo": "https://logos.composio.dev/api/serpapi",
-    "category": "analytics",
-    "toolCount": 48,
-    "triggerCount": 0
+    "category": "web search & research",
+    "toolCount": 59,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "jira",
     "name": "Jira",
     "logo": "https://logos.composio.dev/api/jira",
     "category": "project management",
-    "toolCount": 102,
-    "triggerCount": 3
+    "toolCount": 103,
+    "triggerCount": 17
   },
   {
     "slug": "firecrawl",
     "name": "Firecrawl",
     "logo": "https://logos.composio.dev/api/firecrawl",
-    "category": "ai web scraping",
-    "toolCount": 30,
-    "triggerCount": 0
+    "category": "web scraping & browser",
+    "toolCount": 33,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "tavily",
     "name": "Tavily",
     "logo": "https://logos.composio.dev/api/tavily",
-    "category": "ai web scraping",
+    "category": "web search & research",
     "toolCount": 5,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "youtube",
     "name": "YouTube",
     "logo": "https://logos.composio.dev/api/youtube",
     "category": "video & audio",
-    "toolCount": 51,
+    "toolCount": 61,
     "triggerCount": 4
   },
   {
@@ -180,7 +189,7 @@
     "name": "Slackbot",
     "logo": "https://logos.composio.dev/api/slackbot",
     "category": "team chat",
-    "toolCount": 101,
+    "toolCount": 104,
     "triggerCount": 9
   },
   {
@@ -196,7 +205,7 @@
     "name": "Bitbucket",
     "logo": "https://logos.composio.dev/api/bitbucket",
     "category": "developer tools",
-    "toolCount": 110,
+    "toolCount": 118,
     "triggerCount": 0
   },
   {
@@ -236,7 +245,7 @@
     "name": "Reddit",
     "logo": "https://logos.composio.dev/api/reddit",
     "category": "social media accounts",
-    "toolCount": 23,
+    "toolCount": 35,
     "triggerCount": 0
   },
   {
@@ -259,9 +268,12 @@
     "slug": "exa",
     "name": "Exa",
     "logo": "https://logos.composio.dev/api/exa",
-    "category": "ai web scraping",
-    "toolCount": 18,
-    "triggerCount": 0
+    "category": "web search & research",
+    "toolCount": 20,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "sentry",
@@ -291,16 +303,19 @@
     "slug": "elevenlabs",
     "name": "ElevenLabs",
     "logo": "https://logos.composio.dev/api/elevenlabs",
-    "category": "artificial intelligence",
-    "toolCount": 155,
-    "triggerCount": 0
+    "category": "audio & speech",
+    "toolCount": 166,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "microsoft_teams",
     "name": "Microsoft Teams",
     "logo": "https://logos.composio.dev/api/microsoft_teams",
     "category": "team chat",
-    "toolCount": 171,
+    "toolCount": 194,
     "triggerCount": 0
   },
   {
@@ -308,16 +323,19 @@
     "name": "Asana",
     "logo": "https://logos.composio.dev/api/asana",
     "category": "project management",
-    "toolCount": 153,
+    "toolCount": 157,
     "triggerCount": 6
   },
   {
     "slug": "peopledatalabs",
     "name": "People Data Labs",
     "logo": "https://logos.composio.dev/api/peopledatalabs",
-    "category": "analytics",
-    "toolCount": 24,
-    "triggerCount": 0
+    "category": "people & contact data",
+    "toolCount": 27,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "shopify",
@@ -325,30 +343,33 @@
     "logo": "https://logos.composio.dev/api/shopify",
     "category": "ecommerce",
     "toolCount": 407,
-    "triggerCount": 0
+    "triggerCount": 45
   },
   {
     "slug": "linkedin",
     "name": "LinkedIn",
     "logo": "https://logos.composio.dev/api/linkedin",
     "category": "social media accounts",
-    "toolCount": 24,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
     "slug": "google_maps",
     "name": "Google Maps",
     "logo": "https://logos.composio.dev/api/google_maps",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 23,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "one_drive",
     "name": "OneDrive",
     "logo": "https://logos.composio.dev/api/one_drive",
     "category": "file management & storage",
-    "toolCount": 83,
+    "toolCount": 95,
     "triggerCount": 9
   },
   {
@@ -357,14 +378,14 @@
     "logo": "https://logos.composio.dev/api/docusign",
     "category": "signatures",
     "toolCount": 338,
-    "triggerCount": 0
+    "triggerCount": 20
   },
   {
     "slug": "discordbot",
     "name": "Discord Bot",
     "logo": "https://logos.composio.dev/api/discordbot",
     "category": "team chat",
-    "toolCount": 165,
+    "toolCount": 168,
     "triggerCount": 0
   },
   {
@@ -372,7 +393,7 @@
     "name": "Salesforce",
     "logo": "https://logos.composio.dev/api/salesforce",
     "category": "crm",
-    "toolCount": 223,
+    "toolCount": 240,
     "triggerCount": 7
   },
   {
@@ -380,30 +401,33 @@
     "name": "Calendly",
     "logo": "https://logos.composio.dev/api/calendly",
     "category": "scheduling & booking",
-    "toolCount": 56,
-    "triggerCount": 0
+    "toolCount": 57,
+    "triggerCount": 10
   },
   {
     "slug": "trello",
     "name": "Trello",
     "logo": "https://logos.composio.dev/api/trello",
     "category": "project management",
-    "toolCount": 329,
-    "triggerCount": 5
+    "toolCount": 331,
+    "triggerCount": 43
   },
   {
     "slug": "apollo",
     "name": "Apollo",
     "logo": "https://logos.composio.dev/api/apollo",
-    "category": "crm",
-    "toolCount": 48,
-    "triggerCount": 0
+    "category": "people & contact data",
+    "toolCount": 70,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "semrush",
     "name": "Semrush",
     "logo": "https://logos.composio.dev/api/semrush",
-    "category": "marketing",
+    "category": "seo & ai visibility",
     "toolCount": 37,
     "triggerCount": 0
   },
@@ -427,7 +451,7 @@
     "slug": "weathermap",
     "name": "OpenWeatherMap",
     "logo": "https://logos.composio.dev/api/weathermap",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 2,
     "triggerCount": 0
   },
@@ -436,23 +460,23 @@
     "name": "PostHog",
     "logo": "https://logos.composio.dev/api/posthog",
     "category": "analytics",
-    "toolCount": 507,
-    "triggerCount": 0
+    "toolCount": 520,
+    "triggerCount": 11
   },
   {
     "slug": "clickup",
     "name": "ClickUp",
     "logo": "https://logos.composio.dev/api/clickup",
     "category": "productivity",
-    "toolCount": 164,
-    "triggerCount": 20
+    "toolCount": 165,
+    "triggerCount": 21
   },
   {
     "slug": "brevo",
     "name": "Brevo",
     "logo": "https://logos.composio.dev/api/brevo",
     "category": "email newsletters",
-    "toolCount": 21,
+    "toolCount": 47,
     "triggerCount": 0
   },
   {
@@ -460,23 +484,23 @@
     "name": "Stripe",
     "logo": "https://logos.composio.dev/api/stripe",
     "category": "payment processing",
-    "toolCount": 432,
-    "triggerCount": 7
+    "toolCount": 435,
+    "triggerCount": 40
   },
   {
     "slug": "klaviyo",
     "name": "Klaviyo",
     "logo": "https://logos.composio.dev/api/klaviyo",
     "category": "marketing automation",
-    "toolCount": 225,
+    "toolCount": 231,
     "triggerCount": 0
   },
   {
     "slug": "browserbase_tool",
     "name": "Browserbase",
     "logo": "https://logos.composio.dev/api/browserbase_tool",
-    "category": "developer tools",
-    "toolCount": 19,
+    "category": "web scraping & browser",
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -484,7 +508,7 @@
     "name": "Mailchimp",
     "logo": "https://logos.composio.dev/api/mailchimp",
     "category": "email newsletters",
-    "toolCount": 275,
+    "toolCount": 277,
     "triggerCount": 4
   },
   {
@@ -492,7 +516,7 @@
     "name": "Attio",
     "logo": "https://logos.composio.dev/api/attio",
     "category": "crm",
-    "toolCount": 108,
+    "toolCount": 114,
     "triggerCount": 0
   },
   {
@@ -516,7 +540,7 @@
     "name": "Zoho",
     "logo": "https://logos.composio.dev/api/zoho",
     "category": "crm",
-    "toolCount": 57,
+    "toolCount": 95,
     "triggerCount": 0
   },
   {
@@ -532,7 +556,7 @@
     "name": "Dropbox",
     "logo": "https://logos.composio.dev/api/dropbox",
     "category": "file management & storage",
-    "toolCount": 177,
+    "toolCount": 178,
     "triggerCount": 0
   },
   {
@@ -548,8 +572,8 @@
     "name": "Confluence",
     "logo": "https://logos.composio.dev/api/confluence",
     "category": "team collaboration",
-    "toolCount": 69,
-    "triggerCount": 20
+    "toolCount": 70,
+    "triggerCount": 23
   },
   {
     "slug": "freshdesk",
@@ -595,9 +619,12 @@
     "slug": "ahrefs",
     "name": "Ahrefs",
     "logo": "https://logos.composio.dev/api/ahrefs",
-    "category": "marketing automation",
-    "toolCount": 40,
-    "triggerCount": 0
+    "category": "seo & ai visibility",
+    "toolCount": 46,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "affinity",
@@ -619,8 +646,8 @@
     "slug": "heygen",
     "name": "HeyGen",
     "logo": "https://logos.composio.dev/api/heygen",
-    "category": "artificial intelligence",
-    "toolCount": 71,
+    "category": "media generation",
+    "toolCount": 77,
     "triggerCount": 0
   },
   {
@@ -660,14 +687,14 @@
     "name": "Monday",
     "logo": "https://logos.composio.dev/api/monday",
     "category": "project management",
-    "toolCount": 125,
-    "triggerCount": 0
+    "toolCount": 126,
+    "triggerCount": 17
   },
   {
     "slug": "semanticscholar",
     "name": "Semantic Scholar",
     "logo": "https://logos.composio.dev/api/semanticscholar",
-    "category": "artificial intelligence",
+    "category": "web search & research",
     "toolCount": 21,
     "triggerCount": 0
   },
@@ -692,7 +719,7 @@
     "name": "Pipedrive",
     "logo": "https://logos.composio.dev/api/pipedrive",
     "category": "crm",
-    "toolCount": 402,
+    "toolCount": 406,
     "triggerCount": 3
   },
   {
@@ -708,7 +735,7 @@
     "name": "WhatsApp",
     "logo": "https://logos.composio.dev/api/whatsapp",
     "category": "phone & sms",
-    "toolCount": 57,
+    "toolCount": 58,
     "triggerCount": 1
   },
   {
@@ -724,7 +751,7 @@
     "name": "Zendesk",
     "logo": "https://logos.composio.dev/api/zendesk",
     "category": "crm",
-    "toolCount": 452,
+    "toolCount": 457,
     "triggerCount": 2
   },
   {
@@ -739,7 +766,7 @@
     "slug": "lmnt",
     "name": "LMNT",
     "logo": "https://logos.composio.dev/api/lmnt",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 8,
     "triggerCount": 0
   },
@@ -748,7 +775,7 @@
     "name": "Meta Ads",
     "logo": "https://logos.composio.dev/api/metaads",
     "category": "ads & conversion",
-    "toolCount": 53,
+    "toolCount": 74,
     "triggerCount": 0
   },
   {
@@ -764,8 +791,8 @@
     "name": "Google Super",
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
-    "toolCount": 467,
-    "triggerCount": 20
+    "toolCount": 510,
+    "triggerCount": 48
   },
   {
     "slug": "browser_tool",
@@ -779,15 +806,18 @@
     "slug": "yousearch",
     "name": "You.com",
     "logo": "https://logos.composio.dev/api/yousearch",
-    "category": "artificial intelligence",
-    "toolCount": 1,
-    "triggerCount": 0
+    "category": "web search & research",
+    "toolCount": 8,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "linkup",
     "name": "Linkup",
     "logo": "https://logos.composio.dev/api/linkup",
-    "category": "ai web scraping",
+    "category": "web search & research",
     "toolCount": 4,
     "triggerCount": 0
   },
@@ -797,7 +827,10 @@
     "logo": "https://logos.composio.dev/api/listennotes",
     "category": "video & audio",
     "toolCount": 26,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "typefully",
@@ -812,7 +845,7 @@
     "name": "Bolna",
     "logo": "https://logos.composio.dev/api/bolna",
     "category": "ai agents",
-    "toolCount": 35,
+    "toolCount": 102,
     "triggerCount": 0
   },
   {
@@ -820,7 +853,7 @@
     "name": "Rocketlane",
     "logo": "https://logos.composio.dev/api/rocketlane",
     "category": "project management",
-    "toolCount": 69,
+    "toolCount": 81,
     "triggerCount": 0
   },
   {
@@ -852,7 +885,7 @@
     "name": "Retell AI",
     "logo": "https://logos.composio.dev/api/retellai",
     "category": "artificial intelligence",
-    "toolCount": 67,
+    "toolCount": 70,
     "triggerCount": 0
   },
   {
@@ -868,7 +901,7 @@
     "name": "Google Ads",
     "logo": "https://logos.composio.dev/api/googleads",
     "category": "ads & conversion",
-    "toolCount": 22,
+    "toolCount": 39,
     "triggerCount": 0
   },
   {
@@ -924,7 +957,7 @@
     "name": "Miro",
     "logo": "https://logos.composio.dev/api/miro",
     "category": "team collaboration",
-    "toolCount": 81,
+    "toolCount": 84,
     "triggerCount": 0
   },
   {
@@ -932,7 +965,7 @@
     "name": "SharePoint",
     "logo": "https://logos.composio.dev/api/share_point",
     "category": "documents",
-    "toolCount": 98,
+    "toolCount": 127,
     "triggerCount": 0
   },
   {
@@ -981,7 +1014,7 @@
     "logo": "https://logos.composio.dev/api/launch_darkly",
     "category": "developer tools",
     "toolCount": 248,
-    "triggerCount": 0
+    "triggerCount": 16
   },
   {
     "slug": "mailerlite",
@@ -989,7 +1022,7 @@
     "logo": "https://logos.composio.dev/api/mailerlite",
     "category": "email newsletters",
     "toolCount": 86,
-    "triggerCount": 0
+    "triggerCount": 13
   },
   {
     "slug": "contentful",
@@ -1004,8 +1037,8 @@
     "name": "Close",
     "logo": "https://logos.composio.dev/api/close",
     "category": "crm",
-    "toolCount": 6,
-    "triggerCount": 0
+    "toolCount": 14,
+    "triggerCount": 45
   },
   {
     "slug": "docmosis",
@@ -1043,7 +1076,7 @@
     "slug": "moz",
     "name": "Moz",
     "logo": "https://logos.composio.dev/api/moz",
-    "category": "marketing automation",
+    "category": "seo & ai visibility",
     "toolCount": 12,
     "triggerCount": 0
   },
@@ -1084,7 +1117,7 @@
     "name": "Zoho Inventory",
     "logo": "https://logos.composio.dev/api/zoho_inventory",
     "category": "accounting",
-    "toolCount": 58,
+    "toolCount": 67,
     "triggerCount": 0
   },
   {
@@ -1092,7 +1125,7 @@
     "name": "Facebook",
     "logo": "https://logos.composio.dev/api/facebook",
     "category": "social media accounts",
-    "toolCount": 43,
+    "toolCount": 56,
     "triggerCount": 0
   },
   {
@@ -1115,9 +1148,12 @@
     "slug": "crustdata",
     "name": "Crustdata",
     "logo": "https://logos.composio.dev/api/crustdata",
-    "category": "sales & crm",
+    "category": "company data",
     "toolCount": 15,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "webex",
@@ -1131,7 +1167,7 @@
     "slug": "brandfetch",
     "name": "Brandfetch",
     "logo": "https://logos.composio.dev/api/brandfetch",
-    "category": "images & design",
+    "category": "company data",
     "toolCount": 7,
     "triggerCount": 0
   },
@@ -1140,7 +1176,7 @@
     "name": "Canva",
     "logo": "https://logos.composio.dev/api/canva",
     "category": "images & design",
-    "toolCount": 48,
+    "toolCount": 52,
     "triggerCount": 0
   },
   {
@@ -1164,7 +1200,7 @@
     "name": "Linkhut",
     "logo": "https://logos.composio.dev/api/linkhut",
     "category": "bookmark managers",
-    "toolCount": 5,
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -1275,7 +1311,7 @@
     "slug": "screenshotone",
     "name": "ScreenshotOne",
     "logo": "https://screenshotone.com/logo.png",
-    "category": "developer tools",
+    "category": "web scraping & browser",
     "toolCount": 5,
     "triggerCount": 0
   },
@@ -1364,7 +1400,7 @@
     "name": "Lexoffice",
     "logo": "https://logos.composio.dev/api/lexoffice",
     "category": "accounting",
-    "toolCount": 42,
+    "toolCount": 44,
     "triggerCount": 0
   },
   {
@@ -1372,7 +1408,7 @@
     "name": "Gorgias",
     "logo": "https://logos.composio.dev/api/gorgias",
     "category": "crm",
-    "toolCount": 32,
+    "toolCount": 44,
     "triggerCount": 0
   },
   {
@@ -1396,7 +1432,7 @@
     "name": "Zoho Desk",
     "logo": "https://logos.composio.dev/api/zoho_desk",
     "category": "crm",
-    "toolCount": 31,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -1405,7 +1441,7 @@
     "logo": "https://logos.composio.dev/api/ashby",
     "category": "hr talent & recruitment",
     "toolCount": 125,
-    "triggerCount": 0
+    "triggerCount": 28
   },
   {
     "slug": "datarobot",
@@ -1499,7 +1535,7 @@
     "slug": "browseai",
     "name": "Browseai",
     "logo": "https://logos.composio.dev/api/browseai",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 11,
     "triggerCount": 0
   },
@@ -1628,7 +1664,7 @@
     "name": "Servicem8",
     "logo": "https://logos.composio.dev/api/servicem8",
     "category": "scheduling & booking",
-    "toolCount": 28,
+    "toolCount": 36,
     "triggerCount": 0
   },
   {
@@ -1660,7 +1696,7 @@
     "name": "Cloudflare",
     "logo": "https://logos.composio.dev/api/cloudflare",
     "category": "security & identity tools",
-    "toolCount": 20,
+    "toolCount": 64,
     "triggerCount": 0
   },
   {
@@ -1684,7 +1720,7 @@
     "name": "Xero",
     "logo": "https://logos.composio.dev/api/xero",
     "category": "accounting",
-    "toolCount": 53,
+    "toolCount": 68,
     "triggerCount": 0
   },
   {
@@ -1708,7 +1744,7 @@
     "name": "Zoho Mail",
     "logo": "https://logos.composio.dev/api/zoho_mail",
     "category": "email",
-    "toolCount": 15,
+    "toolCount": 45,
     "triggerCount": 0
   },
   {
@@ -1716,7 +1752,7 @@
     "name": "Mural",
     "logo": "https://logos.composio.dev/api/mural",
     "category": "team collaboration",
-    "toolCount": 22,
+    "toolCount": 31,
     "triggerCount": 0
   },
   {
@@ -1733,14 +1769,6 @@
     "logo": "https://logos.composio.dev/api/intercom",
     "category": "customer support",
     "toolCount": 133,
-    "triggerCount": 0
-  },
-  {
-    "slug": "highlevel",
-    "name": "Highlevel",
-    "logo": "https://logos.composio.dev/api/highlevel",
-    "category": "marketing automation",
-    "toolCount": 218,
     "triggerCount": 0
   },
   {
@@ -1787,7 +1815,7 @@
     "slug": "zenserp",
     "name": "Zenserp",
     "logo": "https://logos.composio.dev/api/zenserp",
-    "category": "ai web scraping",
+    "category": "web search & research",
     "toolCount": 12,
     "triggerCount": 0
   },
@@ -1816,11 +1844,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "twitch",
+    "name": "Twitch",
+    "logo": "https://logos.composio.dev/api/twitch",
+    "category": "video & audio",
+    "toolCount": 131,
+    "triggerCount": 0
+  },
+  {
     "slug": "datadog",
     "name": "Datadog",
     "logo": "https://logos.composio.dev/api/datadog",
     "category": "server monitoring",
-    "toolCount": 65,
+    "toolCount": 76,
     "triggerCount": 0
   },
   {
@@ -1920,6 +1956,17 @@
     "triggerCount": 0
   },
   {
+    "slug": "accu_weather",
+    "name": "AccuWeather",
+    "logo": "https://logos.composio.dev/api/accuweather",
+    "category": "places & weather",
+    "toolCount": 41,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "active_merge",
     "name": "ActiveMerge",
     "logo": "https://logos.composio.dev/api/active_merge",
@@ -1960,11 +2007,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "adobe_marketing_agent_mcp",
+    "name": "Adobe Marketing Agent MCP",
+    "logo": "https://logos.composio.dev/api/adobe_marketing_agent_mcp",
+    "category": "model context protocol",
+    "toolCount": 12,
+    "triggerCount": 0
+  },
+  {
     "slug": "adrapid",
     "name": "Adrapid",
     "logo": "https://logos.composio.dev/api/adrapid",
     "category": "images & design",
     "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
+    "slug": "adroll",
+    "name": "AdRoll",
+    "logo": "https://logos.composio.dev/api/adroll",
+    "category": "marketing",
+    "toolCount": 51,
     "triggerCount": 0
   },
   {
@@ -1995,7 +2058,7 @@
     "slug": "affinda",
     "name": "Affinda",
     "logo": "https://logos.composio.dev/api/affinda",
-    "category": "artificial intelligence",
+    "category": "documents & ocr",
     "toolCount": 119,
     "triggerCount": 0
   },
@@ -2004,7 +2067,7 @@
     "name": "Agent Mail",
     "logo": "https://logos.composio.dev/api/agent_mail",
     "category": "ai agents",
-    "toolCount": 5,
+    "toolCount": 21,
     "triggerCount": 1
   },
   {
@@ -2019,8 +2082,16 @@
     "slug": "agenty",
     "name": "Agenty",
     "logo": "https://logos.composio.dev/api/agenty",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 79,
+    "triggerCount": 0
+  },
+  {
+    "slug": "agile_crm",
+    "name": "Agile CRM",
+    "logo": "https://logos.composio.dev/api/agilecrm",
+    "category": "crm",
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -2044,7 +2115,7 @@
     "name": "Ahrefs MCP",
     "logo": "https://logos.composio.dev/api/ahrefs_mcp",
     "category": "analytics",
-    "toolCount": 134,
+    "toolCount": 135,
     "triggerCount": 0
   },
   {
@@ -2064,10 +2135,26 @@
     "triggerCount": 0
   },
   {
+    "slug": "aircall",
+    "name": "Aircall",
+    "logo": "https://logos.composio.dev/api/aircall",
+    "category": "communication",
+    "toolCount": 48,
+    "triggerCount": 0
+  },
+  {
+    "slug": "airops_mcp",
+    "name": "AirOps MCP",
+    "logo": "https://logos.composio.dev/api/airops_mcp",
+    "category": "model context protocol",
+    "toolCount": 96,
+    "triggerCount": 0
+  },
+  {
     "slug": "airparser",
     "name": "Airparser",
     "logo": "https://logos.composio.dev/api/airparser",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -2075,15 +2162,23 @@
     "slug": "airtop",
     "name": "Airtop",
     "logo": "https://logos.composio.dev/api/airtop",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "airwallex",
+    "name": "Airwallex",
+    "logo": "https://logos.composio.dev/api/airwallex",
+    "category": "payment processing",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
     "slug": "aivoov",
     "name": "Aivoov",
     "logo": "https://logos.composio.dev/api/aivoov",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 1,
     "triggerCount": 0
   },
@@ -2094,6 +2189,17 @@
     "category": "taxes",
     "toolCount": 10,
     "triggerCount": 0
+  },
+  {
+    "slug": "akta",
+    "name": "Akta",
+    "logo": "https://logos.composio.dev/api/akta",
+    "category": "company data",
+    "toolCount": 39,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "algodocs",
@@ -2139,9 +2245,12 @@
     "slug": "alpha_vantage",
     "name": "Alpha Vantage",
     "logo": "https://logos.composio.dev/api/alpha_vantage",
-    "category": "analytics",
+    "category": "market data",
     "toolCount": 56,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "alttext_ai",
@@ -2172,14 +2281,14 @@
     "name": "Amazing Marvin",
     "logo": "https://logos.composio.dev/api/amazingmarvin",
     "category": "productivity",
-    "toolCount": 10,
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
     "slug": "ambee",
     "name": "Ambee",
     "logo": "https://logos.composio.dev/api/ambee",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 27,
     "triggerCount": 0
   },
@@ -2189,6 +2298,22 @@
     "logo": "https://logos.composio.dev/api/ambient_weather",
     "category": "internet of things",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "amplitude_mcp",
+    "name": "Amplitude MCP",
+    "logo": "https://logos.composio.dev/api/amplitude_mcp",
+    "category": "model context protocol",
+    "toolCount": 48,
+    "triggerCount": 0
+  },
+  {
+    "slug": "anakin_io",
+    "name": "Anakin",
+    "logo": "https://logos.composio.dev/api/anakin",
+    "category": "web scraping & browser",
+    "toolCount": 26,
     "triggerCount": 0
   },
   {
@@ -2235,7 +2360,7 @@
     "slug": "apexverify",
     "name": "ApexVerify",
     "logo": "https://logos.composio.dev/api/apexverify",
-    "category": "contact management",
+    "category": "people & contact data",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -2253,15 +2378,21 @@
     "logo": "https://logos.composio.dev/api/api_ninjas",
     "category": "developer tools",
     "toolCount": 129,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "api_sports",
     "name": "API-Sports",
     "logo": "https://logos.composio.dev/api/api_sports",
     "category": "developer tools",
-    "toolCount": 67,
-    "triggerCount": 0
+    "toolCount": 73,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "api_bible",
@@ -2299,8 +2430,8 @@
     "slug": "apify",
     "name": "Apify",
     "logo": "https://logos.composio.dev/api/apify",
-    "category": "ai web scraping",
-    "toolCount": 113,
+    "category": "web scraping & browser",
+    "toolCount": 184,
     "triggerCount": 0
   },
   {
@@ -2308,7 +2439,7 @@
     "name": "Apify MCP",
     "logo": "https://logos.composio.dev/api/apify_mcp",
     "category": "model context protocol",
-    "toolCount": 8,
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -2368,6 +2499,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "archive_org",
+    "name": "Archive.org",
+    "logo": "https://logos.composio.dev/api/archive_org",
+    "category": "content & files",
+    "toolCount": 26,
+    "triggerCount": 0
+  },
+  {
     "slug": "arena",
     "name": "Are.na",
     "logo": "https://logos.composio.dev/api/arena",
@@ -2389,13 +2528,16 @@
     "logo": "https://logos.composio.dev/api/artificial_analysis",
     "category": "developer tools",
     "toolCount": 12,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "aryn",
     "name": "Aryn",
     "logo": "https://logos.composio.dev/api/aryn",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 9,
     "triggerCount": 0
   },
@@ -2419,7 +2561,7 @@
     "slug": "assemblyai",
     "name": "AssemblyAI",
     "logo": "https://logos.composio.dev/api/assemblyai",
-    "category": "transcription",
+    "category": "audio & speech",
     "toolCount": 9,
     "triggerCount": 0
   },
@@ -2437,6 +2579,22 @@
     "logo": "https://logos.composio.dev/api/async_interview",
     "category": "human resources",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "atlassian_mcp",
+    "name": "Atlassian MCP",
+    "logo": "https://logos.composio.dev/api/atlassian_mcp",
+    "category": "model context protocol",
+    "toolCount": 41,
+    "triggerCount": 0
+  },
+  {
+    "slug": "audioscrape_mcp",
+    "name": "Audioscrape MCP",
+    "logo": "https://logos.composio.dev/api/audioscrape_mcp",
+    "category": "model context protocol",
+    "toolCount": 20,
     "triggerCount": 0
   },
   {
@@ -2459,7 +2617,7 @@
     "slug": "autom",
     "name": "Autom",
     "logo": "https://logos.composio.dev/api/autom",
-    "category": "ai web scraping",
+    "category": "web search & research",
     "toolCount": 4,
     "triggerCount": 0
   },
@@ -2469,6 +2627,14 @@
     "logo": "https://logos.composio.dev/api/avoma",
     "category": "ai meeting assistants",
     "toolCount": 16,
+    "triggerCount": 0
+  },
+  {
+    "slug": "aweber",
+    "name": "AWeber",
+    "logo": "https://logos.composio.dev/api/aweber",
+    "category": "marketing automation",
+    "toolCount": 32,
     "triggerCount": 0
   },
   {
@@ -2485,6 +2651,14 @@
     "logo": "https://logos.composio.dev/api/ayrshare",
     "category": "social media marketing",
     "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
+    "slug": "azure_monitor_activity_log",
+    "name": "Azure Monitor Activity Log",
+    "logo": "https://logos.composio.dev/api/azure_monitor_activity_log",
+    "category": "it operations",
+    "toolCount": 2,
     "triggerCount": 0
   },
   {
@@ -2576,6 +2750,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "beatapi",
+    "name": "BeatAPI",
+    "logo": "https://logos.composio.dev/api/beatapi",
+    "category": "ai content generation",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "beehiiv",
     "name": "Beehiiv",
     "logo": "https://logos.composio.dev/api/beehiiv",
@@ -2603,7 +2785,7 @@
     "slug": "benzinga",
     "name": "Benzinga",
     "logo": "https://logos.composio.dev/api/benzinga",
-    "category": "analytics",
+    "category": "market data",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -2636,7 +2818,7 @@
     "name": "Better Stack MCP",
     "logo": "https://logos.composio.dev/api/better_stack_mcp",
     "category": "server monitoring",
-    "toolCount": 111,
+    "toolCount": 116,
     "triggerCount": 0
   },
   {
@@ -2653,6 +2835,14 @@
     "logo": "https://logos.composio.dev/api/bidsketch",
     "category": "proposal & invoice management",
     "toolCount": 38,
+    "triggerCount": 0
+  },
+  {
+    "slug": "bigdata_com_mcp",
+    "name": "Bigdata.com MCP",
+    "logo": "https://logos.composio.dev/api/bigdata_com_mcp",
+    "category": "model context protocol",
+    "toolCount": 17,
     "triggerCount": 0
   },
   {
@@ -2728,11 +2918,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "bfl",
+    "name": "Black Forest Labs",
+    "logo": "https://logos.composio.dev/api/bfl",
+    "category": "media generation",
+    "toolCount": 14,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "bland_ai",
     "name": "Bland AI",
     "logo": "https://logos.composio.dev/api/bland_ai",
     "category": "ai agents",
-    "toolCount": 10,
+    "toolCount": 18,
     "triggerCount": 0
   },
   {
@@ -2741,6 +2942,14 @@
     "logo": "https://logos.composio.dev/api/blazemeter",
     "category": "developer tools",
     "toolCount": 92,
+    "triggerCount": 0
+  },
+  {
+    "slug": "blitz_api",
+    "name": "Blitz API",
+    "logo": "https://logos.composio.dev/api/blitz_api",
+    "category": "sales & crm",
+    "toolCount": 16,
     "triggerCount": 0
   },
   {
@@ -2757,6 +2966,14 @@
     "logo": "https://logos.composio.dev/api/blooio",
     "category": "communication",
     "toolCount": 26,
+    "triggerCount": 0
+  },
+  {
+    "slug": "bluepillow",
+    "name": "Blue Pillow Hotels & Stays",
+    "logo": "https://logos.composio.dev/api/bluepillow",
+    "category": "ai agents",
+    "toolCount": 8,
     "triggerCount": 0
   },
   {
@@ -2875,7 +3092,7 @@
     "slug": "bouncer",
     "name": "Bouncer",
     "logo": "https://logos.composio.dev/api/bouncer",
-    "category": "email",
+    "category": "people & contact data",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -2883,7 +3100,7 @@
     "slug": "bouncify",
     "name": "Bouncify",
     "logo": "https://logos.composio.dev/api/bouncify",
-    "category": "marketing",
+    "category": "people & contact data",
     "toolCount": 7,
     "triggerCount": 0
   },
@@ -2892,7 +3109,7 @@
     "name": "Box MCP",
     "logo": "https://logos.composio.dev/api/box_mcp",
     "category": "model context protocol",
-    "toolCount": 44,
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -2917,6 +3134,14 @@
     "logo": "https://logos.composio.dev/api/braintrust",
     "category": "artificial intelligence",
     "toolCount": 17,
+    "triggerCount": 0
+  },
+  {
+    "slug": "braze",
+    "name": "Braze",
+    "logo": "https://logos.composio.dev/api/braze",
+    "category": "marketing automation",
+    "toolCount": 119,
     "triggerCount": 0
   },
   {
@@ -2947,9 +3172,12 @@
     "slug": "brightdata",
     "name": "Bright Data",
     "logo": "https://logos.composio.dev/api/brightdata",
-    "category": "ai web scraping",
-    "toolCount": 10,
-    "triggerCount": 0
+    "category": "web scraping & browser",
+    "toolCount": 29,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "brilliant_directories",
@@ -2960,18 +3188,37 @@
     "triggerCount": 0
   },
   {
+    "slug": "browser_use",
+    "name": "Browser Use",
+    "logo": "https://logos.composio.dev/api/browseruse",
+    "category": "web scraping & browser",
+    "toolCount": 47,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "browseract",
     "name": "BrowserAct",
     "logo": "https://logos.composio.dev/api/browseract",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "browserbase_mcp",
+    "name": "Browserbase MCP",
+    "logo": "https://logos.composio.dev/api/browserbase_mcp",
+    "category": "web scraping & browser",
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
     "slug": "browserless",
     "name": "Browserless",
     "logo": "https://logos.composio.dev/api/browserless",
-    "category": "developer tools",
+    "category": "web scraping & browser",
     "toolCount": 7,
     "triggerCount": 0
   },
@@ -2997,6 +3244,14 @@
     "logo": "https://logos.composio.dev/api/buffer",
     "category": "social media accounts",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "bug_recorder",
+    "name": "Bug Recorder",
+    "logo": "https://logos.composio.dev/api/bug_recorder",
+    "category": "server monitoring",
+    "toolCount": 1,
     "triggerCount": 0
   },
   {
@@ -3080,6 +3335,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "byte_plus_ark",
+    "name": "BytePlus Ark",
+    "logo": "https://logos.composio.dev/api/byteplus_ark",
+    "category": "ai models",
+    "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
     "slug": "cabinpanda",
     "name": "Cabinpanda",
     "logo": "https://logos.composio.dev/api/cabinpanda",
@@ -3093,6 +3356,22 @@
     "logo": "https://logos.composio.dev/api/calendarhero",
     "category": "scheduling & booking",
     "toolCount": 38,
+    "triggerCount": 0
+  },
+  {
+    "slug": "calendly_mcp",
+    "name": "Calendly MCP",
+    "logo": "https://logos.composio.dev/api/calendly_mcp",
+    "category": "model context protocol",
+    "toolCount": 36,
+    "triggerCount": 0
+  },
+  {
+    "slug": "callback24",
+    "name": "Callback24",
+    "logo": "https://logos.composio.dev/api/callback24",
+    "category": "call tracking",
+    "toolCount": 27,
     "triggerCount": 0
   },
   {
@@ -3131,7 +3410,7 @@
     "slug": "camb_ai",
     "name": "CAMB.AI",
     "logo": "https://logos.composio.dev/api/camb_ai",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 8,
     "triggerCount": 0
   },
@@ -3152,6 +3431,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "candid_mcp",
+    "name": "Candid MCP",
+    "logo": "https://logos.composio.dev/api/candid_mcp",
+    "category": "model context protocol",
+    "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
     "slug": "canny",
     "name": "Canny",
     "logo": "https://logos.composio.dev/api/canny",
@@ -3165,6 +3452,14 @@
     "logo": "https://logos.composio.dev/api/canva_mcp",
     "category": "content & files",
     "toolCount": 33,
+    "triggerCount": 0
+  },
+  {
+    "slug": "capsolver",
+    "name": "CapSolver",
+    "logo": "https://logos.composio.dev/api/capsolver",
+    "category": "developer tools",
+    "toolCount": 16,
     "triggerCount": 0
   },
   {
@@ -3189,6 +3484,14 @@
     "logo": "https://logos.composio.dev/api/capturekit",
     "category": "developer tools",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "carbon_voice_mcp",
+    "name": "Carbon Voice MCP",
+    "logo": "https://logos.composio.dev/api/carbon_voice_mcp",
+    "category": "model context protocol",
+    "toolCount": 28,
     "triggerCount": 0
   },
   {
@@ -3220,15 +3523,18 @@
     "name": "CarsXE",
     "logo": "https://logos.composio.dev/api/carsxe",
     "category": "developer tools",
-    "toolCount": 12,
-    "triggerCount": 0
+    "toolCount": 13,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "cashfree_payments_mcp",
-    "name": "Cashfree Payments MCP",
+    "name": "Cashfree MCP",
     "logo": "https://logos.composio.dev/api/cashfree_payments_mcp",
-    "category": "payment processing",
-    "toolCount": 66,
+    "category": "model context protocol",
+    "toolCount": 38,
     "triggerCount": 0
   },
   {
@@ -3283,7 +3589,7 @@
     "slug": "ceramic",
     "name": "Ceramic",
     "logo": "https://logos.composio.dev/api/ceramic",
-    "category": "ai web scraping",
+    "category": "web search & research",
     "toolCount": 1,
     "triggerCount": 0
   },
@@ -3317,6 +3623,22 @@
     "logo": "https://logos.composio.dev/api/charla",
     "category": "communication",
     "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "chartly",
+    "name": "Chartly",
+    "logo": "https://logos.composio.dev/api/chartly",
+    "category": "images & design",
+    "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
+    "slug": "chartmogul",
+    "name": "ChartMogul",
+    "logo": "https://logos.composio.dev/api/chartmogul",
+    "category": "analytics",
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -3384,6 +3706,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "circleback_mcp",
+    "name": "Circleback MCP",
+    "logo": "https://logos.composio.dev/api/circleback_mcp",
+    "category": "model context protocol",
+    "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
     "slug": "circleci",
     "name": "CircleCI",
     "logo": "https://logos.composio.dev/api/circleci",
@@ -3400,6 +3730,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "clarify_mcp",
+    "name": "Clarify MCP",
+    "logo": "https://logos.composio.dev/api/clarify_mcp",
+    "category": "model context protocol",
+    "toolCount": 46,
+    "triggerCount": 0
+  },
+  {
     "slug": "clarity_ai_mcp",
     "name": "Clarity AI MCP",
     "logo": "https://logos.composio.dev/api/clarity_ai_mcp",
@@ -3413,6 +3751,25 @@
     "logo": "https://logos.composio.dev/api/classmarker",
     "category": "education",
     "toolCount": 28,
+    "triggerCount": 0
+  },
+  {
+    "slug": "clay",
+    "name": "Clay",
+    "logo": "https://logos.composio.dev/api/clay",
+    "category": "sales & crm",
+    "toolCount": 6,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "clay_mcp",
+    "name": "Clay MCP",
+    "logo": "https://logos.composio.dev/api/clay_mcp",
+    "category": "model context protocol",
+    "toolCount": 17,
     "triggerCount": 0
   },
   {
@@ -3456,6 +3813,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "clickup_mcp",
+    "name": "ClickUp MCP",
+    "logo": "https://logos.composio.dev/api/clickup_mcp",
+    "category": "model context protocol",
+    "toolCount": 58,
+    "triggerCount": 0
+  },
+  {
     "slug": "clientary",
     "name": "Clientary",
     "logo": "https://logos.composio.dev/api/clientary",
@@ -3464,11 +3829,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "clio_manage",
+    "name": "Clio Manage",
+    "logo": "https://logos.composio.dev/api/clio_manage",
+    "category": "legal & public records",
+    "toolCount": 99,
+    "triggerCount": 0
+  },
+  {
     "slug": "clockify",
     "name": "Clockify",
     "logo": "https://clockify.me/assets/images/clockify-logo.svg",
     "category": "time tracking software",
-    "toolCount": 75,
+    "toolCount": 76,
     "triggerCount": 0
   },
   {
@@ -3476,7 +3849,15 @@
     "name": "Cloro",
     "logo": "https://logos.composio.dev/api/cloro",
     "category": "ai web scraping",
-    "toolCount": 10,
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
+    "slug": "close_mcp",
+    "name": "Close MCP",
+    "logo": "https://logos.composio.dev/api/close_mcp",
+    "category": "model context protocol",
+    "toolCount": 114,
     "triggerCount": 0
   },
   {
@@ -3507,7 +3888,7 @@
     "slug": "cloudflare_browser_rendering",
     "name": "Cloudflare Browser Rendering",
     "logo": "https://logos.composio.dev/api/cloudflare_browser_rendering",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 4,
     "triggerCount": 0
   },
@@ -3560,6 +3941,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "clover",
+    "name": "Clover",
+    "logo": "https://logos.composio.dev/api/clover",
+    "category": "commerce",
+    "toolCount": 209,
+    "triggerCount": 0
+  },
+  {
     "slug": "coassemble",
     "name": "Coassemble",
     "logo": "https://logos.composio.dev/api/coassemble",
@@ -3598,6 +3987,41 @@
     "category": "ai assistants",
     "toolCount": 21,
     "triggerCount": 0
+  },
+  {
+    "slug": "cohere",
+    "name": "Cohere",
+    "logo": "https://logos.composio.dev/api/cohere",
+    "category": "artificial intelligence",
+    "toolCount": 22,
+    "triggerCount": 0
+  },
+  {
+    "slug": "coinbase_agents_mcp",
+    "name": "Coinbase Agents MCP",
+    "logo": "https://logos.composio.dev/api/coinbase_agents_mcp",
+    "category": "model context protocol",
+    "toolCount": 29,
+    "triggerCount": 0
+  },
+  {
+    "slug": "coinbase_wallet_mcp",
+    "name": "Coinbase Wallet MCP",
+    "logo": "https://logos.composio.dev/api/coinbase_wallet_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
+    "triggerCount": 0
+  },
+  {
+    "slug": "coingecko",
+    "name": "CoinGecko",
+    "logo": "https://logos.composio.dev/api/coingecko",
+    "category": "market data",
+    "toolCount": 60,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "coinmarketcap",
@@ -3648,6 +4072,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "common_room_mcp",
+    "name": "Common Room MCP",
+    "logo": "https://logos.composio.dev/api/common_room_mcp",
+    "category": "model context protocol",
+    "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
     "slug": "company_url_finder",
     "name": "Company URL Finder",
     "logo": "https://logos.composio.dev/api/companyurlfinder",
@@ -3665,11 +4097,14 @@
   },
   {
     "slug": "companyenrich",
-    "name": "Companyenrich",
+    "name": "CompanyEnrich",
     "logo": "https://logos.composio.dev/api/companyenrich",
-    "category": "developer tools",
-    "toolCount": 32,
-    "triggerCount": 0
+    "category": "company data",
+    "toolCount": 48,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "compdf",
@@ -3707,7 +4142,15 @@
     "slug": "consensus",
     "name": "Consensus",
     "logo": "https://logos.composio.dev/api/consensus",
-    "category": "artificial intelligence",
+    "category": "web search & research",
+    "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "consensus_mcp",
+    "name": "Consensus MCP",
+    "logo": "https://logos.composio.dev/api/consensus_mcp",
+    "category": "model context protocol",
     "toolCount": 1,
     "triggerCount": 0
   },
@@ -3718,6 +4161,17 @@
     "category": "marketing",
     "toolCount": 93,
     "triggerCount": 0
+  },
+  {
+    "slug": "contactout",
+    "name": "ContactOut",
+    "logo": "https://logos.composio.dev/api/contactout",
+    "category": "people & contact data",
+    "toolCount": 25,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "contacts_plus",
@@ -3744,6 +4198,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "contentsquare_mcp",
+    "name": "Contentsquare MCP",
+    "logo": "https://logos.composio.dev/api/contentsquare_mcp",
+    "category": "model context protocol",
+    "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
     "slug": "content_studio",
     "name": "ContentStudio",
     "logo": "https://logos.composio.dev/api/contentstudio",
@@ -3755,15 +4217,18 @@
     "slug": "context_dev",
     "name": "Context.dev",
     "logo": "https://logos.composio.dev/api/context_dev",
-    "category": "developer tools",
+    "category": "web scraping & browser",
     "toolCount": 11,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "context7_mcp",
     "name": "Context7 MCP",
     "logo": "https://logos.composio.dev/api/context7_mcp",
-    "category": "developer tools & devops",
+    "category": "developer tools",
     "toolCount": 2,
     "triggerCount": 0
   },
@@ -3824,6 +4289,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "copper",
+    "name": "Copper",
+    "logo": "https://logos.composio.dev/api/copper",
+    "category": "crm",
+    "toolCount": 65,
+    "triggerCount": 0
+  },
+  {
     "slug": "copyleaks",
     "name": "Copyleaks",
     "logo": "https://logos.composio.dev/api/copyleaks",
@@ -3867,8 +4340,16 @@
     "slug": "cradl_ai",
     "name": "Cradl AI",
     "logo": "https://logos.composio.dev/api/cradl_ai",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "craft_mcp",
+    "name": "Craft MCP",
+    "logo": "https://logos.composio.dev/api/craft_mcp",
+    "category": "model context protocol",
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -3883,7 +4364,7 @@
     "slug": "crawlbase",
     "name": "Crawlbase",
     "logo": "https://logos.composio.dev/api/crawlbase",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 8,
     "triggerCount": 0
   },
@@ -3893,6 +4374,22 @@
     "logo": "https://logos.composio.dev/api/creatomate",
     "category": "video & audio",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "creem",
+    "name": "Creem",
+    "logo": "https://logos.composio.dev/api/creem",
+    "category": "payment processing",
+    "toolCount": 48,
+    "triggerCount": 0
+  },
+  {
+    "slug": "crew_ai",
+    "name": "CrewAI",
+    "logo": "https://logos.composio.dev/api/crewai",
+    "category": "ai agents",
+    "toolCount": 8,
     "triggerCount": 0
   },
   {
@@ -3924,7 +4421,7 @@
     "name": "Crowdin",
     "logo": "https://logos.composio.dev/api/crowdin",
     "category": "developer tools",
-    "toolCount": 231,
+    "toolCount": 233,
     "triggerCount": 0
   },
   {
@@ -4084,16 +4581,19 @@
     "name": "Datadog MCP",
     "logo": "https://logos.composio.dev/api/datadog_mcp",
     "category": "server monitoring",
-    "toolCount": 341,
+    "toolCount": 370,
     "triggerCount": 0
   },
   {
     "slug": "dataforseo",
-    "name": "Dataforseo",
+    "name": "DataForSEO",
     "logo": "https://logos.composio.dev/api/dataforseo",
-    "category": "developer tools",
+    "category": "seo & ai visibility",
     "toolCount": 312,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "datascope",
@@ -4109,6 +4609,14 @@
     "logo": "https://logos.composio.dev/api/daytona",
     "category": "developer tools",
     "toolCount": 114,
+    "triggerCount": 0
+  },
+  {
+    "slug": "dbt_cloud",
+    "name": "dbt Cloud",
+    "logo": "https://logos.composio.dev/api/dbt_cloud",
+    "category": "developer tools",
+    "toolCount": 20,
     "triggerCount": 0
   },
   {
@@ -4139,9 +4647,12 @@
     "slug": "deepgram",
     "name": "Deepgram",
     "logo": "https://logos.composio.dev/api/deepgram",
-    "category": "artificial intelligence",
-    "toolCount": 8,
-    "triggerCount": 0
+    "category": "audio & speech",
+    "toolCount": 17,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "deepimage",
@@ -4156,8 +4667,11 @@
     "name": "DeepSeek",
     "logo": "https://logos.composio.dev/api/deepseek",
     "category": "ai models",
-    "toolCount": 4,
-    "triggerCount": 0
+    "toolCount": 6,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "deepwiki_mcp",
@@ -4181,6 +4695,14 @@
     "logo": "https://logos.composio.dev/api/deployhq",
     "category": "developer tools",
     "toolCount": 60,
+    "triggerCount": 0
+  },
+  {
+    "slug": "descript_mcp",
+    "name": "Descript MCP",
+    "logo": "https://logos.composio.dev/api/descript_mcp",
+    "category": "model context protocol",
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -4220,7 +4742,7 @@
     "name": "Devin MCP",
     "logo": "https://logos.composio.dev/api/devin_mcp",
     "category": "model context protocol",
-    "toolCount": 4,
+    "toolCount": 23,
     "triggerCount": 0
   },
   {
@@ -4244,7 +4766,7 @@
     "name": "Dice MCP",
     "logo": "https://logos.composio.dev/api/dice_mcp",
     "category": "hr talent & recruitment",
-    "toolCount": 2,
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -4267,8 +4789,16 @@
     "slug": "diffbot",
     "name": "Diffbot",
     "logo": "https://logos.composio.dev/api/diffbot",
-    "category": "artificial intelligence",
+    "category": "web scraping & browser",
     "toolCount": 35,
+    "triggerCount": 0
+  },
+  {
+    "slug": "dify",
+    "name": "Dify",
+    "logo": "https://logos.composio.dev/api/dify",
+    "category": "ai agents",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -4284,7 +4814,23 @@
     "name": "DigitalOcean",
     "logo": "https://logos.composio.dev/api/digital_ocean",
     "category": "developer tools",
-    "toolCount": 48,
+    "toolCount": 54,
+    "triggerCount": 0
+  },
+  {
+    "slug": "directiq",
+    "name": "DirectIQ",
+    "logo": "https://logos.composio.dev/api/directiq",
+    "category": "transactional email",
+    "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "disqus",
+    "name": "Disqus",
+    "logo": "https://logos.composio.dev/api/disqus",
+    "category": "social media accounts",
+    "toolCount": 148,
     "triggerCount": 0
   },
   {
@@ -4323,7 +4869,7 @@
     "slug": "docparser",
     "name": "Docparser",
     "logo": "https://logos.composio.dev/api/docparser",
-    "category": "documents",
+    "category": "documents & ocr",
     "toolCount": 4,
     "triggerCount": 0
   },
@@ -4355,7 +4901,7 @@
     "slug": "docsumo",
     "name": "Docsumo",
     "logo": "https://logos.composio.dev/api/docsumo",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 11,
     "triggerCount": 0
   },
@@ -4432,6 +4978,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "domotz_mcp",
+    "name": "Domotz MCP",
+    "logo": "https://logos.composio.dev/api/domotz_mcp",
+    "category": "model context protocol",
+    "toolCount": 99,
+    "triggerCount": 0
+  },
+  {
     "slug": "donately",
     "name": "Donately",
     "logo": "https://logos.composio.dev/api/donately",
@@ -4499,8 +5053,16 @@
     "slug": "dreamstudio",
     "name": "Dreamstudio",
     "logo": "https://logos.composio.dev/api/dreamstudio",
-    "category": "artificial intelligence",
+    "category": "media generation",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "dribbble",
+    "name": "Dribbble",
+    "logo": "https://logos.composio.dev/api/dribbble",
+    "category": "images & design",
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -4577,7 +5139,7 @@
   },
   {
     "slug": "e2b",
-    "name": "E2b",
+    "name": "E2B",
     "logo": "https://logos.composio.dev/api/e2b",
     "category": "developer tools",
     "toolCount": 27,
@@ -4667,7 +5229,7 @@
     "slug": "elevenreader",
     "name": "Elevenreader",
     "logo": "https://logos.composio.dev/api/elevenreader",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 124,
     "triggerCount": 0
   },
@@ -4676,7 +5238,7 @@
     "name": "Elorus",
     "logo": "https://logos.composio.dev/api/elorus",
     "category": "proposal & invoice management",
-    "toolCount": 13,
+    "toolCount": 19,
     "triggerCount": 0
   },
   {
@@ -4701,6 +5263,14 @@
     "logo": "https://logos.composio.dev/api/emailoctopus",
     "category": "email newsletters",
     "toolCount": 20,
+    "triggerCount": 0
+  },
+  {
+    "slug": "emailvalidation",
+    "name": "Emailvalidation",
+    "logo": "https://logos.composio.dev/api/emailvalidation",
+    "category": "email",
+    "toolCount": 2,
     "triggerCount": 0
   },
   {
@@ -4787,8 +5357,19 @@
     "slug": "eodhd_apis",
     "name": "EODHD APIs",
     "logo": "https://logos.composio.dev/api/eodhd_apis",
-    "category": "analytics",
+    "category": "market data",
     "toolCount": 11,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "era_context_mcp",
+    "name": "Era Context MCP",
+    "logo": "https://logos.composio.dev/api/era_context_mcp",
+    "category": "model context protocol",
+    "toolCount": 51,
     "triggerCount": 0
   },
   {
@@ -4797,6 +5378,14 @@
     "logo": "https://logos.composio.dev/api/eranol",
     "category": "video & audio",
     "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "eraser_mcp",
+    "name": "Eraser MCP",
+    "logo": "https://logos.composio.dev/api/eraser_mcp",
+    "category": "model context protocol",
+    "toolCount": 42,
     "triggerCount": 0
   },
   {
@@ -4900,7 +5489,7 @@
     "name": "Excel",
     "logo": "https://logos.composio.dev/api/excel",
     "category": "spreadsheets",
-    "toolCount": 54,
+    "toolCount": 60,
     "triggerCount": 0
   },
   {
@@ -4909,6 +5498,22 @@
     "logo": "https://logos.composio.dev/api/exceptionless",
     "category": "developer tools",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "explorium",
+    "name": "Explorium",
+    "logo": "https://logos.composio.dev/api/explorium",
+    "category": "ai sales tools",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "explorium_mcp",
+    "name": "Explorium MCP",
+    "logo": "https://logos.composio.dev/api/explorium_mcp",
+    "category": "model context protocol",
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -4955,9 +5560,12 @@
     "slug": "fal_ai",
     "name": "Fal.ai",
     "logo": "https://logos.composio.dev/api/fal_ai",
-    "category": "ai models",
-    "toolCount": 12,
-    "triggerCount": 0
+    "category": "media generation",
+    "toolCount": 13,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "faraday",
@@ -4972,8 +5580,8 @@
     "name": "Fathom",
     "logo": "https://logos.composio.dev/api/fathom",
     "category": "ai meeting assistants",
-    "toolCount": 7,
-    "triggerCount": 0
+    "toolCount": 9,
+    "triggerCount": 1
   },
   {
     "slug": "feathery",
@@ -4989,6 +5597,14 @@
     "logo": "https://logos.composio.dev/api/feedbear",
     "category": "product management",
     "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "fellow_ai_mcp",
+    "name": "Fellow.ai MCP",
+    "logo": "https://logos.composio.dev/api/fellow_ai_mcp",
+    "category": "model context protocol",
+    "toolCount": 19,
     "triggerCount": 0
   },
   {
@@ -5040,10 +5656,26 @@
     "triggerCount": 0
   },
   {
+    "slug": "financial_datasets_ai",
+    "name": "Financial Datasets",
+    "logo": "https://logos.composio.dev/api/financial_datasets_ai",
+    "category": "analytics",
+    "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
+    "slug": "financial_datasets_ai_mcp",
+    "name": "Financial Datasets AI MCP",
+    "logo": "https://logos.composio.dev/api/financial_datasets_ai_mcp",
+    "category": "model context protocol",
+    "toolCount": 28,
+    "triggerCount": 0
+  },
+  {
     "slug": "findymail",
     "name": "Findymail",
     "logo": "https://logos.composio.dev/api/findymail",
-    "category": "email",
+    "category": "people & contact data",
     "toolCount": 21,
     "triggerCount": 0
   },
@@ -5061,6 +5693,14 @@
     "logo": "https://logos.composio.dev/api/fingertip",
     "category": "website builders",
     "toolCount": 60,
+    "triggerCount": 0
+  },
+  {
+    "slug": "finlight",
+    "name": "Finlight",
+    "logo": "https://logos.composio.dev/api/finlight",
+    "category": "news & lifestyle",
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -5083,6 +5723,17 @@
     "slug": "finnhub",
     "name": "Finnhub",
     "logo": "https://logos.composio.dev/api/finnhub",
+    "category": "market data",
+    "toolCount": 11,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "finviz",
+    "name": "Finviz",
+    "logo": "https://logos.composio.dev/api/finviz",
     "category": "analytics",
     "toolCount": 11,
     "triggerCount": 0
@@ -5123,9 +5774,12 @@
     "slug": "fish_audio",
     "name": "Fish Audio",
     "logo": "https://logos.composio.dev/api/fish_audio",
-    "category": "artificial intelligence",
-    "toolCount": 10,
-    "triggerCount": 0
+    "category": "audio & speech",
+    "toolCount": 12,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "fixer",
@@ -5212,7 +5866,7 @@
     "name": "Folk",
     "logo": "https://logos.composio.dev/api/folk",
     "category": "crm",
-    "toolCount": 23,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -5220,7 +5874,7 @@
     "name": "Follow Up Boss",
     "logo": "https://logos.composio.dev/api/follow_up_boss",
     "category": "crm",
-    "toolCount": 99,
+    "toolCount": 112,
     "triggerCount": 0
   },
   {
@@ -5256,6 +5910,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "formilla",
+    "name": "Formilla",
+    "logo": "https://logos.composio.dev/api/formilla",
+    "category": "customer support",
+    "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
     "slug": "fraudlabs_pro",
     "name": "FraudLabs Pro",
     "logo": "https://www.fraudlabspro.com/images/logo.png",
@@ -5272,6 +5934,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "freee",
+    "name": "freee",
+    "logo": "https://logos.composio.dev/api/freee",
+    "category": "accounting",
+    "toolCount": 267,
+    "triggerCount": 0
+  },
+  {
+    "slug": "freshsales",
+    "name": "Freshsales",
+    "logo": "https://logos.composio.dev/api/freshsales",
+    "category": "crm",
+    "toolCount": 104,
+    "triggerCount": 0
+  },
+  {
     "slug": "freshservice",
     "name": "Freshservice",
     "logo": "https://logos.composio.dev/api/freshservice",
@@ -5281,10 +5959,10 @@
   },
   {
     "slug": "fullenrich",
-    "name": "Fullenrich",
+    "name": "FullEnrich",
     "logo": "https://gravatar.com/avatar/0d4b0c4b0c4b0c4b0c4b0c4b0c4b0c4b0",
-    "category": "contact management",
-    "toolCount": 9,
+    "category": "people & contact data",
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
@@ -5293,6 +5971,22 @@
     "logo": "https://logos.composio.dev/api/fullstory",
     "category": "analytics",
     "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
+    "slug": "fuseai",
+    "name": "FuseAI",
+    "logo": "https://logos.composio.dev/api/fuseai",
+    "category": "ai sales tools",
+    "toolCount": 141,
+    "triggerCount": 0
+  },
+  {
+    "slug": "fuseai_mcp",
+    "name": "FuseAI MCP",
+    "logo": "https://logos.composio.dev/api/fuseai_mcp",
+    "category": "model context protocol",
+    "toolCount": 16,
     "triggerCount": 0
   },
   {
@@ -5331,7 +6025,7 @@
     "slug": "gan_ai",
     "name": "Gan.AI",
     "logo": "https://logos.composio.dev/api/gan_ai",
-    "category": "artificial intelligence",
+    "category": "media generation",
     "toolCount": 8,
     "triggerCount": 0
   },
@@ -5341,6 +6035,14 @@
     "logo": "https://logos.composio.dev/api/gatherup",
     "category": "reviews",
     "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "geekflare",
+    "name": "Geekflare",
+    "logo": "https://logos.composio.dev/api/geekflare",
+    "category": "developer tools",
+    "toolCount": 17,
     "triggerCount": 0
   },
   {
@@ -5357,7 +6059,10 @@
     "logo": "https://logos.composio.dev/api/gemini",
     "category": "artificial intelligence",
     "toolCount": 8,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "gender_api",
@@ -5387,7 +6092,7 @@
     "slug": "geoapify",
     "name": "Geoapify",
     "logo": "https://www.geoapify.com/wp-content/uploads/2020/06/geoapify_logo.svg",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 25,
     "triggerCount": 0
   },
@@ -5421,6 +6126,14 @@
     "logo": "https://logos.composio.dev/api/getprospect",
     "category": "marketing",
     "toolCount": 22,
+    "triggerCount": 0
+  },
+  {
+    "slug": "getresponse",
+    "name": "GetResponse",
+    "logo": "https://logos.composio.dev/api/getresponse",
+    "category": "marketing automation",
+    "toolCount": 213,
     "triggerCount": 0
   },
   {
@@ -5468,7 +6181,15 @@
     "name": "Gitea",
     "logo": "https://logos.composio.dev/api/gitea",
     "category": "developer tools",
-    "toolCount": 19,
+    "toolCount": 41,
+    "triggerCount": 0
+  },
+  {
+    "slug": "github_mcp",
+    "name": "GitHub MCP",
+    "logo": "https://logos.composio.dev/api/github_mcp",
+    "category": "model context protocol",
+    "toolCount": 44,
     "triggerCount": 0
   },
   {
@@ -5476,7 +6197,7 @@
     "name": "GitLab",
     "logo": "https://logos.composio.dev/api/gitlab",
     "category": "developer tools",
-    "toolCount": 116,
+    "toolCount": 123,
     "triggerCount": 0
   },
   {
@@ -5491,7 +6212,7 @@
     "slug": "gladia",
     "name": "Gladia",
     "logo": "https://www.gladia.io/favicon.ico",
-    "category": "transcription",
+    "category": "audio & speech",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -5509,6 +6230,22 @@
     "logo": "https://logos.composio.dev/api/gleap",
     "category": "customer support",
     "toolCount": 179,
+    "triggerCount": 0
+  },
+  {
+    "slug": "gleif",
+    "name": "GLEIF API",
+    "logo": "https://logos.composio.dev/api/gleif",
+    "category": "legal & public records",
+    "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "glide_mcp",
+    "name": "Glide MCP",
+    "logo": "https://logos.composio.dev/api/glide_mcp",
+    "category": "developer tools",
+    "toolCount": 124,
     "triggerCount": 0
   },
   {
@@ -5552,6 +6289,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "goodapi_plant_trees",
+    "name": "GoodAPI: Plant Trees",
+    "logo": "https://logos.composio.dev/api/goodapi_plant_trees",
+    "category": "ecommerce",
+    "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
     "slug": "goodbits",
     "name": "Goodbits",
     "logo": "https://goodbits.io/logo.png",
@@ -5581,6 +6326,14 @@
     "logo": "https://logos.composio.dev/api/google_admin",
     "category": "security & identity tools",
     "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
+    "slug": "google_adsense",
+    "name": "Google AdSense",
+    "logo": "https://logos.composio.dev/api/google_adsense",
+    "category": "ads & conversion",
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -5683,7 +6436,7 @@
     "slug": "gradium",
     "name": "Gradium",
     "logo": "https://logos.composio.dev/api/gradium",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 9,
     "triggerCount": 0
   },
@@ -5693,6 +6446,14 @@
     "logo": "https://logos.composio.dev/api/grafana",
     "category": "developer tools",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "grafana_cloud_mcp",
+    "name": "Grafana Cloud MCP",
+    "logo": "https://logos.composio.dev/api/grafana_cloud_mcp",
+    "category": "model context protocol",
+    "toolCount": 118,
     "triggerCount": 0
   },
   {
@@ -5707,7 +6468,7 @@
     "slug": "granola_mcp",
     "name": "Granola MCP",
     "logo": "https://logos.composio.dev/api/granola_mcp",
-    "category": "productivity & project management",
+    "category": "productivity",
     "toolCount": 6,
     "triggerCount": 0
   },
@@ -5721,11 +6482,14 @@
   },
   {
     "slug": "graphhopper",
-    "name": "Graphhopper",
+    "name": "GraphHopper",
     "logo": "https://www.graphhopper.com/images/graphhopper_logo.svg",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 13,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "greenhouse",
@@ -5733,6 +6497,14 @@
     "logo": "https://logos.composio.dev/api/greenhouse",
     "category": "hr talent & recruitment",
     "toolCount": 134,
+    "triggerCount": 0
+  },
+  {
+    "slug": "greptile_mcp",
+    "name": "Greptile MCP",
+    "logo": "https://logos.composio.dev/api/greptile_mcp",
+    "category": "model context protocol",
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -5800,6 +6572,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "halopsa",
+    "name": "HaloPSA",
+    "logo": "https://logos.composio.dev/api/halopsa",
+    "category": "customer support",
+    "toolCount": 85,
+    "triggerCount": 0
+  },
+  {
     "slug": "handwrite",
     "name": "Handwrite.io",
     "logo": "https://logos.composio.dev/api/handwrite",
@@ -5821,6 +6601,14 @@
     "logo": "https://www.happyscribe.com/favicon.ico",
     "category": "transcription",
     "toolCount": 20,
+    "triggerCount": 0
+  },
+  {
+    "slug": "harness",
+    "name": "Harness",
+    "logo": "https://logos.composio.dev/api/harness",
+    "category": "developer tools",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -5905,9 +6693,9 @@
   },
   {
     "slug": "here",
-    "name": "Here",
+    "name": "HERE",
     "logo": "https://www.here.com/etc.clientlibs/here/clientlibs/website/clientlib-site/resources/images/here-logo.svg",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 99,
     "triggerCount": 0
   },
@@ -5924,7 +6712,7 @@
     "name": "Heyreach",
     "logo": "https://logos.composio.dev/api/heyreach",
     "category": "marketing automation",
-    "toolCount": 19,
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -5944,6 +6732,25 @@
     "triggerCount": 0
   },
   {
+    "slug": "higgsfield",
+    "name": "Higgsfield",
+    "logo": "https://logos.composio.dev/api/higgsfield",
+    "category": "media generation",
+    "toolCount": 14,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "higgsfield_mcp",
+    "name": "Higgsfield MCP",
+    "logo": "https://logos.composio.dev/api/higgsfield_mcp",
+    "category": "model context protocol",
+    "toolCount": 101,
+    "triggerCount": 0
+  },
+  {
     "slug": "highergov",
     "name": "Highergov",
     "logo": "https://www.highergov.com/favicon.ico",
@@ -5952,11 +6759,35 @@
     "triggerCount": 0
   },
   {
+    "slug": "highlevel_agency",
+    "name": "HighLevel Agency",
+    "logo": "https://logos.composio.dev/api/highlevel_agency",
+    "category": "crm",
+    "toolCount": 16,
+    "triggerCount": 0
+  },
+  {
+    "slug": "highlevel_location",
+    "name": "HighLevel Location",
+    "logo": "https://logos.composio.dev/api/highlevel",
+    "category": "crm",
+    "toolCount": 555,
+    "triggerCount": 0
+  },
+  {
+    "slug": "highlevel_mcp",
+    "name": "HighLevel MCP",
+    "logo": "https://logos.composio.dev/api/highlevel_mcp",
+    "category": "model context protocol",
+    "toolCount": 36,
+    "triggerCount": 0
+  },
+  {
     "slug": "hireflix",
     "name": "Hireflix",
     "logo": "https://logos.composio.dev/api/hireflix",
     "category": "human resources",
-    "toolCount": 17,
+    "toolCount": 18,
     "triggerCount": 0
   },
   {
@@ -5992,6 +6823,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "honcho",
+    "name": "Honcho",
+    "logo": "https://logos.composio.dev/api/honcho",
+    "category": "artificial intelligence",
+    "toolCount": 16,
+    "triggerCount": 0
+  },
+  {
     "slug": "honeybadger",
     "name": "Honeybadger",
     "logo": "https://logos.composio.dev/api/honeybadger",
@@ -6004,7 +6843,7 @@
     "name": "Honeycomb MCP",
     "logo": "https://logos.composio.dev/api/honeycomb_mcp",
     "category": "developer tools",
-    "toolCount": 32,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -6028,7 +6867,7 @@
     "name": "Hostinger",
     "logo": "https://logos.composio.dev/api/hostinger",
     "category": "developer tools",
-    "toolCount": 24,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -6061,7 +6900,10 @@
     "logo": "https://logos.composio.dev/api/htmlcss_to_image",
     "category": "images & design",
     "toolCount": 10,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "hub_planner",
@@ -6099,15 +6941,18 @@
     "slug": "hunter",
     "name": "Hunter",
     "logo": "https://logo.clearbit.com/hunter.io",
-    "category": "email",
-    "toolCount": 26,
-    "triggerCount": 0
+    "category": "people & contact data",
+    "toolCount": 38,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "hypeauditor",
     "name": "Hypeauditor",
     "logo": "https://hypeauditor.com/favicon.ico",
-    "category": "social media marketing",
+    "category": "social & creator data",
     "toolCount": 4,
     "triggerCount": 0
   },
@@ -6115,7 +6960,7 @@
     "slug": "hyperbrowser",
     "name": "Hyperbrowser",
     "logo": "https://logos.composio.dev/api/hyperbrowser",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 43,
     "triggerCount": 0
   },
@@ -6147,9 +6992,12 @@
     "slug": "icypeas",
     "name": "Icypeas",
     "logo": "https://www.icypeas.com/logo.png",
-    "category": "email",
+    "category": "people & contact data",
     "toolCount": 22,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "idealpostcodes",
@@ -6173,6 +7021,17 @@
     "logo": "https://logos.composio.dev/api/ignav_flights",
     "category": "lifestyle & entertainment",
     "toolCount": 5,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "ignav_flights_mcp",
+    "name": "Ignav Flights MCP",
+    "logo": "https://logos.composio.dev/api/ignav_flights_mcp",
+    "category": "model context protocol",
+    "toolCount": 2,
     "triggerCount": 0
   },
   {
@@ -6248,6 +7107,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "imply_polaris",
+    "name": "Imply Polaris",
+    "logo": "https://logos.composio.dev/api/imply_polaris",
+    "category": "analytics",
+    "toolCount": 108,
+    "triggerCount": 0
+  },
+  {
     "slug": "inblog",
     "name": "Inblog",
     "logo": "https://logos.composio.dev/api/inblog",
@@ -6288,11 +7155,11 @@
     "triggerCount": 0
   },
   {
-    "slug": "instacart",
-    "name": "Instacart",
-    "logo": "https://logos.composio.dev/api/instacart",
-    "category": "ecommerce",
-    "toolCount": 4,
+    "slug": "inspo_mcp",
+    "name": "Inspo MCP",
+    "logo": "https://logos.composio.dev/api/inspo_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -6300,7 +7167,7 @@
     "name": "Instagram",
     "logo": "https://logos.composio.dev/api/instagram",
     "category": "social media accounts",
-    "toolCount": 36,
+    "toolCount": 40,
     "triggerCount": 0
   },
   {
@@ -6308,7 +7175,7 @@
     "name": "Instantly",
     "logo": "https://app.instantly.ai/favicon.ico",
     "category": "drip emails",
-    "toolCount": 117,
+    "toolCount": 121,
     "triggerCount": 0
   },
   {
@@ -6332,7 +7199,7 @@
     "name": "Intercom MCP",
     "logo": "https://logos.composio.dev/api/intercom_mcp",
     "category": "communication",
-    "toolCount": 14,
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -6347,7 +7214,7 @@
     "slug": "invofox",
     "name": "Invofox",
     "logo": "https://logos.composio.dev/api/invofox",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -6371,7 +7238,7 @@
     "slug": "ip2location_io",
     "name": "IP2Location.io",
     "logo": "https://logos.composio.dev/api/ip2location_io",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 5,
     "triggerCount": 0
   },
@@ -6409,11 +7276,14 @@
   },
   {
     "slug": "ipinfo_io",
-    "name": "Ipinfo.io",
+    "name": "IPinfo",
     "logo": "https://ipinfo.io/static/images/ipinfo-logo.png",
     "category": "developer tools",
     "toolCount": 27,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "iplocate",
@@ -6433,7 +7303,7 @@
   },
   {
     "slug": "iqair_airvisual",
-    "name": "Iqair Airvisual",
+    "name": "IQAir AirVisual",
     "logo": "https://logos.composio.dev/api/iqair_airvisual",
     "category": "developer tools",
     "toolCount": 10,
@@ -6472,11 +7342,57 @@
     "triggerCount": 0
   },
   {
+    "slug": "jentic_mcp",
+    "name": "Jentic MCP",
+    "logo": "https://logos.composio.dev/api/jentic_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "jev",
+    "name": "Jev",
+    "logo": "https://logos.composio.dev/api/jev",
+    "category": "artificial intelligence",
+    "toolCount": 2,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "jigsawstack",
     "name": "Jigsawstack",
     "logo": "https://logos.composio.dev/api/jigsawstack",
     "category": "artificial intelligence",
     "toolCount": 23,
+    "triggerCount": 0
+  },
+  {
+    "slug": "jinko",
+    "name": "Jinko",
+    "logo": "https://logos.composio.dev/api/jinko",
+    "category": "scheduling & booking",
+    "toolCount": 13,
+    "triggerCount": 0
+  },
+  {
+    "slug": "job_search",
+    "name": "Job Search",
+    "logo": "https://logos.composio.dev/api/job-search",
+    "category": "human resources",
+    "toolCount": 94,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "jobber",
+    "name": "Jobber",
+    "logo": "https://logos.composio.dev/api/jobber",
+    "category": "crm",
+    "toolCount": 36,
     "triggerCount": 0
   },
   {
@@ -6500,7 +7416,15 @@
     "name": "Jotform",
     "logo": "https://logos.composio.dev/api/jotform",
     "category": "forms & surveys",
-    "toolCount": 18,
+    "toolCount": 34,
+    "triggerCount": 0
+  },
+  {
+    "slug": "jotform_sign",
+    "name": "Jotform Sign",
+    "logo": "https://logos.composio.dev/api/jotform_sign",
+    "category": "signatures",
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -6510,6 +7434,17 @@
     "category": "security & identity tools",
     "toolCount": 2,
     "triggerCount": 0
+  },
+  {
+    "slug": "just_one_api",
+    "name": "Just One API",
+    "logo": "https://logos.composio.dev/api/just_one_api",
+    "category": "social & creator data",
+    "toolCount": 288,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "kadoa",
@@ -6556,7 +7491,7 @@
     "name": "Kapso",
     "logo": "https://logos.composio.dev/api/kapso",
     "category": "communication",
-    "toolCount": 10,
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -6565,6 +7500,14 @@
     "logo": "https://logos.composio.dev/api/keen_io",
     "category": "analytics",
     "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
+    "slug": "kernel_mcp",
+    "name": "Kernel MCP",
+    "logo": "https://logos.composio.dev/api/kernel_mcp",
+    "category": "model context protocol",
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -6604,7 +7547,7 @@
     "name": "Kieai",
     "logo": "https://logos.composio.dev/api/kieai",
     "category": "artificial intelligence",
-    "toolCount": 35,
+    "toolCount": 38,
     "triggerCount": 0
   },
   {
@@ -6616,12 +7559,20 @@
     "triggerCount": 0
   },
   {
+    "slug": "kintone_rest",
+    "name": "Kintone REST",
+    "logo": "https://logos.composio.dev/api/kintone_rest",
+    "category": "app builder",
+    "toolCount": 55,
+    "triggerCount": 0
+  },
+  {
     "slug": "kit",
     "name": "Kit",
     "logo": "https://logos.composio.dev/api/kit",
     "category": "marketing automation",
     "toolCount": 42,
-    "triggerCount": 0
+    "triggerCount": 17
   },
   {
     "slug": "klazify",
@@ -6701,6 +7652,14 @@
     "logo": "https://logos.composio.dev/api/labs64_netlicensing",
     "category": "developer tools",
     "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
+    "slug": "labsmobile",
+    "name": "LabsMobile",
+    "logo": "https://logos.composio.dev/api/labsmobile",
+    "category": "phone & sms",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -6784,6 +7743,17 @@
     "triggerCount": 0
   },
   {
+    "slug": "leadmagic",
+    "name": "LeadMagic",
+    "logo": "https://logos.composio.dev/api/leadmagic",
+    "category": "people & contact data",
+    "toolCount": 109,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "leadoku",
     "name": "Leadoku",
     "logo": "https://logos.composio.dev/api/leadoku",
@@ -6800,6 +7770,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "legal_data_hunter_mcp",
+    "name": "Legal Data Hunter MCP",
+    "logo": "https://logos.composio.dev/api/legal_data_hunter_mcp",
+    "category": "model context protocol",
+    "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
     "slug": "leiga",
     "name": "Leiga",
     "logo": "https://logos.composio.dev/api/leiga",
@@ -6812,7 +7790,7 @@
     "name": "Lemlist",
     "logo": "https://logos.composio.dev/api/lemlist",
     "category": "marketing automation",
-    "toolCount": 54,
+    "toolCount": 60,
     "triggerCount": 0
   },
   {
@@ -6856,12 +7834,28 @@
     "triggerCount": 0
   },
   {
+    "slug": "lilt_mcp",
+    "name": "LILT MCP",
+    "logo": "https://logos.composio.dev/api/lilt_mcp",
+    "category": "model context protocol",
+    "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
     "slug": "line",
     "name": "LINE",
     "logo": "https://logos.composio.dev/api/line",
     "category": "communication",
-    "toolCount": 13,
+    "toolCount": 17,
     "triggerCount": 1
+  },
+  {
+    "slug": "linear_mcp",
+    "name": "Linear MCP",
+    "logo": "https://logos.composio.dev/api/linear_mcp",
+    "category": "model context protocol",
+    "toolCount": 78,
+    "triggerCount": 0
   },
   {
     "slug": "linguapop",
@@ -6869,6 +7863,14 @@
     "logo": "https://logos.composio.dev/api/linguapop",
     "category": "education",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "linguin_ai",
+    "name": "Linguin AI",
+    "logo": "https://logos.composio.dev/api/linguin_ai",
+    "category": "artificial intelligence",
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -6888,6 +7890,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "link_twin",
+    "name": "LinkTwin",
+    "logo": "https://logos.composio.dev/api/linktwin",
+    "category": "url shortener",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "linq",
+    "name": "Linq",
+    "logo": "https://logos.composio.dev/api/linq",
+    "category": "communication",
+    "toolCount": 68,
+    "triggerCount": 0
+  },
+  {
     "slug": "listclean",
     "name": "Listclean",
     "logo": "https://logos.composio.dev/api/listclean",
@@ -6901,6 +7919,14 @@
     "logo": "https://logos.composio.dev/api/livesession",
     "category": "analytics",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "llm_api",
+    "name": "LLM API",
+    "logo": "https://logos.composio.dev/api/llm_api",
+    "category": "artificial intelligence",
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -6931,9 +7957,12 @@
     "slug": "logo_dev",
     "name": "Logo.dev",
     "logo": "https://logos.composio.dev/api/logo_dev",
-    "category": "images & design",
-    "toolCount": 2,
-    "triggerCount": 0
+    "category": "company data",
+    "toolCount": 8,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "lokalise",
@@ -6941,6 +7970,14 @@
     "logo": "https://logos.composio.dev/api/lokalise",
     "category": "project management",
     "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "longbridge_mcp",
+    "name": "Longbridge MCP",
+    "logo": "https://logos.composio.dev/api/longbridge_mcp",
+    "category": "model context protocol",
+    "toolCount": 161,
     "triggerCount": 0
   },
   {
@@ -6968,12 +8005,23 @@
     "triggerCount": 0
   },
   {
+    "slug": "lucid_mcp",
+    "name": "Lucid MCP",
+    "logo": "https://logos.composio.dev/api/lucid_mcp",
+    "category": "model context protocol",
+    "toolCount": 35,
+    "triggerCount": 0
+  },
+  {
     "slug": "luma_labs",
     "name": "Luma Labs",
     "logo": "https://logos.composio.dev/api/luma_labs",
-    "category": "artificial intelligence",
+    "category": "media generation",
     "toolCount": 11,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "lumify",
@@ -6987,9 +8035,12 @@
     "slug": "lusha",
     "name": "Lusha",
     "logo": "https://logos.composio.dev/api/lusha",
-    "category": "sales & crm",
-    "toolCount": 7,
-    "triggerCount": 0
+    "category": "people & contact data",
+    "toolCount": 13,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "lyzr",
@@ -7000,12 +8051,31 @@
     "triggerCount": 0
   },
   {
+    "slug": "magic_hour",
+    "name": "Magic Hour",
+    "logo": "https://logos.composio.dev/api/magic_hour",
+    "category": "ai content generation",
+    "toolCount": 38,
+    "triggerCount": 0
+  },
+  {
+    "slug": "magic_patterns_mcp",
+    "name": "Magic Patterns MCP",
+    "logo": "https://logos.composio.dev/api/magic_patterns_mcp",
+    "category": "model context protocol",
+    "toolCount": 23,
+    "triggerCount": 0
+  },
+  {
     "slug": "magicslides",
     "name": "MagicSlides",
     "logo": "https://logos.composio.dev/api/magicslides",
     "category": "ai content generation",
     "toolCount": 4,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "magnetic",
@@ -7029,6 +8099,14 @@
     "logo": "https://logos.composio.dev/api/mailboxlayer",
     "category": "email",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "mailboxvalidator",
+    "name": "MailboxValidator",
+    "logo": "https://logos.composio.dev/api/mailboxvalidator",
+    "category": "email",
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -7116,7 +8194,7 @@
     "name": "Make",
     "logo": "https://logos.composio.dev/api/make",
     "category": "marketing automation",
-    "toolCount": 26,
+    "toolCount": 56,
     "triggerCount": 0
   },
   {
@@ -7147,7 +8225,7 @@
     "slug": "mapbox",
     "name": "Mapbox",
     "logo": "https://logos.composio.dev/api/mapbox",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 32,
     "triggerCount": 0
   },
@@ -7168,12 +8246,23 @@
     "triggerCount": 0
   },
   {
+    "slug": "marcopolo_mcp",
+    "name": "MarcoPolo MCP",
+    "logo": "https://logos.composio.dev/api/marcopolo_mcp",
+    "category": "model context protocol",
+    "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
     "slug": "marketstack",
     "name": "Marketstack",
     "logo": "https://logos.composio.dev/api/marketstack",
-    "category": "developer tools",
+    "category": "market data",
     "toolCount": 19,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "markup_ai",
@@ -7182,6 +8271,17 @@
     "category": "artificial intelligence",
     "toolCount": 10,
     "triggerCount": 0
+  },
+  {
+    "slug": "mathpix",
+    "name": "Mathpix",
+    "logo": "https://logos.composio.dev/api/mathpix",
+    "category": "documents & ocr",
+    "toolCount": 29,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "matterport",
@@ -7240,6 +8340,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "memelord_mcp",
+    "name": "Memelord MCP",
+    "logo": "https://www.memelord.com/favicon.ico",
+    "category": "model context protocol",
+    "toolCount": 19,
+    "triggerCount": 0
+  },
+  {
     "slug": "merchantpro",
     "name": "MerchantPro",
     "logo": "https://logos.composio.dev/api/merchantpro",
@@ -7264,6 +8372,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "meshy",
+    "name": "Meshy",
+    "logo": "https://logos.composio.dev/api/meshy",
+    "category": "media generation",
+    "toolCount": 27,
+    "triggerCount": 0
+  },
+  {
     "slug": "metabase",
     "name": "Metabase",
     "logo": "https://logos.composio.dev/api/metabase",
@@ -7275,7 +8391,7 @@
     "slug": "metaphor",
     "name": "Metaphor",
     "logo": "https://logos.composio.dev/api/metaphor",
-    "category": "artificial intelligence",
+    "category": "web search & research",
     "toolCount": 1,
     "triggerCount": 0
   },
@@ -7308,7 +8424,15 @@
     "name": "Microsoft To Do",
     "logo": "https://logos.composio.dev/api/microsoft_todo",
     "category": "task management",
-    "toolCount": 22,
+    "toolCount": 25,
+    "triggerCount": 0
+  },
+  {
+    "slug": "midpage_mcp",
+    "name": "Midpage MCP",
+    "logo": "https://logos.composio.dev/api/midpage_mcp",
+    "category": "model context protocol",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -7320,11 +8444,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "mihu_ai",
+    "name": "Mihu AI",
+    "logo": "https://logos.composio.dev/api/mihu_ai",
+    "category": "ai agents",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "mindbody",
     "name": "Mindbody",
     "logo": "https://logos.composio.dev/api/mindbody",
     "category": "fitness",
-    "toolCount": 8,
+    "toolCount": 18,
     "triggerCount": 0
   },
   {
@@ -7342,6 +8474,17 @@
     "category": "server monitoring",
     "toolCount": 5,
     "triggerCount": 0
+  },
+  {
+    "slug": "minimax",
+    "name": "MiniMax",
+    "logo": "https://logos.composio.dev/api/minimax",
+    "category": "artificial intelligence",
+    "toolCount": 34,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "mintlify",
@@ -7372,8 +8515,11 @@
     "name": "Mistral AI",
     "logo": "https://logos.composio.dev/api/mistral_ai",
     "category": "artificial intelligence",
-    "toolCount": 54,
-    "triggerCount": 0
+    "toolCount": 105,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "mixmax",
@@ -7388,7 +8534,7 @@
     "name": "Mobbin MCP",
     "logo": "https://logos.composio.dev/api/mobbin_mcp",
     "category": "images & design",
-    "toolCount": 1,
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -7416,6 +8562,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "modem_mcp",
+    "name": "Modem MCP",
+    "logo": "https://logos.composio.dev/api/modem_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
+    "triggerCount": 0
+  },
+  {
     "slug": "moderationapi",
     "name": "Moderation API",
     "logo": "https://logos.composio.dev/api/moderationapi",
@@ -7427,8 +8581,16 @@
     "slug": "monday_mcp",
     "name": "Monday MCP",
     "logo": "https://logos.composio.dev/api/monday_mcp",
-    "category": "productivity & project management",
-    "toolCount": 36,
+    "category": "project management",
+    "toolCount": 96,
+    "triggerCount": 0
+  },
+  {
+    "slug": "money_forward",
+    "name": "Money Forward",
+    "logo": "https://logos.composio.dev/api/money_forward",
+    "category": "accounting",
+    "toolCount": 23,
     "triggerCount": 0
   },
   {
@@ -7437,6 +8599,22 @@
     "logo": "https://logos.composio.dev/api/moneybird",
     "category": "accounting",
     "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "mongodb",
+    "name": "MongoDB",
+    "logo": "https://logos.composio.dev/api/mongodb",
+    "category": "databases",
+    "toolCount": 496,
+    "triggerCount": 0
+  },
+  {
+    "slug": "mongodb_mcp",
+    "name": "MongoDB MCP",
+    "logo": "https://logos.composio.dev/api/mongodb_mcp",
+    "category": "model context protocol",
+    "toolCount": 41,
     "triggerCount": 0
   },
   {
@@ -7464,6 +8642,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "motherduck_mcp",
+    "name": "MotherDuck MCP",
+    "logo": "https://logos.composio.dev/api/motherduck_mcp",
+    "category": "model context protocol",
+    "toolCount": 45,
+    "triggerCount": 0
+  },
+  {
     "slug": "motion",
     "name": "Motion",
     "logo": "https://logos.composio.dev/api/motion",
@@ -7475,7 +8661,7 @@
     "slug": "mrscraper",
     "name": "MrScraper",
     "logo": "https://logos.composio.dev/api/mrscraper",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 11,
     "triggerCount": 0
   },
@@ -7492,7 +8678,7 @@
     "name": "MuAPI",
     "logo": "https://logos.composio.dev/api/muapi",
     "category": "artificial intelligence",
-    "toolCount": 5,
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -7547,7 +8733,7 @@
     "slug": "nanonets_ocr",
     "name": "Nanonets OCR",
     "logo": "https://logos.composio.dev/api/nanonets_ocr",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 6,
     "triggerCount": 0
   },
@@ -7596,7 +8782,7 @@
     "name": "Neon MCP",
     "logo": "https://logos.composio.dev/api/neon_mcp",
     "category": "databases",
-    "toolCount": 35,
+    "toolCount": 104,
     "triggerCount": 0
   },
   {
@@ -7659,7 +8845,7 @@
     "slug": "news_api",
     "name": "NewsAPI",
     "logo": "https://logos.composio.dev/api/news_api",
-    "category": "news & lifestyle",
+    "category": "web search & research",
     "toolCount": 4,
     "triggerCount": 0
   },
@@ -7669,6 +8855,14 @@
     "logo": "https://logos.composio.dev/api/nextdns",
     "category": "security & identity tools",
     "toolCount": 68,
+    "triggerCount": 0
+  },
+  {
+    "slug": "ngram",
+    "name": "Ngram",
+    "logo": "https://logos.composio.dev/api/ngram",
+    "category": "ai content generation",
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -7736,6 +8930,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "notion_mcp",
+    "name": "Notion MCP",
+    "logo": "https://logos.composio.dev/api/notion_mcp",
+    "category": "model context protocol",
+    "toolCount": 42,
+    "triggerCount": 0
+  },
+  {
+    "slug": "notra",
+    "name": "Notra",
+    "logo": "https://logos.composio.dev/api/notra",
+    "category": "ai content generation",
+    "toolCount": 110,
+    "triggerCount": 0
+  },
+  {
     "slug": "nozbe_teams",
     "name": "Nozbe Teams",
     "logo": "https://logos.composio.dev/api/nozbe_teams",
@@ -7784,6 +8994,30 @@
     "triggerCount": 0
   },
   {
+    "slug": "nylas_mcp",
+    "name": "Nylas MCP",
+    "logo": "https://logos.composio.dev/api/nylas_mcp",
+    "category": "model context protocol",
+    "toolCount": 38,
+    "triggerCount": 0
+  },
+  {
+    "slug": "oboard",
+    "name": "Oboard",
+    "logo": "https://logos.composio.dev/api/oboard",
+    "category": "productivity",
+    "toolCount": 32,
+    "triggerCount": 0
+  },
+  {
+    "slug": "ocean_io",
+    "name": "Ocean.io",
+    "logo": "https://logos.composio.dev/api/ocean_io",
+    "category": "sales & crm",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "ocr_web_service",
     "name": "OCR Web Service",
     "logo": "https://logos.composio.dev/api/ocr_web_service",
@@ -7795,8 +9029,24 @@
     "slug": "ocrspace",
     "name": "OCR.space",
     "logo": "https://logos.composio.dev/api/ocrspace",
-    "category": "ai document extraction",
+    "category": "documents & ocr",
     "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
+    "slug": "octagon_mcp",
+    "name": "Octagon MCP",
+    "logo": "https://logos.composio.dev/api/octagon_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "odata",
+    "name": "OData",
+    "logo": "https://logos.composio.dev/api/odata",
+    "category": "databases",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -7816,11 +9066,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "okzest",
+    "name": "OKZest",
+    "logo": "https://logos.composio.dev/api/okzest",
+    "category": "images & design",
+    "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
     "slug": "ollama",
     "name": "Ollama",
     "logo": "https://logos.composio.dev/api/ollama",
     "category": "ai models",
     "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "olostep",
+    "name": "Olostep",
+    "logo": "https://logos.composio.dev/api/olostep",
+    "category": "web scraping & browser",
+    "toolCount": 16,
     "triggerCount": 0
   },
   {
@@ -7900,16 +9166,22 @@
     "name": "OpenAI",
     "logo": "https://logos.composio.dev/api/openai",
     "category": "artificial intelligence",
-    "toolCount": 126,
-    "triggerCount": 0
+    "toolCount": 128,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "openalex",
     "name": "OpenAlex",
     "logo": "https://logos.composio.dev/api/openalex",
-    "category": "databases",
-    "toolCount": 14,
-    "triggerCount": 0
+    "category": "web search & research",
+    "toolCount": 19,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "opencage",
@@ -7917,6 +9189,14 @@
     "logo": "https://logos.composio.dev/api/opencage",
     "category": "developer tools",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "openfunnel_agent_primitives",
+    "name": "OpenFunnel Agent Primitives",
+    "logo": "https://logos.composio.dev/api/openfunnel_agent_primitives",
+    "category": "ai sales tools",
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -7939,7 +9219,7 @@
     "slug": "openperplex",
     "name": "Openperplex",
     "logo": "https://logos.composio.dev/api/openperplex",
-    "category": "artificial intelligence",
+    "category": "web search & research",
     "toolCount": 8,
     "triggerCount": 0
   },
@@ -7953,10 +9233,10 @@
   },
   {
     "slug": "openrouter",
-    "name": "Openrouter",
+    "name": "OpenRouter",
     "logo": "https://logos.composio.dev/api/openrouter",
     "category": "artificial intelligence",
-    "toolCount": 13,
+    "toolCount": 20,
     "triggerCount": 0
   },
   {
@@ -7971,8 +9251,24 @@
     "slug": "openweather_api",
     "name": "OpenWeather API",
     "logo": "https://logos.composio.dev/api/openweather_api",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "openweb_ninja",
+    "name": "OpenWeb Ninja",
+    "logo": "https://logos.composio.dev/api/openweb_ninja",
+    "category": "ai web scraping",
+    "toolCount": 164,
+    "triggerCount": 0
+  },
+  {
+    "slug": "opn_form",
+    "name": "OPNForm",
+    "logo": "https://logos.composio.dev/api/opnform",
+    "category": "forms & surveys",
+    "toolCount": 28,
     "triggerCount": 0
   },
   {
@@ -8013,6 +9309,22 @@
     "logo": "https://logos.composio.dev/api/orshot",
     "category": "ai content generation",
     "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "osv",
+    "name": "OSV",
+    "logo": "https://logos.composio.dev/api/osv",
+    "category": "developer tools",
+    "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "otter_ai_mcp",
+    "name": "Otter.ai MCP",
+    "logo": "https://logos.composio.dev/api/otter_ai_mcp",
+    "category": "model context protocol",
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -8075,8 +9387,19 @@
     "slug": "parallel",
     "name": "Parallel",
     "logo": "https://logos.composio.dev/api/parallel",
-    "category": "ai web scraping",
-    "toolCount": 32,
+    "category": "web search & research",
+    "toolCount": 41,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "parallel_task_mcp",
+    "name": "Parallel Task MCP",
+    "logo": "https://logos.composio.dev/api/parallel_task_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -8128,6 +9451,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "particl_mcp",
+    "name": "Particl MCP",
+    "logo": "https://logos.composio.dev/api/particl_mcp",
+    "category": "model context protocol",
+    "toolCount": 18,
+    "triggerCount": 0
+  },
+  {
     "slug": "passcreator",
     "name": "Passcreator",
     "logo": "https://logos.composio.dev/api/passcreator",
@@ -8141,6 +9472,14 @@
     "logo": "https://logos.composio.dev/api/passslot",
     "category": "event management",
     "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "paychasers",
+    "name": "PayChasers",
+    "logo": "https://logos.composio.dev/api/paychasers",
+    "category": "payment processing",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -8176,6 +9515,30 @@
     "triggerCount": 0
   },
   {
+    "slug": "pdf_blocks",
+    "name": "PDF Blocks",
+    "logo": "https://logos.composio.dev/api/pdf_blocks",
+    "category": "documents",
+    "toolCount": 17,
+    "triggerCount": 0
+  },
+  {
+    "slug": "pdf_munk",
+    "name": "PDF Munk",
+    "logo": "https://logos.composio.dev/api/pdf_munk",
+    "category": "documents",
+    "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "pdf_vector",
+    "name": "PDF Vector",
+    "logo": "https://logos.composio.dev/api/pdf_vector",
+    "category": "ai document extraction",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "pdf_api_io",
     "name": "PDF-API.io",
     "logo": "https://logos.composio.dev/api/pdf_api_io",
@@ -8188,8 +9551,11 @@
     "name": "PDF.co",
     "logo": "https://logos.composio.dev/api/pdf_co",
     "category": "documents",
-    "toolCount": 35,
-    "triggerCount": 0
+    "toolCount": 49,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "pdf4me",
@@ -8232,6 +9598,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "peec_ai_mcp",
+    "name": "Peec AI MCP",
+    "logo": "https://logos.composio.dev/api/peec_ai_mcp",
+    "category": "model context protocol",
+    "toolCount": 84,
+    "triggerCount": 0
+  },
+  {
     "slug": "peerdom",
     "name": "Peerdom",
     "logo": "https://logos.composio.dev/api/peerdom",
@@ -8251,7 +9625,7 @@
     "slug": "perigon",
     "name": "Perigon",
     "logo": "https://logos.composio.dev/api/perigon",
-    "category": "news & lifestyle",
+    "category": "web search & research",
     "toolCount": 9,
     "triggerCount": 0
   },
@@ -8272,6 +9646,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "personio",
+    "name": "Personio",
+    "logo": "https://logos.composio.dev/api/personio",
+    "category": "human resources",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "pexels",
     "name": "Pexels",
     "logo": "https://logos.composio.dev/api/pexels",
@@ -8283,8 +9665,16 @@
     "slug": "phantombuster",
     "name": "PhantomBuster",
     "logo": "https://logos.composio.dev/api/phantombuster",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 53,
+    "triggerCount": 0
+  },
+  {
+    "slug": "photoroom",
+    "name": "PhotoRoom",
+    "logo": "https://logos.composio.dev/api/photoroom",
+    "category": "images & design",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -8340,7 +9730,7 @@
     "name": "Pinterest",
     "logo": "https://logos.composio.dev/api/pinterest",
     "category": "social media accounts",
-    "toolCount": 24,
+    "toolCount": 27,
     "triggerCount": 0
   },
   {
@@ -8348,6 +9738,14 @@
     "name": "Pinterest Ads",
     "logo": "https://logos.composio.dev/api/pinterest_ads",
     "category": "ads & conversion",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "pipeless",
+    "name": "Pipeless Recommendations",
+    "logo": "https://logos.composio.dev/api/pipeless",
+    "category": "artificial intelligence",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -8360,6 +9758,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "pivot",
+    "name": "Pivot",
+    "logo": "https://logos.composio.dev/api/pivot",
+    "category": "team collaboration",
+    "toolCount": 71,
+    "triggerCount": 0
+  },
+  {
     "slug": "placid",
     "name": "Placid",
     "logo": "https://logos.composio.dev/api/placid",
@@ -8368,12 +9774,36 @@
     "triggerCount": 0
   },
   {
+    "slug": "plaid_mcp",
+    "name": "Plaid MCP",
+    "logo": "https://logos.composio.dev/api/plaid_mcp",
+    "category": "model context protocol",
+    "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
     "slug": "plain",
     "name": "Plain",
     "logo": "https://logos.composio.dev/api/plain",
     "category": "customer support",
-    "toolCount": 23,
+    "toolCount": 120,
     "triggerCount": 11
+  },
+  {
+    "slug": "plain_mcp",
+    "name": "Plain MCP",
+    "logo": "https://logos.composio.dev/api/plain_mcp",
+    "category": "customer support",
+    "toolCount": 80,
+    "triggerCount": 0
+  },
+  {
+    "slug": "planetscale",
+    "name": "PlanetScale",
+    "logo": "https://logos.composio.dev/api/planetscale",
+    "category": "databases",
+    "toolCount": 245,
+    "triggerCount": 0
   },
   {
     "slug": "planly",
@@ -8456,10 +9886,18 @@
     "triggerCount": 0
   },
   {
+    "slug": "polar_signals_mcp",
+    "name": "Polar Signals MCP",
+    "logo": "https://logos.composio.dev/api/polar_signals_mcp",
+    "category": "model context protocol",
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
     "slug": "polygon",
     "name": "Polygon",
     "logo": "https://logos.composio.dev/api/polygon",
-    "category": "analytics",
+    "category": "market data",
     "toolCount": 90,
     "triggerCount": 0
   },
@@ -8472,6 +9910,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "polymarket",
+    "name": "Polymarket US",
+    "logo": "https://logos.composio.dev/api/polymarket",
+    "category": "commerce",
+    "toolCount": 44,
+    "triggerCount": 0
+  },
+  {
     "slug": "polymarket_us",
     "name": "Polymarket US",
     "logo": "https://logos.composio.dev/api/polymarket_us",
@@ -8480,11 +9926,11 @@
     "triggerCount": 0
   },
   {
-    "slug": "polymarket",
-    "name": "Polymarket US",
-    "logo": "https://logos.composio.dev/api/polymarket",
-    "category": "commerce",
-    "toolCount": 44,
+    "slug": "poma_grill",
+    "name": "POMA Grill",
+    "logo": "https://logos.composio.dev/api/poma_grill",
+    "category": "ai agents",
+    "toolCount": 18,
     "triggerCount": 0
   },
   {
@@ -8501,6 +9947,14 @@
     "logo": "https://logos.composio.dev/api/pophive_mcp",
     "category": "analytics",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "popupsmart",
+    "name": "Popupsmart",
+    "logo": "https://logos.composio.dev/api/popupsmart",
+    "category": "marketing automation",
+    "toolCount": 1,
     "triggerCount": 0
   },
   {
@@ -8548,7 +10002,7 @@
     "name": "Postiz",
     "logo": "https://logos.composio.dev/api/postiz_mcp",
     "category": "social media marketing",
-    "toolCount": 9,
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -8579,15 +10033,18 @@
     "slug": "predict_leads",
     "name": "PredictLeads",
     "logo": "https://logos.composio.dev/api/predictleads",
-    "category": "ai sales tools",
-    "toolCount": 9,
-    "triggerCount": 0
+    "category": "company data",
+    "toolCount": 11,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "prerender",
     "name": "Prerender",
     "logo": "https://logos.composio.dev/api/prerender",
-    "category": "developer tools",
+    "category": "seo & ai visibility",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -8699,9 +10156,12 @@
     "slug": "prospeo",
     "name": "Prospeo",
     "logo": "https://logos.composio.dev/api/prospeo",
-    "category": "ai sales tools",
+    "category": "people & contact data",
     "toolCount": 8,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "proxiedmail",
@@ -8717,6 +10177,14 @@
     "logo": "https://logos.composio.dev/api/pumble",
     "category": "team chat",
     "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "purechecker",
+    "name": "PureChecker",
+    "logo": "https://logos.composio.dev/api/purechecker",
+    "category": "email",
+    "toolCount": 2,
     "triggerCount": 0
   },
   {
@@ -8784,6 +10252,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "quicknode_mcp",
+    "name": "QuickNode MCP",
+    "logo": "https://logos.composio.dev/api/quicknode_mcp",
+    "category": "model context protocol",
+    "toolCount": 22,
+    "triggerCount": 0
+  },
+  {
     "slug": "quiltt",
     "name": "Quiltt",
     "logo": "https://logos.composio.dev/api/quiltt",
@@ -8800,6 +10276,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "quire",
+    "name": "Quire",
+    "logo": "https://logos.composio.dev/api/quire",
+    "category": "project management",
+    "toolCount": 102,
+    "triggerCount": 0
+  },
+  {
     "slug": "quo",
     "name": "Quo",
     "logo": "https://logos.composio.dev/api/quo",
@@ -8811,7 +10295,7 @@
     "slug": "radar",
     "name": "Radar",
     "logo": "https://logos.composio.dev/api/radar",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 37,
     "triggerCount": 0
   },
@@ -8844,7 +10328,7 @@
     "name": "Railway MCP",
     "logo": "https://logos.composio.dev/api/railway_mcp",
     "category": "developer tools",
-    "toolCount": 26,
+    "toolCount": 46,
     "triggerCount": 0
   },
   {
@@ -8852,7 +10336,7 @@
     "name": "Raindrop.io",
     "logo": "https://logos.composio.dev/api/raindrop",
     "category": "bookmark managers",
-    "toolCount": 11,
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
@@ -8868,7 +10352,15 @@
     "name": "Ramp",
     "logo": "https://logos.composio.dev/api/ramp",
     "category": "accounting",
-    "toolCount": 88,
+    "toolCount": 111,
+    "triggerCount": 0
+  },
+  {
+    "slug": "ramp_mcp",
+    "name": "Ramp MCP",
+    "logo": "https://logos.composio.dev/api/ramp_mcp",
+    "category": "model context protocol",
+    "toolCount": 213,
     "triggerCount": 0
   },
   {
@@ -8892,7 +10384,15 @@
     "name": "Re:amaze",
     "logo": "https://logos.composio.dev/api/re_amaze",
     "category": "customer support",
-    "toolCount": 2,
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "read_ai_mcp",
+    "name": "Read AI MCP",
+    "logo": "https://logos.composio.dev/api/read_ai_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -9004,7 +10504,7 @@
     "name": "Render",
     "logo": "https://logos.composio.dev/api/render",
     "category": "developer tools",
-    "toolCount": 95,
+    "toolCount": 99,
     "triggerCount": 0
   },
   {
@@ -9036,7 +10536,7 @@
     "name": "Replicate",
     "logo": "https://logos.composio.dev/api/replicate",
     "category": "artificial intelligence",
-    "toolCount": 31,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -9052,7 +10552,7 @@
     "name": "Reply.io",
     "logo": "https://logos.composio.dev/api/reply_io",
     "category": "marketing automation",
-    "toolCount": 33,
+    "toolCount": 35,
     "triggerCount": 0
   },
   {
@@ -9068,7 +10568,7 @@
     "name": "Resend",
     "logo": "https://logos.composio.dev/api/resend",
     "category": "email",
-    "toolCount": 62,
+    "toolCount": 66,
     "triggerCount": 0
   },
   {
@@ -9076,7 +10576,15 @@
     "name": "Resend MCP",
     "logo": "https://logos.composio.dev/api/resend_mcp",
     "category": "email",
-    "toolCount": 95,
+    "toolCount": 103,
+    "triggerCount": 0
+  },
+  {
+    "slug": "resource_planner",
+    "name": "Resource Planner",
+    "logo": "https://logos.composio.dev/api/resource_planner",
+    "category": "project management",
+    "toolCount": 16,
     "triggerCount": 0
   },
   {
@@ -9084,7 +10592,15 @@
     "name": "Respond.io",
     "logo": "https://logos.composio.dev/api/respond_io",
     "category": "customer support",
-    "toolCount": 7,
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "retable",
+    "name": "Retable",
+    "logo": "https://logos.composio.dev/api/retable",
+    "category": "spreadsheets",
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
@@ -9112,19 +10628,19 @@
     "triggerCount": 0
   },
   {
-    "slug": "rev_ai",
-    "name": "Rev AI",
-    "logo": "https://logos.composio.dev/api/rev_ai",
-    "category": "artificial intelligence",
-    "toolCount": 11,
-    "triggerCount": 0
-  },
-  {
     "slug": "rev",
     "name": "Rev AI",
     "logo": "https://logos.composio.dev/api/rev",
     "category": "transcription",
     "toolCount": 36,
+    "triggerCount": 0
+  },
+  {
+    "slug": "rev_ai",
+    "name": "Rev AI",
+    "logo": "https://logos.composio.dev/api/rev_ai",
+    "category": "audio & speech",
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
@@ -9235,7 +10751,7 @@
     "slug": "runway",
     "name": "Runway",
     "logo": "https://logos.composio.dev/api/runway",
-    "category": "ai content generation",
+    "category": "media generation",
     "toolCount": 22,
     "triggerCount": 0
   },
@@ -9336,18 +10852,37 @@
     "triggerCount": 0
   },
   {
+    "slug": "scorecard_mcp",
+    "name": "Scorecard MCP",
+    "logo": "https://logos.composio.dev/api/scorecard_mcp",
+    "category": "model context protocol",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
     "slug": "scrape_do",
     "name": "Scrape Do",
     "logo": "https://logos.composio.dev/api/scrape_do",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 16,
     "triggerCount": 0
   },
   {
+    "slug": "scrapecreators",
+    "name": "ScrapeCreators",
+    "logo": "https://logos.composio.dev/api/scrapecreators",
+    "category": "social & creator data",
+    "toolCount": 72,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "scrapegraph_ai",
-    "name": "Scrapegraph Ai",
+    "name": "ScrapeGraphAI",
     "logo": "https://logos.composio.dev/api/scrapegraph_ai",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 27,
     "triggerCount": 0
   },
@@ -9355,7 +10890,7 @@
     "slug": "scrapfly",
     "name": "Scrapfly",
     "logo": "https://logos.composio.dev/api/scrapfly",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 12,
     "triggerCount": 0
   },
@@ -9371,7 +10906,7 @@
     "slug": "scrapingbee",
     "name": "Scrapingbee",
     "logo": "https://logos.composio.dev/api/scrapingbee",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 5,
     "triggerCount": 0
   },
@@ -9403,8 +10938,16 @@
     "slug": "search_api",
     "name": "Search api",
     "logo": "https://logos.composio.dev/api/search_api",
-    "category": "developer tools",
+    "category": "web search & research",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "searchapi_mcp",
+    "name": "SearchAPI MCP",
+    "logo": "https://logos.composio.dev/api/searchapi_mcp",
+    "category": "model context protocol",
+    "toolCount": 1,
     "triggerCount": 0
   },
   {
@@ -9421,6 +10964,14 @@
     "logo": "https://logos.composio.dev/api/seatable",
     "category": "databases",
     "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "sec",
+    "name": "SEC EDGAR",
+    "logo": "https://logos.composio.dev/api/sec",
+    "category": "business intelligence",
+    "toolCount": 9,
     "triggerCount": 0
   },
   {
@@ -9456,6 +11007,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "semrush_mcp",
+    "name": "Semrush MCP",
+    "logo": "https://logos.composio.dev/api/semrush_mcp",
+    "category": "analytics",
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
     "slug": "sendbird",
     "name": "Sendbird",
     "logo": "https://logos.composio.dev/api/sendbird",
@@ -9476,7 +11035,7 @@
     "name": "Sender",
     "logo": "https://logos.composio.dev/api/sender",
     "category": "email newsletters",
-    "toolCount": 8,
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -9501,6 +11060,14 @@
     "logo": "https://logos.composio.dev/api/sendloop",
     "category": "email newsletters",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "send_pulse",
+    "name": "SendPulse",
+    "logo": "https://logos.composio.dev/api/sendpulse",
+    "category": "marketing automation",
+    "toolCount": 617,
     "triggerCount": 0
   },
   {
@@ -9547,15 +11114,26 @@
     "slug": "serpdog",
     "name": "Serpdog",
     "logo": "https://logos.composio.dev/api/serpdog",
-    "category": "ai web scraping",
+    "category": "web search & research",
     "toolCount": 1,
     "triggerCount": 0
+  },
+  {
+    "slug": "serper",
+    "name": "Serper",
+    "logo": "https://logos.composio.dev/api/serper",
+    "category": "web search & research",
+    "toolCount": 15,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "serphouse",
     "name": "Serphouse",
     "logo": "https://logos.composio.dev/api/serphouse",
-    "category": "developer tools",
+    "category": "web search & research",
     "toolCount": 18,
     "triggerCount": 0
   },
@@ -9563,7 +11141,7 @@
     "slug": "serply",
     "name": "Serply",
     "logo": "https://logos.composio.dev/api/serply",
-    "category": "developer tools",
+    "category": "web search & research",
     "toolCount": 3,
     "triggerCount": 0
   },
@@ -9576,11 +11154,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "servicetitan",
+    "name": "ServiceTitan",
+    "logo": "https://logos.composio.dev/api/servicetitan",
+    "category": "scheduling & booking",
+    "toolCount": 585,
+    "triggerCount": 0
+  },
+  {
     "slug": "sevdesk",
     "name": "Sevdesk",
     "logo": "https://logos.composio.dev/api/sevdesk",
     "category": "accounting",
-    "toolCount": 115,
+    "toolCount": 127,
     "triggerCount": 0
   },
   {
@@ -9696,6 +11282,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "sign_now",
+    "name": "SignNow",
+    "logo": "https://logos.composio.dev/api/signnow",
+    "category": "signatures",
+    "toolCount": 333,
+    "triggerCount": 0
+  },
+  {
     "slug": "signpath",
     "name": "Signpath",
     "logo": "https://logos.composio.dev/api/signpath",
@@ -9760,6 +11354,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "simplescraper_mcp",
+    "name": "Simplescraper MCP",
+    "logo": "https://logos.composio.dev/api/simplescraper_mcp",
+    "category": "model context protocol",
+    "toolCount": 13,
+    "triggerCount": 0
+  },
+  {
     "slug": "siteleaf",
     "name": "Siteleaf",
     "logo": "https://logos.composio.dev/api/siteleaf",
@@ -9787,7 +11389,7 @@
     "slug": "skyvern",
     "name": "Skyvern",
     "logo": "https://logos.composio.dev/api/skyvern",
-    "category": "ai agents",
+    "category": "web scraping & browser",
     "toolCount": 10,
     "triggerCount": 0
   },
@@ -9820,14 +11422,14 @@
     "name": "Smartlead",
     "logo": "https://logos.composio.dev/api/smartlead",
     "category": "ai sales tools",
-    "toolCount": 19,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
     "slug": "smartproxy",
     "name": "Smartproxy",
     "logo": "https://logos.composio.dev/api/smartproxy",
-    "category": "ai web scraping",
+    "category": "web scraping & browser",
     "toolCount": 6,
     "triggerCount": 0
   },
@@ -9852,7 +11454,7 @@
     "name": "Snapchat",
     "logo": "https://logos.composio.dev/api/snapchat",
     "category": "marketing",
-    "toolCount": 139,
+    "toolCount": 140,
     "triggerCount": 0
   },
   {
@@ -9915,8 +11517,16 @@
     "slug": "speechmatics",
     "name": "Speechmatics",
     "logo": "https://logos.composio.dev/api/speechmatics",
-    "category": "transcription",
+    "category": "audio & speech",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "splice_mcp",
+    "name": "Splice MCP",
+    "logo": "https://logos.composio.dev/api/splice_mcp",
+    "category": "model context protocol",
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -10016,6 +11626,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "statsig",
+    "name": "Statsig",
+    "logo": "https://logos.composio.dev/api/statsig",
+    "category": "analytics",
+    "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "statsig_mcp",
+    "name": "Statsig MCP",
+    "logo": "https://logos.composio.dev/api/statsig_mcp",
+    "category": "model context protocol",
+    "toolCount": 93,
+    "triggerCount": 0
+  },
+  {
     "slug": "statuscake",
     "name": "Statuscake",
     "logo": "https://logos.composio.dev/api/statuscake",
@@ -10051,7 +11677,7 @@
     "slug": "stormglass_io",
     "name": "Stormglass Io",
     "logo": "https://logos.composio.dev/api/stormglass_io",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 6,
     "triggerCount": 0
   },
@@ -10064,12 +11690,15 @@
     "triggerCount": 0
   },
   {
-    "slug": "strava",
-    "name": "Strava",
-    "logo": "https://logos.composio.dev/api/strava",
-    "category": "fitness",
-    "toolCount": 36,
-    "triggerCount": 0
+    "slug": "strale",
+    "name": "Strale",
+    "logo": "https://logos.composio.dev/api/strale",
+    "category": "developer tools",
+    "toolCount": 11,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "streamtime",
@@ -10084,7 +11713,7 @@
     "name": "Stripe MCP",
     "logo": "https://logos.composio.dev/api/stripe_mcp",
     "category": "payment processing",
-    "toolCount": 12,
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -10093,6 +11722,14 @@
     "logo": "https://logos.composio.dev/api/studio_by_ai21_labs",
     "category": "ai models",
     "toolCount": 57,
+    "triggerCount": 0
+  },
+  {
+    "slug": "stytch_mcp",
+    "name": "Stytch MCP",
+    "logo": "https://logos.composio.dev/api/stytch_mcp",
+    "category": "model context protocol",
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -10115,7 +11752,7 @@
     "slug": "supabase_read_mcp",
     "name": "Supabase Read MCP",
     "logo": "https://logos.composio.dev/api/supabase_read_mcp",
-    "category": "databases",
+    "category": "model context protocol",
     "toolCount": 21,
     "triggerCount": 0
   },
@@ -10123,9 +11760,12 @@
     "slug": "supadata",
     "name": "Supadata",
     "logo": "https://logos.composio.dev/api/supadata",
-    "category": "ai web scraping",
-    "toolCount": 11,
-    "triggerCount": 0
+    "category": "audio & speech",
+    "toolCount": 20,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "superchat",
@@ -10208,6 +11848,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "synthesize_bio_mcp",
+    "name": "Synthesize Bio MCP",
+    "logo": "https://logos.composio.dev/api/synthesize_bio_mcp",
+    "category": "model context protocol",
+    "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
     "slug": "synthflow_ai",
     "name": "Synthflow AI",
     "logo": "https://logos.composio.dev/api/synthflow_ai",
@@ -10216,11 +11864,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "tableau",
+    "name": "Tableau",
+    "logo": "https://logos.composio.dev/api/tableau",
+    "category": "analytics",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "taggun",
     "name": "Taggun",
     "logo": "https://logos.composio.dev/api/taggun",
     "category": "ai document extraction",
     "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
+    "slug": "tailscale",
+    "name": "Tailscale",
+    "logo": "https://logos.composio.dev/api/tailscale",
+    "category": "it operations",
+    "toolCount": 13,
     "triggerCount": 0
   },
   {
@@ -10328,6 +11992,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "templatefox",
+    "name": "TemplateFox",
+    "logo": "https://logos.composio.dev/api/templatefox",
+    "category": "documents",
+    "toolCount": 24,
+    "triggerCount": 0
+  },
+  {
+    "slug": "temporal",
+    "name": "Temporal",
+    "logo": "https://logos.composio.dev/api/temporal",
+    "category": "developer tools",
+    "toolCount": 63,
+    "triggerCount": 0
+  },
+  {
     "slug": "textcortex",
     "name": "Textcortex",
     "logo": "https://logos.composio.dev/api/textcortex",
@@ -10352,11 +12032,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "thecompaniesapi",
+    "name": "The Companies API",
+    "logo": "https://logos.composio.dev/api/thecompaniesapi",
+    "category": "company data",
+    "toolCount": 29,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "the_odds_api",
     "name": "The Odds API",
     "logo": "https://logos.composio.dev/api/the_odds_api",
     "category": "gaming",
-    "toolCount": 8,
+    "toolCount": 9,
     "triggerCount": 0
   },
   {
@@ -10376,6 +12067,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "thoughtspot_spotter_mcp",
+    "name": "ThoughtSpot Spotter MCP",
+    "logo": "https://logos.composio.dev/api/thoughtspot_spotter_mcp",
+    "category": "model context protocol",
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "ticket_tailor_mcp",
+    "name": "Ticket Tailor MCP",
+    "logo": "https://logos.composio.dev/api/ticket_tailor_mcp",
+    "category": "model context protocol",
+    "toolCount": 77,
+    "triggerCount": 0
+  },
+  {
     "slug": "ticketmaster",
     "name": "Ticketmaster",
     "logo": "https://logos.composio.dev/api/ticketmaster",
@@ -10388,7 +12095,7 @@
     "name": "Ticktick",
     "logo": "https://logos.composio.dev/api/ticktick",
     "category": "productivity",
-    "toolCount": 14,
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -10408,11 +12115,30 @@
     "triggerCount": 0
   },
   {
+    "slug": "tik_hub",
+    "name": "TikHub",
+    "logo": "https://logos.composio.dev/api/tikhub",
+    "category": "social & creator data",
+    "toolCount": 514,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "tiktok",
     "name": "Tiktok",
     "logo": "https://logos.composio.dev/api/tiktok",
     "category": "social media accounts",
     "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "tiktok_ads",
+    "name": "TikTok Ads",
+    "logo": "https://logos.composio.dev/api/tiktok_ads",
+    "category": "marketing",
+    "toolCount": 403,
     "triggerCount": 0
   },
   {
@@ -10432,11 +12158,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "tinyfish",
+    "name": "TinyFish",
+    "logo": "https://logos.composio.dev/api/tinyfish",
+    "category": "web scraping & browser",
+    "toolCount": 23,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
     "slug": "tinyfish_mcp",
     "name": "TinyFish MCP",
     "logo": "https://logos.composio.dev/api/tinyfish_mcp",
     "category": "model context protocol",
-    "toolCount": 8,
+    "toolCount": 20,
     "triggerCount": 0
   },
   {
@@ -10448,11 +12185,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "todoist_mcp",
+    "name": "Todoist MCP",
+    "logo": "https://logos.composio.dev/api/todoist_mcp",
+    "category": "model context protocol",
+    "toolCount": 47,
+    "triggerCount": 0
+  },
+  {
     "slug": "toggl",
     "name": "Toggl",
     "logo": "https://logos.composio.dev/api/toggl",
     "category": "time tracking software",
-    "toolCount": 56,
+    "toolCount": 58,
     "triggerCount": 0
   },
   {
@@ -10475,15 +12220,18 @@
     "slug": "tomba",
     "name": "Tomba",
     "logo": "https://logos.composio.dev/api/tomba",
-    "category": "sales & crm",
-    "toolCount": 10,
-    "triggerCount": 0
+    "category": "people & contact data",
+    "toolCount": 25,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "tomtom",
     "name": "Tomtom",
     "logo": "https://logos.composio.dev/api/tomtom",
-    "category": "developer tools",
+    "category": "places & weather",
     "toolCount": 82,
     "triggerCount": 0
   },
@@ -10544,11 +12292,19 @@
     "triggerCount": 0
   },
   {
+    "slug": "tripo3d",
+    "name": "Tripo3D",
+    "logo": "https://logos.composio.dev/api/tripo3d",
+    "category": "media generation",
+    "toolCount": 23,
+    "triggerCount": 0
+  },
+  {
     "slug": "trivago_mcp",
     "name": "Trivago MCP",
     "logo": "https://logos.composio.dev/api/trivago_mcp",
     "category": "scheduling & booking",
-    "toolCount": 2,
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -10595,8 +12351,19 @@
     "slug": "twelve_data",
     "name": "Twelve Data",
     "logo": "https://logos.composio.dev/api/twelve_data",
-    "category": "analytics",
+    "category": "market data",
     "toolCount": 107,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "twenty",
+    "name": "Twenty",
+    "logo": "https://logos.composio.dev/api/twenty",
+    "category": "crm",
+    "toolCount": 8,
     "triggerCount": 0
   },
   {
@@ -10619,7 +12386,7 @@
     "slug": "typecast",
     "name": "Typecast",
     "logo": "https://logos.composio.dev/api/typecast",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 7,
     "triggerCount": 0
   },
@@ -10664,6 +12431,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "unipile",
+    "name": "Unipile",
+    "logo": "https://logos.composio.dev/api/unipile",
+    "category": "communication",
+    "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
     "slug": "unisender",
     "name": "Unisender",
     "logo": "https://logos.composio.dev/api/unisender",
@@ -10677,6 +12452,14 @@
     "logo": "https://logos.composio.dev/api/uniswap_api",
     "category": "developer tools",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "unleash",
+    "name": "Unleash",
+    "logo": "https://logos.composio.dev/api/unleash",
+    "category": "developer tools",
+    "toolCount": 297,
     "triggerCount": 0
   },
   {
@@ -10760,12 +12543,31 @@
     "triggerCount": 0
   },
   {
+    "slug": "vantage_mcp",
+    "name": "Vantage MCP",
+    "logo": "https://logos.composio.dev/api/vantage_mcp",
+    "category": "model context protocol",
+    "toolCount": 134,
+    "triggerCount": 0
+  },
+  {
     "slug": "vapi",
     "name": "Vapi",
     "logo": "https://logos.composio.dev/api/vapi",
-    "category": "artificial intelligence",
+    "category": "audio & speech",
     "toolCount": 38,
     "triggerCount": 0
+  },
+  {
+    "slug": "vaquill",
+    "name": "Vaquill",
+    "logo": "https://logos.composio.dev/api/vaquill",
+    "category": "legal & public records",
+    "toolCount": 31,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "vast_ai",
@@ -10796,7 +12598,15 @@
     "name": "Vercel",
     "logo": "https://logos.composio.dev/api/vercel",
     "category": "developer tools",
-    "toolCount": 146,
+    "toolCount": 152,
+    "triggerCount": 0
+  },
+  {
+    "slug": "vercel_ai_gateway",
+    "name": "Vercel AI Gateway",
+    "logo": "https://logos.composio.dev/api/vercel_ai_gateway",
+    "category": "ai models",
+    "toolCount": 22,
     "triggerCount": 0
   },
   {
@@ -10864,11 +12674,35 @@
     "triggerCount": 0
   },
   {
+    "slug": "vibe_prospecting_mcp",
+    "name": "Vibe Prospecting MCP",
+    "logo": "https://logos.composio.dev/api/vibe_prospecting_mcp",
+    "category": "model context protocol",
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
     "slug": "video_db",
     "name": "VideoDB",
     "logo": "https://logos.composio.dev/api/videodb",
     "category": "video & audio",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "vidiq_mcp",
+    "name": "vidIQ MCP",
+    "logo": "https://logos.composio.dev/api/vidiq_mcp",
+    "category": "model context protocol",
+    "toolCount": 67,
+    "triggerCount": 0
+  },
+  {
+    "slug": "vimeo",
+    "name": "Vimeo",
+    "logo": "https://logos.composio.dev/api/vimeo",
+    "category": "video & audio",
+    "toolCount": 50,
     "triggerCount": 0
   },
   {
@@ -10881,7 +12715,7 @@
   },
   {
     "slug": "virustotal",
-    "name": "Virustotal",
+    "name": "VirusTotal",
     "logo": "https://logos.composio.dev/api/virustotal",
     "category": "security & identity tools",
     "toolCount": 16,
@@ -10901,6 +12735,14 @@
     "logo": "https://logos.composio.dev/api/vlm_run",
     "category": "ai document extraction",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "voiceflow",
+    "name": "Voiceflow",
+    "logo": "https://logos.composio.dev/api/voiceflow",
+    "category": "ai agents",
+    "toolCount": 20,
     "triggerCount": 0
   },
   {
@@ -10934,6 +12776,25 @@
     "category": "marketing automation",
     "toolCount": 5,
     "triggerCount": 0
+  },
+  {
+    "slug": "weaviate_mcp",
+    "name": "Weaviate MCP",
+    "logo": "https://logos.composio.dev/api/weaviate_mcp",
+    "category": "model context protocol",
+    "toolCount": 2,
+    "triggerCount": 0
+  },
+  {
+    "slug": "web3_career",
+    "name": "Web3 Career",
+    "logo": "https://logos.composio.dev/api/web3_career",
+    "category": "hr talent & recruitment",
+    "toolCount": 1,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "webcrawlerapi",
@@ -11032,11 +12893,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "wise",
+    "name": "Wise",
+    "logo": "https://logos.composio.dev/api/wise",
+    "category": "payment processing",
+    "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
     "slug": "wisepops",
     "name": "Wisepops",
     "logo": "https://logos.composio.dev/api/wisepops",
     "category": "marketing",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "wispr_flow_mcp",
+    "name": "Wispr Flow MCP",
+    "logo": "https://logos.composio.dev/api/wispr_flow_mcp",
+    "category": "model context protocol",
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -11056,19 +12933,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "withpica",
+    "name": "withPICA",
+    "logo": "https://logos.composio.dev/api/withpica",
+    "category": "lifestyle & entertainment",
+    "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
     "slug": "wix",
     "name": "Wix",
     "logo": "https://logos.composio.dev/api/wix",
     "category": "website builders",
-    "toolCount": 144,
+    "toolCount": 145,
     "triggerCount": 0
   },
   {
     "slug": "wix_mcp",
     "name": "Wix MCP",
     "logo": "https://logos.composio.dev/api/wix_mcp",
-    "category": "e-commerce",
-    "toolCount": 14,
+    "category": "ecommerce",
+    "toolCount": 27,
     "triggerCount": 0
   },
   {
@@ -11081,7 +12966,7 @@
   },
   {
     "slug": "wolfram_alpha_api",
-    "name": "Wolfram Alpha Api",
+    "name": "Wolfram|Alpha API",
     "logo": "https://logos.composio.dev/api/wolfram_alpha_api",
     "category": "developer tools",
     "toolCount": 11,
@@ -11108,7 +12993,7 @@
     "name": "WordPress.com",
     "logo": "https://logos.composio.dev/api/wordpress_com",
     "category": "content & files",
-    "toolCount": 10,
+    "toolCount": 11,
     "triggerCount": 0
   },
   {
@@ -11124,8 +13009,16 @@
     "name": "Workday",
     "logo": "https://logos.composio.dev/api/workday",
     "category": "human resources",
-    "toolCount": 567,
+    "toolCount": 588,
     "triggerCount": 13
+  },
+  {
+    "slug": "workday_raas",
+    "name": "Workday RaaS",
+    "logo": "https://logos.composio.dev/api/workday_raas",
+    "category": "human resources",
+    "toolCount": 3,
+    "triggerCount": 0
   },
   {
     "slug": "workiz",
@@ -11133,6 +13026,14 @@
     "logo": "https://logos.composio.dev/api/workiz",
     "category": "crm",
     "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "workos",
+    "name": "WorkOS",
+    "logo": "https://logos.composio.dev/api/workos",
+    "category": "security & identity tools",
+    "toolCount": 29,
     "triggerCount": 0
   },
   {
@@ -11147,7 +13048,7 @@
     "slug": "world_news_api",
     "name": "World News API",
     "logo": "https://logos.composio.dev/api/world_news_api",
-    "category": "news & lifestyle",
+    "category": "web search & research",
     "toolCount": 8,
     "triggerCount": 0
   },
@@ -11195,7 +13096,7 @@
     "slug": "youtube_transcript",
     "name": "YouTube Transcript",
     "logo": "https://logos.composio.dev/api/youtube_transcript",
-    "category": "transcription",
+    "category": "audio & speech",
     "toolCount": 9,
     "triggerCount": 0
   },
@@ -11220,16 +13121,19 @@
     "name": "Zernio MCP",
     "logo": "https://logos.composio.dev/api/zernio_mcp",
     "category": "social media marketing",
-    "toolCount": 51,
+    "toolCount": 52,
     "triggerCount": 0
   },
   {
     "slug": "zerobounce",
-    "name": "Zerobounce",
+    "name": "ZeroBounce",
     "logo": "https://logos.composio.dev/api/zerobounce",
-    "category": "email",
-    "toolCount": 20,
-    "triggerCount": 0
+    "category": "people & contact data",
+    "toolCount": 22,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "zigpoll",

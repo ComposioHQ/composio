@@ -5,6 +5,7 @@ import { Agent, ProxyAgent, getGlobalDispatcher, setGlobalDispatcher } from 'und
 import {
   createPinnedDispatcher,
   hasCustomGlobalDispatcher,
+  pinnedHttpFetch,
 } from '../../src/utils/pinnedDispatcher.node';
 
 /**
@@ -94,6 +95,68 @@ describe('createPinnedDispatcher', () => {
     } finally {
       setDefaultAutoSelectFamily(previous);
     }
+  });
+});
+
+describe('pinnedHttpFetch', () => {
+  let server: Server | undefined;
+
+  afterEach(async () => {
+    if (server) {
+      await new Promise<void>(resolve => server!.close(() => resolve()));
+      server = undefined;
+    }
+  });
+
+  it('connects to a validated address while preserving the original host', async () => {
+    let receivedHost = '';
+    let receivedBody = '';
+    let receivedContentLength = '';
+    server = createServer((request, response) => {
+      receivedHost = request.headers.host ?? '';
+      receivedContentLength = request.headers['content-length'] ?? '';
+      request.setEncoding('utf8');
+      request.on('data', chunk => {
+        receivedBody += chunk;
+      });
+      request.on('end', () => {
+        response.writeHead(200, { 'content-type': 'text/plain' });
+        response.end('pinned payload');
+      });
+    });
+    await new Promise<void>(resolve => server!.listen(0, '127.0.0.1', resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const response = await pinnedHttpFetch(
+      `http://pinned.invalid:${port}/payload`,
+      { method: 'PUT', body: 'upload body' },
+      ['127.0.0.1']
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('pinned payload');
+    expect(receivedHost).toBe(`pinned.invalid:${port}`);
+    expect(receivedBody).toBe('upload body');
+    expect(receivedContentLength).toBe('11');
+  });
+
+  it('does not add Content-Length to a request without a body', async () => {
+    let receivedContentLength: string | undefined;
+    server = createServer((request, response) => {
+      receivedContentLength = request.headers['content-length'];
+      response.end('ok');
+    });
+    await new Promise<void>(resolve => server!.listen(0, '127.0.0.1', resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const response = await pinnedHttpFetch(
+      `http://pinned.invalid:${port}/payload`,
+      { method: 'GET' },
+      ['127.0.0.1']
+    );
+
+    expect(await response.text()).toBe('ok');
+    expect(receivedContentLength).toBeUndefined();
   });
 });
 

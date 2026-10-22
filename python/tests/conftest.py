@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 from pathlib import Path
+import typing as t
 from unittest.mock import Mock
 
 import pytest
@@ -81,15 +82,16 @@ def load_golden_signatures() -> dict:
         return json.load(f)
 
 
-def mock_http_client() -> Mock:
+def mock_http_client(mock_cls: t.Type[Mock] = Mock) -> Mock:
     """Build a mock ``HttpClient`` for tool-execution tests.
 
-    Production routes non-idempotent writes through ``client.without_retries``
-    (a retry-disabled clone of the client). The mock mirrors that by returning
-    itself for ``without_retries``, so assertions on ``client.tools.execute`` and
-    ``client.tools.proxy`` still observe the call.
+    Production routes tool executions and proxied calls through
+    ``client.without_retries`` (a retry-disabled clone of the client). The mock
+    mirrors that by returning itself for ``without_retries``, so assertions on
+    ``client.tools.execute``, ``client.tools.proxy``, and the
+    ``client.tool_router.session`` execution methods still observe the call.
     """
-    client = Mock()
+    client = mock_cls()
     client.without_retries = client
     return client
 

@@ -1,23 +1,19 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { BunContext } from '@effect/platform-bun';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { afterEach, describe, expect, it, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { vi } from 'vitest';
 import {
-  hostRunCompanionStaticAssetRelativePaths,
   listMissingInstalledRunCompanionModules,
+  loadInstalledCompanionModule,
   repairMissingInstalledRunCompanionModules,
-  resolveRunCompanionAssetPath,
-  RUN_CODEX_ACP_BINARY_TARGETS,
-  RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
+  RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS,
+  RUN_COMPANION_MODULE_BASENAMES,
   RUN_COMPANION_MODULE_FILENAMES,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
-  RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS,
-  runCompanionStaticAssetRelativePathsFor,
 } from 'src/services/run-companion-modules';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 
 const extractZipMock = vi.hoisted(() => vi.fn());
 vi.mock('extract-zip', () => ({ default: extractZipMock }));
@@ -29,11 +25,33 @@ const TEST_BINARY_ASSET_NAMES = [
   'composio-linux-aarch64.zip',
   'composio-linux-x64.zip',
 ];
-// A release archive ships every platform's codex-acp binary.
-const TEST_COMPANION_RELATIVE_PATHS = [
+// A release archive ships the live companions plus the legacy placeholders.
+const TEST_ARCHIVE_RELATIVE_PATHS = [
   ...RUN_COMPANION_MODULE_FILENAMES,
-  ...RUN_COMPANION_ALL_STATIC_ASSET_RELATIVE_PATHS,
-].sort();
+  ...RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS,
+];
+
+// What a complete install holds next to the executable.
+const writeLiveCompanions = (installDirectory: string) => {
+  fs.mkdirSync(path.join(installDirectory, 'services'));
+  RUN_COMPANION_MODULE_FILENAMES.forEach(fileName => {
+    fs.writeFileSync(
+      path.join(installDirectory, fileName),
+      `export * from "./services/${fileName}";\n`
+    );
+    fs.writeFileSync(path.join(installDirectory, 'services', fileName), 'export {};\n');
+  });
+};
+
+// What an install upgraded from an older release still holds: every legacy
+// placeholder, empty.
+const writeLegacyPlaceholders = (installDirectory: string) => {
+  RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.forEach(relativePath => {
+    const filePath = path.join(installDirectory, relativePath);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, '');
+  });
+};
 
 const stubRepairFetch = () => {
   const fetchMock = vi.fn((url: string) =>
@@ -61,12 +79,18 @@ const mockArchiveContents = (missingRelativePath?: string) => {
   extractZipMock.mockImplementation(
     async (archivePath: string, options: { readonly dir: string }) => {
       const packageDirectory = path.join(options.dir, path.parse(archivePath).name);
-      for (const relativePath of TEST_COMPANION_RELATIVE_PATHS) {
-        if (relativePath === missingRelativePath) continue;
+      TEST_ARCHIVE_RELATIVE_PATHS.filter(
+        relativePath => relativePath !== missingRelativePath
+      ).forEach(relativePath => {
         const filePath = path.join(packageDirectory, relativePath);
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
-        fs.writeFileSync(filePath, `new:${relativePath}`);
-      }
+        fs.writeFileSync(
+          filePath,
+          RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.includes(relativePath)
+            ? ''
+            : `new:${relativePath}`
+        );
+      });
     }
   );
 };
@@ -78,46 +102,37 @@ describe('run-companion-modules', () => {
     vi.unstubAllEnvs();
   });
 
-  describe('runCompanionStaticAssetRelativePathsFor', () => {
-    it('[Given] a supported host [Then] it requires only that host codex-acp binary', () => {
-      for (const target of RUN_CODEX_ACP_BINARY_TARGETS) {
-        expect(
-          runCompanionStaticAssetRelativePathsFor({
-            platform: target.platform,
-            arch: target.arch,
-          })
-        ).toEqual([...RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS, target.relativePath]);
-      }
-    });
-
-    it('[Given] an unsupported host [Then] it requires only the portable assets', () => {
-      expect(runCompanionStaticAssetRelativePathsFor({ platform: 'win32', arch: 'x64' })).toEqual(
-        RUN_COMPANION_SHARED_STATIC_ASSET_RELATIVE_PATHS
-      );
-    });
+  it('pins the legacy placeholder list to the ten paths released clients require', () => {
+    expect(RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS).toEqual([
+      'run-subagent-shared.mjs',
+      'run-subagent-acp.mjs',
+      'run-subagent-legacy.mjs',
+      'run-subagent-output-mcp.mjs',
+      'acp-adapters/claude-code-acp.mjs',
+      'acp-adapters/cli.js',
+      'acp-adapters/codex/darwin-arm64/codex-acp',
+      'acp-adapters/codex/darwin-x64/codex-acp',
+      'acp-adapters/codex/linux-arm64/codex-acp',
+      'acp-adapters/codex/linux-x64/codex-acp',
+    ]);
   });
 
-  layer(BunContext.layer)(it => {
+  it('keeps the legacy placeholders out of the live companion list', () => {
+    expect(
+      RUN_COMPANION_MODULE_FILENAMES.filter(fileName =>
+        RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.includes(fileName)
+      )
+    ).toEqual([]);
+  });
+
+  layer(BunServices.layer)(it => {
     it.effect(
-      "[Given] an install lacking another platform's codex-acp binary [Then] nothing needs repair",
+      '[Given] an install with only the live companions and their bundles [Then] nothing needs repair',
       () =>
         Effect.gen(function* () {
-          const hostStaticAssets = yield* hostRunCompanionStaticAssetRelativePaths;
-          const foreignRelativePaths = RUN_CODEX_ACP_BINARY_TARGETS.map(
-            target => target.relativePath
-          ).filter(relativePath => !hostStaticAssets.includes(relativePath));
-
-          expect(foreignRelativePaths.length).toBe(RUN_CODEX_ACP_BINARY_TARGETS.length - 1);
-
-          const installDirectory = fs.mkdtempSync(
-            path.join(os.tmpdir(), 'composio-run-host-scope-')
-          );
+          const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-live-'));
           const execPath = path.join(installDirectory, 'composio');
-          for (const relativePath of [...RUN_COMPANION_MODULE_FILENAMES, ...hostStaticAssets]) {
-            const filePath = path.join(installDirectory, relativePath);
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
-            fs.writeFileSync(filePath, `installed:${relativePath}`);
-          }
+          writeLiveCompanions(installDirectory);
           const fetchMock = stubRepairFetch();
 
           return yield* Effect.gen(function* () {
@@ -139,14 +154,13 @@ describe('run-companion-modules', () => {
     );
 
     it.effect(
-      '[Given] an install without ACP adapters [Then] a plain run neither reports nor repairs anything',
+      '[Given] an install holding empty legacy placeholders [Then] it is not damaged and nothing is repaired',
       () =>
         Effect.gen(function* () {
-          const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-no-acp-'));
+          const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-legacy-'));
           const execPath = path.join(installDirectory, 'composio');
-          for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
-            fs.writeFileSync(path.join(installDirectory, fileName), '', 'utf8');
-          }
+          writeLiveCompanions(installDirectory);
+          writeLegacyPlaceholders(installDirectory);
           const fetchMock = stubRepairFetch();
 
           return yield* Effect.gen(function* () {
@@ -158,8 +172,6 @@ describe('run-companion-modules', () => {
                 appVersion: '0.0.0-test',
               })
             ).toEqual({ repaired: false });
-            // The self-repair download is what 404s on a dev build; the ACP tier
-            // must never reach it.
             expect(fetchMock).not.toHaveBeenCalled();
           }).pipe(
             Effect.ensuring(
@@ -169,11 +181,30 @@ describe('run-companion-modules', () => {
         })
     );
 
+    it.effect('[Given] a missing run-helpers-runtime.mjs [Then] it is reported as missing', () =>
+      Effect.gen(function* () {
+        const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-'));
+        const execPath = path.join(installDirectory, 'composio');
+        writeLiveCompanions(installDirectory);
+        fs.rmSync(path.join(installDirectory, 'run-helpers-runtime.mjs'));
+
+        return yield* Effect.gen(function* () {
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([
+            'run-helpers-runtime.mjs',
+          ]);
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      })
+    );
+
     it.effect(
-      '[Given] a missing companion wrapper [Then] repair still restores the ACP tier too',
+      '[Given] a missing companion wrapper [Then] repair restores the companions and leaves the archive placeholders behind',
       () => {
         const installDirectory = fs.mkdtempSync(
-          path.join(os.tmpdir(), 'composio-run-tier-repair-')
+          path.join(os.tmpdir(), 'composio-run-repair-scope-')
         );
         const execPath = path.join(installDirectory, 'composio');
         stubRepairFetch();
@@ -187,9 +218,75 @@ describe('run-companion-modules', () => {
           });
 
           expect(result).toEqual({ repaired: true, releaseTag: TEST_RELEASE_TAG });
-          for (const relativePath of yield* hostRunCompanionStaticAssetRelativePaths) {
-            expect(fs.existsSync(path.join(installDirectory, relativePath))).toBe(true);
-          }
+          expect(fs.readdirSync(installDirectory).sort()).toEqual(
+            [...RUN_COMPANION_MODULE_FILENAMES, RUN_COMPANION_RELEASE_TAG_FILENAME].sort()
+          );
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
+    it.effect(
+      '[Given] only an unrelated companion is missing [Then] a scoped repair does nothing',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-scoped-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        fs.mkdirSync(path.join(installDirectory, 'services'));
+        fs.writeFileSync(
+          path.join(installDirectory, 'generation-runtime.mjs'),
+          'export * from "./services/generation-runtime.mjs";\n'
+        );
+        fs.writeFileSync(path.join(installDirectory, 'services', 'generation-runtime.mjs'), '');
+        const fetchMock = stubRepairFetch();
+
+        return Effect.gen(function* () {
+          expect(yield* listMissingInstalledRunCompanionModules(execPath)).not.toEqual([]);
+          expect(
+            yield* repairMissingInstalledRunCompanionModules({
+              callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+              execPath,
+              appVersion: '0.0.0-test',
+              companionBaseName: 'generation-runtime',
+            })
+          ).toEqual({ repaired: false });
+          expect(fetchMock).not.toHaveBeenCalled();
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
+    it.effect(
+      '[Given] a companion wrapper whose bundle is missing [Then] a scoped repair restores it',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-scoped-repair-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        fs.writeFileSync(
+          path.join(installDirectory, 'generation-runtime.mjs'),
+          'export * from "./services/generation-runtime.mjs";\n'
+        );
+        stubRepairFetch();
+        mockArchiveContents();
+
+        return Effect.gen(function* () {
+          const result = yield* repairMissingInstalledRunCompanionModules({
+            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+            execPath,
+            appVersion: '0.0.0-test',
+            companionBaseName: 'generation-runtime',
+          });
+
+          expect(result).toEqual({ repaired: true, releaseTag: TEST_RELEASE_TAG });
+          expect(fs.existsSync(path.join(installDirectory, 'generation-runtime.mjs'))).toBe(true);
         }).pipe(
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
@@ -201,7 +298,7 @@ describe('run-companion-modules', () => {
     it.effect('[Given] a complete archive [Then] repair atomically replaces companions', () => {
       const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-repair-test-'));
       const execPath = path.join(installDirectory, 'composio');
-      const companionRelativePath = TEST_COMPANION_RELATIVE_PATHS[0]!;
+      const companionRelativePath = RUN_COMPANION_MODULE_FILENAMES[0]!;
       const companionPath = path.join(installDirectory, companionRelativePath);
       const releaseTagPath = path.join(installDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME);
       fs.mkdirSync(path.dirname(companionPath), { recursive: true });
@@ -237,7 +334,7 @@ describe('run-companion-modules', () => {
       const execPath = path.join(installDirectory, 'composio');
       const releaseTagPath = path.join(installDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME);
       const previousReleaseTag = '@composio/cli@0.2.31\n';
-      const missingRelativePath = TEST_COMPANION_RELATIVE_PATHS.at(-1)!;
+      const missingRelativePath = RUN_COMPANION_MODULE_FILENAMES.at(-1)!;
       fs.writeFileSync(releaseTagPath, previousReleaseTag);
       stubRepairFetch();
       mockArchiveContents(missingRelativePath);
@@ -250,7 +347,7 @@ describe('run-companion-modules', () => {
         }).pipe(Effect.flip);
 
         expect(error.message).toContain(
-          `missing ${missingRelativePath}; cannot restore the files required by 'composio run'`
+          `missing ${missingRelativePath}; cannot restore the CLI's bundled support files`
         );
         expect(fs.readFileSync(releaseTagPath, 'utf8')).toBe(previousReleaseTag);
       }).pipe(
@@ -281,7 +378,7 @@ describe('run-companion-modules', () => {
             appVersion: '0.0.0-test',
           }).pipe(Effect.flip);
 
-          expect(error.message).toContain("Unable to restore the files required by 'composio run'");
+          expect(error.message).toContain("Unable to restore the CLI's bundled support files");
           expect(fetchMock).toHaveBeenCalledOnce();
         }).pipe(
           Effect.ensuring(
@@ -317,14 +414,14 @@ describe('run-companion-modules', () => {
           }).pipe(Effect.flip);
 
           expect(fetchMock).toHaveBeenCalledOnce();
-          const requestUrl = String(fetchMock.mock.calls[0]?.[0]);
-          expect(requestUrl).toBe(
+          const [[requestUrl]] = fetchMock.mock.calls;
+          expect(String(requestUrl)).toBe(
             'https://github-proxy.test/repos/fork-owner/fork-repo/releases/tags/%40composio%2Fcli%409.9.9-test'
           );
         }).pipe(
           // Simulate the cli-main runtime, whose provider rewrites config keys
           // to their COMPOSIO_-prefixed spelling.
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -360,12 +457,12 @@ describe('run-companion-modules', () => {
           }).pipe(Effect.flip);
 
           expect(fetchMock).toHaveBeenCalledOnce();
-          const requestUrl = String(fetchMock.mock.calls[0]?.[0]);
-          expect(requestUrl).toBe(
+          const [[requestUrl]] = fetchMock.mock.calls;
+          expect(String(requestUrl)).toBe(
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -375,75 +472,66 @@ describe('run-companion-modules', () => {
   });
 });
 
-/**
- * Release archives fill only the codex-acp binary their own platform can execute
- * and leave the other three as empty placeholders, so that a CLI installed
- * before 2026-08-18 still passes its upgrade verification. A placeholder must
- * never be handed back as a runnable adapter.
- */
-describe('resolveRunCompanionAssetPath', () => {
-  layer(BunContext.layer)(it => {
-    const withInstallDirectory = <A, E, R>(
-      contents: number,
-      use: (execPath: string) => Effect.Effect<A, E, R>
-    ) =>
+describe('loadInstalledCompanionModule', () => {
+  layer(BunServices.layer)(it => {
+    it('registers the in-process companion alongside the run preload set', () => {
+      expect(RUN_COMPANION_MODULE_BASENAMES).toEqual(
+        expect.arrayContaining(['generation-runtime'])
+      );
+    });
+
+    // From a checkout there is no `.mjs` next to an executable, so the loader
+    // has to fall through to the `.ts` source next to `run-companion-modules.ts`.
+    // The compiled-binary path (`dist/<name>.mjs` next to `process.execPath`)
+    // is covered by the Docker E2E suite, which runs the real binary.
+    it.effect('[Given] a source checkout [Then] it loads the module from its .ts source', () =>
       Effect.gen(function* () {
-        const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'companion-asset-'));
-        const execPath = path.join(installDirectory, 'composio');
-        const assetPath = path.join(installDirectory, 'acp-adapters', 'codex', 'darwin-arm64');
-        fs.mkdirSync(assetPath, { recursive: true });
-        fs.writeFileSync(path.join(assetPath, 'codex-acp'), Buffer.alloc(contents));
-        return yield* use(execPath).pipe(
-          Effect.ensuring(
-            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
-          )
+        const generation = yield* loadInstalledCompanionModule<
+          typeof import('src/services/generation-runtime')
+        >('generation-runtime', ['wrapInlineCodeForRun']);
+
+        expect(generation.wrapInlineCodeForRun('1 + 1')).toBe('return (1 + 1);');
+      })
+    );
+
+    it.effect('[Given] a module that cannot be loaded [Then] it fails with a typed error', () =>
+      Effect.gen(function* () {
+        const error = yield* loadInstalledCompanionModule('missing-companion-module', []).pipe(
+          Effect.flip
         );
-      });
 
-    const relativePathFromRoot = 'acp-adapters/codex/darwin-arm64/codex-acp';
-
-    it.effect('resolves a populated binary', () =>
-      withInstallDirectory(64, execPath =>
-        Effect.gen(function* () {
-          const resolved = yield* resolveRunCompanionAssetPath({
-            callerImportMetaUrl: import.meta.url,
-            execPath,
-            relativePathFromRoot,
-            requireNonEmpty: true,
-          });
-
-          expect(resolved).toBe(path.join(path.dirname(execPath), relativePathFromRoot));
-        })
-      )
+        expect(error._tag).toBe('services/RunCompanionRepairError');
+        expect(error.message).toContain('missing-companion-module.mjs');
+      })
     );
 
-    it.effect('reports an empty placeholder as absent under requireNonEmpty', () =>
-      withInstallDirectory(0, execPath =>
+    it.effect(
+      '[Given] a module from another release [Then] it fails with a typed error naming the missing export',
+      () =>
         Effect.gen(function* () {
-          const resolved = yield* resolveRunCompanionAssetPath({
-            callerImportMetaUrl: import.meta.url,
-            execPath,
-            relativePathFromRoot,
-            requireNonEmpty: true,
-          });
+          const error = yield* loadInstalledCompanionModule<{
+            readonly wrapInlineCodeForRun: unknown;
+            readonly retiredExport: unknown;
+          }>('generation-runtime', ['wrapInlineCodeForRun', 'retiredExport']).pipe(Effect.flip);
 
-          expect(resolved).toBeNull();
+          expect(error._tag).toBe('services/RunCompanionRepairError');
+          expect(error.message).toContain('generation-runtime');
+          expect(error.message).toContain('missing retiredExport');
         })
-      )
     );
 
-    it.effect('still resolves an empty file when only existence is required', () =>
-      withInstallDirectory(0, execPath =>
-        Effect.gen(function* () {
-          const resolved = yield* resolveRunCompanionAssetPath({
-            callerImportMetaUrl: import.meta.url,
-            execPath,
-            relativePathFromRoot,
-          });
+    it.effect('[Given] the generation companion [Then] its API is promise-shaped', () =>
+      Effect.gen(function* () {
+        const generation = yield* loadInstalledCompanionModule<
+          typeof import('src/services/generation-runtime')
+        >('generation-runtime', ['wrapInlineCodeForRun', 'generatePythonSourceFiles']);
 
-          expect(resolved).toBe(path.join(path.dirname(execPath), relativePathFromRoot));
-        })
-      )
+        expect(generation.wrapInlineCodeForRun('1 + 1')).toBe('return (1 + 1);');
+        const outcome = yield* Effect.promise(() =>
+          generation.generatePythonSourceFiles({ banner: 'b', outputDir: '/tmp/out' }, {})
+        );
+        expect(outcome).toEqual({ _tag: 'Success', value: [] });
+      })
     );
   });
 });

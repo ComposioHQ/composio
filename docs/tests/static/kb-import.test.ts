@@ -109,6 +109,25 @@ function previousManifest(): KbManifest {
 }
 
 describe('support-knowledge snapshot import', () => {
+  test('keeps a retired guide unpublished when its public source is refreshed', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-retired-'));
+    try {
+      writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+      const previous = previousManifest();
+      previous.guides[0]!.state = 'retired';
+      const snapshot = buildSupportKnowledgeSnapshot({
+        sourceRoot,
+        sourceCommit: 'updated-source',
+        previousManifest: previous,
+        now: new Date('2026-08-18T00:00:00Z'),
+      });
+
+      expect(snapshot.manifest.guides[0]?.state).toBe('retired');
+    } finally {
+      rmSync(sourceRoot, { recursive: true, force: true });
+    }
+  });
+
   test('verifies the checkout repository and exact source commit', () => {
     const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-git-'));
     git(sourceRoot, 'init');
@@ -398,6 +417,11 @@ describe('support-knowledge snapshot import', () => {
       '{"preserve":true}\n',
       'utf8',
     );
+    writeFileSync(
+      join(targetRoot, 'semantic-index.json'),
+      '{"records":[{"id":"existing-vector"}]}\n',
+      'utf8',
+    );
 
     expect(() => writeSupportKnowledgeSnapshot({
       snapshot,
@@ -421,5 +445,8 @@ describe('support-knowledge snapshot import', () => {
       join(targetRoot, 'external-sources/auth-guides.json'),
       'utf8',
     )).toBe('{"preserve":true}\n');
+    expect(readFileSync(join(targetRoot, 'semantic-index.json'), 'utf8')).toBe(
+      '{"records":[{"id":"existing-vector"}]}\n',
+    );
   });
 });

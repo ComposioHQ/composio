@@ -82,41 +82,15 @@ console.log('Toolkit:', account.toolkit.slug);
 
 ### Get account credentials
 
-Get account credentials for use with your own tools:
+Connected-account responses describe the authentication state. Sensitive credential fields in `account.state.val` are [redacted by default](#credential-masking), for both Composio-managed and custom auth configs. This object is not a source of usable provider tokens for your own tools.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-# Get the connected account's authentication state
-if account.state:
-    # The state contains the auth scheme and credentials
-    auth_scheme = account.state.auth_scheme
-    credentials = account.state.val
-
-    print(f"Auth scheme: {auth_scheme}")
-    print(f"Credentials: {credentials}")
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const account = await composio.connectedAccounts.get('ca_123');
-// ---cut---
-// Get the connected account's authentication state
-if (account.state) {
-  // The state contains the auth scheme and credentials
-  const authScheme = account.state.authScheme;
-  const credentials = account.state.val;
-
-  console.log('Auth scheme:', authScheme);
-  console.log('Credentials:', credentials);
-}
-```
-  </Tab>
-</Tabs>
+To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execute), which injects credentials server-side. For custom business logic, use [session extension tools](/docs/extending-sessions/custom-tools-and-toolkits). See [Token custody architecture](/docs/security/token-custody) for the boundaries between your application, Composio, and the provider.
 
 ## Refresh credentials
+
+<Callout type="warn">
+`composio.connected_accounts.refresh()` in Python and `composio.connectedAccounts.refresh()` in TypeScript are deprecated. Re-initiate authentication with `link()` or `composio.toolkits.authorize()` instead. The refresh endpoint no longer validates credentials. TypeScript ignores `validateCredentials` and logs a warning when you set it.
+</Callout>
 
 Manually refresh credentials for a connected account:
 
@@ -191,6 +165,16 @@ console.log('Account enabled status:', enabled.success);
 INACTIVE accounts cannot execute tools. Tool execution will fail until the status is changed.
 </Callout>
 
+## Revoke accounts
+
+To revoke upstream tokens and mark a connection `REVOKED`, call `composio.connected_accounts.revoke(connected_account_id)` in Python or `await composio.connectedAccounts.revoke(connectedAccountId)` in TypeScript. Upstream token revocation is best effort. The call fails if the toolkit does not support programmatic revocation or the account is not in a revokable state.
+
+## Complete deferred OAuth
+
+If your project has an OAuth callback verifier configured, Composio redirects to your verifier with a single-use session URI before activating the connection. Verify the person's identity in your application, then redeem the URI with `composio.connected_accounts.complete_auth(user_id=user_id, session_uri=session_uri)` in Python or `await composio.connectedAccounts.completeAuth({ userId, sessionUri })` in TypeScript.
+
+Composio checks project ownership and the connection's user ID before completing the token exchange. An expired or already redeemed URI returns a `404`.
+
 ## Delete accounts
 
 Permanently remove a connected account:
@@ -236,7 +220,7 @@ Instead of returning full values, the API returns the first 4 characters followe
 
 Values shorter than 4 characters are replaced with `REDACTED`.
 
-This applies to the Get Connected Account and List Connected Accounts endpoints.
+This applies to the Get Connected Account and List Connected Accounts endpoints for both Composio-managed and custom auth configs. The API redacts these fields before returning the response to your application.
 
 If your use case requires calling a provider API directly, use [Proxy execute](/docs/extending-sessions/proxy-execute). Composio injects the connected account's credentials server-side.
 

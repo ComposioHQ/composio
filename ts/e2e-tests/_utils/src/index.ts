@@ -6,7 +6,6 @@ export type {
   RunFixtureOptions,
   DefineTestsContext,
   NodeVersionMeta as NodeVersion,
-  DenoVersionMeta as DenoVersion,
   CliVersionMeta as CliVersion,
   RuntimeVersions,
   RuntimeKind,

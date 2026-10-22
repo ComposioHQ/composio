@@ -2,7 +2,7 @@ name: Examples TypeScript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/examples/**'
       - 'ts/packages/core/**'
@@ -17,7 +17,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'turbo.jsonc'
   pull_request:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/examples/**'
       - 'ts/packages/core/**'
@@ -67,6 +67,9 @@ jobs:
 
       - name: Lint examples
         run: pnpm run lint:examples
+
+      - name: Test approval examples and MCP elicitation
+        run: pnpm --filter approvals-example test
 
       # Prove the Cloudflare Workers entry bundles without secrets or deploying.
       - name: Cloudflare Workers dry-run build

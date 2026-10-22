@@ -1,0 +1,459 @@
+---
+title: Approvals
+experimental: true
+description: Ask the user before your agent runs the tools you choose
+keywords: [approval, human in the loop, elicitation, require_approval, input_required, confirmation]
+---
+
+By default, your agent can run any tool in a session as soon as it decides to. You can configure the session to require the user's approval before any tool runs, such as tools that send, post or delete things on their behalf.
+
+When your agent calls a tool that requires approval, Composio doesn't run it. It returns an elicitation that asks the user to approve the call, and runs the tool once it receives their answer.
+
+<Callout type="warn" title="Experimental">
+Approvals are experimental. They need `composio` newer than 0.27.0 or `@composio/core` newer than 0.24.0.
+</Callout>
+
+## Choosing which tools need approval
+
+You choose which tools need approval with their [tags](/docs/tool-tags) when you create a session. For example, this session asks the user before any tool that creates, updates or deletes something:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    # Everywhere: ask before tools that create, update or delete
+    tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  // Everywhere: ask before tools that create, update or delete
+  tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
+});
+```
+</Tab>
+</Tabs>
+
+To handle a toolkit differently, override the session-wide `tags` in `tools.<toolkit>.tags`. This session asks before the same tools everywhere, except GitHub, where it only asks before tools that delete:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    # Everywhere: ask before tools that create, update or delete
+    tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
+    tools={
+        # GitHub: ask only before tools that delete
+        "github": {"tags": {"require_approval": ["destructiveHint"]}},
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  // Everywhere: ask before tools that create, update or delete
+  tags: { requireApproval: ['createHint', 'updateHint', 'destructiveHint'] },
+  tools: {
+    // GitHub: ask only before tools that delete
+    github: { tags: { requireApproval: ['destructiveHint'] } },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+The override replaces the session-wide `tags` for that toolkit, including any tags you block, so list everything you still want for it.
+
+## Asking the user
+
+When a tool needs approval, `session.execute()` raises an error:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio.exceptions import ToolInputRequiredError
+
+arguments = {"recipient_email": "priya@acme.com", "subject": "Q3 numbers"}
+
+try:
+    session.execute("GMAIL_SEND_EMAIL", arguments=arguments)
+except ToolInputRequiredError as error:
+    questions = error.input_requests
+    request_state = error.request_state
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, ComposioToolInputRequiredError, type ToolRouterInputRequest } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+const args = { recipient_email: 'priya@acme.com', subject: 'Q3 numbers' };
+let questions: Record<string, ToolRouterInputRequest> = {};
+let requestState: string | undefined;
+
+try {
+  await session.execute('GMAIL_SEND_EMAIL', args);
+} catch (error) {
+  if (error instanceof ComposioToolInputRequiredError) {
+    questions = error.inputRequests;
+    requestState = error.requestState;
+  }
+}
+```
+</Tab>
+</Tabs>
+
+The error's `input_requests` holds the questions to ask the user, keyed by ID. Each question has a `message` describing the tool call, and a `requested_schema` describing the answer the user can give:
+
+```json
+{
+  "elicit_0f2f8872eea523ed": {
+    "type": "elicitation",
+    "mode": "form",
+    "message": "Your agent wants to run the following tool:\n\nGMAIL_SEND_EMAIL({\"recipient_email\": \"priya@acme.com\", \"subject\": \"Q3 numbers\"})",
+    "requested_schema": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "title": "Decision",
+          "oneOf": [
+            { "const": "approve", "title": "Approve" },
+            { "const": "always_approve", "title": "Always approve" },
+            { "const": "deny", "title": "Deny" }
+          ]
+        }
+      },
+      "required": ["decision"]
+    }
+  }
+}
+```
+
+Show the user the `message` and a form built from `requested_schema`. Build the form from the schema, since the choices vary between questions.
+
+One tool execution can return several questions, for example when the agent runs several tools at once with `COMPOSIO_MULTI_EXECUTE_TOOL`. Answer all of them when you send the call again.
+
+The questions follow the format of [MCP elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation) requests, so you can reuse an existing elicitation UI.
+
+## Sending the answer
+
+Send the same call again with the user's answers:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+result = session.execute(
+    "GMAIL_SEND_EMAIL",
+    arguments=arguments,
+    input_responses={
+        "elicit_0f2f8872eea523ed": {
+            "action": "accept",
+            "content": {"decision": "approve"},
+        }
+    },
+    request_state=request_state,
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+const args = { recipient_email: 'priya@acme.com', subject: 'Q3 numbers' };
+declare const requestState: string | undefined;
+// ---cut---
+const result = await session.execute('GMAIL_SEND_EMAIL', args, {
+  inputResponses: {
+    elicit_0f2f8872eea523ed: {
+      action: 'accept',
+      content: { decision: 'approve' },
+    },
+  },
+  requestState,
+});
+```
+</Tab>
+</Tabs>
+
+When the user picks **Always approve**, their approval lasts for the rest of the session. Later calls to that tool on the same connected account run without asking again.
+
+## Approvals in MCP clients
+
+Approvals use MCP [elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation), which lets a server ask the user for input through the client. When your agent connects to the session [over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. With clients that don't support elicitation, calls that need approval are denied. To run them without approval instead, set `no_elicitation_support_fallback` to `"allow"`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        }
+    },
+    experimental={"no_elicitation_support_fallback": "allow"},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      requireApproval: ['GMAIL_SEND_EMAIL'],
+    },
+  },
+  experimental: { noElicitationSupportFallback: 'allow' },
+});
+```
+</Tab>
+</Tabs>
+
+## Current limitations
+
+- **Workbench and bash scripts.** Composio uses a model to find the tools a `COMPOSIO_REMOTE_WORKBENCH` or `COMPOSIO_REMOTE_BASH_TOOL` script calls, so it can miss some. If approval must never be skipped, [disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox).
+- **Proxy execute.** `session.proxy_execute()` is currently disabled for a toolkit when any of its tools need approval.
+- **Tags.** Rules based on [tags](/docs/tool-tags) are only as accurate as the tags, which Composio assigns on a best-effort basis. List tools explicitly for anything you must gate.
+- **Providers.** The SDK's `handle_tool_calls` and framework providers don't handle approval yet. Run tool calls with `session.execute()`, as in the [full example](#full-example) below.
+
+## Full example
+
+An agent loop with Claude that asks for approval in the terminal:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import json
+
+import anthropic
+from composio import Composio
+from composio.exceptions import ToolInputRequiredError
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(provider=AnthropicProvider())
+client = anthropic.Anthropic()
+
+session = composio.create(
+    user_id="user_123",
+    toolkits={"enable": ["gmail"]},
+    tools={
+        "gmail": {
+            # The agent can fetch and send emails
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            # but needs the user's approval to send one
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        }
+    },
+)
+tools = session.tools()
+
+
+def ask_user(question):
+    """Show one question in the terminal and return the user's answer."""
+    # Describes the tool call, like which email the agent wants to send
+    print(question["message"])
+    # Ask for each field in requested_schema, like the decision to approve or deny
+    content = {}
+    for name, field in question["requested_schema"]["properties"].items():
+        choices = [choice["const"] for choice in field.get("oneOf", [])]
+        content[name] = input(f"{field.get('title', name)} ({'/'.join(choices)}): ")
+    return {"action": "accept", "content": content}
+
+
+def run_tool(block):
+    """Run one tool call, asking the user whenever Composio needs their input."""
+    # No answers yet on the first try
+    input_responses, request_state = None, None
+    while True:
+        try:
+            result = session.execute(
+                block.name,
+                arguments=block.input,
+                input_responses=input_responses,
+                request_state=request_state,
+            )
+            break
+        except ToolInputRequiredError as error:
+            # The tool needs approval: ask the user every question, keyed by its ID
+            input_responses = {
+                question_id: ask_user(question)
+                for question_id, question in error.input_requests.items()
+            }
+            # Send this back with the answers when you retry the call
+            request_state = error.request_state
+
+    # Return the result to Claude
+    return {
+        "type": "tool_result",
+        "tool_use_id": block.id,
+        "content": json.dumps({"data": result.data, "error": result.error}),
+        "is_error": result.result_type == "failed",
+    }
+
+
+messages = [
+    {"role": "user", "content": "Email priya@acme.com with the subject 'Q3 numbers' and say the report is ready."}
+]
+response = client.messages.create(
+    model="claude-opus-4-6", max_tokens=4096, tools=tools, messages=messages
+)
+
+# Run the tools Claude calls until it has a final answer
+while response.stop_reason == "tool_use":
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({
+        "role": "user",
+        "content": [run_tool(block) for block in response.content if block.type == "tool_use"],
+    })
+    response = client.messages.create(
+        model="claude-opus-4-6", max_tokens=4096, tools=tools, messages=messages
+    )
+
+for block in response.content:
+    if block.type == "text":
+        print(block.text)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import Anthropic from '@anthropic-ai/sdk';
+import { AnthropicProvider } from '@composio/anthropic';
+import {
+  Composio,
+  ComposioToolInputRequiredError,
+  type ToolRouterInputRequest,
+  type ToolRouterSessionExecuteOptions,
+} from '@composio/core';
+import * as readline from 'node:readline/promises';
+
+const composio = new Composio({ provider: new AnthropicProvider() });
+const client = new Anthropic();
+const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+const session = await composio.create('user_123', {
+  toolkits: { enable: ['gmail'] },
+  tools: {
+    gmail: {
+      // The agent can fetch and send emails
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
+      // but needs the user's approval to send one
+      requireApproval: ['GMAIL_SEND_EMAIL'],
+    },
+  },
+});
+const tools = await session.tools();
+
+// Show one question in the terminal and return the user's answer
+async function askUser(question: ToolRouterInputRequest) {
+  // Describes the tool call, like which email the agent wants to send
+  console.log(question.message);
+  // Ask for each field in requestedSchema, like the decision to approve or deny
+  const { properties } = question.requestedSchema as {
+    properties: Record<string, { title?: string; oneOf?: { const: string }[] }>;
+  };
+  const content: Record<string, string> = {};
+  for (const [name, field] of Object.entries(properties)) {
+    const choices = field.oneOf?.map((choice) => choice.const) ?? [];
+    content[name] = await terminal.question(`${field.title ?? name} (${choices.join('/')}): `);
+  }
+  return { action: 'accept' as const, content };
+}
+
+// Run one tool call, asking the user whenever Composio needs their input
+async function runTool(block: Anthropic.ToolUseBlock): Promise<Anthropic.ToolResultBlockParam> {
+  // No answers yet on the first try
+  let answers: ToolRouterSessionExecuteOptions = {};
+  while (true) {
+    try {
+      const result = await session.execute(block.name, block.input as Record<string, unknown>, answers);
+      // Return the result to Claude
+      return {
+        type: 'tool_result',
+        tool_use_id: block.id,
+        content: JSON.stringify({ data: result.data, error: result.error }),
+        is_error: result.resultType === 'failed',
+      };
+    } catch (error) {
+      if (!(error instanceof ComposioToolInputRequiredError)) throw error;
+      // The tool needs approval: ask the user every question, keyed by its ID
+      const inputResponses: NonNullable<ToolRouterSessionExecuteOptions['inputResponses']> = {};
+      for (const [questionId, question] of Object.entries(error.inputRequests)) {
+        inputResponses[questionId] = await askUser(question);
+      }
+      // Retry the call with the answers, and the request state if there is one
+      answers = { inputResponses, requestState: error.requestState };
+    }
+  }
+}
+
+const messages: Anthropic.MessageParam[] = [
+  { role: 'user', content: "Email priya@acme.com with the subject 'Q3 numbers' and say the report is ready." },
+];
+let response = await client.messages.create({
+  model: 'claude-opus-4-6',
+  max_tokens: 4096,
+  tools,
+  messages,
+});
+
+// Run the tools Claude calls until it has a final answer
+while (response.stop_reason === 'tool_use') {
+  messages.push({ role: 'assistant', content: response.content });
+  const results: Anthropic.ToolResultBlockParam[] = [];
+  for (const block of response.content) {
+    if (block.type === 'tool_use') results.push(await runTool(block));
+  }
+  messages.push({ role: 'user', content: results });
+  response = await client.messages.create({
+    model: 'claude-opus-4-6',
+    max_tokens: 4096,
+    tools,
+    messages,
+  });
+}
+
+for (const block of response.content) {
+  if (block.type === 'text') console.log(block.text);
+}
+terminal.close();
+```
+</Tab>
+</Tabs>
+
+## Runnable examples
+
+Try the [TypeScript and Python approval examples](https://github.com/ComposioHQ/composio/tree/next/ts/examples/approvals) for a minimal tool call, a multi-tool batch, and an MCP client with elicitation. They use read-only Hacker News calls, so you don't need a connected account or model API key. The examples include tests for CI and unattended staging checks for approve, deny, decline, cancel, and **Always approve**.
+
+## Next
+
+<Card
+  icon={<Wrench />}
+  title="Configuring sessions"
+  href="/docs/configuring-sessions"
+  description="Enable toolkits and tools, filter by tags, and update a session's configuration."
+/>

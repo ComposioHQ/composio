@@ -1,8 +1,4 @@
-import {
-  WELL_KNOWN_NODE_VERSIONS,
-  WELL_KNOWN_DENO_VERSIONS,
-  WELL_KNOWN_CLI_VERSIONS,
-} from './const';
+import { WELL_KNOWN_NODE_VERSIONS, WELL_KNOWN_CLI_VERSIONS } from './const';
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
@@ -18,7 +14,6 @@ export type NonEmptyArray<T> = [T, ...T[]];
 export type NonEmptyString<T extends string> = T extends '' ? never : T;
 
 export type NodeVersionFromUser = (typeof WELL_KNOWN_NODE_VERSIONS)[number];
-export type DenoVersionFromUser = (typeof WELL_KNOWN_DENO_VERSIONS)[number];
 export type CliVersionFromUser = (typeof WELL_KNOWN_CLI_VERSIONS)[number];
 
 /**
@@ -43,19 +38,6 @@ export type NodeVersionMeta =
   | { kind: 'current'; value: string; skip: SkipInCI };
 
 /**
- * Metadata for a resolved Deno version to test against.
- * Includes skip state for CI mode.
- */
-export type DenoVersionMeta =
-  | {
-      kind: 'static';
-      value: Exclude<(typeof WELL_KNOWN_DENO_VERSIONS)[number], 'current'>;
-      skip: SkipInCI;
-    }
-  | { kind: 'overridden'; value: string; skip: SkipInCI }
-  | { kind: 'current'; value: string; skip: SkipInCI };
-
-/**
  * Metadata for a resolved CLI version to test against.
  * Includes skip state for CI mode.
  */
@@ -66,13 +48,11 @@ export type CliVersionMeta =
 
 /**
  * Runtime versions to test against.
- * Supports Node.js, Deno, and CLI runtimes.
+ * Supports Node.js and CLI runtimes.
  */
 export interface RuntimeVersions {
   /** Node.js versions to test */
   node?: readonly NodeVersionFromUser[];
-  /** Deno versions to test */
-  deno?: readonly DenoVersionFromUser[];
   /** CLI versions to test */
   cli?: readonly CliVersionFromUser[];
 }
@@ -119,7 +99,7 @@ export interface RunFixtureOptions {
 /**
  * Supported runtime environments for e2e tests.
  */
-export type RuntimeKind = 'node' | 'deno' | 'cli';
+export type RuntimeKind = 'node' | 'cli';
 
 /**
  * Options for runCmd.
@@ -183,13 +163,12 @@ export interface DefineTestsContext {
 export interface E2EConfig {
   /**
    * Runtime versions to test against.
-   * Supports Node.js, Deno, and CLI runtimes.
+   * Supports Node.js and CLI runtimes.
    *
    * @example
    * ```typescript
    * versions: {
-   *   node: ['22.22.3', '24.17.0', '25.9.0'],
-   *   deno: ['2.6.7'],
+   *   node: ['22.23.4', '24.22.1', '26.12.1'],
    * }
    * ```
    */

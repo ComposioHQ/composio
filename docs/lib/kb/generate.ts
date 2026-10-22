@@ -224,7 +224,7 @@ function rewriteSourceRepositoryLinks(markdown: string, guide: KbGuide, guides: 
   );
 }
 
-function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): string {
+function guideMdx(guide: KbGuide, guides: KbGuide[]): string {
   const related = relatedResources(guide, guides);
   const toolkitSlugs = toolkitSlugsForGuide(guide);
   const frontmatter = [
@@ -233,7 +233,6 @@ function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): stri
     `description: ${yamlString(guide.description)}`,
     `keywords: ${yamlArray([...guide.tags, ...guide.topics, ...guide.aliases])}`,
     `sources: ${JSON.stringify(guide.sources)}`,
-    `sourceCommit: ${yamlString(sourceCommit)}`,
     `lastVerifiedAt: ${yamlString(guide.lastVerifiedAt ?? '')}`,
     `reviewAfter: ${yamlString(guide.reviewAfter ?? '')}`,
     `freshness: ${yamlString(guide.freshness)}`,
@@ -271,7 +270,7 @@ function buildExpectedFiles(catalog: KbCatalog): Map<string, string> {
     `${JSON.stringify({ title: 'Guides', pages: guides.map(guide => guide.slug) }, null, 2)}\n`
   );
   for (const guide of guides) {
-    files.set(`guide/${guide.slug}.mdx`, guideMdx(guide, guides, catalog.manifest.source.commit));
+    files.set(`guide/${guide.slug}.mdx`, guideMdx(guide, guides));
   }
   return files;
 }
@@ -282,6 +281,17 @@ function listRelativeFiles(directory: string): string[] {
     .filter(entry => entry.isFile())
     .map(entry => relative(directory, join(entry.parentPath, entry.name)))
     .sort();
+}
+
+function planFileChanges(outputDir: string, expected: Map<string, string>) {
+  const actualFiles = listRelativeFiles(outputDir);
+  const actualFileSet = new Set(actualFiles);
+  const writes = [...expected].filter(
+    ([path, content]) =>
+      !actualFileSet.has(path) || readFileSync(join(outputDir, path), 'utf8') !== content,
+  );
+  const removals = actualFiles.filter(path => !expected.has(path));
+  return { writes, removals };
 }
 
 function assertSafeOutputDirectory(outputDir: string): void {
@@ -298,26 +308,22 @@ export function generateKbContent(options: GenerateKbContentOptions = {}): KbGen
   const expected = buildExpectedFiles(catalog);
   const published = getPublishedKbGuides(catalog).length;
   const held = catalog.guides.filter(guide => guide.state === 'needs-review').length;
+  const changes = planFileChanges(outputDir, expected);
 
   if (options.check) {
-    const actualFiles = listRelativeFiles(outputDir);
-    const expectedFiles = [...expected.keys()].sort();
-    const matches =
-      actualFiles.length === expectedFiles.length &&
-      expectedFiles.every(
-        (path, index) =>
-          actualFiles[index] === path &&
-          readFileSync(join(outputDir, path), 'utf8') === expected.get(path)
-      );
-    if (!matches) throw new Error('Generated KB content is out of date; run bun run generate:kb');
+    if (changes.writes.length > 0 || changes.removals.length > 0) {
+      throw new Error('Generated KB content is out of date; run bun run generate:kb');
+    }
     return { published, held, files: expected.size };
   }
 
-  rmSync(outputDir, { recursive: true, force: true });
-  for (const [path, content] of expected) {
+  for (const [path, content] of changes.writes) {
     const target = join(outputDir, path);
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, content, 'utf8');
+  }
+  for (const path of changes.removals) {
+    rmSync(join(outputDir, path), { force: true });
   }
   return { published, held, files: expected.size };
 }

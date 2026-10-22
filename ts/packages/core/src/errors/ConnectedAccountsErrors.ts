@@ -8,6 +8,8 @@ export const ConnectedAccountErrorCodes = {
   SHARED_ACCESS_DENIED: 'SHARED_ACCESS_DENIED',
   ACL_ONLY_FOR_SHARED: 'ACL_ONLY_FOR_SHARED',
   SHARED_CONNECTION_NOT_ACCESSIBLE: 'SHARED_CONNECTION_NOT_ACCESSIBLE',
+  REVOCATION_NOT_SUPPORTED: 'CONNECTED_ACCOUNT_REVOCATION_NOT_SUPPORTED',
+  NOT_REVOKABLE: 'CONNECTED_ACCOUNT_NOT_REVOKABLE',
 } as const;
 
 export class ComposioConnectedAccountNotFoundError extends ComposioError {
@@ -154,5 +156,50 @@ export class ComposioLegacyConnectedAccountsEndpointRetiredError extends Composi
       ],
     });
     this.name = 'ComposioLegacyConnectedAccountsEndpointRetiredError';
+  }
+}
+
+/**
+ * Thrown by `composio.connectedAccounts.revoke()` when the toolkit behind the
+ * connection does not support programmatic revocation at the provider (API
+ * 400).
+ */
+export class ComposioConnectedAccountRevocationNotSupportedError extends ComposioError {
+  constructor(
+    message: string = 'This toolkit does not support programmatic revocation of connected accounts',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ConnectedAccountErrorCodes.REVOCATION_NOT_SUPPORTED,
+      statusCode: 400,
+      possibleFixes: options.possibleFixes || [
+        "Revoke the grant from the provider's own settings page, then disable or delete the connected account with composio.connectedAccounts.disable() / delete().",
+      ],
+    });
+    this.name = 'ComposioConnectedAccountRevocationNotSupportedError';
+  }
+}
+
+/**
+ * Thrown by `composio.connectedAccounts.revoke()` when the connection is not
+ * in a state that can be revoked (API 409), for example it never completed
+ * authentication. Revoking an already revoked connection is not an error: it
+ * returns an empty `revokedTokens` list.
+ */
+export class ComposioConnectedAccountNotRevokableError extends ComposioError {
+  constructor(
+    message: string = 'The connected account is not in a revokable state',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ConnectedAccountErrorCodes.NOT_REVOKABLE,
+      statusCode: 409,
+      possibleFixes: options.possibleFixes || [
+        'Check the connection status with composio.connectedAccounts.get(); only ACTIVE connections can be revoked.',
+      ],
+    });
+    this.name = 'ComposioConnectedAccountNotRevokableError';
   }
 }

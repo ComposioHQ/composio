@@ -1,5 +1,6 @@
-import { Args, Command, HelpDoc, ValidationError } from '@effect/cli';
+import { commandInputError } from 'src/commands/errors';
 import { Effect, Option } from 'effect';
+import { Argument, Command } from 'effect/cli';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
@@ -10,14 +11,18 @@ import type { SkillFeatureFlag } from '../../../skills-src/composio-cli/referenc
 
 const knownFeatures: ReadonlyArray<SkillFeatureFlag> = Object.values(CLI_EXPERIMENTAL_FEATURES);
 
-const featureArg = Args.text({ name: 'feature' }).pipe(
-  Args.withDescription(`Experimental feature name. Known features: ${knownFeatures.join(', ')}`),
-  Args.optional
+const invalidState = commandInputError('config experimental');
+
+const featureArg = Argument.String('feature').pipe(
+  Argument.withDescription(
+    `Experimental feature name. Known features: ${knownFeatures.join(', ')}`
+  ),
+  Argument.optional
 );
 
-const stateArg = Args.text({ name: 'state' }).pipe(
-  Args.withDescription('Set to "on" or "off"'),
-  Args.optional
+const stateArg = Argument.String('state').pipe(
+  Argument.withDescription('Set to "on" or "off"'),
+  Argument.optional
 );
 
 const rebuildSkill = Effect.gen(function* () {
@@ -97,9 +102,8 @@ export const configExperimentalCmd = Command.make(
 
       const stateValue = state.value.toLowerCase();
       if (stateValue !== 'on' && stateValue !== 'off') {
-        yield* ui.log.error(`Invalid state "${state.value}". Use "on" or "off".`);
         return yield* Effect.fail(
-          ValidationError.invalidValue(HelpDoc.p(`Invalid state: ${state.value}`))
+          invalidState(`Invalid state "${state.value}". Use "on" or "off".`, '<state>')
         );
       }
 
@@ -138,5 +142,10 @@ export const configExperimentalCmd = Command.make(
       '',
       `Known features: ${knownFeatures.join(', ')}`,
     ].join('\n')
-  )
+  ),
+  Command.withExamples([
+    { command: 'composio config experimental' },
+    { command: 'composio config experimental listen on' },
+    { command: 'composio config experimental listen off' },
+  ])
 );

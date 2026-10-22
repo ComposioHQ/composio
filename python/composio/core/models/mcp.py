@@ -7,13 +7,15 @@ This module provides MCP server operations
 from __future__ import annotations
 
 import typing as t
+import warnings
 
 import typing_extensions as te
+from composio_client import omit
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
-from composio.exceptions import ValidationError
+from composio.exceptions import ComposioDeprecationWarning, ValidationError
 from composio.utils.pydantic import none_to_omit
 
 # Data Types (matching TypeScript specification)
@@ -99,6 +101,22 @@ def _add_generate_method(
     # Add the generate method to the response object and cast to MCPCreateResponse
     response.generate = generate  # type: ignore
     return t.cast(MCPCreateResponse, response)
+
+
+# ``managed_auth_by_composio`` is deprecated upstream, but dropping it would strip
+# the connection-management tools from generated URLs. Keep sending it and warn
+# once per process in SDK terms. The API client still raises its own notice once
+# per client instance: it has no per-call switch, and ``warnings.catch_warnings``
+# would reset every module's "already shown" registry on each call.
+_MANAGED_AUTH_DEPRECATION = (
+    "composio.mcp.generate() returns URLs that rely on the deprecated "
+    "include_composio_helper_actions query parameter, which the API will remove "
+    "in a future version. Switch to a session MCP endpoint: "
+    "composio.create(user_id, mcp=True) exposes session.mcp.url with "
+    "connection-management tools built in. "
+    "https://docs.composio.dev/docs/sessions-via-mcp"
+)
+_managed_auth_deprecation_warned = False
 
 
 class MCP(Resource):
@@ -214,14 +232,15 @@ class MCP(Resource):
                     auth_config_ids.append(toolkit_config["auth_config_id"])
 
             # Use the allowed_tools parameter instead of individual toolkit configs
-            custom_tools = none_to_omit(allowed_tools)
+            # (`custom_tools` is the deprecated create-time alias)
+            allowed_tools_param = none_to_omit(allowed_tools)
 
             # Use the custom MCP create endpoint
             response = self._client.mcp.custom.create(
                 name=name,
                 toolkits=toolkit_names,
                 auth_config_ids=auth_config_ids,
-                custom_tools=custom_tools,
+                allowed_tools=allowed_tools_param,
                 managed_auth_via_composio=not manually_manage_connections,
             )
 
@@ -395,7 +414,9 @@ class MCP(Resource):
                 update_params["auth_config_ids"] = auth_config_ids
 
             if allowed_tools is not None:
-                update_params["custom_tools"] = allowed_tools
+                # The update endpoint only reads `allowed_tools`; the create-time
+                # `custom_tools` alias is deprecated and ignored on PATCH.
+                update_params["allowed_tools"] = allowed_tools
 
             if manually_manage_connections is not None:
                 update_params[
@@ -469,10 +490,20 @@ class MCP(Resource):
             server_details = self._client.mcp.retrieve(mcp_config_id)
 
             # Generate server URLs (matching TS: this.client.mcp.generate.url)
+            managed_auth_by_composio = not manually_manage_connections
+            global _managed_auth_deprecation_warned
+            if managed_auth_by_composio and not _managed_auth_deprecation_warned:
+                _managed_auth_deprecation_warned = True
+                # 3: past ``Resource``'s trace wrapper to the caller's line.
+                warnings.warn(
+                    _MANAGED_AUTH_DEPRECATION, ComposioDeprecationWarning, stacklevel=3
+                )
+            # The API defaults the field to false, so opting out omits it and
+            # raises no client notice.
             url_response = self._client.mcp.generate.url(
                 mcp_server_id=mcp_config_id,
                 user_ids=[user_id],
-                managed_auth_by_composio=False if manually_manage_connections else True,
+                managed_auth_by_composio=True if managed_auth_by_composio else omit,
             )
 
             # Get the generated URL (matching TS: urlResponse.user_ids_url[0])

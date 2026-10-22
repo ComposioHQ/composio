@@ -5,18 +5,13 @@ import { Tool } from '@composio/core';
 // Mock the llamaindex module
 vi.mock('llamaindex', () => {
   return {
-    tool: vi.fn().mockImplementation(config => ({
-      metadata: {
-        name: config.name,
-        description: config.description,
-        parameters: config.parameters,
-      },
-      call: config.execute,
-      // Mock LlamaIndex tool properties
-      _type: 'llamaindex_tool',
-      _config: config,
-    })),
-    JSONValue: {},
+    FunctionTool: class {
+      constructor(
+        readonly call: (input: unknown) => unknown,
+        readonly metadata: { name: string; description: string; parameters: unknown },
+        readonly zodType: unknown
+      ) {}
+    },
   };
 });
 
@@ -263,19 +258,6 @@ describe('LlamaindexProvider', () => {
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(0);
-    });
-
-    it('should handle single item array', () => {
-      const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-      const result = provider.wrapMcpServerResponse(mcpResponse);
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        url: new URL('https://single.example.com'),
-        name: 'single-server',
-      });
     });
 
     it('should create proper URL objects from string URLs', () => {

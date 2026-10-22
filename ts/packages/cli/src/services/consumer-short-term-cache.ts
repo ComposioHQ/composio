@@ -1,15 +1,15 @@
-import { FileSystem, Path } from '@effect/platform';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
+import { ComposioToolkitsRepository, ComposioClientSingleton } from 'src/services/composio-clients';
 import {
-  ComposioToolkitsRepository,
-  ComposioClientSingleton,
   getConsumerConnectedToolkits,
   resolveConsumerProject,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { resolveCommandProject } from 'src/services/command-project';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import { djb2Hash } from 'src/utils/djb2';
@@ -24,11 +24,11 @@ const CACHE_FILE = 'consumer-short-term-cache.json';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const SEARCH_SESSION_EXTENSION_MS = 5 * 60 * 1000;
 
-const StringMappingsSchema = Schema.Record({ key: Schema.String, value: Schema.String });
-const AvailableConnectedAccountsSchema = Schema.Record({
-  key: Schema.String,
-  value: Schema.Array(CachedConnectedAccountSummarySchema),
-});
+const StringMappingsSchema = Schema.Record(Schema.String, Schema.String);
+const AvailableConnectedAccountsSchema = Schema.Record(
+  Schema.String,
+  Schema.Array(CachedConnectedAccountSummarySchema)
+);
 const ConsumerToolRouterAuthConfigMappingsSchema = Schema.Struct({
   authConfigs: Schema.optional(StringMappingsSchema),
 });
@@ -42,10 +42,7 @@ const CacheEntrySchema = Schema.Struct({
   toolRouterAuthConfigs: Schema.optional(ConsumerToolRouterAuthConfigMappingsSchema),
   toolRouterConnectedAccounts: Schema.optional(ConsumerToolRouterConnectedAccountMappingsSchema),
   probablyMyCliSessionsByCwdHash: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: Schema.Struct({ id: Schema.String, expiresAt: Schema.String }),
-    })
+    Schema.Record(Schema.String, Schema.Struct({ id: Schema.String, expiresAt: Schema.String }))
   ),
 });
 
@@ -55,7 +52,7 @@ export type ConsumerToolRouterConnectedAccountMappings =
   typeof ConsumerToolRouterConnectedAccountMappingsSchema.Type;
 type CacheEntry = typeof CacheEntrySchema.Type;
 type CacheState = { readonly [key: string]: CacheEntry };
-const decodeCacheShell = Schema.decodeUnknownOption(Schema.parseJson(JsonRecordSchema));
+const decodeCacheShell = Schema.decodeUnknownOption(Schema.fromJsonString(JsonRecordSchema));
 const decodeCacheEntry = Schema.decodeUnknownOption(CacheEntrySchema);
 
 // Per-entry decode: one stale or version-skewed entry (e.g. written by a
@@ -135,10 +132,10 @@ const writeCache = (state: CacheState) =>
     const fs = yield* FileSystem.FileSystem;
     const cacheDir = yield* setupCacheDir;
     const filePath = yield* cachePath;
-    yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
+    yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catch(() => Effect.void));
     yield* fs
       .writeFileString(filePath, JSON.stringify(state, null, 2))
-      .pipe(Effect.catchAll(() => Effect.void));
+      .pipe(Effect.catch(() => Effect.void));
   });
 
 const getAlwaysConnectedNoAuthToolkits = () =>
@@ -401,7 +398,6 @@ const resolveConsumerScope = (params?: {
       return null;
     }
     const consumerProject = yield* resolveConsumerProject({
-      baseURL: userContext.data.baseURL,
       apiKey,
       orgId,
     }).pipe(Effect.option);
@@ -435,13 +431,16 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     const clientSingleton = yield* ComposioClientSingleton;
     const directToolkits = yield* Effect.gen(function* () {
       const consumerProject = yield* resolveConsumerProject({
-        baseURL: userContext.data.baseURL,
         apiKey,
         orgId: scope.orgId,
       });
+      // The nano id, as `resolveCommandProject` hands it to `composio execute`:
+      // the memoized connected-account list is keyed on the client's org and
+      // project, so a different project id here would mean a second
+      // `GET /connected_accounts` per execute.
       const client = yield* clientSingleton.getFor({
         orgId: scope.orgId,
-        projectId: consumerProject.project_id,
+        projectId: consumerProject.project_nano_id,
       });
       const connectionContext = yield* resolveToolRouterSessionConnections(
         client,
@@ -454,7 +453,6 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       Option.isSome(directToolkits) && directToolkits.value.connectedToolkits.length > 0
         ? directToolkits.value.connectedToolkits
         : (yield* getConsumerConnectedToolkits({
-            baseURL: userContext.data.baseURL,
             apiKey,
             orgId: scope.orgId,
             consumerUserId: scope.consumerUserId,
@@ -476,20 +474,18 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         toolRouterAuthConfigs: mergeAuthConfigMappings({
           current: currentEntry?.toolRouterAuthConfigs,
-          next: Option.isSome(directToolkits)
-            ? {
-                authConfigs: directToolkits.value.authConfigs,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ authConfigs }) => ({ authConfigs }))
+          ),
         }),
         toolRouterConnectedAccounts: mergeConnectedAccountMappings({
           current: currentEntry?.toolRouterConnectedAccounts,
-          next: Option.isSome(directToolkits)
-            ? {
-                connectedAccounts: directToolkits.value.connectedAccounts,
-                availableConnectedAccounts: directToolkits.value.availableConnectedAccounts,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ connectedAccounts, availableConnectedAccounts }) => ({
+              connectedAccounts,
+              availableConnectedAccounts,
+            }))
+          ),
         }),
         ...searchSessionFields,
       },
@@ -542,8 +538,8 @@ export const primeConsumerConnectedToolkitsCacheInBackground = (params?: {
   readonly consumerUserId?: string;
 }) =>
   refreshConsumerConnectedToolkitsCache(params).pipe(
-    Effect.catchAll(() => Effect.void),
-    Effect.forkDaemon,
+    Effect.catch(() => Effect.void),
+    Effect.forkDetach,
     Effect.asVoid
   );
 

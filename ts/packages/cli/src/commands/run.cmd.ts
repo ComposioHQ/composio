@@ -1,22 +1,24 @@
+import { CommandInputError } from 'src/commands/errors';
 import process from 'node:process';
-import { Args, Command, Options } from '@effect/cli';
-import { Command as PlatformCommand, CommandExecutor, FileSystem, Path } from '@effect/platform';
-import { Data, Deferred, Duration, Effect, Either, MutableRef, Option } from 'effect';
-import { ts } from 'ts-morph';
+import { Argument, Command, Flag } from 'effect/cli';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
+import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
-import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
+import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
+import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import {
+  CLI_DEBUG_FLAG_NAMES,
   debugFlagsToChildEnv,
-  isAcpOnlyEnabled,
   isPerfDebugEnabled,
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
-import { detectMasterFromHost } from 'src/services/master-detector';
 import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
 import {
   repairMissingInstalledRunCompanionModules,
@@ -26,134 +28,85 @@ import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
-import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { loadHostConfig } from 'src/services/config';
-import { resolveCliConfigPath } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 
-const file = Options.text('file').pipe(
-  Options.withAlias('f'),
-  Options.withDescription('Run a TS/JS file instead of inline code'),
-  Options.optional
+const RUN_FLAG_NAMES = {
+  file: 'file',
+  dryRun: 'dry-run',
+  debug: 'debug',
+  skipConnectionCheck: 'skip-connection-check',
+  skipToolParamsCheck: 'skip-tool-params-check',
+  skipChecks: 'skip-checks',
+} as const;
+
+const file = Flag.String(RUN_FLAG_NAMES.file).pipe(
+  Flag.withAlias('f'),
+  Flag.withDescription('Run a TS/JS file instead of inline code'),
+  Flag.optional
 );
 
-const dryRun = Options.boolean('dry-run').pipe(
-  Options.withDescription('Preview execute() calls without running them'),
-  Options.withDefault(false)
+const dryRun = Flag.Boolean(RUN_FLAG_NAMES.dryRun).pipe(
+  Flag.withDescription('Preview execute() calls without running them'),
+  Flag.withDefault(false)
 );
-const debug = Options.boolean('debug').pipe(
-  Options.withDescription('Log helper steps while the script runs'),
-  Options.withDefault(false)
+const debug = Flag.Boolean(RUN_FLAG_NAMES.debug).pipe(
+  Flag.withDescription('Log helper steps while the script runs'),
+  Flag.withDefault(false)
 );
-const logsOff = Options.boolean('logs-off').pipe(
-  Options.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
-  Options.withDefault(false)
+const skipConnectionCheck = Flag.Boolean(RUN_FLAG_NAMES.skipConnectionCheck).pipe(
+  Flag.withDescription('Skip the connected-account check'),
+  Flag.withDefault(false)
 );
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDescription('Skip the connected-account check'),
-  Options.withDefault(false)
+const skipToolParamsCheck = Flag.Boolean(RUN_FLAG_NAMES.skipToolParamsCheck).pipe(
+  Flag.withDescription('Skip input validation against cached schema'),
+  Flag.withDefault(false)
 );
-const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
-  Options.withDescription('Skip input validation against cached schema'),
-  Options.withDefault(false)
-);
-const skipChecks = Options.boolean('skip-checks').pipe(
-  Options.withDescription('Skip both connection and input validation checks'),
-  Options.withDefault(false)
+const skipChecks = Flag.Boolean(RUN_FLAG_NAMES.skipChecks).pipe(
+  Flag.withDescription('Skip both connection and input validation checks'),
+  Flag.withDefault(false)
 );
 
-const args = Args.repeated(Args.text({ name: 'arg' })).pipe(
-  Args.withDescription('Inline code followed by arguments, or just arguments when using --file')
+const runFlags = {
+  file,
+  dryRun,
+  debug,
+  skipConnectionCheck,
+  skipToolParamsCheck,
+  skipChecks,
+};
+
+/** Share names with the passthrough adapter; the framework owns parsing the flag values. */
+export const RUN_FILE_FLAGS = new Set([`--${RUN_FLAG_NAMES.file}`, '-f']);
+export const RUN_KNOWN_VALUE_FLAGS = new Set([...RUN_FILE_FLAGS, '--log-level']);
+export const RUN_KNOWN_BOOLEAN_FLAGS = new Set([
+  ...Object.values(RUN_FLAG_NAMES)
+    .filter(name => name !== RUN_FLAG_NAMES.file)
+    .map(name => `--${name}`),
+  ...CLI_DEBUG_FLAG_NAMES.flatMap(name => [`--${name}`, `--no-${name}`]),
+  '--help',
+  '-h',
+  '--version',
+  '-v',
+]);
+
+const args = Argument.String('arg').pipe(
+  Argument.variadic(),
+  Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')
 );
 
 const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
 
-export const extractInlineExecuteToolSlugs = (source: string): ReadonlyArray<string> => {
-  if (!source.trim()) {
-    return [];
-  }
-
-  const parsed = ts.createSourceFile(
-    'composio-run-inline.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
-  const slugs = new Set<string>();
-
-  const visit = (node: ts.Node) => {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'execute'
-    ) {
-      const [slugArg] = node.arguments;
-      if (slugArg && ts.isStringLiteralLike(slugArg)) {
-        slugs.add(slugArg.text);
-      }
-    }
-
-    ts.forEachChild(node, visit);
-  };
-
-  visit(parsed);
-  return [...slugs];
-};
-
-export const wrapInlineCodeForRun = (source: string): string => {
-  const parsed = ts.createSourceFile(
-    'composio-run-inline.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
-  const statements = [...parsed.statements];
-  if (statements.length === 0) {
-    return source;
-  }
-
-  const lastStatement = statements.at(-1);
-  if (!lastStatement || !ts.isExpressionStatement(lastStatement)) {
-    return source;
-  }
-
-  const prefix = source.slice(0, lastStatement.getFullStart());
-  const suffix = source.slice(lastStatement.getEnd());
-  const expressionText = lastStatement.expression.getText(parsed);
-  return `${prefix}return (${expressionText});${suffix}`;
-};
-
-export const wrapFileSourceForRun = (source: string): string => {
-  const parsed = ts.createSourceFile(
-    'composio-run-file.ts',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
-  const statements = [...parsed.statements];
-  const firstNonImportIndex = statements.findIndex(statement => !ts.isImportDeclaration(statement));
-  if (firstNonImportIndex === -1) {
-    return source;
-  }
-
-  const bodyStart = statements[firstNonImportIndex]!.getFullStart();
-  const importPrefix = source.slice(0, bodyStart);
-  const body = source.slice(bodyStart);
-  return [
-    importPrefix,
-    'const __composioResult = await (async () => {',
-    wrapInlineCodeForRun(body),
-    '})();',
-    'if (__composioResult !== undefined) {',
-    '  console.log(__composioResult);',
-    '}',
-    '',
-  ].join('\n');
-};
+/**
+ * The source rewrites need the TypeScript compiler, which ships in the
+ * `generation-runtime` companion module next to the executable rather than in
+ * the executable itself. Loading it here keeps it off every other command's
+ * startup path. A missing companion goes through the same self-repair as the
+ * `run-*` modules, and its error surfaces exactly as theirs does below.
+ */
+const loadSourceTransforms = loadGenerationRuntime.pipe(
+  Effect.mapError(error => new Error(error.message))
+);
 
 export const inferCliInvocationPrefix = (
   path: Path.Path,
@@ -230,28 +183,11 @@ const createRunHelpersPreloadFile = (
         ? context.runOutputDir
         : yield* fs.makeTempDirectory({ directory: os.tmpdir, prefix: 'composio-run-artifacts-' });
     const runLogFilePath = path.join(runOutputDir, 'run.log');
-    const readAccessRoots = [
-      ...new Set(
-        [
-          ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
-          runOutputDir,
-        ].map(value => path.resolve(value))
-      ),
-    ];
     yield* fs.makeDirectory(runOutputDir, { recursive: true });
     yield* fs.writeFileString(runLogFilePath, '');
     yield* fs.writeFileString(
       preloadPath,
-      buildRunHelpersSource(
-        cliPrefix,
-        {
-          ...context,
-          runOutputDir,
-          runLogFilePath,
-          readAccessRoots,
-        },
-        moduleUrls
-      )
+      buildRunHelpersSource(cliPrefix, { ...context, runOutputDir, runLogFilePath }, moduleUrls)
     );
     return { directory, preloadPath, runOutputDir, runLogFilePath };
   });
@@ -262,15 +198,14 @@ const createRunHelpersPreloadFile = (
  * An ordinary usage mistake rather than a broken invariant, so it is a typed failure with a
  * one-line message instead of a defect: the caller sees the fix, not a stack trace.
  */
-export class MissingRunSourceError extends Data.TaggedError('commands/MissingRunSourceError')<{
-  readonly message: string;
-}> {}
-
 const MISSING_RUN_SOURCE_MESSAGE = [
   'Provide inline code or use --file to run a script file.',
   `  composio run 'console.log(1)'`,
   '  composio run --file ./script.ts',
 ].join('\n');
+
+const missingRunSource = () =>
+  new CommandInputError({ command: 'run', message: MISSING_RUN_SOURCE_MESSAGE });
 
 export const buildRunCommand = ({
   path,
@@ -287,6 +222,7 @@ export const buildRunCommand = ({
 }) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const { wrapFileSourceForRun, wrapInlineCodeForRun } = yield* loadSourceTransforms;
     // Use process.execPath directly — the child is spawned with BUN_BE_BUN=1
     // which makes compiled Bun binaries act as a plain Bun runtime.
     // Avoid the `run` subcommand entirely since Bun intercepts it as its own
@@ -325,34 +261,23 @@ export const buildRunCommand = ({
       };
     }
 
-    return yield* Effect.fail(new MissingRunSourceError({ message: MISSING_RUN_SOURCE_MESSAGE }));
+    return yield* Effect.fail(missingRunSource());
   });
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const os = yield* NodeOs;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
-    const defaultComposioDir = path.join(os.homedir, USER_COMPOSIO_DIR);
-    // Honors the same COMPOSIO_CACHE_DIR-then-CACHE_DIR precedence the spawned
-    // run-helpers child applies when locating its cache, so the sandbox read
-    // roots below always include the directory the child actually uses.
-    const composioCacheDir = yield* APP_CONFIG.CACHE_DIR;
-    const hostCacheDir = yield* loadHostConfig(UNPREFIXED_CONFIG.CACHE_DIR);
-    const configuredCacheDir = composioCacheDir || hostCacheDir || defaultComposioDir;
-    const baseReadAccessRoots = [
-      ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
-    ];
-
+    // A spawned `composio execute` treats a forwarded web URL as an explicit
+    // choice of Dashboard. When this process keeps the backend transport (a
+    // custom backend with no web URL), forward none so the child decides alike.
+    const forwardWebURL = (yield* resolveConsumerExecutionTransport) === 'dashboard';
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
-      webURL: userContext.data.webURL,
+      ...(forwardWebURL ? { webURL: userContext.data.webURL } : {}),
       orgId,
-      cliConfigPath: yield* resolveCliConfigPath,
-      readAccessRoots: baseReadAccessRoots,
     } satisfies RunHelperContext;
 
     if (!apiKey || !orgId) {
@@ -377,13 +302,6 @@ const resolveRunHelperContext = () =>
       consumerProjectId: consumerProject.value.projectId,
       consumerProjectName: consumerProject.value.projectName,
       runOutputDir: sessionArtifactsDir,
-      readAccessRoots: [
-        ...new Set(
-          [...baseReadAccessRoots, sessionArtifactsDir]
-            .filter((value): value is string => typeof value === 'string' && value.length > 0)
-            .map(value => path.resolve(value))
-        ),
-      ],
     } satisfies RunHelperContext;
   });
 
@@ -410,15 +328,15 @@ class ChildSignalError extends Data.TaggedError('ChildSignalError')<{
 /**
  * Sends `signal` to the child's process group and reports whether it was delivered.
  *
- * The @effect/platform executor spawns with `detached: true` on POSIX, so the script leads its
+ * The `effect/process` spawner spawns with `detached: true` on POSIX, so the script leads its
  * own process group and a negative pid is what reaches it (and anything it spawned). Delivery
  * fails with ESRCH when the group is already gone, which is a normal race, not a run failure.
  */
 const signalChildProcessGroup = (pid: number, signal: ForwardedSignal): boolean =>
-  Either.try({
+  Result.try({
     try: () => process.kill(-pid, signal),
     catch: cause => new ChildSignalError({ pid, signal, cause }),
-  }).pipe(Either.getOrElse(() => false));
+  }).pipe(Result.getOrElse(() => false));
 
 /**
  * Waits for the script to exit, giving up after `duration`.
@@ -428,12 +346,15 @@ const signalChildProcessGroup = (pid: number, signal: ForwardedSignal): boolean 
  * interrupted along with it — leaving the wait hanging until the script exits on its own.
  * Daemon fibers are detached from the interrupted fiber, so their deadline still fires.
  */
-const awaitChildExitWithin = (child: CommandExecutor.Process, duration: Duration.Duration) =>
+const awaitChildExitWithin = (
+  child: ChildProcessSpawner.ChildProcessHandle,
+  duration: Duration.Duration
+) =>
   Effect.gen(function* () {
     const settled = yield* Deferred.make<void>();
     const complete = Deferred.succeed(settled, undefined);
-    yield* Effect.forkDaemon(Effect.zipRight(Effect.ignore(child.exitCode), complete));
-    yield* Effect.forkDaemon(Effect.zipRight(Effect.sleep(duration), complete));
+    yield* Effect.forkDetach(Effect.andThen(Effect.ignore(child.exitCode), complete));
+    yield* Effect.forkDetach(Effect.andThen(Effect.sleep(duration), complete));
     yield* Deferred.await(settled);
   });
 
@@ -445,7 +366,7 @@ const awaitChildExitWithin = (child: CommandExecutor.Process, duration: Duration
  * only as the executor's SIGTERM. Handlers are registered and removed with the scope so they
  * never leak into a later run.
  */
-const forwardSignalsToChild = (child: CommandExecutor.Process) =>
+const forwardSignalsToChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     // Windows has no process groups and the executor does not detach there.
@@ -474,7 +395,7 @@ const forwardSignalsToChild = (child: CommandExecutor.Process) =>
             process.removeListener(signal, listener);
           }
         }).pipe(
-          Effect.zipRight(
+          Effect.andThen(
             MutableRef.get(forwarded)
               ? awaitChildExitWithin(child, CHILD_SIGNAL_GRACE_PERIOD)
               : Effect.void
@@ -484,87 +405,56 @@ const forwardSignalsToChild = (child: CommandExecutor.Process) =>
   });
 
 export const runCmd = Command.make('run', {
-  file,
-  dryRun,
-  debug,
-  logsOff,
-  skipConnectionCheck,
-  skipToolParamsCheck,
-  skipChecks,
+  ...runFlags,
   args,
 }).pipe(
   Command.withDescription(
-    [
-      'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.',
-      '',
-      'Examples:',
-      `  composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "composiohq", repo: "composio", title: "Bug report" }); console.log(issue)'`,
-      `  composio run --dry-run 'await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" })'`,
-      `  composio run --debug 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
-      `  composio run '`,
-      `    const [emails, issues] = await Promise.all([`,
-      `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
-      `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),`,
-      `    ]);`,
-      `    const brief = await experimental_subAgent(`,
-      `      \`Create a morning brief from these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
-      `      {`,
-      `        schema: z.object({`,
-      `          brief: z.string(),`,
-      `          urgentEmails: z.array(z.string()),`,
-      `          urgentIssues: z.array(z.string()),`,
-      `        }),`,
-      `      }`,
-      `    );`,
-      `    brief.structuredOutput;`,
-      `  '`,
-      '  composio run --file ./script.ts -- hello world',
-      '',
-      'Injected helpers (behave like their CLI counterparts):',
-      '  execute(slug, data?)          Same as `composio execute` — returns parsed JSON',
-      '  search(query, options?)        Same as `composio search` — returns matching tools',
-      '  experimental_subAgent(prompt, options?) Experimental helper to spawn a powerful sub-agent from the same agent family as your current main agent',
-      '                                 (Codex -> Codex, Claude -> Claude) with optional Zod structured output',
-      '  result.prompt()                Prompt-safe serialization of a helper result, ideal for experimental_subAgent(...)',
-      '  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function',
-      '                                 Example: const f = await proxy("gmail")',
-      '                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")',
-      '  z                              Injected global from `zod` for structured output schemas',
-      '',
-      'All helpers reuse your CLI auth state and connected accounts.',
-      '',
-      'Flags:',
-      '  --debug                     Log helper steps while the script runs',
-      '  --dry-run                   Preview execute() calls without running them',
-      '  --logs-off                  Hide the always-on experimental_subAgent streaming logs',
-      '  --skip-connection-check     Skip the connected-account check',
-      '  --skip-tool-params-check    Skip input validation against cached schema',
-      '  --skip-checks               Skip both checks above',
-      '',
-      'See also:',
-      '  composio search "<query>"                 Discover tool slugs before scripting',
-      '  composio link <toolkit>                   Connect accounts before scripting',
-      '  composio execute <slug> --get-schema      Inspect tool inputs before scripting',
-    ].join('\n')
+    'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.\n\nInjected helpers (behave like their CLI counterparts):\n  execute(slug, data?)          Same as `composio execute` — returns parsed JSON\n  search(query, options?)        Same as `composio search` — returns matching tools\n  result.prompt()                Prompt-safe serialization of a helper result\n  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function\n                                 Example: const f = await proxy("gmail")\n                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")\n  z                              Injected global from `zod` for defining and validating schemas\n\nAll helpers reuse your CLI auth state and connected accounts.\n\nUse composio search "<query>" to discover tools and composio execute <slug> --get-schema to inspect inputs.'
   ),
+  Command.withShortDescription(
+    'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.'
+  ),
+  Command.withExamples([
+    {
+      command:
+        'composio run \'\n  // execute(slug, data?) — run a tool, returns parsed JSON\n  const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER");\n  console.log(me);\n\'',
+    },
+    {
+      command:
+        'composio run \'\n  // search(query, opts?) — find tools by use case\n  const tools = await search("send email");\n  console.log(tools);\n\'',
+    },
+    {
+      command:
+        'composio run \'\n  const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Deploy v2" });\n  await execute("SLACK_SEND_MESSAGE", { channel: "eng", markdown_text: "Created: " + issue.data.html_url });\n\'',
+      description: 'Sequential: chain tool outputs across services',
+    },
+    {
+      command:
+        'composio run \'\n  const [emails, issues, events] = await Promise.all([\n    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),\n    execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),\n    execute("GOOGLECALENDAR_FIND_EVENT", { calendar_id: "primary" }),\n  ]);\n  console.log({ emails: emails.data, issues: issues.data, events: events.data });\n\'',
+      description: 'Parallel: fetch from multiple services at once with Promise.all',
+    },
+    {
+      command:
+        'composio run \'\n  const issues = [101, 102, 103, 104];\n  await Promise.all(issues.map(n =>\n    execute("GITHUB_ADD_LABELS_TO_ISSUE", { owner: "acme", repo: "app", issue_number: n, labels: ["priority"] })\n  ));\n\'',
+      description: 'Bulk: fan out with Promise.all + .map()',
+    },
+    {
+      command:
+        'composio run \'\n  const f = await proxy("gmail");\n  console.log(await f("https://gmail.googleapis.com/gmail/v1/users/me/profile"));\n\'',
+      description: 'proxy(toolkit) — returns a fetch() bound to your connected account',
+    },
+    {
+      command: 'composio run --file ./workflow.ts -- --repo acme/app',
+      description: 'Run from a file',
+    },
+  ]),
   Command.withHandler(
-    ({
-      file,
-      dryRun,
-      debug,
-      logsOff,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      skipChecks,
-      args,
-    }) =>
+    ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, skipChecks, args }) =>
       Effect.gen(function* () {
         // Checked before any setup work so a bare `composio run` neither creates a run-artifacts
         // directory nor advertises a log file for a script that will never start.
         if (Option.isNone(file) && !args[0]) {
-          return yield* Effect.fail(
-            new MissingRunSourceError({ message: MISSING_RUN_SOURCE_MESSAGE })
-          );
+          return yield* Effect.fail(missingRunSource());
         }
 
         const fs = yield* FileSystem.FileSystem;
@@ -576,15 +466,15 @@ export const runCmd = Command.make('run', {
         );
         const perfDebug = yield* isPerfDebugEnabled;
         const toolDebug = yield* isToolDebugEnabled;
-        const acpOnly = yield* isAcpOnlyEnabled;
         const telemetryDebug = yield* isTelemetryDebugEnabled;
         if (Option.isNone(file)) {
           const [inlineCode] = args;
+          const { extractInlineExecuteToolSlugs } = yield* loadSourceTransforms;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
           if (preloadSlugs.length > 0) {
             yield* warmToolInputDefinitions(preloadSlugs).pipe(
-              Effect.catchAll(() => Effect.void),
-              Effect.forkDaemon
+              Effect.catch(() => Effect.void),
+              Effect.forkDetach
             );
           }
         }
@@ -592,13 +482,10 @@ export const runCmd = Command.make('run', {
         const helperContext: RunHelperContext = {
           ...(yield* resolveRunHelperContext()),
           runId,
-          master: yield* detectMasterFromHost,
           perfDebug,
           toolDebug,
           telemetryDebug,
           debug,
-          logsOff,
-          acpOnly,
           dryRun,
           skipConnectionCheck,
           skipToolParamsCheck,
@@ -630,7 +517,7 @@ export const runCmd = Command.make('run', {
             args,
             debug,
           },
-        }).pipe(Effect.catchAll(() => Effect.void));
+        }).pipe(Effect.catch(() => Effect.void));
         yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
         const runCommand = yield* buildRunCommand({
           path,
@@ -641,19 +528,19 @@ export const runCmd = Command.make('run', {
         });
         const exitCode = yield* Effect.gen(function* () {
           const [executable, ...commandArgs] = runCommand.cmd;
-          const command = PlatformCommand.make(executable, ...commandArgs).pipe(
-            PlatformCommand.env({
+          // Spawning the command (instead of running it to completion) yields the handle whose
+          // pid the signal forwarding below needs. `extendEnv` keeps the caller's environment.
+          const child = yield* ChildProcess.make(executable!, commandArgs, {
+            env: {
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,
-              ...debugFlagsToChildEnv({ perfDebug, toolDebug, acpOnly, telemetryDebug }),
-            }),
-            PlatformCommand.stdin('inherit'),
-            PlatformCommand.stdout('inherit'),
-            PlatformCommand.stderr('inherit')
-          );
-          // Start the process instead of running it to completion: only a started process
-          // exposes the pid the signal forwarding below needs.
-          const child = yield* PlatformCommand.start(command);
+              ...debugFlagsToChildEnv({ perfDebug, toolDebug, telemetryDebug }),
+            },
+            extendEnv: true,
+            stdin: 'inherit',
+            stdout: 'inherit',
+            stderr: 'inherit',
+          });
           yield* forwardSignalsToChild(child);
           return Number(yield* child.exitCode);
         }).pipe(

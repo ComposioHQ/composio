@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import sys
 import typing as t
 
 from pydantic import BaseModel
@@ -136,6 +137,51 @@ def _build_final_slug(tool_slug: str, toolkit_slug: t.Optional[str] = None) -> s
     if toolkit_slug:
         return f"{LOCAL_TOOL_PREFIX}{toolkit_slug.upper()}_{upper}"
     return f"{LOCAL_TOOL_PREFIX}{upper}"
+
+
+def _qualified_original_slug_key(toolkit: t.Optional[str], original_slug: str) -> str:
+    return f"{toolkit.upper() if toolkit else ''}::{original_slug.upper()}"
+
+
+def _can_share_original_slug(
+    existing: CustomToolsMapEntry, next_entry: CustomToolsMapEntry
+) -> bool:
+    return (
+        existing.toolkit is not None
+        and next_entry.toolkit is not None
+        and existing.toolkit.lower() != next_entry.toolkit.lower()
+    )
+
+
+def _add_original_slug_alias(
+    *,
+    by_original_slug: t.Dict[str, CustomToolsMapEntry],
+    ambiguous_original_slugs: t.Set[str],
+    original_slug: str,
+    entry: CustomToolsMapEntry,
+) -> None:
+    original_slug_key = original_slug.upper()
+    if original_slug_key in ambiguous_original_slugs:
+        return
+
+    existing = by_original_slug.get(original_slug_key)
+    if existing is None:
+        by_original_slug[original_slug_key] = entry
+        return
+
+    if existing.final_slug.upper() == entry.final_slug.upper():
+        return
+
+    if _can_share_original_slug(existing, entry):
+        del by_original_slug[original_slug_key]
+        ambiguous_original_slugs.add(original_slug_key)
+        return
+
+    raise ValidationError(
+        f'Custom tool slug collision: original slug "{original_slug}" '
+        f'maps to multiple final slugs. "{existing.final_slug}" and '
+        f'"{entry.final_slug}" both resolve from "{original_slug_key}".'
+    )
 
 
 def _get_input_json_schema(model: t.Type[BaseModel]) -> t.Dict[str, t.Any]:
@@ -244,21 +290,52 @@ def _get_caller_locals(depth: int = 2) -> t.Optional[t.Mapping[str, t.Any]]:
         del frame
 
 
-def _resolve_function_annotations(
+def _signature(fn: t.Callable[..., t.Any]) -> inspect.Signature:
+    """Read a signature without evaluating annotations that may not resolve yet."""
+    if sys.version_info >= (3, 14):
+        import annotationlib
+
+        # Python 3.14 evaluates annotations lazily; the default VALUE format
+        # raises NameError for names defined later or only under TYPE_CHECKING.
+        return inspect.signature(fn, annotation_format=annotationlib.Format.FORWARDREF)
+    return inspect.signature(fn)
+
+
+def _resolve_input_annotation(
     fn: t.Callable[..., t.Any],
+    param: inspect.Parameter,
     *,
     localns: t.Optional[t.Mapping[str, t.Any]] = None,
-) -> t.Dict[str, t.Any]:
-    """Resolve annotations, including postponed string annotations when possible."""
+) -> t.Any:
+    """Resolve the input parameter's annotation, including string annotations.
+
+    Only this one annotation is resolved, so an unresolvable ``ctx`` or return
+    annotation (for example one imported under ``TYPE_CHECKING``) does not fail.
+    """
+    annotation = param.annotation
+    if isinstance(annotation, t.ForwardRef):
+        annotation = annotation.__forward_arg__
+    if not isinstance(annotation, str):
+        return annotation
+
+    def holder() -> None: ...
+
+    holder.__annotations__ = {param.name: annotation}
     try:
         return t.get_type_hints(
-            fn,
+            holder,
             globalns=getattr(fn, "__globals__", {}),
             localns=dict(localns) if localns is not None else None,
             include_extras=True,
-        )
-    except Exception:
-        return {}
+        )[param.name]
+    except Exception as exc:
+        missing = exc.name if isinstance(exc, NameError) and exc.name else annotation
+        raise ValidationError(
+            f"experimental.tool: could not resolve the annotation {annotation!r} of "
+            f'the first parameter of "{fn.__name__}" '
+            f"({type(exc).__name__}: {exc}). Define {missing} before the tool, and "
+            f"import it at runtime rather than under `if TYPE_CHECKING:`."
+        ) from exc
 
 
 def _infer_tool_from_function(
@@ -303,12 +380,7 @@ def _infer_tool_from_function(
             f"'def {fn.__name__}(input, ctx)' instead of 'async def'."
         )
 
-    sig = inspect.signature(fn)
-    params = list(sig.parameters.values())
-    resolved_annotations = _resolve_function_annotations(
-        fn,
-        localns=annotation_locals,
-    )
+    params = list(_signature(fn).parameters.values())
 
     if not params:
         raise ValidationError(
@@ -326,7 +398,7 @@ def _infer_tool_from_function(
 
     # First param must be the input model
     first = params[0]
-    first_annotation = resolved_annotations.get(first.name, first.annotation)
+    first_annotation = _resolve_input_annotation(fn, first, localns=annotation_locals)
     if first_annotation is inspect.Parameter.empty or not (
         isinstance(first_annotation, type) and issubclass(first_annotation, BaseModel)
     ):
@@ -578,6 +650,8 @@ def build_custom_tools_map(
     """Build a CustomToolsMap from custom tools and toolkits."""
     by_final_slug: t.Dict[str, CustomToolsMapEntry] = {}
     by_original_slug: t.Dict[str, CustomToolsMapEntry] = {}
+    by_toolkit_and_original_slug: t.Dict[str, CustomToolsMapEntry] = {}
+    ambiguous_original_slugs: t.Set[str] = set()
 
     def add_entry(
         handle: CustomTool, final_slug: str, toolkit: t.Optional[str]
@@ -597,20 +671,24 @@ def build_custom_tools_map(
                 f'Custom tool slug collision: "{final_slug}" is already registered.'
             )
 
-        if original_slug in by_original_slug:
-            existing = by_original_slug[original_slug]
+        qualified_key = _qualified_original_slug_key(toolkit, original_slug)
+        if qualified_key in by_toolkit_and_original_slug:
             raise ValidationError(
                 f'Custom tool slug collision: original slug "{handle.slug}" '
-                f"maps to multiple final slugs. "
-                f'"{existing.final_slug}" and "{final_slug}" both resolve '
-                f'from "{original_slug}".'
+                f'is already registered for toolkit "{toolkit or "custom"}".'
             )
 
         entry = CustomToolsMapEntry(
             handle=handle, final_slug=final_slug, toolkit=toolkit
         )
         by_final_slug[final_slug_key] = entry
-        by_original_slug[original_slug] = entry
+        by_toolkit_and_original_slug[qualified_key] = entry
+        _add_original_slug_alias(
+            by_original_slug=by_original_slug,
+            ambiguous_original_slugs=ambiguous_original_slugs,
+            original_slug=original_slug,
+            entry=entry,
+        )
 
     # Process standalone tools
     for handle in tools:
@@ -629,6 +707,8 @@ def build_custom_tools_map(
     return CustomToolsMap(
         by_final_slug=by_final_slug,
         by_original_slug=by_original_slug,
+        by_toolkit_and_original_slug=by_toolkit_and_original_slug,
+        ambiguous_original_slugs=ambiguous_original_slugs,
         toolkits=list(toolkits) if toolkits else None,
         tools=list(tools) if tools else None,
     )
@@ -648,41 +728,94 @@ def build_custom_tools_map_from_response(
     """Build a CustomToolsMap using the slug/original_slug mapping from the backend response."""
     by_final_slug: t.Dict[str, CustomToolsMapEntry] = {}
     by_original_slug: t.Dict[str, CustomToolsMapEntry] = {}
+    by_toolkit_and_original_slug: t.Dict[str, CustomToolsMapEntry] = {}
+    ambiguous_original_slugs: t.Set[str] = set()
 
-    # Build lookup from original slug -> handle + toolkit
-    handles_by_original: t.Dict[str, t.Tuple[CustomTool, t.Optional[str]]] = {}
+    # Build lookups from toolkit + original slug and from original slug -> matches.
+    handles_by_qualified_original: t.Dict[
+        str, t.Tuple[CustomTool, t.Optional[str]]
+    ] = {}
+    handles_by_original: t.Dict[str, t.List[t.Tuple[CustomTool, t.Optional[str]]]] = {}
+
+    def register_handle(handle: CustomTool, toolkit: t.Optional[str]) -> None:
+        original_slug = handle.slug.upper()
+        match = (handle, toolkit)
+        handles_by_qualified_original[
+            _qualified_original_slug_key(toolkit, original_slug)
+        ] = match
+        handles_by_original.setdefault(original_slug, []).append(match)
+
     for handle in tools:
-        key = handle.slug.upper()
-        if key in handles_by_original:
-            raise ValidationError(
-                f'Duplicate custom tool slug "{handle.slug}" — '
-                f"each tool must have a unique slug across all custom tools and toolkits."
-            )
-        handles_by_original[key] = (handle, handle.extends_toolkit)
+        register_handle(handle, handle.extends_toolkit)
     if toolkits:
         for tk in toolkits:
             for handle in tk.tools:
-                key = handle.slug.upper()
-                if key in handles_by_original:
-                    raise ValidationError(
-                        f'Duplicate custom tool slug "{handle.slug}" — '
-                        f"each tool must have a unique slug across all custom tools and toolkits."
-                    )
-                handles_by_original[key] = (handle, tk.slug)
+                register_handle(handle, tk.slug)
+
+    def find_handle(
+        final_slug: str, original_slug: str, toolkit: t.Optional[str]
+    ) -> t.Optional[t.Tuple[CustomTool, t.Optional[str]]]:
+        original_slug_key = original_slug.upper()
+        qualified_match = handles_by_qualified_original.get(
+            _qualified_original_slug_key(toolkit, original_slug_key)
+        )
+        if qualified_match is not None:
+            return qualified_match
+
+        bare_matches = handles_by_original.get(original_slug_key, [])
+        if not bare_matches:
+            # Response tool not defined locally; nothing to route in-process.
+            return None
+        # A bare match may only stand in when the response carries no toolkit
+        # identity. Binding a toolkit child to another toolkit's handler would
+        # silently execute the wrong implementation.
+        if toolkit is None and len(bare_matches) == 1:
+            return bare_matches[0]
+
+        registered = sorted(
+            {(match_toolkit or "custom").upper() for _, match_toolkit in bare_matches}
+        )
+        raise ValidationError(
+            f'Cannot map custom tool "{final_slug}": original slug '
+            f'"{original_slug}" for toolkit "{toolkit or "custom"}" has no exact '
+            f"local match. Registered for toolkits: {', '.join(registered)}."
+        )
 
     def add_entry(
         final_slug: str, original_slug: str, toolkit: t.Optional[str]
     ) -> None:
-        match = handles_by_original.get(original_slug.upper())
+        resolved_toolkit = toolkit
+        match = find_handle(final_slug, original_slug, resolved_toolkit)
         if not match:
             return
         handle, default_toolkit = match
-        resolved_toolkit = toolkit if toolkit is not None else default_toolkit
+        if resolved_toolkit is None:
+            resolved_toolkit = default_toolkit
+
+        final_slug_key = final_slug.upper()
+        if final_slug_key in by_final_slug:
+            raise ValidationError(
+                f'Custom tool slug collision: "{final_slug}" is already registered.'
+            )
+
+        qualified_key = _qualified_original_slug_key(resolved_toolkit, original_slug)
+        if qualified_key in by_toolkit_and_original_slug:
+            raise ValidationError(
+                f'Custom tool slug collision: original slug "{handle.slug}" '
+                f'is already registered for toolkit "{resolved_toolkit or "custom"}".'
+            )
+
         entry = CustomToolsMapEntry(
             handle=handle, final_slug=final_slug, toolkit=resolved_toolkit
         )
-        by_final_slug[final_slug.upper()] = entry
-        by_original_slug[original_slug.upper()] = entry
+        by_final_slug[final_slug_key] = entry
+        by_toolkit_and_original_slug[qualified_key] = entry
+        _add_original_slug_alias(
+            by_original_slug=by_original_slug,
+            ambiguous_original_slugs=ambiguous_original_slugs,
+            original_slug=original_slug,
+            entry=entry,
+        )
 
     if experimental and experimental.custom_tools:
         for ct in experimental.custom_tools:
@@ -693,9 +826,19 @@ def build_custom_tools_map_from_response(
             for ctk_tool in ctk.tools:
                 add_entry(ctk_tool.slug, ctk_tool.original_slug, ctk.slug)
 
+    # Ambiguity follows the local definitions, not whichever subset the
+    # response happened to include: a shared child slug must never become
+    # callable by its bare name just because a sibling was omitted.
+    for original_slug_key, matches in handles_by_original.items():
+        if len(matches) > 1:
+            by_original_slug.pop(original_slug_key, None)
+            ambiguous_original_slugs.add(original_slug_key)
+
     return CustomToolsMap(
         by_final_slug=by_final_slug,
         by_original_slug=by_original_slug,
+        by_toolkit_and_original_slug=by_toolkit_and_original_slug,
+        ambiguous_original_slugs=ambiguous_original_slugs,
         toolkits=list(toolkits) if toolkits else None,
         tools=list(tools) if tools else None,
     )
@@ -709,6 +852,19 @@ def find_custom_tool_map_entry_by_final_slug(
     if custom_tools_map is None:
         return None
     return custom_tools_map.by_final_slug.get(slug.upper())
+
+
+def find_custom_tool_map_entry_by_toolkit_and_original_slug(
+    custom_tools_map: t.Optional[CustomToolsMap],
+    toolkit: t.Optional[str],
+    slug: str,
+) -> t.Optional[CustomToolsMapEntry]:
+    """Find a custom toolkit tool by toolkit slug and original tool slug."""
+    if custom_tools_map is None:
+        return None
+    return custom_tools_map.by_toolkit_and_original_slug.get(
+        _qualified_original_slug_key(toolkit, slug)
+    )
 
 
 def assert_no_custom_tool_slugs_in_preload(
@@ -734,6 +890,7 @@ def assert_no_custom_tool_slugs_in_preload(
             custom_tools_map is not None
             and (
                 normalized in custom_tools_map.by_original_slug
+                or normalized in custom_tools_map.ambiguous_original_slugs
                 or normalized in custom_tools_map.by_final_slug
             )
         ):

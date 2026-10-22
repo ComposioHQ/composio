@@ -1,9 +1,13 @@
-import { describe, expect, it } from '@effect/vitest';
+import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { InternalServerError } from '@composio/client/effect';
+import {
+  ComposioToolkitsRepository,
+  type ToolkitProjectScope,
+} from 'src/services/composio-clients';
+import * as FileSystem from 'effect/FileSystem';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
   CACHE_FILES,
   ComposioToolkitsRepositoryCached,
@@ -12,10 +16,23 @@ import { toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import {
   countingToolkitsRepository,
+  makeToolkitsRepositoryStub,
+  type GetProjectToolkitsError,
   type GetToolkitsError,
 } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testToolkits: Toolkits = [makeToolkitFixture('github'), makeToolkitFixture('gmail')];
+
+const serviceUnavailable = (message: string) =>
+  new InternalServerError({
+    message,
+    method: 'GET',
+    url: 'https://backend.composio.dev/api/v3.1/toolkits',
+    status: 503,
+    requestId: undefined,
+    details: undefined,
+    body: undefined,
+  });
 
 /**
  * Cached repository over a counting stub, with the cache directory pointed at a
@@ -27,23 +44,36 @@ const withCountingRepository = <A>(
   getToolkits: () => Effect.Effect<Toolkits, GetToolkitsError>,
   program: (context: {
     readonly calls: () => number;
+    readonly projectCalls: () => number;
     readonly cacheDir: string;
-  }) => Effect.Effect<A, GetToolkitsError, ComposioToolkitsRepository | FileSystem.FileSystem>,
-  config: ReadonlyArray<readonly [string, string]> = []
+  }) => Effect.Effect<
+    A,
+    GetToolkitsError | GetProjectToolkitsError,
+    ComposioToolkitsRepository | FileSystem.FileSystem
+  >,
+  config: ReadonlyArray<readonly [string, string]> = [],
+  getProjectToolkits?: (
+    scope?: ToolkitProjectScope
+  ) => Effect.Effect<Toolkits, GetProjectToolkitsError>
 ) =>
   Effect.suspend(() => {
     const cacheDir = tempy.temporaryDirectory();
-    const repository = countingToolkitsRepository(getToolkits);
+    const repository = countingToolkitsRepository(getToolkits, getProjectToolkits);
 
-    return program({ calls: repository.calls, cacheDir }).pipe(
+    return program({
+      calls: repository.calls,
+      projectCalls: repository.projectCalls,
+      cacheDir,
+    }).pipe(
       Effect.provide(
         Layer.merge(
           Layer.provide(ComposioToolkitsRepositoryCached, repository.layer),
           BunFileSystem.layer
         )
       ),
-      Effect.withConfigProvider(
-        ConfigProvider.fromMap(new Map([['CACHE_DIR', cacheDir], ...config]))
+      Effect.provideService(
+        ConfigProvider.ConfigProvider,
+        ConfigProvider.fromEnvRecord(Object.fromEntries([['CACHE_DIR', cacheDir], ...config]))
       )
     );
   });
@@ -92,13 +122,13 @@ describe('ComposioToolkitsRepositoryCached', () => {
 
   it.effect('surfaces a failed fetch once, and does not retry it', () =>
     withCountingRepository(
-      () => Effect.fail(new HttpServerError({ cause: 'network down', status: 503 })),
+      () => Effect.fail(serviceUnavailable('network down')),
       ({ calls }) =>
         Effect.gen(function* () {
           const repository = yield* ComposioToolkitsRepository;
 
-          const first = yield* Effect.either(repository.getToolkits());
-          const second = yield* Effect.either(repository.getToolkits());
+          const first = yield* Effect.result(repository.getToolkits());
+          const second = yield* Effect.result(repository.getToolkits());
 
           expect(second).toEqual(first);
           // One attempt for both callers: the caching layer must not mistake
@@ -129,5 +159,163 @@ describe('ComposioToolkitsRepositoryCached', () => {
         }),
       [['FORCE_USE_CACHE', 'true']]
     )
+  );
+
+  it.effect('fetches project toolkits once, and never from the cached file', () =>
+    withCountingRepository(
+      () => Effect.die('the cached file should have answered this'),
+      ({ calls, projectCalls, cacheDir }) =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheFile = `${cacheDir}/${CACHE_FILES.toolkits}`;
+          const cached = yield* toolkitsToJSON(testToolkits).pipe(Effect.orDie);
+          yield* fs.writeFileString(cacheFile, cached).pipe(Effect.orDie);
+
+          const repository = yield* ComposioToolkitsRepository;
+          const toolkits = yield* repository.getToolkits();
+          const projectToolkits = yield* repository.getProjectToolkits();
+          yield* repository.getProjectToolkits();
+
+          expect(toolkits.map(t => t.slug)).toEqual(['github', 'gmail']);
+          expect(projectToolkits.map(t => t.slug)).toEqual(['custom_grain']);
+          expect(calls()).toBe(0);
+          expect(projectCalls()).toBe(1);
+          // `toolkits.json` holds the Composio-managed catalog only.
+          expect(yield* fs.readFileString(cacheFile).pipe(Effect.orDie)).toBe(cached);
+        }),
+      [['FORCE_USE_CACHE', 'true']],
+      () => Effect.succeed([makeToolkitFixture('custom_grain')])
+    )
+  );
+
+  it.effect('surfaces a failed project fetch once, and does not retry it', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scope = { orgId: 'org_a', projectId: 'pr_a' };
+
+          const first = yield* Effect.result(repository.getProjectToolkits(scope));
+          const second = yield* Effect.result(repository.getProjectToolkits(scope));
+
+          expect(second).toEqual(first);
+          expect(projectCalls()).toBe(1);
+        }),
+      [],
+      () => Effect.fail(serviceUnavailable('network down'))
+    )
+  );
+
+  it.effect('fetches project toolkits once per project scope', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scopeA = { orgId: 'org_a', projectId: 'pr_a' };
+          const scopeB = { orgId: 'org_a', projectId: 'pr_b' };
+
+          const results = yield* Effect.all([
+            repository.getProjectToolkits(scopeA),
+            repository.getProjectToolkits(scopeB),
+            repository.getProjectToolkits({ ...scopeA }),
+            repository.getProjectToolkits(scopeB),
+            repository.getProjectToolkits(),
+          ]);
+
+          expect(results.map(toolkits => toolkits.map(t => t.slug))).toEqual([
+            ['custom_pr_a'],
+            ['custom_pr_b'],
+            ['custom_pr_a'],
+            ['custom_pr_b'],
+            ['custom_unscoped'],
+          ]);
+          // Unscoped is a scope of its own: the project context decides it.
+          expect(projectCalls()).toBe(3);
+        }),
+      [],
+      scope => Effect.succeed([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
+    )
+  );
+
+  it.effect('shares one in-flight project fetch between concurrent first callers', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scope = { orgId: 'org_a', projectId: 'pr_a' };
+
+          const results = yield* Effect.all(
+            [
+              repository.getProjectToolkits(scope),
+              repository.getProjectToolkits({ ...scope }),
+              repository.getProjectToolkits(scope),
+            ],
+            { concurrency: 'unbounded' }
+          );
+
+          expect(results.map(toolkits => toolkits.map(t => t.slug))).toEqual([
+            ['custom_pr_a'],
+            ['custom_pr_a'],
+            ['custom_pr_a'],
+          ]);
+          expect(projectCalls()).toBe(1);
+        }),
+      [],
+      // The fetch yields before answering, so every caller is waiting on it.
+      scope =>
+        Effect.yieldNow.pipe(
+          Effect.as([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
+        )
+    )
+  );
+
+  it.effect('passes an uncached method straight through to the underlying repository', () =>
+    Effect.gen(function* () {
+      const searchTools = vi.fn(() =>
+        Effect.succeed({
+          items: [],
+          total_items: 0,
+          total_pages: 0,
+          current_page: 1,
+          next_cursor: null,
+        })
+      );
+      const underlying = makeToolkitsRepositoryStub({ searchTools });
+      const params = { search: 'gmail', limit: 3 };
+
+      const repository = yield* ComposioToolkitsRepository.pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioToolkitsRepositoryCached,
+            Layer.succeed(ComposioToolkitsRepository, underlying)
+          )
+        )
+      );
+      yield* repository.searchTools(params);
+
+      expect(searchTools).toHaveBeenCalledOnce();
+      expect(searchTools).toHaveBeenCalledWith(params);
+    })
+  );
+
+  it.effect('exposes an underlying method it does not know about', () =>
+    Effect.gen(function* () {
+      const addedLater = () => Effect.succeed('added later');
+      const underlying = Object.assign(makeToolkitsRepositoryStub({}), { addedLater });
+
+      const repository = yield* ComposioToolkitsRepository.pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioToolkitsRepositoryCached,
+            Layer.succeed(ComposioToolkitsRepository, underlying)
+          )
+        )
+      );
+
+      expect((repository as typeof underlying).addedLater).toBe(addedLater);
+    })
   );
 });

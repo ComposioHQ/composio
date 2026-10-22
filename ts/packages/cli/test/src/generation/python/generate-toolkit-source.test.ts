@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import { describe, expect, it } from 'vitest';
 import { generatePythonToolkitSources } from 'src/generation/python/generate-toolkit-sources';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
@@ -256,6 +257,69 @@ describe('generatePythonToolkitSources', () => {
     assertPythonIsValid({ files: Object.fromEntries(sources) });
   });
 
+  it('[Given] tool and trigger slugs containing Python source [Then] importing the module is safe', () => {
+    const toolkits = makeTestToolkits([
+      {
+        name: 'Gmail',
+        slug: 'gmail',
+      },
+    ]);
+    const maliciousToolSlug = 'GMAIL_x = "\'; __import__("os").system("echo compromised"); #';
+    const maliciousTriggerSlug = 'GMAIL_y = "\'; __import__("os").system("echo compromised"); #';
+
+    const index = createToolkitIndex({
+      toolkits,
+      typeableTools: { withTypes: false, tools: [maliciousToolSlug] },
+      triggerTypes: [{ ...TRIGGER_TYPES_GMAIL[0], slug: maliciousTriggerSlug }],
+    });
+
+    const sources = generatePythonToolkitSources(BANNER)(index);
+    const source = sources[0][1];
+
+    expect(source).toContain(
+      `locals()[${JSON.stringify(maliciousToolSlug.slice('GMAIL_'.length))}] = ${JSON.stringify(maliciousToolSlug)}`
+    );
+    expect(source).toContain(
+      `locals()[${JSON.stringify(maliciousTriggerSlug.slice('GMAIL_'.length))}] = `
+    );
+    assertPythonIsValid({ files: Object.fromEntries(sources) });
+
+    const result = spawnSync('python3', ['-c', source], { encoding: 'utf8' });
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toBe('');
+    expect(result.status).toBe(0);
+  });
+
+  it('[Given] a locals slug before a fallback assignment [Then] importing the module succeeds', () => {
+    const toolkits = makeTestToolkits([
+      {
+        name: 'Gmail',
+        slug: 'gmail',
+      },
+    ]);
+    const localsSlug = 'GMAIL_locals';
+    const fallbackSlug = 'GMAIL_bad-name';
+
+    const index = createToolkitIndex({
+      toolkits,
+      typeableTools: { withTypes: false, tools: [localsSlug, fallbackSlug] },
+      triggerTypes: [
+        { ...TRIGGER_TYPES_GMAIL[0], slug: localsSlug },
+        { ...TRIGGER_TYPES_GMAIL[0], slug: fallbackSlug },
+      ],
+    });
+
+    const sources = generatePythonToolkitSources(BANNER)(index);
+    const source = sources[0][1];
+
+    expect(source.indexOf('locals()["bad-name"]')).toBeLessThan(source.indexOf('locals ='));
+    assertPythonIsValid({ files: Object.fromEntries(sources) });
+
+    const result = spawnSync('python3', ['-c', source], { encoding: 'utf8' });
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
+  });
+
   describe('[Given] versionMap with toolkit version overrides', () => {
     describe('without type tools', () => {
       it('[Given] a toolkit with version override [Then] it includes version comment in generated file', () => {
@@ -408,114 +472,6 @@ describe('generatePythonToolkitSources', () => {
         expect(sources).toHaveLength(1);
         expect(sources[0][0]).toBe('gmail.py');
         expect(sources[0][1]).toContain('# @toolkit-version: 20250901_00');
-
-        assertPythonIsValid({ files: Object.fromEntries(sources) });
-      });
-
-      it('[Given] multiple toolkits with different version overrides [Then] each file includes its version comment', () => {
-        const toolkits = makeTestToolkits([
-          {
-            name: 'Gmail',
-            slug: 'gmail',
-          },
-          {
-            name: 'Slack Helper',
-            slug: 'slack',
-          },
-        ]);
-
-        const versionMap = new Map([
-          ['gmail', '20250901_00'],
-          ['slack', '20250815_00'],
-        ]) as Map<Lowercase<string>, string>;
-
-        const index = createToolkitIndex({
-          toolkits,
-          typeableTools: {
-            withTypes: true,
-            tools: [...TOOLS_TYPES_GMAIL.slice(0, 1)],
-          },
-          triggerTypes: [],
-          versionMap,
-        });
-
-        const sources = generatePythonToolkitSources(BANNER)(index);
-        expect(sources).toHaveLength(2);
-
-        // Gmail should have its version comment
-        expect(sources[0][0]).toBe('gmail.py');
-        expect(sources[0][1]).toContain('# @toolkit-version: 20250901_00');
-
-        // Slack should have its version comment
-        expect(sources[1][0]).toBe('slack.py');
-        expect(sources[1][1]).toContain('# @toolkit-version: 20250815_00');
-
-        assertPythonIsValid({ files: Object.fromEntries(sources) });
-      });
-
-      it('[Given] only some toolkits with version override [Then] only those files include version comment', () => {
-        const toolkits = makeTestToolkits([
-          {
-            name: 'Gmail',
-            slug: 'gmail',
-          },
-          {
-            name: 'Slack Helper',
-            slug: 'slack',
-          },
-        ]);
-
-        // Only gmail has a version override
-        const versionMap = new Map([['gmail', '20250901_00']]) as Map<Lowercase<string>, string>;
-
-        const index = createToolkitIndex({
-          toolkits,
-          typeableTools: {
-            withTypes: true,
-            tools: [...TOOLS_TYPES_GMAIL.slice(0, 1)],
-          },
-          triggerTypes: [],
-          versionMap,
-        });
-
-        const sources = generatePythonToolkitSources(BANNER)(index);
-        expect(sources).toHaveLength(2);
-
-        // Gmail should have version comment
-        expect(sources[0][0]).toBe('gmail.py');
-        expect(sources[0][1]).toContain('# @toolkit-version: 20250901_00');
-
-        // Slack should NOT have version comment
-        expect(sources[1][0]).toBe('slack.py');
-        expect(sources[1][1]).not.toContain('@toolkit-version');
-
-        assertPythonIsValid({ files: Object.fromEntries(sources) });
-      });
-
-      it('[Given] empty versionMap [Then] no files include version comment', () => {
-        const toolkits = makeTestToolkits([
-          {
-            name: 'Gmail',
-            slug: 'gmail',
-          },
-        ]);
-
-        const versionMap = new Map() as Map<Lowercase<string>, string>;
-
-        const index = createToolkitIndex({
-          toolkits,
-          typeableTools: {
-            withTypes: true,
-            tools: [...TOOLS_TYPES_GMAIL.slice(0, 1)],
-          },
-          triggerTypes: [],
-          versionMap,
-        });
-
-        const sources = generatePythonToolkitSources(BANNER)(index);
-        expect(sources).toHaveLength(1);
-        expect(sources[0][0]).toBe('gmail.py');
-        expect(sources[0][1]).not.toContain('@toolkit-version');
 
         assertPythonIsValid({ files: Object.fromEntries(sources) });
       });

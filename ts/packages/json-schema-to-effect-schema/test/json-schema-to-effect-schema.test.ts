@@ -51,9 +51,30 @@ describe('jsonSchemaToEffectSchema', () => {
     expectParity({ type: 'number', format: 'int64' }, 42, true);
     expectParity({ type: 'number', format: 'int64' }, 4.2, false);
     expectParity({ type: 'string', format: 'binary' }, 'aGVsbG8=', true);
-    expectParity({ type: 'string', format: 'binary' }, 'not base64', false);
+    expectParity({ type: 'string', format: 'binary' }, 'hello world', true);
+    expectParity({ type: 'string', format: 'byte' }, 'not base64', true);
+    expectParity({ type: 'string', contentEncoding: 'base16' }, '0f', true);
+    expectParity({ type: 'string', contentEncoding: 'base64' }, 'aGVsbG8gd29ybGQ=', true);
+    expectParity({ type: 'string', contentEncoding: 'base64' }, 'not base64', false);
+    expectParity({ type: 'string', contentEncoding: 'BASE64' }, 'not base64', false);
+    expectParity(
+      { type: 'string', format: 'binary', contentEncoding: 'base64' },
+      'not base64',
+      false
+    );
     expectParity({ type: 'string', format: 'ip' }, '127.0.0.1', true);
     expectParity({ type: 'string', format: 'ip' }, 'not-an-ip', false);
+  });
+
+  it('honors the boolean exclusive bound under an explicit Draft 4', () => {
+    const schema = { type: 'number', minimum: 1, exclusiveMinimum: true } satisfies JsonSchema;
+    const accepts = (input: unknown, draft?: '4'): boolean =>
+      Option.isSome(Schema.decodeUnknownOption(jsonSchemaToEffectSchema(schema, { draft }))(input));
+
+    expect(accepts(1, '4')).toBe(false);
+    expect(accepts(2, '4')).toBe(true);
+    expect(accepts(1)).toBe(false);
+    expect(accepts(2)).toBe(true);
   });
 
   it('supports JSON Schema composition without generated code', () => {

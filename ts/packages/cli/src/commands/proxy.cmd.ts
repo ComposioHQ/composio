@@ -1,10 +1,12 @@
-import { Args, Command, Options } from '@effect/cli';
-import { Data, Effect, Either, Option } from 'effect';
+import { requireLogin } from 'src/effects/require-auth';
+import { Argument, Command, Flag } from 'effect/cli';
+import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { requireAuth } from 'src/effects/require-auth';
+import { ExpectedFailure } from 'src/effects/expected-failure';
+import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
@@ -13,54 +15,52 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
-const endpoint = Args.text({ name: 'url' }).pipe(
-  Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
+const endpoint = Argument.String('url').pipe(
+  Argument.withDescription('Absolute or relative API endpoint to call through proxy execute.')
 );
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withAlias('t'),
-  Options.withDescription('Toolkit slug whose connected account should be used')
+const toolkit = Flag.String('toolkit').pipe(
+  Flag.withAlias('t'),
+  Flag.withDescription('Toolkit slug whose connected account should be used')
 );
 
-const account = Options.text('account').pipe(
-  Options.withDescription(
+const account = Flag.String('account').pipe(
+  Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the toolkit.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const method = Options.text('method').pipe(
-  Options.withAlias('X'),
-  Options.withDefault('GET'),
-  Options.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
+const method = Flag.String('method').pipe(
+  Flag.withAlias('X'),
+  Flag.withDefault('GET'),
+  Flag.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
 );
 
-const headers = Options.text('header').pipe(
-  Options.withAlias('H'),
-  Options.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
-  Options.repeated
+const headers = Flag.String('header').pipe(
+  Flag.withAlias('H'),
+  Flag.withDescription('Header in "Name: value" format. Repeat for multiple headers.'),
+  Flag.atLeast(0)
 );
 
-const data = Options.text('data').pipe(
-  Options.withAlias('d'),
-  Options.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
-  Options.optional
+const data = Flag.String('data').pipe(
+  Flag.withAlias('d'),
+  Flag.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
+  Flag.optional
 );
 
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Skip the short-lived connected-account fail-fast check if you just connected an account'
   )
 );
@@ -78,17 +78,32 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'PATCH',
 ];
 
+/**
+ * `composio proxy` has no consumer user to send the request as. An expected failure:
+ * `cli-main.ts` prints the message and exits 1.
+ */
 export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
-  readonly reason: 'missing_consumer_user' | 'toolkit_not_connected';
   readonly message: string;
-  readonly toolkit?: string;
-  readonly endpoint?: string;
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
+
+/**
+ * A proxy call refused before sending it because the toolkit is not connected, already reported
+ * on stderr and as `{ "successful": false, ... }` on stdout. `cli-main.ts` prints nothing more
+ * and exits 1.
+ */
+export class ReportedProxyCommandError extends Data.TaggedError(
+  'commands/ReportedProxyCommandError'
+)<{
+  readonly message: string;
+  readonly toolkit: string;
+  readonly endpoint: string;
 }> {}
 
-class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
@@ -116,10 +131,13 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
 const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
 export const parseProxyBody = (raw: string): unknown =>
-  Either.getOrElse(parseJsonRecord(raw), (): unknown => raw);
+  Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
-  result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>
+  result: Pick<
+    Extract<SessionProxyExecuteResponse, { result_type: 'completed' }>,
+    'status' | 'data' | 'headers' | 'binary_data'
+  >
 ) => {
   if (result.binary_data) {
     return JSON.stringify(
@@ -215,8 +233,8 @@ const runProxyConnectedToolkitFailFast = (params: {
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
     }).pipe(
-      Effect.catchAll(() => Effect.void),
-      Effect.forkDaemon,
+      Effect.catch(() => Effect.void),
+      Effect.forkDetach,
       Effect.asVoid
     );
 
@@ -247,8 +265,7 @@ const runProxyConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* new ProxyCommandError({
-        reason: 'toolkit_not_connected',
+      return yield* new ReportedProxyCommandError({
         message,
         toolkit: params.toolkit,
         endpoint: params.endpoint,
@@ -266,35 +283,30 @@ export const proxyCmd = Command.make('proxy', {
   skipConnectionCheck,
 }).pipe(
   Command.withDescription(
-    [
-      'curl-like access to any toolkit API through Composio using your connected account.',
-      'Composio handles authentication — just provide the full URL and toolkit.',
-      '',
-      'Examples:',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
-      `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
-      `    -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
-      '',
-      'See also:',
-      '  composio link <toolkit>                   Connect an account before calling proxy',
-      '  composio run \'const f = await proxy("gmail"); ...\'   Use proxy in a script',
-    ].join('\n')
+    'curl-like access to any toolkit API through Composio using your connected account.\nComposio handles authentication — just provide the full URL and toolkit.'
   ),
+  Command.withShortDescription(
+    'curl-like access to any toolkit API through Composio using your connected account.'
+  ),
+  Command.withExamples([
+    {
+      command:
+        'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
+    },
+    {
+      command:
+        'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\\n  -X POST -H \'content-type: application/json\' -d \'{"message":{"raw":"..."}}\'',
+    },
+  ]),
   Command.withHandler(options =>
     Effect.gen(function* () {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
         return yield* new ProxyCommandError({
-          reason: 'missing_consumer_user',
           message: 'No consumer project user is available for proxy execution in this context.',
         });
       }
@@ -351,32 +363,52 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          return yield* Effect.tryPromise({
-            try: () =>
-              client.toolRouter.session.proxyExecute(sessionId, {
+          const failed = (cause: unknown) =>
+            new ProxyRequestError({
+              message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+              cause,
+            });
+
+          return yield* client.toolRouter.session
+            .proxyExecute(
+              sessionId,
+              {
                 toolkit_slug: normalizedToolkit,
                 endpoint,
                 method: normalizedMethod,
                 ...(parsedBody !== undefined ? { body: parsedBody } : {}),
                 ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-              }),
-            catch: cause =>
-              new ProxyRequestError({
-                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
-                cause,
-              }),
-          }).pipe(
-            Effect.matchEffect({
-              onFailure: error =>
-                handleProxyExecutionError({
-                  ui,
-                  error,
-                  toolkit: normalizedToolkit,
-                  endpoint,
-                }),
-              onSuccess: Effect.succeed,
-            })
-          );
+              }
+              // A proxied call is not `idempotent`, so it is sent once: a retry
+              // after the upstream API already acted duplicates the side
+              // effect. The response is not validated either, for the same
+              // reason.
+            )
+            .pipe(
+              Effect.mapError(failed),
+              Effect.flatMap(response =>
+                response.result_type === 'input_required'
+                  ? Effect.fail(
+                      failed(
+                        toolInputRequiredError(
+                          `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                          response
+                        )
+                      )
+                    )
+                  : Effect.succeed(response)
+              ),
+              Effect.matchEffect({
+                onFailure: error =>
+                  handleProxyExecutionError({
+                    ui,
+                    error,
+                    toolkit: normalizedToolkit,
+                    endpoint,
+                  }),
+                onSuccess: Effect.succeed,
+              })
+            );
         })
       );
 
@@ -387,5 +419,6 @@ export const proxyCmd = Command.make('proxy', {
         yield* ui.output(output);
       }
     })
-  )
+  ),
+  requireLogin
 );

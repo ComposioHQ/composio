@@ -32,9 +32,6 @@ export function transformMcpCreateResponse(
   const result = CustomCreateResponseSchema.safeParse({
     id: response.id,
     name: response.name,
-    createdAt: (response as unknown as Record<string, unknown>).created_at,
-    updatedAt: (response as unknown as Record<string, unknown>).updated_at,
-    status: (response as unknown as Record<string, unknown>).status,
   });
 
   if (!result.success) {
@@ -55,7 +52,6 @@ export function transformMcpListResponse(response: McpListResponseRaw): McpListR
     name: item.name,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
-    status: (item as unknown as Record<string, unknown>).status,
   }));
 
   const result = McpListResponseSchema.safeParse({
@@ -82,7 +78,6 @@ export function transformMcpRetrieveResponse(
     name: response.name,
     createdAt: response.created_at,
     updatedAt: response.updated_at,
-    status: (response as unknown as Record<string, unknown>).status,
     toolkits: response.toolkits,
     tools: response.allowed_tools,
     managedAuthViaComposio: response.managed_auth_via_composio,
@@ -105,9 +100,8 @@ export function transformMcpRetrieveResponse(
  */
 export function transformMcpDeleteResponse(response: McpDeleteResponseRaw): McpDeleteResponse {
   const result = McpDeleteResponseSchema.safeParse({
-    id: (response as unknown as Record<string, unknown>).id,
-    deleted: (response as unknown as Record<string, unknown>).deleted,
-    message: (response as unknown as Record<string, unknown>).message,
+    id: response.id,
+    deleted: response.deleted,
   });
 
   if (!result.success) {
@@ -128,9 +122,8 @@ export function transformMcpUpdateResponse(response: McpUpdateResponseRaw): McpU
     name: response.name,
     createdAt: response.created_at,
     updatedAt: response.updated_at,
-    status: (response as unknown as Record<string, unknown>).status,
     toolkits: response.toolkits,
-    tools: (response as unknown as Record<string, unknown>).tools,
+    tools: response.allowed_tools,
   });
 
   if (!result.success) {

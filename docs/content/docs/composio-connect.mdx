@@ -1,7 +1,7 @@
 ---
 title: Composio Connect
 description: Connect Composio to an existing MCP client without using the SDK
-keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n]
+keywords: [composio connect, mcp, claude code, claude cowork, chatgpt, muse, openclaw, hermes, cursor, notion, codex, warp, grok, gemini cli, vscode, devin desktop, windsurf, antigravity, openai agent builder, n8n, atomic agent, atomic bot]
 ---
 
 Use Composio Connect when you already have an MCP-compatible client and want the shared Composio MCP URL, without creating an SDK session. Connect it to `https://connect.composio.dev/mcp`.
@@ -119,6 +119,37 @@ Open the [Composio plugin in the Cursor marketplace](https://cursor.com/marketpl
 
 </ConnectClientOption>
 
+<ConnectClientOption id="muse" name="Muse" description="Meta's personal agent" icon="/images/clients/muse.svg" category="popular">
+
+Muse builds the connector from a chat message, so there is no settings form. Use `https://connect.composio.dev/mcp` as the URL, not a `backend.composio.dev` URL.
+
+<Steps>
+<Step>
+<StepTitle>Ask Muse to connect to Composio</StepTitle>
+
+Start a new Muse chat and send this message:
+
+```
+Create a Custom Connector for the Composio remote MCP server and connect to it:
+- Name: Composio
+- Transport: remote streamable HTTP
+- URL: https://connect.composio.dev/mcp
+- Auth: API key sent in the x-consumer-api-key header
+Use exactly this URL. Don't look it up in the Composio docs or swap in another host such as backend.composio.dev.
+Open the secure credentials store so I can enter the API key there, not in this chat. Then list its tools to confirm the connection works.
+```
+
+</Step>
+<Step>
+<StepTitle>Add your API key in the secure credentials store</StepTitle>
+
+Copy your consumer API key from the AI Clients setup in the Composio dashboard. Don't paste it into the chat. Tap the button Muse shows to open **Add custom connector**, paste the key, then tap **Add**. Muse lists the Composio tools once it connects.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
 <ConnectClientOption id="openclaw" name="OpenClaw" description="Open-source personal AI assistant" icon="/images/clients/openclaw.svg" category="other">
 
 <Steps>
@@ -134,6 +165,29 @@ Install the Composio CLI: curl -fsSL https://composio.dev/install | sh, then run
 
 </ConnectClientOption>
 
+<ConnectClientOption id="atomic-agent" name="Atomic Agent" description="Local-first agent with a built-in Composio integration" icon="/images/clients/atomic-agent.svg" category="other">
+
+<Steps>
+<Step>
+<StepTitle>Add your Composio API key</StepTitle>
+
+Open the **Integrations** tab in the TUI and select **Composio**, or add the key to `~/.atomic-agent/.env`:
+
+```
+COMPOSIO_API_KEY=your-api-key
+```
+
+</Step>
+<Step>
+<StepTitle>Restart the agent</StepTitle>
+
+Composio tools are registered at startup and appear as `mcp.composio.*`. Ask the agent for something that lives in one of your apps and it will search for the right tool, then prompt you to authorize the app on first use.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
 <ConnectClientOption id="hermes" name="Hermes" description="Autonomous terminal agent" icon="/images/clients/hermes.png" category="other">
 
 <Steps>
@@ -143,6 +197,27 @@ Install the Composio CLI: curl -fsSL https://composio.dev/install | sh, then run
 ```
 Install the Composio CLI: curl -fsSL https://composio.dev/install | sh, then run composio login.
 ```
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="atomic-bot" name="Atomic Bot" description="Cloud instances for OpenClaw, Hermes and Codex" icon="/images/clients/atomic-bot.png" category="other">
+
+Atomic Bot holds the Composio connection for each agent it runs, so there is no MCP URL to paste here. You pick the apps in its own Connectors screen instead.
+
+<Steps>
+<Step>
+<StepTitle>Open Connectors for your agent</StepTitle>
+
+In [Atomic Bot](https://atomicbot.ai/cloud?utm_source=composio&utm_medium=docs&utm_campaign=composio_connect), open the agent you want to connect and go to **Connectors**. No instance yet? Pick an agent and it is running in about a minute.
+
+</Step>
+<Step>
+<StepTitle>Connect the apps it needs</StepTitle>
+
+Find the app and press **Connect**. Composio runs the authorization, and the connected account belongs to that agent. Its tools are available in the chat right away.
 
 </Step>
 </Steps>

@@ -1,0 +1,27 @@
+---
+title: 'Python SDK 0.25.0 and TypeScript SDK 0.22.0 align Instant Sessions'
+description: 'Use Instant account selection and charge details in both SDKs, with Session-aware provider helpers and connection fixes.'
+date: '2026-09-29'
+---
+
+Both SDKs now use the Instant Session and account contracts. Tool execution and usage responses expose exact Instant charges, and provider helpers can execute tools through a supplied Tool Router Session.
+
+### Release versions
+
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| Python `composio`           | `0.25.0` |
+| TypeScript `@composio/core` | `0.22.0` |
+| TypeScript `@composio/slim` | `0.22.0` |
+
+### Instant Sessions and charges
+
+- Configure Instant access with `instant` and request execution charge details with `instant.returnInstantCharge` in TypeScript or `instant.return_instant_charge` in Python. The former `premium_usage` and `return_premium_charge` names are replaced by the Instant contract.
+- Read `instantCharge` in TypeScript or `instant_charge` in Python from Session execution results. Project usage summaries expose the exact USD amount as a string; charged tool logs include `metadata.instant_charge`.
+- Select an Instant account with `instant_account` in the Session API contract. Session search results describe available Instant tools through `instantAccount` in TypeScript or `instant_account` in Python.
+
+### Provider helpers and fixes
+
+- Google, Cloudflare, and OpenAI Responses helpers in TypeScript, and the Google Gemini helper in Python, accept a Tool Router Session for execution. Existing user ID calls continue to use direct execution.
+- TypeScript `ConnectionRequest.status` now follows the result of `waitForConnection()`, and telemetry records calls to `waitForConnection()`.
+- The OpenAI provider no longer includes Assistants API helpers. Move Assistants integrations to the Responses API and `OpenAIResponsesProvider` from `@composio/openai`.

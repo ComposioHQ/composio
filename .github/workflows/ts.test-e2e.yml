@@ -2,7 +2,7 @@ name: E2E Test Typescript SDK
 
 on:
   push:
-    branches: [master, next]
+    branches: [master, next, main]
     paths:
       - 'ts/**'
       # A catalog pin or lockfile change swaps what every ts/** package
@@ -11,6 +11,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/build-e2e-image/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
       - 'mise.toml'
       - 'mise.lock'
@@ -24,6 +25,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/build-e2e-image/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
       - 'mise.toml'
       - 'mise.lock'
@@ -48,7 +50,7 @@ jobs:
     permissions: read-all
     outputs:
       node: ${{ steps.versions.outputs.node }}
-      deno: ${{ steps.versions.outputs.deno }}
+      node-digests: ${{ steps.versions.outputs.node-digests }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,7 +59,7 @@ jobs:
         id: versions
         run: |
           echo "node=$(jq -c '.node' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
-          echo "deno=$(jq -c '.deno' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
+          echo "node-digests=$(jq -c .nodeDigests toolchain-versions.json)" >> "$GITHUB_OUTPUT"
 
   # Node.js E2E tests, running in Docker to isolate environment
   # Each test suite defines its own versions.node in e2e.test.ts
@@ -132,101 +134,28 @@ jobs:
 
       - name: Pre-build Docker image for e2e tests
         if: steps.api-keys.outputs.available == 'true'
-        run: |
-          docker build -f ts/e2e-tests/_utils/Dockerfile.node \
-            --build-arg NODE_VERSION=${{ matrix.node-version }} \
-            --label composio.e2e=true \
-            --label composio.runtime=node \
-            --label "composio.node_version=${{ matrix.node-version }}" \
-            -t "composio-e2e-node:${{ matrix.node-version }}" \
-            .
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ts/e2e-tests/_utils/Dockerfile.node
+          tag: composio-e2e-node:${{ matrix.node-version }}
+          cache-scope: e2e-node-${{ matrix.node-version }}
+          cache-target: toolchain
+          build-args: |
+            NODE_VERSION=${{ matrix.node-version }}
+            NODE_VERSION_DIGEST=${{ fromJSON(needs.toolchain-versions.outputs.node-digests)[matrix.node-version] }}
+          labels: |
+            composio.e2e=true
+            composio.runtime=node
+            composio.node_version=${{ matrix.node-version }}
 
       - name: Run Node.js E2E Tests
         if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:node
 
-  # Deno E2E tests, running in Docker to isolate environment
-  # Each test suite defines its own versions.deno in e2e.test.ts
-  # Tests that don't support the matrix version are automatically skipped
-  test-e2e-deno-docker:
-    name: E2E Test Deno ${{ matrix.deno-version }}
-    needs: toolchain-versions
-    runs-on: ubuntu-24.04
-    permissions: read-all
-    strategy:
-      fail-fast: false
-      matrix:
-        deno-version: ${{ fromJSON(needs.toolchain-versions.outputs.deno) }}
-    env:
-      CI: 1
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
-      COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Normalize Composio API keys
-        run: |
-          {
-            echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}"
-            echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}"
-            echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}"
-          } >> "$GITHUB_ENV"
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
-        with:
-          deno-version: ${{ matrix.deno-version }}
-
-      - name: Setup Node.js, pnpm, Bun
-        id: setup-toolchain
-        uses: ./.github/actions/setup-node-pnpm-bun
-        with:
-          enable-turbo-cache: 'true'
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm run build:packages
-
-      - name: Check API keys
-        id: api-keys
-        env:
-          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
-        run: |
-          missing=()
-          for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
-            if [ -z "${!name}" ]; then
-              missing+=("$name")
-            fi
-          done
-
-          if [ "${#missing[@]}" -gt 0 ]; then
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
-              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
-              exit 0
-            fi
-
-            printf '::error::%s is not set\n' "${missing[@]}"
-            exit 1
-          fi
-
-          echo "available=true" >> "$GITHUB_OUTPUT"
-          echo "✅ API keys are configured"
-
-      - name: Run Deno E2E Tests
-        if: steps.api-keys.outputs.available == 'true'
-        run: pnpm run test:e2e:deno
-
   # CLI E2E tests, running in scratch Docker to isolate environment
   test-e2e-cli-docker:
     name: E2E Test CLI (scratch)
+    needs: toolchain-versions
     runs-on: ubuntu-24.04
     permissions: read-all
     env:
@@ -286,18 +215,31 @@ jobs:
           echo "available=true" >> "$GITHUB_OUTPUT"
           echo "✅ API keys are configured"
 
-      - name: Pre-build Docker image for CLI e2e tests
+      - name: Read CLI version
+        id: cli-version
         run: |
           CLI_VERSION=$(node -p "require('./ts/packages/cli/package.json').version")
           echo "COMPOSIO_E2E_CLI_VERSION=${CLI_VERSION}" >> "$GITHUB_ENV"
-          docker build -f ts/e2e-tests/_utils/Dockerfile.cli \
-            --build-arg CLI_VERSION="${CLI_VERSION}" \
-            --build-arg NODE_VERSION="${{ steps.setup-toolchain.outputs.node-version }}" \
-            --label composio.e2e=true \
-            --label composio.runtime=cli \
-            --label "composio.cli_version=${CLI_VERSION}" \
-            -t "composio-e2e-cli:${CLI_VERSION}" \
-            .
+          echo "value=${CLI_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Pre-build Docker image for CLI e2e tests
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ts/e2e-tests/_utils/Dockerfile.cli
+          tag: composio-e2e-cli:${{ steps.cli-version.outputs.value }}
+          cache-scope: e2e-cli
+          cache-target: toolchain
+          # The CLI node version comes from mise.lock and must stay present in
+          # both `node` and `nodeDigests` of toolchain-versions.json, or the
+          # digest lookup yields an empty pin.
+          build-args: |
+            CLI_VERSION=${{ steps.cli-version.outputs.value }}
+            NODE_VERSION=${{ steps.setup-toolchain.outputs.node-version }}
+            NODE_VERSION_DIGEST=${{ fromJSON(needs.toolchain-versions.outputs.node-digests)[steps.setup-toolchain.outputs.node-version] }}
+          labels: |
+            composio.e2e=true
+            composio.runtime=cli
+            composio.cli_version=${{ steps.cli-version.outputs.value }}
 
       - name: Run CLI E2E Tests
         if: steps.api-keys.outputs.available == 'true'

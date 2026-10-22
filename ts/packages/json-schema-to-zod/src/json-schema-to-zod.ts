@@ -1,19 +1,15 @@
-import type { z, ZodTypeAny } from 'zod/v3';
+import type { ZodType, ZodTypeAny } from 'zod/v3';
 
-import { parseSchema } from './parsers/parse-schema';
-import { parseObjectShape } from './parsers/parse-object-shape';
-import type { JsonSchemaToZodOptions, JsonSchema, JsonSchemaObject } from './types';
+import { zodV3Backend } from './backend/zod-v3';
+import { createConverter } from './convert';
+import type { JsonSchemaToZodOptions, JsonSchema } from './types';
+
+const converter = createConverter(zodV3Backend);
 
 export const jsonSchemaToZod = (
   schema: JsonSchema,
   options: JsonSchemaToZodOptions = {}
-): z.ZodType => {
-  return parseSchema(schema, {
-    path: [],
-    seen: new Map(),
-    ...options,
-  });
-};
+): ZodType => converter.jsonSchemaToZod(schema, options);
 
 /**
  * A simplified type for Zod raw shapes that avoids deep type instantiation issues.
@@ -36,16 +32,4 @@ export type SimpleZodRawShape = Record<string, ZodTypeAny>;
 export const jsonSchemaToZodShape = (
   schema: JsonSchema,
   options: JsonSchemaToZodOptions = {}
-): SimpleZodRawShape => {
-  if (typeof schema !== 'object' || schema === null) {
-    return {};
-  }
-
-  const objectSchema = schema as JsonSchemaObject;
-
-  return parseObjectShape(objectSchema, {
-    path: [],
-    seen: new Map(),
-    ...options,
-  });
-};
+): SimpleZodRawShape => converter.jsonSchemaToZodShape(schema, options);

@@ -1,5 +1,37 @@
 # @composio/experimental
 
+## 0.2.8
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+
+## 0.2.7
+
+### Patch Changes
+
+- 1afd8be: Stop re-sending a workbench tool execution after a network failure. The Python `run_composio_tool` helper retried a timed-out or dropped request up to three more times, so a tool the backend had already run could repeat its side effect, such as sending the same email twice. It now returns the error after the first attempt; rate-limited (429) requests still retry.
+- 31e8b3f: Report a failed tool execution and a call that needs user input as errors from the Python workbench helpers. `run_composio_tool` returned an empty error, which reads as success, for a `failed` execution without error text and for an `input_required` answer, and `proxy_execute` returned `(None, "")` for a proxied call that needs user input. Both now return a non-empty error. For `input_required` the error says that the call needs user input and was not executed, and `run_composio_tool` returns the questions as `input_requests` without the opaque `request_state`.
+
+## 0.2.6
+
+### Patch Changes
+
+- 485c09d: Refresh runtime dependencies and support Anthropic SDK 0.127 in the Anthropic provider.
+
+## 0.2.5
+
+### Patch Changes
+
+- 7055914: Move published dependency ranges to their current upstream releases: zod 4.5, openai 7.10, typebox 1.3.27, @mastra/schema-compat 1.3.8, and @cloudflare/workers-types 5.20260905. `@composio/anthropic` also accepts `@anthropic-ai/sdk` 0.124 as a peer, the line it is now tested against.
+- 100d568: Stamp eve's durable callback descriptors on the tools `EveProvider` wraps. eve only stamps descriptors on `defineTool` calls it finds in an agent's own source, so tools built inside `node_modules` were rejected at resolve time and every Composio tool was dropped from the step. Each wrapped tool now persists only its slug and an id for the resolve that produced it, and re-attaches to that resolve's Composio executor when eve replays or resumes a parked call.
+
+## 0.2.4
+
+### Patch Changes
+
+- 4e633d1: Update TypeBox to 1.3.18.
+
 ## 0.2.3
 
 ### Patch Changes

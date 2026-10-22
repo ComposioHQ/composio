@@ -356,6 +356,10 @@ export type CreateConnectedAccountLinkResponse = z.infer<
 
 export const ConnectedAccountRefreshOptionsSchema = z.object({
   redirectUrl: z.string().optional(),
+  /**
+   * @deprecated The Composio API no longer accepts this field. It is ignored
+   *   and `refresh()` logs a warning when it is set.
+   */
   validateCredentials: z.boolean().optional(),
 });
 export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;
@@ -393,3 +397,53 @@ export const UpdateConnectedAccountAclParamsSchema = ConnectedAccountAclConfigSc
   }
 );
 export type UpdateConnectedAccountAclParams = z.infer<typeof UpdateConnectedAccountAclParamsSchema>;
+
+/**
+ * Response of `composio.connectedAccounts.revoke()`.
+ */
+export const ConnectedAccountRevokedTokenSchema = z.enum([
+  'access_token',
+  'refresh_token',
+  'credential',
+]);
+export type ConnectedAccountRevokedToken = z.infer<typeof ConnectedAccountRevokedTokenSchema>;
+
+export const ConnectedAccountRevokeResponseSchema = z.object({
+  /**
+   * Tokens revoked at the provider on this call. An empty array means the
+   * connection was already revoked (no upstream dispatch).
+   */
+  revokedTokens: z.array(ConnectedAccountRevokedTokenSchema),
+  connectedAccount: z.object({
+    id: z.string(),
+    /** The connection status after this call (`REVOKED` on success). */
+    status: ConnectedAccountStatusSchema,
+  }),
+});
+export type ConnectedAccountRevokeResponse = z.infer<typeof ConnectedAccountRevokeResponseSchema>;
+
+/**
+ * Params for `composio.connectedAccounts.completeAuth()`.
+ */
+export const ConnectedAccountCompleteAuthParamsSchema = z.object({
+  /** The user the connection was initiated for. Must match the connection owner. */
+  userId: z.string().min(1),
+  /** The opaque, single-use session URI your OAuth callback verifier received. */
+  sessionUri: z.string().min(1),
+});
+export type ConnectedAccountCompleteAuthParams = z.infer<
+  typeof ConnectedAccountCompleteAuthParamsSchema
+>;
+
+/**
+ * Response of `composio.connectedAccounts.completeAuth()`.
+ */
+export const ConnectedAccountCompleteAuthResponseSchema = z.object({
+  /** The connection that was completed; it is now `ACTIVE`. */
+  connectedAccountId: z.string(),
+  /** The toolkit the connection belongs to. */
+  toolkitSlug: z.string(),
+});
+export type ConnectedAccountCompleteAuthResponse = z.infer<
+  typeof ConnectedAccountCompleteAuthResponseSchema
+>;

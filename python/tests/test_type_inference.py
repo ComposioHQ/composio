@@ -29,9 +29,8 @@ from composio.core.provider._openai_responses import (
 )
 
 if TYPE_CHECKING:
-    from typing_extensions import assert_type
-
     from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
+    from typing_extensions import assert_type
 
 
 def test_openai_provider_explicit() -> None:
@@ -114,3 +113,41 @@ def test_openai_responses_provider_explicit() -> None:
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
         assert_type(tools, list[dict[str, Any]])
+
+
+def test_auth_config_response_types() -> None:
+    """SDK mutation results retain the generated client's Pydantic types."""
+    if TYPE_CHECKING:
+        from composio_client.types.auth_config_delete_response import (
+            AuthConfigDeleteResponse,
+        )
+        from composio_client.types.auth_config_update_response import (
+            AuthConfigUpdateResponse,
+        )
+        from composio_client.types.auth_config_update_status_response import (
+            AuthConfigUpdateStatusResponse,
+        )
+
+        composio = Composio()
+        custom = composio.auth_configs.update(
+            "ac_test",
+            options={"type": "custom", "credentials": {"scopes": "read:user"}},
+        )
+        default = composio.auth_configs.update(
+            "ac_test", options={"type": "default", "is_enabled_for_tool_router": True}
+        )
+        deleted = composio.auth_configs.delete("ac_test")
+        enabled = composio.auth_configs.enable("ac_test")
+        disabled = composio.auth_configs.disable("ac_test")
+
+        assert_type(custom, AuthConfigUpdateResponse)
+        assert_type(default, AuthConfigUpdateResponse)
+        assert_type(deleted, AuthConfigDeleteResponse)
+        assert_type(enabled, AuthConfigUpdateStatusResponse)
+        assert_type(disabled, AuthConfigUpdateStatusResponse)
+        assert_type(custom.success, bool)
+        assert_type(default.message, str)
+        assert_type(deleted.revoke_job_id, str | None)
+        assert_type(enabled.success, bool)
+        assert_type(disabled.message, str)
+        assert_type(custom.model_dump(), dict[str, Any])

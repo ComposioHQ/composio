@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { BunPath } from '@effect/platform-bun';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';

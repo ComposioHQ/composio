@@ -1,6 +1,8 @@
 name: Docs - Update Support Knowledge
 
 on:
+  # Dispatch is the primary path; this six-hour run reconciles missed events and
+  # repairs semantic artifacts made stale by docs-side content changes.
   schedule:
     - cron: '17 */6 * * *'
   repository_dispatch:
@@ -9,6 +11,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: docs-support-knowledge-refresh
+  cancel-in-progress: true
 
 jobs:
   refresh:
@@ -49,31 +55,19 @@ jobs:
         with:
           repository: ComposioHQ/support-knowledge
           token: ${{ steps.upstream-token.outputs.token }}
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source_commit || 'main' }}
           path: .support-knowledge
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Resolve upstream change
         id: source
         env:
           SOURCE_ROOT: ${{ github.workspace }}/.support-knowledge
           HAVE_UPSTREAM: ${{ steps.upstream-token.outcome == 'success' }}
-        run: |
-          current_commit=$(jq -r '.source.commit' kb/manifest.json)
-          echo "commit=$current_commit" >> "$GITHUB_OUTPUT"
-          if [ "$HAVE_UPSTREAM" != "true" ]; then
-            echo "upstream_changed=false" >> "$GITHUB_OUTPUT"
-            echo "No upstream token; skipping support-knowledge sync check and treating upstream as unchanged."
-            exit 0
-          fi
-          source_commit=$(git -C "$SOURCE_ROOT" rev-parse HEAD)
-          echo "commit=$source_commit" >> "$GITHUB_OUTPUT"
-          if [ "$source_commit" = "$current_commit" ]; then
-            echo "upstream_changed=false" >> "$GITHUB_OUTPUT"
-            echo "Support knowledge is already current at $source_commit."
-          else
-            echo "upstream_changed=true" >> "$GITHUB_OUTPUT"
-            echo "Refreshing support knowledge from $current_commit to $source_commit."
-          fi
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_SOURCE_COMMIT: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source_commit || '' }}
+        run: bash scripts/resolve-kb-refresh-source.sh
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun

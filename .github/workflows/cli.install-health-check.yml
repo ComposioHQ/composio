@@ -90,7 +90,9 @@ jobs:
             "$HOME/.composio/run-subagent-shared.mjs" \
             "$HOME/.composio/run-subagent-acp.mjs" \
             "$HOME/.composio/run-subagent-legacy.mjs" \
-            "$HOME/.composio/run-subagent-output-mcp.mjs"
+            "$HOME/.composio/run-subagent-output-mcp.mjs" \
+            "$HOME/.composio/generation-runtime.mjs" \
+            "$HOME/.composio/execute-output-encoder-runtime.mjs"
           rm -rf \
             "$HOME/.composio/services" \
             "$HOME/.composio/acp-adapters" \

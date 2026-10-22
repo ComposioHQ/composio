@@ -10,7 +10,7 @@
 import { readFileSync } from 'fs';
 import { mkdir, writeFile, rm, readdir, readFile } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 // Paths (relative to ts/packages/core)
@@ -19,6 +19,11 @@ const PACKAGE_DIR = join(SCRIPT_DIR, '..');
 const MODELS_DIR = join(PACKAGE_DIR, 'src/models');
 const OUTPUT_DIR = join(PACKAGE_DIR, '../../../docs/content/reference/sdk-reference/typescript');
 const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
+const TYPEDOC_BIN = join(
+  dirname(fileURLToPath(import.meta.resolve('typedoc/package.json'))),
+  'bin',
+  'typedoc'
+);
 
 // Internal classes that should NOT be documented (accessed via other APIs)
 const INTERNAL_CLASSES = new Set([
@@ -55,12 +60,73 @@ function slugFor(className: string): string {
   return SLUG_OVERRIDES[className] ?? toKebabCase(className);
 }
 
+// Model file names become typedoc arguments. They are never interpolated into a
+// shell, but a name outside this charset is still not a model and is skipped
+// rather than passed through.
+const MODEL_FILE_NAME = /^[A-Za-z0-9_.-]+\.ts$/;
+
 // Discover model files automatically
-async function discoverModelFiles(): Promise<string[]> {
-  const files = await readdir(MODELS_DIR);
+export async function discoverModelFiles(modelsDir: string = MODELS_DIR): Promise<string[]> {
+  const files = await readdir(modelsDir);
   return files
     .filter(f => f.endsWith('.ts') && !f.includes('.test.') && !f.includes('.spec.'))
+    .filter(f => {
+      if (MODEL_FILE_NAME.test(f)) {
+        return true;
+      }
+      console.warn(`  Skipping model file with an unexpected name: ${JSON.stringify(f)}`);
+      return false;
+    })
     .map(f => `src/models/${f}`);
+}
+
+// TypeDoc arguments, one array element per argument so the entry points are
+// never joined into a shell command line.
+function buildTypeDocArgs(
+  entryPoints: readonly string[],
+  outputJson: string = TEMP_JSON,
+  packageDir: string = PACKAGE_DIR
+): string[] {
+  return [
+    '--json',
+    outputJson,
+    '--tsconfig',
+    'tsconfig.json',
+    // Without this, TypeDoc reports source paths relative to the common
+    // directory of every file it visited, which moves whenever a model pulls in
+    // a file outside `src/`. Pinning it keeps `sources[].fileName` resolvable.
+    '--displayBasePath',
+    packageDir,
+    '--excludePrivate',
+    '--excludeProtected',
+    '--excludeInternal',
+    '--skipErrorChecking', // Skip TS errors, we just want the documentation
+    ...entryPoints,
+  ];
+}
+
+interface TypeDocCommandOptions {
+  outputJson?: string;
+  packageDir?: string;
+  typedocBin?: string;
+}
+
+export function runTypeDocCommand(
+  entryPoints: readonly string[],
+  {
+    outputJson = TEMP_JSON,
+    packageDir = PACKAGE_DIR,
+    typedocBin = TYPEDOC_BIN,
+  }: TypeDocCommandOptions = {}
+): void {
+  execFileSync(
+    process.execPath,
+    [typedocBin, ...buildTypeDocArgs(entryPoints, outputJson, packageDir)],
+    {
+      stdio: 'pipe',
+      cwd: packageDir,
+    }
+  );
 }
 
 // Discover classes to document from TypeDoc output
@@ -177,6 +243,12 @@ interface TypeDocParameter {
   defaultValue?: string;
 }
 
+export function isParameterRequired(
+  param: Pick<TypeDocParameter, 'flags' | 'defaultValue'>
+): boolean {
+  return !param.flags?.isOptional && param.defaultValue === undefined;
+}
+
 interface TypeDocType {
   type: string;
   name?: string;
@@ -288,18 +360,18 @@ function extractTag(comment: TypeDocReflection['comment'] | undefined, tagName: 
   return comment.blockTags.filter(t => t.tag === tagName).map(t => extractText(t.content));
 }
 
-function getSourceFileText(fileName: string): string | undefined {
-  const filePath = join(PACKAGE_DIR, 'src', fileName);
+// TypeDoc source paths are relative to `--displayBasePath`, which is the package
+// directory. A path that does not resolve means the two have drifted apart, and
+// every signature would silently fall back to TypeDoc's expanded types, so the
+// read is left to throw.
+export function getSourceFileText(fileName: string, packageDir: string = PACKAGE_DIR): string {
+  const filePath = resolve(packageDir, fileName);
   const cached = sourceFileCache.get(filePath);
   if (cached !== undefined) return cached;
 
-  try {
-    const text = readFileSync(filePath, 'utf-8');
-    sourceFileCache.set(filePath, text);
-    return text;
-  } catch {
-    return undefined;
-  }
+  const text = readFileSync(filePath, 'utf-8');
+  sourceFileCache.set(filePath, text);
+  return text;
 }
 
 function getLineOffset(text: string, line: number): number {
@@ -603,8 +675,6 @@ function getSourceSignatureTypes(signature: TypeDocSignature): SourceSignatureTy
   if (!source) return undefined;
 
   const text = getSourceFileText(source.fileName);
-  if (!text) return undefined;
-
   return parseSourceSignatureTypesAtLine(text, source.line);
 }
 
@@ -694,7 +764,7 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
       // Clean up ugly TypeScript internal names
       name: param.name.startsWith('__') ? 'options' : param.name,
       type: sourceTypes?.parameters.get(param.name) ?? formatType(param.type),
-      required: !param.flags?.isOptional,
+      required: isParameterRequired(param),
       description: extractDescription(param.comment),
       default: param.defaultValue,
     }));
@@ -841,7 +911,7 @@ function generateMethodMdx(method: MethodDoc): string {
         lines.push('|------|------|-------------|');
         for (const param of sig.parameters) {
           const opt = param.required ? '' : '?';
-          const desc = escapeTextForMdx(param.description || '');
+          const desc = escapeTableTextForMdx(param.description || '');
           const typeCell = escapeTypeForMdx(simplifyTypeForTable(param.type));
           lines.push(`| \`${param.name}${opt}\` | \`${typeCell}\` | ${desc} |`);
         }
@@ -903,7 +973,7 @@ function generateMethodMdx(method: MethodDoc): string {
   return lines.join('\n');
 }
 
-function generateClassMdx(classDoc: ClassDoc): string {
+export function generateClassMdx(classDoc: ClassDoc): string {
   const lines: string[] = [];
 
   // Build full description for frontmatter (first sentence + additional context)
@@ -950,7 +1020,8 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('');
     lines.push('```typescript');
     lines.push(`const composio = new Composio({ apiKey: 'your-api-key' });`);
-    lines.push(`const result = await composio.${accessorName}.list();`);
+    const usageCall = classDoc.name === 'Toolkits' ? 'get({})' : 'list()';
+    lines.push(`const result = await composio.${accessorName}.${usageCall};`);
     lines.push('```');
     lines.push('');
   }
@@ -969,7 +1040,7 @@ function generateClassMdx(classDoc: ClassDoc): string {
       lines.push('|------|------|-------------|');
       for (const prop of publicProps) {
         const typeCell = escapeTypeForMdx(simplifyTypeForTable(prop.type));
-        const safeDesc = escapeTextForMdx(prop.description || '');
+        const safeDesc = escapeTableTextForMdx(prop.description || '');
         lines.push(`| \`${prop.name}\` | \`${typeCell}\` | ${safeDesc} |`);
       }
     } else {
@@ -1014,6 +1085,10 @@ export function escapeTextForMdx(str: string): string {
     .replace(/>/g, '&gt;');
 }
 
+export function escapeTableTextForMdx(str: string): string {
+  return escapeTextForMdx(str).replace(/\s*\n\s*/g, ' ');
+}
+
 // Clean up internal generic type parameters that don't add value for users
 function cleanupGenericTypes(type: string): string {
   // Remove generic parameters that are just implementation details
@@ -1051,6 +1126,24 @@ function isInlineObjectType(type: string): boolean {
   return type.startsWith('{') || type.includes(': {');
 }
 
+// Shorten a type to at most `maxLength` characters. A union is cut between
+// members, or elided entirely when not even its first member fits, so it never
+// ends inside a string literal.
+function truncateType(type: string, maxLength: number): string {
+  const members = splitTopLevel(type, '|');
+  if (members.length > 1) {
+    const suffix = ' | ...';
+    let kept = members[0];
+    for (const member of members.slice(1)) {
+      const next = `${kept} | ${member}`;
+      if (next.length + suffix.length > maxLength) break;
+      kept = next;
+    }
+    return kept.length + suffix.length <= maxLength ? kept + suffix : '...';
+  }
+  return type.substring(0, maxLength - 3) + '...';
+}
+
 // Simplify complex types for table display while preserving public object shapes.
 export function simplifyTypeForTable(type: string): string {
   // First clean up internal generics
@@ -1077,7 +1170,7 @@ export function simplifyTypeForTable(type: string): string {
 
     // Truncate very long types
     if (cleaned.length > 80) {
-      return cleaned.substring(0, 77) + '...';
+      return truncateType(cleaned, 80);
     }
   }
   return cleaned;
@@ -1117,7 +1210,7 @@ export function simplifyTypeForSignature(type: string): string {
 
   // Truncate very long types
   if (cleaned.length > 100) {
-    return cleaned.substring(0, 97) + '...';
+    return truncateType(cleaned, 100);
   }
 
   return cleaned;
@@ -1132,21 +1225,8 @@ async function runTypeDoc(): Promise<TypeDocProject> {
 
   console.log(`  Found ${entryPoints.length} entry points`);
 
-  const cmd = [
-    'npx typedoc',
-    '--json',
-    TEMP_JSON,
-    '--tsconfig',
-    'tsconfig.json',
-    '--excludePrivate',
-    '--excludeProtected',
-    '--excludeInternal',
-    '--skipErrorChecking', // Skip TS errors, we just want the documentation
-    ...entryPoints,
-  ].join(' ');
-
   try {
-    execSync(cmd, { stdio: 'pipe', cwd: PACKAGE_DIR });
+    runTypeDocCommand(entryPoints);
   } catch (error) {
     console.error('TypeDoc failed:', error);
     throw error;
@@ -1211,7 +1291,7 @@ async function main() {
   const classesTable = documented
     .map(
       ({ name, description }) =>
-        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTextForMdx(description)} |`
+        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTableTextForMdx(description)} |`
     )
     .join('\n');
 

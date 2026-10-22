@@ -20,6 +20,16 @@ updates:
     # lanes. Upgrade them manually with parallel old/new coverage. Dependabot
     # security updates are not affected by update-type ignores.
     ignore:
+      # Mastra >=1.54 pulls Node-only sandbox dependencies into Workers bundles.
+      # Upgrade this boundary manually alongside the cf:dry-run compatibility check.
+      - dependency-name: "@mastra/core"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # MCP 2.x requires Mastra core >=1.75, beyond the Workers-compatible pin.
+      - dependency-name: "@mastra/mcp"
+        update-types: ["version-update:semver-major"]
+      # The Mastra example remains on AI SDK 6 and its OpenAI provider 3.x.
+      - dependency-name: "@ai-sdk/openai"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "ai"
         update-types: ["version-update:semver-major"]
       - dependency-name: "openai"
@@ -47,11 +57,22 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
 
-  # Python SDK and provider packages
+  # Python SDK and provider packages.
+  #
+  # The uv workspace root is "/": that is where pyproject.toml declares
+  # [tool.uv.workspace] and where uv.lock lives, so Dependabot must run there
+  # to update the lockfile. Pointing it at "/python" only rewrote
+  # python/pyproject.toml and left uv.lock behind (see the langchain-openai
+  # security bump in ec24c54ff), and alerts against the lockfile never
+  # auto-resolved. The explicit provider directories are the projects that are
+  # not workspace members and resolve on their own.
   - package-ecosystem: "pip"
     directories:
-      - "/python"
-      - "/python/providers/*"
+      - "/"
+      - "/python/providers/autogen"
+      - "/python/providers/claude_agent_sdk"
+      - "/python/providers/langgraph"
+      - "/python/providers/llamaindex"
     schedule:
       interval: "weekly"
       day: "friday"

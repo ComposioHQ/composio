@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
+from composio_client import ProjectAuth
 
 from composio.core.models.tool_router_session_files import (
     RemoteFile,
@@ -44,7 +45,7 @@ def mock_stream_response(
 def mock_client():
     """Create a mock HTTP client with files API."""
     client = MagicMock()
-    client.api_key = "test-api-key"
+    client.sdk_auth = ProjectAuth("test-api-key")
 
     # Mock files.list
     mock_list_response = MagicMock()
@@ -283,11 +284,20 @@ class TestRemoteFile:
         assert Path(out_path).read_bytes() == b"saved content"
         assert out_path.endswith("output.txt")
 
-    def test_save_default_location(self, tmp_path):
+    @pytest.mark.parametrize(
+        ("mount_relative_path", "expected_name"),
+        [
+            ("report.pdf", "report.pdf"),
+            ("C:report.txt", "report.txt"),
+            ("\ufeffreport.txt", "\ufeffreport.txt"),
+            ("\u0085report.txt\u0085", "report.txt"),
+        ],
+    )
+    def test_save_default_location(self, tmp_path, mount_relative_path, expected_name):
         """Test save() without path uses default directory."""
         rf = RemoteFile(
             expires_at="2026-01-01",
-            mount_relative_path="report.pdf",
+            mount_relative_path=mount_relative_path,
             sandbox_mount_prefix="/mnt/files",
             download_url="https://example.com/file",
         )
@@ -295,7 +305,7 @@ class TestRemoteFile:
             with patch("pathlib.Path.home", return_value=tmp_path):
                 out_path = rf.save()
 
-        expected = tmp_path / ".composio" / "files" / "report.pdf"
+        expected = tmp_path / ".composio" / "files" / expected_name
         assert Path(out_path) == expected
         assert expected.read_bytes() == b"pdf content"
 
@@ -318,6 +328,102 @@ class TestRemoteFile:
 
         # The check raises before mkdir/write, so nothing was written under tmp_path.
         assert not (tmp_path / ".composio").exists()
+
+    @pytest.mark.parametrize(
+        "mount_relative_path", ["", ".", "\u00a0.\u00a0", "\u2007..\u2007"]
+    )
+    def test_save_default_location_rejects_unusable_basename(
+        self, tmp_path, mount_relative_path
+    ):
+        """A mount path that strips down to ``.`` or ``..`` would make the
+        save path equal the download directory or its parent; each must be a
+        ``ValidationError`` raised before anything touches the disk, not an
+        ``IsADirectoryError`` from ``write_bytes``."""
+        rf = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path=mount_relative_path,
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+
+        with patch.object(rf, "buffer", return_value=b"should not be written"):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                with pytest.raises(ValidationError, match="Path traversal detected"):
+                    rf.save()
+
+        assert not (tmp_path / ".composio").exists()
+
+    @pytest.mark.parametrize(
+        ("mount_relative_path", "expected"),
+        [
+            ("report.\u00a0", "report-11aada8ba3168adf"),
+            (
+                "out/report_2026-09-29T10:30:00.csv",
+                "report_2026-09-29T10_30_00-d7211bb25cb815fe.csv",
+            ),
+            ("What is this?.png", "What is this_-9c68adf2da8b6e8d.png"),
+        ],
+    )
+    def test_save_makes_unportable_names_portable(
+        self, tmp_path, mount_relative_path, expected
+    ):
+        rf = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path=mount_relative_path,
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+        with patch.object(rf, "buffer", return_value=b"content"):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                saved = Path(rf.save())
+        assert saved.name == expected
+        assert saved.read_bytes() == b"content"
+
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ["report?.png", "report_-05fcb95aa5b918e9.png"],
+            ["report_-05fcb95aa5b918e9.png", "report?.png"],
+            ["請" * 41 + ".pdf"] * 3,
+        ],
+    )
+    def test_default_save_preserves_files_with_colliding_names(self, names, tmp_path):
+        paths = []
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            for index, name in enumerate(names):
+                file = RemoteFile(
+                    expires_at="2026-01-01",
+                    mount_relative_path=name,
+                    sandbox_mount_prefix="/mnt/files",
+                    download_url="https://example.com/file",
+                )
+                with patch.object(file, "buffer", return_value=bytes([index])):
+                    paths.append(Path(file.save()))
+
+        assert len(set(paths)) == len(names)
+        assert [path.read_bytes() for path in paths] == [
+            bytes([i]) for i in range(len(names))
+        ]
+        assert all(len(path.name.encode()) <= 128 for path in paths)
+        assert all(path.suffix == Path(names[0]).suffix for path in paths)
+
+    def test_failed_default_save_leaves_no_file_behind(self, tmp_path):
+        file = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path="report.pdf",
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+        with patch("pathlib.Path.home", return_value=tmp_path):
+            # Writing `str` to the binary file fails after the path is claimed.
+            with patch.object(file, "buffer", return_value="not bytes"):
+                with pytest.raises(TypeError):
+                    file.save()
+            with patch.object(file, "buffer", return_value=b"content"):
+                saved = Path(file.save())
+
+        assert saved.name == "report.pdf"
+        assert [path.name for path in saved.parent.iterdir()] == ["report.pdf"]
 
 
 class TestResponseDerivedUrlsAreGuarded:
@@ -407,6 +513,38 @@ class TestResponseDerivedUrlsAreGuarded:
             with patch(SAFE_GET, return_value=oversized):
                 with pytest.raises(RemoteFileDownloadError, match="exceeds maximum"):
                     rf.buffer()
+
+    def test_buffer_maps_midstream_failure_and_closes_response(self):
+        rf = self._remote_file("https://s3.example.com/download")
+        response = mock_stream_response()
+
+        def failing_stream(chunk_size=None):
+            yield b"partial"
+            raise requests.exceptions.ConnectionError("peer reset mid-stream")
+
+        response.iter_content = failing_stream
+
+        with patch(SAFE_GET, return_value=response):
+            with pytest.raises(RemoteFileDownloadError) as exc_info:
+                rf.buffer()
+
+        assert isinstance(exc_info.value.__cause__, requests.exceptions.ConnectionError)
+        response.close.assert_called_once()
+
+    def test_url_upload_maps_midstream_failure_and_closes_response(self, files_mount):
+        response = mock_stream_response()
+
+        def failing_stream(chunk_size=None):
+            yield b"partial"
+            raise requests.exceptions.ConnectionError("peer reset mid-stream")
+
+        response.iter_content = failing_stream
+
+        with patch(SAFE_GET, return_value=response):
+            with pytest.raises(ValidationError, match="peer reset mid-stream"):
+                files_mount.upload("https://files.example/input.txt")
+
+        response.close.assert_called_once()
 
     def test_text_and_save_inherit_the_guard(self, tmp_path):
         """`text()` and `save()` read through `buffer()`, so they are covered."""

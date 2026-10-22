@@ -1,9 +1,13 @@
+import { cliAnalyticsProvenance } from 'src/services/client-provenance';
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
+import type { AgentHost } from 'src/services/agent-host';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
+import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { rootCommandIndex } from 'src/utils/cli-args';
 
 export const CLI_ANALYTICS_EVENTS = {
   CLI_COMMAND_INVOKED: 'CLI_COMMAND_INVOKED',
@@ -42,6 +46,7 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_PLUGIN_SETUP_SUCCEEDED: 'CLI_PLUGIN_SETUP_SUCCEEDED',
   CLI_PLUGIN_SETUP_FAILED: 'CLI_PLUGIN_SETUP_FAILED',
   CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'CLI_PLUGIN_UNINSTALL_SUCCEEDED',
+  CLI_PLUGIN_HINT_SHOWN: 'CLI_PLUGIN_HINT_SHOWN',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
@@ -97,11 +102,13 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_PLUGIN_SETUP_SUCCEEDED: 'setup',
   CLI_PLUGIN_SETUP_FAILED: 'setup',
   CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'setup',
+  CLI_PLUGIN_HINT_SHOWN: 'setup',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'execute',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'execute',
   CLI_TOOL_INVOCATION_FAILED: 'execute',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
 
+let cliAnalyticsVersion = APP_VERSION;
 let cliChannel = inferSkillReleaseChannel(APP_VERSION);
 
 /**
@@ -109,6 +116,7 @@ let cliChannel = inferSkillReleaseChannel(APP_VERSION);
  * resolved from release-tag.txt before any command can emit telemetry.
  */
 export const configureCliAnalyticsReleaseVersion = (version: string): void => {
+  cliAnalyticsVersion = version;
   cliChannel = inferSkillReleaseChannel(version);
 };
 
@@ -119,6 +127,24 @@ const buildEvent = (
   name,
   properties: {
     ...properties,
+    ...cliAnalyticsProvenance(
+      typeof properties.cli_version === 'string' ? properties.cli_version : cliAnalyticsVersion
+    ),
+    // Command events can describe offline or mixed work. Do not pretend they
+    // each represent one HTTP request.
+    execution_channel:
+      typeof properties.command_path === 'string' &&
+      [
+        'execute',
+        'search',
+        'link',
+        'proxy',
+        'dev playground-execute',
+        'dev toolkits search',
+        'dev connected-accounts link',
+      ].includes(properties.command_path)
+        ? 'tool_router'
+        : 'unknown',
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
     cli_channel: cliChannel,
   },
@@ -165,6 +191,7 @@ const KNOWN_COMMAND_TOKENS = new Set([
 ]);
 
 const TOOL_NOT_FOUND_PATTERN = /\btool\b.*\bnot found\b/i;
+const TOOL_VALIDATION_PATTERN = /\b(?:validation|invalid parameter|invalid argument)\b/i;
 const TOOL_NOT_FOUND_CODES: ReadonlySet<number> = new Set([
   1147, // MCP_ToolNotFound
   1800, // ActionExecute_ToolNotFound
@@ -183,8 +210,8 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
 
 const extractCommandPath = (argv: ReadonlyArray<string>): string => {
   const commandTokens: string[] = [];
-
-  for (const token of argv.slice(2)) {
+  const args = argv.slice(2);
+  for (const token of args.slice(rootCommandIndex(args))) {
     if (!token || token.startsWith('-') || !KNOWN_COMMAND_TOKENS.has(token)) {
       break;
     }
@@ -233,6 +260,11 @@ const extractUnknownKeys = (issues: ReadonlyArray<string>): ReadonlyArray<string
 const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
 
+const failureReasonProperties = (error: unknown) => {
+  if (error instanceof SetupCommandError) return { failure_reason_code: error.reasonCode };
+  return {};
+};
+
 const isFlagPresent = (argv: ReadonlyArray<string>, ...flags: string[]): boolean =>
   argv.slice(2).some(token => {
     if (flags.includes(token)) return true;
@@ -261,7 +293,8 @@ const getFlagValue = (argv: ReadonlyArray<string>, ...flags: string[]): string |
 const getTrailingPositionals = (context: CliCommandTelemetryContext): ReadonlyArray<string> => {
   const commandTokenCount =
     context.commandPath === 'composio' ? 0 : context.commandPath.split(' ').length;
-  const args = context.argv.slice(2 + commandTokenCount);
+  const rootArgs = context.argv.slice(2);
+  const args = rootArgs.slice(rootCommandIndex(rootArgs) + commandTokenCount);
   const positionals: string[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -475,21 +508,21 @@ export const createCliCommandTelemetryContext = (
   cliVersion: string,
   terminal: { readonly stdoutIsTTY: boolean; readonly stderrIsTTY: boolean },
   invocation: CliInvocationContext
-): CliCommandTelemetryContext => ({
-  argv,
-  cliVersion,
-  invocationOrigin: invocation.invocationOrigin,
-  parentRunId: invocation.parentRunId,
-  commandPath: extractCommandPath(argv),
-  flagNames: extractFlagNames(argv),
-  stdoutIsTTY: terminal.stdoutIsTTY,
-  stderrIsTTY: terminal.stderrIsTTY,
-  startedAt: Date.now(),
-  runId:
-    extractCommandPath(argv) === 'run'
-      ? (invocation.parentRunId ?? crypto.randomUUID())
-      : undefined,
-});
+): CliCommandTelemetryContext => {
+  const commandPath = extractCommandPath(argv);
+  return {
+    argv,
+    cliVersion,
+    invocationOrigin: invocation.invocationOrigin,
+    parentRunId: invocation.parentRunId,
+    commandPath,
+    flagNames: extractFlagNames(argv),
+    stdoutIsTTY: terminal.stdoutIsTTY,
+    stderrIsTTY: terminal.stderrIsTTY,
+    startedAt: Date.now(),
+    runId: commandPath === 'run' ? (invocation.parentRunId ?? crypto.randomUUID()) : undefined,
+  };
+};
 
 const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent =>
   buildEvent(CLI_ANALYTICS_EVENTS.CLI_COMMAND_INVOKED, {
@@ -635,8 +668,23 @@ export const getPrimaryLifecycleFailedEvent = (
   return buildEvent(family.failedEventName, {
     ...family.getProperties(context),
     error_name: errorNameOf(error),
+    ...failureReasonProperties(error),
   });
 };
+
+export const getPluginHintShownEvent = (params: {
+  readonly invocationOrigin: string;
+  readonly cliVersion: string;
+  readonly commandPath: string;
+  readonly agentHost: AgentHost;
+}): TrackEvent =>
+  buildEvent(CLI_ANALYTICS_EVENTS.CLI_PLUGIN_HINT_SHOWN, {
+    source: 'cli',
+    invocation_origin: params.invocationOrigin,
+    cli_version: params.cliVersion,
+    command_path: params.commandPath,
+    agent_host: params.agentHost,
+  });
 
 export const getPluginLifecycleSucceededEvent = (params: {
   readonly operation: 'setup' | 'uninstall';
@@ -688,6 +736,8 @@ export const getSetupHostDetectedEvent = (params: {
   readonly hostVersion?: string;
   readonly unsupportedReasonCode?:
     'codex_too_old' | 'no_json_inspection' | 'host_command_failed' | 'unknown';
+  readonly hostConfigDirPresent?: boolean;
+  readonly hostBinaryInKnownPaths?: boolean;
   readonly invocationOrigin: string;
   readonly cliVersion: string;
 }): TrackEvent =>
@@ -703,6 +753,8 @@ export const getSetupHostDetectedEvent = (params: {
     supported: params.supported,
     host_version: params.hostVersion,
     unsupported_reason_code: params.unsupportedReasonCode,
+    host_config_dir_present: params.hostConfigDirPresent,
+    host_binary_in_known_paths: params.hostBinaryInKnownPaths,
   });
 
 export const getSetupCancelledEvent = (params: {
@@ -771,23 +823,24 @@ export const isMaybeToolNotFoundError = (params: {
   readonly errorSlug?: string;
   readonly status?: number;
   readonly apiCode?: number;
-}): boolean =>
-  (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) ||
-  params.status === 404 ||
-  params.errorSlug?.toLowerCase().includes('notfound') === true ||
-  TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+}): boolean => {
+  if (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) return true;
+  if (params.status === 404) return true;
+  const errorSlug = params.errorSlug?.toLowerCase() ?? '';
+  if (errorSlug.includes('notfound')) return true;
+  return TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+};
 
 export const isMaybeToolValidationError = (params: {
   readonly message?: string;
   readonly errorSlug?: string;
   readonly apiCode?: number;
-}): boolean =>
-  (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) ||
-  params.errorSlug?.toLowerCase().includes('validation') === true ||
-  params.errorSlug?.toLowerCase().includes('invalidparameter') === true ||
-  /\bvalidation\b/i.test(params.message ?? '') ||
-  /\binvalid parameter\b/i.test(params.message ?? '') ||
-  /\binvalid argument\b/i.test(params.message ?? '');
+}): boolean => {
+  if (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) return true;
+  const errorSlug = params.errorSlug?.toLowerCase() ?? '';
+  if (errorSlug.includes('validation') || errorSlug.includes('invalidparameter')) return true;
+  return TOOL_VALIDATION_PATTERN.test(params.message ?? '');
+};
 
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;

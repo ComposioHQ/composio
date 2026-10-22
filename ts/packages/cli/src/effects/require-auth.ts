@@ -1,24 +1,21 @@
-import { Effect, Option } from 'effect';
+import { Effect } from 'effect';
+import { Command } from 'effect/cli';
+import { notLoggedIn } from 'src/commands/errors';
 import { ComposioUserContext } from 'src/services/user-context';
-import { TerminalUI } from 'src/services/terminal-ui';
+
+/** Fails with `NotLoggedInError` when `~/.composio` holds no API key. */
+export const assertLoggedIn = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  if (!ctx.isLoggedIn()) {
+    return yield* notLoggedIn();
+  }
+});
 
 /**
- * Checks that the user is authenticated. Returns `true` if an API key is present,
- * or logs a warning and returns `false` if not.
- *
- * Usage in commands:
- * ```ts
- * if (!(yield* requireAuth)) return;
- * ```
+ * Makes a command, or a group entry and every subcommand under it, require a logged-in user.
+ * Pipe it after `Command.withSubcommands`, since it wraps the handler that exists when it is
+ * applied. The handler then never checks `apiKey` or prints a login hint.
  */
-export const requireAuth = Effect.gen(function* () {
-  const ctx = yield* ComposioUserContext;
-
-  if (Option.isNone(ctx.data.apiKey)) {
-    const ui = yield* TerminalUI;
-    yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-    return false as const;
-  }
-
-  return true as const;
-});
+export const requireLogin = <const Name extends string, Input, ContextInput, E, R>(
+  self: Command.Command<Name, Input, ContextInput, E, R>
+) => Command.provideEffectDiscard(self, assertLoggedIn);

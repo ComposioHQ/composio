@@ -6,6 +6,7 @@ import {
   buildSemanticArtifact,
   docsContentHashFromRecords,
   semanticRecordFromSearchRecord,
+  SemanticArtifactStaleError,
   validateSemanticArtifact,
   type KnowledgeSemanticArtifact,
 } from '@/lib/knowledge/semantic-artifact';
@@ -37,11 +38,20 @@ const docsContentHash = docsContentHashFromRecords(
 if (process.argv.includes('--check')) {
   if (!existsSync(artifactPath)) throw new Error('KB semantic artifact is missing');
   const artifact = JSON.parse(readFileSync(artifactPath, 'utf8')) as KnowledgeSemanticArtifact;
-  validateSemanticArtifact(artifact, {
-    supportKnowledgeCommit: manifest.source.commit,
-    docsContentHash,
-    contentHashes,
-  });
+  try {
+    validateSemanticArtifact(artifact, {
+      supportKnowledgeCommit: manifest.source.commit,
+      docsContentHash,
+      contentHashes,
+    });
+  } catch (error) {
+    if (!(error instanceof SemanticArtifactStaleError)) throw error;
+    const message = `${error.message}. Search falls back to keyword results until the artifact is rebuilt. ` +
+      'Run bun run build:kb-semantic with OPENAI_API_KEY, or use the Docs - Rebuild KB Semantic Artifact workflow.';
+    if (!process.argv.includes('--allow-stale')) throw new Error(message);
+    console.warn(`${process.env.GITHUB_ACTIONS === 'true' ? '::warning::' : 'Warning: '}${message}`);
+    process.exit(0);
+  }
   console.log(`KB semantic artifact is current: ${artifact.records.length} records.`);
   process.exit(0);
 }

@@ -1,5 +1,36 @@
 # @composio/json-schema-to-zod
 
+## 0.4.0
+
+### Minor Changes
+
+- f119f05: Add a `@composio/json-schema-to-zod/v4` entry that builds classic Zod v4 schemas with the same `jsonSchemaToZod` and `jsonSchemaToZodShape` functions as the root entry, which keeps building Zod v3 schemas. The v4 builder forwards `format`, `contentEncoding`, `contentMediaType`, and `type: "integer"` into the schema's metadata so `z.toJSONSchema()` and the frameworks built on it render them again; `withoutAnnotations: true` turns that off. `/v4` requires zod `>= 4.1.13`, the first release whose `zod/v4` shares its metadata registry across copies, and throws at load time below it.
+
+  The root builder now reports an issue inside a nested object once, at its own path. Issues raised by `patternProperties`, `additionalProperties`, unrecognized keys, and `oneOf` under a property previously carried that property's name twice (`['x', 'x', 'key']`).
+
+### Patch Changes
+
+- 04fdb41: Check a string tool parameter as base64 only when its `contentEncoding` is `base64`. `format: "binary"` (raw octets in OpenAPI) and other encodings such as `base16` were validated as base64, so the Vercel, LangChain, LlamaIndex, and Claude Agent SDK providers rejected tool calls with plain text or hex in those fields, and the schema sent to the model described them as `contentEncoding: "base64"`. Those fields are now plain strings. `contentEncoding: "base64"` keeps its check, and `format: "byte"` stays unchecked.
+
+## 0.3.4
+
+### Patch Changes
+
+- 077ceb3: Fix tool schemas rejected by OpenAI and Anthropic when a parameter uses `anyOf`, `oneOf`, `allOf`, `$ref`, or similar keywords. The converted schema is a `ZodObject` again, so the LangChain, Vercel, LlamaIndex, and Claude Agent SDK providers send tool parameters with a top-level `type: "object"`. Patterns with escapes such as `\_` or `\:` no longer fail every call to the tool.
+- d9f6291: Tool schema `pattern` and `patternProperties` regexes now run on a linear-time engine (RE2, via `re2js`), so a hostile pattern such as `^(a+)+$` can no longer hang argument validation. A `pattern` that needs lookaround still runs on the native engine when a static check shows it cannot backtrack catastrophically, on input up to 1000 characters; otherwise it is left unenforced. A `patternProperties` key that needs lookaround or a backreference now fails conversion with an `InvalidPatternError` (reason `unsupported`). Patterns now match astral characters (emoji) as single characters, as JSON Schema's Unicode regex dialect does.
+
+## 0.3.3
+
+### Patch Changes
+
+- b4b9fc4: Guard schema `pattern` and `patternProperties` compilation. A pattern that does not compile or exceeds 1024 characters now fails conversion with an `InvalidPatternError` that names the offending property path instead of a raw `SyntaxError`. `@composio/core` surfaces that path in the `JsonSchemaToZodError` message. No backtracking heuristic is applied: a hostile `pattern` that backtracks catastrophically remains a known limitation.
+
+## 0.3.2
+
+### Patch Changes
+
+- ab289d6: Preserve Draft 7 acceptance across primitive, composed, referenced, conditional, and typeless schemas. Enforce sibling and object/array assertions, retain positional tuple and `additionalItems` behavior, and prevent native Zod materialization from rejecting values already accepted by the source schema.
+
 ## 0.3.1
 
 ### Patch Changes

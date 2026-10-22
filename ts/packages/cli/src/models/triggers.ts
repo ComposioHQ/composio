@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Effect, Schema } from 'effect';
 
 /**
  * A trigger instance item from the list-active endpoint.
@@ -6,27 +6,23 @@ import { Schema } from 'effect';
  */
 export const TriggerInstanceItem = Schema.Struct({
   id: Schema.String,
-  uuid: Schema.optionalWith(Schema.String, { default: () => '' }),
-  trigger_name: Schema.optionalWith(Schema.String, { default: () => '' }),
-  connected_account_id: Schema.optionalWith(Schema.String, { default: () => '' }),
-  auth_config_id: Schema.optionalWith(Schema.String, { default: () => '' }),
-  user_id: Schema.optionalWith(Schema.String, { default: () => '' }),
-  disabled_at: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
-  updated_at: Schema.optionalWith(Schema.String, { default: () => '' }),
-  trigger_data: Schema.optionalWith(Schema.String, { default: () => '' }),
-  state: Schema.optionalWith(
-    Schema.NullOr(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-    {
-      default: () => null,
-    }
+  uuid: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  trigger_name: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  connected_account_id: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  auth_config_id: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  user_id: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  disabled_at: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
   ),
-  trigger_config: Schema.optionalWith(
-    Schema.NullOr(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-    {
-      default: () => null,
-    }
+  updated_at: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  trigger_data: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+  state: Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
   ),
-}).annotations({ identifier: 'TriggerInstanceItem' });
+  trigger_config: Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
+  ),
+}).annotate({ identifier: 'TriggerInstanceItem' });
 export type TriggerInstanceItem = Schema.Schema.Type<typeof TriggerInstanceItem>;
 
 export const TriggerInstanceItems = Schema.Array(TriggerInstanceItem);

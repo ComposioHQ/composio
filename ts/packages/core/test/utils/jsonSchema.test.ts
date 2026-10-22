@@ -3,9 +3,14 @@ import {
   deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
   ensureObjectTypeOnProperties,
+  jsonSchemaToZodSchema,
 } from '../../src/utils/jsonSchema';
-import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
+import {
+  JsonSchemaRefResolutionError,
+  JsonSchemaToZodError,
+} from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
+import { zodSchemaToJsonSchema } from '../../src/utils/zodSchema';
 import { ToolSchema } from '../../src/types/tool.types';
 import {
   assertCorpusInvariants,
@@ -630,6 +635,44 @@ describe('ToolSchema parameter-root preservation', () => {
     });
 
     expect(tool.inputParameters).not.toHaveProperty('additionalProperties');
+  });
+});
+
+describe('jsonSchemaToZodSchema', () => {
+  it('names the property whose pattern cannot be compiled', () => {
+    let caught: unknown;
+    try {
+      jsonSchemaToZodSchema({
+        type: 'object',
+        properties: { name: { type: 'string', pattern: '(' } },
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(JsonSchemaToZodError);
+    expect((caught as JsonSchemaToZodError).message).toContain('at properties.name');
+    expect((caught as JsonSchemaToZodError).cause).toBeInstanceOf(Error);
+  });
+
+  it('describes a string as base64 to the model only when its contentEncoding is base64', () => {
+    const serialized = zodSchemaToJsonSchema(
+      jsonSchemaToZodSchema({
+        type: 'object',
+        properties: {
+          file: { type: 'string', format: 'binary' },
+          hex: { type: 'string', contentEncoding: 'base16' },
+          encoded: { type: 'string', contentEncoding: 'base64' },
+        },
+        required: ['file', 'hex', 'encoded'],
+      })
+    );
+
+    expect(serialized.properties).toEqual({
+      file: { type: 'string' },
+      hex: { type: 'string' },
+      encoded: { type: 'string', contentEncoding: 'base64' },
+    });
   });
 });
 

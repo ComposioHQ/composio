@@ -2,43 +2,15 @@ import { Predicate } from 'effect';
 import {
   extractApiErrorDetails,
   extractMessage,
-  extractSlug,
   type ApiErrorDetails,
 } from 'src/utils/api-error-extraction';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { DashboardToolExecutionError } from 'src/services/dashboard-tool-execution';
 
 const NO_CONNECTION_SLUGS: ReadonlySet<string> = new Set([
   'ActionExecute_ConnectedAccountNotFound',
   'ToolRouterV2_NoActiveConnection',
 ]);
-
-const extractNestedDetails = (value: unknown): unknown => {
-  let current: unknown = value;
-  const seen = new Set<unknown>();
-
-  while (Predicate.isObject(current) && !seen.has(current)) {
-    seen.add(current);
-
-    if (Predicate.hasProperty(current, 'details')) {
-      const details = current.details;
-      if (details !== undefined) {
-        return details;
-      }
-    }
-
-    if (Predicate.hasProperty(current, 'error')) {
-      current = current.error;
-      continue;
-    }
-    if (Predicate.hasProperty(current, 'cause')) {
-      current = current.cause;
-      continue;
-    }
-    break;
-  }
-
-  return undefined;
-};
 
 export const normalizeCliError = (error: unknown): unknown => {
   let current: unknown = error;
@@ -124,25 +96,14 @@ export const mapComposioError = (params: {
   readonly toolSlug?: string;
 }) => {
   const normalized = normalizeCliError(params.error);
-  const nestedDetails = extractNestedDetails(params.error) ?? extractNestedDetails(normalized);
   const apiDetails =
     extractApiErrorDetails(params.error) ??
-    extractApiErrorDetails(nestedDetails) ??
-    extractApiErrorDetails(normalized) ??
     (normalized instanceof ComposioNoActiveConnectionError ? normalized.apiDetails : undefined);
-  const slugValue =
-    apiDetails?.slug ??
-    extractSlug(nestedDetails) ??
-    extractSlug(params.error) ??
-    extractSlug(normalized) ??
-    (normalized instanceof ComposioNoActiveConnectionError
-      ? normalized.apiDetails?.slug
-      : undefined);
+  const slugValue = apiDetails?.slug;
 
   if (
     normalized instanceof ComposioNoActiveConnectionError ||
-    isNoActiveConnectionApiError(apiDetails) ||
-    isNoConnectionSlug(slugValue)
+    isNoActiveConnectionApiError(apiDetails)
   ) {
     const mapped =
       normalized instanceof ComposioNoActiveConnectionError
@@ -171,10 +132,11 @@ export const mapComposioError = (params: {
     apiDetails,
     slugValue,
     message:
-      extractMessage(apiDetails) ??
-      extractMessage(nestedDetails) ??
-      extractMessage(normalized) ??
-      'Unknown error',
+      // Its own message names the Dashboard and what to do next; the cause it
+      // wraps (a transport or decode failure) does not.
+      normalized instanceof DashboardToolExecutionError
+        ? normalized.message
+        : (extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error'),
     override: null,
   };
 };

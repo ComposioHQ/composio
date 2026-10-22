@@ -270,6 +270,9 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
     types_module = types.ModuleType("anthropic.types")
     beta_module = types.ModuleType("anthropic.types.beta")
     beta_tool_use_module = types.ModuleType("anthropic.types.beta.beta_tool_use_block")
+    cache_control_module = types.ModuleType(
+        "anthropic.types.cache_control_ephemeral_param"
+    )
     message_module = types.ModuleType("anthropic.types.message")
     tool_param_module = types.ModuleType("anthropic.types.tool_param")
     tool_use_module = types.ModuleType("anthropic.types.tool_use_block")
@@ -285,6 +288,7 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
         pass
 
     beta_tool_use_module.BetaToolUseBlock = BetaToolUseBlock
+    cache_control_module.CacheControlEphemeralParam = dict
     message_module.Message = Message
     tool_param_module.ToolParam = dict
     tool_use_module.ToolUseBlock = ToolUseBlock
@@ -295,6 +299,11 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
         sys.modules,
         "anthropic.types.beta.beta_tool_use_block",
         beta_tool_use_module,
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "anthropic.types.cache_control_ephemeral_param",
+        cache_control_module,
     )
     monkeypatch.setitem(sys.modules, "anthropic.types.message", message_module)
     monkeypatch.setitem(sys.modules, "anthropic.types.tool_param", tool_param_module)
@@ -353,7 +362,7 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
 
     session = Mock()
     session.execute.return_value = SimpleNamespace(
-        data={"ok": True}, error=None, log_id="log-session"
+        data={"ok": True}, error=None, log_id="log-session", result_type="completed"
     )
     provider.execute_tool.reset_mock()
     result = provider.execute_tool_call(session=session, tool_call=tool_call)

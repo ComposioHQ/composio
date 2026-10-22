@@ -1,5 +1,6 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { DateTime, Effect, Layer, Option, Schema } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';
@@ -20,13 +21,18 @@ import { NodeOs } from './node-os';
  * this file can only cost a fetch, never an answer: an unknown slug falls
  * through to the catalog, and the backend never removes a toolkit, so a slug
  * recorded here never stops being real.
+ *
+ * Custom toolkits are the exception: they belong to a project, can be deleted,
+ * and this file is shared by every project on the machine. The resolver checks
+ * custom matches against the active project's catalog before accepting them.
+ * Learned custom slugs are only a best-effort fallback when that lookup fails.
  */
 
 export const KNOWN_TOOLKIT_SLUGS_FILE = 'known-toolkit-slugs.json';
 
 const KnownToolkitSlugs = Schema.Struct({
   slugs: Schema.Array(Schema.String),
-  refreshedAt: Schema.DateTimeUtc,
+  refreshedAt: Schema.DateTimeUtcFromString,
 });
 
 export type KnownToolkitSlugs = Schema.Schema.Type<typeof KnownToolkitSlugs>;
@@ -58,11 +64,11 @@ export const readKnownToolkitSlugs: Effect.Effect<Option.Option<KnownToolkitSlug
     const fs = yield* FileSystem.FileSystem;
     const filePath = yield* knownToolkitSlugsPath;
     const content = yield* fs.readFileString(filePath);
-    return yield* Schema.decode(KnownToolkitSlugsJSON)(content);
+    return yield* Schema.decodeEffect(KnownToolkitSlugsJSON)(content);
   }
 ).pipe(
   Effect.asSome,
-  Effect.catchAll(error =>
+  Effect.catch(error =>
     Effect.logDebug(`No usable ${KNOWN_TOOLKIT_SLUGS_FILE}: ${error}`).pipe(
       Effect.as(Option.none<KnownToolkitSlugs>())
     )
@@ -71,19 +77,21 @@ export const readKnownToolkitSlugs: Effect.Effect<Option.Option<KnownToolkitSlug
 );
 
 /**
- * Records `slugs`, sorted and deduped, stamped with the current time.
+ * Records `slugs`, sorted and deduped, with the last full catalog refresh time.
  *
  * Never fails: this is an optimization, and a machine that cannot write to its
  * own cache directory should still be able to run tools. Concurrent CLI
  * processes are safe by construction — the write is atomic, and since slugs
  * are only ever added, whichever writer lands last leaves a usable file.
  */
-export const writeKnownToolkitSlugs = (slugs: ReadonlyArray<string>): Effect.Effect<void> =>
+export const writeKnownToolkitSlugs = (
+  slugs: ReadonlyArray<string>,
+  refreshedAt: DateTime.Utc
+): Effect.Effect<void> =>
   Effect.gen(function* () {
     const filePath = yield* knownToolkitSlugsPath;
-    const refreshedAt = yield* DateTime.now;
 
-    const content = yield* Schema.encode(KnownToolkitSlugsJSON)({
+    const content = yield* Schema.encodeEffect(KnownToolkitSlugsJSON)({
       slugs: [...new Set(slugs.map(slug => slug.toLowerCase()))].sort(),
       refreshedAt,
     });
@@ -91,6 +99,6 @@ export const writeKnownToolkitSlugs = (slugs: ReadonlyArray<string>): Effect.Eff
     yield* writeFileAtomic(filePath, content);
     yield* Effect.logDebug(`Recorded ${slugs.length} toolkit slugs in ${filePath}`);
   }).pipe(
-    Effect.catchAll(error => Effect.logDebug(`Failed to record known toolkit slugs: ${error}`)),
+    Effect.catch(error => Effect.logDebug(`Failed to record known toolkit slugs: ${error}`)),
     provideFileSystem
   );

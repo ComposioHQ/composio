@@ -17,6 +17,8 @@ import typing as t
 
 from pydantic import ValidationError as PydanticValidationError
 
+from composio.exceptions import ToolInputRequiredError, ValidationError
+
 from .custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
@@ -37,7 +39,37 @@ def find_custom_tool(
     if map_ is None:
         return None
     upper = slug.upper()
-    return map_.by_final_slug.get(upper) or map_.by_original_slug.get(upper)
+    final_slug_match = map_.by_final_slug.get(upper)
+    if final_slug_match is not None:
+        return final_slug_match
+    if upper in map_.ambiguous_original_slugs:
+        return None
+    return map_.by_original_slug.get(upper)
+
+
+def assert_unambiguous_custom_tool_slug(
+    map_: t.Optional[CustomToolsMap], slug: str
+) -> None:
+    """Reject ambiguous bare original slugs before remote fallback."""
+    if map_ is None:
+        return
+
+    upper = slug.upper()
+    if upper not in map_.ambiguous_original_slugs:
+        return
+
+    final_slugs = sorted(
+        entry.final_slug
+        for entry in map_.by_final_slug.values()
+        if entry.handle.slug.upper() == upper
+    )
+    hint = f" Use one of: {', '.join(final_slugs)}." if final_slugs else ""
+    raise ValidationError(
+        f'Ambiguous custom tool slug "{slug}". Multiple custom toolkit tools '
+        "share this original slug; manual session.execute() by original slug "
+        "is only supported when the original slug is unique."
+        f"{hint}"
+    )
 
 
 def execute_custom_tool(
@@ -49,6 +81,9 @@ def execute_custom_tool(
 
     Validates input via the Pydantic model, calls the user's execute function,
     and wraps the result into the standard response format.
+
+    :raises ToolInputRequiredError: If a call the tool made through the session
+        context needs user input before it can run.
     """
     handle = entry.handle
 
@@ -71,6 +106,11 @@ def execute_custom_tool(
             "error": None,
             "successful": True,
         }
+    except ToolInputRequiredError:
+        # ``ctx.execute()`` / ``ctx.proxy_execute()`` asked for user input:
+        # nothing ran. Flattening it into a failed result would drop the
+        # questions and the request state the caller needs to answer them.
+        raise
     except Exception as e:
         return {
             "data": {},

@@ -338,6 +338,7 @@ describe('TelemetryTransport', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('should send SDK_INITIALIZED metric on setup', () => {
@@ -371,6 +372,20 @@ describe('TelemetryTransport', () => {
     // The batchProcessor will push the payload, but we can check sendMetric is eventually called
     await transport.sendMetric([]); // flush
     expect(sendMetricSpy).toHaveBeenCalled();
+  });
+
+  it('should instrument async methods defined on plain objects', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const instance = { double: async (a: number) => a * 2 };
+
+    transport.instrument(instance, 'PlainObject');
+
+    await expect(instance.double(21)).resolves.toBe(42);
+    await transport.flush();
+    const functionNames = sendMetricSpy.mock.calls.flatMap(([payloads]) =>
+      payloads.map((payload: TelemetryPayload) => payload.functionName)
+    );
+    expect(functionNames).toContain('PlainObject.double');
   });
 
   it('should send error telemetry if instrumented method throws', async () => {

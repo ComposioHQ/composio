@@ -7,15 +7,19 @@ import typing as t
 import warnings
 
 import typing_extensions as te
-from composio_client import BadRequestError, omit
+from composio_client import BadRequestError, ConflictError, omit
 
 from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import (
+    connected_account_complete_auth_response,
     connected_account_create_params,
     connected_account_patch_params,
     connected_account_patch_response,
+    connected_account_refresh_params,
+    connected_account_refresh_response,
     connected_account_retrieve_response,
+    connected_account_revoke_response,
     connected_account_update_status_response,
     link_create_params,
 )
@@ -34,6 +38,17 @@ _TERMINAL_CONNECTION_STATES: t.FrozenSet[str] = frozenset(
 # One-time-per-process guard so long-running services don't spam the deprecation
 # warning on every initiate() call.
 _legacy_initiate_warning_emitted = False
+
+_REFRESH_DEPRECATION = (
+    "connected_accounts.refresh() is deprecated: the API marks "
+    "POST /connected_accounts/{id}/refresh as deprecated. Re-initiate "
+    "auth with connected_accounts.link() or toolkits.authorize() instead."
+)
+
+_REFRESH_VALIDATE_CREDENTIALS_IGNORED = (
+    "connected_accounts.refresh(): the API no longer accepts "
+    "validate_credentials; the argument is ignored."
+)
 
 
 class ConnectionRequest(Resource):
@@ -368,7 +383,6 @@ class ConnectedAccounts:
         self.list = self._client.connected_accounts.list
         self.delete = self._client.connected_accounts.delete
         self.update_status = self._client.connected_accounts.update_status
-        self.refresh = self._client.connected_accounts.refresh
         self.enable = functools.partial(
             self._client.connected_accounts.update_status,
             enabled=True,
@@ -376,6 +390,103 @@ class ConnectedAccounts:
         self.disable = functools.partial(
             self._client.connected_accounts.update_status,
             enabled=False,
+        )
+
+    @te.deprecated(_REFRESH_DEPRECATION, category=None)
+    def refresh(
+        self,
+        nanoid: str,
+        **params: te.Unpack[
+            connected_account_refresh_params.ConnectedAccountRefreshParams
+        ],
+    ) -> connected_account_refresh_response.ConnectedAccountRefreshResponse:
+        """
+        Refresh the credentials of a connected account.
+
+        .. deprecated::
+            The API marks ``POST /connected_accounts/{id}/refresh`` as
+            deprecated. Re-initiate authentication with
+            :meth:`link` or ``composio.toolkits.authorize()`` instead.
+
+        :param nanoid: The connected account ID (``ca_xxx``).
+        :return: The refresh response.
+
+        Example:
+            composio.connected_accounts.refresh("ca_abc123")
+        """
+        warnings.warn(
+            _REFRESH_DEPRECATION, exceptions.ComposioDeprecationWarning, stacklevel=2
+        )
+        # The API no longer accepts validate_credentials; forward every other
+        # kwarg (timeout, extra_headers, ...) unchanged.
+        forwarded: t.Dict[str, t.Any] = dict(params)
+        if forwarded.pop("validate_credentials", None) is not None:
+            warnings.warn(
+                _REFRESH_VALIDATE_CREDENTIALS_IGNORED,
+                exceptions.ComposioDeprecationWarning,
+                stacklevel=2,
+            )
+        return self._client.connected_accounts.refresh(nanoid, **forwarded)
+
+    def revoke(
+        self, nanoid: str
+    ) -> connected_account_revoke_response.ConnectedAccountRevokeResponse:
+        """
+        Revoke a connected account's upstream tokens (best effort) and mark
+        the connection ``REVOKED``.
+
+        Raises :class:`composio.exceptions.ComposioConnectedAccountRevocationNotSupportedError`
+        when the toolkit does not support programmatic revocation (API 400)
+        and :class:`composio.exceptions.ComposioConnectedAccountNotRevokableError`
+        when the connection is not in a revokable state (API 409).
+
+        :param nanoid: The connected account ID (``ca_xxx``).
+        :return: The revoked tokens and the updated connected account.
+
+        Example:
+            result = composio.connected_accounts.revoke("ca_abc123")
+            print(result.connected_account.status)  # "REVOKED"
+        """
+        try:
+            return self._client.connected_accounts.revoke(nanoid)
+        except BadRequestError as error:
+            raise exceptions.ComposioConnectedAccountRevocationNotSupportedError(
+                f"Connected account {nanoid!r} cannot be revoked programmatically: "
+                f"the toolkit does not support token revocation ({error})"
+            ) from error
+        except ConflictError as error:
+            raise exceptions.ComposioConnectedAccountNotRevokableError(
+                f"Connected account {nanoid!r} is not in a revokable state ({error})"
+            ) from error
+
+    def complete_auth(
+        self, *, user_id: str, session_uri: str
+    ) -> connected_account_complete_auth_response.ConnectedAccountCompleteAuthResponse:
+        """
+        Complete a deferred OAuth connection once you have verified the
+        user's identity.
+
+        When your project has an OAuth callback verifier configured, Composio
+        does not activate a new OAuth connection by itself: it redirects to
+        your verifier with a single-use session URI. After confirming who the
+        user is, redeem it here; Composio checks that your project owns the
+        pending connection and that ``user_id`` is its owner, completes the
+        token exchange, and the connection becomes ``ACTIVE``. Redeeming a
+        session twice, or after it expires, fails with a 404 from the API.
+
+        :param user_id: The user the connection was initiated for.
+        :param session_uri: The session URI from the verifier redirect.
+        :return: The completed ``connected_account_id`` and its ``toolkit_slug``.
+
+        Example:
+            result = composio.connected_accounts.complete_auth(
+                user_id="user_123",
+                session_uri=session_uri,  # from the verifier redirect
+            )
+            print(result.connected_account_id)
+        """
+        return self._client.connected_accounts.complete_auth(
+            user_id=user_id, session_uri=session_uri
         )
 
     def update(
@@ -609,7 +720,7 @@ class ConnectedAccounts:
                 "composio.connected_accounts.link() — same return shape, "
                 "same allow_multiple semantics. "
                 "https://docs.composio.dev/docs/changelog/2026/04/24",
-                DeprecationWarning,
+                exceptions.ComposioDeprecationWarning,
                 stacklevel=2,
             )
 
