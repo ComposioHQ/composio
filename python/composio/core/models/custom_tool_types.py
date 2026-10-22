@@ -10,11 +10,10 @@ from dataclasses import dataclass, field
 
 import typing_extensions as te
 from composio_client.types.tool_router import session_create_params
-from pydantic import BaseModel
-
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
+from pydantic import BaseModel
 
 from composio.utils.safe_path import SAFE_COMPONENT_REGEX
 
@@ -35,11 +34,45 @@ class ProxyExecuteBinaryData(te.TypedDict):
     expires_at: t.Optional[str]
 
 
-class ToolRouterSessionProxyExecuteResponse(te.TypedDict):
-    """SDK-facing shape returned by ``proxy_execute()``.
+class ToolRouterHookEvaluatedResult(te.TypedDict):
+    """A session hook that ran. ``outcome`` is what it decided."""
+
+    id: str
+    status: t.Literal["evaluated"]
+    outcome: t.Literal["continue", "block"]
+
+
+class ToolRouterHookUnavailableResult(te.TypedDict):
+    """A session hook that could not be evaluated, for example because it
+    timed out. It does not block the call."""
+
+    id: str
+    status: t.Literal["unavailable"]
+
+
+ToolRouterHookResult = t.Union[
+    ToolRouterHookEvaluatedResult, ToolRouterHookUnavailableResult
+]
+"""What one session hook decided about a call."""
+
+
+class ToolRouterBlockReason(te.TypedDict):
+    """Why a session hook blocked a call.
+
+    ``request_blocked``: a ``before_execute`` hook blocked it and the tool did not
+    run. ``response_blocked``: the tool ran and an ``after_execute`` hook
+    blocked its result.
+    """
+
+    type: t.Literal["request_blocked", "response_blocked"]
+    hook_id: str
+
+
+class ToolRouterSessionProxyExecuteCompleted(te.TypedDict):
+    """A proxied request that was sent.
 
     Field-for-field equivalent to the TypeScript SDK's
-    ``ToolRouterSessionProxyExecuteResponse``, spelled in snake_case: the same
+    ``ToolRouterSessionProxyExecuteCompleted``, spelled in snake_case: the same
     fields carry the same meaning in both SDKs, each in its own language's
     convention. The generated client's model is deliberately not exposed --
     it is regenerated from the upstream spec, so returning it directly would
@@ -50,10 +83,33 @@ class ToolRouterSessionProxyExecuteResponse(te.TypedDict):
     renders ``200.0`` where TypeScript renders ``200``.
     """
 
+    result_type: t.Literal["completed"]
     status: int
     data: t.Any
     headers: t.Optional[t.Dict[str, str]]
     binary_data: te.NotRequired[ProxyExecuteBinaryData]
+    hook_results: te.NotRequired[t.List[ToolRouterHookResult]]
+
+
+class ToolRouterSessionProxyExecuteBlocked(te.TypedDict):
+    """A proxied request that a session hook blocked. It has no HTTP response.
+
+    ``message`` is meant for the agent; it names the hook when the hook has a
+    ``name``.
+    """
+
+    result_type: t.Literal["blocked"]
+    block_reason: ToolRouterBlockReason
+    message: str
+    hook_results: te.NotRequired[t.List[ToolRouterHookResult]]
+
+
+ToolRouterSessionProxyExecuteResponse = t.Union[
+    ToolRouterSessionProxyExecuteCompleted, ToolRouterSessionProxyExecuteBlocked
+]
+"""SDK-facing shape returned by ``proxy_execute()``. Check ``result_type``
+before reading ``status``: a request a session hook blocked has no HTTP
+response."""
 
 
 SLUG_REGEX = SAFE_COMPONENT_REGEX

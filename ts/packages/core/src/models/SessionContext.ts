@@ -24,8 +24,8 @@ import {
   executeCustomTool,
 } from './customToolExecution';
 import {
-  assertNotInputRequired,
   transformExecuteResponse,
+  transformProxyExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
@@ -144,24 +144,9 @@ export class SessionContextImpl implements SessionContext {
       requestOptions?.signal
     );
 
-    assertNotInputRequired(
+    return transformProxyExecuteResponse(
       response,
       `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
     );
-    return {
-      status: response.status,
-      data: response.data,
-      headers: response.headers,
-      ...(response.binary_data
-        ? {
-            binaryData: {
-              contentType: response.binary_data.content_type,
-              size: response.binary_data.size,
-              url: response.binary_data.url,
-              expiresAt: response.binary_data.expires_at,
-            },
-          }
-        : {}),
-    };
   }
 }

@@ -842,7 +842,12 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
         assert "binary_data" not in result
 
     def test_proxy_execute_narrows_status_to_int(self):
@@ -861,8 +866,14 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
-        assert result == {"status": 200, "data": None, "headers": None}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": None,
+            "headers": None,
+        }
 
     def test_proxy_execute_projects_binary_data(self):
         mock_client = mock_http_client(MagicMock)
@@ -884,6 +895,7 @@ class TestSessionContextImpl:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -1079,7 +1091,13 @@ class TestToolRouterSessionCustomTools:
         result = s.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
         assert "binary_data" not in result
 
@@ -1102,6 +1120,7 @@ class TestToolRouterSessionCustomTools:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
