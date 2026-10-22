@@ -51,6 +51,21 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 Use `composio execute <slug> --get-schema` to print a tool's input schema as JSON.
 `composio execute <slug> --help` now shows command options and examples.
 
+### Creating development triggers
+
+For a project with 2FA enabled, pass the user who owns the connected account:
+
+```bash
+composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE --connected-account-id ca_123 --user-id user_123
+```
+
+The shared `--user-id` flag works before or after the subcommand. When omitted,
+the command uses the resolved directory project's test user, then the global test
+user configured by `composio login`. Setting both `COMPOSIO_ORG_ID` and
+`COMPOSIO_PROJECT_ID` in the process environment overrides directory configuration,
+including its test user. If no test user is resolved, the request omits `user_id`
+and the server applies the project's ownership policy.
+
 ## Configuration
 
 The Composio CLI supports configuration via environment variables. It stores authenticated user context in `user_data.json` and general CLI settings in `config.json`.

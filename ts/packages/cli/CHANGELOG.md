@@ -4,6 +4,15 @@
 
 ### Patch Changes
 
+- `composio dev triggers create` now accepts `--user-id` and sends it with the
+  request, so it works on projects with 2FA enabled, which require the user who
+  owns the connected account. It used to reject `--user-id` and send no user,
+  so creating a trigger on those projects always failed. Without `--user-id`
+  it sends the project's test user id, else the global test user id, and names
+  the one it used on stderr; with neither configured it sends no user, as
+  before. Given a user and no `--connected-account-id`, the API picks that
+  user's first active connection for the trigger's toolkit.
+
 - More expected errors now print as a plain message on stderr and exit 1, like
   other usage errors. They used to print under a `💥` banner with the error tag
   and a stack location, as if the CLI had crashed. The message itself is
