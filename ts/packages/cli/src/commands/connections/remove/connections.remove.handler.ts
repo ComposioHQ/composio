@@ -1,6 +1,9 @@
 import { Effect } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import {
+  CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+  decodeConnectedAccountList,
+} from 'src/effects/decode-connected-account-list';
 import { failedWith } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -123,7 +126,9 @@ export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) 
         .list({ user_ids: [consumerUserId], limit: 1000 }, idempotent)
         .pipe(failedWith(ConnectionsRemovalRequestError, 'Failed to list connections.'))
     );
-    const result = yield* decodeConnectedAccountListWithFallback(rawResult);
+    const result = yield* decodeConnectedAccountList(rawResult).pipe(
+      failedWith(ConnectionsRemovalRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
+    );
     const resolved = resolveAccount({ accounts: result.items, selector: account });
 
     if ('error' in resolved) {
