@@ -15,10 +15,6 @@ You can describe each check in natural language, and Firewall blocks any tool ca
 
 Firewall also comes with a built-in check that blocks prompt injection in tool results before it reaches your agent.
 
-<Callout type="warn">
-Firewall is in beta.
-</Callout>
-
 ## Custom prompt checks
 
 You can build custom prompt checks with **hooks**. A hook is attached to a session and runs when your agent calls a tool. It can run before the tool call (`before_execute`) or after it (`after_execute`).
