@@ -1,24 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
+import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { extendConfigProvider } from 'src/services/config';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-
-const parseJsonFromLines = (lines: ReadonlyArray<string>) => {
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    const line = lines[i];
-    if (!line) continue;
-    try {
-      return JSON.parse(line) as Record<string, Array<Record<string, unknown>>>;
-    } catch {
-      // continue
-    }
-  }
-  throw new Error('Expected JSON output but none found');
-};
 
 const testConnections: ConnectedAccountItem[] = [
   {
@@ -86,49 +74,7 @@ const connectedAccountsData = {
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
-
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    capabilities: Effect.succeed(
-      getTerminalCapabilities({
-        stdin: { isTTY: true },
-        stdout: { isTTY: true },
-        stderr: { isTTY: true },
-      })
-    ),
-    output: data => Console.log(data),
-    error: data => Console.error(data),
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
-    log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
-    },
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
-    select: (_message, options) => Effect.succeed(options[0]!.value),
-    confirm: () => Effect.succeed(confirmed),
-    withSpinner: (message, effect, options) =>
-      Effect.gen(function* () {
-        const result = yield* effect;
-        const successMsg =
-          typeof options?.successMessage === 'function'
-            ? options.successMessage(result)
-            : (options?.successMessage ?? message);
-        yield* Console.log(successMsg);
-        return result;
-      }),
-    useMakeSpinner: (_message, use) =>
-      use({
-        message: (_msg: string) => Effect.void,
-        stop: (msg?: string) => (msg ? Console.log(msg) : Effect.void),
-        error: (msg?: string) => (msg ? Console.error(msg) : Effect.void),
-      }),
-  });
+});
 
 describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
@@ -139,7 +85,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE', permission_group: null }],
@@ -166,7 +112,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE', permission_group: null }],
@@ -187,7 +133,7 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
           github: [
@@ -235,95 +181,10 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const parsed = parseJsonFromLines(lines);
+        const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).not.toHaveProperty('slack');
       })
-    );
-  });
-});
-
-describe('CLI: composio connections remove', () => {
-  const confirmedDeleteCalls: string[] = [];
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData: {
-        items: testConnections,
-        onDelete: nanoid => confirmedDeleteCalls.push(nanoid),
-      },
-      terminalUI: terminalUIWithConfirm(true),
-    })
-  )(it => {
-    it.effect('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
-      Effect.gen(function* () {
-        confirmedDeleteCalls.length = 0;
-
-        const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
-        yield* cli(['connections', 'remove', 'gmail']);
-
-        expect(confirmedDeleteCalls).toEqual(['con_gmail_active']);
-
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n')).toContain('Removed gmail connection.');
-      })
-    );
-  });
-
-  const deniedDeleteCalls: string[] = [];
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData: {
-        items: testConnections,
-        onDelete: nanoid => deniedDeleteCalls.push(nanoid),
-      },
-      terminalUI: terminalUIWithConfirm(false),
-    })
-  )(it => {
-    it.effect('[Given] consent is denied [Then] does not remove the connection', () =>
-      Effect.gen(function* () {
-        deniedDeleteCalls.length = 0;
-
-        const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
-        yield* cli(['connections', 'remove', 'work']);
-
-        expect(deniedDeleteCalls).toEqual([]);
-
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n')).toContain('No connection removed.');
-      })
-    );
-  });
-
-  const ambiguousDeleteCalls: string[] = [];
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData: {
-        items: testConnections,
-        onDelete: nanoid => ambiguousDeleteCalls.push(nanoid),
-      },
-      terminalUI: terminalUIWithConfirm(true),
-    })
-  )(it => {
-    it.effect(
-      '[Given] a selector matches multiple accounts [Then] asks for a unique selector',
-      () =>
-        Effect.gen(function* () {
-          ambiguousDeleteCalls.length = 0;
-
-          const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
-          yield* cli(['connections', 'remove', 'github']);
-
-          expect(ambiguousDeleteCalls).toEqual([]);
-
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          expect(lines.join('\n')).toContain('Multiple connections matched "github"');
-        })
     );
   });
 });

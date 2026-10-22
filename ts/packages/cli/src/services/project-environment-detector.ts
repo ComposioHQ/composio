@@ -2,9 +2,9 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Match, Context, Layer } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { getAncestors } from 'src/utils/get-ancestors';
-import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
-import { loadHostConfig } from 'src/services/config';
+import { HOST_CONFIG } from 'src/config';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -35,7 +35,11 @@ export class ProjectEnvironmentDetectorError extends Data.TaggedError(
   readonly message: string;
   readonly checkedPaths: string[];
   readonly details?: string;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -500,9 +504,7 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
       if (fileSet.has('pnpm-workspace.yaml')) return 'pnpm' as const;
     }
 
-    const userAgent = parseUserAgent(
-      yield* loadHostConfig(UNPREFIXED_CONFIG.NPM_CONFIG_USER_AGENT)
-    );
+    const userAgent = parseUserAgent(yield* Effect.orDie(HOST_CONFIG.NPM_CONFIG_USER_AGENT));
     if (userAgent) return userAgent;
 
     return 'npm' as const;

@@ -7,6 +7,7 @@ import warnings
 
 import httpx
 import typing_extensions as te
+from composio_client import Auth, AutoAuth, ProjectAuth, Scope, UserAuth
 
 from composio import exceptions
 from composio.client import DEFAULT_MAX_RETRIES, APIEnvironment, HttpClient
@@ -23,7 +24,6 @@ from composio.core.models import (
 )
 from composio.core.models.base import allow_tracking
 from composio.core.models.mcp import MCP
-from composio.core.models.tool_router_constants import ORG_ID_HEADER, PROJECT_ID_HEADER
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider._openai import (
     OpenAIProvider,
@@ -64,14 +64,15 @@ class SDKConfig(te.TypedDict):
     logging_level: te.NotRequired[LogLevel]
 
 
-def _scope_headers(
+def _scope(
     *, org_id: t.Optional[str], project_id: t.Optional[str]
-) -> t.Dict[str, str]:
-    """The ``x-org-id`` / ``x-project-id`` default headers for an explicit scope.
+) -> t.Optional[Scope]:
+    """The client ``scope`` for an explicit ``org_id`` / ``project_id`` pair.
 
     The two nano IDs scope requests together: a user API key without an
     explicit scope keeps the API default (the developer project), so a
     half-configured scope is rejected instead of silently selecting a project.
+    The client sends them as ``x-org-id`` / ``x-project-id``.
     """
     org_id = org_id or None
     project_id = project_id or None
@@ -81,8 +82,31 @@ def _scope_headers(
             "(the organization and consumer project nano IDs) or neither"
         )
     if org_id is None or project_id is None:
-        return {}
-    return {ORG_ID_HEADER: org_id, PROJECT_ID_HEADER: project_id}
+        return None
+    return Scope(organization_id=org_id, project_id=project_id)
+
+
+def _env_key(name: str) -> t.Optional[str]:
+    """``name`` from the environment, or ``None`` when unset or blank."""
+    value = os.environ.get(name)
+    return value if value and value.strip() else None
+
+
+def _custom_headers() -> t.Optional[t.Dict[str, str]]:
+    """``COMPOSIO_CUSTOM_HEADERS`` (``name: value`` lines) as default headers.
+
+    The generated client read this variable itself until 2.0.0-rc.18; it now
+    reads no environment, so the SDK keeps sending what it always sent.
+    """
+    raw = os.environ.get("COMPOSIO_CUSTOM_HEADERS")
+    if not raw:
+        return None
+    parsed: t.Dict[str, str] = {}
+    for line in raw.split("\n"):
+        colon = line.find(":")
+        if colon >= 0:
+            parsed[line[:colon].strip()] = line[colon + 1 :].strip()
+    return parsed or None
 
 
 class Composio(t.Generic[TTool, TToolCollection], WithLogger):
@@ -215,27 +239,34 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         logging_level = kwargs.get("logging_level")
         WithLogger.__init__(self, logger=logger, logging_level=logging_level)
         disable_api_key = kwargs.get("disable_api_key", False)
-        api_key: t.Optional[str]
+        user_api_key = kwargs.get("user_api_key") or _env_key("COMPOSIO_USER_API_KEY")
+        org_api_key = kwargs.get("org_api_key") or _env_key("COMPOSIO_ORG_API_KEY")
+        auth: Auth
         if disable_api_key:
             if kwargs.get("api_key") is not None:
                 raise exceptions.InvalidParams(
                     "`disable_api_key=True` cannot be combined with an explicit "
                     "`api_key`; pass one or the other"
                 )
-            api_key = None
-            user_api_key = kwargs.get("user_api_key") or os.environ.get(
-                "COMPOSIO_USER_API_KEY"
-            )
             if not user_api_key:
                 raise exceptions.UserApiKeyNotProvidedError()
+            # The user key alone, on every request. An organization key is
+            # not sent in this mode, as before.
+            auth = UserAuth(user_api_key)
         else:
             api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
             if not api_key:
                 raise exceptions.ApiKeyNotProvidedError()
-
-        default_headers = _scope_headers(
-            org_id=kwargs.get("org_id"), project_id=kwargs.get("project_id")
-        )
+            # With a user or organization key beside it, the client sends
+            # exactly one credential per request: the project key wherever the
+            # operation accepts it, otherwise the first declared scheme a key is
+            # held for. With the project key alone, that key on every request.
+            auth = (
+                AutoAuth(project=api_key, user=user_api_key, organization=org_api_key)
+                if user_api_key or org_api_key
+                else ProjectAuth(api_key)
+            )
+        scope = _scope(org_id=kwargs.get("org_id"), project_id=kwargs.get("project_id"))
 
         # Each instance gets its own provider so that the execute_tool_fn binding
         # performed by Tools.__init__ cannot leak across SDK instances (issue #4369).
@@ -251,14 +282,12 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         self._client = HttpClient(
             environment=kwargs.get("environment", "production"),
             provider=actual_provider.name,
-            api_key=api_key,
-            disable_api_key=disable_api_key,
-            user_api_key=kwargs.get("user_api_key"),
-            org_api_key=kwargs.get("org_api_key"),
+            auth=auth,
+            scope=scope,
             base_url=kwargs.get("base_url") or os.environ.get("COMPOSIO_BASE_URL"),
             timeout=kwargs.get("timeout"),
             max_retries=kwargs.get("max_retries", DEFAULT_MAX_RETRIES),
-            default_headers=default_headers or None,
+            default_headers=_custom_headers(),
             http_client=kwargs.get("http_client"),
             logger=logger,
             logging_level=logging_level,

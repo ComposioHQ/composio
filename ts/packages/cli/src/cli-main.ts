@@ -4,18 +4,28 @@
  * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
  */
 import process from 'node:process';
-import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
+import {
+  Cause,
+  ConfigProvider,
+  Effect,
+  Exit,
+  Layer,
+  Logger,
+  Option,
+  Predicate,
+  Runtime,
+} from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig, CliError } from 'effect/unstable/cli';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { CliConfig, CliError } from 'effect/cli';
+import { FetchHttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
+import { withoutClientNotices } from 'src/effects/without-client-notices';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
-import { getBaseConfigProvider, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -26,11 +36,18 @@ import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
-import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
+import {
+  ComposioUserContext,
+  ComposioUserContextLive as _ComposioUserContextLive,
+} from 'src/services/user-context';
+import { formatBackendMismatch } from 'src/config/backend';
+import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
+import { extractMessage } from 'src/utils/api-error-extraction';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { DashboardToolExecution } from 'src/services/dashboard-tool-execution';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
@@ -48,12 +65,16 @@ import {
 } from 'src/analytics/events';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
+import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
-import { ShellSetupAbortError } from 'src/commands/install.cmd';
-import { MissingRunSourceError } from 'src/commands/run.cmd';
+import { ShellSetupAbortError } from 'src/commands/install/install.errors';
+import { ReportedProxyCommandError } from 'src/commands/proxy.cmd';
+import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.cmd';
+import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
@@ -81,7 +102,7 @@ export const ComposioSessionRepositoryLive = Layer.provide(
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -101,7 +122,7 @@ export const TriggersRealtimeLive = Layer.provide(
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, LogLevelFromConfigLive)
 ) satisfies RequiredLayer;
 
 // Fed the cached repository so that the staleness refresh behind it shares the
@@ -111,9 +132,14 @@ export const ToolkitSlugCatalogLive = Layer.provide(
   ComposioToolkitsRepositoryCachedLive
 ) satisfies RequiredLayer;
 
+export const DashboardToolExecutionLive = Layer.provide(
+  DashboardToolExecution.Default,
+  Layer.mergeAll(ComposioUserContextLive, FetchHttpClient.layer)
+);
+
 export const ToolsExecutorLive = Layer.provide(
   _ToolsExecutorLive,
-  Layer.mergeAll(ComposioClientSingletonLive, ToolkitSlugCatalogLive)
+  Layer.mergeAll(ComposioClientSingletonLive, ToolkitSlugCatalogLive, DashboardToolExecutionLive)
 ) satisfies RequiredLayer;
 
 export const ProjectContextLive = Layer.provide(
@@ -126,8 +152,13 @@ export const SetupSkillInstallerLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
+export const PendingLoginSessionLive = Layer.provide(
+  PendingLoginSession.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
-  CliConfigLive.pipe(Layer.provide(ConfigLive)),
+  CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
   NodeProcess.Default,
   UpgradeBinaryLive,
@@ -144,13 +175,17 @@ const layers = Layer.mergeAll(
   SetupSkillInstallerLive,
   TriggersRealtimeLive,
   ProjectContextLive,
+  PendingLoginSessionLive,
   BunServices.layer,
   BunFileSystem.layer,
   BunPath.layer,
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
-  Layer.merge(Logger.layer([Logger.consolePretty()]), Layer.succeed(Logger.LogToStderr, true))
+  Layer.merge(
+    Logger.layer([withoutClientNotices(Logger.consolePretty())]),
+    Layer.succeed(Logger.LogToStderr, true)
+  )
 ) satisfies RequiredLayer;
 
 export const teardown: Runtime.Teardown = <E, A>(
@@ -241,8 +276,29 @@ export type CliBootstrapOptions = {
   readonly argv: ReadonlyArray<string>;
 };
 
+/** Writes `message` to stderr: as a decorated warning on a terminal, as plain text otherwise. */
+const warn = (message: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.warn(message);
+    } else {
+      yield* ui.error(`Warning: ${message}`);
+    }
+  });
+
+/** Warns, before any request, when an env var sends the stored key to another backend. */
+const warnOnBackendMismatch = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  yield* Option.match(ctx.backendMismatch, {
+    onNone: () => Effect.void,
+    onSome: mismatch => warn(formatBackendMismatch(mismatch)),
+  });
+});
+
 const cliProgram = (argv: ReadonlyArray<string>) =>
-  showUpdateNotice.pipe(
+  warnOnBackendMismatch.pipe(
+    Effect.andThen(showUpdateNotice),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(
@@ -263,14 +319,36 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           process.exitCode = 1;
         })
     ),
-    // A bare `composio run` is a usage mistake, not a broken invariant: print the one-line fix and
-    // exit non-zero instead of routing it through the defect reporter below.
+    // A usage mistake, a missing setup or login, or a failure a remote service reported clearly
+    // (see `UsageFailure`) is not a broken invariant: print the message and exit non-zero
+    // instead of routing it through the defect reporter below.
     Effect.catchIf(
-      (error): error is MissingRunSourceError => error instanceof MissingRunSourceError,
+      (error): error is UsageFailure => isUsageFailure(error),
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
           yield* ui.error(error.message);
+          process.exitCode = 1;
+        })
+    ),
+    // A rejected user API key gets the backend's message and the way to log in again, from
+    // whichever command it escaped.
+    Effect.catchIf(isRejectedUserApiKey, error =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error(extractMessage(error) ?? 'The user API key was rejected.');
+        yield* ui.error(yield* rejectedUserApiKeyHint);
+        process.exitCode = 1;
+      })
+    ),
+    // `composio execute` and `composio proxy` already printed the failure, and the failed result
+    // as JSON on stdout; the typed failure only exists so scripts and agents see a non-zero exit
+    // code.
+    Effect.catchIf(
+      (error): error is ReportedToolExecutionError | ReportedProxyCommandError =>
+        error instanceof ReportedToolExecutionError || error instanceof ReportedProxyCommandError,
+      () =>
+        Effect.sync(() => {
           process.exitCode = 1;
         })
     ),
@@ -331,9 +409,12 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
       })
     ),
     Effect.provide(layers),
-    // v4 removed `Effect.withConfigProvider` (a FiberRef-scoped combinator); `ConfigProvider` is
-    // now a `Context.Reference`, so the equivalent is providing it as a layer.
-    Effect.provide(ConfigProvider.layer(extendConfigProvider(getBaseConfigProvider())))
+    // Built per invocation, never at module scope: `ConfigProvider.fromEnv()` snapshots
+    // `process.env` when constructed, and the ambient `ConfigProvider` reference caches its
+    // default snapshot process-wide on first use. A fresh provider here means every config read
+    // of this invocation observes the environment as it is now (`vi.stubEnv` in tests, any
+    // in-process mutation before `runCli`).
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv()))
   );
 
 export const runCli = (options: CliBootstrapOptions): void => {

@@ -1,4 +1,10 @@
-FROM debian:bookworm-slim
+# Base images are digest-pinned for supply-chain integrity. ECR Public mirrors the
+# Docker Official Images, so builds do not depend on Docker Hub availability, but
+# its anonymous rate limit can still return 429 on shared runner IPs; CI mitigates
+# that by retrying with backoff (see .github/actions/build-e2e-image).
+ARG BASE_REGISTRY=public.ecr.aws/docker/library
+
+FROM ${BASE_REGISTRY}/debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587
 
 ARG INSTALL_SHELL=bash
 

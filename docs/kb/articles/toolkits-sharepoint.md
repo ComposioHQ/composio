@@ -1,3 +1,47 @@
+## Use a tenant-specific Microsoft endpoint for SharePoint Graph
+
+Set `issuer` to your Microsoft Entra tenant ID to authenticate SharePoint Graph
+through that tenant's endpoint instead of `/common`. Use the directory (tenant)
+ID, not your SharePoint site name. Microsoft's [tenant authority
+reference](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc#find-your-apps-openid-configuration-document-uri)
+explains how tenant-specific sign-in differs from `common`.
+
+First, retrieve the toolkit's authentication fields with your Composio project
+API key:
+
+```bash
+curl --fail-with-body \
+  'https://backend.composio.dev/api/v3.1/toolkits/sharepoint_graph' \
+  -H 'x-api-key: <COMPOSIO_API_KEY>'
+```
+
+Find the `OAUTH2` auth scheme and inspect `fields.auth_config_creation` and
+`fields.connected_account_initiation`. The `issuer` field appears under
+`connected_account_initiation`.
+
+To apply the same tenant ID to new connections, [update your custom auth
+config](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid) with
+`shared_credentials.issuer`:
+
+```bash
+curl --fail-with-body -X PATCH \
+  'https://backend.composio.dev/api/v3.1/auth_configs/<AUTH_CONFIG_ID>' \
+  -H 'x-api-key: <COMPOSIO_API_KEY>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "type": "custom",
+    "shared_credentials": {
+      "issuer": "<MICROSOFT_TENANT_ID>"
+    }
+  }'
+```
+
+Replace `<AUTH_CONFIG_ID>` with your SharePoint Graph custom auth config ID.
+Every new connection created through this auth config inherits the tenant ID.
+Create a new connection using that config and complete Microsoft sign-in to use
+the tenant-specific endpoint. This recipe configures new connections; it does
+not migrate existing connected accounts.
+
 ## SharePoint REST APIs and SharePoint Graph are separate API families
 
 Treat the current SharePoint toolkit and the SharePoint Graph toolkit as separate API families, not as interchangeable variants of the same connection.

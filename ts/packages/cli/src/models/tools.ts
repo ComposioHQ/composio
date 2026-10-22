@@ -1,4 +1,4 @@
-import { Brand, Schema } from 'effect';
+import { Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
 export const ToolAsEnum = Schema.String.annotate({ identifier: 'ToolAsEnum' });
@@ -13,14 +13,6 @@ export type ToolsAsEnums = Schema.Schema.Type<typeof ToolsAsEnums>;
 export const ToolsAsEnumsJSON = JSONTransformSchema(ToolsAsEnums);
 export const toolsAsEnumsFromJSON = Schema.decodeEffect(ToolsAsEnumsJSON);
 export const toolsAsEnumsToJSON = Schema.encodeEffect(ToolsAsEnumsJSON);
-
-// E.g., `SEND_EMAIL`
-export type ToolName = string & Brand.Brand<'ToolName'>;
-export const ToolName = Brand.nominal<ToolName>();
-
-// E.g., `GMAIL_SEND_EMAIL`
-export type ToolNameWithToolkitPrefix = string & Brand.Brand<'ToolNameWithToolkitPrefix'>;
-export const ToolNameWithToolkitPrefix = Brand.nominal<ToolNameWithToolkitPrefix>();
 
 /**
  * Tool with payload
@@ -63,3 +55,11 @@ export type Tools = Schema.Schema.Type<typeof Tools>;
 export const ToolsJSON = JSONTransformSchema(Tools);
 export const ToolsFromJSON = Schema.decodeEffect(ToolsJSON);
 export const ToolsToJSON = Schema.encodeEffect(ToolsJSON);
+
+// The client does not type the latest-version endpoint, so the CLI owns its
+// response contract.
+export const LatestToolVersionResponse = Schema.Struct({
+  tool_slug: Schema.String,
+  version: Schema.String,
+}).annotate({ identifier: 'LatestToolVersionResponse' });
+export type LatestToolVersionResponse = Schema.Schema.Type<typeof LatestToolVersionResponse>;

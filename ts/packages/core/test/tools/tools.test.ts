@@ -1173,6 +1173,23 @@ describe('Tools', () => {
       expect(result).toEqual(expectedProxyResponse);
     });
 
+    it('should forward userId as user_id', async () => {
+      const expectedProxyResponse = { data: { ok: true }, status: 200 };
+      mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);
+
+      await context.tools.proxyExecute({
+        endpoint: '/api/test',
+        method: 'GET',
+        connectedAccountId: 'test-account-id',
+        userId: 'user-123',
+      });
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        expect.objectContaining({ connected_account_id: 'test-account-id', user_id: 'user-123' }),
+        { maxRetries: 0 }
+      );
+    });
+
     it('should handle proxy request with only header parameters', async () => {
       const proxyParams = {
         endpoint: '/api/headers-only',
@@ -1391,6 +1408,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1417,6 +1435,7 @@ describe('Tools', () => {
 
       it('returns the Instant charge for provider-wrapped session tools', async () => {
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: {},
           error: null,
           log_id: '123',
@@ -1439,6 +1458,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1507,6 +1527,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1555,6 +1576,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1595,6 +1617,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'failed',
           data: null,
           error: 'Something went wrong',
           log_id: '456',
@@ -1623,6 +1646,7 @@ describe('Tools', () => {
         };
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1686,6 +1710,7 @@ describe('Tools', () => {
         context.tools.wrapToolsForToolRouter(sessionId, tools);
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',
@@ -1733,6 +1758,7 @@ describe('Tools', () => {
         context.tools.wrapToolsForToolRouter(sessionId, tools, modifiers);
 
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: { results: true },
           error: null,
           log_id: '123',

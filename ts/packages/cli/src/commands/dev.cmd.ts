@@ -1,8 +1,10 @@
-import { Command, Flag } from 'effect/unstable/cli';
-import { Data, Effect, Option } from 'effect';
+import { requireLogin } from 'src/effects/require-auth';
+import { Command, Flag } from 'effect/cli';
+import { Effect, Option } from 'effect';
+import { CommandInputError } from './errors';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
-import { logsCmd } from './logs-cmd/logs.cmd';
+import { logsCmd } from './logs/logs.cmd';
 import { devToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { toolkitsCmd } from './toolkits/toolkits.cmd';
 import { authConfigsCmd } from './auth-configs/auth-configs.cmd';
@@ -13,27 +15,41 @@ import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-us
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
+import { CommandSurface, rejectSharedFlags, rejectsSharedFlags } from './surface';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
   Flag.optional
 );
 
+/**
+ * Flags every `dev` subcommand accepts, before or after the subcommand name.
+ * A handler reads them through `CommandSurface`; a subcommand must not declare
+ * a flag of the same name, `withSharedFlags` rejects the duplicate.
+ */
+const userId = Flag.String('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription(
+    'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.'
+  )
+);
+
+const projectName = Flag.String('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project to use instead of the one configured in this directory')
+);
+
 export const devSubcommands = [
-  initCmd,
+  initCmd.pipe(rejectsSharedFlags('dev init')),
   devToolsCmd$Execute,
-  triggersCmd$Listen,
-  logsCmd,
+  triggersCmd$Listen.pipe(requireLogin),
+  logsCmd.pipe(rejectsSharedFlags('dev logs', ['--project-name'])),
   toolkitsCmd,
-  authConfigsCmd,
+  authConfigsCmd.pipe(rejectsSharedFlags('dev auth-configs')),
   connectedAccountsCmd,
   triggersCmd,
-  projectsCmd,
+  projectsCmd.pipe(rejectsSharedFlags('dev projects')),
 ] as const;
-
-export class DeveloperModeError extends Data.TaggedError('commands/DeveloperModeError')<{
-  readonly message: string;
-}> {}
 
 const describeCurrentMode = (enabled: boolean) =>
   enabled
@@ -54,7 +70,9 @@ const applyDeveloperModeChange = (enabled: boolean) =>
     if (enabled) {
       if (!stdin.isTTY()) {
         const configPath = yield* resolveCliConfigPath;
-        return yield* new DeveloperModeError({
+        return yield* new CommandInputError({
+          command: 'dev',
+          option: '--mode',
           message: `Enabling developer mode requires an interactive terminal. Set "developer.enabled": true in ${configPath} to enable it outside an interactive session.`,
         });
       }
@@ -124,8 +142,17 @@ const promptForDeveloperMode = () =>
     yield* applyDeveloperModeChange(next === 'on');
   });
 
-export const buildDevCommand = (visibility: CommandVisibility) => {
-  const cmd = Command.make('dev', { devMode }).pipe(
+const developerModeHandler = ({ devMode }: { readonly devMode: Option.Option<'on' | 'off'> }) =>
+  Option.match(devMode, {
+    onNone: () => promptForDeveloperMode(),
+    onSome: value => applyDeveloperModeChange(value === 'on'),
+  });
+
+const makeDevCommand = <E, R>(
+  visibility: CommandVisibility,
+  handler: (input: { readonly devMode: Option.Option<'on' | 'off'> }) => Effect.Effect<void, E, R>
+) =>
+  Command.make('dev', { devMode }).pipe(
     Command.withDescription(
       visibility.isDevModeEnabled
         ? 'Developer workflows: init, playground execution, logs, projects, toolkits, accounts, and triggers.'
@@ -135,13 +162,26 @@ export const buildDevCommand = (visibility: CommandVisibility) => {
       { command: 'composio dev --mode on' },
       { command: 'composio dev --mode off' },
     ]),
-    Command.withHandler(({ devMode }) =>
-      Option.match(devMode, {
-        onNone: () => promptForDeveloperMode(),
-        onSome: value => applyDeveloperModeChange(value === 'on'),
-      })
-    )
+    Command.withHandler(handler)
   );
 
-  return visibility.isDevModeEnabled ? cmd.pipe(Command.withSubcommands([...devSubcommands])) : cmd;
+// The developer-mode toggle changes a global setting, for no user and no project.
+const toggleRejections = {
+  '--project-name':
+    '`composio dev --mode` changes a global setting, so --project-name does not apply. Remove it.',
+  '--user-id':
+    '`composio dev --mode` changes a global setting, so --user-id does not apply. Remove it.',
 };
+
+export const buildDevCommand = (visibility: CommandVisibility) =>
+  visibility.isDevModeEnabled
+    ? makeDevCommand(visibility, input =>
+        rejectSharedFlags('dev', undefined, toggleRejections).pipe(
+          Effect.andThen(developerModeHandler(input))
+        )
+      ).pipe(
+        Command.withSubcommands([...devSubcommands]),
+        Command.withSharedFlags({ userId, projectName }),
+        Command.provide(({ userId, projectName }) => CommandSurface.dev({ userId, projectName }))
+      )
+    : makeDevCommand(visibility, developerModeHandler);

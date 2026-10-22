@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -56,6 +57,6 @@ export async function generateMetadata({ params }: ToolkitPageProps): Promise<Me
   return {
     title: `${toolkit.name} knowledge`,
     description: `Find public Composio docs, support answers, OAuth guides, examples, and reference pages for ${toolkit.name}.`,
-    alternates: { canonical: `/kb/toolkit/${toolkit.slug}` },
+    alternates: markdownAlternates(`/kb/toolkit/${toolkit.slug}`),
   };
 }

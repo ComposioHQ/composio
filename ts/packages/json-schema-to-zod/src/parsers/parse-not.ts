@@ -1,15 +1,22 @@
-import { z } from 'zod/v3';
-
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 
-export const parseNot = (jsonSchema: JsonSchemaObject & { not: JsonSchema }, refs: Refs) => {
-  return z.any().refine(
+export const parseNot = <S>(
+  jsonSchema: JsonSchemaObject & { not: JsonSchema },
+  ctx: ParseContext<S>
+): S => {
+  const { backend } = ctx;
+  return backend.refine<unknown>(
+    backend.any(),
     value =>
-      !parseSchema(jsonSchema.not, {
-        ...refs,
-        path: [...refs.path, 'not'],
-      }).safeParse(value).success,
+      !backend.run(
+        parseSchema(jsonSchema.not, {
+          ...ctx,
+          path: [...ctx.path, 'not'],
+        }),
+        value
+      ).success,
     'Invalid input: Should NOT be valid against schema'
   );
 };

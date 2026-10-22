@@ -1,18 +1,15 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import {
-  APIConnectionError,
-  Composio as RawComposioClient,
-  NotFoundError,
+  Auth,
+  make as makeComposioClient,
+  type ComposioError,
   type RequestOptions,
-} from '@composio/client';
+} from '@composio/client/effect';
 import type {
-  AuthConfigCreateParams,
-  AuthConfigCreateResponse,
-} from '@composio/client/resources/auth-configs';
-import type { LinkCreateResponse } from '@composio/client/resources/link';
-import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
-import type { ToolRetrieveResponse } from '@composio/client/resources/tools';
+  TriggerInstanceListActiveParams,
+  TriggerInstanceUpsertParams,
+} from '@composio/client/resources/trigger-instances';
 import { TIMESTAMP } from '../models/account';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -28,37 +25,25 @@ import {
   Path,
   References,
   Schedule,
-  String,
 } from 'effect';
-import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { CliConfig, type Command as CliCommand } from 'effect/cli';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { ComposioCliConfig } from 'src/cli-config';
+import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
-import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
+import { PendingLoginSession } from 'src/services/pending-login-session';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
-  HttpServerError,
-  InvalidToolkitsError,
-  InvalidToolkitVersionsError,
-  type InvalidVersionDetail,
-  type OrganizationSummary,
-  type OrgProject,
-  type ToolkitProjectScope,
+  type ClientScope,
 } from 'src/services/composio-clients';
-import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
-import type { Tool, Tools } from 'src/models/tools';
-import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
-import type { AuthConfigItem } from 'src/models/auth-configs';
-import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { TriggerInstanceItem } from 'src/models/triggers';
-import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CliUserConfig } from 'src/models/cli-user-config';
@@ -66,6 +51,7 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import { DashboardToolExecutionTest, type DashboardTestResponder } from '../layers/dashboard';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import type { ToolExecuteResponse } from 'src/services/tools-executor';
 import type {
@@ -87,49 +73,42 @@ import type {
 import { Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
-import { CommandRunner, type CommandRunnerShape } from 'src/services/command-runner';
+import type { CommandRunnerShape } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
-import {
-  SetupSkillInstaller,
-  type SetupSkillInstallerShape,
-} from 'src/services/setup-skill-installer';
-import { FetchHttpClient } from 'effect/unstable/http';
+import type { SetupSkillInstallerShape } from 'src/services/setup-skill-installer';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
+import { notFoundError } from '../layers/not-found';
+import { DEFAULT_PAGE_LIMIT } from '../layers/page';
+import { CommandRunnerTest } from '../layers/command-runner';
+import { SetupSkillInstallerTest } from '../layers/setup';
+import {
+  resolveToolkitsTestData,
+  toolkitCatalogMethods,
+  type ToolkitsTestData,
+} from '../layers/toolkits';
+import {
+  mockAccountResources,
+  type AccountTestData,
+  type MockRequestScope,
+} from '../layers/accounts';
+import {
+  connectedAccountRepositoryMethods,
+  mockConnectedAccountResources,
+  resolveAuthConfigsTestData,
+  resolveConnectedAccountsTestData,
+  type AuthConfigsTestData,
+  type ConnectedAccountsTestData,
+} from '../layers/connected-accounts';
 
-/**
- * The credentials and scope one mock-client request carries: the parameters
- * the client was obtained with, overridden by per-request headers.
- */
-export interface MockRequestScope {
-  readonly userApiKey?: string;
-  readonly apiKey?: string;
-  readonly orgId?: string;
-  readonly projectId?: string;
-}
-
-/**
- * One call to an account, session-info, or consumer endpoint of the mock client.
- */
-export interface MockAccountRequest {
-  readonly operation:
-    | 'org.list'
-    | 'org.project.list'
-    | 'org.consumer.project.resolve'
-    | 'org.consumer.listConnectedToolkits'
-    | 'auth.session.retrieveInfo'
-    | 'tools.getLatestVersion'
-    | 'org.project.createApiKey'
-    | 'org.consumer.config'
-    | 'consumer.permissions.resolve';
-  readonly scope: MockRequestScope;
-  readonly params?: unknown;
-  readonly options?: RequestOptions;
-}
+export type { MockAccountRequest, MockRequestScope } from '../layers/accounts';
 
 export interface TestLiveInput {
   /**
-   * Base config provider to use in test.
-   * If not provided, the default `ConfigProvider.fromEnv({ env: {} })` is used.
+   * Config provider to use in test. Its values win; anything it leaves unset falls through to
+   * `hostOnlyEnvConfigProvider`, the live host environment without any `COMPOSIO_*`,
+   * `DEBUG_OVERRIDE_*`, or `FORCE_*` variable, so `HOST_CONFIG` (`CI`, `VITEST`, `PATH`, the
+   * agent-host markers) keeps reading the real process the way the old raw-provider bypass did.
    */
   baseConfigProvider?: ConfigProvider.ConfigProvider;
 
@@ -153,68 +132,24 @@ export interface TestLiveInput {
   /**
    * Mock toolkit-related data to use in test.
    */
-  toolkitsData?: {
-    toolkits?: Toolkits;
-    /**
-     * Custom toolkits registered in the test project. Kept apart from
-     * `toolkits`, the Composio-managed catalog, as the API keeps them apart.
-     */
-    projectToolkits?: Toolkits;
-    /**
-     * The project `projectToolkits` belong to. When set, a project-toolkit
-     * lookup for any other scope, or for none, finds nothing, as the API
-     * would answer for another project.
-     */
-    projectToolkitsScope?: ToolkitProjectScope;
-    /**
-     * Called with the scope of every project-toolkit lookup.
-     */
-    onGetProjectToolkits?: (scope: ToolkitProjectScope | undefined) => void;
-    detailedToolkits?: ToolkitDetailed[];
-    tools?: Tools;
-    triggerTypesAsEnums?: TriggerTypesAsEnums;
-    triggerTypes?: TriggerTypes;
-  };
+  toolkitsData?: ToolkitsTestData;
 
   /**
    * Account, session-info, and consumer data served by the mock client's
    * `org.*` and `auth.session.retrieveInfo` resources and its `get`/`post`
-   * escape hatch. An endpoint without data rejects with a connection error,
-   * as an unreachable backend would; consumer project resolution always
-   * answers, echoing the requested org.
+   * escape hatch.
    */
-  accountData?: {
-    sessionInfo?:
-      | SessionRetrieveInfoResponse
-      | ((
-          scope: MockRequestScope
-        ) => SessionRetrieveInfoResponse | Promise<SessionRetrieveInfoResponse>);
-    organizations?: ReadonlyArray<OrganizationSummary>;
-    projects?: ReadonlyArray<OrgProject>;
-    connectedToolkits?: ReadonlyArray<string>;
-    latestToolVersion?: { readonly tool_slug: string; readonly version: string };
-    projectApiKey?: string;
-    onRequest?: (request: MockAccountRequest) => void;
-  };
+  accountData?: AccountTestData;
 
   /**
    * Mock auth-config data to use in test.
    */
-  authConfigsData?: {
-    items?: AuthConfigItem[];
-    createResponse?: AuthConfigCreateResponse;
-    onCreate?: (params: AuthConfigCreateParams) => void;
-  };
+  authConfigsData?: AuthConfigsTestData;
 
   /**
    * Mock connected-account data to use in test.
    */
-  connectedAccountsData?: {
-    items?: ConnectedAccountItem[];
-    linkResponse?: LinkCreateResponse;
-    onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
-    onDelete?: (nanoid: string) => void;
-  };
+  connectedAccountsData?: ConnectedAccountsTestData;
 
   /**
    * Mock trigger instance data to use in test.
@@ -263,6 +198,22 @@ export interface TestLiveInput {
   toolsExecutor?: {
     failWith?: unknown;
     respondWith?: ToolExecuteResponse;
+    /** Called each time the mock executor actually runs a tool call. */
+    onExecute?: (slug: string) => void;
+  };
+
+  /**
+   * Stand in for the Dashboard endpoints `composio execute` sends consumer
+   * executions to.
+   *
+   * By default the test Dashboard does what the real one does with a request:
+   * it creates a Tool Router session itself and executes on the mock client's
+   * `toolRouter.session.*` handlers, relaying their answer or their status
+   * error. Set `respond` to answer yourself; a rejection is delivered to the
+   * CLI as a network failure.
+   */
+  dashboard?: {
+    respond?: DashboardTestResponder;
   };
 
   /**
@@ -271,39 +222,49 @@ export interface TestLiveInput {
    * Controls the mock `ComposioClientSingleton`'s `toolRouter.session.*` methods.
    * Each method can be overridden individually; defaults are provided for all.
    *
+   * Each override answers with an Effect, so a test can fail a call with one
+   * of the client's own errors or route it to a client over a stub transport.
+   *
    * When `toolsExecutor` is also set, its mock takes precedence for `tools execute`
    * (the Tool Router mock is still used by `toolkits list`, `toolkits info`, etc.).
    */
   toolRouter?: {
     /** Override `session.create`. Receives the create params. */
-    create?: (params: SessionCreateParams) => Promise<SessionCreateResponse>;
+    create?: (params: SessionCreateParams) => Effect.Effect<SessionCreateResponse, ComposioError>;
     /** Override `session.execute`. Receives sessionId, params, and request options. */
     execute?: (
       sessionId: string,
       params: SessionExecuteParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionExecuteResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionExecuteResponse, ComposioError>;
     /** Override `session.executeMeta`. Receives sessionId, params, and request options. */
     executeMeta?: (
       sessionId: string,
       params: SessionExecuteMetaParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionExecuteMetaResponse>;
-    /** Override `session.link`. Receives sessionId and params. */
-    link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionExecuteMetaResponse, ComposioError>;
+    /** Override `session.link`. Receives sessionId, params, and request options. */
+    link?: (
+      sessionId: string,
+      params: SessionLinkParams,
+      options?: RequestOptions
+    ) => Effect.Effect<SessionLinkResponse, ComposioError>;
     /** Override `session.proxyExecute`. Receives sessionId, params, and request options. */
     proxyExecute?: (
       sessionId: string,
       params: SessionProxyExecuteParams,
-      options?: { maxRetries?: number }
-    ) => Promise<SessionProxyExecuteResponse>;
+      options?: RequestOptions
+    ) => Effect.Effect<SessionProxyExecuteResponse, ComposioError>;
     /** Override `session.search`. Receives sessionId and params. */
-    search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;
+    search?: (
+      sessionId: string,
+      params: SessionSearchParams
+    ) => Effect.Effect<SessionSearchResponse, ComposioError>;
     /** Override `session.toolkits`. Receives sessionId and optional params. */
     toolkits?: (
       sessionId: string,
       params?: SessionToolkitsParams | null
-    ) => Promise<SessionToolkitsResponse>;
+    ) => Effect.Effect<SessionToolkitsResponse, ComposioError>;
   };
 
   /**
@@ -335,69 +296,17 @@ export interface TestLiveInput {
 
 type RequiredLayer = Layer.Layer<CliCommand.Environment, unknown, never>;
 
-const toClientTool = (tool: Tool): ToolRetrieveResponse => {
-  // Derive toolkit slug from tool slug prefix (e.g. GMAIL_SEND_EMAIL -> gmail)
-  const parts = tool.slug.split('_');
-  const toolkitSlug = parts.length > 1 ? parts[0]!.toLowerCase() : '';
-  return {
-    ...tool,
-    available_versions: [...tool.available_versions],
-    tags: [...tool.tags],
-    no_auth: false,
-    version: 'latest',
-    scopes: [],
-    scope_requirements: null,
-    is_deprecated: false,
-    deprecated: {
-      displayName: tool.name,
-      version: 'latest',
-      available_versions: [...tool.available_versions],
-      is_deprecated: false,
-      toolkit: { logo: '' },
-    },
-    toolkit: { name: toolkitSlug, slug: toolkitSlug, logo: '' },
-  };
-};
-
 /**
  * Effect layer that injects all the services needed for tests, using mocks to avoid
  * side-effects like unwanted HTTP requests to remote services.
  */
 export const TestLayer = (input?: TestLiveInput) =>
   Effect.gen(function* () {
-    const defaultAppClientData = {
-      toolkits: [] as Toolkits,
-      projectToolkits: [] as Toolkits,
-      detailedToolkits: [] as ToolkitDetailed[],
-      tools: [] as Tools,
-      triggerTypesAsEnums: [] as TriggerTypesAsEnums,
-      triggerTypes: [] as TriggerTypes,
-    } satisfies TestLiveInput['toolkitsData'];
     const fixture = input?.fixture;
-    const toolkitsData = {
-      ...defaultAppClientData,
-      ...(input?.toolkitsData ?? {}),
-      detailedToolkits:
-        input?.toolkitsData?.detailedToolkits ?? defaultAppClientData.detailedToolkits,
-    };
+    const toolkitsData = resolveToolkitsTestData(input?.toolkitsData);
 
-    const defaultAuthConfigsData = {
-      items: [] as AuthConfigItem[],
-      createResponse: undefined as AuthConfigCreateResponse | undefined,
-    } satisfies TestLiveInput['authConfigsData'];
-    const authConfigsData = {
-      ...defaultAuthConfigsData,
-      ...(input?.authConfigsData ?? {}),
-    };
-
-    const defaultConnectedAccountsData = {
-      items: [] as ConnectedAccountItem[],
-      linkResponse: undefined as LinkCreateResponse | undefined,
-    } satisfies TestLiveInput['connectedAccountsData'];
-    const connectedAccountsData = {
-      ...defaultConnectedAccountsData,
-      ...(input?.connectedAccountsData ?? {}),
-    };
+    const authConfigsData = resolveAuthConfigsTestData(input?.authConfigsData);
+    const connectedAccountsData = resolveConnectedAccountsTestData(input?.connectedAccountsData);
 
     const defaultRealtimeData = {
       events: [] as ReadonlyArray<Record<string, unknown>>,
@@ -421,391 +330,9 @@ export const TestLayer = (input?: TestLiveInput) =>
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
       ComposioToolkitsRepository.of({
-        getToolkits: () => Effect.succeed(toolkitsData.toolkits),
-        getProjectToolkits: scope =>
-          Effect.sync(() => {
-            toolkitsData.onGetProjectToolkits?.(scope);
-            const owner = toolkitsData.projectToolkitsScope;
-            const inScope =
-              owner === undefined ||
-              (scope?.orgId === owner.orgId && scope.projectId === owner.projectId);
-            return inScope ? toolkitsData.projectToolkits : [];
-          }),
-        getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
-          const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
-          const found = toolkitsData.toolkits.filter(t =>
-            normalizedSlugs.has(String.toLowerCase(t.slug))
-          );
-          if (found.length !== slugs.length) {
-            const foundSlugs = new Set(found.map(t => String.toLowerCase(t.slug)));
-            const notFound = slugs.filter(s => !foundSlugs.has(String.toLowerCase(s)));
-            return Effect.fail(
-              new InvalidToolkitsError({
-                invalidToolkits: [...notFound],
-                availableToolkits: toolkitsData.toolkits.map(t => t.slug),
-              })
-            );
-          }
-          return Effect.succeed(found);
-        },
-        getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
-        getToolsAsEnums: () => Effect.succeed(toolkitsData.tools.map(tool => tool.slug)),
-        getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
-        getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
-          let triggers = toolkitsData.triggerTypes;
-          if (toolkitSlugs && toolkitSlugs.length > 0) {
-            const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-            triggers = triggers.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
-          }
-          return Effect.succeed(triggers);
-        },
-        getTriggerTypeDetailed: (slug: string) => {
-          const found = toolkitsData.triggerTypes.find(
-            trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
-          );
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Trigger type "${slug}" not found`, status: 404 })
-            );
-          }
-          return Effect.succeed(found);
-        },
-        getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
-          let tools = toolkitsData.tools;
-          if (toolkitSlugs && toolkitSlugs.length > 0) {
-            const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-            tools = tools.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
-          }
-          return Effect.succeed(tools);
-        },
-        validateToolkits: (toolkitSlugs: ReadonlyArray<string>) => {
-          const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
-          const availableSlugs = toolkitsData.toolkits.map(toolkit =>
-            String.toLowerCase(toolkit.slug)
-          );
-          const invalidSlugs = normalizedInputSlugs.filter(slug => !availableSlugs.includes(slug));
-
-          if (invalidSlugs.length > 0) {
-            return Effect.fail(
-              new InvalidToolkitsError({
-                invalidToolkits: invalidSlugs,
-                availableToolkits: availableSlugs,
-              })
-            );
-          }
-
-          return Effect.succeed(normalizedInputSlugs);
-        },
-        filterToolkitsBySlugs: (toolkits, toolkitSlugs) => {
-          const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
-          return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
-        },
-        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
-          // Filter tools based on toolkit slugs from specs
-          const toolkitSlugs = specs.map(s => s.toolkitSlug.toUpperCase());
-          const prefixes = toolkitSlugs.map(s => `${s}_`);
-          const tools = toolkitsData.tools.filter(t =>
-            prefixes.some(p => t.slug.toUpperCase().startsWith(p))
-          );
-          return Effect.succeed(tools);
-        },
-        validateToolkitVersions: (
-          overrides: ToolkitVersionOverrides,
-          relevantToolkits?: ReadonlyArray<string>
-        ) => {
-          // Mock implementation that validates against test fixture
-          const invalidVersions: InvalidVersionDetail[] = [];
-          const warnings: string[] = [];
-
-          for (const [toolkit, version] of overrides) {
-            // Check if toolkit should be validated
-            if (relevantToolkits && !relevantToolkits.map(s => s.toLowerCase()).includes(toolkit)) {
-              warnings.push(`Version override for "${toolkit}" will be ignored`);
-              continue;
-            }
-
-            // Check if toolkit exists in the fixture
-            const toolkitExists = toolkitsData.toolkits.some(
-              t => String.toLowerCase(t.slug) === toolkit
-            );
-
-            if (!toolkitExists) {
-              return Effect.fail(
-                new InvalidToolkitsError({
-                  invalidToolkits: [toolkit],
-                  availableToolkits: toolkitsData.toolkits.map(t => t.slug),
-                })
-              );
-            }
-
-            // Mock: only accept 'latest' or versions matching pattern YYYYMMDD_NN
-            const validPattern = /^\d{8}_\d{2}$/;
-            if (version !== 'latest' && !validPattern.test(version)) {
-              invalidVersions.push({
-                toolkit,
-                requestedVersion: version,
-                availableVersions: ['20250901_00', '20250815_00', '20250710_00'],
-              });
-            }
-          }
-
-          if (invalidVersions.length > 0) {
-            return Effect.fail(new InvalidToolkitVersionsError({ invalidVersions }));
-          }
-
-          return Effect.succeed({
-            validatedOverrides: overrides,
-            warnings: warnings as ReadonlyArray<string>,
-          });
-        },
-        searchToolkits: (params: {
-          search?: string;
-          category?: string;
-          limit?: number;
-          cursor?: string;
-        }) => {
-          let results = [...toolkitsData.toolkits];
-
-          if (params.search) {
-            const q = params.search.toLowerCase();
-            results = results.filter(
-              t =>
-                t.name.toLowerCase().includes(q) ||
-                t.slug.toLowerCase().includes(q) ||
-                t.meta.description.toLowerCase().includes(q)
-            );
-          }
-
-          const limit = params.limit ?? 30;
-          const items = results.slice(0, limit);
-          return Effect.succeed({
-            items,
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            next_cursor: null,
-          });
-        },
-        searchTools: (params: {
-          search?: string;
-          toolkit_slug?: string;
-          tags?: string;
-          limit?: number;
-          cursor?: string;
-        }) => {
-          let results = [...toolkitsData.tools];
-
-          if (params.toolkit_slug) {
-            const slugs = params.toolkit_slug.split(',').map(s => s.trim().toUpperCase() + '_');
-            results = results.filter(t => slugs.some(p => t.slug.toUpperCase().startsWith(p)));
-          }
-
-          if (params.search) {
-            const q = params.search.toLowerCase();
-            results = results.filter(
-              t =>
-                t.name.toLowerCase().includes(q) ||
-                t.slug.toLowerCase().includes(q) ||
-                t.description.toLowerCase().includes(q)
-            );
-          }
-
-          if (params.tags) {
-            const tagList = params.tags.split(',').map(t => t.trim().toLowerCase());
-            results = results.filter(t =>
-              tagList.some(tag => t.tags.map(tt => tt.toLowerCase()).includes(tag))
-            );
-          }
-
-          const limit = params.limit ?? 30;
-          const items = results.slice(0, limit).map(toClientTool);
-          return Effect.succeed({
-            items,
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            current_page: 1,
-            next_cursor: null,
-          });
-        },
-        getToolDetailed: (slug: string) => {
-          const found = toolkitsData.tools.find(t => t.slug.toUpperCase() === slug.toUpperCase());
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Tool "${slug}" not found`, status: 404 })
-            );
-          }
-          return Effect.succeed(toClientTool(found));
-        },
-        getToolkitDetailed: (slug: string) => {
-          const found = toolkitsData.detailedToolkits.find(
-            t => t.slug.toLowerCase() === slug.toLowerCase()
-          );
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({ cause: `Toolkit "${slug}" not found`, status: 404 })
-            );
-          }
-          return Effect.succeed(found);
-        },
-        listAuthConfigs: (params: {
-          search?: string;
-          toolkit_slug?: string;
-          limit?: number;
-          show_disabled?: boolean;
-        }) => {
-          let results = [...authConfigsData.items];
-
-          if (params.toolkit_slug) {
-            const slugs = params.toolkit_slug.split(',').map(s => s.trim().toLowerCase());
-            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
-          }
-
-          if (params.search) {
-            const q = params.search.toLowerCase();
-            results = results.filter(
-              item => item.name.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
-            );
-          }
-
-          const limit = params.limit ?? 30;
-          const items = results.slice(0, limit);
-          return Effect.succeed({
-            items,
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            current_page: 1,
-            next_cursor: null,
-          });
-        },
-        getAuthConfig: (nanoid: string) => {
-          const found = authConfigsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({
-                cause: `Auth config "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Auth config "${nanoid}" not found.`,
-                  suggestedFix: 'Check the auth config ID and try again.',
-                  code: 404,
-                },
-              })
-            );
-          }
-          return Effect.succeed(found);
-        },
-        createAuthConfig: (params: AuthConfigCreateParams) => {
-          authConfigsData.onCreate?.(params);
-          return Effect.succeed(
-            authConfigsData.createResponse ?? {
-              auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
-              toolkit: { slug: 'test' },
-            }
-          );
-        },
-        deleteAuthConfig: (nanoid: string) => {
-          const found = authConfigsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({
-                cause: `Auth config "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Auth config "${nanoid}" not found.`,
-                  suggestedFix: 'Check the auth config ID and try again.',
-                  code: 404,
-                },
-              })
-            );
-          }
-          return Effect.succeed({ success: true, message: 'Auth config deleted' });
-        },
-        listConnectedAccounts: (params: {
-          toolkit_slugs?: string[];
-          user_ids?: string[];
-          statuses?: ReadonlyArray<string> | null;
-          limit?: number;
-        }) => {
-          let results = [...connectedAccountsData.items];
-
-          if (params.toolkit_slugs && params.toolkit_slugs.length > 0) {
-            const slugs = params.toolkit_slugs.map(s => s.toLowerCase());
-            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
-          }
-
-          if (params.user_ids && params.user_ids.length > 0) {
-            const ids = new Set(params.user_ids);
-            results = results.filter(item => ids.has(item.user_id));
-          }
-
-          if (params.statuses && params.statuses.length > 0) {
-            const statuses = new Set(params.statuses);
-            results = results.filter(item => statuses.has(item.status));
-          }
-
-          const limit = params.limit ?? 30;
-          const items = results.slice(0, limit);
-          return Effect.succeed({
-            items,
-            total_items: results.length,
-            total_pages: Math.ceil(results.length / limit),
-            current_page: 1,
-            next_cursor: null,
-          });
-        },
-        getConnectedAccount: (nanoid: string) => {
-          const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({
-                cause: `Connected account "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Connected account "${nanoid}" not found.`,
-                  suggestedFix: 'Check the connected account ID and try again.',
-                  code: 404,
-                },
-              })
-            );
-          }
-          return Effect.succeed(found);
-        },
-        deleteConnectedAccount: (nanoid: string) => {
-          const found = connectedAccountsData.items.find(item => item.id === nanoid);
-          if (!found) {
-            return Effect.fail(
-              new HttpServerError({
-                cause: `Connected account "${nanoid}" not found`,
-                status: 404,
-                details: {
-                  message: `Connected account "${nanoid}" not found.`,
-                  suggestedFix: 'Check the connected account ID and try again.',
-                  code: 404,
-                },
-              })
-            );
-          }
-          return Effect.succeed({ success: true });
-        },
-        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) => {
-          if (connectedAccountsData.linkResponse) {
-            return Effect.succeed(connectedAccountsData.linkResponse);
-          }
-          return Effect.succeed({
-            connected_account_id: 'con_test_link',
-            expires_at: '2026-12-31T23:59:59Z',
-            link_token: 'lt_test_token',
-            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-          } satisfies LinkCreateResponse);
-        },
-        listActiveTriggers: (params: {
-          user_ids?: string[];
-          connected_account_ids?: string[];
-          auth_config_ids?: string[];
-          trigger_ids?: string[];
-          trigger_names?: string[];
-          show_disabled?: boolean;
-          limit?: number;
-        }) => {
+        ...toolkitCatalogMethods(toolkitsData),
+        ...connectedAccountRepositoryMethods(authConfigsData, connectedAccountsData),
+        listActiveTriggers: (params: TriggerInstanceListActiveParams) => {
           let results = [...triggersData.items];
 
           const userIds = params.user_ids;
@@ -843,7 +370,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             results = results.filter(item => item.disabled_at === null);
           }
 
-          const limit = params.limit ?? 30;
+          const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
           const items = results.slice(0, limit);
           return Effect.succeed({
             items,
@@ -853,19 +380,12 @@ export const TestLayer = (input?: TestLiveInput) =>
             next_cursor: null,
           });
         },
-        createTrigger: (
-          triggerSlug: string,
-          params?: {
-            connected_account_id?: string;
-            trigger_config?: Record<string, unknown>;
-          }
-        ) =>
+        createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
           }),
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),
-        deleteTrigger: triggerId => Effect.succeed({ trigger_id: triggerId }),
       })
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
@@ -904,6 +424,11 @@ export const TestLayer = (input?: TestLiveInput) =>
         execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
+        // Command tests read the exit code off the real process.
+        setExitCode: code =>
+          Effect.sync(() => {
+            process.exitCode = code;
+          }),
       })
     );
 
@@ -919,7 +444,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       },
       experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
       artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
       security: 'auto',
     });
 
@@ -933,7 +457,6 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
             artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
-            experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };
         },
@@ -975,350 +498,253 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const toolRouterOverrides = input?.toolRouter;
 
-    const defaultToolkitsHandler = async (
+    const defaultToolkitsHandler = (
       _sessionId: string,
       params?: SessionToolkitsParams | null
-    ): Promise<SessionToolkitsResponse> => {
-      let results: SessionToolkitsResponse['items'] = toolkitsData.toolkits.map(t => ({
-        slug: t.slug,
-        name: t.name,
-        meta: { description: t.meta.description, logo: '' },
-        is_no_auth: t.no_auth ?? false,
-        enabled: true,
-        connected_account: null,
-        composio_managed_auth_schemes: [...(t.composio_managed_auth_schemes ?? [])],
-      }));
+    ): Effect.Effect<SessionToolkitsResponse> =>
+      Effect.sync(() => {
+        let results: SessionToolkitsResponse['items'] = toolkitsData.toolkits.map(t => ({
+          slug: t.slug,
+          name: t.name,
+          meta: { description: t.meta.description, logo: '' },
+          is_no_auth: t.no_auth ?? false,
+          enabled: true,
+          connected_account: null,
+          composio_managed_auth_schemes: [...(t.composio_managed_auth_schemes ?? [])],
+        }));
 
-      if (params?.search) {
-        const q = params.search.toLowerCase();
-        results = results.filter(
-          t =>
-            t.name.toLowerCase().includes(q) ||
-            t.slug.toLowerCase().includes(q) ||
-            t.meta.description.toLowerCase().includes(q)
-        );
-      }
+        if (params?.search) {
+          const q = params.search.toLowerCase();
+          results = results.filter(
+            t =>
+              t.name.toLowerCase().includes(q) ||
+              t.slug.toLowerCase().includes(q) ||
+              t.meta.description.toLowerCase().includes(q)
+          );
+        }
 
-      if (params?.toolkits) {
-        const slugSet = new Set(params.toolkits.map(s => s.toLowerCase()));
-        results = results.filter(t => slugSet.has(t.slug.toLowerCase()));
-      }
+        if (params?.toolkits) {
+          const slugSet = new Set(params.toolkits.map(s => s.toLowerCase()));
+          results = results.filter(t => slugSet.has(t.slug.toLowerCase()));
+        }
 
-      const limit = params?.limit ?? 1000;
-      const items = results.slice(0, limit);
-      return {
-        items,
-        current_page: 1,
-        total_items: results.length,
-        total_pages: Math.ceil(results.length / limit),
-        next_cursor: null,
-      };
-    };
-
-    const defaultSearchHandler = async (
-      _sessionId: string,
-      params: SessionSearchParams
-    ): Promise<SessionSearchResponse> => {
-      const results = params.queries.map((query, index) => {
-        const queryUseCase = query.use_case ?? '';
-        const normalizedQuery = queryUseCase.toLowerCase();
-        const matchedTools = toolkitsData.tools.filter(
-          tool =>
-            tool.name.toLowerCase().includes(normalizedQuery) ||
-            tool.slug.toLowerCase().includes(normalizedQuery) ||
-            tool.description.toLowerCase().includes(normalizedQuery)
-        );
-
+        const limit = params?.limit ?? 1000;
+        const items = results.slice(0, limit);
         return {
-          index: index + 1,
-          use_case: queryUseCase,
-          primary_tool_slugs: matchedTools.map(tool => tool.slug),
-          related_tool_slugs: [],
-          toolkits: Array.from(
-            new Set(
-              matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
-            )
-          ),
-          matchedTools,
+          items,
+          current_page: 1,
+          total_items: results.length,
+          total_pages: Math.ceil(results.length / limit),
+          next_cursor: null,
         };
       });
 
-      const allMatchedTools = results.flatMap(result => result.matchedTools);
-      const toolSchemas = Object.fromEntries(
-        allMatchedTools.map(tool => [
-          tool.slug,
-          {
-            tool_slug: tool.slug,
-            toolkit: tool.slug.split('_')[0]?.toLowerCase() ?? '',
-            description: tool.description,
-            hasFullSchema: true,
-            input_schema: tool.input_parameters,
-            output_schema: tool.output_parameters,
-          },
-        ])
-      );
-      const toolkitConnectionStatuses = Array.from(
-        new Set(
-          allMatchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
-        )
-      ).map(toolkitSlug => ({
-        toolkit: toolkitSlug,
-        description: `${toolkitSlug} toolkit`,
-        has_active_connection: false,
-        status_message: 'No active connection',
-      }));
+    const defaultSearchHandler = (
+      _sessionId: string,
+      params: SessionSearchParams
+    ): Effect.Effect<SessionSearchResponse> =>
+      Effect.sync(() => {
+        const results = params.queries.map((query, index) => {
+          const queryUseCase = query.use_case ?? '';
+          const normalizedQuery = queryUseCase.toLowerCase();
+          const matchedTools = toolkitsData.tools.filter(
+            tool =>
+              tool.name.toLowerCase().includes(normalizedQuery) ||
+              tool.slug.toLowerCase().includes(normalizedQuery) ||
+              tool.description.toLowerCase().includes(normalizedQuery)
+          );
 
-      return {
-        success: true,
-        error: null,
-        results: results.map(({ matchedTools: _matchedTools, ...result }) => result),
-        tool_schemas: toolSchemas,
-        toolkit_connection_statuses: toolkitConnectionStatuses,
-        next_steps_guidance: [],
-        session: {
-          id: 'trs_test_session',
-          generate_id: false,
-          instructions: 'Reuse this session id for follow-up calls.',
-        },
-        time_info: {
-          current_time_utc: TIMESTAMP,
-          current_time_utc_epoch_seconds: 1767225600,
-          message: 'UTC time',
-        },
-      };
-    };
-
-    const failOnNetworkCall: typeof globalThis.fetch = Object.assign(
-      (input: RequestInfo | URL): Promise<Response> => {
-        const url =
-          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        throw new Error(`unexpected network call from the mock Composio client: ${url}`);
-      },
-      { preconnect: () => undefined }
-    );
-
-    // `fromEnv({}, ...)` is what production uses, so the mock cannot read the
-    // developer's COMPOSIO_* variables either. The throwing `fetch` turns a
-    // resource this mock forgot to shadow into a named test failure instead of
-    // a live request against the real backend.
-    const mockComposioClient = Object.assign(
-      RawComposioClient.fromEnv(
-        {},
-        {
-          apiKey: 'test',
-          userApiKey: null,
-          orgApiKey: null,
-          baseURL: 'https://mock.invalid',
-          logLevel: 'off',
-          fetch: failOnNetworkCall,
-        }
-      ),
-      {
-        link: {
-          create: async (params: { auth_config_id: string; user_id: string }) => {
-            const response = connectedAccountsData.linkResponse ?? {
-              connected_account_id: 'con_test_link',
-              expires_at: '2026-12-31T23:59:59Z',
-              link_token: 'lt_test_token',
-              redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-            };
-            return response;
-          },
-        },
-        patch: async (path: string, options?: { body?: Record<string, unknown> }) => {
-          connectedAccountsData.onPatch?.({ path, body: options?.body });
-
-          const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
-          if (!match) {
-            throw new Error(`Unhandled PATCH path "${path}"`);
-          }
-
-          const connectedAccountId = match[1];
-          const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
-          if (!account) {
-            throw new Error(`Connected account "${connectedAccountId}" not found`);
-          }
-
-          if (typeof options?.body?.alias === 'string') {
-            Object.assign(account as { alias?: string | null }, {
-              alias: options.body.alias,
-            });
-          }
-
-          return account;
-        },
-        connectedAccounts: {
-          list: async (params?: {
-            toolkit_slugs?: string[];
-            user_ids?: string[];
-            statuses?: string[];
-            limit?: number;
-          }) => {
-            let results = [...connectedAccountsData.items];
-
-            if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
-              const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
-              results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
-            }
-
-            if (params?.user_ids && params.user_ids.length > 0) {
-              const userIds = new Set(params.user_ids);
-              results = results.filter(item => userIds.has(item.user_id));
-            }
-
-            if (params?.statuses && params.statuses.length > 0) {
-              const statuses = new Set(params.statuses);
-              results = results.filter(item => statuses.has(item.status));
-            }
-
-            const limit = params?.limit ?? 30;
-            return {
-              items: results.slice(0, limit),
-              total_items: results.length,
-              total_pages: Math.ceil(results.length / limit),
-              current_page: 1,
-              next_cursor: null,
-            };
-          },
-          retrieve: async (nanoid: string) => {
-            const found = connectedAccountsData.items.find(item => item.id === nanoid);
-            if (!found) {
-              throw new Error(`Connected account "${nanoid}" not found`);
-            }
-            return found;
-          },
-          delete: async (nanoid: string) => {
-            const found = connectedAccountsData.items.find(item => item.id === nanoid);
-            if (!found) {
-              throw new Error(`Connected account "${nanoid}" not found`);
-            }
-            connectedAccountsData.onDelete?.(nanoid);
-            return {};
-          },
-        },
-        triggersTypes: {
-          retrieve: async (slug: string) => {
-            const found = toolkitsData.triggerTypes.find(
-              trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
-            );
-            if (!found) {
-              throw new NotFoundError(
-                404,
-                { error: { message: `Trigger type "${slug}" not found` } },
-                `Trigger type "${slug}" not found`,
-                new Headers()
-              );
-            }
-            return found;
-          },
-        },
-        triggerInstances: {
-          upsert: async (
-            triggerSlug: string,
-            params?: {
-              connected_account_id?: string;
-              trigger_config?: Record<string, unknown>;
-            }
-          ) => {
-            if (
-              input?.triggersData?.rejectUnknownTriggerSlugs &&
-              !toolkitsData.triggerTypes.some(
-                trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
+          return {
+            index: index + 1,
+            use_case: queryUseCase,
+            primary_tool_slugs: matchedTools.map(tool => tool.slug),
+            related_tool_slugs: [],
+            toolkits: Array.from(
+              new Set(
+                matchedTools
+                  .map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '')
+                  .filter(Boolean)
               )
-            ) {
-              throw new Error(`Trigger type "${triggerSlug}" not found`);
-            }
-            return {
-              trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
-            };
+            ),
+            matchedTools,
+          };
+        });
+
+        const allMatchedTools = results.flatMap(result => result.matchedTools);
+        const toolSchemas = Object.fromEntries(
+          allMatchedTools.map(tool => [
+            tool.slug,
+            {
+              tool_slug: tool.slug,
+              toolkit: tool.slug.split('_')[0]?.toLowerCase() ?? '',
+              description: tool.description,
+              hasFullSchema: true,
+              input_schema: tool.input_parameters,
+              output_schema: tool.output_parameters,
+            },
+          ])
+        );
+        const toolkitConnectionStatuses = Array.from(
+          new Set(
+            allMatchedTools
+              .map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '')
+              .filter(Boolean)
+          )
+        ).map(toolkitSlug => ({
+          toolkit: toolkitSlug,
+          description: `${toolkitSlug} toolkit`,
+          has_active_connection: false,
+          status_message: 'No active connection',
+        }));
+
+        return {
+          success: true,
+          error: null,
+          results: results.map(({ matchedTools: _matchedTools, ...result }) => result),
+          tool_schemas: toolSchemas,
+          toolkit_connection_statuses: toolkitConnectionStatuses,
+          next_steps_guidance: [],
+          session: {
+            id: 'trs_test_session',
+            generate_id: false,
+            instructions: 'Reuse this session id for follow-up calls.',
           },
-          manage: {
-            update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
+          time_info: {
+            current_time_utc: TIMESTAMP,
+            current_time_utc_epoch_seconds: 1767225600,
+            message: 'UTC time',
+          },
+        };
+      });
+
+    // What the mock client answers with instead of calling the network.
+    const resourceShadows = {
+      ...mockConnectedAccountResources(connectedAccountsData),
+      triggersTypes: {
+        retrieve: (slug: string) => {
+          const found = toolkitsData.triggerTypes.find(
+            trigger => trigger.slug.toUpperCase() === slug.toUpperCase()
+          );
+          return found
+            ? Effect.succeed(found)
+            : Effect.fail(notFoundError(`Trigger type "${slug}" not found`));
+        },
+      },
+      triggerInstances: {
+        upsert: (
+          triggerSlug: string,
+          params?: {
+            connected_account_id?: string;
+            trigger_config?: Record<string, unknown>;
+          }
+        ) => {
+          if (
+            input?.triggersData?.rejectUnknownTriggerSlugs &&
+            !toolkitsData.triggerTypes.some(
+              trigger => trigger.slug.toUpperCase() === triggerSlug.toUpperCase()
+            )
+          ) {
+            return Effect.fail(notFoundError(`Trigger type "${triggerSlug}" not found`));
+          }
+          return Effect.succeed({
+            trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+          });
+        },
+        manage: {
+          update: (triggerId: string, params: { status: 'enable' | 'disable' }) =>
+            Effect.succeed({
               trigger_id: triggerId,
               status: params.status,
             }),
-            delete: async (triggerId: string) => ({ trigger_id: triggerId }),
-          },
         },
-        toolkits: {
-          retrieve: async (slug: string) => {
-            const detailed = toolkitsData.detailedToolkits.find(
-              t => t.slug.toLowerCase() === slug.toLowerCase()
-            );
-            if (detailed) {
-              return {
-                name: detailed.name,
-                slug: detailed.slug,
-                is_local_toolkit: detailed.is_local_toolkit,
-                composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
-                no_auth: detailed.no_auth,
-                meta: detailed.meta,
-              };
-            }
+      },
+      toolkits: {
+        retrieve: (slug: string) => {
+          const detailed = toolkitsData.detailedToolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (detailed) {
+            return Effect.succeed({
+              name: detailed.name,
+              slug: detailed.slug,
+              is_local_toolkit: detailed.is_local_toolkit,
+              composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+              no_auth: detailed.no_auth,
+              meta: detailed.meta,
+            });
+          }
 
-            const found = toolkitsData.toolkits.find(
-              t => t.slug.toLowerCase() === slug.toLowerCase()
-            );
-            if (!found) {
-              throw new Error(`Toolkit "${slug}" not found`);
-            }
-            return {
-              name: found.name,
-              slug: found.slug,
-              is_local_toolkit: found.is_local_toolkit,
-              composio_managed_auth_schemes: [...found.composio_managed_auth_schemes],
-              no_auth: found.no_auth,
-              meta: found.meta,
-            };
-          },
+          const found = toolkitsData.toolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (!found) {
+            return Effect.fail(notFoundError(`Toolkit "${slug}" not found`));
+          }
+          return Effect.succeed({
+            name: found.name,
+            slug: found.slug,
+            is_local_toolkit: found.is_local_toolkit,
+            composio_managed_auth_schemes: [...found.composio_managed_auth_schemes],
+            no_auth: found.no_auth,
+            meta: found.meta,
+          });
         },
-        files: {
-          createPresignedURL: async (params: {
-            filename: string;
-            mimetype: string;
-            md5: string;
-            tool_slug: string;
-            toolkit_slug: string;
-          }) => ({
+      },
+      files: {
+        createPresignedURL: (params: {
+          filename: string;
+          mimetype: string;
+          md5: string;
+          tool_slug: string;
+          toolkit_slug: string;
+        }) =>
+          Effect.succeed({
             key: `uploads/${params.filename}`,
             new_presigned_url: 'https://s3.test.composio.dev/upload',
           }),
-        },
-        toolRouter: {
-          session: {
-            create:
-              toolRouterOverrides?.create ??
-              (async (params: SessionCreateParams) => ({
+      },
+      toolRouter: {
+        session: {
+          create:
+            toolRouterOverrides?.create ??
+            ((params: SessionCreateParams) =>
+              Effect.succeed({
                 session_id: 'trs_test_session',
                 config: { user_id: params.user_id },
                 mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
                 tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
               })),
-            execute:
-              toolRouterOverrides?.execute ??
-              (async (_sessionId: string, params: SessionExecuteParams) => ({
+          execute:
+            toolRouterOverrides?.execute ??
+            ((_sessionId: string, params: SessionExecuteParams) =>
+              Effect.succeed({
+                result_type: 'completed' as const,
                 data: { tool_slug: params.tool_slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
               })),
-            executeMeta:
-              toolRouterOverrides?.executeMeta ??
-              (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
+          executeMeta:
+            toolRouterOverrides?.executeMeta ??
+            ((_sessionId: string, params: SessionExecuteMetaParams) =>
+              Effect.succeed({
+                result_type: 'completed' as const,
                 data: { slug: params.slug, arguments: params.arguments },
                 error: null,
                 log_id: 'log_test',
               })),
-            link:
-              toolRouterOverrides?.link ??
-              (async () => ({
+          link:
+            toolRouterOverrides?.link ??
+            (() =>
+              Effect.succeed({
                 connected_account_id: 'con_test_link',
                 link_token: 'lt_test_token',
                 redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
                 account_type: 'PRIVATE' as const,
               })),
-            proxyExecute:
-              toolRouterOverrides?.proxyExecute ??
-              (async (_sessionId: string, params: SessionProxyExecuteParams) => ({
+          proxyExecute:
+            toolRouterOverrides?.proxyExecute ??
+            ((_sessionId: string, params: SessionProxyExecuteParams) =>
+              Effect.succeed({
                 status: 200,
                 data: {
                   toolkit_slug: params.toolkit_slug,
@@ -1329,149 +755,57 @@ export const TestLayer = (input?: TestLiveInput) =>
                 },
                 headers: {},
               })),
-            search: toolRouterOverrides?.search ?? defaultSearchHandler,
-            toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
-            tools: async () => ({
-              items: [],
-            }),
-          },
+          search: toolRouterOverrides?.search ?? defaultSearchHandler,
+          toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
         },
+      },
+    };
+
+    // A resource the shadows do not cover reaches the transport, which dies
+    // with the URL instead of sending a live request.
+    const dieOnNetworkCall = HttpClient.make(request =>
+      Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
+    );
+
+    // Each shadow answers with an Effect, built when the call runs. A shadow
+    // ignores the request options
+    // (`signal`, `maxRetries`, headers beyond `decode`), and the
+    // `connectedAccounts.list` shadow never pages (`next_cursor` is null):
+    // pagination, retries, and abort are covered by `stubComposioClient`,
+    // the real `make` over a recording transport.
+    const withShadows = <Resources extends object>(base: Resources, shadows: object): Resources => {
+      const shadowed = { ...base } as Record<string, unknown>;
+      for (const [key, shadow] of Object.entries(shadows) as Array<[string, unknown]>) {
+        shadowed[key] =
+          typeof shadow === 'function'
+            ? (...args: ReadonlyArray<unknown>) =>
+                Effect.suspend(() => shadow(...args) as Effect.Effect<unknown, unknown>)
+            : withShadows((shadowed[key] ?? {}) as object, shadow as object);
       }
+      return shadowed as Resources;
+    };
+
+    const mockComposioClient = withShadows(
+      makeComposioClient(
+        {
+          auth: Auth.project('test'),
+          baseURL: 'https://mock.invalid',
+        },
+        dieOnNetworkCall
+      ),
+      resourceShadows
     );
 
     // --- Account, session-info, and consumer endpoints ---
-    // Served per client scope, so a handler sees the credentials and org or
-    // project the real client would have placed in its default headers.
+    // Served per client scope; see `mockAccountResources`.
     const accountData = input?.accountData ?? {};
-    const noTestData = (operation: MockAccountRequest['operation']) =>
-      new APIConnectionError({ message: `No test data for ${operation}` });
-
-    const scopeOf = (base: MockRequestScope, options?: RequestOptions): MockRequestScope => {
-      // The CLI only ever passes plain header records.
-      const headers = (options?.headers ?? {}) as Record<string, string | null | undefined>;
-      const userApiKey = headers['x-user-api-key'];
-      return {
-        userApiKey: userApiKey === null ? undefined : (userApiKey ?? base.userApiKey),
-        apiKey: headers['x-api-key'] ?? undefined,
-        orgId: headers['x-org-id'] ?? base.orgId,
-        projectId: headers['x-project-id'] ?? base.projectId,
-      };
-    };
-
-    const accountBranches = (base: MockRequestScope) => {
-      const record = (
-        operation: MockAccountRequest['operation'],
-        options: RequestOptions | undefined,
-        params?: unknown
-      ): MockRequestScope => {
-        const scope = scopeOf(base, options);
-        accountData.onRequest?.({ operation, scope, params, options });
-        return scope;
-      };
-      const timestamps = {
-        created_at: TIMESTAMP,
-        updated_at: TIMESTAMP,
-      };
-
-      return {
-        org: Object.assign(Object.create(mockComposioClient.org) as typeof mockComposioClient.org, {
-          list: async (query?: { limit?: number } | null, options?: RequestOptions) => {
-            record('org.list', options, query);
-            if (!accountData.organizations) throw noTestData('org.list');
-            const organizations = accountData.organizations.map(org => ({ ...org, ...timestamps }));
-            return {
-              organizations,
-              next_cursor: null,
-              total_pages: 1,
-              current_page: 1,
-              total_items: organizations.length,
-            };
-          },
-          project: {
-            list: async (
-              query?: { limit?: number; list_all_org_projects?: boolean | null } | null,
-              options?: RequestOptions
-            ) => {
-              record('org.project.list', options, query);
-              if (!accountData.projects) throw noTestData('org.project.list');
-              return {
-                data: [...accountData.projects],
-                next_cursor: null,
-                total_pages: 1,
-                current_page: 1,
-                total_items: accountData.projects.length,
-              };
-            },
-          },
-          consumer: {
-            project: {
-              resolve: async (
-                params: { 'x-user-api-key': string; 'x-org-id': string },
-                options?: RequestOptions
-              ) => {
-                record('org.consumer.project.resolve', options, params);
-                const orgId = params['x-org-id'];
-                return {
-                  project_id: 'consumer_project_id_test',
-                  project_nano_id: 'consumer_project_test',
-                  project_name: 'Consumer Project',
-                  org_id: orgId,
-                  project_type: 'CONSUMER' as const,
-                  config: { consumer_experience_enabled: true, enhanced_controls: false },
-                  consumer_user_id: `consumer-user-${orgId}`,
-                };
-              },
-            },
-            listConnectedToolkits: async (
-              params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
-              options?: RequestOptions
-            ) => {
-              record('org.consumer.listConnectedToolkits', options, params);
-              if (!accountData.connectedToolkits) {
-                throw noTestData('org.consumer.listConnectedToolkits');
-              }
-              return { toolkits: [...accountData.connectedToolkits] };
-            },
-          },
-        }),
-        auth: {
-          session: {
-            retrieveInfo: async (options?: RequestOptions) => {
-              const scope = record('auth.session.retrieveInfo', options);
-              const sessionInfo = accountData.sessionInfo;
-              if (sessionInfo === undefined) throw noTestData('auth.session.retrieveInfo');
-              return typeof sessionInfo === 'function' ? sessionInfo(scope) : sessionInfo;
-            },
-          },
-        },
-        get: async (path: string, options?: RequestOptions) => {
-          if (/^\/api\/v3\/tools\/[^/]+\/get_latest_version$/.test(path)) {
-            record('tools.getLatestVersion', options, { path });
-            if (!accountData.latestToolVersion) throw noTestData('tools.getLatestVersion');
-            return accountData.latestToolVersion;
-          }
-          throw new Error(`Unhandled GET path "${path}"`);
-        },
-        post: async (path: string, options?: RequestOptions & { body?: unknown }) => {
-          if (/^\/api\/v3\/org\/project\/[^/]+\/api_keys\/create$/.test(path)) {
-            record('org.project.createApiKey', options, { path, body: options?.body });
-            if (!accountData.projectApiKey) throw noTestData('org.project.createApiKey');
-            return { api_key: accountData.projectApiKey };
-          }
-          throw new Error(`Unhandled POST path "${path}"`);
-        },
-      };
-    };
 
     const scopedClients = new Map<string, typeof mockComposioClient>();
     const mockClientFor = (scope: MockRequestScope) => {
-      const key = JSON.stringify([scope.userApiKey, scope.orgId, scope.projectId]);
+      const key = JSON.stringify([scope.userApiKey, scope.apiKey, scope.orgId, scope.projectId]);
       const cached = scopedClients.get(key);
       if (cached) return cached;
-      const scoped = Object.assign(
-        Object.create(mockComposioClient) as typeof mockComposioClient,
-        accountBranches(scope)
-      );
+      const scoped = withShadows(mockComposioClient, mockAccountResources(accountData, scope));
       scopedClients.set(key, scoped);
       return scoped;
     };
@@ -1482,8 +816,13 @@ export const TestLayer = (input?: TestLiveInput) =>
         get: Effect.fn(function* () {
           return mockClientFor({});
         }),
-        getFor: Effect.fn(function* (params: MockRequestScope) {
-          return mockClientFor(params);
+        getFor: Effect.fn(function* (params: ClientScope) {
+          return mockClientFor({
+            userApiKey: params.userApiKey,
+            apiKey: params.projectApiKey,
+            orgId: params.orgId,
+            projectId: params.projectId,
+          });
         }),
         getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
       })
@@ -1503,60 +842,45 @@ export const TestLayer = (input?: TestLiveInput) =>
       ? Layer.succeed(
           ToolsExecutor,
           ToolsExecutor.of({
-            execute: (slug, params) => {
-              if (input.toolsExecutor!.failWith) {
-                return Effect.fail(input.toolsExecutor!.failWith);
-              }
-              if (input.toolsExecutor!.respondWith) {
-                return Effect.succeed(input.toolsExecutor!.respondWith);
-              }
-              return Effect.succeed({
-                data: { slug, params },
-                error: null,
-                successful: true,
-                logId: 'log_test',
-              });
-            },
+            execute: (slug, params) =>
+              Effect.suspend(() => {
+                input.toolsExecutor!.onExecute?.(slug);
+                if (input.toolsExecutor!.failWith) {
+                  return Effect.fail(input.toolsExecutor!.failWith);
+                }
+                if (input.toolsExecutor!.respondWith) {
+                  return Effect.succeed(input.toolsExecutor!.respondWith);
+                }
+                return Effect.succeed({
+                  data: { slug, params },
+                  error: null,
+                  successful: true,
+                  logId: 'log_test',
+                });
+              }),
           })
         )
       : Layer.provide(
           ToolsExecutorLive,
-          Layer.mergeAll(ComposioClientSingletonTest, ToolkitSlugCatalogTest)
+          Layer.mergeAll(
+            ComposioClientSingletonTest,
+            ToolkitSlugCatalogTest,
+            Layer.provide(
+              DashboardToolExecutionTest({
+                toolRouter: mockComposioClient.toolRouter,
+                respond: input?.dashboard?.respond,
+              }),
+              ComposioUserContextTest
+            )
+          )
         );
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
-
-    // CommandRunner mock — default returns exit code 0
-    const CommandRunnerTest = input?.commandRunner
-      ? Layer.succeed(CommandRunner, input.commandRunner)
-      : Layer.succeed(
-          CommandRunner,
-          CommandRunner.of({
-            run: () => Effect.succeed(0),
-            capture: () =>
-              Effect.succeed({
-                exitCode: 0,
-                stdout: '',
-                stderr: '',
-              }),
-          })
-        );
 
     // TerminalUI — use provided override or default TerminalUITest
     const TerminalUILayer = input?.terminalUI
       ? Layer.succeed(TerminalUI, input.terminalUI)
       : TerminalUITest;
-
-    const SetupSkillInstallerTest = Layer.succeed(
-      SetupSkillInstaller,
-      input?.setupSkillInstaller ??
-        SetupSkillInstaller.of({
-          isClaudeSkillReady: Effect.succeed(false),
-          hasManagedClaudeSkill: Effect.succeed(false),
-          ensureClaudeSkill: Effect.succeed(false),
-          removeClaudeSkill: Effect.succeed(false),
-        })
-    );
 
     const _console = yield* MockConsole.make;
 
@@ -1578,8 +902,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
-      CommandRunnerTest,
-      SetupSkillInstallerTest,
+      CommandRunnerTest(input?.commandRunner),
+      SetupSkillInstallerTest(input?.setupSkillInstaller),
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunServices.layer,
@@ -1591,6 +915,10 @@ export const TestLayer = (input?: TestLiveInput) =>
       // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
       // never route through the root command still need the "no CLI flag override" default.
       cliDebugFlagsLayer(),
+      Layer.provide(
+        PendingLoginSession.Default,
+        Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
+      ),
       Layer.provide(
         ProjectContext.Default,
         Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)
@@ -1608,7 +936,11 @@ export const TestLayer = (input?: TestLiveInput) =>
     // `ConfigProvider` reference instead of the test's `baseConfigProvider`. `Layer.provideMerge`
     // keeps `ConfigProvider` in the output so it stays visible to everything `TestLayer` provides.
     Layer.provideMerge(
-      ConfigProvider.layer(input?.baseConfigProvider ?? ConfigProvider.fromEnv({ env: {} }))
+      ConfigProvider.layer(
+        input?.baseConfigProvider === undefined
+          ? hostOnlyEnvConfigProvider
+          : ConfigProvider.orElse(input.baseConfigProvider, hostOnlyEnvConfigProvider)
+      )
     )
   );
 

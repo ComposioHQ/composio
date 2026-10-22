@@ -4,9 +4,9 @@ import { ConfigProvider, DateTime, Deferred, Effect, FileSystem, Layer, Schedule
 import * as tempy from 'tempy';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { Toolkits } from 'src/models/toolkits';
+import { InternalServerError } from '@composio/client/effect';
 import {
   ComposioToolkitsRepository,
-  HttpServerError,
   type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import { KNOWN_TOOLKIT_SLUGS_FILE } from 'src/services/known-toolkit-slugs';
@@ -32,7 +32,17 @@ const UNRELEASED_TOOLKIT = 'acme_analytics';
 const CUSTOM_TOOLKIT = 'custom_grain';
 
 const failingFetch = () =>
-  Effect.fail(new HttpServerError({ cause: 'catalog unavailable', status: 503 }));
+  Effect.fail(
+    new InternalServerError({
+      message: 'catalog unavailable',
+      method: 'GET',
+      url: 'https://backend.composio.dev/api/v3.1/toolkits',
+      status: 503,
+      requestId: undefined,
+      details: undefined,
+      body: undefined,
+    })
+  );
 
 /**
  * A learned-slugs file recorded `daysAgo` days ago. Anything under a week old
@@ -44,6 +54,19 @@ const learnedFileContent = (slugs: ReadonlyArray<string>, daysAgo = 0) =>
     slugs,
     refreshedAt: DateTime.formatIso(DateTime.subtract(DateTime.nowUnsafe(), { days: daysAgo })),
   });
+
+/**
+ * A project catalog that lists each named project's toolkits. Unscoped
+ * lookups, and projects it does not name, list nothing.
+ */
+const projectCatalog =
+  (toolkitsByProject: Readonly<Record<string, ReadonlyArray<string>>>) =>
+  (scope?: ToolkitProjectScope) =>
+    Effect.succeed(
+      Object.entries(toolkitsByProject)
+        .filter(([projectId]) => projectId === scope?.projectId)
+        .flatMap(([, slugs]) => slugs.map(slug => makeToolkitFixture(slug)))
+    );
 
 interface ResolverOptions {
   readonly getToolkits?: () => Effect.Effect<Toolkits, GetToolkitsError>;
@@ -130,7 +153,9 @@ const runInCacheDir = <A>(
     );
   }).pipe(
     Effect.provide(BunFileSystem.layer),
-    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ CACHE_DIR: cacheDir })))
+    Effect.provide(
+      ConfigProvider.layer(ConfigProvider.fromEnvRecord({ COMPOSIO_CACHE_DIR: cacheDir }))
+    )
   );
 
 describe('toolkitFromToolSlug', () => {
@@ -348,15 +373,13 @@ describe('toolkitFromToolSlug', () => {
       )
     );
 
-    for (const learned of ['custom_grain', 'custom_grain_search_persons']) {
-      it.live(`uses the active project's prefix instead of learned ${learned}`, () =>
+    it.live.each(['custom_grain', 'custom_grain_search_persons'])(
+      "uses the active project's prefix instead of learned %s",
+      learned =>
         withResolver(
           {
             seedLearnedFile: learnedFileContent([learned]),
-            getProjectToolkits: scope =>
-              Effect.succeed(
-                scope?.projectId === 'proj_b' ? [makeToolkitFixture('custom_grain_search')] : []
-              ),
+            getProjectToolkits: projectCatalog({ proj_b: ['custom_grain_search'] }),
           },
           () =>
             Effect.gen(function* () {
@@ -374,8 +397,7 @@ describe('toolkitFromToolSlug', () => {
               ).toBe('custom');
             })
         )
-      );
-    }
+    );
 
     it.live('keeps a scoped discovery when an older background fetch completes later', () =>
       Effect.gen(function* () {
@@ -544,8 +566,7 @@ describe('toolkitFromToolSlug', () => {
     it.live('learns a custom toolkit found by a scoped lookup after an unscoped one', () =>
       withResolver(
         {
-          getProjectToolkits: scope =>
-            Effect.succeed(scope ? [makeToolkitFixture(CUSTOM_TOOLKIT)] : []),
+          getProjectToolkits: projectCatalog({ proj_1: [CUSTOM_TOOLKIT] }),
           seedLearnedFile: learnedFileContent([]),
         },
         ({ waitForLearnedFile }) =>

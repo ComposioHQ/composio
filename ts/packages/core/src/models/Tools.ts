@@ -52,7 +52,7 @@ import { telemetry } from '../telemetry/Telemetry';
 import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
-import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import {
@@ -63,13 +63,16 @@ import { dereferenceJsonSchema } from '../utils/jsonSchema';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
-import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
+import {
+  isExecutionSuccessful,
+  transformExecuteResponse,
+} from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
 type ToolRouterSessionExecuteOptions = {
-  experimental?: SessionExecuteParams.Experimental;
+  experimental?: NonNullable<SessionExecuteParams['experimental']>;
 };
 
 type RawToolParameters =
@@ -1002,8 +1005,7 @@ export class Tools<
          * @deprecated The `customConnectionData` execute param is deprecated and will be
          * removed in a future release. Use `customAuthParams` instead.
          */
-        custom_connection_data:
-          body.customConnectionData as ComposioToolExecuteParams['custom_connection_data'],
+        custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
         version: toolkitVersion,
@@ -1249,11 +1251,14 @@ export class Tools<
       requestOptions?.signal
     );
 
-    const { data, error, logId, instantCharge } = transformExecuteResponse(response);
+    const { data, error, logId, resultType, instantCharge } = transformExecuteResponse(
+      response,
+      toolSlug
+    );
     let result: ToolExecuteResponse = {
       data,
       error,
-      successful: !error,
+      successful: isExecutionSuccessful({ resultType }),
       logId,
       ...(instantCharge !== undefined && { instantCharge }),
     };
@@ -1343,6 +1348,7 @@ export class Tools<
    * @param {string} body.endpoint - Path relative to the toolkit's base URL, or an absolute URL
    * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'} body.method - HTTP method
    * @param {string} [body.connectedAccountId] - The connected account to authenticate as
+   * @param {string} [body.userId] - The user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it
    * @param {unknown} [body.body] - JSON request body
    * @param {Array<{ in: 'query' | 'header'; name: string; value: string | number }>} [body.parameters] - Extra query parameters or headers
    * @returns {Promise<ToolProxyResponse>} The upstream status, headers, and parsed body
@@ -1369,7 +1375,7 @@ export class Tools<
     }
     // convert the headers and query to the composio format
     // { name: string, type: 'header' | 'query', value: string }
-    const parameters: ComposioToolProxyParams.Parameter[] = [];
+    const parameters: NonNullable<ComposioToolProxyParams['parameters']>[number][] = [];
     const parameterTypes = {
       header: 'header',
       query: 'query',
@@ -1390,13 +1396,12 @@ export class Tools<
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
+      user_id: toolProxyParams.data.userId,
       parameters: parameters,
       /**
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // oxlint-disable-next-line typescript/ban-ts-comment -- generated client versions disagree about this deprecated field
-      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(

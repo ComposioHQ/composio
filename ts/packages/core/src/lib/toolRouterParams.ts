@@ -1,7 +1,7 @@
 import {
   SessionCreateParams,
   SessionPatchParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import {
   ToolRouterConfigTags,
   ToolRouterConfigTools,
@@ -18,6 +18,8 @@ import {
   ToolRouterUpdateExperimentalConfig,
   ToolRouterSandboxConfig,
   ToolRouterInstant,
+  ToolRouterProxyExecute,
+  ToolRouterHook,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -28,14 +30,18 @@ type ParsedCreateSessionConfig = TypeOf<typeof ToolRouterCreateSessionConfigSche
 /** Parsed update input; the public `ToolRouterUpdateSessionConfig` is a union over it. */
 type ParsedUpdateSessionConfig = TypeOf<typeof ToolRouterUpdateSessionConfigSchema>;
 
+/** A toolkit's entry in the session `tools` map, as sent on create and update. */
+type SessionToolsEntry = NonNullable<SessionCreateParams['tools']>[string];
+
+/** `require_approval` when the caller set an approval list, nothing otherwise. */
+const requireApprovalParam = <T extends string>(
+  requireApproval: T[] | undefined
+): { require_approval?: T[] } =>
+  requireApproval !== undefined ? { require_approval: requireApproval } : {};
+
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
-):
-  | Record<
-      string,
-      SessionCreateParams.Enable | SessionCreateParams.Disable | SessionCreateParams.Tags
-    >
-  | undefined => {
+): Record<string, SessionToolsEntry> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -52,14 +58,16 @@ export const transformToolRouterToolsParams = (
             if (Array.isArray(data)) {
               acc[key] = { enable: data };
             } else if ('enable' in data) {
-              acc[key] = { enable: data.enable };
+              acc[key] = { enable: data.enable, ...requireApprovalParam(data.requireApproval) };
             } else if ('disable' in data) {
-              acc[key] = { disable: data.disable };
+              acc[key] = { disable: data.disable, ...requireApprovalParam(data.requireApproval) };
             } else if ('tags' in data) {
               const tags = transformToolRouterTagsParams(data.tags);
               if (tags) {
-                acc[key] = { tags };
+                acc[key] = { tags, ...requireApprovalParam(data.requireApproval) };
               }
+            } else {
+              acc[key] = { require_approval: data.requireApproval };
             }
           } else {
             throw new ValidationError(parsedResult.error.message);
@@ -69,10 +77,7 @@ export const transformToolRouterToolsParams = (
         }
         return acc;
       },
-      {} as Record<
-        string,
-        SessionCreateParams.Enable | SessionCreateParams.Disable | SessionCreateParams.Tags
-      >
+      {} as Record<string, SessionToolsEntry>
     );
     return result;
   }
@@ -80,7 +85,9 @@ export const transformToolRouterToolsParams = (
 
 export const transformToolRouterTagsParams = (
   params?: ToolRouterConfigTags
-): SessionCreateParams.Tags['tags'] | undefined => {
+):
+  | Extract<NonNullable<SessionCreateParams['tools']>[string], { tags: unknown }>['tags']
+  | undefined => {
   if (!params) {
     return undefined;
   }
@@ -90,13 +97,14 @@ export const transformToolRouterTagsParams = (
     return {
       enable: params.enable,
       disable: params.disable,
+      ...requireApprovalParam(params.requireApproval),
     };
   }
 };
 
 export const transformToolRouterManageConnectionsParams = (
   params?: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
-): SessionCreateParams.ManageConnections => {
+): NonNullable<SessionCreateParams['manage_connections']> => {
   if (params === undefined) {
     // Default case when params is undefined
     return {
@@ -139,7 +147,7 @@ export const resolveToolRouterSandboxConfig = (
 
 export const transformToolRouterSandboxParams = (
   params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
-): SessionCreateParams.Workbench | undefined => {
+): NonNullable<SessionCreateParams['workbench']> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -168,60 +176,78 @@ type WithNull<T, K extends keyof T> = Omit<T, K> & { [P in K]?: NonNullable<T[P]
  * the generated client types as string-only.
  */
 export type SessionPatchManageConnectionsBody = WithNull<
-  SessionPatchParams.ManageConnections,
+  NonNullable<SessionPatchParams['manage_connections']>,
   'callback_url'
 >;
 
 /** `multi_account` as sent by `session.update()`; `null` removes the stored maximum. */
 export type SessionPatchMultiAccountBody = WithNull<
-  SessionPatchParams.MultiAccount,
+  NonNullable<SessionPatchParams['multi_account']>,
   'max_accounts_per_toolkit'
 >;
 
 /** `experimental` as sent by `session.update()`; `null` removes a stored leaf. */
 export type SessionPatchExperimentalBody = WithNull<
-  SessionPatchParams.Experimental,
+  NonNullable<SessionPatchParams['experimental']>,
   'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
 >;
 
+/** A hook as the API takes it, in snake_case. The generated client does not type `hooks` yet. */
+export type SessionHookBody = {
+  type: 'before_execute' | 'after_execute';
+  id: string;
+  name?: string;
+  applies_to: 'all' | { toolkits: string[] };
+  handler:
+    | { type: 'condition_check'; condition: string; action: 'block' }
+    | { type: 'prompt_injection_check'; action: 'block' };
+};
+
+/** Request body of `sessions.create()`: the generated `SessionCreateParams` plus `hooks`. */
+export type SessionCreateBody = SessionCreateParams & { hooks?: SessionHookBody[] };
+
+/** `hooks` as sent on create and update: `appliesTo` becomes `applies_to`. */
+export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHookBody[] =>
+  hooks.map(({ appliesTo, ...hook }) => ({ ...hook, applies_to: appliesTo }));
+
 /**
  * Request body of `session.update()`. Extends the generated `SessionPatchParams`
- * with the nullable policy blocks (`null` removes the stored override) and the
- * `expected_config_version` root precondition, none of which the generated
- * client types yet.
+ * with the nullable policy blocks (`null` removes the stored override), `hooks`
+ * and the `expected_config_version` root precondition, none of which the
+ * generated client types yet.
  */
 export type SessionPatchBody = Omit<
   WithNull<
     SessionPatchParams,
     'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
   >,
-  'manage_connections' | 'multi_account' | 'experimental' | 'premium_usage'
+  'manage_connections' | 'multi_account' | 'experimental'
 > & {
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;
+  hooks?: SessionHookBody[] | null;
   expected_config_version?: number;
-  instant?: SessionInstantBody;
 };
 
-/** SDK-owned wire contract until the generated client adopts the Instant names. */
-export type SessionInstantBody =
-  | false
-  | (Omit<Exclude<ToolRouterInstant, false>, 'returnInstantCharge'> & {
-      return_instant_charge?: boolean;
-    });
+/** `proxy_execute` as sent on create and update: a boolean becomes `{ enable }`. */
+export const transformToolRouterProxyExecuteParams = (
+  config: ToolRouterProxyExecute
+): NonNullable<SessionCreateParams['proxy_execute']> =>
+  typeof config === 'boolean' ? { enable: config } : config;
 
-export type SessionCreateBody = Omit<SessionCreateParams, 'premium_usage'> & {
-  instant?: SessionInstantBody;
-};
-
-export const transformToolRouterInstantParams = (config: ToolRouterInstant): SessionInstantBody => {
+export const transformToolRouterInstantParams = (
+  config: ToolRouterInstant
+): NonNullable<SessionCreateParams['instant']> => {
   if (config === false) return false;
   return {
     ...(config.toolkits !== undefined && { toolkits: config.toolkits }),
     ...(config.tools !== undefined && { tools: config.tools }),
     ...(config.returnInstantCharge !== undefined && {
       return_instant_charge: config.returnInstantCharge,
+    }),
+    ...(config.returnPricesInSearch !== undefined && {
+      return_prices_in_search: config.returnPricesInSearch,
     }),
   };
 };
@@ -276,6 +302,9 @@ const transformToolRouterUpdateExperimentalParams = (
   if (config.sessionConfigId !== undefined) {
     result.session_config_id = config.sessionConfigId;
   }
+  if (config.noElicitationSupportFallback !== undefined) {
+    result.no_elicitation_support_fallback = config.noElicitationSupportFallback;
+  }
   return result;
 };
 
@@ -285,7 +314,7 @@ const transformToolRouterUpdateExperimentalParams = (
  */
 export const transformToolRouterUpdateSandboxParams = (
   params: Partial<ToolRouterSandboxConfig>
-): SessionPatchParams.Workbench => {
+): NonNullable<SessionPatchParams['workbench']> => {
   const result: Record<string, unknown> = {};
   if (params.enable !== undefined) {
     result.enable = params.enable;
@@ -299,7 +328,7 @@ export const transformToolRouterUpdateSandboxParams = (
   if (params.sandboxSize !== undefined) {
     result.sandbox_size = params.sandboxSize;
   }
-  return result as SessionPatchParams.Workbench;
+  return result as NonNullable<SessionPatchParams['workbench']>;
 };
 
 /** @deprecated Renamed — use `transformToolRouterUpdateSandboxParams` instead. `workbench` is a backwards-compatible alias for `sandbox`. */
@@ -307,7 +336,7 @@ export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdat
 
 export const transformToolRouterMultiAccountParams = (
   params?: ParsedCreateSessionConfig['multiAccount']
-): SessionCreateParams.MultiAccount | undefined => {
+): NonNullable<SessionCreateParams['multi_account']> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -332,7 +361,7 @@ export const transformToolRouterMultiAccountParams = (
 
 export const transformToolRouterToolkitsParams = (
   params?: ParsedCreateSessionConfig['toolkits']
-): SessionCreateParams.Enable | SessionCreateParams.Disable | undefined => {
+): NonNullable<SessionCreateParams['toolkits']> | undefined => {
   if (!params) {
     return undefined;
   }
@@ -342,8 +371,13 @@ export const transformToolRouterToolkitsParams = (
     return { enable: params };
   }
 
-  // Otherwise return as-is (already in enable/disable format)
-  return params as SessionCreateParams.Enable | SessionCreateParams.Disable;
+  if ('enable' in params) {
+    return { enable: params.enable, ...requireApprovalParam(params.requireApproval) };
+  }
+  if ('disable' in params) {
+    return { disable: params.disable, ...requireApprovalParam(params.requireApproval) };
+  }
+  return { require_approval: params.requireApproval };
 };
 
 /**
@@ -400,6 +434,15 @@ export const transformToolRouterUpdateParams = (
         ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
       params.multi_account = ma;
     }
+  }
+  if (config.proxyExecute !== undefined) {
+    params.proxy_execute =
+      config.proxyExecute === null
+        ? null
+        : transformToolRouterProxyExecuteParams(config.proxyExecute);
+  }
+  if (config.hooks !== undefined) {
+    params.hooks = config.hooks === null ? null : transformToolRouterHooksParams(config.hooks);
   }
   if (config.preload !== undefined) {
     params.preload = config.preload;

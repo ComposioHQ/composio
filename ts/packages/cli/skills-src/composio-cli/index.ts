@@ -196,11 +196,11 @@ const commands: SkillCommand[] = [
   },
   {
     id: 'run',
-    title: '`run` - Scripting, LLMs, and Programmatic Workflows',
+    title: '`run` - Scripting and Programmatic Workflows',
     summary:
       'For programmatic calls, loops, output plumbing, or anything beyond a single tool call, prefer `composio run`.',
     intro: [
-      '`composio run` executes an inline ESM JavaScript/TypeScript snippet with authenticated `execute()`, `search()`, `proxy()`, and the experimental `experimental_subAgent()` helper pre-injected. No SDK setup required.',
+      '`composio run` executes an inline ESM JavaScript/TypeScript snippet with authenticated `execute()`, `search()`, and `proxy()` pre-injected. No SDK setup required.',
     ],
     examples: [
       {
@@ -210,10 +210,6 @@ const commands: SkillCommand[] = [
       {
         description: 'Fan out with Promise.all',
         code: 'composio run \'\n  const [me, emails] = await Promise.all([\n    execute("GITHUB_GET_THE_AUTHENTICATED_USER"),\n    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),\n  ]);\n  console.log({ login: me.data.login, emailCount: emails.data.messages?.length });\n\'',
-      },
-      {
-        description: 'Feed tool output into an LLM and get structured JSON back',
-        code: 'composio run --logs-off \'\n  const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 5 });\n  const brief = await experimental_subAgent(\n    `Summarize these emails and count them.\\n\\n${emails.prompt()}`,\n    { schema: z.object({ summary: z.string(), count: z.number() }) }\n  );\n  console.log(brief.structuredOutput);\n\'',
       },
     ],
     notes: [

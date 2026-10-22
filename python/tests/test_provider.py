@@ -7,6 +7,7 @@ This test module verifies provider functionality including:
 - Both agentic and non-agentic provider behavior
 """
 
+import importlib.util
 from types import SimpleNamespace
 from unittest.mock import Mock, call
 
@@ -445,6 +446,7 @@ class TestNonAgenticProviderHelperMethods:
             data={"tools": ["GMAIL_SEND_EMAIL"]},
             error=None,
             log_id="log-session",
+            result_type="completed",
         )
         completion = SimpleNamespace(
             choices=[
@@ -494,8 +496,12 @@ class TestNonAgenticProviderHelperMethods:
         Tools(client=mock_client, provider=provider)
         session = Mock()
         session.execute.side_effect = [
-            SimpleNamespace(data={"index": 1}, error=None, log_id="log-1"),
-            SimpleNamespace(data={"index": 2}, error="failed", log_id="log-2"),
+            SimpleNamespace(
+                data={"index": 1}, error=None, log_id="log-1", result_type="completed"
+            ),
+            SimpleNamespace(
+                data={"index": 2}, error="failed", log_id="log-2", result_type="failed"
+            ),
         ]
         response = Response.model_construct(
             output=[
@@ -776,6 +782,10 @@ class TestAgenticProviderFunctionality:
         assert wrapped[0]["has_executor"] is True
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("composio_langchain") is None,
+    reason="LangChain provider package is not installed",
+)
 class TestLangchainReservedKeywords:
     """Regression tests for PLEN-1671: ValueError when tool schema has Python reserved keywords as parameter names.
 
@@ -938,6 +948,10 @@ class TestLangchainReservedKeywords:
         assert captured == {"from": "2024-01-01"}
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("composio_langchain") is None,
+    reason="LangChain provider package is not installed",
+)
 class TestLangchainFreeFormObjectArguments:
     """Regression for issue #4064 at the Python provider boundary.
 

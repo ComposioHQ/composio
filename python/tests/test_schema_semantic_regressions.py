@@ -19,6 +19,7 @@ from composio.utils.schema_converter import json_schema_to_pydantic_type
 from composio.utils.shared import (
     json_schema_to_model,
     pydantic_model_from_param_schema,
+    validate_and_serialize_tool_arguments,
 )
 
 REJECTION_CASES: tuple[tuple[str, dict[str, t.Any], t.Any], ...] = (
@@ -135,10 +136,12 @@ def test_whole_schema_rejections_match_draft7(
 @pytest.mark.unit
 @pytest.mark.schema
 @pytest.mark.parametrize("literal_keyword", ["const", "enum"])
+@pytest.mark.parametrize("value", [{}, {"x": "fixed"}])
 def test_typed_object_compound_literals_do_not_fall_back_to_string(
     literal_keyword: str,
+    value: dict[str, t.Any],
 ) -> None:
-    literal = {} if literal_keyword == "const" else [{}]
+    literal = value if literal_keyword == "const" else [value]
     schema = {
         "type": "object",
         "properties": {"x": {"type": "string", "default": "generated"}},
@@ -147,8 +150,21 @@ def test_typed_object_compound_literals_do_not_fall_back_to_string(
     Draft7Validator.check_schema(schema)
 
     adapter = TypeAdapter(json_schema_to_pydantic_type(schema))
-    result = adapter.validate_python({})
-    assert adapter.dump_python(result, mode="json") == {}
+    result = adapter.validate_python(value)
+    assert adapter.dump_python(result, mode="json") == value
+    assert adapter.json_schema() == schema
+    with pytest.raises(ValidationError):
+        adapter.validate_python({"x": "wrong"})
+
+    model = json_schema_to_model(
+        {"type": "object", "properties": {"payload": schema}, "required": ["payload"]}
+    )
+    assert validate_and_serialize_tool_arguments(model, {"payload": value}) == {
+        "payload": value
+    }
+    assert (
+        model.model_json_schema()["properties"]["payload"][literal_keyword] == literal
+    )
 
 
 @pytest.mark.unit

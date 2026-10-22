@@ -6,7 +6,10 @@ import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
-import { ComposioSessionConfigConflictError } from '../errors/ToolRouterErrors';
+import {
+  ComposioSessionConfigConflictError,
+  ComposioToolInputRequiredError,
+} from '../errors/ToolRouterErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -18,6 +21,8 @@ import {
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
   ToolRouterSessionExecuteOptions,
+  ToolRouterSessionExecuteMetaOptions,
+  ToolRouterSessionMetaToolSlug,
   ToolRouterSessionConfig,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
@@ -36,7 +41,7 @@ import {
 import {
   transformSearchResponse,
   transformExecuteResponse,
-  transformSessionConfig,
+  transformProxyExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
@@ -68,12 +73,13 @@ import type {
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
+  SessionExecuteMetaParams,
   SessionExecuteParams,
   SessionLinkParams,
   SessionPatchParams,
   SessionPatchResponse,
   SessionSearchParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import {
@@ -93,6 +99,16 @@ import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
+
+/** The request fields that carry the user's answers to an earlier `input_required` call. */
+function inputResponseParams(
+  options: ToolRouterSessionExecuteMetaOptions | undefined
+): Pick<SessionExecuteParams, 'input_responses' | 'request_state'> {
+  return {
+    ...(options?.inputResponses !== undefined && { input_responses: options.inputResponses }),
+    ...(options?.requestState !== undefined && { request_state: options.requestState }),
+  };
+}
 export const DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX =
   '[Direct tool - call directly, no search needed beforehand.]';
 
@@ -468,7 +484,7 @@ export class ToolRouterSession<
       ...(opts.callbackUrl !== undefined && { callback_url: opts.callbackUrl }),
       ...(opts.alias !== undefined && { alias: opts.alias }),
       ...(experimentalWire !== undefined && {
-        experimental: experimentalWire as SessionLinkParams.Experimental,
+        experimental: experimentalWire as NonNullable<SessionLinkParams['experimental']>,
       }),
     };
 
@@ -651,9 +667,9 @@ export class ToolRouterSession<
     },
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionSearchResponse> {
-    const experimental = inlineCustomToolsExperimental<SessionSearchParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionSearchParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     const searchParams = {
       queries: [{ use_case: params.query }],
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
@@ -679,7 +695,10 @@ export class ToolRouterSession<
    * @param arguments_ - Optional tool arguments
    * @param options - Optional execution options
    * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
-   * @returns The tool execution result
+   * @param options.inputResponses - Experimental. The user's answers to an earlier `ComposioToolInputRequiredError`, keyed by the IDs in its `inputRequests`. Repeat the same call with them.
+   * @param options.requestState - Experimental. The `requestState` of that error, sent back unchanged.
+   * @returns The tool execution result. `resultType: 'blocked'` means a session hook blocked the call; `error` then holds the hook's message
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
    */
   async execute(
     toolSlug: string,
@@ -705,6 +724,7 @@ export class ToolRouterSession<
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       };
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
@@ -713,13 +733,14 @@ export class ToolRouterSession<
     const executeParams: SessionExecuteParams = {
       tool_slug: toolSlug,
       arguments: arguments_ ?? {},
+      ...inputResponseParams(options),
     };
     if (options?.account) {
       executeParams.account = options.account;
     }
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     if (experimental) {
       executeParams.experimental = experimental;
     }
@@ -733,7 +754,59 @@ export class ToolRouterSession<
         ),
       requestOptions?.signal
     );
-    const transformed = transformExecuteResponse(response);
+    const transformed = transformExecuteResponse(response, toolSlug);
+    return ToolRouterSessionExecuteResponseSchema.parse(transformed);
+  }
+
+  /**
+   * Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+   *
+   * `session.execute()` also runs meta tools. This method only accepts meta
+   * tool slugs, so a typo is a type error instead of a failed request. The call
+   * is sent to the Composio backend as is: custom tools named in a
+   * `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
+   *
+   * @param slug - The meta tool slug to execute
+   * @param arguments_ - Optional meta tool arguments
+   * @param options - Experimental. The user's answers to an earlier `ComposioToolInputRequiredError` (`inputResponses`) and its `requestState`, as in `session.execute()`
+   * @returns The tool execution result, in the same shape as `session.execute()`
+   * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
+   *
+   * @example
+   * ```typescript
+   * const { data, resultType } = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+   *   queries: [{ use_case: 'send an email' }],
+   * });
+   * ```
+   */
+  async executeMeta(
+    slug: ToolRouterSessionMetaToolSlug,
+    arguments_?: Record<string, unknown>,
+    options?: ToolRouterSessionExecuteMetaOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionExecuteResponse> {
+    const executeMetaParams: SessionExecuteMetaParams = {
+      slug,
+      arguments: arguments_ ?? {},
+      ...inputResponseParams(options),
+    };
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteMetaParams['experimental']>
+    >(this.inlineCustomToolsPayload);
+    if (experimental) {
+      executeMetaParams.experimental = experimental;
+    }
+
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.executeMeta(
+          this.sessionId,
+          executeMetaParams,
+          withoutRetries(requestOptions)
+        ),
+      requestOptions?.signal
+    );
+    const transformed = transformExecuteResponse(response, slug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
 
@@ -742,7 +815,8 @@ export class ToolRouterSession<
    * The backend resolves the connected account from the toolkit within the session.
    *
    * @param params - Proxy request parameters (toolkit, endpoint, method, body, headers/query params)
-   * @returns The proxied API response with status, data, headers
+   * @returns The proxied API response with status, data and headers (`resultType: 'completed'`), or `resultType: 'blocked'` with the hook's message when a session hook blocked the request
+   * @throws {ComposioToolInputRequiredError} If the call needs input from the user before it can run
    */
   async proxyExecute(
     params: SessionProxyExecuteParams,
@@ -764,21 +838,10 @@ export class ToolRouterSession<
       requestOptions?.signal
     );
 
-    return {
-      status: response.status,
-      data: response.data,
-      headers: response.headers,
-      ...(response.binary_data
-        ? {
-            binaryData: {
-              contentType: response.binary_data.content_type,
-              size: response.binary_data.size,
-              url: response.binary_data.url,
-              expiresAt: response.binary_data.expires_at,
-            },
-          }
-        : {}),
-    };
+    return transformProxyExecuteResponse(
+      response,
+      `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
+    );
   }
 
   /**
@@ -866,7 +929,7 @@ export class ToolRouterSession<
     }
 
     this.configVersion = response.config_version;
-    this.config = transformSessionConfig(response.config);
+    this.config = response.config;
     this.preload = response.config.preload;
     this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
@@ -923,7 +986,7 @@ export class ToolRouterSession<
         version: item.version,
         createdAt: item.created_at,
         isCurrent: item.is_current,
-        config: transformSessionConfig(item.config),
+        config: item.config,
       })),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
@@ -947,9 +1010,9 @@ export class ToolRouterSession<
     tool?: Tool
   ): Promise<ToolExecuteResponse> {
     const body = { sessionId: this.sessionId, arguments: input };
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     if (experimental) {
       return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool, { experimental });
     }
@@ -1048,6 +1111,12 @@ export class ToolRouterSession<
 
     const remoteTransportFailed = !!remoteOutcome && 'error' in remoteOutcome;
     const remoteTransportError = remoteTransportFailed ? remoteOutcome.error : null;
+    // An input request is not a per-tool failure: rethrow it so the caller gets
+    // `inputRequests` and `requestState`.
+    // Accepted: local tools in this batch already ran and their results are discarded.
+    if (remoteTransportError instanceof ComposioToolInputRequiredError) {
+      throw remoteTransportError;
+    }
     const remoteErrorMessage = remoteTransportFailed
       ? (remoteTransportError instanceof Error
           ? remoteTransportError.message
@@ -1119,16 +1188,21 @@ export class ToolRouterSession<
     }
     const remoteError =
       remoteErrorMessage ?? (typeof remoteResult?.error === 'string' ? remoteResult.error : null);
-    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
+    // A failed execution can carry no error text, so success is read from each
+    // result's own verdict and not from the absence of an error message.
+    const hasAnyFailure =
+      localResults.some(r => !r.result.successful) ||
+      remoteResult?.successful === false ||
+      !!remoteError;
 
     return {
       data: mergedData,
-      error: hasAnyError
-        ? remoteError && failedCount === 0
-          ? remoteError
-          : `${failedCount} out of ${allResults.length} tools failed`
+      error: hasAnyFailure
+        ? failedCount > 0
+          ? `${failedCount} out of ${allResults.length} tools failed`
+          : remoteError
         : null,
-      successful: !hasAnyError,
+      successful: !hasAnyFailure,
       ...(remoteResult?.instantCharge !== undefined && {
         instantCharge: remoteResult.instantCharge,
       }),

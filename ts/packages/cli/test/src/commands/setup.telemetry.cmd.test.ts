@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Exit } from 'effect';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { Effect } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
 import { NodeOs } from 'src/services/node-os';
@@ -263,10 +263,7 @@ describe('CLI: composio setup telemetry', () => {
   layer(TestLive({ commandRunner: legacyCodex.runner }))('unsupported Codex only', it => {
     it.effect('tracks the normalized reason code and the installer skip', () =>
       Effect.gen(function* () {
-        const exit = yield* Effect.exit(
-          cli(['setup', '--target', 'auto', '--yes', '--if-present'])
-        );
-        expect(Exit.isSuccess(exit)).toBe(true);
+        yield* cli(['setup', '--target', 'auto', '--yes', '--if-present']);
 
         expect(eventsNamed('CLI_SETUP_HOST_DETECTED')).toEqual(
           expect.arrayContaining([
@@ -297,10 +294,7 @@ describe('CLI: composio setup telemetry', () => {
   layer(TestLive({ commandRunner: noHosts.runner }))('no detected host', it => {
     it.effect('tracks the installer skip when nothing is detected', () =>
       Effect.gen(function* () {
-        const exit = yield* Effect.exit(
-          cli(['setup', '--target', 'auto', '--yes', '--if-present'])
-        );
-        expect(Exit.isSuccess(exit)).toBe(true);
+        yield* cli(['setup', '--target', 'auto', '--yes', '--if-present']);
 
         expect(eventsNamed('CLI_SETUP_SKIPPED')).toEqual([
           expect.objectContaining({
@@ -319,14 +313,12 @@ describe('CLI: composio setup telemetry', () => {
         yield* cli(['setup', '--target', 'auto', '--yes', '--if-present']);
 
         const detected = eventsNamed('CLI_SETUP_HOST_DETECTED');
-        expect(detected).toHaveLength(2);
-        for (const event of detected) {
-          expect(event.properties).toMatchObject({
-            available: false,
-            host_config_dir_present: false,
-            host_binary_in_known_paths: expect.any(Boolean),
-          });
-        }
+        const absentHost = expect.objectContaining({
+          available: false,
+          host_config_dir_present: false,
+          host_binary_in_known_paths: expect.any(Boolean),
+        });
+        expect(detected.map(event => event.properties)).toEqual([absentHost, absentHost]);
       })
     );
   });
@@ -398,8 +390,12 @@ describe('CLI: composio setup telemetry', () => {
   )('native install failure', it => {
     it.effect('tracks the per-host failure with its phase', () =>
       Effect.gen(function* () {
-        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
-        expect(Exit.isFailure(exit)).toBe(true);
+        const failure = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(Effect.flip);
+        expect(failure).toMatchObject({
+          _tag: 'services/SetupCommandError',
+          operation: 'setup',
+          cause: { _tag: 'services/SetupProcessError', target: 'claude' },
+        });
 
         const failureEvents = eventsNamed('CLI_PLUGIN_SETUP_FAILED');
         expect(failureEvents).toEqual([

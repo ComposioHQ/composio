@@ -268,8 +268,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-            "x-experimental": true
+            "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config (for example a region or subdomain). Non-secret values pre-fill the hosted Connect Link form; secret values are redacted in responses and never sent to the end user."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -403,8 +408,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-            "x-experimental": true
+            "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config (for example a region or subdomain). Non-secret values pre-fill the hosted Connect Link form; secret values are redacted in responses and never sent to the end user."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -525,7 +535,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
+            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -612,7 +628,13 @@
           "shared_credentials": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
+            "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+            "deprecated": true
+          },
+          "shared_connection_fields": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Connection field values inherited by every connected account created under this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
           },
           "is_enabled_for_tool_router": {
             "type": "boolean",
@@ -786,6 +808,22 @@
           "toolkitId": "550e8400-e29b-41d4-a716-446655440000"
         }
       },
+      "ToolPricing": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Human-readable pricing description."
+          },
+          "discount": {
+            "type": "string",
+            "nullable": true,
+            "description": "Discount on top of provider charges."
+          }
+        },
+        "description": "Published pricing for the tool",
+        "additionalProperties": false
+      },
       "InstantAccount": {
         "type": "object",
         "properties": {
@@ -796,9 +834,7 @@
             ]
           },
           "price": {
-            "type": "object",
-            "additionalProperties": {},
-            "description": "Published pricing from the selected tool row, unchanged."
+            "$ref": "#/components/schemas/ToolPricing"
           }
         },
         "required": [
@@ -1146,38 +1182,6 @@
           "total_items"
         ]
       },
-      "ToolPricing": {
-        "type": "object",
-        "properties": {
-          "description": {
-            "type": "string",
-            "nullable": true,
-            "description": "Human-readable pricing description."
-          },
-          "min": {
-            "type": "string",
-            "nullable": true,
-            "description": "Display text for the minimum price."
-          },
-          "max": {
-            "type": "string",
-            "nullable": true,
-            "description": "Display text for the maximum price."
-          },
-          "discount": {
-            "type": "string",
-            "nullable": true,
-            "description": "Human-readable discount text."
-          },
-          "item": {
-            "type": "string",
-            "nullable": true,
-            "description": "Pricing unit, such as per call or per second."
-          }
-        },
-        "description": "Published pricing for the tool; absence does not mean free. Display metadata, not a billing calculation.",
-        "additionalProperties": false
-      },
       "ToolDetails": {
         "type": "object",
         "properties": {
@@ -1469,9 +1473,6 @@
               "is_deprecated",
               "toolkit"
             ]
-          },
-          "pricing": {
-            "$ref": "#/components/schemas/ToolPricing"
           }
         },
         "required": [
@@ -1489,6 +1490,726 @@
           "tags",
           "is_deprecated",
           "deprecated"
+        ]
+      },
+      "SessionHooks": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "before_execute"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_-]{1,64}$",
+                  "description": "Unique within the session. Shows up in results and logs."
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "A readable name. The agent sees it when this hook blocks a call."
+                },
+                "applies_to": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "all"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 1,
+                          "description": "Toolkit slugs"
+                        }
+                      },
+                      "required": [
+                        "toolkits"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                },
+                "handler": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "condition_check"
+                      ]
+                    },
+                    "condition": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "block"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "condition",
+                    "action"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "applies_to",
+                "handler"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "after_execute"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_-]{1,64}$",
+                  "description": "Unique within the session. Shows up in results and logs."
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "A readable name. The agent sees it when this hook blocks a call."
+                },
+                "applies_to": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "all"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 1,
+                          "description": "Toolkit slugs"
+                        }
+                      },
+                      "required": [
+                        "toolkits"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                },
+                "handler": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "condition_check"
+                          ]
+                        },
+                        "condition": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000,
+                          "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                        },
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "block"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "condition",
+                        "action"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "prompt_injection_check"
+                          ]
+                        },
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "block"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "action"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "applies_to",
+                "handler"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "maxItems": 20,
+        "description": "Hooks that run on this session's tool calls."
+      },
+      "HookResult": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The hook id"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "evaluated"
+                ]
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "continue",
+                  "block"
+                ],
+                "description": "What the hook decided"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "outcome"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The hook id"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unavailable"
+                ],
+                "description": "The hook could not be evaluated"
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ]
+          }
+        ]
+      },
+      "ExecuteCompleted": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "completed"
+            ],
+            "description": "The tool ran and succeeded",
+            "x-experimental": true
+          },
+          "instant_charge": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ],
+                "description": "Currency of the instant charge. Always USD."
+              },
+              "charged_by": {
+                "type": "string",
+                "enum": [
+                  "composio"
+                ],
+                "description": "Entity charging for instant usage. Always composio."
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "charged_by"
+            ],
+            "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The data returned by the tool execution",
+            "example": {
+              "message": "Hello, World!",
+              "status": "success"
+            }
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message if the execution failed, null otherwise"
+          },
+          "log_id": {
+            "type": "string",
+            "description": "Unique identifier for the execution log",
+            "example": "log_abc123xyz"
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "data",
+          "error",
+          "log_id"
+        ]
+      },
+      "ExecuteFailed": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "failed"
+            ],
+            "description": "The tool ran and failed, or the user did not approve it",
+            "x-experimental": true
+          },
+          "instant_charge": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ],
+                "description": "Currency of the instant charge. Always USD."
+              },
+              "charged_by": {
+                "type": "string",
+                "enum": [
+                  "composio"
+                ],
+                "description": "Entity charging for instant usage. Always composio."
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "charged_by"
+            ],
+            "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The data returned by the tool execution",
+            "example": {
+              "message": "Hello, World!",
+              "status": "success"
+            }
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message if the execution failed, null otherwise"
+          },
+          "log_id": {
+            "type": "string",
+            "description": "Unique identifier for the execution log",
+            "example": "log_abc123xyz"
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "data",
+          "error",
+          "log_id"
+        ]
+      },
+      "BlockReason": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "request_blocked"
+                ],
+                "description": "A before_execute hook stopped the call. The tool did not run."
+              },
+              "hook_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "hook_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "response_blocked"
+                ],
+                "description": "An after_execute hook stopped the call. The tool ran; its response was withheld."
+              },
+              "hook_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "hook_id"
+            ]
+          }
+        ]
+      },
+      "ExecuteBlocked": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "blocked"
+            ],
+            "description": "A session hook stopped the call"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/BlockReason"
+          },
+          "message": {
+            "type": "string",
+            "description": "A message for the agent. It includes the hook's name, when it has one; the hook id is in `reason`.",
+            "example": "Blocked by session policy: No external email"
+          },
+          "log_id": {
+            "type": "string",
+            "description": "The execution log ID. Only set when the tool ran and its response was blocked."
+          },
+          "instant_charge": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
+                "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ],
+                "description": "Currency of the instant charge. Always USD."
+              },
+              "charged_by": {
+                "type": "string",
+                "enum": [
+                  "composio"
+                ],
+                "description": "Entity charging for instant usage. Always composio."
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "charged_by"
+            ],
+            "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Only set when the tool ran and its response was blocked."
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "reason",
+          "message"
+        ]
+      },
+      "UserInputRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "elicitation"
+            ],
+            "description": "Always `elicitation`"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "form"
+            ],
+            "description": "Always `form`: collect the answer with a form built from `requested_schema`"
+          },
+          "message": {
+            "type": "string",
+            "description": "Text to show the user",
+            "example": "Your agent wants to run the following tool:\n\nGITHUB_DELETE_A_REPOSITORY({\"owner\": \"acme\", \"repo\": \"old-api\"})"
+          },
+          "requested_schema": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "JSON Schema for the answer. As in MCP form mode, it is a flat object whose fields are strings, numbers, booleans, or single- or multi-select enums."
+          }
+        },
+        "required": [
+          "type",
+          "mode",
+          "message",
+          "requested_schema"
+        ],
+        "description": "A question for the user, in the shape of an MCP `elicitation/create` request in form mode (https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation). Show `message` to the user and collect an answer that matches `requested_schema`."
+      },
+      "ExecuteRequiresUserInput": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "input_required"
+            ],
+            "description": "The call needs the user's input before it runs",
+            "x-experimental": true
+          },
+          "input_requests": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UserInputRequest"
+            },
+            "description": "Questions for the user, keyed by an ID the answers must reuse",
+            "x-experimental": true
+          },
+          "request_state": {
+            "type": "string",
+            "description": "Send this back unchanged in `request_state` with the answers",
+            "x-experimental": true
+          }
+        },
+        "required": [
+          "result_type",
+          "input_requests"
+        ],
+        "description": "The call needs the user's input before it runs. Returned only when the session is configured to ask for user approval before tool execution. Show each question in `input_requests` to the user, then repeat the same call with their answers in `input_responses`, along with this `request_state` if present.",
+        "x-experimental": true
+      },
+      "UserInputResponse": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "decline",
+              "cancel"
+            ],
+            "description": "`accept` when the user submitted the form, `decline` when they said no, `cancel` when they dismissed it"
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "With `accept`, the user's answer: fields matching the question's `requested_schema`"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "description": "The user's answer to one question, in the shape of an MCP elicitation result (https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation)."
+      },
+      "ProxyExecuteCompleted": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "completed"
+            ],
+            "description": "The request was sent and the proxied API responded",
+            "x-experimental": true
+          },
+          "data": {
+            "nullable": true,
+            "description": "The response data returned from the proxied API",
+            "example": {
+              "id": "123",
+              "name": "Resource Name",
+              "created_at": "2023-01-01T00:00:00Z"
+            },
+            "type": "object"
+          },
+          "binary_data": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "URL to download binary content"
+              },
+              "content_type": {
+                "type": "string",
+                "description": "Content-Type of the binary data"
+              },
+              "size": {
+                "type": "number",
+                "description": "File size in bytes"
+              },
+              "expires_at": {
+                "type": "string",
+                "description": "ISO 8601 timestamp when the URL expires"
+              }
+            },
+            "required": [
+              "url",
+              "content_type",
+              "size"
+            ],
+            "description": "Binary body response data. Present when the response is a binary file."
+          },
+          "status": {
+            "type": "number",
+            "description": "The HTTP status code returned from the proxied API",
+            "example": 200
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The HTTP headers returned from the proxied API",
+            "example": {
+              "content-type": "application/json",
+              "cache-control": "no-cache"
+            }
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this request. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "status"
+        ]
+      },
+      "ProxyExecuteBlocked": {
+        "type": "object",
+        "properties": {
+          "result_type": {
+            "type": "string",
+            "enum": [
+              "blocked"
+            ],
+            "description": "A session hook stopped the call"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/BlockReason"
+          },
+          "message": {
+            "type": "string",
+            "description": "A message for the agent. It includes the hook's name, when it has one; the hook id is in `reason`.",
+            "example": "Blocked by session policy: No external email"
+          },
+          "hook_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HookResult"
+            },
+            "description": "Every session hook that applied to this call. Omitted when none applied."
+          }
+        },
+        "required": [
+          "result_type",
+          "reason",
+          "message"
         ]
       },
       "ToolRouterToolkitsListResponse": {
@@ -2521,8 +3242,13 @@
                           "shared_credentials": {
                             "type": "object",
                             "additionalProperties": {},
-                            "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-                            "x-experimental": true
+                            "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+                            "deprecated": true
+                          },
+                          "shared_connection_fields": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Connection field values inherited by every connected account created under this auth config. Same value as shared_credentials; secret values are redacted."
                           },
                           "is_enabled_for_tool_router": {
                             "type": "boolean",
@@ -2854,8 +3580,13 @@
                     "shared_credentials": {
                       "type": "object",
                       "additionalProperties": {},
-                      "description": "[EXPERIMENTAL] Shared credentials that will be inherited by all connected accounts using this auth config",
-                      "x-experimental": true
+                      "description": "Shared credentials that will be inherited by all connected accounts using this auth config. DEPRECATED: use `shared_connection_fields` instead. It takes the same value and behaves the same way.",
+                      "deprecated": true
+                    },
+                    "shared_connection_fields": {
+                      "type": "object",
+                      "additionalProperties": {},
+                      "description": "Connection field values inherited by every connected account created under this auth config. Same value as shared_credentials; secret values are redacted."
                     },
                     "is_enabled_for_tool_router": {
                       "type": "boolean",
@@ -5712,7 +6443,8 @@
                         "type": "string"
                       },
                       "id_token": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       "token_type": {
                         "type": "string"
@@ -6442,6 +7174,63 @@
                     "description": "Whether to create an API key for the project. If true, the API key will be created and returned in the response.",
                     "example": false
                   },
+                  "api_key_allowed_ips": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "ip"
+                    },
+                    "description": "IPv4 or IPv6 addresses allowed to use the project API key. Requires should_create_api_key to be true. Omit to allow requests from any IP address.",
+                    "example": [
+                      "203.0.113.10"
+                    ]
+                  },
+                  "api_key_permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "preset": {
+                          "type": "string",
+                          "enum": [
+                            "tools",
+                            "tool_execution",
+                            "proxy_execute",
+                            "session_management",
+                            "session_tool_execution",
+                            "legacy_mcp",
+                            "connected_accounts",
+                            "auth_configs",
+                            "toolkits",
+                            "triggers",
+                            "webhooks",
+                            "observability",
+                            "sessions"
+                          ]
+                        },
+                        "access": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "read",
+                            "write",
+                            "read_write"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "preset",
+                        "access"
+                      ]
+                    },
+                    "description": "Permission levels for the project API key. Requires should_create_api_key to be true. Omit to create a full-access API key.",
+                    "example": [
+                      {
+                        "preset": "tool_execution",
+                        "access": "write"
+                      }
+                    ]
+                  },
                   "config": {
                     "type": "object",
                     "properties": {
@@ -6463,9 +7252,6 @@
                           "show_all",
                           "dont_store_data"
                         ]
-                      },
-                      "require_mcp_api_key": {
-                        "type": "boolean"
                       },
                       "is_composio_link_enabled_for_managed_auth": {
                         "type": "boolean",
@@ -8886,6 +9672,20 @@
           },
           {
             "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "[EXPERIMENTAL] List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
+              "example": "user_123",
+              "x-experimental": true
+            },
+            "required": false,
+            "description": "[EXPERIMENTAL] List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
+            "name": "user_id",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "number",
               "nullable": true
             },
@@ -8936,22 +9736,30 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
-                          "access": {
-                            "anyOf": [
-                              {
-                                "type": "string",
+                          "instant": {
+                            "type": "object",
+                            "properties": {
+                              "supported": {
+                                "type": "boolean",
                                 "enum": [
-                                  "all"
+                                  true
                                 ]
-                              },
-                              {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 256
                               }
+                            },
+                            "required": [
+                              "supported"
                             ],
-                            "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
-                            "example": "all"
+                            "description": "Present when the latest version of this toolkit supports Instant accounts. See the tools endpoint for support on individual tools."
+                          },
+                          "access": {
+                            "type": "string",
+                            "enum": [
+                              "all",
+                              "user"
+                            ],
+                            "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                            "example": "all",
+                            "x-experimental": true
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -9411,6 +10219,37 @@
                                   },
                                   "additionalProperties": false,
                                   "description": "Label and help text for the API key input on the connect page"
+                                },
+                                "additional_fields": {
+                                  "type": "object",
+                                  "properties": {
+                                    "generic_id": {
+                                      "type": "object",
+                                      "properties": {
+                                        "display_name": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 100,
+                                          "description": "Label shown to the user connecting their account"
+                                        },
+                                        "description": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 500,
+                                          "description": "Help text below the input"
+                                        }
+                                      },
+                                      "required": [
+                                        "display_name"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "generic_id"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Additional values each user enters when connecting. Reference each field in a header, for example X-Org-Id: {{generic_id}}. Use display_name for the user-facing label. Every user must supply each declared field. Values are not secret."
                                 }
                               },
                               "required": [
@@ -9786,21 +10625,14 @@
                       "example": true
                     },
                     "access": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "enum": [
-                            "all"
-                          ]
-                        },
-                        {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 256
-                        }
+                      "type": "string",
+                      "enum": [
+                        "all",
+                        "user"
                       ],
-                      "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
-                      "example": "all"
+                      "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                      "example": "all",
+                      "x-experimental": true
                     },
                     "composio_managed_auth_schemes": {
                       "type": "array",
@@ -10493,6 +11325,16 @@
           },
           {
             "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "required": false,
+            "description": "Whether to include published pricing within instant, when available. Defaults to false.",
+            "in": "query",
+            "name": "include_pricing"
+          },
+          {
+            "schema": {
               "oneOf": [
                 {
                   "type": "null"
@@ -10736,6 +11578,16 @@
           },
           {
             "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "required": false,
+            "description": "Whether to include published pricing within instant, when available. Defaults to false.",
+            "in": "query",
+            "name": "include_pricing"
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "required": false,
@@ -10934,22 +11786,30 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
-                          "access": {
-                            "anyOf": [
-                              {
-                                "type": "string",
+                          "instant": {
+                            "type": "object",
+                            "properties": {
+                              "supported": {
+                                "type": "boolean",
                                 "enum": [
-                                  "all"
+                                  true
                                 ]
-                              },
-                              {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 256
                               }
+                            },
+                            "required": [
+                              "supported"
                             ],
-                            "description": "Only for custom toolkits: \"all\" when every user in the project can use the toolkit, otherwise the user_id it is private to",
-                            "example": "all"
+                            "description": "Present when the latest version of this toolkit supports Instant accounts. See the tools endpoint for support on individual tools."
+                          },
+                          "access": {
+                            "type": "string",
+                            "enum": [
+                              "all",
+                              "user"
+                            ],
+                            "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                            "example": "all",
+                            "x-experimental": true
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -11423,7 +12283,8 @@
                             "type": "string"
                           },
                           "id_token": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "token_type": {
                             "type": "string"
@@ -11970,6 +12831,11 @@
                     "description": "The ID of the connected account to use for authentication (if not provided, will use the default account for the project)",
                     "example": "ca_1a2b3c4d5e6f"
                   },
+                  "user_id": {
+                    "type": "string",
+                    "description": "The user id (entity id) that owns connected_account_id. When the project has 2FA enabled, it is validated against the owner of that connection. Also selects which custom toolkits the request may use.",
+                    "example": "user_4567"
+                  },
                   "endpoint": {
                     "type": "string",
                     "description": "The API endpoint to call (absolute URL or path relative to base URL of the connected account)",
@@ -12189,7 +13055,8 @@
                             "type": "string"
                           },
                           "id_token": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "token_type": {
                             "type": "string"
@@ -12410,7 +13277,7 @@
             }
           },
           "400": {
-            "description": "Bad request - Invalid request parameters or body format",
+            "description": "Bad request - Invalid request parameters or body format, or user_id missing or not the owner of connected_account_id on a project with 2FA enabled",
             "content": {
               "application/json": {
                 "schema": {
@@ -12430,7 +13297,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - Connected account does not have permission to access the requested resource",
+            "description": "Forbidden - Connected account does not have permission to access the requested resource, or user_id is not allowed to use the shared connected account",
             "content": {
               "application/json": {
                 "schema": {
@@ -13623,8 +14490,25 @@
                         "webhook",
                         "poll"
                       ],
-                      "description": "The trigger mechanism - either webhook (event-based) or poll (scheduled check)",
-                      "example": "webhook"
+                      "description": "Deprecated: use types. poll for any trigger that polls, even one a webhook wakes; otherwise webhook.",
+                      "example": "webhook",
+                      "deprecated": true
+                    },
+                    "types": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "webhook",
+                          "poll"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "The trigger mechanisms this trigger supports, in order of preference: webhook (event-based) before poll (scheduled check).",
+                      "example": [
+                        "webhook",
+                        "poll"
+                      ]
                     },
                     "toolkit": {
                       "type": "object",
@@ -13709,6 +14593,7 @@
                     "description",
                     "instructions",
                     "type",
+                    "types",
                     "toolkit",
                     "config",
                     "payload",
@@ -13892,8 +14777,25 @@
                               "webhook",
                               "poll"
                             ],
-                            "description": "The trigger mechanism - either webhook (event-based) or poll (scheduled check)",
-                            "example": "webhook"
+                            "description": "Deprecated: use types. poll for any trigger that polls, even one a webhook wakes; otherwise webhook.",
+                            "example": "webhook",
+                            "deprecated": true
+                          },
+                          "types": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "webhook",
+                                "poll"
+                              ]
+                            },
+                            "minItems": 1,
+                            "description": "The trigger mechanisms this trigger supports, in order of preference: webhook (event-based) before poll (scheduled check).",
+                            "example": [
+                              "webhook",
+                              "poll"
+                            ]
                           },
                           "toolkit": {
                             "type": "object",
@@ -13978,6 +14880,7 @@
                           "description",
                           "instructions",
                           "type",
+                          "types",
                           "toolkit",
                           "config",
                           "payload",
@@ -15012,7 +15915,8 @@
                   "managed_auth_by_composio": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Flag indicating if Composio manages authentication",
+                    "description": "Flag indicating if Composio manages authentication. When true, the generated URLs include the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
+                    "deprecated": true,
                     "example": true
                   },
                   "user_ids": {
@@ -15086,17 +15990,17 @@
                     "mcp_url": {
                       "type": "string",
                       "description": "Base MCP URL without any query parameters",
-                      "example": "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000"
+                      "example": "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000"
                     },
                     "connected_account_urls": {
                       "type": "array",
                       "items": {
                         "type": "string"
                       },
-                      "description": "List of URLs generated for each connected account ID",
+                      "description": "List of URLs generated for each connected account ID. URLs may carry the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
                       ]
                     },
                     "user_ids_url": {
@@ -15104,10 +16008,10 @@
                       "items": {
                         "type": "string"
                       },
-                      "description": "List of URLs generated for each user ID",
+                      "description": "List of URLs generated for each user ID. URLs may carry the include_composio_helper_actions query parameter. DEPRECATED: The include_composio_helper_actions query parameter will be removed in a future version. Switch to Composio Sessions (POST /api/v3/tool_router/session), whose MCP URL includes connection-management tools.",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
+                        "https://backend.composio.dev/v3/mcp/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
                       ]
                     }
                   },
@@ -17173,6 +18077,18 @@
                               "slack",
                               "github"
                             ]
+                          },
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "github"
+                            ]
                           }
                         },
                         "required": [
@@ -17194,6 +18110,18 @@
                               "gmail",
                               "slack"
                             ]
+                          },
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "github"
+                            ]
                           }
                         },
                         "required": [
@@ -17201,9 +18129,30 @@
                         ],
                         "additionalProperties": false,
                         "description": "Disable specific toolkits (denylist)"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "github"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "require_approval"
+                        ],
+                        "additionalProperties": false
                       }
                     ],
-                    "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                    "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive. Experimentally, it can also list toolkits whose tools need approval, with or without a filter."
                   },
                   "auth_configs": {
                     "type": "object",
@@ -17337,6 +18286,11 @@
                           "return_instant_charge": {
                             "type": "boolean",
                             "description": "Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage."
+                          },
+                          "return_prices_in_search": {
+                            "type": "boolean",
+                            "description": "Experimental. Show each instant tool's price in tool search results, under instant_account.prices. Defaults to false on create; omit on PATCH to keep the current value. Does not turn instant usage on or off.",
+                            "x-experimental": true
                           }
                         },
                         "additionalProperties": false
@@ -17399,6 +18353,17 @@
                                 "GMAIL_SEND_EMAIL",
                                 "GMAIL_FETCH_EMAILS"
                               ]
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
                             }
                           },
                           "required": [
@@ -17418,6 +18383,17 @@
                               "example": [
                                 "SLACK_ADD_EMOJI"
                               ]
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
                             }
                           },
                           "required": [
@@ -17436,6 +18412,8 @@
                                     "type": "string",
                                     "enum": [
                                       "readOnlyHint",
+                                      "createHint",
+                                      "updateHint",
                                       "destructiveHint",
                                       "idempotentHint",
                                       "openWorldHint"
@@ -17451,6 +18429,8 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
@@ -17463,57 +18443,86 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
                                         ]
                                       }
+                                    },
+                                    "require_approval": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
+                                          "destructiveHint",
+                                          "idempotentHint",
+                                          "openWorldHint"
+                                        ]
+                                      },
+                                      "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                                      "x-experimental": true,
+                                      "example": [
+                                        "destructiveHint"
+                                      ]
                                     }
                                   }
                                 }
                               ],
-                              "description": "MCP tags to filter tools. Array format is treated as enabled list. Object format supports both enabled and disabled lists.",
+                              "description": "Tags for this toolkit. Any `tags` object here fully replaces the session-wide `tags` for this toolkit, including one that only sets `require_approval`. Array format is treated as an enabled list.",
                               "example": {
-                                "enable": [
+                                "disable": [
                                   "openWorldHint"
                                 ],
-                                "disable": [
+                                "require_approval": [
                                   "destructiveHint"
                                 ]
                               }
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
                             }
                           },
                           "required": [
                             "tags"
                           ],
                           "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "require_approval"
+                          ],
+                          "additionalProperties": false
                         }
                       ]
                     },
-                    "description": "Tool-level configuration per toolkit. Allows you to enable, disable, or filter by tags for specific tools within each toolkit. Every slug passed in `enable` / `disable` must be a valid Composio tool slug for that toolkit — invalid or typo'd slugs fail session creation with a clear error listing which ones didn't match.",
-                    "example": {
-                      "gmail": {
-                        "enable": [
-                          "GMAIL_SEND_EMAIL",
-                          "GMAIL_FETCH_EMAILS"
-                        ]
-                      },
-                      "slack": {
-                        "disable": [
-                          "SLACK_ADD_EMOJI"
-                        ]
-                      },
-                      "slackbot": {
-                        "tags": {
-                          "enable": [
-                            "destructiveHint"
-                          ],
-                          "disable": [
-                            "openWorldHint"
-                          ]
-                        }
-                      }
-                    }
+                    "description": "Tool-level configuration per toolkit. Allows you to enable, disable, or filter by tags for specific tools within each toolkit, and experimentally to list tools that need approval. Every tool slug must be a valid Composio tool slug for that toolkit — invalid or typo'd slugs fail session creation with a clear error listing which ones didn't match."
                   },
                   "tags": {
                     "anyOf": [
@@ -17523,6 +18532,8 @@
                           "type": "string",
                           "enum": [
                             "readOnlyHint",
+                            "createHint",
+                            "updateHint",
                             "destructiveHint",
                             "idempotentHint",
                             "openWorldHint"
@@ -17538,6 +18549,8 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
@@ -17550,21 +18563,43 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
                               ]
                             }
+                          },
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "readOnlyHint",
+                                "createHint",
+                                "updateHint",
+                                "destructiveHint",
+                                "idempotentHint",
+                                "openWorldHint"
+                              ]
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "destructiveHint"
+                            ]
                           }
                         }
                       }
                     ],
-                    "description": "Global MCP tool annotation hints for filtering. Array format is treated as enabled list. Object format supports both enabled (tool must have at least one) and disabled (tool must NOT have any) lists. Toolkit-level tags override this. Toolkit enabled/disabled lists take precedence over tag filtering.",
+                    "description": "Session-wide tags for filtering tools. Array format is treated as an enabled list. Object format supports `enable` (a tool must have at least one) and `disable` (a tool must have none), and experimentally the tags whose tools need approval. If a toolkit sets `tools.<toolkit>.tags`, its tools use that object instead of this one.",
                     "example": {
-                      "enable": [
+                      "disable": [
                         "openWorldHint"
                       ],
-                      "disable": [
+                      "require_approval": [
                         "destructiveHint"
                       ]
                     }
@@ -17892,6 +18927,22 @@
                         "additionalProperties": false,
                         "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Defaults to false.",
                         "x-experimental": true
+                      },
+                      "restrict_egress_to_composio": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Set to true to confine the workbench sandbox to Composio: code running in it can reach the Composio API and its own storage volume, and no other network destination. Defaults to false. Set at session creation only.",
+                        "x-experimental": true
+                      },
+                      "no_elicitation_support_fallback": {
+                        "type": "string",
+                        "enum": [
+                          "deny",
+                          "allow"
+                        ],
+                        "default": "deny",
+                        "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. deny (default) rejects the call; allow runs it without approval.",
+                        "x-experimental": true
                       }
                     },
                     "description": "Experimental features - not stable, may be modified or removed in future versions.",
@@ -17914,6 +18965,16 @@
                     },
                     "additionalProperties": false,
                     "description": "Preload configuration for Composio tools. Controls which tools appear in `session.tools` and the MCP server tool list so the agent can call them directly without going through search first. Custom tools use `preload` on the custom tool/toolkit definition instead. Not supported when multi-account is enabled. Each preloaded tool adds to the agent context window, so keep the list at or under ~20 tools."
+                  },
+                  "hooks": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/SessionHooks"
+                      },
+                      {
+                        "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -18170,6 +19231,14 @@
                                   "items": {
                                     "type": "string"
                                   }
+                                },
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
@@ -18185,15 +19254,40 @@
                                   "items": {
                                     "type": "string"
                                   }
+                                },
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
                                 "disabled"
                               ],
                               "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
+                                }
+                              },
+                              "required": [
+                                "require_approval"
+                              ],
+                              "additionalProperties": false
                             }
                           ],
-                          "description": "Toolkit configuration - either enabled list or disabled list"
+                          "description": "Toolkit configuration - either enabled list or disabled list, or toolkits whose tools need approval"
                         },
                         "auth_configs": {
                           "type": "object",
@@ -18310,10 +19404,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -18358,6 +19458,14 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
@@ -18373,6 +19481,14 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
@@ -18392,6 +19508,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -18405,24 +19523,67 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
                                           ]
                                         },
                                         "description": "Tags that the tool must NOT have any of"
+                                      },
+                                      "require_approval": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        },
+                                        "description": "Tool calls matched here pause until the user approves them.",
+                                        "x-experimental": true
                                       }
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
                                   "tags"
                                 ],
                                 "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
+                                  }
+                                },
+                                "required": [
+                                  "require_approval"
+                                ],
+                                "additionalProperties": false
                               }
                             ]
                           },
-                          "description": "Tool-level configuration per toolkit"
+                          "description": "Tool-level configuration per toolkit: tools to enable or disable, or tools that need approval"
                         },
                         "tags": {
                           "type": "object",
@@ -18433,6 +19594,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -18446,15 +19609,33 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
                                 ]
                               },
                               "description": "Tags that the tool must NOT have any of"
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              },
+                              "description": "Tool calls matched here pause until the user approves them.",
+                              "x-experimental": true
                             }
                           },
-                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
+                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support, and experimentally the tags whose tools need approval. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
                         },
                         "workbench": {
                           "type": "object",
@@ -18524,6 +19705,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -18689,6 +19873,15 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "no_elicitation_support_fallback": {
+                          "type": "string",
+                          "enum": [
+                            "deny",
+                            "allow"
+                          ],
+                          "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. Omitted when not set, which means deny.",
+                          "x-experimental": true
                         }
                       },
                       "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
@@ -18878,6 +20071,27 @@
                     "type": "boolean",
                     "description": "When true, direct non-meta tool execution may return a workbench offload preview if the response exceeds the configured threshold and the session workbench is enabled. When omitted or false, direct tool execution returns the normal inline response. Meta/helper tools are unaffected, and COMPOSIO_MULTI_EXECUTE_TOOL uses session.workbench configuration for its own batch-level offload behavior.",
                     "example": true
+                  },
+                  "input_responses": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/UserInputResponse"
+                    },
+                    "description": "The user's answers to an `input_required` response, keyed by the ids in its `input_requests`. Send them by repeating the same call (same tool and arguments) with this field added, along with the response's `request_state` if present. An approved call runs; a denied or declined one returns `failed`.",
+                    "x-experimental": true,
+                    "example": {
+                      "elicit_3f9a1c2b7d4e5f60": {
+                        "action": "accept",
+                        "content": {
+                          "decision": "approve"
+                        }
+                      }
+                    }
+                  },
+                  "request_state": {
+                    "type": "string",
+                    "description": "The `request_state` from the `input_required` response, sent back unchanged with `input_responses`.",
+                    "x-experimental": true
                   }
                 },
                 "required": [
@@ -18889,67 +20103,33 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully executed the tool. Returns execution result, logs, and status.",
+            "description": "The tool call completed, failed, or needs the user's input before it can run. The `result_type` field says which of these happened.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "instant_charge": {
-                      "type": "object",
-                      "properties": {
-                        "amount": {
-                          "type": "string",
-                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
-                          "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
-                        },
-                        "currency": {
-                          "type": "string",
-                          "enum": [
-                            "USD"
-                          ],
-                          "description": "Currency of the instant charge. Always USD."
-                        },
-                        "charged_by": {
-                          "type": "string",
-                          "enum": [
-                            "composio"
-                          ],
-                          "description": "Entity charging for instant usage. Always composio."
-                        }
-                      },
-                      "required": [
-                        "amount",
-                        "currency",
-                        "charged_by"
-                      ],
-                      "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ExecuteCompleted"
                     },
-                    "data": {
-                      "type": "object",
-                      "additionalProperties": {},
-                      "description": "The data returned by the tool execution",
-                      "example": {
-                        "message": "Hello, World!",
-                        "status": "success"
-                      }
+                    {
+                      "$ref": "#/components/schemas/ExecuteFailed"
                     },
-                    "error": {
-                      "type": "string",
-                      "nullable": true,
-                      "description": "Error message if the execution failed, null otherwise"
+                    {
+                      "$ref": "#/components/schemas/ExecuteBlocked"
                     },
-                    "log_id": {
-                      "type": "string",
-                      "description": "Unique identifier for the execution log",
-                      "example": "log_abc123xyz"
+                    {
+                      "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
-                  },
-                  "required": [
-                    "data",
-                    "error",
-                    "log_id"
-                  ]
+                  ],
+                  "discriminator": {
+                    "propertyName": "result_type",
+                    "mapping": {
+                      "completed": "#/components/schemas/ExecuteCompleted",
+                      "failed": "#/components/schemas/ExecuteFailed",
+                      "blocked": "#/components/schemas/ExecuteBlocked",
+                      "input_required": "#/components/schemas/ExecuteRequiresUserInput"
+                    }
+                  }
                 }
               }
             }
@@ -19006,6 +20186,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -19118,6 +20308,27 @@
                       ],
                       "reinitiate_all": false
                     }
+                  },
+                  "input_responses": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/UserInputResponse"
+                    },
+                    "description": "The user's answers to an `input_required` response, keyed by the ids in its `input_requests`. Send them by repeating the same call (same tool and arguments) with this field added, along with the response's `request_state` if present. An approved call runs; a denied or declined one returns `failed`.",
+                    "x-experimental": true,
+                    "example": {
+                      "elicit_3f9a1c2b7d4e5f60": {
+                        "action": "accept",
+                        "content": {
+                          "decision": "approve"
+                        }
+                      }
+                    }
+                  },
+                  "request_state": {
+                    "type": "string",
+                    "description": "The `request_state` from the `input_required` response, sent back unchanged with `input_responses`.",
+                    "x-experimental": true
                   }
                 },
                 "required": [
@@ -19129,67 +20340,33 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully executed the meta tool. Returns execution result, logs, and status.",
+            "description": "The tool call completed, failed, or needs the user's input before it can run. The `result_type` field says which of these happened.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "instant_charge": {
-                      "type": "object",
-                      "properties": {
-                        "amount": {
-                          "type": "string",
-                          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,12})?$",
-                          "description": "Instant charge in USD as an exact non-negative decimal string, with up to 12 fractional digits."
-                        },
-                        "currency": {
-                          "type": "string",
-                          "enum": [
-                            "USD"
-                          ],
-                          "description": "Currency of the instant charge. Always USD."
-                        },
-                        "charged_by": {
-                          "type": "string",
-                          "enum": [
-                            "composio"
-                          ],
-                          "description": "Entity charging for instant usage. Always composio."
-                        }
-                      },
-                      "required": [
-                        "amount",
-                        "currency",
-                        "charged_by"
-                      ],
-                      "description": "Returned only when the session enables instant.return_instant_charge and a charge is available. Failed individual tool calls omit it. Multi-execute returns one aggregate of reported charges from eligible successful calls, even if another call fails."
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ExecuteCompleted"
                     },
-                    "data": {
-                      "type": "object",
-                      "additionalProperties": {},
-                      "description": "The data returned by the tool execution",
-                      "example": {
-                        "message": "Hello, World!",
-                        "status": "success"
-                      }
+                    {
+                      "$ref": "#/components/schemas/ExecuteFailed"
                     },
-                    "error": {
-                      "type": "string",
-                      "nullable": true,
-                      "description": "Error message if the execution failed, null otherwise"
+                    {
+                      "$ref": "#/components/schemas/ExecuteBlocked"
                     },
-                    "log_id": {
-                      "type": "string",
-                      "description": "Unique identifier for the execution log",
-                      "example": "log_abc123xyz"
+                    {
+                      "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
-                  },
-                  "required": [
-                    "data",
-                    "error",
-                    "log_id"
-                  ]
+                  ],
+                  "discriminator": {
+                    "propertyName": "result_type",
+                    "mapping": {
+                      "completed": "#/components/schemas/ExecuteCompleted",
+                      "failed": "#/components/schemas/ExecuteFailed",
+                      "blocked": "#/components/schemas/ExecuteBlocked",
+                      "input_required": "#/components/schemas/ExecuteRequiresUserInput"
+                    }
+                  }
                 }
               }
             }
@@ -19246,6 +20423,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -19385,6 +20572,14 @@
                                   "items": {
                                     "type": "string"
                                   }
+                                },
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
@@ -19400,15 +20595,40 @@
                                   "items": {
                                     "type": "string"
                                   }
+                                },
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
                                 "disabled"
                               ],
                               "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
+                                }
+                              },
+                              "required": [
+                                "require_approval"
+                              ],
+                              "additionalProperties": false
                             }
                           ],
-                          "description": "Toolkit configuration - either enabled list or disabled list"
+                          "description": "Toolkit configuration - either enabled list or disabled list, or toolkits whose tools need approval"
                         },
                         "auth_configs": {
                           "type": "object",
@@ -19525,10 +20745,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -19573,6 +20799,14 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
@@ -19588,6 +20822,14 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
@@ -19607,6 +20849,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -19620,24 +20864,67 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
                                           ]
                                         },
                                         "description": "Tags that the tool must NOT have any of"
+                                      },
+                                      "require_approval": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        },
+                                        "description": "Tool calls matched here pause until the user approves them.",
+                                        "x-experimental": true
                                       }
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
                                   "tags"
                                 ],
                                 "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
+                                  }
+                                },
+                                "required": [
+                                  "require_approval"
+                                ],
+                                "additionalProperties": false
                               }
                             ]
                           },
-                          "description": "Tool-level configuration per toolkit"
+                          "description": "Tool-level configuration per toolkit: tools to enable or disable, or tools that need approval"
                         },
                         "tags": {
                           "type": "object",
@@ -19648,6 +20935,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -19661,15 +20950,33 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
                                 ]
                               },
                               "description": "Tags that the tool must NOT have any of"
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              },
+                              "description": "Tool calls matched here pause until the user approves them.",
+                              "x-experimental": true
                             }
                           },
-                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
+                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support, and experimentally the tags whose tools need approval. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
                         },
                         "workbench": {
                           "type": "object",
@@ -19739,6 +21046,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -19904,6 +21214,15 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "no_elicitation_support_fallback": {
+                          "type": "string",
+                          "enum": [
+                            "deny",
+                            "allow"
+                          ],
+                          "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. Omitted when not set, which means deny.",
+                          "x-experimental": true
                         }
                       },
                       "description": "Experimental features",
@@ -20045,6 +21364,18 @@
                               "slack",
                               "github"
                             ]
+                          },
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "github"
+                            ]
                           }
                         },
                         "required": [
@@ -20066,6 +21397,18 @@
                               "gmail",
                               "slack"
                             ]
+                          },
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "github"
+                            ]
                           }
                         },
                         "required": [
@@ -20073,9 +21416,30 @@
                         ],
                         "additionalProperties": false,
                         "description": "Disable specific toolkits (denylist)"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "github"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "require_approval"
+                        ],
+                        "additionalProperties": false
                       }
                     ],
-                    "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                    "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive. Experimentally, it can also list toolkits whose tools need approval, with or without a filter."
                   },
                   "auth_configs": {
                     "type": "object",
@@ -20209,6 +21573,11 @@
                           "return_instant_charge": {
                             "type": "boolean",
                             "description": "Return the top-level instant_charge in session tool responses when a charge is available. Defaults to false on create; omission on PATCH preserves the current value. Controls response visibility only; it does not enable or disable instant usage."
+                          },
+                          "return_prices_in_search": {
+                            "type": "boolean",
+                            "description": "Experimental. Show each instant tool's price in tool search results, under instant_account.prices. Defaults to false on create; omit on PATCH to keep the current value. Does not turn instant usage on or off.",
+                            "x-experimental": true
                           }
                         },
                         "additionalProperties": false
@@ -20263,6 +21632,17 @@
                                 "GMAIL_SEND_EMAIL",
                                 "GMAIL_FETCH_EMAILS"
                               ]
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
                             }
                           },
                           "required": [
@@ -20282,6 +21662,17 @@
                               "example": [
                                 "SLACK_ADD_EMOJI"
                               ]
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
                             }
                           },
                           "required": [
@@ -20300,6 +21691,8 @@
                                     "type": "string",
                                     "enum": [
                                       "readOnlyHint",
+                                      "createHint",
+                                      "updateHint",
                                       "destructiveHint",
                                       "idempotentHint",
                                       "openWorldHint"
@@ -20315,6 +21708,8 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
@@ -20327,57 +21722,86 @@
                                         "type": "string",
                                         "enum": [
                                           "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
                                           "destructiveHint",
                                           "idempotentHint",
                                           "openWorldHint"
                                         ]
                                       }
+                                    },
+                                    "require_approval": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "readOnlyHint",
+                                          "createHint",
+                                          "updateHint",
+                                          "destructiveHint",
+                                          "idempotentHint",
+                                          "openWorldHint"
+                                        ]
+                                      },
+                                      "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                                      "x-experimental": true,
+                                      "example": [
+                                        "destructiveHint"
+                                      ]
                                     }
                                   }
                                 }
                               ],
-                              "description": "MCP tags to filter tools. Array format is treated as enabled list. Object format supports both enabled and disabled lists.",
+                              "description": "Tags for this toolkit. Any `tags` object here fully replaces the session-wide `tags` for this toolkit, including one that only sets `require_approval`. Array format is treated as an enabled list.",
                               "example": {
-                                "enable": [
+                                "disable": [
                                   "openWorldHint"
                                 ],
-                                "disable": [
+                                "require_approval": [
                                   "destructiveHint"
                                 ]
                               }
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
                             }
                           },
                           "required": [
                             "tags"
                           ],
                           "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tool calls matched here pause until the user approves them. Setting this toolkit's own list, even an empty one, replaces the session-wide `tags.require_approval` for its tools.",
+                              "x-experimental": true,
+                              "example": [
+                                "GITHUB_DELETE_A_REPOSITORY"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "require_approval"
+                          ],
+                          "additionalProperties": false
                         }
                       ]
                     },
-                    "description": "Tool-level configuration per toolkit. Allows you to enable, disable, or filter by tags for specific tools within each toolkit. Every slug passed in `enable` / `disable` must be a valid Composio tool slug for that toolkit — invalid or typo'd slugs fail session creation with a clear error listing which ones didn't match.",
-                    "example": {
-                      "gmail": {
-                        "enable": [
-                          "GMAIL_SEND_EMAIL",
-                          "GMAIL_FETCH_EMAILS"
-                        ]
-                      },
-                      "slack": {
-                        "disable": [
-                          "SLACK_ADD_EMOJI"
-                        ]
-                      },
-                      "slackbot": {
-                        "tags": {
-                          "enable": [
-                            "destructiveHint"
-                          ],
-                          "disable": [
-                            "openWorldHint"
-                          ]
-                        }
-                      }
-                    }
+                    "description": "Tool-level configuration per toolkit. Allows you to enable, disable, or filter by tags for specific tools within each toolkit, and experimentally to list tools that need approval. Every tool slug must be a valid Composio tool slug for that toolkit — invalid or typo'd slugs fail session creation with a clear error listing which ones didn't match."
                   },
                   "tags": {
                     "anyOf": [
@@ -20387,6 +21811,8 @@
                           "type": "string",
                           "enum": [
                             "readOnlyHint",
+                            "createHint",
+                            "updateHint",
                             "destructiveHint",
                             "idempotentHint",
                             "openWorldHint"
@@ -20402,6 +21828,8 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
@@ -20414,21 +21842,43 @@
                               "type": "string",
                               "enum": [
                                 "readOnlyHint",
+                                "createHint",
+                                "updateHint",
                                 "destructiveHint",
                                 "idempotentHint",
                                 "openWorldHint"
                               ]
                             }
+                          },
+                          "require_approval": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "readOnlyHint",
+                                "createHint",
+                                "updateHint",
+                                "destructiveHint",
+                                "idempotentHint",
+                                "openWorldHint"
+                              ]
+                            },
+                            "minItems": 1,
+                            "description": "Tool calls matched here pause until the user approves them. A tool needs approval if its toolkit, the tool itself or any of its tags is listed. A toolkit's own lists in `tools` replace the session-wide tag list for that toolkit.",
+                            "x-experimental": true,
+                            "example": [
+                              "destructiveHint"
+                            ]
                           }
                         }
                       }
                     ],
-                    "description": "Global MCP tool annotation hints for filtering. Array format is treated as enabled list. Object format supports both enabled (tool must have at least one) and disabled (tool must NOT have any) lists. Toolkit-level tags override this. Toolkit enabled/disabled lists take precedence over tag filtering.",
+                    "description": "Session-wide tags for filtering tools. Array format is treated as an enabled list. Object format supports `enable` (a tool must have at least one) and `disable` (a tool must have none), and experimentally the tags whose tools need approval. If a toolkit sets `tools.<toolkit>.tags`, its tools use that object instead of this one.",
                     "example": {
-                      "enable": [
+                      "disable": [
                         "openWorldHint"
                       ],
-                      "disable": [
+                      "require_approval": [
                         "destructiveHint"
                       ]
                     }
@@ -20529,6 +21979,18 @@
                     "additionalProperties": false,
                     "description": "Preload configuration for Composio tools. Controls which tools appear in `session.tools` and the MCP server tool list so the agent can call them directly without going through search first. Custom tools use `preload` on the custom tool/toolkit definition instead. Not supported when multi-account is enabled. Each preloaded tool adds to the agent context window, so keep the list at or under ~20 tools."
                   },
+                  "hooks": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/SessionHooks"
+                      },
+                      {
+                        "nullable": true,
+                        "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it.",
+                        "type": "object"
+                      }
+                    ]
+                  },
                   "experimental": {
                     "type": "object",
                     "nullable": true,
@@ -20588,6 +22050,15 @@
                         ],
                         "additionalProperties": false,
                         "description": "Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool in this session so the agent can report tool executions with empty, incorrect, or failed results. Replaces the stored block when provided; `enable` is required when the block is sent.",
+                        "x-experimental": true
+                      },
+                      "no_elicitation_support_fallback": {
+                        "type": "string",
+                        "enum": [
+                          "deny",
+                          "allow"
+                        ],
+                        "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. deny (default) rejects the call; allow runs it without approval.",
                         "x-experimental": true
                       }
                     },
@@ -20660,6 +22131,14 @@
                                   "items": {
                                     "type": "string"
                                   }
+                                },
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
@@ -20675,15 +22154,40 @@
                                   "items": {
                                     "type": "string"
                                   }
+                                },
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
                                 "disabled"
                               ],
                               "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "require_approval": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Tool calls matched here pause until the user approves them.",
+                                  "x-experimental": true
+                                }
+                              },
+                              "required": [
+                                "require_approval"
+                              ],
+                              "additionalProperties": false
                             }
                           ],
-                          "description": "Toolkit configuration - either enabled list or disabled list"
+                          "description": "Toolkit configuration - either enabled list or disabled list, or toolkits whose tools need approval"
                         },
                         "auth_configs": {
                           "type": "object",
@@ -20800,10 +22304,16 @@
                                 "return_instant_charge": {
                                   "type": "boolean",
                                   "description": "Whether session tool responses return a top-level instant_charge when a charge is available. Defaults to false; controls response visibility only."
+                                },
+                                "return_prices_in_search": {
+                                  "type": "boolean",
+                                  "description": "Experimental. Whether tool search results show each instant tool's price, under instant_account.prices. Defaults to false.",
+                                  "x-experimental": true
                                 }
                               },
                               "required": [
-                                "return_instant_charge"
+                                "return_instant_charge",
+                                "return_prices_in_search"
                               ],
                               "additionalProperties": false
                             }
@@ -20848,6 +22358,14 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
@@ -20863,6 +22381,14 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
@@ -20882,6 +22408,8 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
@@ -20895,24 +22423,67 @@
                                           "type": "string",
                                           "enum": [
                                             "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
                                             "destructiveHint",
                                             "idempotentHint",
                                             "openWorldHint"
                                           ]
                                         },
                                         "description": "Tags that the tool must NOT have any of"
+                                      },
+                                      "require_approval": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "createHint",
+                                            "updateHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        },
+                                        "description": "Tool calls matched here pause until the user approves them.",
+                                        "x-experimental": true
                                       }
                                     }
+                                  },
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
                                   }
                                 },
                                 "required": [
                                   "tags"
                                 ],
                                 "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "require_approval": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool calls matched here pause until the user approves them.",
+                                    "x-experimental": true
+                                  }
+                                },
+                                "required": [
+                                  "require_approval"
+                                ],
+                                "additionalProperties": false
                               }
                             ]
                           },
-                          "description": "Tool-level configuration per toolkit"
+                          "description": "Tool-level configuration per toolkit: tools to enable or disable, or tools that need approval"
                         },
                         "tags": {
                           "type": "object",
@@ -20923,6 +22494,8 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
@@ -20936,15 +22509,33 @@
                                 "type": "string",
                                 "enum": [
                                   "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
                                   "destructiveHint",
                                   "idempotentHint",
                                   "openWorldHint"
                                 ]
                               },
                               "description": "Tags that the tool must NOT have any of"
+                            },
+                            "require_approval": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "createHint",
+                                  "updateHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              },
+                              "description": "Tool calls matched here pause until the user approves them.",
+                              "x-experimental": true
                             }
                           },
-                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
+                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support, and experimentally the tags whose tools need approval. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
                         },
                         "workbench": {
                           "type": "object",
@@ -21014,6 +22605,9 @@
                             "enable"
                           ],
                           "description": "Proxy execute configuration for this session. Omitted when not set."
+                        },
+                        "hooks": {
+                          "$ref": "#/components/schemas/SessionHooks"
                         },
                         "preload": {
                           "type": "object",
@@ -21179,6 +22773,15 @@
                             ]
                           },
                           "description": "Custom tools — standalone or extending Composio toolkits"
+                        },
+                        "no_elicitation_support_fallback": {
+                          "type": "string",
+                          "enum": [
+                            "deny",
+                            "allow"
+                          ],
+                          "description": "What session MCP does with a tool call that needs approval when the MCP client can't ask the user. Omitted when not set, which means deny.",
+                          "x-experimental": true
                         }
                       },
                       "description": "Experimental features",
@@ -21852,7 +23455,8 @@
                             "type": "string"
                           },
                           "id_token": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "token_type": {
                             "type": "string"
@@ -22009,65 +23613,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "nullable": true,
-                      "description": "The response data returned from the proxied API",
-                      "example": {
-                        "id": "123",
-                        "name": "Resource Name",
-                        "created_at": "2023-01-01T00:00:00Z"
-                      },
-                      "type": "object"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProxyExecuteCompleted"
                     },
-                    "binary_data": {
-                      "type": "object",
-                      "properties": {
-                        "url": {
-                          "type": "string",
-                          "description": "URL to download binary content"
-                        },
-                        "content_type": {
-                          "type": "string",
-                          "description": "Content-Type of the binary data"
-                        },
-                        "size": {
-                          "type": "number",
-                          "description": "File size in bytes"
-                        },
-                        "expires_at": {
-                          "type": "string",
-                          "description": "ISO 8601 timestamp when the URL expires"
-                        }
-                      },
-                      "required": [
-                        "url",
-                        "content_type",
-                        "size"
-                      ],
-                      "description": "Binary body response data. Present when the response is a binary file."
+                    {
+                      "$ref": "#/components/schemas/ProxyExecuteBlocked"
                     },
-                    "status": {
-                      "type": "number",
-                      "description": "The HTTP status code returned from the proxied API",
-                      "example": 200
-                    },
-                    "headers": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      },
-                      "description": "The HTTP headers returned from the proxied API",
-                      "example": {
-                        "content-type": "application/json",
-                        "cache-control": "no-cache"
-                      }
+                    {
+                      "$ref": "#/components/schemas/ExecuteRequiresUserInput"
                     }
-                  },
-                  "required": [
-                    "status"
-                  ]
+                  ],
+                  "discriminator": {
+                    "propertyName": "result_type",
+                    "mapping": {
+                      "completed": "#/components/schemas/ProxyExecuteCompleted",
+                      "blocked": "#/components/schemas/ProxyExecuteBlocked",
+                      "input_required": "#/components/schemas/ExecuteRequiresUserInput"
+                    }
+                  }
                 }
               }
             }
@@ -22124,6 +23688,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -22437,6 +24011,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -22803,6 +24387,13 @@
                                   "type": "string"
                                 },
                                 "description": "Tools of this toolkit that run on the Composio instant account"
+                              },
+                              "prices": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "$ref": "#/components/schemas/ToolPricing"
+                                },
+                                "description": "Price of each tool, keyed by tool slug."
                               }
                             },
                             "required": [
@@ -23020,6 +24611,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
             "content": {
               "application/json": {
                 "schema": {

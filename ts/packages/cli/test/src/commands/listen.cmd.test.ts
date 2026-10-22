@@ -1,13 +1,17 @@
+import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
+import { TestClock } from 'effect/testing';
 import { ListenCommandError } from 'src/commands/listen.cmd';
-import { extendConfigProvider } from 'src/services/config';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
-}).pipe(extendConfigProvider);
+});
 
 const enableListen = Effect.gen(function* () {
   const config = yield* ComposioCliUserConfig;
@@ -19,7 +23,40 @@ const enableListen = Effect.gen(function* () {
   });
 });
 
+const failingRealtime = Layer.succeed(
+  TriggersRealtime,
+  TriggersRealtime.of({
+    listen: () => Effect.fail(new TriggerRealtimeSubscriptionError({ message: 'socket closed' })),
+    listenInProject: () =>
+      Effect.fail(new TriggerRealtimeSubscriptionError({ message: 'socket closed' })),
+  })
+);
+
 describe('CLI: composio listen', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] the realtime subscription fails',
+    it => {
+      it.effect('[Then] reports it on a redirected stderr and exits 1', () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const terminal = redirectedTerminalUI();
+          yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']).pipe(
+            Effect.provide(Layer.merge(failingRealtime, terminal.layer))
+          );
+
+          expect(terminal.stderr()).toContain(
+            'Could not subscribe to realtime trigger events: socket closed. Check your network connection or run `composio login`.\n'
+          );
+          expect(process.exitCode).toBe(1);
+        })
+      );
+    }
+  );
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -95,6 +132,92 @@ describe('CLI: composio listen', () => {
 
         expect(output).toContain('stream: ');
         expect(output).toContain('Stopped after receiving 1 event.');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: {
+        events: [
+          {
+            id: 'evt_conn_expired_1',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_1',
+            },
+          },
+        ],
+      },
+    })
+  )('[Given] event payloads that cannot be written', it => {
+    const payloadWritesFail = failingFileWrites(path => path.endsWith('-payload.json'));
+
+    // The write failure logs its warn only after it was counted, so the latch is an ordered
+    // count-is-set signal — no polling, no sleeps.
+    const listenUntilWriteFails = (args: ReadonlyArray<string>) =>
+      Effect.gen(function* () {
+        const writeFailed = Latch.makeUnsafe(false);
+        const terminal = redirectedTerminalUI({
+          onWarn: message => {
+            if (message.includes('-payload.json')) writeFailed.openUnsafe();
+          },
+        });
+        const fiber = yield* Effect.forkChild(
+          cli(['listen', 'composio.connected_account.expired', ...args]).pipe(
+            Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+          )
+        );
+        yield* writeFailed.await;
+        return { fiber, terminal };
+      });
+
+    // A failed write still counts toward --max-events, so the bounded run stops on its own.
+    it.effect('[Then] stops at --max-events and sums the write failures up on stderr', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']).pipe(
+          Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+        );
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        expect(process.exitCode).toBeUndefined();
+      })
+    );
+
+    it.effect('[Then] sums the write failures up on stderr when the timeout stops it', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const { fiber, terminal } = yield* listenUntilWriteFails(['--timeout', '1s']);
+
+        yield* TestClock.adjust('1 second');
+        yield* Fiber.join(fiber);
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        // Recovered per-event failures, not a failed command.
+        expect(process.exitCode).toBeUndefined();
+      })
+    );
+
+    // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the release hook must run the
+    // summary anyway.
+    it.effect('[Then] sums the write failures up even when the listener is interrupted', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const { fiber, terminal } = yield* listenUntilWriteFails([]);
+
+        yield* Fiber.interrupt(fiber);
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        expect(process.exitCode).toBeUndefined();
       })
     );
   });
@@ -183,79 +306,66 @@ describe('CLI: composio listen', () => {
       },
     })
   )('listen validation and domain failures', it => {
-    // v4 migration note: `CliError.InvalidValue` is a fixed flag/argument-name-and-value
-    // struct produced only by the parser. These are business-level validations (only
-    // knowable after parsing), so `listen.cmd.ts` models them as a plain typed domain error
-    // (`ListenOptionError`) instead — see the migration note above `invalidOptionValue`.
+    // Business-level validation (only knowable after parsing) raises `CommandInputError`;
+    // see `src/commands/errors.ts`.
     it.effect('reports malformed trigger params as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'composio.connected_account.expired', '--params', '[]'])
-        );
+        const failure = yield* cli([
+          'listen',
+          'composio.connected_account.expired',
+          '--params',
+          '[]',
+        ]).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
-        }
+        expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
       })
     );
 
     it.effect('reports malformed timeout values as CLI input validation', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(
-          cli(['listen', 'composio.connected_account.expired', '--timeout', 'eventually'])
-        );
+        const failure = yield* cli([
+          'listen',
+          'composio.connected_account.expired',
+          '--timeout',
+          'eventually',
+        ]).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toMatchObject({ _tag: 'commands/ListenOptionError' });
-        }
+        expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
       })
     );
 
     it.effect('reports a missing active connection as a structured domain failure', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']));
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(ListenCommandError);
-          if (failure instanceof ListenCommandError) {
-            expect(failure).toMatchObject({
-              reason: 'connected_account_not_found',
-              toolkitSlug: 'gmail',
-            });
-          }
-        }
+        expect(failure).toBeInstanceOf(ListenCommandError);
+        expect(failure).toMatchObject({
+          reason: 'connected_account_not_found',
+          toolkitSlug: 'gmail',
+        });
       })
     );
 
     it.effect('reports an unknown trigger slug instead of a missing connection', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(cli(['listen', 'BOGUS_SLUG_XYZ']));
+        const failure = yield* cli(['listen', 'BOGUS_SLUG_XYZ']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(ListenCommandError);
-          if (failure instanceof ListenCommandError) {
-            expect(failure).toMatchObject({
-              reason: 'unknown_trigger',
-              slug: 'BOGUS_SLUG_XYZ',
-              toolkitSlug: 'bogus',
-            });
-            expect(failure.message).toContain('Unknown trigger slug "BOGUS_SLUG_XYZ"');
-            expect(failure.message).toContain('composio triggers list <toolkit>');
-            expect(failure.message).not.toContain('composio link');
-          }
-        }
+        expect(failure).toBeInstanceOf(ListenCommandError);
+        expect(failure).toMatchObject({
+          reason: 'unknown_trigger',
+          slug: 'BOGUS_SLUG_XYZ',
+          toolkitSlug: 'bogus',
+          message: expect.stringContaining('Unknown trigger slug "BOGUS_SLUG_XYZ"'),
+        });
+        expect(failure).toHaveProperty(
+          'message',
+          expect.stringContaining('composio triggers list <toolkit>')
+        );
+        expect(failure).toHaveProperty('message', expect.not.stringContaining('composio link'));
       })
     );
   });
@@ -307,20 +417,14 @@ describe('CLI: composio listen', () => {
     it.effect('[Then] reports an unknown trigger slug instead of a creation failure', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const exit = yield* Effect.exit(cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']));
+        const failure = yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESAGE']).pipe(Effect.flip);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const failure = Cause.squash(exit.cause);
-          expect(failure).toBeInstanceOf(ListenCommandError);
-          if (failure instanceof ListenCommandError) {
-            expect(failure).toMatchObject({
-              reason: 'unknown_trigger',
-              slug: 'GMAIL_NEW_GMAIL_MESAGE',
-            });
-            expect(failure.message).toContain('Unknown trigger slug "GMAIL_NEW_GMAIL_MESAGE"');
-          }
-        }
+        expect(failure).toBeInstanceOf(ListenCommandError);
+        expect(failure).toMatchObject({
+          reason: 'unknown_trigger',
+          slug: 'GMAIL_NEW_GMAIL_MESAGE',
+          message: expect.stringContaining('Unknown trigger slug "GMAIL_NEW_GMAIL_MESAGE"'),
+        });
       })
     );
   });

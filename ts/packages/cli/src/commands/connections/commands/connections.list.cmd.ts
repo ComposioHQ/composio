@@ -1,18 +1,16 @@
 import { Data, Effect, Option } from 'effect';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
-import { requireAuth } from 'src/effects/require-auth';
+import { failedWith, requestError } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  formatResolveCommandProjectError,
-  resolveCommandProject,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import { TerminalUI } from 'src/services/terminal-ui';
 import {
   getConnectedAccountPermissionGroup,
   getConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+import { idempotent } from 'src/services/composio-request';
 
 class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
   'commands/MissingConnectionsConsumerUserIdError'
@@ -20,10 +18,7 @@ class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-class ConnectionsListRequestError extends Data.TaggedError('commands/ConnectionsListRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ConnectionsListRequestError extends requestError('commands/ConnectionsListRequestError') {}
 
 const toolkit = Flag.String('toolkit').pipe(
   Flag.withDescription('Filter by toolkit slug (e.g. "gmail")'),
@@ -63,14 +58,12 @@ const formatConnectionsJson = (
 
 export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit }) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const toolkitSlug = Option.getOrUndefined(toolkit);
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    });
 
     const consumerUserId = resolvedProject.consumerUserId;
     if (!consumerUserId) {
@@ -83,19 +76,16 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const rawResult = yield* Effect.tryPromise({
-      try: () =>
-        client.connectedAccounts.list({
+    const rawResult = yield* client.connectedAccounts
+      .list(
+        {
           toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
           user_ids: [consumerUserId],
           limit: 1000,
-        }),
-      catch: cause =>
-        new ConnectionsListRequestError({
-          message: 'Failed to list connections.',
-          cause,
-        }),
-    });
+        },
+        idempotent
+      )
+      .pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,

@@ -1,3 +1,4 @@
+import { instantDiscount, instantPricingDescription, toolkitSupportsInstant } from '@/lib/instant';
 import {
   source,
   getReferenceSource,
@@ -19,7 +20,8 @@ import {
   isToolVersionPath,
   toolVersionParameterDescription,
 } from '@/lib/api-version-guidance';
-import { notFound } from 'next/navigation';
+import { getPageLastUpdated } from '@/lib/content-freshness';
+import { missingMarkdownResponse, withMarkdownMetadata } from '@/lib/markdown-response';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
@@ -55,7 +57,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=${API_FETCH_LIMIT}`,
+      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=${API_FETCH_LIMIT}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -870,6 +872,10 @@ function toolkitToMarkdown(
     lines.push(`- **Version:** ${toolkit.version}`);
   }
 
+  if (toolkitSupportsInstant(toolkit.instant, tools)) {
+    lines.push('- **Instant:** Supported on the latest version. Support varies by tool.');
+  }
+
   if (faqMarkdown && faqMarkdown.trim()) {
     lines.push('', '## Frequently Asked Questions', '');
     // Bump ## headings to ### so FAQ questions are children of the FAQ section
@@ -882,6 +888,12 @@ function toolkitToMarkdown(
       lines.push(`### ${tool.name}`, '');
       lines.push(`**Slug:** \`${tool.slug}\``, '');
       lines.push(tool.description, '');
+      if (tool.instant?.supported === true) {
+        lines.push('**Instant:** Supported on the latest version.', '',
+          `**Instant pricing:** ${instantPricingDescription(tool.instant)}`, '');
+        const discount = instantDiscount(tool.instant);
+        if (discount !== undefined) lines.push(`**Discount:** ${discount}`, '');
+      }
 
       // Input parameters
       if (tool.input_parameters && Object.keys(tool.input_parameters).length > 0) {
@@ -1009,7 +1021,7 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Premium Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Instant Tools](/docs/instant-tools.md) - Run supported tools on Composio accounts and control usage charges',
     '- [Managed OAuth apps](/toolkits/managed-auth.md) - Check whether Composio provides the OAuth app for a toolkit',
     '',
     '## All Toolkits',
@@ -1196,7 +1208,23 @@ function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
   return lines.join('\n') + LLM_FOOTER;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
+export async function GET(req: Request, context: { params: Promise<{ slug?: string[] }> }) {
+  const { slug = [] } = await context.params;
+  const pathname = `/${slug.join('/')}`;
+  const response = await renderMarkdown(req, context);
+  if (!response.headers.get('Content-Type')?.startsWith('text/markdown')) {
+    response.headers.set('Vary', 'Accept');
+    return response;
+  }
+  return withMarkdownMetadata(
+    await response.text(),
+    pathname,
+    response.ok ? await getPageLastUpdated(pathname) : null,
+    { status: response.status, statusText: response.statusText, headers: response.headers },
+  );
+}
+
+async function renderMarkdown(_req: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
   try {
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
@@ -1267,8 +1295,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
           });
         }
       }
-      // If no entries found, fall through to notFound
-      notFound();
+      return missingMarkdownResponse();
     }
 
     // Special handling for meta tools - /toolkits/meta-tools and /toolkits/meta-tools/{slug}.
@@ -1309,7 +1336,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       }
     } else {
       const match = sources.find(s => s.prefix === prefix);
-      if (!match) notFound();
+      if (!match) return missingMarkdownResponse();
       pageSource = match.source;
     }
 
@@ -1403,12 +1430,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug?: 
       }
     }
 
-    notFound();
+    return missingMarkdownResponse();
   } catch (e) {
-    // Don't catch notFound - let it propagate
-    if (e && typeof e === 'object' && 'digest' in e) {
-      throw e;
-    }
     console.error('Unexpected error in llms.mdx route:', e);
     return new Response(`# Error\n\nAn error occurred while generating the markdown content.`, {
       status: 500,

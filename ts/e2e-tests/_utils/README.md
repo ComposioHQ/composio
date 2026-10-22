@@ -9,7 +9,6 @@ Shared infrastructure for running `@composio/core` and CLI end-to-end tests in i
 | `src/`            | TypeScript utilities (e2e runner, config, types)     |
 | `scripts/`        | Docker build and cleanup scripts                     |
 | `Dockerfile.node` | Multi-stage Dockerfile for Node.js test environments |
-| `Dockerfile.deno` | Dockerfile for Deno test environments                |
 | `Dockerfile.cli`  | Scratch Dockerfile for CLI test environments         |
 
 ## API
@@ -25,8 +24,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.17.0', '25.9.0'], // optional, defaults to mise.toml
-    deno: ['2.6.7'], // optional, defaults to mise.toml
+    node: ['22.23.4', '24.22.1', '26.12.1'], // optional, defaults to mise.toml
     cli: ['current'], // optional, defaults to CLI package.json version
   },
   env: { MY_VAR: 'value' }, // optional env vars
@@ -62,7 +60,6 @@ Configuration object passed to `e2e()`:
 | Property | Type                             | Description                                |
 | -------- | -------------------------------- | ------------------------------------------ |
 | `node`   | `readonly NodeVersionFromUser[]` | Node.js versions. Defaults to `mise.toml`  |
-| `deno`   | `readonly DenoVersionFromUser[]` | Deno versions. Defaults to `mise.toml`     |
 | `cli`    | `readonly CliVersionFromUser[]`  | CLI versions. Defaults to CLI package.json |
 
 ### `DefineTestsContext`
@@ -71,7 +68,7 @@ The context passed to the `defineTests` callback:
 
 | Property     | Type/Signature                                                                     | Description                               |
 | ------------ | ---------------------------------------------------------------------------------- | ----------------------------------------- |
-| `runtime`    | `'node' \| 'deno' \| 'cli'`                                                        | Current runtime being tested              |
+| `runtime`    | `'node' \| 'cli'`                                                                  | Current runtime being tested              |
 | `runCmd`     | `(command: string) => Promise<E2ETestResult>`                                      | Run arbitrary command in Docker container |
 | `runFixture` | `(options: RunFixtureOptions) => Promise<E2ETestResult \| E2ETestResultWithSetup>` | Run fixture with optional setup phase     |
 
@@ -192,24 +189,9 @@ Node.js versions to test are resolved in this order:
 
 The following versions are pre-defined in `const.ts`:
 
-- `22.22.3`
-- `24.17.0`
-- `25.9.0`
-- `current` (resolves to `mise.toml` version)
-
-### Deno Version Resolution
-
-Deno versions to test are resolved in this order:
-
-1. **`COMPOSIO_E2E_DENO_VERSION` env var** (highest priority): Use `[env_value]`
-2. **`config.versions.deno`**: Use the provided array
-3. **Default**: Use version from `mise.toml` file
-
-### Well-Known Deno Versions
-
-The following versions are pre-defined in `const.ts`:
-
-- `2.6.7`
+- `22.23.4`
+- `24.22.1`
+- `26.12.1`
 - `current` (resolves to `mise.toml` version)
 
 ### CLI Version Resolution
@@ -265,10 +247,10 @@ e2e(import.meta.url, {
 ## Scripts
 
 ```bash
-# Pre-build Docker images for all well-known Node, Deno, and CLI versions
+# Pre-build Docker images for all well-known Node and CLI versions
 pnpm docker:build
 
-# Remove all e2e Docker images (Node.js, Deno, and CLI)
+# Remove all e2e Docker images (Node.js and CLI)
 pnpm docker:clean
 ```
 
@@ -281,13 +263,13 @@ Each test suite generates a `DEBUG.log` file with structured output grouped by r
 E2E Test: openai-zod4-compat
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/openai-zod4-compat/e2e.test.ts
-Runtime versions: Node.js 22.22.3, Node.js 24.17.0, Node.js 25.9.0
+Runtime versions: Node.js 22.23.4, Node.js 24.22.1, Node.js 26.12.1
 ================================================================================
 
 ################################################################################
-### Node.js 22.22.3
+### Node.js 22.23.4
 ################################################################################
-Image: composio-e2e-node:22.22.3
+Image: composio-e2e-node:22.23.4
 
 --- Phase 1/2: setup ---
 Container: e2e-openai-zod4-compat-22-22-3-1769775520382-setup
@@ -318,9 +300,9 @@ All packages work together!
 ================================================================================
 Summary
 ================================================================================
-Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.17.0: PASS (2 phases, 3.09s total)
-Node.js 25.9.0: PASS (2 phases, 3.08s total)
+Node.js 22.23.4: PASS (2 phases, 3.11s total)
+Node.js 24.22.1: PASS (2 phases, 3.09s total)
+Node.js 26.12.1: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

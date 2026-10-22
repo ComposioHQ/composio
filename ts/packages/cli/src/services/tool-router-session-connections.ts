@@ -1,5 +1,5 @@
-import { Data, Effect } from 'effect';
-import type { Composio } from '@composio/client';
+import { Effect } from 'effect';
+import type { ComposioClientShape } from '@composio/client/effect';
 import { isKnownConnectedAccountStatus } from 'src/models/connected-accounts';
 import {
   compareNewestFirst,
@@ -8,13 +8,7 @@ import {
   resolveDefaultConnectedAccountsByToolkit,
   type SelectableConnectedAccount,
 } from 'src/services/connected-account-selection';
-
-export class ToolRouterSessionConnectionsError extends Data.TaggedError(
-  'services/ToolRouterSessionConnectionsError'
-)<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+import { idempotent } from 'src/services/composio-request';
 
 type RawConnectedAccount = {
   readonly id: string;
@@ -60,27 +54,22 @@ const isNewerAccount = (candidate: RawConnectedAccount, current: RawConnectedAcc
   compareNewestFirst(candidate, current) < 0;
 
 const listConnectedAccountsForToolkits = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   toolkits: ReadonlyArray<string>
 ) =>
-  Effect.tryPromise({
-    try: () =>
-      client.connectedAccounts.list({
-        user_ids: [userId],
-        statuses: ['ACTIVE'],
-        toolkit_slugs: [...toolkits],
-        limit: 1000,
-      }),
-    catch: cause =>
-      new ToolRouterSessionConnectionsError({
-        message: `Failed to list connected accounts for user "${userId}".`,
-        cause,
-      }),
-  });
+  client.connectedAccounts.list(
+    {
+      user_ids: [userId],
+      statuses: ['ACTIVE'],
+      toolkit_slugs: [...toolkits],
+      limit: 1000,
+    },
+    idempotent
+  );
 
 export const resolveToolRouterSessionConnections = (
-  client: Composio,
+  client: ComposioClientShape,
   userId: string,
   options?: {
     readonly toolkits?: ReadonlyArray<string>;
@@ -90,15 +79,7 @@ export const resolveToolRouterSessionConnections = (
     ? listConnectedAccountsForToolkits(client, userId, options.toolkits)
     : // The unfiltered list is the one `composio execute` also needs for its
       // account picker, so it is fetched once per process and shared.
-      listActiveConnectedAccounts({ client, userId }).pipe(
-        Effect.mapError(
-          cause =>
-            new ToolRouterSessionConnectionsError({
-              message: `Failed to list connected accounts for user "${userId}".`,
-              cause,
-            })
-        )
-      )
+      listActiveConnectedAccounts({ client, userId })
   ).pipe(
     Effect.map(response => {
       const items = (response.items ?? []) as ReadonlyArray<RawConnectedAccount>;

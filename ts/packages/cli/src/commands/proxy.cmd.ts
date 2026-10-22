@@ -1,10 +1,12 @@
-import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { requireLogin } from 'src/effects/require-auth';
+import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Result, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { requireAuth } from 'src/effects/require-auth';
+import { ExpectedFailure } from 'src/effects/expected-failure';
+import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
@@ -13,15 +15,13 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
+import { resolveCommandProject } from 'src/services/command-project';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 
 const endpoint = Argument.String('url').pipe(
@@ -78,17 +78,32 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'PATCH',
 ];
 
+/**
+ * `composio proxy` has no consumer user to send the request as. An expected failure:
+ * `cli-main.ts` prints the message and exits 1.
+ */
 export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
-  readonly reason: 'missing_consumer_user' | 'toolkit_not_connected';
   readonly message: string;
-  readonly toolkit?: string;
-  readonly endpoint?: string;
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
+
+/**
+ * A proxy call refused before sending it because the toolkit is not connected, already reported
+ * on stderr and as `{ "successful": false, ... }` on stdout. `cli-main.ts` prints nothing more
+ * and exits 1.
+ */
+export class ReportedProxyCommandError extends Data.TaggedError(
+  'commands/ReportedProxyCommandError'
+)<{
+  readonly message: string;
+  readonly toolkit: string;
+  readonly endpoint: string;
 }> {}
 
-class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
-  readonly message: string;
-  readonly cause: unknown;
-}> {}
+class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
@@ -119,7 +134,10 @@ export const parseProxyBody = (raw: string): unknown =>
   Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
-  result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>
+  result: Pick<
+    Extract<SessionProxyExecuteResponse, { result_type: 'completed' }>,
+    'status' | 'data' | 'headers' | 'binary_data'
+  >
 ) => {
   if (result.binary_data) {
     return JSON.stringify(
@@ -247,8 +265,7 @@ const runProxyConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* new ProxyCommandError({
-        reason: 'toolkit_not_connected',
+      return yield* new ReportedProxyCommandError({
         message,
         toolkit: params.toolkit,
         endpoint: params.endpoint,
@@ -284,17 +301,12 @@ export const proxyCmd = Command.make('proxy', {
   Command.withHandler(options =>
     Effect.gen(function* () {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
-      if (!(yield* requireAuth)) return;
-
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
         return yield* new ProxyCommandError({
-          reason: 'missing_consumer_user',
           message: 'No consumer project user is available for proxy execution in this context.',
         });
       }
@@ -351,38 +363,52 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          return yield* Effect.tryPromise({
-            try: () =>
-              client.toolRouter.session.proxyExecute(
-                sessionId,
-                {
-                  toolkit_slug: normalizedToolkit,
-                  endpoint,
-                  method: normalizedMethod,
-                  ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-                  ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-                },
-                // Never retry a proxied call: a retry after the upstream API
-                // already acted duplicates the side effect.
-                { maxRetries: 0 }
+          const failed = (cause: unknown) =>
+            new ProxyRequestError({
+              message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+              cause,
+            });
+
+          return yield* client.toolRouter.session
+            .proxyExecute(
+              sessionId,
+              {
+                toolkit_slug: normalizedToolkit,
+                endpoint,
+                method: normalizedMethod,
+                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+              }
+              // A proxied call is not `idempotent`, so it is sent once: a retry
+              // after the upstream API already acted duplicates the side
+              // effect. The response is not validated either, for the same
+              // reason.
+            )
+            .pipe(
+              Effect.mapError(failed),
+              Effect.flatMap(response =>
+                response.result_type === 'input_required'
+                  ? Effect.fail(
+                      failed(
+                        toolInputRequiredError(
+                          `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                          response
+                        )
+                      )
+                    )
+                  : Effect.succeed(response)
               ),
-            catch: cause =>
-              new ProxyRequestError({
-                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
-                cause,
-              }),
-          }).pipe(
-            Effect.matchEffect({
-              onFailure: error =>
-                handleProxyExecutionError({
-                  ui,
-                  error,
-                  toolkit: normalizedToolkit,
-                  endpoint,
-                }),
-              onSuccess: Effect.succeed,
-            })
-          );
+              Effect.matchEffect({
+                onFailure: error =>
+                  handleProxyExecutionError({
+                    ui,
+                    error,
+                    toolkit: normalizedToolkit,
+                    endpoint,
+                  }),
+                onSuccess: Effect.succeed,
+              })
+            );
         })
       );
 
@@ -393,5 +419,6 @@ export const proxyCmd = Command.make('proxy', {
         yield* ui.output(output);
       }
     })
-  )
+  ),
+  requireLogin
 );

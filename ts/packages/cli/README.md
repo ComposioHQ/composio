@@ -39,7 +39,7 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 - `composio tools list|info`: Inspect available tools and their cached schemas.
 - `composio triggers list <toolkit>|info`: Inspect toolkit-scoped trigger types and their schemas.
 - `composio connections list [--toolkit <toolkit>]`: Print toolkit connection statuses as JSON.
-- `composio connections remove <account>`: Interactively remove a toolkit connection after confirmation.
+- `composio connections remove <account>`: Remove a toolkit connection after confirmation; pass `--yes` to skip the prompt, which is required when not running interactively.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
 - `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
@@ -51,6 +51,21 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 Use `composio execute <slug> --get-schema` to print a tool's input schema as JSON.
 `composio execute <slug> --help` now shows command options and examples.
 
+### Creating development triggers
+
+For a project with 2FA enabled, pass the user who owns the connected account:
+
+```bash
+composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE --connected-account-id ca_123 --user-id user_123
+```
+
+The shared `--user-id` flag works before or after the subcommand. When omitted,
+the command uses the resolved directory project's test user, then the global test
+user configured by `composio login`. Setting both `COMPOSIO_ORG_ID` and
+`COMPOSIO_PROJECT_ID` in the process environment overrides directory configuration,
+including its test user. If no test user is resolved, the request omits `user_id`
+and the server applies the project's ownership policy.
+
 ## Configuration
 
 The Composio CLI supports configuration via environment variables. It stores authenticated user context in `user_data.json` and general CLI settings in `config.json`.
@@ -61,8 +76,8 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 | ---------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
 | COMPOSIO_USER_API_KEY                    | `user_data.json`: `api_key`         | Composio user API key                                                                                  | None                                                                     |
 | COMPOSIO_ENVIRONMENT                     | -                                   | Selects the production or staging URL defaults                                                         | production                                                               |
-| COMPOSIO_BASE_URL                        | `user_data.json`: `base_url`        | The base URL of the Composio backend API                                                               | https://backend.composio.dev                                             |
-| COMPOSIO_WEB_URL                         | `user_data.json`: `web_url`         | The base URL of the Composio web app                                                                   | https://dashboard.composio.dev/                                          |
+| COMPOSIO_BASE_URL                        | `user_data.json`: `base_url`        | The base URL of the Composio backend API (see below)                                                   | https://backend.composio.dev                                             |
+| COMPOSIO_WEB_URL                         | `user_data.json`: `web_url`         | The base URL of the Composio web app (see below)                                                       | https://dashboard.composio.dev/                                          |
 | COMPOSIO_CACHE_DIR                       | -                                   | The directory where the Composio CLI stores cache files                                                | ~/.composio                                                              |
 | COMPOSIO_SESSION_DIR                     | `config.json`: `artifact_directory` | The root directory for CLI session artifacts                                                           | `COMPOSIO_CACHE_DIR`, then `artifact_directory`, then `$TMPDIR/composio` |
 | COMPOSIO_BIN_DIR                         | -                                   | The directory `composio install` adds to `PATH` (see below)                                            | Resolved from the running binary                                         |
@@ -74,9 +89,12 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 | COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE | -                                   | Disables the connected-account cache                                                                   | true                                                                     |
 | COMPOSIO_PERF_DEBUG                      | -                                   | Set to `1` to write performance diagnostics                                                            | 0                                                                        |
 | COMPOSIO_TOOL_DEBUG                      | -                                   | Set to `1` to write tool diagnostics                                                                   | 0                                                                        |
+| COMPOSIO_CLI_TELEMETRY_DISABLED          | -                                   | Set to `1` to disable CLI telemetry (`COMPOSIO_DISABLE_TELEMETRY` and `TELEMETRY_DISABLED` also work)  | 0                                                                        |
 | DEBUG_OVERRIDE_VERSION                   | -                                   | The version to use when upgrading the Composio CLI (for debugging)                                     | None                                                                     |
 | FORCE_USE_CACHE                          | -                                   | Whether to force the use of previously cached HTTP responses                                           | None                                                                     |
 | NO_COLOR                                 | -                                   | If set, disables color output in the CLI (https://no-color.org/)                                       | None                                                                     |
+
+`composio login` records the backend it logged in to as `base_url` and `web_url` in `user_data.json`, and later commands keep using it. Setting `COMPOSIO_BASE_URL` or `COMPOSIO_ENVIRONMENT` overrides it; when that sends the stored API key to a different backend, the CLI prints a warning on stderr. A key from `COMPOSIO_USER_API_KEY` always uses the backend the environment selects. `composio logout` forgets the recorded backend.
 
 The CLI and its installer use these variables to coordinate nested commands. They aren't intended for manual configuration.
 
@@ -84,7 +102,6 @@ The CLI and its installer use these variables to coordinate nested commands. The
 | ------------------------------ | -------------------------------------------------------------------------- | ------- |
 | COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it | cli     |
 | COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                      | None    |
-| COMPOSIO_RUN_ACP_ONLY          | Set to `1` to disable the legacy sub-agent fallback                        | 0       |
 | COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands        | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
@@ -96,6 +113,8 @@ Additionally, `composio upgrade` supports the following environment variables:
 | COMPOSIO_GITHUB_REPO         | The repository name for the Composio CLI                                                               | composio               |
 | COMPOSIO_GITHUB_TAG          | The tag to use when fetching the Composio CLI binary from Github                                       | latest                 |
 | COMPOSIO_GITHUB_ACCESS_TOKEN | The access token for the GitHub API. Useful during development to avoid getting rate-limited by Github | None                   |
+
+Every variable above is declared in `src/config/`, one catalog per purpose; that directory is the place to look up or add a setting.
 
 ### Choosing the PATH entry with `COMPOSIO_BIN_DIR`
 

@@ -2,10 +2,10 @@ import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Effect, FileSystem, Layer, Path } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,
@@ -22,6 +22,7 @@ import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 
 const childProcessMocks = vi.hoisted(() => ({
   once: vi.fn(),
@@ -36,13 +37,8 @@ vi.mock('node:child_process', () => ({
 
 const originalArgv = [...process.argv];
 
-const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let index = 0; index < cwd.length; index += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(index);
-  }
-  return Math.abs(hash >>> 0).toString(36);
-};
+/** The cache key of `/workspace/project`: its djb2 hash in base 36. */
+const WORKSPACE_PROJECT_CWD_HASH = '1uj8qfp';
 
 // Design contract: `FetchHttpClient.Fetch` is an `effect` `Context.Reference`
 // whose default value (`globalThis.fetch`) is memoized on first read (see the
@@ -56,11 +52,14 @@ const cwdHash = (cwd: string): string => {
 // which `makePlatformLayerWithFetch` below wires up. Tests that never
 // exercise a fetch-reaching code path use the plain `makePlatformLayer` and
 // don't touch `globalThis.fetch` at all.
+// `vi.stubEnv` drives every scenario, so config reads go through a provider that re-reads
+// the environment per lookup instead of the process-wide snapshot `ConfigProvider` defaults to.
 const makePlatformLayer = (home: string) =>
   Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    ConfigProvider.layer(liveEnvConfigProvider),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
@@ -70,6 +69,7 @@ const makePlatformLayerWithFetch = (home: string, fetchImpl: typeof fetch) =>
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    ConfigProvider.layer(liveEnvConfigProvider),
     Layer.succeed(FetchHttpClient.Fetch, fetchImpl),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
@@ -130,21 +130,17 @@ describe('CLI analytics dispatch', () => {
       const cacheDir = tempy.temporaryDirectory();
       const cwd = '/workspace/project';
       vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
-      vi.stubEnv('COMPOSIO_BASE_URL', '');
+      vi.stubEnv('COMPOSIO_BASE_URL', 'https://backend.example.test///');
 
       return Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         yield* fs.writeFileString(
-          path.join(cacheDir, USER_CONFIG_FILE_NAME),
-          JSON.stringify({ base_url: 'https://backend.example.test///' })
-        );
-        yield* fs.writeFileString(
           path.join(cacheDir, 'consumer-short-term-cache.json'),
           JSON.stringify({
             older: {
               probablyMyCliSessionsByCwdHash: {
-                [cwdHash(cwd)]: {
+                [WORKSPACE_PROJECT_CWD_HASH]: {
                   id: 'cli_s_older',
                   // The TestClock sits at epoch 0, so these fixed instants are
                   // deterministically 30s and 60s in the future.
@@ -154,7 +150,7 @@ describe('CLI analytics dispatch', () => {
             },
             newer: {
               probablyMyCliSessionsByCwdHash: {
-                [cwdHash(cwd)]: {
+                [WORKSPACE_PROJECT_CWD_HASH]: {
                   id: 'cli_s_newer',
                   expiresAt: '1970-01-01T00:01:00.000Z',
                 },
@@ -168,6 +164,26 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     }
   );
+
+  it.effect('sends failures to the backend the stored login was issued by', () => {
+    const home = tempy.temporaryDirectory();
+    const cacheDir = tempy.temporaryDirectory();
+    vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+    // Blank reads as unset, whatever the host environment holds.
+    vi.stubEnv('COMPOSIO_BASE_URL', '');
+    vi.stubEnv('COMPOSIO_ENVIRONMENT', '');
+    vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+    writeFileSync(
+      path.join(cacheDir, USER_CONFIG_FILE_NAME),
+      JSON.stringify({ api_key: 'uak_staging', base_url: 'https://staging-backend.composio.dev/' })
+    );
+
+    return Effect.gen(function* () {
+      expect(yield* readApiBaseUrl).toBe('https://staging-backend.composio.dev');
+      vi.stubEnv('COMPOSIO_ENVIRONMENT', 'production');
+      expect(yield* readApiBaseUrl).toBe('https://backend.composio.dev');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
 
   it.effect('ignores malformed worker payloads', () => {
     const home = tempy.temporaryDirectory();
@@ -608,6 +624,41 @@ describe('CLI analytics dispatch', () => {
 
       expect(completedBeforeDeadline).toBe(true);
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('adopts the persisted install_id when the bounded lock wait expires', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = path.join(home, 'composio.ts');
+    const composioDir = path.join(home, '.composio');
+    const lockPath = path.join(composioDir, 'analytics.json.lock');
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+    mkdirSync(composioDir, { recursive: true });
+    writeFileSync(scriptPath, '');
+    // A live lock that is never released drives this process through the full
+    // bounded wait; the identity another run already persisted must still win
+    // over minting a fresh install_id, and the fallback must not rewrite state
+    // without holding the lock.
+    writeFileSync(lockPath, 'other-process');
+    writeFileSync(
+      path.join(composioDir, 'analytics.json'),
+      JSON.stringify({ install_id: 'install_persisted' })
+    );
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED });
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ installId: string }>(args[2]!);
+      expect(payload.installId).toBe('install_persisted');
+
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as { install_id: string };
+      expect(persisted.install_id).toBe('install_persisted');
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 

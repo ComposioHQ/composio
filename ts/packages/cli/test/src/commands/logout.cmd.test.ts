@@ -1,57 +1,25 @@
+import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import * as FileSystem from 'effect/FileSystem';
-import { ConfigProvider, Console, Effect, Option } from 'effect';
+import { ConfigProvider, Effect, Option } from 'effect';
 import path from 'node:path';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { UserDataWithDefaults } from 'src/models/user-data';
 import { writeStoredAgentIdentity } from 'src/services/agents';
-import { extendConfigProvider } from 'src/services/config';
-import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import {
+  terminalUIWithConfirm,
+  terminalUIWithoutPrompt,
+} from 'test/__utils__/services/terminal-ui-test';
 
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    capabilities: Effect.succeed(
-      getTerminalCapabilities({
-        stdin: { isTTY: true },
-        stdout: { isTTY: true },
-        stderr: { isTTY: true },
-      })
-    ),
-    output: data => Console.log(data),
-    error: data => Console.error(data),
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
-    log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
-    },
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
-    select: (_message, options) => Effect.succeed(options[0]!.value),
-    confirm: () => Effect.succeed(confirmed),
-    withSpinner: (message, effect, options) =>
-      Effect.gen(function* () {
-        const result = yield* effect;
-        const successMsg =
-          typeof options?.successMessage === 'function'
-            ? options.successMessage(result)
-            : (options?.successMessage ?? message);
-        yield* Console.log(successMsg);
-        return result;
-      }),
-    useMakeSpinner: (_message, use) =>
-      use({
-        message: (_msg: string) => Effect.void,
-        stop: (msg?: string) => (msg ? Console.log(msg) : Effect.void),
-        error: (msg?: string) => (msg ? Console.error(msg) : Effect.void),
-      }),
-  });
+/** Whether `~/.composio/agent.json` still holds the agent identity. */
+const agentConfigExists = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const cacheDir = yield* setupCacheDir;
+  return yield* fs.exists(path.join(cacheDir, 'agent.json'));
+});
 
 const setupLoggedInAgent = Effect.gen(function* () {
   const ctx = yield* ComposioUserContext;
@@ -71,6 +39,10 @@ const setupLoggedInAgent = Effect.gen(function* () {
 });
 
 describe('CLI: composio logout', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
   describe('[When] logged out', () => {
     layer(TestLive())(it => {
       it.effect('[Then] it is idempotent', () =>
@@ -107,7 +79,7 @@ describe('CLI: composio logout', () => {
   describe('[When] logged in', () => {
     const testConfigProvider = ConfigProvider.fromEnv({
       env: { COMPOSIO_USER_API_KEY: 'api_key_already_logged_in' },
-    }).pipe(extendConfigProvider);
+    });
 
     layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
       it.effect('[Then] it persists user data', () =>
@@ -153,9 +125,51 @@ describe('CLI: composio logout', () => {
           expect(output).toContain('Agent Logout Warning');
           expect(output).toContain('composio_agent_key');
           expect(output).toContain('Agent logout cancelled');
+          // Declining is not a failure.
+          expect(process.exitCode).toBeUndefined();
           expect(ctx.isLoggedIn()).toBeTruthy();
           expect(agentConfigExists).toBe(true);
         })
+      );
+    });
+
+    layer(TestLive())(it => {
+      it.effect('[Then] without a terminal and --yes it fails and removes nothing', () =>
+        Effect.gen(function* () {
+          const ctx = yield* setupLoggedInAgent;
+
+          const failure = yield* cli(['logout']).pipe(Effect.flip);
+
+          // `cli-main.ts` prints the message on stderr and exits 1.
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'logout',
+            option: '--yes',
+            message:
+              '`composio logout` needs --yes when not running interactively: it removes the stored Composio agent key.',
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
+          expect(ctx.isLoggedIn()).toBeTruthy();
+          expect(yield* agentConfigExists).toBe(true);
+        })
+      );
+    });
+
+    layer(TestLive({ terminalUI: terminalUIWithoutPrompt }))(it => {
+      it.effect.each([['--yes'], ['-y'], ['-f']])(
+        '[Then] %s on a terminal logs out without asking',
+        ([flag]) =>
+          Effect.gen(function* () {
+            const ctx = yield* setupLoggedInAgent;
+
+            yield* cli(['logout', flag]);
+
+            const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+            expect(output).not.toContain('Agent Logout Warning');
+            expect(output).toContain('removed stored Composio agent key');
+            expect(ctx.isLoggedIn()).toBeFalsy();
+            expect(yield* agentConfigExists).toBe(false);
+          })
       );
     });
 

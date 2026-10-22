@@ -337,3 +337,249 @@ class TestToolsListWireParams:
         params = seen[0].url.params
         assert params["query"] == "github issues"
         assert "search" not in params
+
+
+_TOOL_BODY: dict[str, t.Any] = {
+    "slug": "GMAIL_SEND_EMAIL",
+    "name": "Send email",
+    "description": "Sends an email",
+    "input_parameters": {"type": "object", "properties": {}},
+    "output_parameters": {"type": "object", "properties": {}},
+    "toolkit": {"slug": "gmail", "name": "Gmail", "logo": ""},
+    "version": "20250114_00",
+}
+_EXECUTE_BODY: dict[str, t.Any] = {
+    "data": {"ok": True},
+    "successful": True,
+    "error": None,
+}
+
+_DEPRECATED_TOOLKITS_HEADER = "Composio-Deprecated-Toolkits"
+_GMAIL_ITEM = (
+    '"GMAIL";version="20250114_00";deprecated=@1779840000;'
+    'sunset=@1787788800;reason="lifecycle"'
+)
+
+
+def _tool_transport(
+    retrieve_headers: t.Optional[dict[str, str]] = None,
+    execute_headers: t.Optional[dict[str, str]] = None,
+    seen: t.Optional[list[httpx.Request]] = None,
+    event_hooks: t.Optional[dict[str, list[t.Callable[..., t.Any]]]] = None,
+) -> httpx.Client:
+    """Serve the tool schema on GET and the execute body on POST."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if seen is not None:
+            seen.append(request)
+        if request.method == "POST":
+            return httpx.Response(
+                200, json=_EXECUTE_BODY, headers=execute_headers or {}
+            )
+        return httpx.Response(200, json=_TOOL_BODY, headers=retrieve_headers or {})
+
+    return httpx.Client(
+        transport=httpx.MockTransport(handler), event_hooks=event_hooks or {}
+    )
+
+
+class TestToolkitDeprecationHeader:
+    """``Composio-Deprecated-Toolkits`` surfaces once per toolkit version as a
+    :class:`ComposioDeprecationWarning`, beside the client's own ``Deprecation``
+    handling and without ever failing the call."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_warned(self):
+        from composio.utils import toolkit_deprecation
+
+        toolkit_deprecation._reset_for_tests()
+        yield
+        toolkit_deprecation._reset_for_tests()
+
+    @staticmethod
+    def _deprecations(caught: list[warnings.WarningMessage]) -> list[str]:
+        return [
+            str(w.message)
+            for w in caught
+            if issubclass(w.category, ComposioDeprecationWarning)
+        ]
+
+    def test_tool_retrieve_warns_once(self, custom_logger):
+        logger, _ = custom_logger
+        composio = Composio(
+            api_key="test-key",
+            http_client=_tool_transport(
+                retrieve_headers={_DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM}
+            ),
+            logger=logger,
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+            composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+        assert tool.slug == "GMAIL_SEND_EMAIL"
+        messages = self._deprecations(caught)
+        assert len(messages) == 1
+        assert "[Deprecation] Toolkit GMAIL version 20250114_00" in messages[0]
+        assert "deprecated on 2026-05-27 (lifecycle)" in messages[0]
+        assert "stop working on 2026-08-27" in messages[0]
+        assert 'toolkit_versions={"gmail": "<version>"}' in messages[0]
+        assert "COMPOSIO_TOOLKIT_VERSION_GMAIL" in messages[0]
+        assert (
+            "https://docs.composio.dev/docs/tools-direct/toolkit-versioning"
+            "#deprecation-and-sunset"
+        ) in messages[0]
+
+    def test_execute_path_warns_once_across_retrieve_and_execute(self, custom_logger):
+        logger, _ = custom_logger
+        seen: list[httpx.Request] = []
+        composio = Composio(
+            api_key="test-key",
+            http_client=_tool_transport(
+                retrieve_headers={_DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM},
+                execute_headers={_DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM},
+                seen=seen,
+            ),
+            logger=logger,
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = composio.tools.execute(
+                "GMAIL_SEND_EMAIL", {}, user_id="user-1", version="20250114_00"
+            )
+
+        assert result["successful"] is True
+        assert [request.method for request in seen] == ["GET", "POST"]
+        assert len(self._deprecations(caught)) == 1
+
+    def test_without_retries_clone_shares_the_hook(self, custom_logger):
+        """Only the execute response, served through ``client.without_retries``,
+        carries the header: the warning proves the clone shares the hook."""
+        logger, _ = custom_logger
+        composio = Composio(
+            api_key="test-key",
+            http_client=_tool_transport(
+                execute_headers={_DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM}
+            ),
+            logger=logger,
+        )
+        assert composio.client.without_retries._client is composio.client._client
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            composio.tools.execute(
+                "GMAIL_SEND_EMAIL", {}, user_id="user-1", version="20250114_00"
+            )
+
+        messages = self._deprecations(caught)
+        assert len(messages) == 1
+        assert "GMAIL version 20250114_00" in messages[0]
+
+    def test_no_header_no_warning(self, custom_logger):
+        logger, _ = custom_logger
+        composio = Composio(
+            api_key="test-key", http_client=_tool_transport(), logger=logger
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ComposioDeprecationWarning)
+            composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+            composio.tools.execute(
+                "GMAIL_SEND_EMAIL", {}, user_id="user-1", version="20250114_00"
+            )
+
+    def test_client_deprecation_and_toolkit_header_are_two_warnings(
+        self, custom_logger
+    ):
+        logger, _ = custom_logger
+        composio = Composio(
+            api_key="test-key",
+            http_client=_tool_transport(
+                retrieve_headers={
+                    "Deprecation": "@1688169599",
+                    _DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM,
+                }
+            ),
+            logger=logger,
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+        messages = self._deprecations(caught)
+        assert len(messages) == 2
+        ours = [m for m in messages if "[Deprecation] Toolkit GMAIL" in m]
+        theirs = [m for m in messages if "tools.retrieve" in m]
+        assert len(ours) == 1
+        assert len(theirs) == 1
+
+    def test_malformed_header_keeps_body_and_stays_silent(self, custom_logger):
+        logger, _ = custom_logger
+        composio = Composio(
+            api_key="test-key",
+            http_client=_tool_transport(
+                retrieve_headers={_DEPRECATED_TOOLKITS_HEADER: '"GMAIL;version=;;@@'}
+            ),
+            logger=logger,
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+        assert tool.slug == "GMAIL_SEND_EMAIL"
+        assert self._deprecations(caught) == []
+
+    def test_user_http_client_keeps_its_own_hook_and_gets_ours(self, custom_logger):
+        logger, _ = custom_logger
+        user_seen: list[httpx.Response] = []
+
+        def user_hook(response: httpx.Response) -> None:
+            user_seen.append(response)
+
+        http_client = _tool_transport(
+            retrieve_headers={_DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM},
+            event_hooks={"response": [user_hook]},
+        )
+        composio = Composio(api_key="test-key", http_client=http_client, logger=logger)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+        assert http_client.event_hooks["response"][0] is user_hook
+        assert len(http_client.event_hooks["response"]) == 2
+        assert len(user_seen) == 1
+        assert len(self._deprecations(caught)) == 1
+
+    def test_second_instance_does_not_rewarn_until_reset(self, custom_logger):
+        from composio.utils import toolkit_deprecation
+
+        logger, _ = custom_logger
+        headers = {_DEPRECATED_TOOLKITS_HEADER: _GMAIL_ITEM}
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            Composio(
+                api_key="test-key",
+                http_client=_tool_transport(retrieve_headers=headers),
+                logger=logger,
+            ).tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+            Composio(
+                api_key="test-key",
+                http_client=_tool_transport(retrieve_headers=headers),
+                logger=logger,
+            ).tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+            assert len(self._deprecations(caught)) == 1
+            toolkit_deprecation._reset_for_tests()
+            Composio(
+                api_key="test-key",
+                http_client=_tool_transport(retrieve_headers=headers),
+                logger=logger,
+            ).tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+        assert len(self._deprecations(caught)) == 2

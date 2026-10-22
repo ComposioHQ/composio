@@ -1,26 +1,27 @@
 # Effect v4 CLI testing
 
-The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.0-rc.117` and
-`@effect/vitest@4.0.0-rc.117` (pinned exactly, matching `ts/packages/cli/package.json` and the
+The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.3` and
+`@effect/vitest@4.0.3` (pinned exactly, matching `ts/packages/cli/package.json` and the
 workspace catalog in `pnpm-workspace.yaml`). `@effect/cli` and `@effect/platform` no longer exist
-as dependencies — their functionality moved into `effect`/`effect/unstable/*`. Read
+as dependencies — their functionality moved into `effect`/`effect/*`. Read
 `ts/packages/cli/test/__utils__/services/test-layer.ts` before writing a new test suite; it is the
 canonical example of every pattern below. For source-side v4 conventions (service definitions,
-typed errors, the `effect/unstable/cli` command surface) rather than test-specific ones, use the
+typed errors, the `effect/cli` command surface) rather than test-specific ones, use the
 repo-local `effect-v4` skill.
 
 ## Runner APIs
 
 - `it.effect` is the default tester. It runs inside `Effect.scoped` automatically, so a v3-style
   `it.scoped` is unnecessary — v4's `@effect/vitest` no longer exports `it.scoped`.
-- `it.live` runs against the real (non-`TestClock`) environment; reach for it only when a test must
-  observe real wall-clock behavior.
+- `it.live` runs against the real (non-`TestClock`) environment. Reach for it only when the code
+  under test sleeps outside Effect's clock; a retry, timeout, or `Effect.sleep` inside the code
+  under test is driven on `it.effect` by forking the effect, looping `Effect.yieldNow` and `TestClock.adjust`
+  until `fiber.pollUnsafe()` is set, and `Fiber.join` (see "Time in tests" in the `effect-v4` skill's core-patterns reference).
 - Reusable service layers go through `layer(...)`, not manual `Effect.provide` scattered per test:
 
 ```ts no-check
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 
 describe('CLI: composio', () => {
@@ -34,9 +35,7 @@ describe('CLI: composio', () => {
     );
   });
 
-  const testConfigProvider = ConfigProvider.fromEnv({
-    env: { DEBUG_OVERRIDE_VERSION: '1.2.3-test' },
-  }).pipe(extendConfigProvider);
+  const testConfigProvider = ConfigProvider.fromEnvRecord({ DEBUG_OVERRIDE_VERSION: '1.2.3-test' });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with config override', it => {
     it.effect('[Given] `DEBUG_OVERRIDE_VERSION` env var [Then] prints overridden version', () =>
@@ -108,8 +107,9 @@ choice.
   `Layer.provideMerge` over `Layer.provide` when the reference's value must stay visible to
   everything downstream (see the `ConfigProvider` comment in `test-layer.ts` for the bug this
   distinction fixed).
-- `TestClock` lives under `effect/testing`. The FastCheck bridge was removed in rc.113; native
-  arbitrary generation lives under `effect/unstable/arbitrary/Arbitrary`.
+- `TestClock` lives under `effect/testing`; `TestClock.adjust('1 minute')` resumes every sleep
+  scheduled inside the window, including ones a resumed retry schedules next. The FastCheck bridge
+  was removed in rc.113; native arbitrary generation lives under `effect/Arbitrary`.
 
 ## CLI behavior matrix
 
@@ -118,7 +118,7 @@ Port tests by contract, not file count:
 - root and subcommand help, version, built-ins, aliases, and flag collisions;
 - required, optional, repeated, invalid, and dash-leading arguments, including `--`;
 - stdout data versus stderr decoration in interactive and piped modes;
-- CLI framework errors (`effect/unstable/cli`'s `CliError`) versus Composio domain error
+- CLI framework errors (`effect/cli`'s `CliError`) versus Composio domain error
   (`Data.TaggedError`) rendering and exit-code mapping;
 - shared service layers, config providers, filesystem/process adapters, interruption, time, and
   cleanup;

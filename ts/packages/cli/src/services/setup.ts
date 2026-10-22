@@ -1,6 +1,6 @@
 import * as PlatformError from 'effect/PlatformError';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
-import { ChildProcess as Command } from 'effect/unstable/process';
+import { ChildProcess as Command } from 'effect/process';
 import semver from 'semver';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -834,6 +834,16 @@ export const inspectSetupTargets = (
     return inspected;
   });
 
+const pluginLifecycleAction = (
+  operation: 'setup' | 'uninstall',
+  status: InspectedSetupTarget
+): 'installed' | 'enabled' | 'configured' | 'uninstalled' => {
+  if (operation === 'uninstall') return 'uninstalled';
+  if (!status.plugin_installed) return 'installed';
+  if (!status.plugin_enabled) return 'enabled';
+  return 'configured';
+};
+
 const runSetupTargets = <E, R>(
   inspected: ReadonlyArray<InspectedSetupTarget>,
   runAdapter: (
@@ -873,19 +883,11 @@ const runSetupTargets = <E, R>(
         })
       );
       if (result.plugin_changed) {
-        const action =
-          operation === 'uninstall'
-            ? 'uninstalled'
-            : !status.plugin_installed
-              ? 'installed'
-              : !status.plugin_enabled
-                ? 'enabled'
-                : 'configured';
         yield* trackCliEventEffect(
           getPluginLifecycleSucceededEvent({
             operation,
             target: result.target,
-            action,
+            action: pluginLifecycleAction(operation, status),
             invocationOrigin,
             cliVersion: APP_VERSION,
           })

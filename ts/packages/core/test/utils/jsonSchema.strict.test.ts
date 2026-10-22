@@ -470,3 +470,269 @@ describe('omitNullToolArguments', () => {
     expect(input).toEqual(snapshot);
   });
 });
+
+describe('null acceptance', () => {
+  const NULL_BRANCH = { type: 'null' };
+  const DIRECTION = { enum: ['asc', null] };
+  const wrapped = (schema: unknown) => ({ anyOf: [schema, NULL_BRANCH] });
+  const toolSchema = (property: unknown, definitions: unknown = { Direction: DIRECTION }) => ({
+    type: 'object',
+    properties: { value: property },
+    $defs: definitions,
+  });
+
+  it.each<[Record<string, unknown>, Record<string, unknown>]>([
+    [{ type: 'string', enum: ['asc', 'desc'] }, wrapped({ type: 'string', enum: ['asc', 'desc'] })],
+    [
+      { type: ['string', 'null'], enum: ['asc', 'desc'] },
+      wrapped({ type: ['string', 'null'], enum: ['asc', 'desc'] }),
+    ],
+    [{ type: 'string', const: 'asc' }, wrapped({ type: 'string', const: 'asc' })],
+    [
+      { type: 'integer', enum: [1, 2], description: 'page size' },
+      { description: 'page size', ...wrapped({ type: 'integer', enum: [1, 2] }) },
+    ],
+    [
+      { type: 'string', anyOf: [{ minLength: 1 }] },
+      wrapped({ type: 'string', anyOf: [{ minLength: 1 }] }),
+    ],
+    [
+      { enum: ['asc'], anyOf: [{ type: 'string' }, NULL_BRANCH] },
+      wrapped({ enum: ['asc'], anyOf: [{ type: 'string' }, NULL_BRANCH] }),
+    ],
+    [
+      { $ref: '#/$defs/Direction', type: 'string' },
+      wrapped({ $ref: '#/$defs/Direction', type: 'string' }),
+    ],
+    // Already nullable: left alone.
+    [
+      { type: ['string', 'null'], enum: ['asc', null] },
+      { type: ['string', 'null'], enum: ['asc', null] },
+    ],
+    [{ $ref: '#/$defs/Direction' }, { $ref: '#/$defs/Direction' }],
+    [{ anyOf: [{ type: ['string', 'null'] }] }, { anyOf: [{ type: ['string', 'null'] }] }],
+    // `type` or `anyOf` as the only obstacle: widened in place.
+    [
+      { type: 'string', minLength: 1 },
+      { type: ['string', 'null'], minLength: 1 },
+    ],
+    [
+      { anyOf: [{ type: 'string' }], description: 'd' },
+      { anyOf: [{ type: 'string' }, NULL_BRANCH], description: 'd' },
+    ],
+  ])('widening keeps every constraint: %j', (property, expected) => {
+    const source = toolSchema(property);
+    const snapshot = structuredClone(source);
+    const result = toStrictJsonSchema(source);
+
+    expect(result.unsupported).toEqual([]);
+    expect(propertyOf(result.schema, 'value')).toEqual(expected);
+    expect(result.schema.required).toEqual(['value']);
+    expect(source).toEqual(snapshot);
+    const again = toStrictJsonSchema(result.schema);
+    expect(again.schema).toEqual(result.schema);
+    expect(again.changes).toEqual([]);
+  });
+
+  it.each<[unknown, boolean]>([
+    [{ type: ['string', 'null'], enum: ['asc', 'desc'] }, false],
+    [{ type: ['string', 'null'], const: 'asc' }, false],
+    [{ type: ['string', 'null'], enum: ['asc', null] }, true],
+    [{ type: ['string', 'null'], const: null }, true],
+    [{ $ref: '#/$defs/Direction' }, true],
+    [{ $ref: '#/$defs/Direction', type: 'string' }, false],
+    [{ $ref: '#/$defs/Direction', enum: ['asc'] }, false],
+    [{ $ref: '#/$defs/Missing' }, false],
+    [{ $ref: 1 }, false],
+    [{ allOf: [{ type: ['string', 'null'] }, { enum: ['asc'] }] }, false],
+    [{ allOf: [{ type: ['string', 'null'] }, DIRECTION] }, true],
+    [{ oneOf: [NULL_BRANCH, { type: 'string' }] }, true],
+    [{ oneOf: [NULL_BRANCH, { enum: [null] }] }, false],
+    [{ not: NULL_BRANCH }, false],
+    [{ not: { type: 'string' } }, true],
+    [{ if: NULL_BRANCH, then: { type: 'string' } }, false],
+    [{ if: { type: 'string' }, then: { type: 'string' } }, true],
+    [{ if: { type: 'string' }, else: { type: 'string' } }, false],
+    [true, true],
+    [false, false],
+  ])('null is kept only when every keyword accepts it: %j', (property, kept) => {
+    const input = { value: null };
+    expect(omitNullToolArguments(input, toolSchema(property))).toEqual(kept ? { value: null } : {});
+    expect(input).toEqual({ value: null });
+  });
+
+  it.each<[Record<string, unknown>, boolean]>([
+    [{ a: { $ref: '#/$defs/a' } }, false],
+    [{ a: { $ref: '#/$defs/b' }, b: { $ref: '#/$defs/a' } }, false],
+    [{ a: { anyOf: [{ $ref: '#/$defs/a' }] } }, false],
+    [{ a: { type: 'null', oneOf: [{ $ref: '#/$defs/a' }] } }, false],
+    [{ a: { anyOf: [{ $ref: '#/$defs/b' }] }, b: { anyOf: [{ $ref: '#/$defs/a' }] } }, false],
+    [{ a: { anyOf: [{ $ref: '#/$defs/a' }, NULL_BRANCH] } }, true],
+    [{ a: { oneOf: [{ $ref: '#/$defs/a' }, NULL_BRANCH] } }, true],
+  ])('reference cycles terminate: %j', (definitions, kept) => {
+    const source = toolSchema({ $ref: '#/$defs/a' }, definitions);
+    expect(omitNullToolArguments({ value: null }, source)).toEqual(kept ? { value: null } : {});
+    expect(toStrictJsonSchema(source).unsupported).toEqual([]);
+  });
+
+  it('checks a node reached twice outside a cycle each time', () => {
+    const shared = { anyOf: [NULL_BRANCH] };
+    const source = { type: 'object', properties: { value: { allOf: [shared, shared] } } };
+    expect(omitNullToolArguments({ value: null }, source)).toEqual({ value: null });
+  });
+
+  /** `a0` is the leaf; every `a(i)` references `a(i-1)` twice, so paths double per level. */
+  const diamond = (levels: number, keyword: string, leaf: unknown) => {
+    const definitions: Record<string, unknown> = { a0: leaf };
+    for (let i = 1; i <= levels; i++) {
+      const ref = { $ref: `#/$defs/a${i - 1}` };
+      definitions[`a${i}`] = { [keyword]: [ref, ref] };
+    }
+    return toolSchema({ $ref: `#/$defs/a${levels}` }, definitions);
+  };
+
+  it('evaluates a definition shared by many branches once', () => {
+    const rejecting = diamond(20, 'anyOf', { type: 'string' });
+    expect(propertyOf(toStrictJsonSchema(rejecting).schema, 'value')).toEqual(
+      wrapped({ $ref: '#/$defs/a20' })
+    );
+    expect(omitNullToolArguments({ value: null }, rejecting)).toEqual({});
+
+    const accepting = diamond(20, 'allOf', NULL_BRANCH);
+    expect(omitNullToolArguments({ value: null }, accepting)).toEqual({ value: null });
+  });
+
+  it('stays bounded when cycles keep answers from being remembered', () => {
+    // Every level also points back at the top, so no answer below it is final.
+    const levels = 20;
+    const definitions: Record<string, unknown> = { a0: { type: 'string' } };
+    for (let i = 1; i <= levels; i++) {
+      const ref = { $ref: `#/$defs/a${i - 1}` };
+      definitions[`a${i}`] = { anyOf: [ref, ref, { $ref: `#/$defs/a${levels}` }] };
+    }
+    const source = toolSchema({ $ref: `#/$defs/a${levels}` }, definitions);
+    expect(omitNullToolArguments({ value: null }, source)).toEqual({});
+    expect(propertyOf(toStrictJsonSchema(source).schema, 'value')).toEqual(
+      wrapped({ $ref: `#/$defs/a${levels}` })
+    );
+  });
+
+  it('does not prove null through a reference chain past the depth bound', () => {
+    const definitions: Record<string, unknown> = { a0: NULL_BRANCH };
+    for (let i = 1; i <= 100; i++) definitions[`a${i}`] = { $ref: `#/$defs/a${i - 1}` };
+    expect(
+      omitNullToolArguments({ value: null }, toolSchema({ $ref: '#/$defs/a100' }, definitions))
+    ).toEqual({});
+    expect(
+      omitNullToolArguments({ value: null }, toolSchema({ $ref: '#/$defs/a10' }, definitions))
+    ).toEqual({ value: null });
+  });
+
+  it('adds a null branch to a $ref whose target the rewrite types as an object', () => {
+    const source = {
+      type: 'object',
+      properties: { node: { $ref: '#/$defs/Node' } },
+      $defs: {
+        Node: { properties: { label: { type: 'string' }, child: { $ref: '#/$defs/Node' } } },
+      },
+    };
+    const { schema, unsupported } = toStrictJsonSchema(source);
+    const definitions = schema.$defs as Record<string, Record<string, unknown>>;
+
+    expect(unsupported).toEqual([]);
+    expect(propertyOf(schema, 'node')).toEqual(wrapped({ $ref: '#/$defs/Node' }));
+    expect(definitions.Node.type).toBe('object');
+    expect(propertyOf(definitions.Node, 'child')).toEqual(wrapped({ $ref: '#/$defs/Node' }));
+    // The tool's own schema accepts the null, so it is forwarded.
+    expect(omitNullToolArguments({ node: null }, source)).toEqual({ node: null });
+  });
+
+  it('reports a $ref into a property that wrapping moved', () => {
+    const { unsupported } = toStrictJsonSchema({
+      type: 'object',
+      properties: {
+        value: { type: 'string', enum: ['asc'], $defs: { Text: { type: 'string' } } },
+        alias: { $ref: '#/properties/value/$defs/Text' },
+      },
+      required: ['alias'],
+    });
+    expect(unsupported.map(({ path, keyword }) => ({ path, keyword }))).toEqual([
+      { path: 'properties.alias', keyword: '$ref' },
+    ]);
+  });
+
+  it('shares what it learned about a cyclic definition across many properties', () => {
+    const levels = 20;
+    const top = `#/$defs/a${levels}`;
+    const definitions: Record<string, unknown> = { a0: { type: 'string' } };
+    for (let i = 1; i <= levels; i++) {
+      const lower = `#/$defs/a${i - 1}`;
+      definitions[`a${i}`] = { anyOf: [{ $ref: lower }, { $ref: lower }, { $ref: top }] };
+    }
+    const names = Array.from({ length: 400 }, (_, i) => `p${i}`);
+    const source = {
+      type: 'object',
+      properties: Object.fromEntries(names.map(name => [name, { $ref: top }])),
+      $defs: definitions,
+    };
+    const { schema } = toStrictJsonSchema(source);
+    for (const name of names) expect(propertyOf(schema, name)).toEqual(wrapped({ $ref: top }));
+    const input = Object.fromEntries(names.map(name => [name, null]));
+    expect(omitNullToolArguments(input, source)).toEqual({});
+  });
+
+  it('keeps a check that runs out of budget from affecting the next one', () => {
+    const source = {
+      type: 'object',
+      properties: {
+        wide: { anyOf: Array.from({ length: 5000 }, () => ({ type: 'string' })) },
+        note: { type: ['string', 'null'] },
+        same: { anyOf: [{ type: 'string' }, NULL_BRANCH] },
+      },
+    };
+    expect(omitNullToolArguments({ wide: null, note: null, same: null }, source)).toEqual({
+      note: null,
+      same: null,
+    });
+    const { schema } = toStrictJsonSchema(source);
+    expect(propertyOf(schema, 'note')).toEqual({ type: ['string', 'null'] });
+    expect(propertyOf(schema, 'same')).toEqual({ anyOf: [{ type: 'string' }, NULL_BRANCH] });
+  });
+
+  it('proves nothing in a check that meets a bound', () => {
+    // Both branches accept null, so `oneOf` rejects it; the second is only
+    // reachable past the depth bound and must not count as a rejection.
+    const definitions: Record<string, unknown> = { a0: NULL_BRANCH };
+    for (let i = 1; i <= 70; i++) definitions[`a${i}`] = { $ref: `#/$defs/a${i - 1}` };
+    const deep = { $ref: '#/$defs/a70' };
+    const properties = {
+      one: { oneOf: [NULL_BRANCH, deep] },
+      negated: { not: deep },
+      guarded: { if: deep, else: NULL_BRANCH },
+      // Reaches a node the checks above left unproven.
+      later: { not: { $ref: '#/$defs/a69' } },
+    };
+    const source = { type: 'object', properties, $defs: definitions };
+    const input = Object.fromEntries(Object.keys(properties).map(name => [name, null]));
+    expect(omitNullToolArguments(input, source)).toEqual({});
+  });
+
+  it('does not evaluate an unproven definition again for each property', () => {
+    // `top` is cyclic and wider than the budget, so nothing about it settles.
+    const top = { $ref: '#/$defs/top' };
+    const definitions: Record<string, unknown> = {
+      top: { anyOf: Array.from({ length: 3000 }, (_, i) => ({ $ref: `#/$defs/b${i}` })) },
+    };
+    for (let i = 0; i < 3000; i++) definitions[`b${i}`] = { anyOf: [top, { type: 'string' }] };
+    const names = Array.from({ length: 2000 }, (_, i) => `p${i}`);
+    const source = {
+      type: 'object',
+      properties: Object.fromEntries(names.map(name => [name, { ...top }])),
+      $defs: definitions,
+    };
+    const input = Object.fromEntries(names.map(name => [name, null]));
+    expect(omitNullToolArguments(input, source)).toEqual({});
+    const { schema } = toStrictJsonSchema(source);
+    for (const name of names) expect(propertyOf(schema, name)).toEqual(wrapped(top));
+  });
+});

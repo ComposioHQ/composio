@@ -37,14 +37,13 @@ import {
   SessionCreateParams,
   SessionCreateResponse,
   SessionRetrieveResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type {
   CustomTool,
   CustomToolkit,
   InlineCustomToolsWirePayload,
 } from '../types/customTool.types';
 import {
-  type SessionCreateBody,
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
   transformToolRouterManageConnectionsParams,
@@ -52,13 +51,15 @@ import {
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
   transformToolRouterInstantParams,
+  transformToolRouterProxyExecuteParams,
+  transformToolRouterHooksParams,
+  type SessionCreateBody,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
-import { transformSessionConfig } from '../utils/transformers/toolRouterResponseTransform';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
@@ -77,7 +78,7 @@ function getSessionMetadata(
   session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
 ) {
   const metadata: ToolRouterSessionMetadata = {
-    config: transformSessionConfig(session.config),
+    config: session.config,
     preload: session.config.preload,
     workbench: session.config.workbench,
     configVersion: session.config_version,
@@ -140,7 +141,8 @@ export class ToolRouter<
   /**
    * Derives the MCP config for a session from the auth context the session
    * request was made with: the project key when one is configured, otherwise
-   * the resolved user API key, plus the org/project scope when configured.
+   * the resolved user API key, otherwise the organization API key, plus the
+   * org/project scope when configured.
    * Headers are only attached when the MCP URL shares the client's API
    * origin. Any other destination throws when the caller passed `mcp: true`
    * and otherwise yields empty headers plus a warning; see
@@ -156,6 +158,7 @@ export class ToolRouter<
       apiBaseURL: this.client.baseURL,
       apiKey: this.config?.apiKey,
       userApiKey: this.config?.userApiKey,
+      orgApiKey: this.config?.orgApiKey,
       defaultHeaders: this.config?.defaultHeaders,
       orgId: this.config?.orgId,
       projectId: this.config?.projectId,
@@ -241,6 +244,11 @@ export class ToolRouter<
       experimentalPayload.session_config_id = routerConfig.experimental.sessionConfigId;
     }
 
+    if (routerConfig.experimental?.noElicitationSupportFallback !== undefined) {
+      experimentalPayload.no_elicitation_support_fallback =
+        routerConfig.experimental.noElicitationSupportFallback;
+    }
+
     if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
       experimentalPayload.assistive_prompt_config = {
         user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,
@@ -284,6 +292,12 @@ export class ToolRouter<
       ),
       workbench: sandboxPayload,
       multi_account: multiAccountPayload,
+      ...(routerConfig.proxyExecute !== undefined && {
+        proxy_execute: transformToolRouterProxyExecuteParams(routerConfig.proxyExecute),
+      }),
+      ...(routerConfig.hooks !== undefined && {
+        hooks: transformToolRouterHooksParams(routerConfig.hooks),
+      }),
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {
         search: { enable: false },

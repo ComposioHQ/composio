@@ -19,14 +19,6 @@ const TAG_LABELS: Record<string, { label: string; className: string }> = {
     label: 'Destructive',
     className: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20',
   },
-  idempotentHint: {
-    label: 'Idempotent',
-    className: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
-  },
-  openWorldHint: {
-    label: 'External',
-    className: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
-  },
   important: {
     label: 'Important',
     className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',

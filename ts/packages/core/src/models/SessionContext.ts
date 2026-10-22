@@ -23,8 +23,11 @@ import {
   findCustomTool,
   executeCustomTool,
 } from './customToolExecution';
-import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
-import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
+import {
+  transformExecuteResponse,
+  transformProxyExecuteResponse,
+} from '../utils/transformers/toolRouterResponseTransform';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
@@ -85,6 +88,7 @@ export class SessionContextImpl implements SessionContext {
         data: result.data,
         error: result.error,
         logId: '',
+        resultType: result.successful ? 'completed' : 'failed',
       });
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
@@ -93,9 +97,9 @@ export class SessionContextImpl implements SessionContext {
       tool_slug: toolSlug,
       arguments: arguments_,
     };
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
+    const experimental = inlineCustomToolsExperimental<
+      NonNullable<SessionExecuteParams['experimental']>
+    >(this.inlineCustomToolsPayload);
     if (experimental) {
       executeParams.experimental = experimental;
     }
@@ -109,7 +113,9 @@ export class SessionContextImpl implements SessionContext {
         ),
       requestOptions?.signal
     );
-    return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
+    return ToolRouterSessionExecuteResponseSchema.parse(
+      transformExecuteResponse(response, toolSlug)
+    );
   }
 
   /**
@@ -138,20 +144,9 @@ export class SessionContextImpl implements SessionContext {
       requestOptions?.signal
     );
 
-    return {
-      status: response.status,
-      data: response.data,
-      headers: response.headers,
-      ...(response.binary_data
-        ? {
-            binaryData: {
-              contentType: response.binary_data.content_type,
-              size: response.binary_data.size,
-              url: response.binary_data.url,
-              expiresAt: response.binary_data.expires_at,
-            },
-          }
-        : {}),
-    };
+    return transformProxyExecuteResponse(
+      response,
+      `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
+    );
   }
 }

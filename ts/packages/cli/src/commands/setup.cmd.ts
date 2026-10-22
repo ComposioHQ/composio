@@ -1,5 +1,5 @@
 import { setupSkillCmd } from './setup-skill.cmd';
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect, Predicate } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -18,6 +18,8 @@ import {
   SETUP_TARGETS,
   uninstallSetupTargets,
   type AgentHost,
+  type SetupTargetDetection,
+  type SetupUnsupportedReasonCode,
 } from 'src/services/setup';
 import { SetupCommandError, type SetupFailureReasonCode } from 'src/services/setup-command-error';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -64,6 +66,14 @@ const setupCommandError = (
     ...(cause === undefined ? {} : { cause }),
   });
 
+// Only a host that is present but unsupported has a reason to report.
+const unsupportedReasonCodeOf = (
+  detection: SetupTargetDetection
+): SetupUnsupportedReasonCode | undefined => {
+  if (!detection.available || detection.supported) return undefined;
+  return detection.unsupportedReasonCode ?? 'unknown';
+};
+
 const setupBaseCmd = Command.make(
   'setup',
   { target, yes, ifPresent, uninstall },
@@ -85,10 +95,7 @@ const setupBaseCmd = Command.make(
             available: detection.available,
             supported: detection.supported,
             hostVersion: detection.version,
-            unsupportedReasonCode:
-              detection.available && !detection.supported
-                ? (detection.unsupportedReasonCode ?? 'unknown')
-                : undefined,
+            unsupportedReasonCode: unsupportedReasonCodeOf(detection),
             hostConfigDirPresent: detection.configDirPresent,
             hostBinaryInKnownPaths: detection.binaryInKnownPaths,
             invocationOrigin,

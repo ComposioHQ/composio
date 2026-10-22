@@ -1,5 +1,25 @@
 # @composio/claude-code-agents
 
+## 0.13.0
+
+### Minor Changes
+
+- adf6b02: Build tool input schemas with the Zod v4 builder from `@composio/json-schema-to-zod/v4`, so `format`, `contentEncoding`, `contentMediaType`, and `type: "integer"` survive the SDK's conversion to the JSON Schema the model sees. Before, a field such as `{ type: "string", format: "binary" }` reached the model as `{ type: "string" }`. The values a tool accepts and rejects are unchanged.
+
+  The `zod` peer dependency is now `^4.1.13` (was `^4.0.0`): the v4 builder needs the metadata registry zod shares across copies from 4.1.13 on, and throws at load time on an older zod. Upgrade zod to 4.1.13 or newer before upgrading this package.
+
+### Patch Changes
+
+- Updated dependencies [f119f05]
+- Updated dependencies [04fdb41]
+  - @composio/json-schema-to-zod@0.4.0
+
+## 0.12.2
+
+### Patch Changes
+
+- fd59eba: Update SDK and provider dependencies to compatible releases. Accept Anthropic SDK 0.132 and OpenAI Agents 0.20 in provider peer ranges, and add Pi coding-agent 1.x to the experimental provider's supported peer range.
+
 ## 0.12.1
 
 ### Patch Changes

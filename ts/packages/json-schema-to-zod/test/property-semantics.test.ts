@@ -13,6 +13,11 @@
  * - `multipleOf` is always an integer: the converter checks decimal
  *   multiples through decimal scaling (see the `primitive-float-multiple-of`
  *   corpus case) while the oracle uses raw float modulo
+ * - subnormal numbers are skipped under `multipleOf`: the oracle divides in
+ *   floating point, and `-5e-324 / 5` underflows to `-0`, so Ajv calls a
+ *   subnormal a multiple of any small integer. The converter's exact check
+ *   rejects it (see "does not treat a subnormal as an integer multiple" in
+ *   semantic-regressions.test.ts)
  * - draft-4 boolean `exclusiveMinimum`/`exclusiveMaximum` are never
  *   generated: they are not part of Draft 7, so the oracle cannot express
  *   them (the `primitive-draft4-boolean-exclusive-bounds` corpus case covers
@@ -22,8 +27,8 @@ import Ajv from 'ajv';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { jsonSchemaToZod } from '../src/index';
 import type { JsonSchema, Serializable } from '../src/types';
+import { builders } from './support/builders';
 
 const SCALAR_TYPES = ['string', 'integer', 'number', 'boolean', 'null'] as const;
 type ScalarType = (typeof SCALAR_TYPES)[number];
@@ -117,10 +122,17 @@ const schemaAndInstance: fc.Arbitrary<{ schema: SchemaRecord; value: Serializabl
 
 const ajv = new Ajv({ strict: false });
 
-describe('scalar conversion matches the Draft 7 oracle', () => {
+/** Smallest positive normal double; anything nonzero below it is subnormal. */
+const MIN_NORMAL = 2 ** -1022;
+const isSubnormal = (value: Serializable): boolean =>
+  typeof value === 'number' && value !== 0 && Math.abs(value) < MIN_NORMAL;
+
+describe.each(builders)('scalar conversion matches the Draft 7 oracle ($name)', builder => {
   it('accepts exactly what Ajv accepts, standalone and object-wrapped', () => {
     fc.assert(
       fc.property(schemaAndInstance, ({ schema, value }) => {
+        fc.pre(!(schema.multipleOf !== undefined && isSubnormal(value)));
+
         const objectSchema = {
           type: 'object',
           properties: { value: schema },
@@ -130,14 +142,14 @@ describe('scalar conversion matches the Draft 7 oracle', () => {
         const instance = { value };
 
         const oracleScalar = ajv.compile(schema)(value);
-        const zodScalar = jsonSchemaToZod(schema as JsonSchema).safeParse(value).success;
+        const zodScalar = builder.convert(schema as JsonSchema).safeParse(value).success;
         expect(
           zodScalar,
           `standalone schema=${JSON.stringify(schema)} value=${JSON.stringify(value)}`
         ).toBe(oracleScalar);
 
         const oracleObject = ajv.compile(objectSchema)(instance);
-        const zodObject = jsonSchemaToZod(objectSchema as JsonSchema).safeParse(instance).success;
+        const zodObject = builder.convert(objectSchema as JsonSchema).safeParse(instance).success;
         expect(
           zodObject,
           `wrapped schema=${JSON.stringify(schema)} value=${JSON.stringify(value)}`

@@ -8,7 +8,9 @@ import { ConnectedAccountExperimentalSchema } from './connectedAccounts.types';
 import type {
   SessionConfigHistoryResponse,
   SessionCreateResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+  SessionExecuteMetaParams,
+  SessionExecuteParams,
+} from '@composio/client/resources/tool-router/session';
 import type {
   CustomTool,
   CustomToolkit,
@@ -108,6 +110,39 @@ export const ToolRouterToolkitsEnabledConfigSchema = z
   })
   .strict();
 
+/**
+ * Toolkits whose tools need the user's approval before they run. A call that
+ * needs approval doesn't run: `session.execute()` throws
+ * `ComposioToolInputRequiredError` with the question to show the user.
+ * @experimental
+ */
+const ToolRouterToolkitsRequireApprovalSchema = ToolRouterToolkitsParamSchema.describe(
+  'Experimental. Toolkits whose tools need the user approval before they run'
+);
+
+/** Session toolkit policy: a list to enable, an enable/disable object, or only an approval list. */
+const ToolRouterSessionToolkitsSchema = z.union([
+  ToolRouterToolkitsParamSchema,
+  ToolRouterToolkitsDisabledConfigSchema.extend({
+    requireApproval: ToolRouterToolkitsRequireApprovalSchema.optional(),
+  }).strict(),
+  ToolRouterToolkitsEnabledConfigSchema.extend({
+    requireApproval: ToolRouterToolkitsRequireApprovalSchema.optional(),
+  }).strict(),
+  z.object({ requireApproval: ToolRouterToolkitsRequireApprovalSchema }).strict(),
+]);
+
+/**
+ * What happens to a call that needs the user's approval when the session's MCP
+ * client can't ask the user.
+ * @experimental
+ */
+const ToolRouterNoElicitationSupportFallbackSchema = z
+  .enum(['deny', 'allow'])
+  .describe(
+    'Experimental. What happens to a call that needs approval when the MCP client cannot ask the user'
+  );
+
 /** Experimental Instant usage policy for a Session. */
 export const ToolRouterInstantSchema = z.union([
   z.literal(false),
@@ -131,6 +166,12 @@ export const ToolRouterInstantSchema = z.union([
        * usage on a Session set to `false`.
        */
       returnInstantCharge: z.boolean().optional(),
+      /**
+       * Experimental. Show each Instant tool's price in Session search
+       * results, under `toolkitConnectionStatuses[].instantAccount.prices`.
+       * Controls visibility only.
+       */
+      returnPricesInSearch: z.boolean().optional(),
     })
     .strict(),
 ]);
@@ -149,7 +190,16 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
 
 // Tags
 export const ToolRouterTagsParamSchema = z
-  .array(z.enum(['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']))
+  .array(
+    z.enum([
+      'readOnlyHint',
+      'createHint',
+      'updateHint',
+      'destructiveHint',
+      'idempotentHint',
+      'openWorldHint',
+    ])
+  )
   .describe('The tags to filter the tools by');
 export const ToolRouterTagsEnableDisableSchema = z
   .object({
@@ -158,6 +208,13 @@ export const ToolRouterTagsEnableDisableSchema = z
     ),
     disable: ToolRouterTagsParamSchema.optional().describe(
       'The tags to disable in the tool router session'
+    ),
+    /**
+     * Tools with any of these tags need the user's approval before they run.
+     * @experimental
+     */
+    requireApproval: ToolRouterTagsParamSchema.optional().describe(
+      'Experimental. Tools with any of these tags need the user approval before they run'
     ),
   })
   .strict();
@@ -193,6 +250,14 @@ export const ToolRouterToolsParamSchema = z
   .describe('The tools to use in the tool router session');
 export type ToolRouterToolsParam = z.infer<typeof ToolRouterToolsParamSchema>;
 
+/**
+ * Tools of the toolkit that need the user's approval before they run.
+ * @experimental
+ */
+const ToolRouterToolsRequireApprovalSchema = ToolRouterToolsParamSchema.describe(
+  'Experimental. Tools of this toolkit that need the user approval before they run'
+);
+
 export const ToolRouterConfigToolsSchema = z
   .union([
     ToolRouterToolsParamSchema,
@@ -201,6 +266,7 @@ export const ToolRouterConfigToolsSchema = z
         enable: ToolRouterToolsParamSchema.describe(
           'The tools to enable in the tool router session'
         ),
+        requireApproval: ToolRouterToolsRequireApprovalSchema.optional(),
       })
       .strict(),
     z
@@ -208,6 +274,7 @@ export const ToolRouterConfigToolsSchema = z
         disable: ToolRouterToolsParamSchema.describe(
           'The tools to disable in the tool router session'
         ),
+        requireApproval: ToolRouterToolsRequireApprovalSchema.optional(),
       })
       .strict(),
     z
@@ -215,13 +282,15 @@ export const ToolRouterConfigToolsSchema = z
         tags: ToolRouterConfigTagsSchema.describe(
           'The tags to filter the tools by, this will override the global tags'
         ),
+        requireApproval: ToolRouterToolsRequireApprovalSchema.optional(),
       })
       .strict(),
+    z.object({ requireApproval: ToolRouterToolsRequireApprovalSchema }).strict(),
   ])
   .superRefine((val, ctx) => {
-    // If it's an object (not an array), ensure only one property is present
+    // If it's an object (not an array), allow at most one of enable, disable and tags
     if (typeof val === 'object' && !Array.isArray(val)) {
-      const keys = Object.keys(val);
+      const keys = Object.keys(val).filter(key => key !== 'requireApproval');
       if (keys.length > 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -232,6 +301,102 @@ export const ToolRouterConfigToolsSchema = z
     }
   });
 export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
+
+/**
+ * Proxy execute settings for a session. `enable: true` exposes the
+ * `COMPOSIO_PROXY_EXECUTE` meta tool and `enable: false` also turns off the
+ * sandbox `proxy_execute()` helper. Leaving the block out keeps the meta tool
+ * off while `sandbox.enableProxyExecution` controls the helper.
+ */
+export const ToolRouterProxyExecuteConfigSchema = z
+  .object({
+    enable: z
+      .boolean()
+      .describe(
+        'true exposes the COMPOSIO_PROXY_EXECUTE meta tool. false also turns off the sandbox proxy_execute() helper.'
+      ),
+  })
+  .strict();
+export type ToolRouterProxyExecuteConfig = z.infer<typeof ToolRouterProxyExecuteConfigSchema>;
+
+/**
+ * `proxyExecute` as accepted by `sessions.create()` and `session.update()`:
+ * a boolean is shorthand for `{ enable: boolean }`.
+ */
+export const ToolRouterProxyExecuteSchema = z.union([
+  z.boolean(),
+  ToolRouterProxyExecuteConfigSchema,
+]);
+export type ToolRouterProxyExecute = z.infer<typeof ToolRouterProxyExecuteSchema>;
+
+/** Which tool calls a hook runs on: `'all'`, or only calls to the listed toolkits (including their proxy calls). */
+export const ToolRouterHookAppliesToSchema = z.union([
+  z.literal('all'),
+  z.object({ toolkits: z.array(z.string()).describe('Toolkit slugs') }).strict(),
+]);
+export type ToolRouterHookAppliesTo = z.infer<typeof ToolRouterHookAppliesToSchema>;
+
+/** Blocks a call or result when it matches `condition`, a plain sentence describing what to block. */
+export const ToolRouterHookConditionCheckHandlerSchema = z
+  .object({
+    type: z.literal('condition_check'),
+    condition: z
+      .string()
+      .describe(
+        'What to block, written as a plain sentence. For example: "Sending email to anyone outside example.org".'
+      ),
+    action: z.literal('block'),
+  })
+  .strict();
+export type ToolRouterHookConditionCheckHandler = z.infer<
+  typeof ToolRouterHookConditionCheckHandlerSchema
+>;
+
+/** A pre-defined check that blocks results with text that tries to give the agent instructions. */
+export const ToolRouterHookPromptInjectionCheckHandlerSchema = z
+  .object({
+    type: z.literal('prompt_injection_check'),
+    action: z.literal('block'),
+  })
+  .strict();
+export type ToolRouterHookPromptInjectionCheckHandler = z.infer<
+  typeof ToolRouterHookPromptInjectionCheckHandlerSchema
+>;
+
+const toolRouterHookIdentityFields = {
+  id: z.string().describe('Unique within the session. Shows up in results and logs.'),
+  name: z
+    .string()
+    .optional()
+    .describe('A readable name. The agent sees it when this hook blocks a call.'),
+  appliesTo: ToolRouterHookAppliesToSchema,
+};
+
+/**
+ * A hook on a session's tool calls. A `before_execute` hook can block a call
+ * before it runs; an `after_execute` hook can block its result before the
+ * agent sees it.
+ */
+export const ToolRouterHookSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('before_execute'),
+      ...toolRouterHookIdentityFields,
+      handler: ToolRouterHookConditionCheckHandlerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('after_execute'),
+      ...toolRouterHookIdentityFields,
+      handler: z.discriminatedUnion('type', [
+        ToolRouterHookConditionCheckHandlerSchema,
+        ToolRouterHookPromptInjectionCheckHandlerSchema,
+      ]),
+    })
+    .strict(),
+]);
+export type ToolRouterHook = z.infer<typeof ToolRouterHookSchema>;
 
 const ToolRouterCreateSessionConfigBaseSchema = z
   .object({
@@ -256,14 +421,9 @@ const ToolRouterCreateSessionConfigBaseSchema = z
 
     tags: ToolRouterConfigTagsSchema.optional().describe('Global tags to filter the tools by'),
 
-    toolkits: z
-      .union([
-        ToolRouterToolkitsParamSchema,
-        ToolRouterToolkitsDisabledConfigSchema,
-        ToolRouterToolkitsEnabledConfigSchema,
-      ])
-      .optional()
-      .describe('The toolkits to use in the tool router session'),
+    toolkits: ToolRouterSessionToolkitsSchema.optional().describe(
+      'The toolkits to use in the tool router session'
+    ),
 
     instant: ToolRouterInstantSchema.optional().describe(
       'Experimental Instant usage policy. Omission permits eligible tools when the project allows Instant usage; false disables it for this Session.'
@@ -319,6 +479,17 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .optional()
       .describe('Multi-account configuration for this session'),
 
+    proxyExecute: ToolRouterProxyExecuteSchema.optional().describe(
+      'Proxy execute configuration for this session; a boolean is shorthand for `{ enable }`. Rejected by the API when enable is false and sandbox.enableProxyExecution is true.'
+    ),
+
+    hooks: z
+      .array(ToolRouterHookSchema)
+      .optional()
+      .describe(
+        "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
+      ),
+
     preload: z
       .object({
         tools: z
@@ -364,6 +535,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           .describe(
             'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits.'
           ),
+        /**
+         * What happens to a call that needs the user's approval when the
+         * session's MCP client can't ask the user: `deny` (the default) or
+         * `allow`.
+         * @experimental
+         */
+        noElicitationSupportFallback: ToolRouterNoElicitationSupportFallbackSchema.optional(),
       })
       .optional()
       .describe('Experimental features configuration - not stable, may be modified or removed'),
@@ -378,6 +556,7 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           config.toolkits !== undefined && 'toolkits',
           config.tools !== undefined && 'tools',
           config.tags !== undefined && 'tags',
+          config.hooks !== undefined && 'hooks',
           config.experimental.customTools !== undefined && 'experimental.customTools',
           config.experimental.customToolkits !== undefined && 'experimental.customToolkits',
         ].filter((field): field is string => field !== false)
@@ -423,7 +602,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {SessionPreset} [sessionPreset] - Shortcut that exposes every tool allowed by the session filters directly in session.tools() and the MCP tool list. Disables search, multi-execute, manage-connections, and sandbox by default; explicit overrides for supported fields still win. Without this preset, ToolRouter uses the default configuration with meta tools enabled.
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
- * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
+ * @param {Array<'readOnlyHint' | 'createHint' | 'updateHint' | 'destructiveHint'>} tags - Global tags to filter tools by the type of action they take
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
  * @param {ToolRouterInstant} [instant] - Experimental Instant usage policy. The project must allow Instant usage.
@@ -440,10 +619,13 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [multiAccount.enable] - When true, enables multi-account mode. Falls back to org/project-level config when not set.
  * @param {number} [multiAccount.maxAccountsPerToolkit] - Max connected accounts per toolkit (2-10, default 5)
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
+ * @param {boolean | object} [proxyExecute] - Proxy execute configuration for this session. A boolean is shorthand for `{ enable }`.
+ * @param {boolean} proxyExecute.enable - `true` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool. `false` also turns off the sandbox `proxy_execute()` helper.
+ * @param {ToolRouterHook[]} [hooks] - Hooks that run on this session's tool calls. A `before_execute` hook can block a call before it runs; an `after_execute` hook can block its result before the agent sees it. Cannot be combined with `experimental.sessionConfigId`.
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
  * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
- * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
+ * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `hooks`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
 export type ToolRouterCreateSessionConfig =
   InlineAccessCreateSessionConfig | SavedConfigCreateSessionConfig;
@@ -461,11 +643,12 @@ type InlineAccessCreateSessionConfig = Omit<ParsedCreateSessionConfig, 'experime
 /** Create input that takes its access policy from a saved Session config. */
 type SavedConfigCreateSessionConfig = Omit<
   ParsedCreateSessionConfig,
-  'toolkits' | 'tools' | 'tags' | 'experimental'
+  'toolkits' | 'tools' | 'tags' | 'hooks' | 'experimental'
 > & {
   toolkits?: never;
   tools?: never;
   tags?: never;
+  hooks?: never;
   experimental: Omit<
     ParsedCreateSessionExperimental,
     'sessionConfigId' | 'customTools' | 'customToolkits'
@@ -609,7 +792,24 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
   currentUserInfo: z.record(z.string(), z.unknown()).optional(),
   /** Present when the toolkit runs on a Composio Instant account; only these tools run on it. */
-  instantAccount: z.object({ allowedToolSlugs: z.array(z.string()) }).optional(),
+  instantAccount: z
+    .object({
+      allowedToolSlugs: z.array(z.string()),
+      /**
+       * Price of each tool, keyed by tool slug. Present only when the Session
+       * sets `instant.returnPricesInSearch`.
+       */
+      prices: z
+        .record(
+          z.string(),
+          z.object({
+            description: z.string().optional(),
+            discount: z.string().nullable().optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
@@ -624,14 +824,57 @@ export const ToolRouterSessionSearchResponseSchema = z.object({
 });
 export type ToolRouterSessionSearchResponse = z.infer<typeof ToolRouterSessionSearchResponseSchema>;
 
+// --- Session hook results (camelCase) ---
+
+/**
+ * What one session hook decided about a call. `unavailable` means the hook
+ * could not be evaluated (for example it timed out); it does not block the
+ * call.
+ */
+export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    id: z.string().describe('The hook id'),
+    status: z.literal('evaluated'),
+    outcome: z.enum(['continue', 'block']).describe('What the hook decided'),
+  }),
+  z.object({
+    id: z.string().describe('The hook id'),
+    status: z.literal('unavailable'),
+  }),
+]);
+export type ToolRouterHookResult = z.infer<typeof ToolRouterHookResultSchema>;
+
+/**
+ * Why a session hook blocked a call. `request_blocked`: a `before_execute` hook
+ * blocked it and the tool did not run. `response_blocked`: the tool ran and an
+ * `after_execute` hook blocked its result.
+ */
+export const ToolRouterBlockReasonSchema = z.object({
+  type: z.enum(['request_blocked', 'response_blocked']),
+  hookId: z.string(),
+});
+export type ToolRouterBlockReason = z.infer<typeof ToolRouterBlockReasonSchema>;
+
 // --- Session execute response schema (camelCase) ---
 
 export const ToolRouterSessionExecuteResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   error: z.string().nullable(),
   logId: z.string(),
+  /**
+   * Whether the tool ran and succeeded (`completed`), ran and failed
+   * (`failed`), or was blocked by a session hook (`blocked`). A failed
+   * execution can carry a `null` or empty `error`, so read this rather than
+   * `error` to tell them apart. A blocked call has empty `data` and the
+   * agent-facing message in `error`.
+   */
+  resultType: z.enum(['completed', 'failed', 'blocked']),
   /** Actual Instant usage charge when the Session opts into returning it. */
   instantCharge: z.unknown().optional(),
+  /** Set when `resultType` is `blocked`: which hook blocked the call, and at which stage. */
+  blockReason: ToolRouterBlockReasonSchema.optional(),
+  /** Every session hook that applied to this call. Absent when none applied. */
+  hookResults: z.array(ToolRouterHookResultSchema).optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -639,7 +882,9 @@ export type ToolRouterSessionExecuteResponse = z.infer<
 
 // --- Session proxy execute response (matches ToolProxyResponse from client) ---
 
-export interface ToolRouterSessionProxyExecuteResponse {
+/** A proxied request that was sent. */
+export interface ToolRouterSessionProxyExecuteCompleted {
+  resultType: 'completed';
   /** The HTTP status code returned from the proxied API */
   status: number;
   /** The response data from the proxied API */
@@ -653,7 +898,27 @@ export interface ToolRouterSessionProxyExecuteResponse {
     url: string;
     expiresAt?: string;
   };
+  /** Every session hook that applied to this request. Absent when none applied. */
+  hookResults?: ToolRouterHookResult[];
 }
+
+/** A proxied request that a session hook blocked. */
+export interface ToolRouterSessionProxyExecuteBlocked {
+  resultType: 'blocked';
+  /** Which hook blocked the request, and at which stage. */
+  blockReason: ToolRouterBlockReason;
+  /** A message for the agent. It names the hook when the hook has a `name`. */
+  message: string;
+  /** Every session hook that applied to this request. */
+  hookResults?: ToolRouterHookResult[];
+}
+
+/**
+ * Result of `session.proxyExecute()`. Check `resultType` before reading
+ * `status`: a request a session hook blocked has no HTTP response.
+ */
+export type ToolRouterSessionProxyExecuteResponse =
+  ToolRouterSessionProxyExecuteCompleted | ToolRouterSessionProxyExecuteBlocked;
 
 /**
  * Experimental features on a tool router session.
@@ -701,36 +966,68 @@ export interface ToolRouterSessionExecuteOptions {
    * COMPOSIO_MULTI_EXECUTE_TOOL.tools[].account.
    */
   account?: string;
+  /**
+   * The user's answers to the questions of a `ComposioToolInputRequiredError`,
+   * keyed by the IDs in its `inputRequests`. Send them by repeating the same
+   * call (same tool and arguments). An approved call runs; a denied or
+   * declined one returns `resultType: 'failed'`.
+   * @experimental
+   */
+  inputResponses?: Record<string, ToolRouterInputResponse>;
+  /**
+   * The `requestState` of the `ComposioToolInputRequiredError`, sent back
+   * unchanged with `inputResponses`.
+   * @experimental
+   */
+  requestState?: string;
 }
 
-export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
+/**
+ * The user's answer to one question, in the shape of an MCP elicitation
+ * result: `accept` with the form's fields in `content`, `decline` when they
+ * said no, or `cancel` when they dismissed it. For an approval, `content` is
+ * `{ decision: 'approve' }`, `{ decision: 'always_approve' }` or
+ * `{ decision: 'deny' }`.
+ * @experimental
+ */
+export type ToolRouterInputResponse = NonNullable<SessionExecuteParams['input_responses']>[string];
 
-export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
+/**
+ * Slug of a Composio meta tool (`COMPOSIO_*`) that `session.executeMeta()` can
+ * run, for example `COMPOSIO_SEARCH_TOOLS`.
+ */
+export type ToolRouterSessionMetaToolSlug = SessionExecuteMetaParams['slug'];
 
-export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
+/** Options for `session.executeMeta()`: the user's answers to an earlier `input_required` call. */
+export type ToolRouterSessionExecuteMetaOptions = Pick<
+  ToolRouterSessionExecuteOptions,
+  'inputResponses' | 'requestState'
+>;
 
-const ToolRouterInstantResponseFilterSchema = z.union([
-  z.object({ enabled: z.array(z.string()) }),
-  z.object({ disabled: z.array(z.string()) }),
-]);
+export type ToolRouterSessionExecuteMetaFn = (
+  slug: ToolRouterSessionMetaToolSlug,
+  arguments_?: Record<string, unknown>,
+  options?: ToolRouterSessionExecuteMetaOptions,
+  requestOptions?: ComposioRequestOptions
+) => Promise<ToolRouterSessionExecuteResponse>;
 
-/** Instant policy in the server's Session config (wire field casing). */
-export const ToolRouterInstantResponseSchema = z.object({
-  toolkits: ToolRouterInstantResponseFilterSchema.optional(),
-  tools: z.record(z.string(), ToolRouterInstantResponseFilterSchema).optional(),
-  return_instant_charge: z.boolean(),
-});
-export type ToolRouterInstantResponse = z.infer<typeof ToolRouterInstantResponseSchema>;
+export type ToolRouterSessionPreloadConfig = NonNullable<
+  SessionCreateResponse['config']
+>['preload'];
+
+export type ToolRouterSessionWorkbenchConfig = NonNullable<
+  NonNullable<SessionCreateResponse['config']>['workbench']
+>;
+
+export type ToolRouterSessionWarning = NonNullable<SessionCreateResponse['warnings']>[number];
 
 /**
  * Server-side session configuration as returned by the API: toolkit/tool
  * allowlists, tags, auth configs, connected accounts, manage_connections,
- * preload, sandbox (`workbench`), search, execute and Instant settings.
- * The generated client still declares the old policy name.
+ * preload, sandbox (`workbench`), search, execute, proxy execute and Instant
+ * settings.
  */
-export type ToolRouterSessionConfig = Omit<SessionCreateResponse.Config, 'premium_usage'> & {
-  instant?: false | ToolRouterInstantResponse;
-};
+export type ToolRouterSessionConfig = NonNullable<SessionCreateResponse['config']>;
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -856,6 +1153,12 @@ export const ToolRouterUpdateExperimentalSchema = z
       .describe(
         'Exposes the COMPOSIO_SUBMIT_FEEDBACK helper tool. `null` removes the stored block'
       ),
+    /**
+     * What happens to a call that needs the user's approval when the session's
+     * MCP client can't ask the user: `deny` or `allow`.
+     * @experimental
+     */
+    noElicitationSupportFallback: ToolRouterNoElicitationSupportFallbackSchema.optional(),
     sessionConfigId: z
       .string()
       .min(1)
@@ -878,13 +1181,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
     instant: ToolRouterInstantSchema.optional().describe(
       'Experimental Instant usage policy. False disables it. Any supplied object, even one that only sets returnInstantCharge, re-enables it. Omitted subfields keep their stored values.'
     ),
-    toolkits: z
-      .union([
-        ToolRouterToolkitsParamSchema,
-        ToolRouterToolkitsDisabledConfigSchema,
-        ToolRouterToolkitsEnabledConfigSchema,
-      ])
-      .nullable()
+    toolkits: ToolRouterSessionToolkitsSchema.nullable()
       .optional()
       .describe(
         'Toolkit policy. An empty allowlist (`[]` or `{ enable: [] }`) is sent as-is and denies every app toolkit; `null` removes the stored policy and restores the unrestricted default'
@@ -936,6 +1233,16 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .nullable()
       .optional()
       .describe('`null` removes the session override; the mode then resolves to disabled'),
+    proxyExecute: ToolRouterProxyExecuteSchema.nullable()
+      .optional()
+      .describe(
+        'Replaces the proxy execute block; a boolean is shorthand for `{ enable }` and `null` removes it'
+      ),
+    hooks: z
+      .array(ToolRouterHookSchema)
+      .nullable()
+      .optional()
+      .describe('Replaces the whole list of hooks; `null` removes every hook'),
     preload: z
       .object({
         tools: z.union([z.array(z.string()), z.literal('all')]).optional(),
@@ -976,6 +1283,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
           config.toolkits !== undefined && 'toolkits',
           config.tools !== undefined && 'tools',
           config.tags !== undefined && 'tags',
+          config.hooks !== undefined && 'hooks',
         ].filter((field): field is string => field !== false)
       );
     }
@@ -991,8 +1299,8 @@ export const ToolRouterUpdateSessionConfigSchema = z
 
 /**
  * Options for `session.update()`. `experimental.sessionConfigId` applies a
- * saved Session config and cannot be combined with `toolkits`, `tools` or
- * `tags` (including `null`).
+ * saved Session config and cannot be combined with `toolkits`, `tools`,
+ * `tags` or `hooks` (including `null`).
  */
 export type ToolRouterUpdateSessionConfig =
   InlineAccessUpdateSessionConfig | SavedConfigUpdateSessionConfig;
@@ -1009,11 +1317,12 @@ type InlineAccessUpdateSessionConfig = Omit<ParsedUpdateSessionConfig, 'experime
 /** Update input that applies a saved Session config. */
 type SavedConfigUpdateSessionConfig = Omit<
   ParsedUpdateSessionConfig,
-  'toolkits' | 'tools' | 'tags' | 'experimental'
+  'toolkits' | 'tools' | 'tags' | 'hooks' | 'experimental'
 > & {
   toolkits?: never;
   tools?: never;
   tags?: never;
+  hooks?: never;
   experimental: Omit<ParsedUpdateSessionExperimental, 'sessionConfigId'> & {
     sessionConfigId: string;
   };
@@ -1046,12 +1355,9 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
  * The session configuration at one version, as stored by the API. This is
  * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = Omit<
-  SessionConfigHistoryResponse.Item.Config,
-  'premium_usage'
-> & {
-  instant?: false | ToolRouterInstantResponse;
-};
+export type ToolRouterSessionConfigHistoryConfig = NonNullable<
+  SessionConfigHistoryResponse['items'][number]['config']
+>;
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */
@@ -1151,6 +1457,8 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
+  /** Execute a Composio meta tool (`COMPOSIO_*`) within the session */
+  executeMeta: ToolRouterSessionExecuteMetaFn;
   /** Update the session configuration. Mutates this session in-place and resolves to the updated `config`. */
   update: ToolRouterSessionUpdateFn;
   /** Delete the session. Deleted sessions are no longer retrievable or executable. */

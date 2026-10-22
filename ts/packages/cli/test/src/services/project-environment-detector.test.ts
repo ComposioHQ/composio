@@ -1,8 +1,9 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { describe, expect, layer, assert } from '@effect/vitest';
-import { beforeAll, afterAll } from 'vitest';
-import { Effect, Layer, Result } from 'effect';
+import { beforeEach, vi } from 'vitest';
+import { ConfigProvider, Effect, Layer, Result } from 'effect';
+import { liveEnvConfigProvider } from 'test/__utils__';
 import * as FileSystem from 'effect/FileSystem';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import {
@@ -10,7 +11,11 @@ import {
   ProjectEnvironmentDetectorError,
 } from 'src/services/project-environment-detector';
 
-const testLayer = Layer.provideMerge(ProjectEnvironmentDetector.Default, BunFileSystem.layer);
+// The package-manager cases below set `npm_config_user_agent` on the live process environment.
+const testLayer = Layer.provideMerge(
+  ProjectEnvironmentDetector.Default,
+  Layer.mergeAll(BunFileSystem.layer, ConfigProvider.layer(liveEnvConfigProvider))
+);
 
 const writeFile = (fs: FileSystem.FileSystem, filePath: string, content: string) =>
   Effect.gen(function* () {
@@ -20,19 +25,9 @@ const writeFile = (fs: FileSystem.FileSystem, filePath: string, content: string)
   });
 
 describe('ProjectEnvironmentDetector', () => {
-  let savedUserAgent: string | undefined;
-
-  beforeAll(() => {
-    savedUserAgent = process.env.npm_config_user_agent;
-    delete process.env.npm_config_user_agent;
-  });
-
-  afterAll(() => {
-    if (savedUserAgent !== undefined) {
-      process.env.npm_config_user_agent = savedUserAgent;
-    } else {
-      delete process.env.npm_config_user_agent;
-    }
+  // `unstubEnvs` in the Vitest config restores the inherited value after each test.
+  beforeEach(() => {
+    vi.stubEnv('npm_config_user_agent', undefined);
   });
 
   describe('detectProjectEnvironment', () => {
@@ -342,13 +337,10 @@ describe('ProjectEnvironmentDetector', () => {
             const detector = yield* ProjectEnvironmentDetector;
             const cwd = tempy.temporaryDirectory();
 
-            process.env.npm_config_user_agent = 'pnpm/9.15.0 npm/? node/v20.11.0';
-            try {
-              const result = yield* detector.detectJsPackageManager(cwd);
-              expect(result).toBe('pnpm');
-            } finally {
-              delete process.env.npm_config_user_agent;
-            }
+            vi.stubEnv('npm_config_user_agent', 'pnpm/9.15.0 npm/? node/v20.11.0');
+
+            const result = yield* detector.detectJsPackageManager(cwd);
+            expect(result).toBe('pnpm');
           })
       );
 
@@ -359,13 +351,10 @@ describe('ProjectEnvironmentDetector', () => {
             const detector = yield* ProjectEnvironmentDetector;
             const cwd = tempy.temporaryDirectory();
 
-            process.env.npm_config_user_agent = 'bun/1.1.0';
-            try {
-              const result = yield* detector.detectJsPackageManager(cwd);
-              expect(result).toBe('bun');
-            } finally {
-              delete process.env.npm_config_user_agent;
-            }
+            vi.stubEnv('npm_config_user_agent', 'bun/1.1.0');
+
+            const result = yield* detector.detectJsPackageManager(cwd);
+            expect(result).toBe('bun');
           })
       );
     });

@@ -9,7 +9,7 @@ import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
-  versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
+  versions: { node: ['22.23.4', '24.22.1', '26.12.1'] },
   usesFixtures: true,
   defineTests: ({ runFixture }) => {
     let result: E2ETestResultWithSetup;
@@ -45,6 +45,10 @@ e2e(import.meta.url, {
 
       it('normalizes JSON string inputs', () => {
         expect(result.stdout).toContain('STRING_INPUT_EXECUTION_OK');
+      });
+
+      it('sends the source schema and validates with Zod', () => {
+        expect(result.stdout).toContain('SOURCE_SCHEMA_OK');
       });
 
       it('produces a ToolSet-compatible collection', () => {

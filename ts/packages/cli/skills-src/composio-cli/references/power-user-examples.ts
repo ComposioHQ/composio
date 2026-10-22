@@ -4,7 +4,7 @@ export const powerUserExamplesReference: ReferenceDocument = {
   slug: 'power-user-examples',
   title: 'Power-User Examples',
   intro: [
-    'Load this file when the user needs more than one top-level command, wants to script workflows, or wants to use `experimental_subAgent()` inside `composio run`.',
+    'Load this file when the user needs more than one top-level command or wants to script workflows with `composio run`.',
   ],
   sections: [
     {
@@ -81,32 +81,6 @@ export const powerUserExamplesReference: ReferenceDocument = {
       ],
     },
     {
-      title: 'Use `experimental_subAgent()` With `z` And `result.prompt()`',
-      body: [
-        'Turn a tool result into structured output:',
-        'Use `result.prompt()` when the helper result is too noisy for a raw object dump but you still want to feed it into `experimental_subAgent()`.',
-      ],
-      commands: [
-        {
-          code: `composio run --logs-off '
-  const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 2 });
-
-  const brief = await experimental_subAgent(
-    \`Return only valid JSON matching the schema. Summarize these emails in one sentence and report how many items were returned.\\n\\n\${emails.prompt()}\`,
-    {
-      schema: z.object({
-        summary: z.string(),
-        count: z.number(),
-      }),
-    }
-  );
-
-  console.log(brief.structuredOutput);
-'`,
-        },
-      ],
-    },
-    {
       title: 'Use `proxy()` For Raw API Access',
       body: [
         '`proxy(toolkit)` returns a fetch-compatible function bound to the connected account. Name it like `fetch` if that keeps the script clearer. It returns a real `Response`, so call `.json()` or `.text()`.',
@@ -147,7 +121,6 @@ export const powerUserExamplesReference: ReferenceDocument = {
       body: [
         '- Use `--dry-run` to preview every `execute()` call in the script.',
         '- Use `--debug` to see helper steps while the script runs.',
-        '- Use `--logs-off` when `experimental_subAgent()` streaming logs are too noisy for the task.',
         'Example:',
       ],
       commands: [

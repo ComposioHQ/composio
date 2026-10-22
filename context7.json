@@ -1,6 +1,7 @@
 {
+  "$schema": "https://context7.com/schema/context7.json",
   "projectTitle": "Composio",
-  "description": "Composio equip's your AI agents & LLMs with 100+ high-quality integrations via function calling",
+  "description": "Composio connects AI agents to apps with managed authentication, tool discovery, and tool execution.",
   "folders": ["docs/content", "ts", "python"],
   "excludeFolders": [],
   "excludeFiles": [
@@ -15,8 +16,10 @@
   ],
   "rules": [
     "The current Composio REST API version is v3.1, served at https://backend.composio.dev/api/v3.1. Prefer it for new code and new examples.",
-    "https://backend.composio.dev/api/v3 is the previous REST API version. It is frozen with pinned tool-version defaults and remains supported — existing v3 integrations keep working and do not need to migrate.",
-    "On v3.1, GET /tools, GET /tools/{tool_slug}, POST /tools/execute/{tool_slug}, POST /tools/execute/{tool_slug}/input, and POST /tools/scopes/required default their version parameter to the latest toolkit version instead of the pinned 00000000_00. Code that needs the v3 pinned default must pass it explicitly: version=00000000_00, or toolkit_versions=00000000_00 on GET /tools. This version-default change is limited to these five endpoints.",
+    "https://backend.composio.dev/api/v3 is the previous REST API version. It is frozen with pinned tool-version defaults and remains supported. Existing v3 integrations keep working and do not need to migrate.",
+    "On REST v3.1, GET /tools and GET /tools/{tool_slug} default to the latest toolkit version. To pin it, use toolkit_versions=00000000_00 for GET /tools or version=00000000_00 for GET /tools/{tool_slug}.",
+    "On REST v3.1, POST /tools/execute/{tool_slug}, POST /tools/execute/{tool_slug}/input, and POST /tools/scopes/required default to the latest toolkit version. Pass version=00000000_00 to pin it explicitly.",
+    "Only those five endpoints change version defaults. POST /tools/scopes/required is v3.1-only; the other four also exist on v3, where omission selects 00000000_00.",
     "TypeScript (@composio/core) and Python (composio) SDK callers are already on v3.1 through the generated client; this only affects direct REST calls."
   ],
   "previousVersions": []

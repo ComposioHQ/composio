@@ -10,6 +10,7 @@ import {
 } from '@/lib/source';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
 import { getLocalKnowledgeDiscoveryPaths } from '@/lib/knowledge/discovery';
+import { getPageLastUpdated } from '@/lib/content-freshness';
 
 const baseUrl = 'https://docs.composio.dev';
 
@@ -79,5 +80,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...changelogPages,
   ];
 
-  return Array.from(new Map(pages.map((page) => [page.url, page])).values());
+  return Promise.all(
+    Array.from(new Map(pages.map((page) => [page.url, page])).values()).map(async (page) => {
+      const lastModified = await getPageLastUpdated(new URL(page.url).pathname);
+      return lastModified ? { ...page, lastModified } : page;
+    }),
+  );
 }

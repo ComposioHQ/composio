@@ -77,6 +77,24 @@ jobs:
             directory: '.'
             export-flags: '--all-packages'
             standalone: false
+            # CVE-2026-59951 / GHSA-84m7-p3x7-pcfv exhausts memory in
+            # stateful Streamable HTTP *servers*. Composio does not run that
+            # transport; the locked crewai 1.15.22 uses mcp.client transports.
+            # CrewAI still pins mcp~=1.28.1, excluding the 1.30.0 fix (the
+            # latest published crewai 1.15.28 has the same constraint).
+            # Remove this exception once CrewAI permits a patched MCP, or
+            # reassess it before adding a stateful MCP HTTP server here.
+            # https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-84m7-p3x7-pcfv
+            #
+            # PYSEC-2026-4321 / GHSA-hq85-5cpj-mr62: uv's vendored CA bundle
+            # trusts a root whose intermediates are compromised, so uv's own
+            # network requests can be intercepted. `uv` is in this lock only
+            # as a dependency of crewai-cli (through crewai); Composio never
+            # runs it. crewai-cli pins uv~=0.11.6, excluding the 0.13.4 fix
+            # (the latest published crewai-cli 1.15.28 has the same
+            # constraint). Remove this exception once crewai-cli permits it.
+            # https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
+            ignored-vulns: 'CVE-2026-59951 PYSEC-2026-4321'
           # Provider projects with their own lockfiles, which pin the published
           # `composio` from PyPI rather than the workspace checkout. uv resolves
           # them on their own even though python/providers/openai is listed as
@@ -143,9 +161,11 @@ jobs:
           echo "Audited the $origin lockfile"
 
       - name: Run pip-audit
+        env:
+          LOCK_IGNORED_VULNS: ${{ matrix.lock.ignored-vulns }}
         run: |
           ignore_flags=()
-          for id in $IGNORED_VULNS; do
+          for id in $IGNORED_VULNS $LOCK_IGNORED_VULNS; do
             ignore_flags+=(--ignore-vuln "$id")
           done
           uvx --from "pip-audit==$PIP_AUDIT_VERSION" pip-audit \

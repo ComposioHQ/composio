@@ -1,6 +1,6 @@
 {
   "name": "@composio/json-schema-to-zod",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -25,6 +25,10 @@
     ".": {
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./v4": {
+      "types": "./dist/v4.d.mts",
+      "default": "./dist/v4.mjs"
     }
   },
   "files": [
@@ -46,20 +50,26 @@
   ],
   "license": "ISC",
   "devDependencies": {
+    "@ai-sdk/provider-utils": "^5.0.58",
+    "@langchain/core": "^1.2.17",
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.4",
     "ajv": "^8.20.0",
     "fast-check": "^4.10.2",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "zod-3-25": "npm:zod@3.25.76",
+    "zod-floor": "npm:zod@4.1.13",
+    "zod-to-json-schema": "catalog:"
   },
   "peerDependencies": {
     "zod": ">=3.25.76 <5"
   },
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
-    "dequal": "^2.0.3"
+    "dequal": "^2.0.3",
+    "re2js": "^2.8.6"
   }
 }

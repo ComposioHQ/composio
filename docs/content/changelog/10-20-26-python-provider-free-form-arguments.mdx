@@ -1,0 +1,46 @@
+---
+title: 'Free-Form Arguments Reach Execution in AutoGen, Google ADK, and OpenAI Agents'
+description: 'The Python AutoGen and Google ADK providers no longer drop free-form tool arguments, and OpenAI Agents stops telling the model that open arguments are closed'
+date: '2026-10-20'
+---
+
+A tool argument that accepts arbitrary keys, such as an object with no `properties`, `additionalProperties: true`, or `patternProperties`, could reach your tool as `{}` in the Python AutoGen and Google ADK providers. No input error was raised, so the tool ran with different arguments from the ones the model sent.
+
+LangChain, LangGraph, and CrewAI were fixed in Python `0.19.0` (see [Free-Form Object Arguments Are Preserved Across SDKs](/docs/changelog/2026/08/06)). This release covers the remaining agentic providers.
+
+### Bug Fixes
+
+- **AutoGen** (`composio-autogen`): both runtime paths, `autogen_core` tools and AG2's `register_tools`, now pass every key the tool schema allows to execution and validate it with the same rules as LangChain and CrewAI. The advertised tool schema now marks the top-level object as open when the source schema does.
+- **Google ADK** (`composio-google-adk`): top-level keys the tool schema allows are no longer filtered down to named parameters, and arguments are validated before execution.
+- **OpenAI Agents** (`composio-openai-agents`): the advertised top-level schema keeps the source's `additionalProperties` instead of always setting it to `false`. A schema that declares no properties is advertised as open, matching the TypeScript provider.
+
+**Before:**
+
+```python
+# tool comes from Composio(provider=AutogenProvider()).tools.get(...)
+# its input schema is {"type": "object", "properties": {}}
+await tool.run_json({"filters": {"status": "open"}}, CancellationToken())
+# The tool executed with {}
+```
+
+**After:**
+
+```python
+await tool.run_json({"filters": {"status": "open"}}, CancellationToken())
+# The tool executes with {"filters": {"status": "open"}}
+```
+
+### Behavior Change for AutoGen and Google ADK
+
+<Callout type="warn">
+AutoGen and Google ADK now validate tool arguments against the tool's JSON schema, as LangChain, LangGraph, and CrewAI already do. Calls that used to succeed after the provider silently dropped or converted a value now return an error result to the agent: `{"successful": false, "error": "...", "data": null}`.
+</Callout>
+
+- An unknown top-level key on a schema that declares properties and omits `additionalProperties` is rejected instead of dropped.
+- A value of the wrong type, such as `"5"` for an integer, is rejected instead of converted.
+- An optional argument the model leaves out is no longer sent as `""`, `0`, or `{}`. The schema's declared default applies instead.
+- An invalid `patternProperties` or schema-valued `additionalProperties` raises when the tool is wrapped.
+
+### Known Limitation
+
+On Google ADK and on AutoGen's AG2 `register_tools` path, the tool declaration is still built from named parameters. A tool whose whole argument object is free-form is therefore not advertised to the model as open, so the model may not send those keys. Free-form objects nested under a declared argument work on every provider.

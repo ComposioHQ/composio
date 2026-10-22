@@ -7,7 +7,8 @@ import {
 } from '@composio/json-schema-to-effect-schema';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { getLatestToolVersion } from 'src/services/composio-account';
 import { memoizeInProcess } from 'src/utils/memoize-in-process';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
@@ -135,13 +136,6 @@ export const getCachedToolInputDefinition = (slug: string) =>
     };
   });
 
-export const getToolDefinitionCachePath = (slug: string) =>
-  Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const cacheDir = yield* setupCacheDir;
-    return toolDefinitionPath(path, cacheDir, slug);
-  });
-
 export const cacheToolInputDefinition = (params: {
   readonly slug: string;
   readonly schema: Record<string, unknown>;
@@ -185,7 +179,7 @@ export const invalidateToolInputDefinition = (slug: string) =>
   });
 
 // One `get_latest_version` round trip per tool per process. `composio execute`
-// asks twice on every call: the background version check forked from the
+// asks twice on every call: the validation that gates the tool call in the
 // command, and `getOrFetchToolInputDefinition` on the executor's file-upload
 // path. Both want the same answer within the same second.
 const fetchLatestToolVersionOnce = memoizeInProcess({
@@ -332,15 +326,6 @@ const refreshAndFetchToolInputDefinitionIfVersionChanged = (
     return { isStale, latestVersion, definition, skipped: false as const };
   });
 
-export const refreshToolInputDefinitionIfVersionChanged = (
-  slug: string,
-  cachedVersion: string | null,
-  params?: { readonly orgId?: string; readonly projectId?: string }
-) =>
-  refreshAndFetchToolInputDefinitionIfVersionChanged(slug, cachedVersion, params).pipe(
-    Effect.map(({ isStale, latestVersion, skipped }) => ({ isStale, latestVersion, skipped }))
-  );
-
 export class ToolInputValidationError extends Data.TaggedError('ToolInputValidationError')<{
   readonly toolSlug: string;
   readonly schemaPath: string;
@@ -356,9 +341,27 @@ export class ToolInputValidationError extends Data.TaggedError('ToolInputValidat
   }
 }
 
+// The schema itself is unusable, which says nothing about the arguments. Kept
+// apart from `ToolInputValidationError` so it never blocks a tool call.
+export class ToolInputSchemaCompileError extends Data.TaggedError('ToolInputSchemaCompileError')<{
+  readonly toolSlug: string;
+  readonly schemaPath: string;
+  readonly cause?: unknown;
+}> {
+  override get message(): string {
+    return [
+      `Could not compile the cached JSON schema for ${this.toolSlug} into a validator.`,
+      `Schema: ${this.schemaPath}`,
+    ].join('\n');
+  }
+}
+
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
   const objectSchema = decodeObjectSchemaWithProperties(schema);
-  return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
+  return Option.match(objectSchema, {
+    onNone: () => [],
+    onSome: ({ properties }) => Object.keys(properties),
+  });
 };
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -476,13 +479,7 @@ export const validateToolInputArgumentsWithDefinition = (
 
     const inputSchema = yield* Effect.try({
       try: () => compileToolInputSchema(normalizedSchema, allowedKeys),
-      catch: error =>
-        new ToolInputValidationError({
-          toolSlug: slug,
-          schemaPath,
-          issues: ['Could not compile the cached JSON schema into a validator.'],
-          cause: error,
-        }),
+      catch: error => new ToolInputSchemaCompileError({ toolSlug: slug, schemaPath, cause: error }),
     });
 
     yield* Schema.decodeUnknownEffect(inputSchema, { errors: 'all' })(args).pipe(
@@ -495,17 +492,6 @@ export const validateToolInputArgumentsWithDefinition = (
     );
 
     return { schemaPath, schema };
-  });
-
-export const validateToolInputArgumentsIfCached = (slug: string, args: Record<string, unknown>) =>
-  Effect.gen(function* () {
-    const cached = yield* getCachedToolInputDefinition(slug);
-    if (!cached) {
-      return false as const;
-    }
-
-    yield* validateToolInputArgumentsWithDefinition(slug, args, cached);
-    return true as const;
   });
 
 export const validateToolInputArguments = (

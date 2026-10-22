@@ -318,10 +318,14 @@
     },
     {
       "slug": "dashboard-org-members",
-      "title": "Organization Members and Administrators",
-      "description": "Public guidance for transferring organization control and managing administrator roles.",
+      "title": "Organization Members and Roles",
+      "description": "What the Admin, Member (Developer), and Viewer roles can do in Composio For You and Platform, and how to transfer organization control.",
       "articlePath": "dashboard-org-members.md",
       "sources": [
+        {
+          "sourcePath": "dashboard/org-members/public.md",
+          "sourceHeading": "What each organization role can do"
+        },
         {
           "sourcePath": "dashboard/org-members/public.md",
           "sourceHeading": "Transfer organization control to another user"
@@ -333,8 +337,10 @@
       ],
       "tags": [
         "dashboard",
+        "for-you",
         "members",
         "organizations",
+        "permissions",
         "platform",
         "roles"
       ],
@@ -344,8 +350,8 @@
       ],
       "relatedGuides": [],
       "externalResources": [],
-      "updatedAt": "2026-07-16",
-      "lastVerifiedAt": "2026-08-17",
+      "updatedAt": "2026-10-13",
+      "lastVerifiedAt": "2026-10-13",
       "reviewAfter": "2026-11-15",
       "freshness": "evergreen",
       "state": "published",
@@ -5231,7 +5237,7 @@
       "sources": [
         {
           "sourcePath": "toolkits/serpapi/public.md",
-          "sourceHeading": "Disable SerpAPI by listing premium toolkit slugs in session config"
+          "sourceHeading": "Control SerpAPI availability in a Session"
         },
         {
           "sourcePath": "toolkits/serpapi/public.md",
@@ -5382,7 +5388,7 @@
       ],
       "relatedGuides": [],
       "externalResources": [],
-      "updatedAt": "2026-07-16",
+      "updatedAt": "2026-10-13",
       "lastVerifiedAt": "2026-08-12",
       "reviewAfter": "2026-11-10",
       "freshness": "evergreen",

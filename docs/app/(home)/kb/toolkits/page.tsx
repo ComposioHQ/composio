@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -7,7 +8,7 @@ import { getKnowledgeToolkitSummaries } from '@/lib/knowledge/catalog';
 export const metadata: Metadata = {
   title: 'Browse knowledge by toolkit',
   description: 'Find public Composio knowledge for every supported toolkit.',
-  alternates: { canonical: '/kb/toolkits' },
+  alternates: markdownAlternates('/kb/toolkits'),
 };
 
 export default async function KnowledgeToolkitsPage() {

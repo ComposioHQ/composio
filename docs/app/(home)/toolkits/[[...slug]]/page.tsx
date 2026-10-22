@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import { toolkitsSource, getOgImageUrl } from '@/lib/source';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -8,7 +9,7 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { getAllToolkits } from '@/lib/toolkit-data';
+import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { resolveToolkit } from '@/lib/toolkit-resolution';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -28,8 +29,7 @@ export const dynamicParams = true;
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
 async function fetchDetailedTools(
-  toolkitSlug: string,
-  version?: string | null
+  toolkitSlug: string
 ): Promise<Tool[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
@@ -38,7 +38,7 @@ async function fetchDetailedTools(
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=10000${version ? `&version=${encodeURIComponent(version)}` : ''}`,
+      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=10000`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export async function generateMetadata({
     return {
       title: 'Toolkits',
       description: 'Browse all toolkits supported by Composio',
-      alternates: { canonical: '/toolkits' },
+      alternates: markdownAlternates('/toolkits'),
       openGraph: { images: [ogImage] },
       twitter: { card: 'summary_large_image', images: [ogImage] },
     };
@@ -173,7 +173,7 @@ export async function generateMetadata({
     return {
       title: page.data.title,
       description: page.data.description,
-      alternates: { canonical: page.url },
+      alternates: markdownAlternates(page.url),
       openGraph: { images: [ogImage] },
       twitter: { card: 'summary_large_image', images: [ogImage] },
     };
@@ -191,7 +191,9 @@ export async function generateMetadata({
       return {
         title,
         description,
-        alternates: { canonical: `/toolkits/${toolkit.slug}` },
+        alternates: await getToolkitBySlug(toolkit.slug)
+          ? markdownAlternates(`/toolkits/${toolkit.slug}`)
+          : { canonical: `/toolkits/${toolkit.slug}` },
         openGraph: { images: [ogImage] },
         twitter: { card: 'summary_large_image', images: [ogImage] },
       };
@@ -241,7 +243,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     if (toolkit) {
       // Fetch detailed tool/trigger info and FAQ content in parallel
       const [detailedTools, detailedTriggers, faq] = await Promise.all([
-        fetchDetailedTools(toolkit.slug, toolkit.version),
+        fetchDetailedTools(toolkit.slug),
         fetchDetailedTriggers(toolkit.slug, toolkit.version),
         readToolkitFaq(toolkit.slug),
       ]);

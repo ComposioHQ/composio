@@ -1,6 +1,6 @@
 import { Context, Effect, Layer, Stream } from 'effect';
 import type * as PlatformError from 'effect/PlatformError';
-import type { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import type { ChildProcess, ChildProcessSpawner } from 'effect/process';
 
 export interface CommandResult {
   readonly exitCode: number;

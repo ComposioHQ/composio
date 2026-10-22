@@ -20,10 +20,10 @@ import {
 import { MCPServerInstanceSchema } from '../types/mcp.experimental.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { transform } from '../utils/transform';
-import { McpUpdateResponse } from '@composio/client/resources.js';
-import { McpRetrieveResponse } from '@composio/client/resources';
+import type { McpRetrieveResponse, McpUpdateResponse } from '@composio/client/resources/mcp';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import logger from '../utils/logger';
 
 function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveResponse): MCPItem {
   return transform(response)
@@ -40,6 +40,19 @@ function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveRespo
       toolkits: raw.toolkits,
     }));
 }
+
+// `managed_auth_by_composio` is deprecated upstream, but dropping it would strip
+// the connection-management tools from generated URLs. Keep sending it, silence
+// the API client's notice (it names an internal call), and warn once per process
+// in SDK terms instead.
+const MANAGED_AUTH_DEPRECATION =
+  '[Deprecation] composio.mcp.generate() returns URLs that rely on the deprecated ' +
+  'include_composio_helper_actions query parameter, which the API will remove in a ' +
+  'future version. Switch to a session MCP endpoint: composio.create(userId, { mcp: true }) ' +
+  'exposes session.mcp.url with connection-management tools built in. ' +
+  'https://docs.composio.dev/docs/sessions-via-mcp';
+let _managedAuthDeprecationWarned = false;
+
 /**
  * MCP (Model Control Protocol) class
  * Handles MCP server operations.
@@ -465,8 +478,13 @@ export class MCP {
       user_ids: [userId],
       managed_auth_by_composio: options?.manuallyManageConnections ? false : true,
     };
+    if (urlBody.managed_auth_by_composio && !_managedAuthDeprecationWarned) {
+      _managedAuthDeprecationWarned = true;
+      logger.warn(MANAGED_AUTH_DEPRECATION);
+    }
     const urlResponse = await withCancellation(
-      () => this.client.mcp.generate.url(urlBody, requestOptions),
+      () =>
+        this.client.withOptions({ logLevel: 'error' }).mcp.generate.url(urlBody, requestOptions),
       requestOptions?.signal
     );
 

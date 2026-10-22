@@ -1,4 +1,5 @@
-import { Command as CliCommand, Flag } from 'effect/unstable/cli';
+import { isAPIError } from '@composio/client/effect';
+import { Command as CliCommand, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -13,12 +14,21 @@ import {
   sessionProjectApiKeyOf,
   sessionUserIdOf,
   type OrgProject,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
+import { browserLogin } from 'src/effects/browser-login';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
+import { commandInputError } from 'src/commands/errors';
+import { reportFailure } from 'src/effects/report-failure';
+import {
+  describeDecodeError,
+  isClientConnectionError,
+  isClientDecodeError,
+  type ClientApiError,
+} from 'src/utils/api-error-extraction';
 
 /**
  * `composio init` — Initialize a developer project in the current directory.
@@ -32,6 +42,11 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  *
  * - `--yes` / `-y` — auto-select the first project from the list
  */
+
+const noBrowserOpt = Flag.Boolean('no-browser').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Login without browser interaction')
+);
 
 const yesOpt = Flag.Boolean('yes').pipe(
   Flag.withAlias('y'),
@@ -166,23 +181,33 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     }
   });
 
-const logEnvCreationHttpError =
-  (ui: TerminalUI) =>
-  (e: { status?: number; details?: { message: string; suggestedFix?: string }; cause?: unknown }) =>
-    Effect.gen(function* () {
-      yield* ui.log.warn('Could not create .env.local from session info.');
-      if (e.status) {
-        yield* ui.log.error(`HTTP ${e.status}`);
-      }
+const logEnvCreationHttpError = (ui: TerminalUI) => (e: ClientApiError) =>
+  Effect.gen(function* () {
+    yield* ui.log.warn('Could not create .env.local from session info.');
+    if (isClientDecodeError(e)) {
+      const { message, hint } = describeDecodeError(e);
+      yield* ui.log.error(message);
+      yield* ui.log.step(hint);
+      return;
+    }
+    if (isAPIError(e)) {
+      yield* ui.log.error(`HTTP ${e.status}`);
       if (e.details) {
         yield* ui.log.error(e.details.message);
-        if (e.details.suggestedFix !== undefined) {
-          yield* ui.log.step(e.details.suggestedFix);
+        if (e.details.suggested_fix !== undefined) {
+          yield* ui.log.step(e.details.suggested_fix);
         }
-      } else if (e.cause) {
-        yield* ui.log.error(String(e.cause));
+        return;
       }
-    });
+    }
+    // A connection failure names what the transport reported; every other
+    // failure keeps the line it had as a stringified error.
+    yield* ui.log.error(
+      isClientConnectionError(e) && e.description !== undefined
+        ? e.description
+        : `Error: ${e.message}`
+    );
+  });
 
 const logEnvCreationDecodingError = (ui: TerminalUI) => (e: { cause?: unknown }) =>
   Effect.gen(function* () {
@@ -266,16 +291,16 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     const orgIdValue = Option.getOrUndefined(ctx.data.orgId);
     const projectIdValue = Option.getOrUndefined(ctx.data.projectId);
     if (!globalApiKey || !orgIdValue) {
-      yield* ui.log.warn('No global API key or org ID found. Please try `composio login` first.');
-      yield* ui.outro('');
-      return;
+      return yield* commandInputError('dev init')(
+        'No global API key or org ID found. Please try `composio login` first.'
+      );
     }
 
     const orgProjects = yield* listOrgProjects({
       apiKey: globalApiKey,
       orgId: orgIdValue,
     }).pipe(
-      Effect.catchTag('services/HttpServerError', e =>
+      Effect.catchTag(CLIENT_API_ERROR_TAGS, e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to list org projects:', e);
           yield* ui.log.warn('Could not fetch projects from the server.');
@@ -302,8 +327,9 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     );
 
     if (orgProjects.data.length === 0) {
-      yield* ui.log.warn('No projects found for your organization.');
-      yield* ui.log.info(
+      yield* reportFailure(
+        ui,
+        'No projects found for your organization.',
         'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
       );
       yield* ui.outro('');
@@ -320,17 +346,19 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       testUserId: Option.none(),
     });
 
-    const selectedProject: OrgProject =
-      yes || orgProjects.data.length === 1
-        ? (selectDefaultProject({
-            projects: orgProjects.data,
-            defaultOrgId: orgIdValue,
-            defaultProjectId: projectIdValue,
-          }) ?? orgProjects.data[0])
-        : yield* ui.select<OrgProject>(
-            'Select a developer project:',
-            orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
-          );
+    const skipProjectPicker = yes || orgProjects.data.length === 1;
+    const defaultProject =
+      selectDefaultProject({
+        projects: orgProjects.data,
+        defaultOrgId: orgIdValue,
+        defaultProjectId: projectIdValue,
+      }) ?? orgProjects.data[0];
+    const selectedProject: OrgProject = skipProjectPicker
+      ? defaultProject
+      : yield* ui.select<OrgProject>(
+          'Select a developer project:',
+          orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
+        );
 
     const selected = orgProjectToKeys(selectedProject);
     yield* ui.log.step(`Using developer project "${selectedProject.name}"`);
@@ -338,7 +366,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     // 4. Write project config
     yield* writeProjectConfig(composioDir, selected);
     yield* ensureProjectApiKeyInEnv({ cwd: proc.cwd, selected }).pipe(
-      Effect.catchTag('services/HttpServerError', e =>
+      Effect.catchTag(CLIENT_API_ERROR_TAGS, e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to resolve project API key from session/info:', e);
           yield* logEnvCreationHttpError(ui)(e);
