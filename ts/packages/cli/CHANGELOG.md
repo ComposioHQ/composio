@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  gain `--fail-fast`: the listener stops at the first event it fails to save,
+  forward, or append to `--out`, prints how many events failed on stderr, and
+  exits 1. Without it, a failed event is still reported and skipped, and the
+  exit code stays 0.
+
 ### Patch Changes
 
 - More expected errors now print as a plain message on stderr and exit 1, like

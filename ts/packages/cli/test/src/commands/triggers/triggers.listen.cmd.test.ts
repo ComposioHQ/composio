@@ -98,6 +98,26 @@ describe('CLI: composio dev listen', () => {
       })
     );
 
+    // No --max-events: only --fail-fast can stop this run.
+    it.effect('[Then] --fail-fast stops at the first failed forward and exits 1', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        yield* cli([
+          'dev',
+          'listen',
+          '--forward',
+          'http://127.0.0.1:9/composio',
+          '--fail-fast',
+        ]).pipe(Effect.provide(terminal.layer));
+
+        expect(terminal.stderr()).toContain(
+          '1 event failed to forward to http://127.0.0.1:9/composio while listening.'
+        );
+        expect(process.exitCode).toBe(1);
+      })
+    );
+
     it.effect('[Then] sums the output-file failures up on stderr when the listener stops', () =>
       Effect.gen(function* () {
         yield* enableListen;

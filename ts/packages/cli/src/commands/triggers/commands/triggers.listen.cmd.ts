@@ -1,5 +1,6 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { reportFailure } from 'src/effects/report-failure';
+import { eventCount, makeSinkFailures } from '../sink-failures';
 import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -65,6 +66,13 @@ const forward = Flag.String('forward').pipe(
 const out = Flag.String('out').pipe(
   Flag.withDescription('Append each matching event to this file'),
   Flag.optional
+);
+
+const failFast = Flag.Boolean('fail-fast').pipe(
+  Flag.withDescription(
+    'Stop at the first event that fails to forward or to append to --out, and exit 1'
+  ),
+  Flag.withDefault(false)
 );
 
 const randomUUID = () => crypto.randomUUID();
@@ -148,6 +156,7 @@ export const triggersCmd$Listen = Command.make(
     maxEvents,
     forward,
     out,
+    failFast,
   },
   ({
     toolkits,
@@ -159,6 +168,7 @@ export const triggersCmd$Listen = Command.make(
     maxEvents,
     forward,
     out,
+    failFast,
   }) =>
     Effect.gen(function* () {
       const surface = yield* CommandSurface;
@@ -192,14 +202,23 @@ export const triggersCmd$Listen = Command.make(
       };
 
       const maxEventsLimit = Option.getOrUndefined(maxEvents);
-      const stopWhenDone = yield* Deferred.make<void>();
+      const stopWhenDone = yield* Deferred.make<'max-events' | 'failed'>();
       let matchingEvents = 0;
-      // Per-event failures are recovered so one bad event never stops the listener; they are
-      // counted here and summed up on plain stderr on every stop — including Ctrl+C and
-      // SIGTERM, which runMain turns into a fiber interruption — since a piped caller sees
-      // none of the `ui.log.warn` decoration.
-      let outputWriteFailures = 0;
-      let forwardFailures = 0;
+      const stopOnFailure = Deferred.succeed(stopWhenDone, 'failed').pipe(Effect.asVoid);
+      const forwardFailures = makeSinkFailures({
+        ui,
+        failFast,
+        stop: stopOnFailure,
+        summary: count =>
+          `${eventCount(count)} failed to forward to ${forwardUrl} while listening.`,
+      });
+      const outputWriteFailures = makeSinkFailures({
+        ui,
+        failFast,
+        stop: stopOnFailure,
+        summary: count =>
+          `${eventCount(count)} failed to append to ${outputFilePath} while listening.`,
+      });
       let tableHeaderPrinted = false;
 
       yield* ui.intro('composio dev triggers listen');
@@ -266,14 +285,9 @@ export const triggersCmd$Listen = Command.make(
             const logLine = `${payloadForForwarding}\n`;
 
             if (outputFilePath) {
-              yield* fs.writeFileString(outputFilePath, logLine, { flag: 'a' }).pipe(
-                Effect.catch(error =>
-                  Effect.gen(function* () {
-                    outputWriteFailures += 1;
-                    yield* ui.log.warn(String(error));
-                  })
-                )
-              );
+              yield* fs
+                .writeFileString(outputFilePath, logLine, { flag: 'a' })
+                .pipe(Effect.catch(error => outputWriteFailures.record(String(error))));
             }
 
             if (forwardUrl && webhookSecret) {
@@ -315,18 +329,11 @@ export const triggersCmd$Listen = Command.make(
                   catch: error =>
                     new Error(`Failed forwarding event to ${forwardUrl}: ${String(error)}`),
                 });
-              }).pipe(
-                Effect.catch(error =>
-                  Effect.gen(function* () {
-                    forwardFailures += 1;
-                    yield* ui.log.warn(String(error));
-                  })
-                )
-              );
+              }).pipe(Effect.catch(error => forwardFailures.record(String(error))));
             }
 
             if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
-              yield* Deferred.succeed(stopWhenDone, undefined).pipe(Effect.ignore);
+              yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
             }
           })
         );
@@ -344,31 +351,17 @@ export const triggersCmd$Listen = Command.make(
         Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
       );
 
-      // The summary runs in an onExit finalizer, so it fires on every stop — including the
-      // interruption of an unlimited wait, where the code after this block would not run.
-      const reportSinkFailures = () =>
-        Effect.gen(function* () {
-          if (forwardFailures > 0) {
-            yield* ui.error(
-              `${forwardFailures} event${forwardFailures === 1 ? '' : 's'} failed to forward to ${forwardUrl} while listening.`
-            );
-          }
-          if (outputWriteFailures > 0) {
-            yield* ui.error(
-              `${outputWriteFailures} event${outputWriteFailures === 1 ? '' : 's'} failed to append to ${outputFilePath} while listening.`
-            );
-          }
-        });
-
       yield* Effect.gen(function* () {
-        if (maxEventsLimit === undefined) {
-          return yield* listenEffect;
+        // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
+        // the listener until it is interrupted.
+        const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+        if (stopReason === 'max-events') {
+          yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
-
-        yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
-        yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
       }).pipe(
-        Effect.onExit(() => reportSinkFailures()),
+        // An onExit finalizer, so the summaries print on every stop — including the
+        // interruption by Ctrl+C or SIGTERM, where the code after this block would not run.
+        Effect.onExit(() => Effect.andThen(forwardFailures.report, outputWriteFailures.report)),
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
           reportFailure(
             ui,

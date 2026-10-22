@@ -1,0 +1,40 @@
+import { Effect } from 'effect';
+import { reportFailure } from 'src/effects/report-failure';
+import type { TerminalUI } from 'src/services/terminal-ui';
+
+/** `1 event`, `2 events`. */
+export const eventCount = (count: number) => `${count} event${count === 1 ? '' : 's'}`;
+
+/**
+ * Counts the events a listener sink (saved payloads, an output file, a forwarding URL) failed to
+ * take. One failure never fails the listener on its own: `record` logs a warn, and with
+ * `--fail-fast` it also runs `stop`. `report` sums the count up on stderr when the listener
+ * stops, as a plain line because piped callers see none of the `ui.log.*` decoration; with
+ * `--fail-fast` it goes through `reportFailure` and the CLI exits 1.
+ */
+export const makeSinkFailures = (params: {
+  readonly ui: TerminalUI;
+  readonly failFast: boolean;
+  readonly stop: Effect.Effect<void>;
+  /** The summary line, e.g. `2 events failed to write while listening.` */
+  readonly summary: (count: number) => string;
+}) => {
+  let count = 0;
+  return {
+    record: (message: string) =>
+      Effect.gen(function* () {
+        count += 1;
+        yield* params.ui.log.warn(message);
+        if (params.failFast) {
+          yield* params.stop;
+        }
+      }),
+    report: Effect.suspend(() => {
+      if (count === 0) {
+        return Effect.void;
+      }
+      const summary = params.summary(count);
+      return params.failFast ? reportFailure(params.ui, summary) : params.ui.error(summary);
+    }),
+  };
+};
