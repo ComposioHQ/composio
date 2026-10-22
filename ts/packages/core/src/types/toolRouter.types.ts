@@ -10,7 +10,7 @@ import type {
   SessionCreateResponse,
   SessionExecuteMetaParams,
   SessionExecuteParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type {
   CustomTool,
   CustomToolkit,
@@ -329,6 +329,75 @@ export const ToolRouterProxyExecuteSchema = z.union([
 ]);
 export type ToolRouterProxyExecute = z.infer<typeof ToolRouterProxyExecuteSchema>;
 
+/** Which tool calls a hook runs on: `'all'`, or only calls to the listed toolkits (including their proxy calls). */
+export const ToolRouterHookAppliesToSchema = z.union([
+  z.literal('all'),
+  z.object({ toolkits: z.array(z.string()).describe('Toolkit slugs') }).strict(),
+]);
+export type ToolRouterHookAppliesTo = z.infer<typeof ToolRouterHookAppliesToSchema>;
+
+/** Blocks a call or result when it matches `condition`, a plain sentence describing what to block. */
+export const ToolRouterHookConditionCheckHandlerSchema = z
+  .object({
+    type: z.literal('condition_check'),
+    condition: z
+      .string()
+      .describe(
+        'What to block, written as a plain sentence. For example: "Sending email to anyone outside example.org".'
+      ),
+    action: z.literal('block'),
+  })
+  .strict();
+export type ToolRouterHookConditionCheckHandler = z.infer<
+  typeof ToolRouterHookConditionCheckHandlerSchema
+>;
+
+/** A pre-defined check that blocks results with text that tries to give the agent instructions. */
+export const ToolRouterHookPromptInjectionCheckHandlerSchema = z
+  .object({
+    type: z.literal('prompt_injection_check'),
+    action: z.literal('block'),
+  })
+  .strict();
+export type ToolRouterHookPromptInjectionCheckHandler = z.infer<
+  typeof ToolRouterHookPromptInjectionCheckHandlerSchema
+>;
+
+const toolRouterHookIdentityFields = {
+  id: z.string().describe('Unique within the session. Shows up in results and logs.'),
+  name: z
+    .string()
+    .optional()
+    .describe('A readable name. The agent sees it when this hook blocks a call.'),
+  appliesTo: ToolRouterHookAppliesToSchema,
+};
+
+/**
+ * A hook on a session's tool calls. A `before_execute` hook can block a call
+ * before it runs; an `after_execute` hook can block its result before the
+ * agent sees it.
+ */
+export const ToolRouterHookSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('before_execute'),
+      ...toolRouterHookIdentityFields,
+      handler: ToolRouterHookConditionCheckHandlerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('after_execute'),
+      ...toolRouterHookIdentityFields,
+      handler: z.discriminatedUnion('type', [
+        ToolRouterHookConditionCheckHandlerSchema,
+        ToolRouterHookPromptInjectionCheckHandlerSchema,
+      ]),
+    })
+    .strict(),
+]);
+export type ToolRouterHook = z.infer<typeof ToolRouterHookSchema>;
+
 const ToolRouterCreateSessionConfigBaseSchema = z
   .object({
     sessionPreset: z
@@ -414,6 +483,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       'Proxy execute configuration for this session; a boolean is shorthand for `{ enable }`. Rejected by the API when enable is false and sandbox.enableProxyExecution is true.'
     ),
 
+    hooks: z
+      .array(ToolRouterHookSchema)
+      .optional()
+      .describe(
+        "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
+      ),
+
     preload: z
       .object({
         tools: z
@@ -480,6 +556,7 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           config.toolkits !== undefined && 'toolkits',
           config.tools !== undefined && 'tools',
           config.tags !== undefined && 'tags',
+          config.hooks !== undefined && 'hooks',
           config.experimental.customTools !== undefined && 'experimental.customTools',
           config.experimental.customToolkits !== undefined && 'experimental.customToolkits',
         ].filter((field): field is string => field !== false)
@@ -544,10 +621,11 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
  * @param {boolean | object} [proxyExecute] - Proxy execute configuration for this session. A boolean is shorthand for `{ enable }`.
  * @param {boolean} proxyExecute.enable - `true` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool. `false` also turns off the sandbox `proxy_execute()` helper.
+ * @param {ToolRouterHook[]} [hooks] - Hooks that run on this session's tool calls. A `before_execute` hook can block a call before it runs; an `after_execute` hook can block its result before the agent sees it. Cannot be combined with `experimental.sessionConfigId`.
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
  * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
- * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
+ * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `hooks`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
 export type ToolRouterCreateSessionConfig =
   InlineAccessCreateSessionConfig | SavedConfigCreateSessionConfig;
@@ -565,11 +643,12 @@ type InlineAccessCreateSessionConfig = Omit<ParsedCreateSessionConfig, 'experime
 /** Create input that takes its access policy from a saved Session config. */
 type SavedConfigCreateSessionConfig = Omit<
   ParsedCreateSessionConfig,
-  'toolkits' | 'tools' | 'tags' | 'experimental'
+  'toolkits' | 'tools' | 'tags' | 'hooks' | 'experimental'
 > & {
   toolkits?: never;
   tools?: never;
   tags?: never;
+  hooks?: never;
   experimental: Omit<
     ParsedCreateSessionExperimental,
     'sessionConfigId' | 'customTools' | 'customToolkits'
@@ -745,6 +824,37 @@ export const ToolRouterSessionSearchResponseSchema = z.object({
 });
 export type ToolRouterSessionSearchResponse = z.infer<typeof ToolRouterSessionSearchResponseSchema>;
 
+// --- Session hook results (camelCase) ---
+
+/**
+ * What one session hook decided about a call. `unavailable` means the hook
+ * could not be evaluated (for example it timed out); it does not block the
+ * call.
+ */
+export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    id: z.string().describe('The hook id'),
+    status: z.literal('evaluated'),
+    outcome: z.enum(['continue', 'block']).describe('What the hook decided'),
+  }),
+  z.object({
+    id: z.string().describe('The hook id'),
+    status: z.literal('unavailable'),
+  }),
+]);
+export type ToolRouterHookResult = z.infer<typeof ToolRouterHookResultSchema>;
+
+/**
+ * Why a session hook blocked a call. `request_blocked`: a `before_execute` hook
+ * blocked it and the tool did not run. `response_blocked`: the tool ran and an
+ * `after_execute` hook blocked its result.
+ */
+export const ToolRouterBlockReasonSchema = z.object({
+  type: z.enum(['request_blocked', 'response_blocked']),
+  hookId: z.string(),
+});
+export type ToolRouterBlockReason = z.infer<typeof ToolRouterBlockReasonSchema>;
+
 // --- Session execute response schema (camelCase) ---
 
 export const ToolRouterSessionExecuteResponseSchema = z.object({
@@ -752,13 +862,19 @@ export const ToolRouterSessionExecuteResponseSchema = z.object({
   error: z.string().nullable(),
   logId: z.string(),
   /**
-   * Whether the tool ran and succeeded (`completed`) or ran and failed
-   * (`failed`). A failed execution can carry a `null` or empty `error`, so
-   * read this rather than `error` to tell the two apart.
+   * Whether the tool ran and succeeded (`completed`), ran and failed
+   * (`failed`), or was blocked by a session hook (`blocked`). A failed
+   * execution can carry a `null` or empty `error`, so read this rather than
+   * `error` to tell them apart. A blocked call has empty `data` and the
+   * agent-facing message in `error`.
    */
-  resultType: z.enum(['completed', 'failed']),
+  resultType: z.enum(['completed', 'failed', 'blocked']),
   /** Actual Instant usage charge when the Session opts into returning it. */
   instantCharge: z.unknown().optional(),
+  /** Set when `resultType` is `blocked`: which hook blocked the call, and at which stage. */
+  blockReason: ToolRouterBlockReasonSchema.optional(),
+  /** Every session hook that applied to this call. Absent when none applied. */
+  hookResults: z.array(ToolRouterHookResultSchema).optional(),
 });
 export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
@@ -766,7 +882,9 @@ export type ToolRouterSessionExecuteResponse = z.infer<
 
 // --- Session proxy execute response (matches ToolProxyResponse from client) ---
 
-export interface ToolRouterSessionProxyExecuteResponse {
+/** A proxied request that was sent. */
+export interface ToolRouterSessionProxyExecuteCompleted {
+  resultType: 'completed';
   /** The HTTP status code returned from the proxied API */
   status: number;
   /** The response data from the proxied API */
@@ -780,7 +898,27 @@ export interface ToolRouterSessionProxyExecuteResponse {
     url: string;
     expiresAt?: string;
   };
+  /** Every session hook that applied to this request. Absent when none applied. */
+  hookResults?: ToolRouterHookResult[];
 }
+
+/** A proxied request that a session hook blocked. */
+export interface ToolRouterSessionProxyExecuteBlocked {
+  resultType: 'blocked';
+  /** Which hook blocked the request, and at which stage. */
+  blockReason: ToolRouterBlockReason;
+  /** A message for the agent. It names the hook when the hook has a `name`. */
+  message: string;
+  /** Every session hook that applied to this request. */
+  hookResults?: ToolRouterHookResult[];
+}
+
+/**
+ * Result of `session.proxyExecute()`. Check `resultType` before reading
+ * `status`: a request a session hook blocked has no HTTP response.
+ */
+export type ToolRouterSessionProxyExecuteResponse =
+  ToolRouterSessionProxyExecuteCompleted | ToolRouterSessionProxyExecuteBlocked;
 
 /**
  * Experimental features on a tool router session.
@@ -873,11 +1011,15 @@ export type ToolRouterSessionExecuteMetaFn = (
   requestOptions?: ComposioRequestOptions
 ) => Promise<ToolRouterSessionExecuteResponse>;
 
-export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
+export type ToolRouterSessionPreloadConfig = NonNullable<
+  SessionCreateResponse['config']
+>['preload'];
 
-export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
+export type ToolRouterSessionWorkbenchConfig = NonNullable<
+  NonNullable<SessionCreateResponse['config']>['workbench']
+>;
 
-export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
+export type ToolRouterSessionWarning = NonNullable<SessionCreateResponse['warnings']>[number];
 
 /**
  * Server-side session configuration as returned by the API: toolkit/tool
@@ -885,7 +1027,7 @@ export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
  * preload, sandbox (`workbench`), search, execute, proxy execute and Instant
  * settings.
  */
-export type ToolRouterSessionConfig = SessionCreateResponse.Config;
+export type ToolRouterSessionConfig = NonNullable<SessionCreateResponse['config']>;
 
 export interface ToolRouterSessionMetadata {
   /** Present on every session built from an API response; the constructor synthesises a minimal config when absent. */
@@ -1096,6 +1238,11 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .describe(
         'Replaces the proxy execute block; a boolean is shorthand for `{ enable }` and `null` removes it'
       ),
+    hooks: z
+      .array(ToolRouterHookSchema)
+      .nullable()
+      .optional()
+      .describe('Replaces the whole list of hooks; `null` removes every hook'),
     preload: z
       .object({
         tools: z.union([z.array(z.string()), z.literal('all')]).optional(),
@@ -1136,6 +1283,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
           config.toolkits !== undefined && 'toolkits',
           config.tools !== undefined && 'tools',
           config.tags !== undefined && 'tags',
+          config.hooks !== undefined && 'hooks',
         ].filter((field): field is string => field !== false)
       );
     }
@@ -1151,8 +1299,8 @@ export const ToolRouterUpdateSessionConfigSchema = z
 
 /**
  * Options for `session.update()`. `experimental.sessionConfigId` applies a
- * saved Session config and cannot be combined with `toolkits`, `tools` or
- * `tags` (including `null`).
+ * saved Session config and cannot be combined with `toolkits`, `tools`,
+ * `tags` or `hooks` (including `null`).
  */
 export type ToolRouterUpdateSessionConfig =
   InlineAccessUpdateSessionConfig | SavedConfigUpdateSessionConfig;
@@ -1169,11 +1317,12 @@ type InlineAccessUpdateSessionConfig = Omit<ParsedUpdateSessionConfig, 'experime
 /** Update input that applies a saved Session config. */
 type SavedConfigUpdateSessionConfig = Omit<
   ParsedUpdateSessionConfig,
-  'toolkits' | 'tools' | 'tags' | 'experimental'
+  'toolkits' | 'tools' | 'tags' | 'hooks' | 'experimental'
 > & {
   toolkits?: never;
   tools?: never;
   tags?: never;
+  hooks?: never;
   experimental: Omit<ParsedUpdateSessionExperimental, 'sessionConfigId'> & {
     sessionConfigId: string;
   };
@@ -1206,7 +1355,9 @@ export type ToolRouterSessionListConfigHistoryOptions = z.infer<
  * The session configuration at one version, as stored by the API. This is
  * the wire shape (snake_case), with the Instant policy under `instant`.
  */
-export type ToolRouterSessionConfigHistoryConfig = SessionConfigHistoryResponse.Item.Config;
+export type ToolRouterSessionConfigHistoryConfig = NonNullable<
+  SessionConfigHistoryResponse['items'][number]['config']
+>;
 
 export type ToolRouterSessionConfigHistoryItem = {
   /** The config version this entry represents. */

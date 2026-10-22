@@ -357,7 +357,7 @@ const rejectingCommands = [
   { path: ['triggers', 'status'], flags: ['--project-name', '--user-id'] },
   {
     path: ['triggers', 'create', 'GMAIL_NEW_GMAIL_MESSAGE'],
-    flags: ['--project-name', '--user-id'],
+    flags: ['--project-name'],
   },
   { path: ['triggers', 'enable', 'ti_1'], flags: ['--project-name', '--user-id'] },
   { path: ['triggers', 'disable', 'ti_1'], flags: ['--project-name', '--user-id'] },

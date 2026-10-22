@@ -1,4 +1,5 @@
 import { Array as Arr, Effect, Option } from 'effect';
+import { reportFailure } from 'src/effects/report-failure';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -8,6 +9,7 @@ import {
   formatToolkitVersionsJson,
   type ToolkitVersions,
 } from './toolkits.version.format';
+import { BROWSE_TOOLKITS_HINT } from '../format';
 
 export type ToolkitsVersionParams = {
   readonly slug: string;
@@ -39,7 +41,7 @@ export const toolkitVersionsOf = (toolkit: VersionedToolkit): ToolkitVersions =>
 
 /**
  * Shows a toolkit's latest version and its last 20 available versions. A failed lookup prints the
- * error and a browse hint and exits 0.
+ * error and a browse hint on stderr and exits 1.
  */
 export const runToolkitsVersion = ({ slug }: ToolkitsVersionParams) =>
   Effect.gen(function* () {
@@ -56,11 +58,12 @@ export const runToolkitsVersion = ({ slug }: ToolkitsVersionParams) =>
         Effect.map(toolkit => Option.some(toolkitVersionsOf(toolkit))),
         Effect.catch(error =>
           Effect.gen(function* () {
-            yield* ui.log.error(
-              extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`
-            );
             yield* Effect.logDebug('Toolkit version error:', error);
-            yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+            yield* reportFailure(
+              ui,
+              extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`,
+              BROWSE_TOOLKITS_HINT
+            );
             return Option.none<ToolkitVersions>();
           })
         )

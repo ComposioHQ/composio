@@ -5,7 +5,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { ProjectContext } from 'src/services/project-context';
-import { NodeProcess } from 'src/services/node-process';
+import { reportFailure } from 'src/effects/report-failure';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -23,7 +23,7 @@ export type ToolkitsListParams = {
   readonly connected: Option.Option<boolean>;
 };
 
-type SessionToolkitItem = SessionToolkitsResponse.Item;
+type SessionToolkitItem = SessionToolkitsResponse['items'][number];
 
 /** The user whose connection status the list shows, and the notice printed when it is a fallback. */
 export type ToolkitsListUser = {
@@ -202,10 +202,11 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
     Effect.catch(error =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        const proc = yield* NodeProcess;
-        yield* ui.log.error(extractMessage(error) ?? 'An error occurred while fetching toolkits.');
+        yield* reportFailure(
+          ui,
+          extractMessage(error) ?? 'An error occurred while fetching toolkits.'
+        );
         yield* ui.output('[]');
-        yield* proc.setExitCode(1);
       })
     )
   );
