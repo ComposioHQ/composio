@@ -1,6 +1,6 @@
 import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Fiber, Layer } from 'effect';
+import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, TestLive } from 'test/__utils__';
@@ -98,26 +98,22 @@ describe('CLI: composio dev listen', () => {
     );
 
     // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the onExit finalizer must run the
-    // summary anyway. The forward URL is invalid, so the attempt fails synchronously — no
-    // network race — and yieldNow bounds fiber startup without a live clock.
+    // summary anyway. The forwarding failure logs its warn only after the failure was counted,
+    // so awaiting the latch is an ordered count-is-set signal — no polling, no sleeps.
     it.effect('[Then] sums the failures up even when the listener is interrupted mid-run', () =>
       Effect.gen(function* () {
         yield* enableListen;
-        const terminal = redirectedTerminalUI();
+        const forwardFailed = Latch.makeUnsafe(false);
+        const terminal = redirectedTerminalUI({
+          onWarn: message => {
+            if (message.includes('Failed forwarding event to')) forwardFailed.openUnsafe();
+          },
+        });
         const fiber = yield* Effect.forkChild(
           cli(['dev', 'listen', '--forward', 'http://']).pipe(Effect.provide(terminal.layer))
         );
 
-        // The per-event fiber is detached, so its output is the only marker that the event
-        // was handled. Poll it once per scheduler turn, bounded so a regression fails fast.
-        const received = yield* Effect.map(
-          Effect.yieldNow,
-          () => terminal.stdout().length > 0
-        ).pipe(Effect.repeat({ until: Boolean, times: 50 }));
-        expect(received).toBe(true);
-        // The invalid-URL forward rejects on a microtask, which drains before the next turn.
-        yield* Effect.yieldNow;
-
+        yield* forwardFailed.await;
         yield* Fiber.interrupt(fiber);
 
         expect(terminal.stderr()).toContain(

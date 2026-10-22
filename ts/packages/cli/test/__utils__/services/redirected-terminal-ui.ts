@@ -1,5 +1,5 @@
 import { Writable } from 'node:stream';
-import { Layer } from 'effect';
+import { Effect, Layer } from 'effect';
 import { makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
 
 const capture = () => {
@@ -22,7 +22,10 @@ const capture = () => {
  * Unlike `terminalUITestImpl`, which prints decoration through `Console`, it shows what such a
  * caller actually sees.
  */
-export const redirectedTerminalUI = () => {
+export const redirectedTerminalUI = (options?: {
+  /** Runs after a `log.warn` is logged — a signal that code behind the warn has run. */
+  readonly onWarn?: (message: string) => void;
+}) => {
   const stdout = capture();
   const stderr = capture();
   const ui = makeTerminalUI({
@@ -30,5 +33,20 @@ export const redirectedTerminalUI = () => {
     stdout: stdout.stream,
     stderr: stderr.stream,
   });
-  return { layer: Layer.succeed(TerminalUI, ui), stdout: stdout.text, stderr: stderr.text };
+  const onWarn = options?.onWarn;
+  const terminal =
+    onWarn === undefined
+      ? ui
+      : TerminalUI.of({
+          ...ui,
+          log: {
+            ...ui.log,
+            warn: message =>
+              Effect.andThen(
+                ui.log.warn(message),
+                Effect.sync(() => onWarn(message))
+              ),
+          },
+        });
+  return { layer: Layer.succeed(TerminalUI, terminal), stdout: stdout.text, stderr: stderr.text };
 };
