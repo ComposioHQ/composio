@@ -109,10 +109,18 @@ describe('CLI: composio dev listen', () => {
         );
 
         let received = false;
-        for (let i = 0; i < 50 && !received; i++) {
-          yield* Effect.yieldNow;
-          received = terminal.stdout().length > 0;
-        }
+        // Up to 50 scheduler turns for the listener fiber to start and process the event;
+        // early iterations see an empty stdout and keep yielding.
+        yield* Effect.forEach(
+          Array.from({ length: 50 }),
+          () =>
+            Effect.gen(function* () {
+              if (received) return;
+              yield* Effect.yieldNow;
+              received = terminal.stdout().length > 0;
+            }),
+          { discard: true }
+        );
         expect(received).toBe(true);
         yield* Effect.yieldNow;
 
