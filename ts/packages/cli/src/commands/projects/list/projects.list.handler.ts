@@ -63,6 +63,8 @@ export const runProjectsList = ({ orgId, limit }: ProjectsListParams) =>
               Effect.gen(function* () {
                 yield* ui.log.warn(NO_PROJECTS_MESSAGE);
                 yield* ui.outro(NO_PROJECTS_OUTRO);
+                // Piped callers need the parseable empty result, not silence.
+                yield* ui.output(formatProjectsJson(projects.data));
               }),
             onNonEmpty: data =>
               Effect.gen(function* () {

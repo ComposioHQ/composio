@@ -139,13 +139,14 @@ describe('CLI: composio dev projects list', () => {
   layer(TestLive({ fixture: LOGGED_IN_FIXTURE, accountData: { projects: [] } }))(
     '[Given] an org without projects',
     it => {
-      it.effect('[Then] warns, points at `dev init`, and prints no data', () =>
+      it.effect('[Then] warns, points at `dev init`, and prints an empty list', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'projects', 'list']);
 
           const stdout = yield* MockConsole.getLines({ stream: 'stdout' });
           const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
-          expect(stdout).toEqual([]);
+          // Piped callers get the parseable empty result, not silence.
+          expect(stdout).toEqual(['[]']);
           expect(stderr).toEqual([
             '-- composio dev projects list --',
             'Loaded 0 projects',

@@ -147,12 +147,13 @@ describe('runProjectsList', () => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect('[Given] no projects [Then] warns and outputs nothing', () => {
+  it.effect('[Given] no projects [Then] warns and prints an empty list', () => {
     const { layer, outputs } = projectsListTest({ projects: [] });
     return Effect.gen(function* () {
       yield* runProjectsList({ orgId: Option.none(), limit: 50 });
 
-      expect(outputs).toEqual([]);
+      // Piped callers get the parseable empty result, not silence.
+      expect(outputs).toEqual(['[]']);
       expect(yield* MockConsole.getLines({ stream: 'stderr' })).toEqual([NO_PROJECTS_MESSAGE]);
     }).pipe(Effect.provide(layer));
   });
