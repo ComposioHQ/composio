@@ -1551,16 +1551,16 @@
                     "type": {
                       "type": "string",
                       "enum": [
-                        "prompt"
+                        "condition_check"
                       ]
                     },
-                    "prompt": {
+                    "condition": {
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 2000,
                       "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
                     },
-                    "on_match": {
+                    "action": {
                       "type": "string",
                       "enum": [
                         "block"
@@ -1569,8 +1569,8 @@
                   },
                   "required": [
                     "type",
-                    "prompt",
-                    "on_match"
+                    "condition",
+                    "action"
                   ],
                   "additionalProperties": false
                 }
@@ -1640,16 +1640,16 @@
                         "type": {
                           "type": "string",
                           "enum": [
-                            "prompt"
+                            "condition_check"
                           ]
                         },
-                        "prompt": {
+                        "condition": {
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 2000,
                           "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
                         },
-                        "on_match": {
+                        "action": {
                           "type": "string",
                           "enum": [
                             "block"
@@ -1658,8 +1658,8 @@
                       },
                       "required": [
                         "type",
-                        "prompt",
-                        "on_match"
+                        "condition",
+                        "action"
                       ],
                       "additionalProperties": false
                     },
@@ -1669,10 +1669,10 @@
                         "type": {
                           "type": "string",
                           "enum": [
-                            "prompt_injection"
+                            "prompt_injection_check"
                           ]
                         },
-                        "on_match": {
+                        "action": {
                           "type": "string",
                           "enum": [
                             "block"
@@ -1681,7 +1681,7 @@
                       },
                       "required": [
                         "type",
-                        "on_match"
+                        "action"
                       ],
                       "additionalProperties": false,
                       "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
@@ -14490,8 +14490,25 @@
                         "webhook",
                         "poll"
                       ],
-                      "description": "The trigger mechanism - either webhook (event-based) or poll (scheduled check)",
-                      "example": "webhook"
+                      "description": "Deprecated: use types. poll for any trigger that polls, even one a webhook wakes; otherwise webhook.",
+                      "example": "webhook",
+                      "deprecated": true
+                    },
+                    "types": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "webhook",
+                          "poll"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "The trigger mechanisms this trigger supports, in order of preference: webhook (event-based) before poll (scheduled check).",
+                      "example": [
+                        "webhook",
+                        "poll"
+                      ]
                     },
                     "toolkit": {
                       "type": "object",
@@ -14576,6 +14593,7 @@
                     "description",
                     "instructions",
                     "type",
+                    "types",
                     "toolkit",
                     "config",
                     "payload",
@@ -14759,8 +14777,25 @@
                               "webhook",
                               "poll"
                             ],
-                            "description": "The trigger mechanism - either webhook (event-based) or poll (scheduled check)",
-                            "example": "webhook"
+                            "description": "Deprecated: use types. poll for any trigger that polls, even one a webhook wakes; otherwise webhook.",
+                            "example": "webhook",
+                            "deprecated": true
+                          },
+                          "types": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "webhook",
+                                "poll"
+                              ]
+                            },
+                            "minItems": 1,
+                            "description": "The trigger mechanisms this trigger supports, in order of preference: webhook (event-based) before poll (scheduled check).",
+                            "example": [
+                              "webhook",
+                              "poll"
+                            ]
                           },
                           "toolkit": {
                             "type": "object",
@@ -14845,6 +14880,7 @@
                           "description",
                           "instructions",
                           "type",
+                          "types",
                           "toolkit",
                           "config",
                           "payload",
