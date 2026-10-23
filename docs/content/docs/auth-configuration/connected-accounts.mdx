@@ -102,7 +102,7 @@ If you use [sessions](/docs/configuring-sessions), call `session.authorize(toolk
 
 Hosted links expire after 10 minutes. Generate a new link when the previous flow expires. Use the connected-account ID returned by the completed flow; do not assume reauthorization preserves the previous ID.
 
-By default, `link()` refuses a second active connection for the same user and auth config. If you need to validate a replacement while keeping the original connection, pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript. Verify the replacement's upstream identity and access, then update your application's account selection before removing the original.
+By default, `link()` refuses to start a flow when the user already has an `ACTIVE` connection on the same auth config. Connections in other states, such as `EXPIRED` or `FAILED`, don't block it, so reconnecting an expired account needs no extra option. To validate a replacement while the original is still `ACTIVE`, pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript. Verify the replacement's upstream identity and access, then update your application's account selection before removing the original.
 
 To change permissions, [update the scope configuration](/docs/authentication/controlling-scopes#update-scopes-on-an-existing-config) before starting the new authorization. Reconnecting the same unchanged config does not add a missing permission or remove a permission it still requests.
 
