@@ -12,13 +12,10 @@ import { Base64Url } from 'effect/encoding';
 export const CODE_CHALLENGE_METHOD = 'S256';
 
 export interface CliSessionProof {
-  /** 32 random bytes, base64url without padding: 43 characters. Never printed or logged. */
   readonly verifier: string;
-  /** base64url(SHA-256(verifier)), without padding. */
   readonly challenge: string;
 }
 
-/** A new verifier from the platform's secure random source, and its S256 challenge. */
 export const makeCliSessionProof: Effect.Effect<
   CliSessionProof,
   PlatformError.PlatformError,
