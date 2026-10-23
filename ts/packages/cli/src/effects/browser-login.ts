@@ -113,7 +113,7 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+hint: For agents: Show the URL and the confirmation code above to the user, so they can check that the browser page shows the same code, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
 
 hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
@@ -243,8 +243,9 @@ export const loginEmail = (sessionInfo: SessionInfoResponse, linkedSession: Link
 
 /**
  * Checks the session behind a spinner until it is linked, every `LOGIN_POLL_INTERVAL_SECONDS`
- * until `expiresAt`. A `LoginSessionEndedError` stops the wait at once; when the session
- * expires first, the wait ends as `expired`.
+ * until `expiresAt`. A `LoginSessionEndedError` stops the wait at once. Any other failure is
+ * retried until `expiresAt`; the wait then ends as `expired` only when the session was still
+ * not linked, and otherwise fails with the last error unchanged.
  */
 export const waitForLinkedSession = <E, R>(
   getSession: Effect.Effect<RetrievedSession, E, R>,
@@ -261,17 +262,21 @@ export const waitForLinkedSession = <E, R>(
             error instanceof LoginSessionEndedError ? Effect.succeed(false) : beforeExpiry,
         }),
         Effect.mapError(error =>
-          error instanceof LoginSessionEndedError
-            ? error
-            : new LoginSessionEndedError({
+          error instanceof LoginSessionError
+            ? new LoginSessionEndedError({
                 reason: 'expired',
                 message: LOGIN_EXPIRED_MESSAGE,
                 cause: error,
               })
+            : error
         ),
         Effect.tap(() => spinner.stop('Login successful')),
         Effect.tapError(error =>
-          spinner.error(error.reason === 'expired' ? 'Login timed out.' : 'Login stopped.')
+          spinner.error(
+            error instanceof LoginSessionEndedError && error.reason === 'expired'
+              ? 'Login timed out.'
+              : 'Login stopped.'
+          )
         )
       )
     );

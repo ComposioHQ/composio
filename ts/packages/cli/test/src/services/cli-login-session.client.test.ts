@@ -2,7 +2,7 @@ import * as BunCrypto from '@effect/platform-bun/BunCrypto';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, describe, expect, it } from '@effect/vitest';
-import { ConfigProvider, Effect, Fiber, Layer, Option } from 'effect';
+import { ConfigProvider, Effect, Fiber, Layer, Option, Schema } from 'effect';
 import { Base64Url } from 'effect/encoding';
 import { HttpClient } from 'effect/http';
 import { TestClock } from 'effect/testing';
@@ -202,7 +202,16 @@ describe('CLI login session on the wire', () => {
           method: 'POST',
           pathAndQuery: '/api/v3.1/cli/create-session',
         });
-        const createBody = JSON.parse(create.body) as Record<string, unknown>;
+        const createBody = Schema.decodeUnknownSync(
+          Schema.fromJsonString(
+            Schema.Struct({
+              scope: Schema.String,
+              source: Schema.String,
+              code_challenge: Schema.String,
+              code_challenge_method: Schema.String,
+            })
+          )
+        )(create.body);
         expect(createBody).toMatchObject({
           scope: 'user',
           code_challenge: s256(verifier),

@@ -52,7 +52,12 @@ import {
   ComposioSessionRepository,
   type ComposioSessionRepositoryShape,
 } from 'src/services/composio-clients';
-import type { PendingLogin } from 'src/services/pending-login-session';
+import {
+  PendingLoginError,
+  PendingLoginSession,
+  type PendingLogin,
+} from 'src/services/pending-login-session';
+import { writeStoredAgentIdentity } from 'src/services/agents';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { ProjectContext } from 'src/services/project-context';
@@ -65,6 +70,7 @@ import { mockAccountResources, type MockRequestScope } from 'test/__utils__/laye
 import { PendingLoginSessionTest } from 'test/__utils__/layers/pending-login-session';
 import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import { makeSessionInfo } from 'test/__utils__/models/account';
+import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import { afterEach, vi } from 'vitest';
 
@@ -90,6 +96,7 @@ vi.mock('src/analytics/dispatch', async importOriginal => {
 
 afterEach(() => {
   analytics.linked.length = 0;
+  vi.restoreAllMocks();
 });
 
 const ORGANIZATIONS: ReadonlyArray<OrganizationSummary> = [
@@ -634,6 +641,57 @@ describe('handlePollLogin', () => {
       }).pipe(Effect.provide(layer));
     }
   );
+
+  it.effect(
+    '[Given] every session lookup fails to connect until the login expires [Then] keeps retrying, then fails with the request error and its cause, and keeps the cache',
+    () => {
+      const connectionError = new APIConnectionError({
+        message: 'Connection error.',
+        method: 'GET',
+        url: 'https://mock.invalid',
+        reason: 'TransportError',
+        description: 'fetch failed: connect ECONNREFUSED 127.0.0.1:1',
+      });
+      const { layer, logins, pending, sessionRequests } = loginHandlerTest({
+        pending: cachedLogin(),
+        session: Effect.fail(connectionError),
+      });
+      return Effect.gen(function* () {
+        const error = yield* whilePolling(Effect.flip(handlePollLogin({ noSkillInstall: true })));
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginSessionRequestError',
+          cause: connectionError,
+        });
+        expect(isUsageFailure(error)).toBe(false);
+        expect(sessionRequests).toHaveLength(121);
+        expect(Option.isSome(pending.current())).toBe(true);
+        expect(logins).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+});
+
+describe('login --agent', () => {
+  it.effect(
+    '[Given] a stored READY agent identity while stderr is not a terminal [Then] names the agent account on stderr',
+    () => {
+      const { layer, outputs } = loginHandlerTest();
+      return Effect.gen(function* () {
+        yield* writeStoredAgentIdentity(makeAgentIdentity());
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+          agentsJsonResponse(makeAgentIdentity())
+        );
+
+        yield* runLogin(params({ agent: true }));
+
+        expect(yield* stderr).toContain('Logged in as Composio agent test-agent@agent.composio.ai');
+        expect(outputs.map(output => JSON.parse(output))).toEqual([
+          expect.objectContaining({ account_type: 'agent', logged_in: true }),
+        ]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
 });
 
 describe('handleSessionKeyLogin', () => {
@@ -678,6 +736,35 @@ describe('handleSessionKeyLogin', () => {
         expect(sessionRequests).toEqual([]);
         expect(logins).toEqual([]);
       }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] --key after the cached login expired [Then] fails with the expired-login error, not the --poll hint, and sends nothing',
+    () => {
+      const expired = new PendingLoginError({
+        message: 'Pending login expired. Run `composio login < /dev/null` again.',
+        reason: 'expired',
+      });
+      const { layer, logins, sessionRequests } = loginHandlerTest();
+      const expiredPending = Layer.succeed(
+        PendingLoginSession,
+        PendingLoginSession.of({
+          write: () => Effect.void,
+          read: Effect.fail(expired),
+          clear: Effect.void,
+        })
+      );
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          handleSessionKeyLogin({ key: 'session-key', noWait: true, noSkillInstall: true })
+        );
+
+        expect(error).toBe(expired);
+        expect(isUsageFailure(error)).toBe(true);
+        expect(sessionRequests).toEqual([]);
+        expect(logins).toEqual([]);
+      }).pipe(Effect.provide(expiredPending), Effect.provide(layer));
     }
   );
 
