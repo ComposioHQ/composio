@@ -39,7 +39,6 @@ const clientFor = (scope: MockRequestScope): ComposioClientShape =>
         orgId: scope.orgId ?? 'org_agent',
         orgName: 'Agent Org',
         orgMemberId: 'mem_agent',
-        userId: 'user_agent',
         email: 'agent@agent.composio.ai',
       }),
     },

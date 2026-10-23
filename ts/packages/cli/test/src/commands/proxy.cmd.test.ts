@@ -357,4 +357,44 @@ describe('CLI: composio proxy', () => {
       );
     }
   );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] a session hook blocks the proxied request [Then] proxy fails with the hook message',
+    it => {
+      it.effect('reports the hook that blocked the request', () =>
+        Effect.gen(function* () {
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              proxyExecute: () =>
+                Effect.succeed({
+                  result_type: 'blocked' as const,
+                  reason: { type: 'request_blocked' as const, hook_id: 'no_external_email' },
+                  message: 'Blocked by session policy: No external email',
+                }),
+            },
+          });
+
+          const { failure, output } = yield* Effect.gen(function* () {
+            const failure = yield* cli([
+              'proxy',
+              'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+              '--toolkit',
+              'gmail',
+              '--skip-connection-check',
+            ]).pipe(Effect.flip);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return { failure, output: lines.join('\n') };
+          }).pipe(Effect.provide(live));
+
+          expect(failure).toMatchObject({ _tag: 'commands/ProxyRequestError' });
+          expect(output).toContain(
+            'GET proxy call via \\"gmail\\" was blocked by session hook \\"no_external_email\\": Blocked by session policy: No external email'
+          );
+          expect(output).not.toContain('Status:');
+        })
+      );
+    }
+  );
 });

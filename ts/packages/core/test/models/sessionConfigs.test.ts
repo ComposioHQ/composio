@@ -190,6 +190,23 @@ describe('SessionConfigs', () => {
       expect('tags' in result.config).toBe(false);
     });
 
+    it('keeps the require_approval lists of a stored policy', async () => {
+      const config = {
+        toolkits: { require_approval: ['gmail'] },
+        tools: {
+          github: { enable: ['GITHUB_GET_REPO'], require_approval: ['GITHUB_GET_REPO'] },
+          slack: { require_approval: ['SLACK_SEND_MESSAGE'] },
+          google_calendar: { tags: { require_approval: ['destructiveHint'] } },
+        },
+        tags: { enable: ['readOnlyHint'], require_approval: ['destructiveHint'] },
+      };
+      mockClient.sessionConfigs.retrieve.mockResolvedValue({ ...rawConfig, config });
+
+      const result = await sessionConfigs.get('sc_1');
+
+      expect(result.config).toEqual(config);
+    });
+
     it.each(['', '   '])('rejects the id %j with a ValidationError and makes no call', async id => {
       await expect(sessionConfigs.get(id)).rejects.toBeInstanceOf(ValidationError);
       expect(mockClient.sessionConfigs.retrieve).not.toHaveBeenCalled();

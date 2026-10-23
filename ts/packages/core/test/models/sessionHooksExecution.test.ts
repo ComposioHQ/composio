@@ -3,7 +3,6 @@ import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
-import { ValidationError } from '../../src/errors';
 import { MockProvider } from '../utils/mocks/provider.mock';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -149,26 +148,12 @@ describe('session execute when a hook blocks the call', () => {
     });
   });
 
-  it('raises a blocked response that is missing its reason', async () => {
-    const { reason: _reason, ...malformed } = blockedCall;
-    const { client } = createClient(malformed);
+  it('leaves hookResults out of a blocked call that reports none', async () => {
+    const { hook_results: _hookResults, ...withoutHookResults } = blockedCall;
+    const { client } = createClient(withoutHookResults);
 
-    await expect(createSession(client).execute('GMAIL_SEND_EMAIL', {})).rejects.toThrow(
-      ValidationError
-    );
-  });
-
-  it('raises malformed hook results on a completed call as malformed hook results', async () => {
-    const { client } = createClient({
-      result_type: 'completed',
-      data: { id: 'msg_1' },
-      error: null,
-      log_id: 'log_1',
-      hook_results: [{ id: 'no_external_email', status: 'nope' }],
-    });
-
-    await expect(createSession(client).execute('GMAIL_SEND_EMAIL', {})).rejects.toThrow(
-      'returned malformed hook results'
+    await expect(createSession(client).execute('GMAIL_SEND_EMAIL', {})).resolves.not.toHaveProperty(
+      'hookResults'
     );
   });
 });
@@ -211,17 +196,18 @@ describe('session proxy execute when a hook blocks the request', () => {
     });
   });
 
-  it('raises malformed hook results on a completed response as malformed hook results', async () => {
+  it('returns the hook results of a request that was sent', async () => {
+    const hookResults = [{ id: 'no_external_email', status: 'evaluated', outcome: 'continue' }];
     const { client } = createClient({
       result_type: 'completed',
       status: 200,
       data: { id: 'msg_1' },
-      headers: {},
-      hook_results: [{ id: 'no_external_email', status: 'nope' }],
+      hook_results: hookResults,
     });
 
-    await expect(createSession(client).proxyExecute(proxyParams)).rejects.toThrow(
-      'returned malformed hook results'
-    );
+    await expect(createSession(client).proxyExecute(proxyParams)).resolves.toMatchObject({
+      resultType: 'completed',
+      hookResults,
+    });
   });
 });

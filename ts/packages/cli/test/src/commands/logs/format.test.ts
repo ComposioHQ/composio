@@ -1,4 +1,4 @@
-import type { ToolListResponse, ToolRetrieveResponse } from '@composio/client/resources/logs';
+import type { ToolListResponse, ToolRetrieveResponse } from '@composio/client/resources/_internal/logs';
 import { describe, expect, it } from 'vitest';
 import {
   formatTriggerLogInfo,

@@ -76,7 +76,7 @@ const showToolLog = (toolLogId: string) =>
     const client = yield* (yield* ComposioClientSingleton).get();
     const toolLog = yield* ui.withSpinner(
       `Fetching tool log "${toolLogId}"...`,
-      client.logs.tools
+      client._internal.logs.tools
         .retrieve(toolLogId, idempotent)
         .pipe(failedWith(ToolLogsRequestError, `Failed to fetch tool log "${toolLogId}".`))
     );
@@ -123,7 +123,7 @@ const listToolLogs = ({
 
     const response = yield* ui.withSpinner(
       'Fetching tool logs...',
-      client.logs.tools
+      client._internal.logs.tools
         .list(
           {
             ...optionalParams({ from, to }),

@@ -12,6 +12,13 @@
 
 ### Patch Changes
 
+- A tool call or proxied request that a session hook blocks is now reported as
+  a failure carrying the hook's message. `composio execute` prints it as a
+  failed call (`successful: false`) with the message in `error`; on consumer
+  projects, whose calls go through the Dashboard, it used to fail as a response
+  the CLI could not read. `composio proxy` fails naming the hook instead of
+  printing a response with no status.
+
 - `composio connections list` now prints each account's `id`, its `alias`
   whenever it has one (previously only when a toolkit had several accounts),
   and `display_name` — the provider identity from `state.val.displayName`,
@@ -23,7 +30,7 @@
   response does not match the shape this CLI expects, naming the mismatched
   fields. They used to warn and continue with the unchecked response.
 
-- The CLI now uses `@composio/client@2.0.0-rc.21` (up from `2.0.0-rc.20`). No
+- The CLI now uses `@composio/client@2.0.0-rc.22` (up from `2.0.0-rc.20`). No
   command changes.
 
 - `composio dev triggers create` now accepts `--user-id` and sends it with the

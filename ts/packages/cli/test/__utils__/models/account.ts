@@ -15,7 +15,6 @@ export const makeSessionInfo = (
     readonly projectNanoId?: string;
     readonly projectName?: string;
     readonly orgMemberId?: string;
-    readonly userId?: string;
     readonly email?: string;
     readonly name?: string;
     readonly apiKey?: string;
@@ -64,8 +63,6 @@ export const makeSessionInfo = (
       name: params.name ?? 'CLI User',
       role: 'admin',
       metadata: {},
-      // Sent by the backend although the v3.1 spec omits it.
-      ...(params.userId === undefined ? {} : { user_id: params.userId }),
     },
   };
 };
