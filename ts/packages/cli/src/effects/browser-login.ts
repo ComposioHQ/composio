@@ -139,6 +139,32 @@ const formatLoginCompleteJson = (params: {
     org_name: params.orgName ?? '',
   });
 
+/** `Logged in as <email> (<org>)`, the org by name when it has one. */
+const formatLoginAccountLine = (params: {
+  readonly email?: string;
+  readonly orgId: string;
+  readonly orgName?: string;
+}): string =>
+  `Logged in ${params.email ? `as ${params.email}` : 'successfully'} (${params.orgName || params.orgId})`;
+
+/**
+ * Names the account a login stored on stderr when stderr is not a terminal, where the
+ * decorated success line does not render, so a log or an agent relaying the login still
+ * sees whose key the CLI now holds.
+ */
+export const reportLoginAccount = (params: {
+  readonly email?: string;
+  readonly orgId: string;
+  readonly orgName?: string;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { stderrIsTTY } = yield* ui.capabilities;
+    if (!stderrIsTTY) {
+      yield* ui.error(formatLoginAccountLine(params));
+    }
+  });
+
 /** Reports a completed login: the success line and next-step hints on stderr, the JSON on stdout. */
 export const emitLoginComplete = (params: {
   readonly email?: string;
@@ -148,6 +174,7 @@ export const emitLoginComplete = (params: {
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     yield* ui.log.success(formatLoginSuccessMessage(params));
+    yield* reportLoginAccount(params);
     yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
     yield* ui.log.info(commandHintStep('Switch your current org', 'root.orgs.switch'));
     yield* ui.output(formatLoginCompleteJson(params));
@@ -393,7 +420,7 @@ const completeOrgSelection = (params: {
       },
     });
     yield* emitLoginComplete({
-      email: linkedSession.account.email ?? undefined,
+      email: sessionInfo.org_member.email || linkedSession.account.email || undefined,
       orgId,
       orgName: Option.match(selected, {
         onNone: () => sessionInfo.project.org.name ?? '',
