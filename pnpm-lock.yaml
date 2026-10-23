@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20261019.1
       version: 5.20261019.1
     '@composio/client':
-      specifier: 2.0.0-rc.21
-      version: 2.0.0-rc.21
+      specifier: 2.0.0-rc.22
+      version: 2.0.0-rc.22
     '@effect/language-service':
       specifier: ^0.87.5
       version: 0.87.5
@@ -990,7 +990,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.21(effect@4.0.5)
+        version: 2.0.0-rc.22(effect@4.0.5)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1238,7 +1238,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.21(effect@4.0.5)
+        version: 2.0.0-rc.22(effect@4.0.5)
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1344,7 +1344,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.21(effect@4.0.5)
+        version: 2.0.0-rc.22(effect@4.0.5)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1758,7 +1758,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.0.0-rc.21(effect@4.0.5)
+        version: 2.0.0-rc.22(effect@4.0.5)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2332,8 +2332,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.0.0-rc.21':
-    resolution: {integrity: sha512-dmFyDbbJMTmQ/Q08GYf6YOpH9/h04+Y2YSKZcJAG3TP15OpeTspHaLhU9G++7C6GdgC3K5a144cjnCLidMu5Mw==}
+  '@composio/client@2.0.0-rc.22':
+    resolution: {integrity: sha512-3qij4JrE3/7L2oV/vMEzrKTIrivckGHYB5PV/OSC5d/jsbCJzIz1RLs8UfEpGAcvTVNZx6vRqEsMDKUYjpjm0Q==}
     engines: {node: '>=22'}
     peerDependencies:
       effect: '*'
@@ -7635,7 +7635,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.0.0-rc.21(effect@4.0.5)':
+  '@composio/client@2.0.0-rc.22(effect@4.0.5)':
     optionalDependencies:
       effect: 4.0.5
 
