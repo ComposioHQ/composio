@@ -12,6 +12,12 @@
 
 ### Patch Changes
 
+- `composio proxy` now enforces the consumer permission policy that
+  `composio execute` enforces, checked against the connected account the
+  request uses. A denied request fails with the same permission error, and a
+  request that needs approval opens the same approval page, before anything is
+  sent.
+
 - A tool call or proxied request that a session hook blocks is now reported as
   a failure carrying the hook's message. `composio execute` prints it as a
   failed call (`successful: false`) with the message in `error`; on consumer
