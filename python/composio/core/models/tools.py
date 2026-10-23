@@ -25,7 +25,6 @@ from pydantic import ValidationError as PydanticValidationError
 from composio.client import HttpClient
 from composio.client.types import (
     Tool,
-    ToolInstant,
     ToolkitMinimal,
     tool_execute_params,
     tool_proxy_params,
@@ -78,27 +77,12 @@ def _normalize_tool(tool: PydanticBaseModel | Mapping[str, object]) -> Tool:
     else:
         normalized = tool
 
-    if isinstance(normalized, PydanticBaseModel) and not isinstance(normalized, Tool):
-        normalized = Tool.model_construct(
-            _fields_set=normalized.model_fields_set,
-            **normalized.__dict__,
-            **(normalized.model_extra or {}),
-        )
-
     toolkit = getattr(normalized, "toolkit", None)
     if isinstance(toolkit, Mapping):
         normalized_toolkit = ToolkitMinimal.model_construct(
             _fields_set=set(toolkit), **dict(toolkit)
         )
         normalized = normalized.model_copy(update={"toolkit": normalized_toolkit})
-
-    instant = (
-        getattr(normalized, "instant", None) if isinstance(normalized, Tool) else None
-    )
-    if instant is not None:
-        normalized = normalized.model_copy(
-            update={"instant": ToolInstant.model_validate(instant)}
-        )
 
     return t.cast(Tool, normalized)
 
@@ -479,7 +463,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             response = self._client.tools.retrieve(
                 tool_slug=slug,
                 toolkit_versions=none_to_omit(self._toolkit_versions),
-                extra_query={"include_pricing": True} if include_pricing else None,
+                include_pricing=True if include_pricing else omit,
             )
         except APIStatusError as error:
             if error.status_code in (400, 404):
@@ -515,9 +499,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     self._client.tools.list(
                         tool_slugs=",".join(tools),
                         toolkit_versions=none_to_omit(self._toolkit_versions),
-                        extra_query={"include_pricing": True}
-                        if include_pricing
-                        else None,
+                        include_pricing=True if include_pricing else omit,
                     ).items
                 )
 
@@ -530,7 +512,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     scopes=scopes,
                     limit=limit,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
-                    extra_query={"include_pricing": True} if include_pricing else None,
+                    include_pricing=True if include_pricing else omit,
                 ).items
             )
         return [_normalize_tool(tool) for tool in tools_list]

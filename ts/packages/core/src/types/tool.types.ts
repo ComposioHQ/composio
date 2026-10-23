@@ -21,10 +21,10 @@ export const ToolInstantSchema = z.object({
   supported: z.literal(true),
   price: z
     .object({
-      description: z.string().optional(),
+      description: z.string().nullish(),
       discount: z.string().nullable().optional(),
     })
-    .optional(),
+    .nullish(),
 });
 export type ToolInstant = z.infer<typeof ToolInstantSchema>;
 
@@ -208,7 +208,7 @@ export const ToolSchema = z.object({
     .optional(),
   scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
   isNoAuth: z.boolean().describe('Do the tool support no auth?').optional(),
-  instant: ToolInstantSchema.optional().describe('Instant support and optional published pricing.'),
+  instant: ToolInstantSchema.nullish().describe('Instant support and optional published pricing.'),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 

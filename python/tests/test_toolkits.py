@@ -24,40 +24,20 @@ def toolkits(mock_client: Mock) -> Toolkits:
 
 
 class TestToolkitsGetMany:
-    def test_list_exposes_instant_support(self, toolkits, mock_client):
-        response = toolkit_list_response.ToolkitListResponse.model_validate(
-            {
-                "current_page": 1,
-                "items": [
-                    {
-                        "name": "Exa",
-                        "slug": "exa",
-                        "type": "native",
-                        "is_local_toolkit": False,
-                        "deprecated": {"toolkitId": "toolkit-id"},
-                        "meta": {
-                            "categories": [],
-                            "created_at": "2026-01-01",
-                            "description": "Search",
-                            "logo": "",
-                            "tools_count": 1,
-                            "triggers_count": 0,
-                            "updated_at": "2026-01-01",
-                            "version": "20261001_00",
-                        },
-                        "instant": {"supported": True},
-                    }
-                ],
-                "total_items": 1,
-                "total_pages": 1,
-            }
+    def test_list_methods_preserve_generated_instant_support(
+        self, toolkits, mock_client
+    ):
+        item = toolkit_list_response.Item.model_construct(
+            name="Exa",
+            slug="exa",
+            instant=toolkit_list_response.CurrentItemInstant(supported=True),
         )
-        mock_client.toolkits.list.return_value = response
-        mock_client.toolkits.retrieve_multi.return_value = Mock(items=response.items)
+        mock_client.toolkits.list.return_value = (
+            toolkit_list_response.ToolkitListResponse.model_construct(items=[item])
+        )
+        mock_client.toolkits.retrieve_multi.return_value = Mock(items=[item])
 
-        listed = toolkits.list()
-        assert listed.items[0].instant is not None
-        assert listed.items[0].instant.supported is True
+        assert toolkits.list().items[0].instant is not None
         assert toolkits.get()[0].instant is not None
         assert toolkits.get_many(["exa"])[0].instant.supported is True
 

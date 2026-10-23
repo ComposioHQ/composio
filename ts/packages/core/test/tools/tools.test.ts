@@ -81,6 +81,43 @@ describe('Tools', () => {
       });
     });
 
+    it('preserves Instant support without requesting pricing', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [{ ...toolMocks.rawTool, instant: { supported: true } }],
+        totalPages: 1,
+      });
+
+      const [tool] = await context.tools.getRawComposioTools({ tools: ['EXA_SEARCH'] });
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        expect.not.objectContaining({ include_pricing: expect.anything() }),
+        undefined
+      );
+      expect(tool.instant).toEqual({ supported: true });
+    });
+
+    it('accepts null Instant and nullable pricing fields', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [
+          { ...toolMocks.rawTool, instant: null },
+          { ...toolMocks.rawTool, instant: { supported: true, price: null } },
+          {
+            ...toolMocks.rawTool,
+            instant: { supported: true, price: { description: null, discount: null } },
+          },
+        ],
+        totalPages: 1,
+      });
+
+      const tools = await context.tools.getRawComposioTools({ tools: ['EXA_SEARCH'] });
+
+      expect(tools.map(tool => tool.instant)).toEqual([
+        null,
+        { supported: true, price: null },
+        { supported: true, price: { description: null, discount: null } },
+      ]);
+    });
+
     it('should fetch tools from the API', async () => {
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
@@ -490,6 +527,22 @@ describe('Tools', () => {
         supported: true,
         price: { description: '$7 per 1,000 searches' },
       });
+    });
+
+    it('preserves Instant support without requesting pricing', async () => {
+      mockClient.tools.retrieve.mockResolvedValueOnce({
+        ...toolMocks.rawTool,
+        instant: { supported: true },
+      });
+
+      const tool = await context.tools.getRawComposioToolBySlug('EXA_SEARCH');
+
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        'EXA_SEARCH',
+        { toolkit_versions: 'latest' },
+        undefined
+      );
+      expect(tool.instant).toEqual({ supported: true });
     });
 
     it('should fetch a tool by slug from the API', async () => {
