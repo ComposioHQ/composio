@@ -11,6 +11,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import type { UserData } from 'src/models/user-data';
 import { MockConsole } from 'test/__utils__';
 import type { MockAccountRequest, MockRequestScope } from 'test/__utils__/layers/accounts';
 import { makeShadowClient } from 'test/__utils__/layers/shadow-client';
@@ -43,8 +44,6 @@ const ORGANIZATIONS: ReadonlyArray<OrganizationSummary> = [
   { id: 'org_third', name: 'Third Org' },
 ];
 
-type LoginCall = readonly [apiKey: string, orgId?: string, testUserId?: string];
-
 interface OrgsSwitchFixture {
   readonly apiKey?: Option.Option<string>;
   readonly orgId?: Option.Option<string>;
@@ -55,13 +54,14 @@ interface OrgsSwitchFixture {
 }
 
 /**
- * What `runOrgsSwitch` reads: a user context whose `login` calls land in `logins`, the account
+ * What `runOrgsSwitch` reads: a user context whose org updates land in `orgUpdates` (switching
+ * must not log in again, so `login` fails the test), the account
  * family of the mock client, and a headless terminal whose picker answers with `pick` and
  * records the options it was shown in `prompts`, and whose stdout data lands in `outputs`.
  */
 const orgsSwitchTest = (fixture: OrgsSwitchFixture = {}) => {
   const outputs: Array<string> = [];
-  const logins: Array<LoginCall> = [];
+  const orgUpdates: Array<string | undefined> = [];
   const prompts: Array<ReadonlyArray<{ readonly label: string; readonly hint?: string }>> = [];
   const requests: Array<MockAccountRequest> = [];
   const apiKey = fixture.apiKey ?? Option.some('uak_orgs_switch');
@@ -115,13 +115,16 @@ const orgsSwitchTest = (fixture: OrgsSwitchFixture = {}) => {
           projectId: Option.none(),
           testUserId: fixture.testUserId ?? Option.none(),
         },
+        backendMismatch: Option.none(),
         isLoggedIn: () => Option.isSome(apiKey),
         logout: Effect.void,
-        login: (...call: LoginCall) =>
+        login: () => Effect.die('orgs switch must update the org, not log in again'),
+        update: (data: Partial<UserData>) =>
           Effect.sync(() => {
-            logins.push(call);
+            orgUpdates.push(
+              data.orgId === undefined ? undefined : Option.getOrUndefined(data.orgId)
+            );
           }),
-        update: () => Effect.void,
       })
     ),
     Layer.succeed(
@@ -140,7 +143,7 @@ const orgsSwitchTest = (fixture: OrgsSwitchFixture = {}) => {
       return NodeOs.of({ homedir: dir, tmpdir: dir, arch: 'arm64', platform: 'darwin' });
     })
   );
-  return { layer, outputs, logins, prompts, requests };
+  return { layer, outputs, orgUpdates, prompts, requests };
 };
 
 const orgListLimits = (requests: ReadonlyArray<MockAccountRequest>) =>
@@ -150,7 +153,7 @@ const orgListLimits = (requests: ReadonlyArray<MockAccountRequest>) =>
 
 describe('runOrgsSwitch', () => {
   it.effect('[Given] --org-id [Then] stores it without listing or prompting', () => {
-    const { layer, outputs, logins, prompts, requests } = orgsSwitchTest({
+    const { layer, outputs, orgUpdates, prompts, requests } = orgsSwitchTest({
       testUserId: Option.some('test_user'),
     });
     return Effect.gen(function* () {
@@ -158,7 +161,7 @@ describe('runOrgsSwitch', () => {
 
       expect(orgListLimits(requests)).toEqual([]);
       expect(prompts).toEqual([]);
-      expect(logins).toEqual([['uak_orgs_switch', 'org_explicit', 'test_user']]);
+      expect(orgUpdates).toEqual(['org_explicit']);
       expect(analytics.linked).toEqual(['member_org_explicit']);
       expect(outputs).toEqual([JSON.stringify({ scope: 'global', org_id: 'org_explicit' })]);
     }).pipe(Effect.provide(layer));
@@ -167,7 +170,7 @@ describe('runOrgsSwitch', () => {
   it.effect(
     '[Given] several orgs and a current one [Then] the picker lists the current org first and stores the pick',
     () => {
-      const { layer, outputs, logins, prompts } = orgsSwitchTest({
+      const { layer, outputs, orgUpdates, prompts } = orgsSwitchTest({
         orgId: Option.some('org_current'),
         pick: 'Third Org',
       });
@@ -181,7 +184,7 @@ describe('runOrgsSwitch', () => {
             { label: 'Third Org', hint: 'org_third' },
           ],
         ]);
-        expect(logins).toEqual([['uak_orgs_switch', 'org_third', undefined]]);
+        expect(orgUpdates).toEqual(['org_third']);
         expect(analytics.linked).toEqual(['member_org_third']);
         expect(outputs).toEqual([JSON.stringify({ scope: 'global', org_id: 'org_third' })]);
       }).pipe(Effect.provide(layer));
@@ -200,23 +203,23 @@ describe('runOrgsSwitch', () => {
   });
 
   it.effect('[Given] one org [Then] it is stored without prompting', () => {
-    const { layer, logins, prompts } = orgsSwitchTest({
+    const { layer, orgUpdates, prompts } = orgsSwitchTest({
       organizations: [{ id: 'org_only', name: 'Only Org' }],
     });
     return Effect.gen(function* () {
       yield* runOrgsSwitch({ orgId: Option.none(), limit: 50 });
 
       expect(prompts).toEqual([]);
-      expect(logins).toEqual([['uak_orgs_switch', 'org_only', undefined]]);
+      expect(orgUpdates).toEqual(['org_only']);
     }).pipe(Effect.provide(layer));
   });
 
   it.effect('[Given] no orgs [Then] stores nothing, links nothing, and outputs nothing', () => {
-    const { layer, outputs, logins } = orgsSwitchTest({ organizations: [] });
+    const { layer, outputs, orgUpdates } = orgsSwitchTest({ organizations: [] });
     return Effect.gen(function* () {
       yield* runOrgsSwitch({ orgId: Option.none(), limit: 50 });
 
-      expect(logins).toEqual([]);
+      expect(orgUpdates).toEqual([]);
       expect(analytics.linked).toEqual([]);
       expect(outputs).toEqual([]);
       expect(yield* MockConsole.getLines()).toContain(`-- ${NO_ORG_SELECTED_OUTRO} --`);
@@ -240,13 +243,13 @@ describe('runOrgsSwitch', () => {
   it.effect(
     '[Given] no stored API key [Then] fails with NotLoggedInError before any request',
     () => {
-      const { layer, logins, requests } = orgsSwitchTest({ apiKey: Option.none() });
+      const { layer, orgUpdates, requests } = orgsSwitchTest({ apiKey: Option.none() });
       return Effect.gen(function* () {
         const error = yield* Effect.flip(runOrgsSwitch({ orgId: Option.none(), limit: 50 }));
 
         expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
         expect(requests).toEqual([]);
-        expect(logins).toEqual([]);
+        expect(orgUpdates).toEqual([]);
       }).pipe(Effect.provide(layer));
     }
   );

@@ -203,6 +203,7 @@ describe('runAgentSignup', () => {
 
       expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
         'This CLI is currently signed in to Composio as a regular user, not an agent.',
+        expect.stringMatching(/^Next steps:\n/),
       ]);
       expect(process.exitCode).toBe(1);
       expect(fetchSpy).not.toHaveBeenCalled();

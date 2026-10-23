@@ -180,6 +180,10 @@ The `ClaudeAgentSDKProvider` exposes your Composio tools to the Claude Agent SDK
 </Tab>
 <Tab value="TypeScript">
 <PackageInstall packages="@composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk" />
+
+<Callout type="warn">
+The TypeScript provider requires Zod `4.1.13` or newer. Upgrade Zod before upgrading `@composio/claude-agent-sdk`; older Zod v4 versions lack the shared metadata registry the provider needs to preserve schema annotations.
+</Callout>
 </Tab>
 </Tabs>
 </Step>

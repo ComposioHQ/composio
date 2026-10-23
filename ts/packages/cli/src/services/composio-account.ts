@@ -69,7 +69,7 @@ export const sessionProjectApiKeyOf = (info: SessionInfoResponse): string | null
 /**
  * A single project entry returned by GET /api/v3.1/org/project/list.
  */
-export type OrgProject = ProjectListResponse.Data;
+export type OrgProject = ProjectListResponse['data'][number];
 
 export interface OrganizationSummary {
   readonly id: string;
@@ -99,7 +99,7 @@ export const listOrganizations = (params: {
       { ...idempotent, ...validated }
     );
     const organizations = response.organizations.map(
-      (organization: OrgListResponse.Organization) =>
+      (organization: OrgListResponse['organizations'][number]) =>
         ({ id: organization.id, name: organization.name }) satisfies OrganizationSummary
     );
 

@@ -15,8 +15,8 @@ mock.module("next/navigation", () => ({
   usePathname: () => "/reference/api-reference/tasks",
   useSearchParams: () => new URLSearchParams(),
 }));
-// Keep toolkit catalogs and toolkit-schema real: module mocks persist across
-// files in Bun and would replace data and transformations used by later suites.
+// Keep catalog loaders and schema helpers real: Bun module mocks persist across
+// files and can empty the knowledge catalog or replace transformations in later suites.
 
 let openapiPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").openapiPageToMarkdown;
 let degradedPageToMarkdown: typeof import("../../app/llms.mdx/[[...slug]]/route").degradedPageToMarkdown;

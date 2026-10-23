@@ -81,10 +81,7 @@ describe('handleClientApiError', () => {
       expect(result).toBe('fallback');
       expect(lines).toStrictEqual([
         'stderr: Auth config "ac_missing" was not found',
-        'stderr: Browse available auth configs:\n> composio dev auth-configs list',
-        'log.error: Auth config "ac_missing" was not found',
-        'log.step: Check the auth config id',
-        'log.step: Browse available auth configs:\n> composio dev auth-configs list',
+        'stderr: Check the auth config id\n\nBrowse available auth configs:\n> composio dev auth-configs list',
       ]);
       expect(exitCode()).toBe(1);
     })
@@ -109,8 +106,6 @@ describe('handleClientApiError', () => {
       expect(lines).toStrictEqual([
         'stderr: Failed to fetch auth config "ac_missing".',
         'stderr: Browse available auth configs:\n> composio dev auth-configs list',
-        'log.error: Failed to fetch auth config "ac_missing".',
-        'log.step: Browse available auth configs:\n> composio dev auth-configs list',
       ]);
       expect(exitCode()).toBe(1);
     })
@@ -130,8 +125,6 @@ describe('handleClientApiError', () => {
       expect(lines).toStrictEqual([
         "stderr: The API response for 'authConfigs.retrieve' is not in the shape this version of the CLI expects (request id: req_decode).",
         'stderr: Upgrade the CLI, then retry:\n> composio upgrade',
-        "log.error: The API response for 'authConfigs.retrieve' is not in the shape this version of the CLI expects (request id: req_decode).",
-        'log.step: Upgrade the CLI, then retry:\n> composio upgrade',
       ]);
       expect(exitCode()).toBe(1);
     })
@@ -150,7 +143,7 @@ describe('handleClientApiError', () => {
       })(clientStatusError).pipe(provide);
 
       expect(lines.at(-1)).toBe(
-        'log.step: Did you mean?\n  ac_similar\n\n> composio dev auth-configs info "ac_similar"'
+        'stderr: Check the auth config id\n\nDid you mean?\n  ac_similar\n\n> composio dev auth-configs info "ac_similar"'
       );
     })
   );

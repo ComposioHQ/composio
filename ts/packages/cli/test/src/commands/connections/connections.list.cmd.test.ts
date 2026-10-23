@@ -76,48 +76,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
 
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    capabilities: Effect.succeed(
-      getTerminalCapabilities({
-        stdin: { isTTY: true },
-        stdout: { isTTY: true },
-        stderr: { isTTY: true },
-      })
-    ),
-    output: data => Console.log(data),
-    error: data => Console.error(data),
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
-    log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
-    },
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
-    select: (_message, options) => Effect.succeed(options[0]!.value),
-    confirm: () => Effect.succeed(confirmed),
-    withSpinner: (message, effect, options) =>
-      Effect.gen(function* () {
-        const result = yield* effect;
-        const successMsg =
-          typeof options?.successMessage === 'function'
-            ? options.successMessage(result)
-            : (options?.successMessage ?? message);
-        yield* Console.log(successMsg);
-        return result;
-      }),
-    useMakeSpinner: (_message, use) =>
-      use({
-        message: (_msg: string) => Effect.void,
-        stop: (msg?: string) => (msg ? Console.log(msg) : Effect.void),
-        error: (msg?: string) => (msg ? Console.error(msg) : Effect.void),
-      }),
-  });
-
 describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
     it.effect('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
@@ -130,10 +88,22 @@ describe('CLI: composio connections list', () => {
         const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
-          gmail: [{ status: 'ACTIVE', permission_group: null }],
+          gmail: [{ id: 'con_gmail_active', status: 'ACTIVE', permission_group: null }],
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
+            {
+              id: 'con_github_work',
+              status: 'ACTIVE',
+              alias: 'work',
+              word_id: 'castle',
+              permission_group: null,
+            },
+            {
+              id: 'con_github_personal',
+              status: 'FAILED',
+              alias: 'personal',
+              word_id: 'forest',
+              permission_group: null,
+            },
           ],
         });
       })
@@ -157,10 +127,22 @@ describe('CLI: composio connections list', () => {
         const parsed = JSON.parse(String(lines.at(-1)));
 
         expect(parsed).toEqual({
-          gmail: [{ status: 'ACTIVE', permission_group: null }],
+          gmail: [{ id: 'con_gmail_active', status: 'ACTIVE', permission_group: null }],
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
+            {
+              id: 'con_github_work',
+              status: 'ACTIVE',
+              alias: 'work',
+              word_id: 'castle',
+              permission_group: null,
+            },
+            {
+              id: 'con_github_personal',
+              status: 'FAILED',
+              alias: 'personal',
+              word_id: 'forest',
+              permission_group: null,
+            },
           ],
         });
       })
@@ -179,8 +161,20 @@ describe('CLI: composio connections list', () => {
 
         expect(parsed).toEqual({
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
+            {
+              id: 'con_github_work',
+              status: 'ACTIVE',
+              alias: 'work',
+              word_id: 'castle',
+              permission_group: null,
+            },
+            {
+              id: 'con_github_personal',
+              status: 'FAILED',
+              alias: 'personal',
+              word_id: 'forest',
+              permission_group: null,
+            },
           ],
         });
       })
@@ -231,56 +225,80 @@ describe('CLI: composio connections list', () => {
   });
 });
 
-describe('CLI: composio connections remove', () => {
-  const confirmedDeleteCalls: string[] = [];
+describe('CLI: composio connections list account identity', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
       connectedAccountsData: {
-        items: testConnections,
-        onDelete: nanoid => confirmedDeleteCalls.push(nanoid),
+        items: [
+          {
+            ...testConnections[0]!,
+            id: 'con_notion_team',
+            alias: 'team',
+            word_id: 'harbor',
+            toolkit: { slug: 'notion' },
+          },
+        ],
       },
-      terminalUI: terminalUIWithConfirm(true),
     })
   )(it => {
-    it.effect('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
+    it.effect('[Given] the only account of a toolkit has an alias [Then] prints id and alias', () =>
       Effect.gen(function* () {
-        confirmedDeleteCalls.length = 0;
-
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        yield* cli(['connections', 'remove', 'gmail']);
-
-        expect(confirmedDeleteCalls).toEqual(['con_gmail_active']);
+        yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n')).toContain('Removed gmail connection.');
+        const parsed = JSON.parse(String(lines.at(-1)));
+
+        expect(parsed).toEqual({
+          notion: [
+            {
+              id: 'con_notion_team',
+              status: 'ACTIVE',
+              alias: 'team',
+              word_id: 'harbor',
+              permission_group: null,
+            },
+          ],
+        });
       })
     );
   });
 
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      terminalUI: terminalUIWithConfirm(true),
-    })
-  )(it => {
-    it.effect('[Given] the API rejects the removal [Then] fails naming the connected account', () =>
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
+    it.effect('[Given] state.val.displayName [Then] prints display_name and no credentials', () =>
       Effect.gen(function* () {
+        const rawItem = {
+          ...testConnections[0]!,
+          id: 'con_gmail_named',
+          alias: 'work',
+          state: {
+            authScheme: 'OAUTH2',
+            val: {
+              displayName: '  ada@example.com  ',
+              access_token: 'must-not-leak',
+              refresh_token: 'must-not-leak',
+            },
+          },
+          data: { access_token: 'must-not-leak' },
+          params: { refresh_token: 'must-not-leak' },
+        };
         const stub = stubClientResources(
           ['connectedAccounts'],
           routeRequests(
             [
               {
-                method: 'DELETE',
-                path: '/api/v3.1/connected_accounts/',
+                method: 'GET',
+                path: '/api/v3.1/connected_accounts',
                 respond: () =>
-                  Response.json(
-                    {
-                      error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 },
-                    },
-                    { status: 403 }
-                  ),
+                  Response.json({
+                    items: [rawItem],
+                    total_items: 1,
+                    total_pages: 1,
+                    current_page: 1,
+                    next_cursor: null,
+                  }),
               },
             ],
             () => Response.json({ items: testConnections, next_cursor: null })
@@ -288,72 +306,26 @@ describe('CLI: composio connections remove', () => {
         );
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        const failure = yield* cli(['connections', 'remove', 'gmail']).pipe(
-          Effect.provide(stub.layer),
-          Effect.flip
-        );
-
-        expect(failure).toMatchObject({ _tag: 'commands/ConnectionsRemovalRequestError' });
-        expect(extractErrorDetails(failure).message).toBe(
-          'Failed to remove connected account "con_gmail_active".\nCaused by: 403 {"error":{"message":"Not allowed","code":1403,"slug":"Forbidden","status":403}}'
-        );
-      })
-    );
-  });
-
-  const deniedDeleteCalls: string[] = [];
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData: {
-        items: testConnections,
-        onDelete: nanoid => deniedDeleteCalls.push(nanoid),
-      },
-      terminalUI: terminalUIWithConfirm(false),
-    })
-  )(it => {
-    it.effect('[Given] consent is denied [Then] does not remove the connection', () =>
-      Effect.gen(function* () {
-        deniedDeleteCalls.length = 0;
-
-        const userContext = yield* ComposioUserContext;
-        yield* userContext.login('test_api_key', 'org_test');
-        yield* cli(['connections', 'remove', 'work']);
-
-        expect(deniedDeleteCalls).toEqual([]);
+        yield* cli(['connections', 'list']).pipe(Effect.provide(stub.layer));
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n')).toContain('No connection removed.');
+        const output = lines.join('\n');
+        const parsed = JSON.parse(String(lines.at(-1)));
+
+        expect(parsed).toEqual({
+          gmail: [
+            {
+              id: 'con_gmail_named',
+              status: 'ACTIVE',
+              alias: 'work',
+              display_name: 'ada@example.com',
+              permission_group: null,
+            },
+          ],
+        });
+        expect(output).not.toContain('must-not-leak');
+        expect(output).not.toContain('access_token');
       })
-    );
-  });
-
-  const ambiguousDeleteCalls: string[] = [];
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData: {
-        items: testConnections,
-        onDelete: nanoid => ambiguousDeleteCalls.push(nanoid),
-      },
-      terminalUI: terminalUIWithConfirm(true),
-    })
-  )(it => {
-    it.effect(
-      '[Given] a selector matches multiple accounts [Then] asks for a unique selector',
-      () =>
-        Effect.gen(function* () {
-          ambiguousDeleteCalls.length = 0;
-
-          const userContext = yield* ComposioUserContext;
-          yield* userContext.login('test_api_key', 'org_test');
-          yield* cli(['connections', 'remove', 'github']);
-
-          expect(ambiguousDeleteCalls).toEqual([]);
-
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          expect(lines.join('\n')).toContain('Multiple connections matched "github"');
-        })
     );
   });
 });

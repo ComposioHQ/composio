@@ -28,8 +28,12 @@ export const runOrgsSwitch = ({ orgId, limit }: OrgsSwitchParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    // `requireLogin` on the `orgs` group has already proven the key is there.
-    const apiKey = yield* Effect.fromOption(ctx.data.apiKey, notLoggedIn);
+    // `requireLogin` on the `orgs` group has already proven the key is there; the
+    // filter also fails a stored empty key, which `requireLogin` counts as present.
+    const apiKey = yield* Effect.fromOption(
+      Option.filter(ctx.data.apiKey, key => key.length > 0),
+      notLoggedIn
+    );
 
     yield* ui.intro(ORGS_SWITCH_INTRO);
     yield* ui.note(CURRENT_ORG_NOTE, CURRENT_ORG_NOTE_TITLE);
@@ -45,7 +49,8 @@ export const runOrgsSwitch = ({ orgId, limit }: OrgsSwitchParams) =>
       onNone: () => ui.outro(NO_ORG_SELECTED_OUTRO),
       onSome: org =>
         Effect.gen(function* () {
-          yield* ctx.login(apiKey, org.id, Option.getOrUndefined(ctx.data.testUserId));
+          // Same key, new org: the login's recorded backend stays as it is.
+          yield* ctx.update({ orgId: Option.some(org.id) });
           yield* linkAnalyticsIdentityForOrg({ apiKey, orgId: org.id });
 
           yield* ui.log.success(updatedOrgMessage(org.name));

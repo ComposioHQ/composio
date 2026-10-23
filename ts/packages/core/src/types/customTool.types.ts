@@ -8,7 +8,7 @@ import type {
 import type {
   SessionCreateParams,
   SessionCreateResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 
 export type AnyZodSchema = z.ZodType | z4.ZodType;
 export type InferZodSchema<T extends AnyZodSchema> = T extends z.ZodType
@@ -142,7 +142,9 @@ export interface CustomTool {
 }
 
 /** Serialized tool definition sent to backend for search indexing. Uses official client type. */
-export type CustomToolDefinition = SessionCreateParams.Experimental.CustomTool;
+export type CustomToolDefinition = NonNullable<
+  NonNullable<SessionCreateParams['experimental']>['custom_tools']
+>[number];
 
 export type CustomToolWireDefinition = CustomToolDefinition;
 
@@ -188,7 +190,9 @@ export interface CustomToolkit {
 }
 
 /** Serialized toolkit definition sent to backend. Uses official client type. */
-export type CustomToolkitDefinition = SessionCreateParams.Experimental.CustomToolkit;
+export type CustomToolkitDefinition = NonNullable<
+  NonNullable<NonNullable<SessionCreateParams['experimental']>['custom_toolkits']>[number]
+>;
 
 export type CustomToolkitWireDefinition = CustomToolkitDefinition;
 
@@ -255,7 +259,11 @@ export interface RegisteredCustomToolkit {
 // ────────────────────────────────────────────────────────────────
 
 /** Custom tool as returned in the session create response (has prefixed slug + original_slug). */
-export type CustomToolResponse = SessionCreateResponse.Experimental.CustomTool;
+export type CustomToolResponse = NonNullable<
+  NonNullable<SessionCreateResponse['experimental']>['custom_tools']
+>[number];
 
 /** Custom toolkit as returned in the session create response (has prefixed slugs + original_slugs). */
-export type CustomToolkitResponse = SessionCreateResponse.Experimental.CustomToolkit;
+export type CustomToolkitResponse = NonNullable<
+  NonNullable<NonNullable<SessionCreateResponse['experimental']>['custom_toolkits']>[number]
+>;
