@@ -8,7 +8,9 @@
 
 Standard plans do not guarantee end-to-end zero data retention or zero training. The per-project **Don't store data** setting reduces what Composio stores, but it does not govern data retained or processed by third-party providers.
 
-Customers who require contractual zero-data-retention, no-training, DPA, or security-review terms should use the Enterprise track so the requirements can be scoped explicitly.
+The [standard DPA](https://composio.dev/legal/dpa) is available to Pro and Enterprise Developer customers. An organization admin can review and accept it in Organization Settings > Billing > Data Processing Addendum. Acceptance is click-through; no countersignature is required.
+
+For bespoke data-processing terms or an end-to-end contractual no-training requirement, use the Enterprise track so the requirements can be scoped explicitly.
 
 ## Model training
 
