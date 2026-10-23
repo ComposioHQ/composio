@@ -476,7 +476,7 @@ describe('handlePollLogin', () => {
         expect(outputs).toEqual([
           JSON.stringify(
             {
-              email: 'poll@example.com',
+              email: 'cli@example.com',
               current_org: { id: 'org_first', name: 'First Org' },
               organizations: [
                 { id: 'org_first', name: 'First Org', selected: true },
@@ -488,6 +488,18 @@ describe('handlePollLogin', () => {
             2
           ),
         ]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a cached login is completed while stderr is not a terminal [Then] names the account from session info on stderr',
+    () => {
+      const { layer } = loginHandlerTest({ pending: cachedLogin() });
+      return Effect.gen(function* () {
+        yield* handlePollLogin({ noSkillInstall: true });
+
+        expect(yield* stderr).toContain('Logged in as cli@example.com (First Org)');
       }).pipe(Effect.provide(layer));
     }
   );
@@ -637,7 +649,7 @@ describe('handleSessionKeyLogin', () => {
         expect(sessionRequests).toEqual([{ id: 'session-key', verifier: VERIFIER }]);
         expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
         expect(outputs).toEqual([
-          JSON.stringify({ email: 'poll@example.com', org_id: 'org_home', org_name: 'Home Org' }),
+          JSON.stringify({ email: 'cli@example.com', org_id: 'org_home', org_name: 'Home Org' }),
         ]);
         expect(analytics.linked).toEqual(['member_org_home']);
         expect(Option.isNone(pending.current())).toBe(true);
@@ -754,6 +766,22 @@ describe('handleDirectLogin', () => {
     }).pipe(Effect.provide(layer));
   });
 
+  it.effect(
+    '[Given] a user API key while stderr is not a terminal [Then] names the account on stderr',
+    () => {
+      const { layer } = loginHandlerTest();
+      return Effect.gen(function* () {
+        yield* handleDirectLogin({
+          userApiKey: 'uak_direct',
+          org: Option.none(),
+          noSkillInstall: true,
+        });
+
+        expect(yield* stderr).toContain('Logged in as cli@example.com (Home Org)');
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
   it.effect('[Given] --org naming no visible org [Then] fails without storing the key', () => {
     const { layer, logins, outputs } = loginHandlerTest();
     return Effect.gen(function* () {
@@ -862,6 +890,21 @@ describe('handleBrowserLogin', () => {
         const lines = (yield* MockConsole.getLines()).join('\n');
         expect(lines).toContain('Confirmation code: 001122');
         expect(lines).not.toContain(sessionRequests[0].verifier);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] an interactive login that is approved and an org picked [Then] shows one account line, naming the account from session info',
+    () => {
+      const { layer } = loginHandlerTest({ interactive: true });
+      return Effect.gen(function* () {
+        yield* handleBrowserLogin(params());
+
+        const accountLines = (yield* MockConsole.getLines({ stripAnsi: true })).filter(line =>
+          line.includes('Logged in')
+        );
+        expect(accountLines).toEqual(['Logged in as cli@example.com in "First Org"']);
       }).pipe(Effect.provide(layer));
     }
   );

@@ -6,6 +6,7 @@ import {
   emitLoginComplete,
   LoginSessionError,
   playgroundTestUserId,
+  reportLoginAccount,
   sessionEnding,
   settlingPendingLogin,
   storeCredentials,
@@ -200,7 +201,7 @@ const loginWithKey = (
       linkAnalytics: true,
     });
 
-    const email = linkedSession.account.email ?? undefined;
+    const email = sessionInfo.org_member.email || linkedSession.account.email || undefined;
     if (params.announce) {
       yield* emitLoginComplete({ email, orgId, orgName });
     }
@@ -280,6 +281,7 @@ export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
     if (canDecorate) {
       yield* ui.note(formatPollLoginComplete(summary), 'Login complete');
     }
+    yield* reportLoginAccount(result);
     yield* ui.output(formatPollLoginJson(summary), { force: true });
     yield* offerSkillInstall(params.noSkillInstall);
   });
