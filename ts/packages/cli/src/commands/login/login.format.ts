@@ -19,8 +19,10 @@ export const ALREADY_LOGGED_IN_OUTRO =
   'If you want to log in with a different account, please run `composio logout` first.';
 export const REAUTHENTICATING_MESSAGE = 'Re-authenticating for multi-project support...';
 
-export const SESSION_NOT_FOUND_MESSAGE =
-  'Session not found or expired. Run `composio login --no-wait` to get a new session.';
+export const KEY_NOT_PENDING_MESSAGE =
+  '`--key` completes only the login this machine started last. Run `composio login --poll` to complete it, or `composio login` to start a new login.';
+export const OUTDATED_PENDING_LOGIN_MESSAGE =
+  'The pending login was started by an older Composio CLI and cannot be completed. Run `composio login` to start a new login.';
 export const SESSION_NOT_LINKED_MESSAGE =
   'Login not complete. Open the URL and finish authentication.';
 export const SESSION_NOT_LINKED_HINT = 'Then run `composio login --key <key>` again.';

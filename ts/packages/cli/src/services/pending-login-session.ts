@@ -1,7 +1,8 @@
 /**
- * The browser login that `composio login` started without waiting: its session key and URL,
- * cached in `<cache dir>/pending-login-session.json` so that `composio login --poll` can
- * complete it from another process. `composio dev init` starts the same browser login, so the
+ * The browser login that `composio login` started without waiting: its session key, URL, and
+ * the verifier that proves this machine started it, cached in
+ * `<cache dir>/pending-login-session.json` so that `composio login --poll` can complete it
+ * from another process. `composio dev init` starts the same browser login, so the
  * file outlives any one command.
  */
 import * as FileSystem from 'effect/FileSystem';
@@ -23,17 +24,22 @@ export const PendingLogin = Schema.Struct({
   loginUrl: Schema.String,
   expiresAt: Schema.String,
   cachedAt: Schema.String,
+  /** The session's proof verifier; absent from a file an older CLI wrote. */
+  verifier: Schema.optional(Schema.String),
 });
 export type PendingLogin = Schema.Schema.Type<typeof PendingLogin>;
 
 export class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
   readonly message: string;
-  readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
+  readonly reason: 'invalid' | 'io' | 'missing' | 'expired' | 'outdated';
   readonly cause?: unknown;
 }> {
-  /** No login was started, or it expired; a cache that cannot be read or decoded is a defect. */
+  /**
+   * No login was started, it expired, or an older CLI started it without a verifier; a cache
+   * that cannot be read or decoded is a defect.
+   */
   get [ExpectedFailure]() {
-    return this.reason === 'missing' || this.reason === 'expired';
+    return this.reason === 'missing' || this.reason === 'expired' || this.reason === 'outdated';
   }
 }
 

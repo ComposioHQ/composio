@@ -1,7 +1,7 @@
 import { Context, Effect, Layer, Option, Stream, Array, Order } from 'effect';
 import * as Str from 'effect/String';
 import type { Cause } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/http';
+import { FetchHttpClient, Headers, HttpClient } from 'effect/http';
 import {
   // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
@@ -19,7 +19,10 @@ import {
   type ToolkitVersionSpec,
   type ToolkitVersionOverrides,
 } from 'src/effects/toolkit-version-overrides';
-import { Session, RetrievedSession } from 'src/models/session';
+import { CreatedSession, RetrievedSession } from 'src/models/session';
+import { APP_VERSION } from 'src/constants';
+import { CODE_CHALLENGE_METHOD } from 'src/effects/cli-session-proof';
+import { NodeOs } from './node-os';
 import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { cliClientIdentity } from './client-provenance';
 import { sha256Hex } from 'src/utils/checksums';
@@ -494,27 +497,59 @@ export class ComposioToolkitsRepository extends Context.Service<
   ).pipe(Layer.provide(ComposioClientSingleton.Default));
 }
 
+/** The header that carries a login's verifier; only `get-session` calls send it. */
+const CLI_SESSION_SECRET_HEADER = 'x-cli-session-secret';
+
+const CREATE_SESSION_PATH = '/api/v3.1/cli/create-session';
+
 const makeComposioSessionRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
+  const os = yield* NodeOs;
   const client = clientSingleton.get();
+  // Shown to the approver as the device that started the login, labelled as self-reported.
+  const source = `composio-cli ${APP_VERSION} (${os.platform}/${os.arch})`;
 
   return {
     /**
-     * Generates a new CLI session with a random 6-character code.
-     * @param params.scope - 'user' for login, 'project' for init (future)
+     * Creates a CLI session bound to `codeChallenge` (S256). The typed `createSession` does not
+     * know the proof fields yet, so the call goes through the raw `post`.
+     * @param params.scope - 'user' for login, 'project' for init
      */
-    createSession: (params?: { scope?: 'user' | 'project' }) =>
+    createSession: (params: {
+      readonly scope: 'user' | 'project';
+      readonly codeChallenge: string;
+    }) =>
       client.pipe(
-        Effect.flatMap(c => c._internal.cli.createSession({ scope: params?.scope ?? 'user' })),
-        Effect.flatMap(decode(Session))
+        Effect.flatMap(c =>
+          c.post(CREATE_SESSION_PATH, {
+            body: {
+              scope: params.scope,
+              source,
+              code_challenge: params.codeChallenge,
+              code_challenge_method: CODE_CHALLENGE_METHOD,
+            },
+          })
+        ),
+        Effect.flatMap(decode(CreatedSession))
       ),
     /**
-     * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
+     * Retrieves the current state of a CLI session by its id, proving with `verifier` that this
+     * terminal created it. The header name is added to the redaction list for the call, so a
+     * span or a rendering of the request shows it as redacted.
      */
-    getSession: (session: { id: string }) =>
+    getSession: (session: { readonly id: string; readonly verifier: string }) =>
       client.pipe(
-        Effect.flatMap(c => c._internal.cli.getSession({ id: session.id }, idempotent)),
-        Effect.flatMap(decode(RetrievedSession))
+        Effect.flatMap(c =>
+          c._internal.cli.getSession(
+            { id: session.id },
+            { ...idempotent, headers: { [CLI_SESSION_SECRET_HEADER]: session.verifier } }
+          )
+        ),
+        Effect.flatMap(decode(RetrievedSession)),
+        Effect.updateService(Headers.CurrentRedactedNames, names => [
+          ...names,
+          CLI_SESSION_SECRET_HEADER,
+        ])
       ),
     getRealtimeCredentials: () =>
       Effect.flatMap(client, c =>
