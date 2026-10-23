@@ -12,7 +12,7 @@ If you're building an agent, we recommend using [sessions](/docs/configuring-ses
 
 Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
 
-Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
+Composio handles background token refresh for supported OAuth connections. You can inspect connection state, start a new authorization when needed, and enable, disable, revoke, or delete connections.
 
 ## List accounts
 
@@ -88,43 +88,38 @@ To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execu
 
 ## Refresh credentials
 
+Composio's background token refresh uses the provider's refresh mechanism when the connection supports it. It does not require you to call an SDK refresh method on a schedule. Providers can still reject a grant after revocation, a policy change, or an OAuth app configuration change.
+
 <Callout type="warn">
-`composio.connected_accounts.refresh()` in Python and `composio.connectedAccounts.refresh()` in TypeScript are deprecated. Re-initiate authentication with `link()` or `composio.toolkits.authorize()` instead. The refresh endpoint no longer validates credentials. TypeScript ignores `validateCredentials` and logs a warning when you set it.
+`composio.connected_accounts.refresh()` in Python and `composio.connectedAccounts.refresh()` in TypeScript are deprecated re-initiation methods. They are separate from background token refresh and no longer validate credentials. TypeScript ignores `validateCredentials` and logs a warning when you set it.
 </Callout>
 
-Manually refresh credentials for a connected account:
+### Start a new authorization
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-try:
-    refreshed = composio.connected_accounts.refresh(connected_account_id)
-    print(f"Redirect URL: {refreshed.redirect_url}")
+When a user needs to reconnect, create a fresh [hosted Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) with `connected_accounts.link()` in Python or `connectedAccounts.link()` in TypeScript. Use the intended user ID and auth config, redirect the user to the returned URL, and wait for the connection to become `ACTIVE`.
 
-    # Wait for the connection to be established
-    composio.connected_accounts.wait_for_connection(refreshed.id)
-except Exception as e:
-    print(f"Failed to refresh tokens: {e}")
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const connectedAccountId = 'ca_123';
-// ---cut---
-try {
-  const refreshed = await composio.connectedAccounts.refresh(connectedAccountId);
-  console.log('Redirect URL:', refreshed.redirect_url);
+If you use [sessions](/docs/configuring-sessions), call `session.authorize(toolkit)` instead. It always starts a new authorization flow, even when the user already has an active connection. See [Manually authenticating](/docs/authentication/manually-authenticating).
 
-  // Wait for the connection to be established
-  await composio.connectedAccounts.waitForConnection(refreshed.id);
-} catch (error) {
-  console.error('Failed to refresh tokens:', error);
-}
-```
-  </Tab>
-</Tabs>
+Hosted links expire after 10 minutes. Generate a new link when the previous flow expires. Use the connected-account ID returned by the completed flow; do not assume reauthorization preserves the previous ID.
+
+By default, `link()` refuses to start a flow when the user already has an `ACTIVE` connection on the same auth config. Connections in other states, such as `EXPIRED` or `FAILED`, don't block it, so reconnecting an expired account needs no extra option. To validate a replacement while the original is still `ACTIVE`, pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript. Verify the replacement's upstream identity and access, then update your application's account selection before removing the original.
+
+To change permissions, [update the scope configuration](/docs/authentication/controlling-scopes#update-scopes-on-an-existing-config) before starting the new authorization. Reconnecting the same unchanged config does not add a missing permission or remove a permission it still requests.
+
+### Diagnose authorization failures
+
+A stored `ACTIVE` status means the connection flow completed and credentials were stored. It does not prove the provider accepts those credentials now. Check the provider status and error inside the tool or proxy response as well as the connection's status reason.
+
+| Symptom | What to check |
+| --- | --- |
+| Authentication did not complete within 10 minutes | Start a fresh hosted link. This is an authorization-flow timeout, not evidence of a failed background refresh. |
+| A previously working connection returns provider `401` | Confirm which connected-account ID the execution used. Inspect its status reason and use a safe read or profile action to check current provider access. |
+| A connection returns `403` or insufficient scopes | Compare the tool's permissions with the scopes available to the OAuth app and granted during authorization. Repeated reconnects to the same config will not fix an unavailable scope. |
+| Connections repeatedly expire after successful use | Check refresh permissions and provider app policy. Share the affected account IDs, execution IDs, timestamps, and redacted provider errors with support so the refresh history can be investigated. |
+
+For custom OAuth, preserve permissions required for ongoing access, such as Microsoft's `offline_access` or Salesforce's `refresh_token`, when choosing tool-specific scopes. Changes to a toolkit's default scopes don't rewrite the scopes saved on an existing auth config. If an existing config omits a refresh permission, add it to the config's `scopes` and authorize a new connection.
+
+Never send access tokens, refresh tokens, client secrets, or API keys when reporting an authorization failure.
 
 ## Enable and disable accounts
 

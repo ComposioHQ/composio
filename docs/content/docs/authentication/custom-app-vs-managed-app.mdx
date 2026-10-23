@@ -16,7 +16,7 @@ This page covers when to use each, how to create a custom auth config, and how t
 Managed apps are the default when they are available. Use them when:
 
 - **You're building and iterating.** No OAuth app registration, no credentials to manage. Create a session and start testing immediately.
-- **Default scopes cover your needs.** Composio requests sensible defaults for each toolkit.
+- **The available scopes meet your requirements.** Check both the access you need and the permissions shown on the provider consent screen. Managed OAuth support for a toolkit does not mean every provider scope is available.
 - **Branding on consent screens doesn't matter yet.** Users will see "Composio wants to access your account" during OAuth. Fine for internal tools, prototypes, and development. You can still [white-label the Connect Link page](/docs/authentication/white-labeling-authentication#customizing-the-connect-link) with your logo and app title without needing your own OAuth app.
 
 ## When to use a custom auth config
@@ -24,8 +24,8 @@ Managed apps are the default when they are available. Use them when:
 Bring your own credentials when any of these apply:
 
 - **Your users see OAuth consent screens.** In production, users should see your app name, not "Composio." This is the most common reason to switch.
-- **You need custom scopes.** Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).
-- **You're hitting rate limits.** Managed apps share quota across all Composio users. Your own app gets a dedicated quota.
+- **You need a different scope set.** The managed app may not be approved for a narrow read-only scope or an additional API permission you need. Some providers also require every connection to grant permissions configured on the shared app. Use your own app when that set does not meet your policy. See [Controlling scopes](/docs/authentication/controlling-scopes#check-what-your-oauth-app-can-request).
+- **You need control over provider quota.** A provider may apply limits to an OAuth app, developer token, account, or workspace. Your own approved app can separate app-level quota from Composio's managed app, but other provider limits still apply. A Composio plan upgrade does not change the provider's quota. See [Rate limits](/reference/rate-limits).
 - **You need faster polling triggers.** Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.
 - **You're connecting to a custom instance.** Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.
 - **Enterprise customers require your branding end-to-end.**
@@ -102,6 +102,12 @@ const session = await composio.create("user_123", {
 </Tabs>
 </Step>
 </Steps>
+
+## Move existing users to your OAuth app
+
+Creating a custom auth config does not migrate connections authorized with Composio's managed app. Have each affected user authorize your OAuth client, and use the connected-account ID returned by the new flow. Existing connections remain bound to the app that issued their credentials.
+
+For Google, your own OAuth app must meet the verification requirements for its requested scopes. Changing the client ID on a config does not transfer Composio's verification or the existing user's grant to your app.
 
 ## Mixing per toolkit
 
