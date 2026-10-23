@@ -2103,6 +2103,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "aha",
+    "name": "Aha!",
+    "logo": "https://logos.composio.dev/api/aha",
+    "category": "product management",
+    "toolCount": 112,
+    "triggerCount": 0
+  },
+  {
     "slug": "ahrefs_mcp",
     "name": "Ahrefs MCP",
     "logo": "https://logos.composio.dev/api/ahrefs_mcp",
@@ -4537,6 +4545,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "cve_now_mcp",
+    "name": "cve.now MCP",
+    "logo": "https://logos.composio.dev/api/cve_now_mcp",
+    "category": "model context protocol",
+    "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
     "slug": "dadata_ru",
     "name": "DaData.ru",
     "logo": "https://logos.composio.dev/api/dadata_ru",
@@ -5191,6 +5207,14 @@
     "logo": "https://logos.composio.dev/api/easy_email_verification",
     "category": "email",
     "toolCount": 5,
+    "triggerCount": 0
+  },
+  {
+    "slug": "ebay",
+    "name": "eBay",
+    "logo": "https://logos.composio.dev/api/ebay",
+    "category": "ecommerce",
+    "toolCount": 31,
     "triggerCount": 0
   },
   {
@@ -7468,6 +7492,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "judge_me",
+    "name": "Judge.me",
+    "logo": "https://logos.composio.dev/api/judgeme",
+    "category": "reviews",
+    "toolCount": 34,
+    "triggerCount": 0
+  },
+  {
     "slug": "jumpcloud",
     "name": "JumpCloud",
     "logo": "https://logos.composio.dev/api/jumpcloud",
@@ -7962,6 +7994,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "livechat",
+    "name": "LiveChat",
+    "logo": "https://logos.composio.dev/api/livechat",
+    "category": "customer support",
+    "toolCount": 111,
+    "triggerCount": 0
+  },
+  {
     "slug": "livesession",
     "name": "Livesession",
     "logo": "https://logos.composio.dev/api/livesession",
@@ -8203,6 +8243,14 @@
     "logo": "https://logos.composio.dev/api/mailersend",
     "category": "transactional email",
     "toolCount": 23,
+    "triggerCount": 0
+  },
+  {
+    "slug": "mailfloss",
+    "name": "mailfloss",
+    "logo": "https://logos.composio.dev/api/mailfloss",
+    "category": "email",
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -8460,6 +8508,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "microsoft_advertising",
+    "name": "Microsoft Advertising",
+    "logo": "https://logos.composio.dev/api/microsoft_advertising",
+    "category": "ads & conversion",
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
     "slug": "onenote",
     "name": "Microsoft OneNote",
     "logo": "https://logos.composio.dev/api/onenote",
@@ -8476,11 +8532,27 @@
     "triggerCount": 0
   },
   {
+    "slug": "microsoft_powerpoint",
+    "name": "Microsoft PowerPoint",
+    "logo": "https://logos.composio.dev/api/microsoft_powerpoint",
+    "category": "documents",
+    "toolCount": 30,
+    "triggerCount": 0
+  },
+  {
     "slug": "microsoft_todo",
     "name": "Microsoft To Do",
     "logo": "https://logos.composio.dev/api/microsoft_todo",
     "category": "task management",
     "toolCount": 25,
+    "triggerCount": 0
+  },
+  {
+    "slug": "microsoft_word",
+    "name": "Microsoft Word",
+    "logo": "https://logos.composio.dev/api/microsoft_word",
+    "category": "documents",
+    "toolCount": 23,
     "triggerCount": 0
   },
   {
@@ -11498,6 +11570,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "smarthr",
+    "name": "SmartHR",
+    "logo": "https://logos.composio.dev/api/smarthr",
+    "category": "human resources",
+    "toolCount": 117,
+    "triggerCount": 0
+  },
+  {
     "slug": "smartlead",
     "name": "Smartlead",
     "logo": "https://logos.composio.dev/api/smartlead",
@@ -12160,6 +12240,14 @@
     "logo": "https://logos.composio.dev/api/thoughtspot_spotter_mcp",
     "category": "model context protocol",
     "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
+    "slug": "threads",
+    "name": "Threads",
+    "logo": "https://logos.composio.dev/api/threads",
+    "category": "social media accounts",
+    "toolCount": 24,
     "triggerCount": 0
   },
   {
