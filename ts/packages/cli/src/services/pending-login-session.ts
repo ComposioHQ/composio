@@ -23,6 +23,8 @@ export const PendingLogin = Schema.Struct({
   loginUrl: Schema.String,
   expiresAt: Schema.String,
   cachedAt: Schema.String,
+  /** Set when the login was started with `--expect-email`; `--poll` enforces it. */
+  expectedEmail: Schema.optional(Schema.String),
 });
 export type PendingLogin = Schema.Schema.Type<typeof PendingLogin>;
 

@@ -20,6 +20,7 @@ import {
   type LoginParams,
 } from 'src/commands/login/login.handler';
 import {
+  AGENT_WITH_EXPECT_EMAIL_MESSAGE,
   AGENT_WITH_OTHER_FLAGS_MESSAGE,
   ALREADY_LOGGED_IN_MESSAGE,
   INVALID_ORGANIZATION_MESSAGE,
@@ -104,6 +105,7 @@ const params = (overrides: Partial<LoginParams> = {}): LoginParams => ({
   key: Option.none(),
   userApiKey: Option.none(),
   org: Option.none(),
+  expectEmail: Option.none(),
   yes: false,
   noSkillInstall: true,
   agent: false,
@@ -134,6 +136,8 @@ interface LoginFixture {
   readonly pending?: Parameters<typeof PendingLoginSessionTest>[0];
   /** What `getSession` answers; a failure stands for an unknown or expired session. */
   readonly session?: Effect.Effect<RetrievedSession, NotFoundError | APIConnectionError>;
+  /** When set, the terminal can prompt and `confirm` answers from this queue. */
+  readonly confirmResults?: ReadonlyArray<boolean>;
 }
 
 // A resource the account mocks do not shadow reaches this transport and dies with its URL.
@@ -160,6 +164,8 @@ const loginHandlerTest = (fixture: LoginFixture = {}) => {
   }> = [];
   const outputs: Array<string> = [];
   const createdSessions: Array<string> = [];
+  const confirmPrompts: Array<string> = [];
+  const confirmQueue = fixture.confirmResults ? [...fixture.confirmResults] : [];
   const pending = PendingLoginSessionTest(fixture.pending);
   const apiKey = fixture.apiKey ?? Option.none();
 
@@ -180,11 +186,16 @@ const loginHandlerTest = (fixture: LoginFixture = {}) => {
         ...terminalUITestImpl,
         capabilities: Effect.succeed(
           getTerminalCapabilities({
-            stdin: { isTTY: false },
+            stdin: { isTTY: confirmQueue.length > 0 },
             stdout: { isTTY: false },
-            stderr: { isTTY: false },
+            stderr: { isTTY: confirmQueue.length > 0 },
           })
         ),
+        confirm: (message, options) =>
+          Effect.sync(() => {
+            confirmPrompts.push(message);
+            return confirmQueue.shift() ?? options?.defaultValue ?? true;
+          }),
         output: data =>
           Effect.sync(() => {
             outputs.push(data);
@@ -266,7 +277,7 @@ const loginHandlerTest = (fixture: LoginFixture = {}) => {
     ),
     ConfigProvider.layer(hostOnlyEnvConfigProvider)
   );
-  return { layer, logins, outputs, createdSessions, pending };
+  return { layer, logins, outputs, createdSessions, confirmPrompts, pending };
 };
 
 const stderr = MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
@@ -315,6 +326,12 @@ describe('runLogin', () => {
       flags: { agent: true, key: Option.some('k') },
       message: AGENT_WITH_OTHER_FLAGS_MESSAGE,
       option: '--agent',
+    },
+    {
+      name: '--agent with --expect-email',
+      flags: { agent: true, expectEmail: Option.some('agent@example.com') },
+      message: AGENT_WITH_EXPECT_EMAIL_MESSAGE,
+      option: '--expect-email',
     },
     {
       name: '--org without --user-api-key',
@@ -386,7 +403,7 @@ describe('handlePollLogin', () => {
         }),
       });
       return Effect.gen(function* () {
-        yield* handlePollLogin({ noSkillInstall: true });
+        yield* handlePollLogin({ noSkillInstall: true, expectEmail: Option.none() });
 
         expect(logins).toEqual([
           { apiKey: 'uak_linked', orgId: 'org_first', testUserId: 'pg-test-user_123' },
@@ -420,7 +437,12 @@ describe('handleSessionKeyLogin', () => {
     });
     return Effect.gen(function* () {
       const error = yield* Effect.flip(
-        handleSessionKeyLogin({ key: 'session-key', noWait: true, noSkillInstall: true })
+        handleSessionKeyLogin({
+          key: 'session-key',
+          noWait: true,
+          noSkillInstall: true,
+          expectEmail: Option.none(),
+        })
       );
 
       expect(error).toMatchObject({
@@ -446,7 +468,12 @@ describe('handleSessionKeyLogin', () => {
       const { layer, logins } = loginHandlerTest({ session: Effect.fail(connectionError) });
       return Effect.gen(function* () {
         const error = yield* Effect.flip(
-          handleSessionKeyLogin({ key: 'session-key', noWait: true, noSkillInstall: true })
+          handleSessionKeyLogin({
+            key: 'session-key',
+            noWait: true,
+            noSkillInstall: true,
+            expectEmail: Option.none(),
+          })
         );
 
         expect(error).toMatchObject({
@@ -468,7 +495,12 @@ describe('handleSessionKeyLogin', () => {
       });
       return Effect.gen(function* () {
         const error = yield* Effect.flip(
-          handleSessionKeyLogin({ key: 'session-key', noWait: true, noSkillInstall: true })
+          handleSessionKeyLogin({
+            key: 'session-key',
+            noWait: true,
+            noSkillInstall: true,
+            expectEmail: Option.none(),
+          })
         );
 
         expect(error).toMatchObject({
@@ -488,7 +520,12 @@ describe('handleSessionKeyLogin', () => {
     () => {
       const { layer, logins, outputs } = loginHandlerTest();
       return Effect.gen(function* () {
-        yield* handleSessionKeyLogin({ key: 'session-key', noWait: true, noSkillInstall: true });
+        yield* handleSessionKeyLogin({
+          key: 'session-key',
+          noWait: true,
+          noSkillInstall: true,
+          expectEmail: Option.none(),
+        });
 
         expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
         expect(outputs).toEqual([
@@ -508,6 +545,7 @@ describe('handleDirectLogin', () => {
         userApiKey: 'uak_direct',
         org: Option.some('Second Org'),
         noSkillInstall: true,
+        expectEmail: Option.none(),
       });
 
       expect(logins).toEqual([
@@ -526,6 +564,7 @@ describe('handleDirectLogin', () => {
         userApiKey: 'uak_direct',
         org: Option.some(''),
         noSkillInstall: true,
+        expectEmail: Option.none(),
       });
 
       expect(logins.map(login => login.orgId)).toEqual(['org_home']);
@@ -541,6 +580,7 @@ describe('handleDirectLogin', () => {
           userApiKey: 'uak_direct',
           org: Option.some('Missing Org'),
           noSkillInstall: true,
+          expectEmail: Option.none(),
         })
       );
 
@@ -591,6 +631,177 @@ describe('handleBrowserLogin', () => {
         expect(outputs[0]).toContain('https://platform.mock.invalid/?cliKey=session-new');
         expect(outputs[0]).toContain('composio login --poll');
         expect(logins).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+});
+
+// --- identity binding (PRDE-1702) -------------------------------------------------------------
+
+describe('login identity binding', () => {
+  const PINNED_POLL_FIXTURE = {
+    pending: Option.some({
+      key: 'session-key',
+      loginUrl: 'https://platform.mock.invalid/?cliKey=session-key',
+      expiresAt: '2026-01-01T00:10:00.000Z',
+      cachedAt: '2026-01-01T00:00:00.000Z',
+      expectedEmail: 'other@example.com',
+    }),
+  };
+
+  it.effect(
+    '[Given] --poll completing as a different account than the pin [Then] fails and consumes the pending login',
+    () => {
+      const { layer, logins, pending } = loginHandlerTest(PINNED_POLL_FIXTURE);
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          handlePollLogin({ noSkillInstall: true, expectEmail: Option.none() })
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginIdentityError',
+          reason: 'mismatch',
+          linkedEmail: 'poll@example.com',
+          expectedEmail: 'other@example.com',
+        });
+        expect(isUsageFailure(error)).toBe(true);
+        // The rejected session is already linked; keeping the cache would only re-fail.
+        expect(Option.isNone(pending.current())).toBe(true);
+        expect(logins).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] --poll with --expect-email matching the linked account [Then] stores the key without prompting',
+    () => {
+      const { layer, logins, pending } = loginHandlerTest({
+        pending: Option.some({
+          key: 'session-key',
+          loginUrl: 'https://platform.mock.invalid/?cliKey=session-key',
+          expiresAt: '2026-01-01T00:10:00.000Z',
+          cachedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      });
+      return Effect.gen(function* () {
+        yield* handlePollLogin({
+          noSkillInstall: true,
+          // Matching is exact modulo case and surrounding whitespace.
+          expectEmail: Option.some('  POLL@Example.com '),
+        });
+
+        expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
+        expect(Option.isNone(pending.current())).toBe(true);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] --key with --expect-email naming another account [Then] fails without storing',
+    () => {
+      const { layer, logins } = loginHandlerTest();
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          handleSessionKeyLogin({
+            key: 'session-key',
+            noWait: true,
+            noSkillInstall: true,
+            expectEmail: Option.some('someone-else@example.com'),
+          })
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginIdentityError',
+          reason: 'mismatch',
+          linkedEmail: 'poll@example.com',
+        });
+        expect(logins).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] --user-api-key with --expect-email naming another account [Then] fails without storing',
+    () => {
+      const { layer, logins } = loginHandlerTest();
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          handleDirectLogin({
+            userApiKey: 'uak_direct',
+            org: Option.none(),
+            noSkillInstall: true,
+            expectEmail: Option.some('wrong@example.com'),
+          })
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginIdentityError',
+          reason: 'mismatch',
+          linkedEmail: 'cli@example.com',
+        });
+        expect(logins).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a pinned headless --no-wait [Then] records the pin and prints the verification code',
+    () => {
+      const { layer, outputs, pending } = loginHandlerTest();
+      return Effect.gen(function* () {
+        yield* handleBrowserLogin(
+          params({ noWait: true, expectEmail: Option.some('cli@example.com') })
+        );
+
+        expect(pending.current()).toEqual(
+          Option.some({
+            key: 'session-new',
+            loginUrl: 'https://platform.mock.invalid/?cliKey=session-new',
+            expiresAt: '2026-01-01T00:10:00.000Z',
+            cachedAt: '2026-01-01T00:00:00.000Z',
+            expectedEmail: 'cli@example.com',
+          })
+        );
+        expect(outputs[0]).toContain('Verification code: 001122');
+        expect(outputs[0]).toContain('bound to cli@example.com');
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] an interactive browser login linked to an unexpected account [Then] aborts on decline and consumes the pending login',
+    () => {
+      const { layer, logins, confirmPrompts, pending, createdSessions } = loginHandlerTest({
+        confirmResults: [false],
+      });
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(handleBrowserLogin(params()));
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginIdentityError',
+          reason: 'declined',
+          linkedEmail: 'poll@example.com',
+        });
+        expect(confirmPrompts).toEqual(['Sign in as poll@example.com?']);
+        expect(logins).toEqual([]);
+        expect(createdSessions).toEqual(['user']);
+        expect(Option.isNone(pending.current())).toBe(true);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] an interactive browser login confirmed [Then] stores the key and clears the pending login',
+    () => {
+      const { layer, logins, confirmPrompts, pending } = loginHandlerTest({
+        confirmResults: [true],
+      });
+      return Effect.gen(function* () {
+        yield* handleBrowserLogin(params());
+
+        expect(confirmPrompts).toEqual(['Sign in as poll@example.com?']);
+        expect(logins.map(login => login.apiKey)).toEqual(['uak_linked', 'uak_linked']);
+        expect(Option.isNone(pending.current())).toBe(true);
       }).pipe(Effect.provide(layer));
     }
   );

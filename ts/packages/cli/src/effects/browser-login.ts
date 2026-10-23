@@ -4,6 +4,7 @@
  * to be linked, then store the user API key it carries.
  */
 import { Data, DateTime, Effect, Option, Schedule, pipe } from 'effect';
+import { confirmLoginIdentity } from 'src/effects/confirm-login-identity';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import open from 'open';
 import type { RetrievedSession } from 'src/models/session';
@@ -53,9 +54,18 @@ const POLL_COMMAND = 'composio login --poll';
 const formatNonInteractiveLoginInstructions = (params: {
   readonly loginUrl: string;
   readonly pollCommand: string;
+  readonly verificationCode: string;
+  readonly pinnedEmail?: string;
 }) => `Open this URL in your browser to log in:
 
   ${params.loginUrl}
+
+Verification code: ${params.verificationCode}
+The approval page must show this code. Do not approve if it does not match.${
+  params.pinnedEmail
+    ? `\nThis login is bound to ${params.pinnedEmail}; it fails if any other account links.`
+    : ''
+}
 
 Then run this command to complete login:
 
@@ -327,6 +337,8 @@ export const browserLogin = (params: {
   readonly noWait?: boolean;
   /** When true (login only), skip the org picker and use the session's org. */
   readonly skipOrgProjectPicker?: boolean;
+  /** Pin the login to this account: a different linked account fails before anything is stored. */
+  readonly expectEmail?: string;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -343,6 +355,7 @@ export const browserLogin = (params: {
       key: session.id,
       loginUrl: url,
       expiresAt: DateTime.formatIso(session.expiresAt),
+      ...(params.expectEmail ? { expectedEmail: params.expectEmail } : {}),
     });
 
     const { canPrompt, canDecorate } = yield* ui.capabilities;
@@ -353,6 +366,8 @@ export const browserLogin = (params: {
       const loginInstructions = formatNonInteractiveLoginInstructions({
         loginUrl: url,
         pollCommand: POLL_COMMAND,
+        verificationCode: session.code,
+        pinnedEmail: params.expectEmail,
       });
       if (canDecorate) {
         yield* ui.log.info('Please login using the following URL:');
@@ -367,6 +382,10 @@ export const browserLogin = (params: {
       ? ui.log.info('Please login using the following URL:')
       : ui.log.step('Redirecting you to the login page');
     yield* ui.note(url, 'Login URL');
+    yield* ui.note(
+      `Verification code: ${session.code}\nThe approval page must show this code. Do not approve if it does not match.`,
+      'Verify this login'
+    );
     yield* ui.output(url);
     if (!effectiveNoBrowser) {
       yield* openLoginUrl(url);
@@ -374,6 +393,20 @@ export const browserLogin = (params: {
 
     const linkedSession = yield* waitForLinkedSession(client.getSession({ id: session.id }));
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
+
+    // PRDE-1702: whoever presents the session id can complete a login, so the account the
+    // session linked is confirmed (or pinned via --expect-email) before its key is used or
+    // stored. A rejected login consumes the pending cache: the session is already linked, so
+    // a later `--poll` could only repeat the completion without the confirmation.
+    yield* confirmLoginIdentity({
+      email: linkedSession.account.email,
+      verificationCode: linkedSession.code,
+      expectedEmail: params.expectEmail,
+    }).pipe(
+      Effect.catchTag('commands/LoginIdentityError', error =>
+        pendingLogin.clear.pipe(Effect.andThen(Effect.fail(error)))
+      )
+    );
 
     // e.g., "uak_b813ydmoEYdB_xBxGHeW"
     const uakApiKey = linkedSession.api_key;
@@ -396,4 +429,8 @@ export const browserLogin = (params: {
     if (willRunPicker) {
       yield* completeOrgSelection({ uakApiKey, sessionInfo, linkedSession });
     }
+
+    // The login completed; the cached pending session has no purpose left and would let a
+    // later `--poll` re-run the completion for the rest of its TTL.
+    yield* pendingLogin.clear;
   });

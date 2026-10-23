@@ -49,6 +49,13 @@ const agentOpt = Flag.Boolean('agent').pipe(
   Flag.withDescription('Sign up or log in using a Composio agent identity')
 );
 
+const expectEmailOpt = Flag.String('expect-email').pipe(
+  Flag.withDescription(
+    'Bind the login to this account: a different linked (or direct-login) account fails before any credential is stored'
+  ),
+  Flag.optional
+);
+
 /**
  * CLI command to login using Composio's CLI session APIs.
  *
@@ -59,6 +66,9 @@ const agentOpt = Flag.Boolean('agent').pipe(
  * with --no-wait, checks once and fails if not linked.
  * Use --user-api-key to log in directly without a browser flow, and --org to override the current org.
  * Use --agent to sign up or log in using a Composio agent identity.
+ * Use --expect-email <email> to bind the login to an account: with --no-wait the pin is
+ * recorded and honored by the later `composio login --poll`; with --key, --poll, or
+ * --user-api-key it fails before storing anything when the account differs.
  * Use -y to skip org picker and use current org.
  *
  * Non-interactive default flow: prints URL + poll instructions, or logs in
@@ -69,6 +79,7 @@ const agentOpt = Flag.Boolean('agent').pipe(
  * composio login
  * composio login --no-browser
  * composio login --no-wait
+ * composio login --no-wait --expect-email you@company.com
  * composio login --key <key>
  * composio login --key <key> --no-wait
  * composio login --user-api-key <uak>
@@ -86,6 +97,7 @@ export const loginCmd = Command.make(
     key: keyOpt,
     userApiKey: userApiKeyOpt,
     org: orgOpt,
+    expectEmail: expectEmailOpt,
     yes: yesOpt,
     noSkillInstall,
     agent: agentOpt,

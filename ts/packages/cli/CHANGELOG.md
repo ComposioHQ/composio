@@ -4,6 +4,16 @@
 
 ### Minor Changes
 
+- `composio login` now binds completion to an identity before any credential is
+  stored. Interactive logins show the session's verification code and ask to
+  confirm the linked account; `--expect-email <email>` pins a login to an
+  account — pass it when starting `login --no-wait` and the later
+  `composio login --poll` enforces it, or use it with `--poll`, `--key`, or
+  `--user-api-key` to fail without storing anything on a mismatch. A headless
+  completion without a pin warns with the linked account's email. The pending
+  login cache is cleared after a completed or rejected login, and
+  `--expect-email` cannot be combined with `--agent`.
+
 - `composio listen`, `composio dev listen` and `composio dev triggers listen`
   gain `--fail-fast`: the listener stops at the first event it fails to save,
   forward, or append to `--out`, prints how many events failed on stderr, and
