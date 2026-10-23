@@ -20,8 +20,7 @@ import {
 import { MCPServerInstanceSchema } from '../types/mcp.experimental.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { transform } from '../utils/transform';
-import { McpUpdateResponse } from '@composio/client/resources.js';
-import { McpRetrieveResponse } from '@composio/client/resources';
+import type { McpRetrieveResponse, McpUpdateResponse } from '@composio/client/resources/mcp';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import logger from '../utils/logger';

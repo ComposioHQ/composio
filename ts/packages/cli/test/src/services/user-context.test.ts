@@ -422,4 +422,225 @@ describe('ComposioUserContext', () => {
       });
     });
   });
+
+  describe('[When] resolving the backend of a stored login', () => {
+    const STAGING = {
+      base_url: 'https://staging-backend.composio.dev',
+      web_url: 'https://staging-dashboard.composio.dev/',
+    };
+    const PRODUCTION = {
+      base_url: 'https://backend.composio.dev',
+      web_url: 'https://dashboard.composio.dev/',
+    };
+
+    /** Builds the context over a home whose user_data.json is `stored` (none when undefined). */
+    const withContext = <A, E>(
+      env: Record<string, string>,
+      stored: Record<string, unknown> | undefined,
+      use: (ctx: ComposioUserContext['Service'], userDataPath: string) => Effect.Effect<A, E>
+    ) => {
+      const home = tempy.temporaryDirectory();
+      const userDataPath = path.join(home, '.composio', 'user_data.json');
+      if (stored !== undefined) {
+        fs.mkdirSync(path.dirname(userDataPath), { recursive: true });
+        fs.writeFileSync(userDataPath, JSON.stringify(stored));
+      }
+      const layer = Layer.provideMerge(
+        ComposioUserContextLive,
+        Layer.mergeAll(
+          BunFileSystem.layer,
+          BunPath.layer,
+          Layer.succeed(NodeOs, defaultNodeOs({ homedir: home })),
+          withMapConfigProvider(new Map(Object.entries(env)))
+        )
+      );
+      return Effect.flatMap(ComposioUserContext, ctx => use(ctx, userDataPath)).pipe(
+        Effect.provide(layer)
+      );
+    };
+    const readStored = (userDataPath: string) =>
+      JSON.parse(fs.readFileSync(userDataPath, 'utf8')) as Record<string, unknown>;
+    const stagingLogin = { api_key: 'uak_staging', org_id: 'org_1', ...STAGING };
+
+    it.effect('[Given] a staging login and no env var [Then] it uses staging', () =>
+      withContext({}, stagingLogin, ctx =>
+        Effect.sync(() => {
+          assertEquals(ctx.data.baseURL, STAGING.base_url);
+          assertEquals(ctx.data.webURL, STAGING.web_url);
+          assertEquals(Option.isNone(ctx.backendMismatch), true);
+        })
+      )
+    );
+
+    it.effect(
+      '[Given] a staging login and COMPOSIO_BASE_URL [Then] the env var wins and the mismatch is reported',
+      () =>
+        withContext({ COMPOSIO_BASE_URL: PRODUCTION.base_url }, stagingLogin, ctx =>
+          Effect.sync(() => {
+            assertEquals(ctx.data.baseURL, PRODUCTION.base_url);
+            assertEquals(ctx.data.webURL, PRODUCTION.web_url);
+            deepStrictEqual(
+              ctx.backendMismatch,
+              Option.some({
+                variable: 'COMPOSIO_BASE_URL' as const,
+                issuedBy: STAGING.base_url,
+                selected: PRODUCTION.base_url,
+              })
+            );
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] a staging login and COMPOSIO_ENVIRONMENT=staging [Then] nothing is reported',
+      () =>
+        withContext({ COMPOSIO_ENVIRONMENT: 'staging' }, stagingLogin, ctx =>
+          Effect.sync(() => {
+            assertEquals(ctx.data.baseURL, STAGING.base_url);
+            assertEquals(Option.isNone(ctx.backendMismatch), true);
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] COMPOSIO_USER_API_KEY and no env var [Then] it uses the default backend',
+      () =>
+        withContext({ COMPOSIO_USER_API_KEY: 'uak_env' }, stagingLogin, ctx =>
+          Effect.sync(() => {
+            assertEquals(ctx.data.baseURL, PRODUCTION.base_url);
+            assertEquals(ctx.data.webURL, PRODUCTION.web_url);
+            assertEquals(Option.isNone(ctx.backendMismatch), true);
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] a recorded backend but no stored key [Then] it uses the default backend',
+      () =>
+        withContext({}, { api_key: null, ...STAGING }, ctx =>
+          Effect.sync(() => {
+            assertEquals(ctx.data.baseURL, PRODUCTION.base_url);
+            assertEquals(ctx.data.webURL, PRODUCTION.web_url);
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] an env override [When] the user data is updated [Then] the stored backend is kept',
+      () =>
+        withContext(
+          { COMPOSIO_BASE_URL: 'http://127.0.0.1:9' },
+          stagingLogin,
+          (ctx, userDataPath) =>
+            Effect.gen(function* () {
+              yield* ctx.update({ orgId: Option.some('org_2') });
+              const stored = readStored(userDataPath);
+              assertEquals(stored.org_id, 'org_2');
+              assertEquals(stored.base_url, STAGING.base_url);
+              assertEquals(stored.web_url, STAGING.web_url);
+            })
+        )
+    );
+
+    it.effect(
+      '[Given] COMPOSIO_ENVIRONMENT=staging [When] logging in [Then] the staging backend is recorded',
+      () =>
+        withContext({ COMPOSIO_ENVIRONMENT: 'staging' }, undefined, (ctx, userDataPath) =>
+          Effect.gen(function* () {
+            yield* ctx.login('uak_new', 'org_1');
+            const stored = readStored(userDataPath);
+            assertEquals(stored.base_url, STAGING.base_url);
+            assertEquals(stored.web_url, STAGING.web_url);
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] a staging login and no env var [When] logging in again [Then] staging stays recorded',
+      () =>
+        withContext({}, stagingLogin, (ctx, userDataPath) =>
+          Effect.gen(function* () {
+            yield* ctx.login('uak_again', 'org_1');
+            assertEquals(readStored(userDataPath).base_url, STAGING.base_url);
+            assertEquals(ctx.data.baseURL, STAGING.base_url);
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] a staging login and COMPOSIO_USER_API_KEY [When] the user data is updated [Then] the stored key stays paired with its backend',
+      () =>
+        withContext(
+          { COMPOSIO_USER_API_KEY: 'uak_env_production' },
+          stagingLogin,
+          (ctx, userDataPath) =>
+            Effect.gen(function* () {
+              yield* ctx.update({ orgId: Option.some('org_2') });
+              const stored = readStored(userDataPath);
+              assertEquals(stored.org_id, 'org_2');
+              assertEquals(stored.api_key, 'uak_staging');
+              assertEquals(stored.base_url, STAGING.base_url);
+              // The env key still serves this run's requests.
+              assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'uak_env_production');
+            })
+        )
+    );
+
+    it.effect(
+      '[Given] COMPOSIO_USER_API_KEY and no stored login [When] the user data is updated [Then] the env key is not written',
+      () =>
+        withContext({ COMPOSIO_USER_API_KEY: 'uak_env_only' }, undefined, (ctx, userDataPath) =>
+          Effect.gen(function* () {
+            yield* ctx.update({ orgId: Option.some('org_2') });
+            const stored = readStored(userDataPath);
+            assertEquals(stored.org_id, 'org_2');
+            assertEquals(stored.api_key ?? null, null);
+          })
+        )
+    );
+
+    it.effect(
+      '[Given] a login recorded against another backend [When] an agent identity logs in [Then] the env-selected backend is recorded',
+      () =>
+        withContext(
+          {},
+          { api_key: 'uak_old', base_url: 'https://proxy.example.test', web_url: null },
+          (ctx, userDataPath) =>
+            Effect.gen(function* () {
+              yield* ctx.login('uak_agent', 'org_agent', undefined, { issuer: 'environment' });
+              const stored = readStored(userDataPath);
+              assertEquals(stored.api_key, 'uak_agent');
+              assertEquals(stored.base_url, PRODUCTION.base_url);
+              assertEquals(stored.web_url, PRODUCTION.web_url);
+              assertEquals(ctx.data.baseURL, PRODUCTION.base_url);
+            })
+        )
+    );
+
+    it.effect(
+      '[Given] COMPOSIO_ENVIRONMENT=staging and an older production login [When] an agent identity logs in [Then] staging is recorded',
+      () =>
+        withContext(
+          { COMPOSIO_ENVIRONMENT: 'staging' },
+          { api_key: 'uak_old', ...PRODUCTION },
+          (ctx, userDataPath) =>
+            Effect.gen(function* () {
+              yield* ctx.login('uak_agent', 'org_agent', undefined, { issuer: 'environment' });
+              assertEquals(readStored(userDataPath).base_url, STAGING.base_url);
+            })
+        )
+    );
+
+    it.effect('[When] logging out [Then] the recorded backend is forgotten', () =>
+      withContext({}, stagingLogin, (ctx, userDataPath) =>
+        Effect.gen(function* () {
+          yield* ctx.logout;
+          const stored = readStored(userDataPath);
+          assertEquals(stored.base_url, null);
+          assertEquals(stored.web_url, null);
+          assertEquals(ctx.data.baseURL, PRODUCTION.base_url);
+        })
+      )
+    );
+  });
 });

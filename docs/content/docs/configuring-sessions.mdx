@@ -26,6 +26,10 @@ By default, a session has access to every toolkit in the Composio catalog. Your 
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
+<Callout type="warn">
+Both SDKs pass product and runtime identity through the API client's `identity` option. If you configure custom default or request headers, remove identity headers such as `x-source`, `x-framework`, `x-sdk-version`, and `x-client-*`. The client rejects attempts to override them.
+</Callout>
+
 ### API key permissions
 
 If you use a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), grant permissions for the session operations your application needs:
@@ -52,6 +56,22 @@ In Python, `session.config.instant` is a model when it contains a policy. Read i
 <Callout>
 If you implement the TypeScript `Session` interface yourself, include the required `config` member. Sessions created by the SDK provide it automatically.
 </Callout>
+
+## Requiring tool approval
+
+Require approval before selected session tools run by adding `requireApproval` (`require_approval` in Python) to toolkit, tool, or tag filters. These approval settings are experimental.
+
+| Scope | TypeScript session option | Python session option |
+| --- | --- | --- |
+| All tools in a toolkit | `toolkits: { requireApproval: ["gmail"] }` | `toolkits={"require_approval": ["gmail"]}` |
+| Specific tools in a toolkit | `tools: { gmail: { requireApproval: ["GMAIL_SEND_EMAIL"] } }` | `tools={"gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]}}` |
+| Tools with matching tags | `tags: { requireApproval: ["destructiveHint"] }` | `tags={"require_approval": ["destructiveHint"]}` |
+
+You can combine an approval list with `enable` or `disable` in the same filter object. An approval list alone does not restrict which tools are available.
+
+When execution needs approval, catch `ComposioToolInputRequiredError` from `@composio/core` in TypeScript or `ToolInputRequiredError` from `composio.exceptions` in Python. Display `inputRequests` (`input_requests`) and wait for the person's answers. Repeat the same tool or meta-tool call with `inputResponses` and `requestState` (`input_responses` and `request_state`), preserving the state from the error. Forward decline and cancel answers unchanged. See [handling input requests](/docs/how-composio-works#handling-requests-for-user-input) for the continuation flow.
+
+For MCP clients, configure the [approval fallback](/docs/sessions-via-mcp#approval-without-elicitation-support) if the client cannot ask for approval.
 
 ## Enabling toolkits
 
@@ -1055,6 +1075,8 @@ console.log(result.data, result.resultType);
 </Tabs>
 
 The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs. The response includes `resultType` (`result_type` in Python). If execution needs input, such as approval, the SDK raises `ComposioToolInputRequiredError` (`ToolInputRequiredError` in Python). Calls are sent once without retries, so retry only when the operation is safe to repeat.
+
+In TypeScript, the third argument holds input-response options: `session.executeMeta(slug, args, { inputResponses, requestState })`. Request options belong in the fourth argument. To pass only request options, use `session.executeMeta(slug, args, undefined, requestOptions)`.
 
 `COMPOSIO_MULTI_EXECUTE_TOOL` calls through this method run on the backend. Custom tools named in those calls are not executed in your process.
 

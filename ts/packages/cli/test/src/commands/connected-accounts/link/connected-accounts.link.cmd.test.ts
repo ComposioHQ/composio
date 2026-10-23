@@ -8,6 +8,7 @@ import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import open from 'open';
 import { afterEach, vi } from 'vitest';
 
@@ -129,6 +130,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+    process.exitCode = undefined;
   });
 
   layer(
@@ -300,6 +302,29 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
+
+    // Logged as decoration, this mistake vanished whenever stderr was not a TTY and the
+    // command exited 0; as a `CommandInputError` it reaches stderr and exits 1.
+    it.effect('reports a toolkit passed together with --auth-config', () =>
+      Effect.gen(function* () {
+        const error = yield* cli([
+          'dev',
+          'connected-accounts',
+          'link',
+          'gmail',
+          '--auth-config',
+          'ac_test',
+          '--no-wait',
+        ]).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'dev connected-accounts link',
+          option: '--auth-config',
+        });
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+    );
   });
 
   layer(
@@ -434,22 +459,21 @@ describe('CLI: composio dev connected-accounts link', () => {
           }),
       },
     })
-  )(
-    '[Given] auth-config link returns an incomplete response [Then] logs an error and exits early',
-    it => {
-      it.effect('reports the incomplete response instead of waiting with empty values', () =>
-        Effect.gen(function* () {
-          yield* cli(['link', 'gmail']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+  )('[Given] auth-config link returns an incomplete response [Then] reports it and exits 1', it => {
+    it.effect('reports the incomplete response instead of waiting with empty values', () =>
+      Effect.gen(function* () {
+        // Redirected streams, as under a script: only plain stderr lines and stdout data show.
+        const terminal = redirectedTerminalUI();
+        yield* cli(['link', 'gmail']).pipe(Effect.provide(terminal.layer));
 
-          expect(lines).toEqual([
-            'Linking gmail...',
-            'The link response from the API is missing `connected_account_id` or `redirect_url`.',
-          ]);
-        })
-      );
-    }
-  );
+        expect(terminal.stderr()).toBe(
+          'The link response from the API is missing `connected_account_id` or `redirect_url`.\n'
+        );
+        expect(terminal.stdout()).toBe('');
+        expect(process.exitCode).toBe(1);
+      })
+    );
+  });
 
   layer(
     TestLive({

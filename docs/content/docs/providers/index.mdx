@@ -11,6 +11,20 @@ Pick the provider that matches the SDK or agent framework you already use. Each 
 The TypeScript SDK is ESM-only and requires Node.js 22.22.3 or newer. Use `import` instead of CommonJS `require()`.
 </Callout>
 
+## TypeScript client configuration
+
+Use `composio.getConfig()` to read SDK credentials. The client returned by `composio.getClient()` doesn't expose `apiKey`, `userApiKey`, `orgApiKey`, or `logger`. Its `baseURL`, `maxRetries`, `timeout`, and `logLevel` are read-only. To change client options for specific calls, derive a client with `const client = composio.getClient().withOptions({ maxRetries: 0 })` and use that client for those calls.
+
+Pass custom headers through the SDK's `defaultHeaders` option.
+
+<Callout type="warn">
+`COMPOSIO_CUSTOM_HEADERS` is no longer supported. Replace it with `defaultHeaders` when constructing the SDK.
+</Callout>
+
+Credential and scope headers supplied through `defaultHeaders` or `createSession({ headers })` become SDK configuration and don't appear in `getConfig().defaultHeaders`. Supply at most one credential header: `x-api-key`, `x-user-api-key`, or `x-org-api-key`. Supplying multiple credential headers throws an error. Per-call client headers cannot override credentials or scope.
+
+With `apiKey: null` and only an organization API key, API calls, trigger authorization, and `session.mcp.headers` use `x-org-api-key`.
+
 ## AI SDKs
 
 Use these when you call a model SDK directly.

@@ -83,17 +83,17 @@
     "@ai-sdk/react": "^4.0.96",
     "@anthropic-ai/claude-agent-sdk": "^0.3.263",
     "@anthropic-ai/sdk": "^0.115.0",
-    "@composio/anthropic": "^0.11.4",
-    "@composio/claude-agent-sdk": "^0.12.1",
-    "@composio/core": "^0.24.0",
+    "@composio/anthropic": "^0.11.5",
+    "@composio/claude-agent-sdk": "^0.13.0",
+    "@composio/core": "^0.26.0",
     "@composio/google": "^0.12.0",
-    "@composio/langchain": "^0.11.1",
-    "@composio/llamaindex": "^0.11.1",
-    "@composio/mastra": "^0.10.5",
+    "@composio/langchain": "^0.11.2",
+    "@composio/llamaindex": "^0.11.2",
+    "@composio/mastra": "^0.10.6",
     "@composio/openai": "^0.13.0",
-    "@composio/openai-agents": "^0.11.1",
+    "@composio/openai-agents": "^0.11.2",
     "@composio/typesafe": "^0.1.1",
-    "@composio/vercel": "^0.12.1",
+    "@composio/vercel": "^0.13.0",
     "@google/genai": "^2.21.0",
     "@langchain/core": "^1.2.9",
     "@langchain/langgraph": "^1.4.14",
@@ -134,6 +134,11 @@
     "next@16.3.8": "patches/next@16.3.8.patch"
   },
   "overrides": {
-    "@mastra/mcp": "1.17.2"
+    "@mastra/mcp": "1.17.2",
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/core": "2.3.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "@modelcontextprotocol/server-legacy": "2.3.1"
   }
 }

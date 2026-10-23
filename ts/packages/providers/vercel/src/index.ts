@@ -25,7 +25,25 @@ import {
   omitNullToolArguments,
 } from '@composio/core';
 import type { ToolSet as VercelToolSet, Tool as VercelTool } from 'ai';
-import { tool } from 'ai';
+import { jsonSchema, tool } from 'ai';
+
+type AiJsonSchema = Parameters<typeof jsonSchema>[0];
+
+/**
+ * The AI SDK schema for a tool input: the model is shown `schema` itself, and
+ * tool-call arguments are validated with the Zod schema built from it.
+ */
+const toolInputSchema = (schema: Record<string, unknown>) => {
+  const validator = jsonSchemaToZodSchema(schema);
+  return jsonSchema(schema as AiJsonSchema, {
+    validate: async value => {
+      const result = await validator.safeParseAsync(value);
+      return result.success
+        ? { success: true, value: result.data }
+        : { success: false, error: result.error };
+    },
+  });
+};
 
 export type VercelToolCollection = VercelToolSet;
 export class VercelProvider extends BaseAgenticProvider<
@@ -55,6 +73,12 @@ export class VercelProvider extends BaseAgenticProvider<
    * // Use the provider to wrap tools for Vercel AI SDK
    * const vercelTools = provider.wrapTools(composioTools, composio.tools.execute);
    * ```
+   *
+   * @param options.strict - Rewrites each tool's input schema into the form
+   * OpenAI strict mode accepts, and validates tool-call arguments against it.
+   * It does not set the AI SDK's per-tool `strict` flag, so the model provider
+   * does not enforce the schema. Anthropic strict mode rejects requests with
+   * typical sets of rewritten tools; see the README.
    */
   constructor({ strict = false }: { strict?: boolean } = {}) {
     super();
@@ -147,15 +171,17 @@ export class VercelProvider extends BaseAgenticProvider<
       }
     }
 
-    // The Zod converter does not follow $ref, so inline the definitions the
-    // strict rewrite keeps (cycles fall back to the permissive sentinel).
-    const inputParametersSchema = jsonSchemaToZodSchema(
+    // The model sees the tool's JSON Schema as is, so keywords a Zod schema
+    // cannot carry (`format`, `contentEncoding`, `contentMediaType`, `title`,
+    // ...) reach it. The Zod converter does not follow $ref, so inline the
+    // definitions first (cycles fall back to the permissive sentinel).
+    const inputSchema = toolInputSchema(
       dereferenceJsonSchema(parameters, { onUnresolved: 'sentinel' })
     );
 
     return tool({
       description: composioTool.description,
-      inputSchema: inputParametersSchema,
+      inputSchema,
 
       execute: async params => {
         // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).

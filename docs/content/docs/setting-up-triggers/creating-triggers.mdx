@@ -111,7 +111,7 @@ const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
 
 Trigger instances default to the `'latest'` toolkit version. If you parse payloads against a fixed schema, [pin a version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version) at SDK initialization.
 
-That's it. The trigger is active. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events).
+The trigger instance is created. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events) and test with a new matching event in the provider. If nothing arrives, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
 
 ## Next
 

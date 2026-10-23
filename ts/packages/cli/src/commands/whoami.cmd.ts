@@ -1,5 +1,6 @@
 import { Command } from 'effect/cli';
 import { Effect, Option } from 'effect';
+import { notLoggedIn } from 'src/commands/errors';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -10,7 +11,7 @@ import { getOrgEnhancedControlsStatus } from 'src/services/tool-permissions';
 
 /**
  * CLI command to display your account information.
- * Never prints or exposes API keys.
+ * Never prints or exposes API keys. Without a login it fails with `NotLoggedInError`.
  *
  * @example
  * ```bash
@@ -26,7 +27,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
 
       yield* ctx.data.apiKey.pipe(
         Option.match({
-          onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
+          onNone: () => Effect.fail(notLoggedIn()),
           onSome: apiKey =>
             Effect.gen(function* () {
               const sessionInfo = yield* getSessionInfoByUserApiKey({

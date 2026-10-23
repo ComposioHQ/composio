@@ -87,6 +87,7 @@ describe('runAgentClaim', () => {
 
       expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
         'No Composio agent identity is saved on this machine.',
+        expect.stringMatching(/^Next steps:\n/),
       ]);
       expect(process.exitCode).toBe(1);
       expect(fetchSpy).not.toHaveBeenCalled();
