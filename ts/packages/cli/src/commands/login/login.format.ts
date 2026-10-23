@@ -8,6 +8,8 @@ export const POLL_WITH_OTHER_FLAGS_MESSAGE =
   '`--poll` cannot be combined with browser, session, direct-login, or agent flags.';
 export const AGENT_WITH_OTHER_FLAGS_MESSAGE =
   '`--agent` cannot be combined with browser, session, or direct-login flags.';
+export const AGENT_WITH_EXPECT_EMAIL_MESSAGE =
+  '`--expect-email` cannot be combined with `--agent`.';
 export const ORG_WITHOUT_USER_API_KEY_MESSAGE = '`--org` requires `--user-api-key`.';
 export const USER_API_KEY_WITH_SESSION_FLAGS_MESSAGE =
   '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.';

@@ -1,6 +1,7 @@
 import { Array as Arr, Data, Effect, Match, Option, Predicate, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { APP_VERSION } from 'src/constants';
+import { confirmLoginIdentity } from 'src/effects/confirm-login-identity';
 import {
   browserLogin,
   emitLoginComplete,
@@ -34,6 +35,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { InvalidOrganizationError, LoginSessionRequestError } from './login.errors';
 import {
+  AGENT_WITH_EXPECT_EMAIL_MESSAGE,
   AGENT_WITH_OTHER_FLAGS_MESSAGE,
   ALREADY_LOGGED_IN_MESSAGE,
   ALREADY_LOGGED_IN_OUTRO,
@@ -60,6 +62,7 @@ export type LoginParams = {
   readonly key: Option.Option<string>;
   readonly userApiKey: Option.Option<string>;
   readonly org: Option.Option<string>;
+  readonly expectEmail: Option.Option<string>;
   readonly yes: boolean;
   readonly noSkillInstall: boolean;
   readonly agent: boolean;
@@ -121,6 +124,7 @@ const loginWithKey = (params: {
   readonly announce: boolean;
   readonly pollRetries?: number;
   readonly defaultToFirstOrg?: boolean;
+  readonly expectedEmail?: string;
 }) =>
   Effect.gen(function* () {
     const client = yield* ComposioSessionRepository;
@@ -135,6 +139,14 @@ const loginWithKey = (params: {
     const linkedSession = yield* params.noWait
       ? Effect.flatMap(getSession, requireLinkedNow)
       : waitForLinkedSession(getSession, params.pollRetries);
+
+    // PRDE-1702: the id alone completes a session, so the account it linked is confirmed (or
+    // pinned) before the key it carries is used or stored.
+    yield* confirmLoginIdentity({
+      email: linkedSession.account.email,
+      verificationCode: linkedSession.code,
+      expectedEmail: params.expectedEmail,
+    });
 
     const uakApiKey = linkedSession.api_key;
     const sessionInfo = yield* getSessionInfoByUserApiKey({ userApiKey: uakApiKey });
@@ -223,18 +235,31 @@ const reusableStoredAgent = (requestedExplicitLoginFlow: boolean) =>
 // --- flows ------------------------------------------------------------------------------------
 
 /** `login --poll`: completes the browser login a headless `login` cached. */
-export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
+export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall' | 'expectEmail'>) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const pendingLoginSession = yield* PendingLoginSession;
     const pendingLogin = yield* pendingLoginSession.read;
+    // An explicit flag wins over the pin recorded when the login was started.
+    const expectedEmail = Option.match(params.expectEmail, {
+      onSome: Option.some,
+      onNone: () =>
+        Option.filter(Option.fromNullishOr(pendingLogin.expectedEmail), email => email.length > 0),
+    });
     const result = yield* loginWithKey({
       key: pendingLogin.key,
       noWait: false,
       announce: false,
       pollRetries: LOGIN_POLL_RETRIES,
       defaultToFirstOrg: true,
-    });
+      expectedEmail: Option.getOrUndefined(expectedEmail),
+    }).pipe(
+      // The rejected session is already linked, so keeping the cache would only let a retry
+      // fail the same way; consume it like a completed login.
+      Effect.catchTag('commands/LoginIdentityError', error =>
+        pendingLoginSession.clear.pipe(Effect.andThen(Effect.fail(error)))
+      )
+    );
     yield* pendingLoginSession.clear;
 
     const summary: PollLoginSummary = {
@@ -264,20 +289,34 @@ const handleAgentLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
 
 /** `login --key`: completes the CLI session a `login --no-wait` printed. */
 export const handleSessionKeyLogin = (
-  params: Pick<LoginParams, 'noWait' | 'noSkillInstall'> & { readonly key: string }
+  params: Pick<LoginParams, 'noWait' | 'noSkillInstall' | 'expectEmail'> & { readonly key: string }
 ) =>
-  loginWithKey({ key: params.key, noWait: params.noWait, announce: true }).pipe(
-    Effect.andThen(offerSkillInstall(params.noSkillInstall))
-  );
+  loginWithKey({
+    key: params.key,
+    noWait: params.noWait,
+    announce: true,
+    expectedEmail: Option.getOrUndefined(params.expectEmail),
+  }).pipe(Effect.andThen(offerSkillInstall(params.noSkillInstall)));
 
 /** `login --user-api-key [--org]`: stores a user API key without a browser. */
 export const handleDirectLogin = (
-  params: Pick<LoginParams, 'org' | 'noSkillInstall'> & { readonly userApiKey: string }
+  params: Pick<LoginParams, 'org' | 'noSkillInstall' | 'expectEmail'> & {
+    readonly userApiKey: string;
+  }
 ) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
     const { userApiKey } = params;
     const sessionInfo = yield* getSessionInfoByUserApiKey({ userApiKey });
+
+    // A pasted key is an explicit act, but `--expect-email` still guards against the wrong
+    // (or a hostile) key being adopted; the gate fails before anything is stored.
+    yield* Option.match(params.expectEmail, {
+      onNone: () => Effect.void,
+      onSome: expectedEmail =>
+        confirmLoginIdentity({ email: sessionInfo.org_member.email, expectedEmail }),
+    });
+
     const homeOrg = sessionInfo.project.org;
 
     const selectedOrg = yield* Option.match(
@@ -314,7 +353,7 @@ export const handleDirectLogin = (
  * both promise output (the printed URL, the session JSON) that it would replace.
  */
 export const handleBrowserLogin = (
-  params: Pick<LoginParams, 'noBrowser' | 'noWait' | 'yes' | 'noSkillInstall'>
+  params: Pick<LoginParams, 'noBrowser' | 'noWait' | 'yes' | 'noSkillInstall' | 'expectEmail'>
 ) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -338,6 +377,7 @@ export const handleBrowserLogin = (
           noBrowser: params.noBrowser,
           noWait: params.noWait,
           skipOrgProjectPicker: params.yes,
+          expectEmail: Option.getOrUndefined(params.expectEmail),
         }).pipe(Effect.andThen(offerSkillInstall(params.noSkillInstall || params.noWait))),
     });
   });
@@ -353,6 +393,7 @@ const selectLoginFlow = (params: LoginParams) => {
     key: Option.isSome(params.key),
     userApiKey: Option.isSome(params.userApiKey),
     org: Option.isSome(params.org),
+    expectEmail: Option.isSome(params.expectEmail),
     browserOrSession: params.noBrowser || params.noWait,
     poll: params.poll,
     agent: params.agent,
@@ -365,6 +406,10 @@ const selectLoginFlow = (params: LoginParams) => {
     Match.when(
       (f: Flags) => f.poll && (f.browserOrSession || f.key || f.userApiKey || f.agent),
       () => reject(POLL_WITH_OTHER_FLAGS_MESSAGE, '--poll')
+    ),
+    Match.when(
+      (f: Flags) => f.agent && f.expectEmail,
+      () => reject(AGENT_WITH_EXPECT_EMAIL_MESSAGE, '--expect-email')
     ),
     Match.when(
       (f: Flags) => f.agent && (f.browserOrSession || f.key || f.userApiKey),
