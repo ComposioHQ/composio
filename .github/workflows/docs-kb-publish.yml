@@ -1,0 +1,98 @@
+name: Docs - Publish KB Guide
+
+# The support portal sends this when someone approves a KB guide that Front Desk drafted: a new guide, a
+# rewrite or a retirement. It becomes one PR on next that merges itself once checks pass.
+on:
+  repository_dispatch:
+    types: [kb-guide-approved]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-kb-publish-${{ github.event.client_payload.draft_id }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Check request
+        env:
+          DRAFT_ID: ${{ github.event.client_payload.draft_id }}
+        run: |
+          if ! [[ "$DRAFT_ID" =~ ^[0-9]+$ ]]; then
+            echo "draft_id must be a number" >&2
+            exit 1
+          fi
+        working-directory: .
+
+      - name: Checkout docs repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Apply the approved guide
+        env:
+          GUIDE: ${{ toJSON(github.event.client_payload.guide) }}
+        run: |
+          printf '%s' "$GUIDE" > "$RUNNER_TEMP/kb-guide.json"
+          bun scripts/publish-kb-guide.ts "$RUNNER_TEMP/kb-guide.json"
+
+      - name: Regenerate KB pages
+        run: |
+          bun run generate:kb
+          bun run check:kb
+
+      - name: Generate composio PR token
+        id: write-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Create pull request
+        id: pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.write-token.outputs.token }}
+          commit-message: 'docs(kb): ${{ github.event.client_payload.summary }}'
+          title: 'docs(kb): ${{ github.event.client_payload.summary }}'
+          body: |
+            KB guide approved in the support portal by ${{ github.event.client_payload.approved_by }}.
+
+            - Guide: `${{ github.event.client_payload.guide.slug }}` (${{ github.event.client_payload.guide.action }})
+            - Draft: ${{ github.event.client_payload.portal_url }}
+
+            Front Desk drafted it; the approver reviewed and edited it in the portal. This PR merges itself
+            once checks pass.
+          branch: docs/kb-front-desk-${{ github.event.client_payload.draft_id }}
+          base: next
+          add-paths: |
+            docs/kb/
+            docs/content/kb/
+
+      - name: Merge once checks pass
+        if: steps.pr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ steps.write-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.pull-request-number }}
+        run: gh pr merge "$PR" --auto --squash
