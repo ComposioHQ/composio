@@ -8,6 +8,16 @@ export const Session = Schema.Struct({
 }).annotate({ identifier: 'Session' });
 export type Session = Schema.Schema.Type<typeof Session>;
 
+/**
+ * A session as `create-session` returns it. `code_challenge_method` is the server's
+ * acknowledgement that it stored the session's proof; it is absent when the server did not.
+ */
+export const CreatedSession = Schema.Struct({
+  ...Session.fields,
+  code_challenge_method: Schema.optional(Schema.NullOr(Schema.String)),
+}).annotate({ identifier: 'CreatedSession' });
+export type CreatedSession = Schema.Schema.Type<typeof CreatedSession>;
+
 const SessionAccount = Schema.Struct({
   id: Schema.String,
   email: Schema.String,

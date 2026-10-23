@@ -165,6 +165,7 @@ describe('CLI: composio login', () => {
         expect(output).toContain('Do not ask the user whether to poll');
         expect(output).toContain('hint: For unattended agents:');
         expect(output).toContain('composio login --agent');
+        expect(output).toContain('Confirmation code: 001122');
 
         const fs = yield* FileSystem.FileSystem;
         const cacheDir = yield* setupCacheDir;
@@ -174,6 +175,8 @@ describe('CLI: composio login', () => {
         );
         const pendingLogin = JSON.parse(pendingLoginRaw) as Record<string, unknown>;
         expect(pendingLogin.key).toBe('te00st11-d0c4-4efa-8117-c638886063e0');
+        expect(pendingLogin.verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+        expect(output).not.toContain(String(pendingLogin.verifier));
         expect(
           (yield* fs.stat(path.join(cacheDir, 'pending-login-session.json'))).mode & 0o777
         ).toBe(0o600);
@@ -394,6 +397,7 @@ describe('CLI: composio login', () => {
             loginUrl: 'https://dashboard.composio.dev/?cliKey=legacy-session-id',
             expiresAt: cachedAt,
             cachedAt,
+            verifier: 'dGVzdC12ZXJpZmllci1mb3ItdGhlLWxvZ2luLXRlc3Q',
           },
           null,
           2
@@ -537,6 +541,7 @@ describe('CLI: composio login', () => {
                 code: '001122',
                 expiresAt,
                 status: 'pending',
+                code_challenge_method: 'S256',
               }),
             getSession: () =>
               Effect.succeed({
@@ -572,6 +577,7 @@ describe('CLI: composio login', () => {
                 loginUrl: `https://dashboard.composio.dev/?cliKey=${sessionId}`,
                 expiresAt: DateTime.formatIso(expiresAt),
                 cachedAt: new Date().toISOString(),
+                verifier: 'dGVzdC12ZXJpZmllci1mb3ItdGhlLWxvZ2luLXRlc3Q',
               },
               null,
               2
