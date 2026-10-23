@@ -268,6 +268,23 @@ describe('ToolRouter', () => {
       expect(bodies[1]).not.toHaveProperty('hooks');
     });
 
+    it('rejects a prompt injection check on a before_execute hook, as the API does', async () => {
+      await expect(
+        toolRouter.create(userId, {
+          hooks: [
+            {
+              type: 'before_execute',
+              id: 'block_injection',
+              appliesTo: 'all',
+              // @ts-expect-error a before_execute hook only takes a condition_check handler
+              handler: { type: 'prompt_injection_check', action: 'block' },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
     it('rejects hooks together with a saved session config', async () => {
       await expect(
         toolRouter.create(

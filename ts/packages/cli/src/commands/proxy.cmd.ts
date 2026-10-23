@@ -386,18 +386,29 @@ export const proxyCmd = Command.make('proxy', {
             )
             .pipe(
               Effect.mapError(failed),
-              Effect.flatMap(response =>
-                response.result_type === 'input_required'
-                  ? Effect.fail(
-                      failed(
-                        toolInputRequiredError(
-                          `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
-                          response
-                        )
+              Effect.flatMap(response => {
+                if (response.result_type === 'input_required') {
+                  return Effect.fail(
+                    failed(
+                      toolInputRequiredError(
+                        `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                        response
                       )
                     )
-                  : Effect.succeed(response)
-              ),
+                  );
+                }
+                // A session hook blocked the request: there is no HTTP
+                // response to print, only the hook's message.
+                if (response.result_type === 'blocked') {
+                  return Effect.fail(
+                    new ProxyRequestError({
+                      message: `${normalizedMethod} proxy call via "${normalizedToolkit}" was blocked by session hook "${response.reason.hook_id}": ${response.message}`,
+                      cause: response.reason,
+                    })
+                  );
+                }
+                return Effect.succeed(response);
+              }),
               Effect.matchEffect({
                 onFailure: error =>
                   handleProxyExecutionError({

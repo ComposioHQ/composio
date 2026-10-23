@@ -5,6 +5,7 @@ import logging
 import os
 import traceback
 import typing as t
+import warnings
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -20,6 +21,9 @@ from composio_client import (
     omit,
 )
 from composio_client import ComposioError as ClientComposioError
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteResponse,
+)
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
@@ -2052,11 +2056,16 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Test that session execute is called for agentic tool execution."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_execute_response.result_type = "completed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "completed",
+                    "data": {"result": "success"},
+                    "error": None,
+                    "log_id": "log_123",
+                }
+            )
+        )
 
         # Create a real Tools instance to test the execute function
         from composio.core.models.tools import Tools as RealTools
@@ -2223,11 +2232,16 @@ class TestToolRouterExecution:
 
     def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
         """Test that tool execution errors are handled correctly."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {}
-        mock_execute_response.error = "Authentication failed"
-        mock_execute_response.result_type = "failed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "failed",
+                    "data": {},
+                    "error": "Authentication failed",
+                    "log_id": "log_123",
+                }
+            )
+        )
 
         # Create a real execute function
         from composio.core.models.tools import Tools as RealTools
@@ -2849,13 +2863,13 @@ class TestSessionHooks:
         tool_router.create(user_id="user_123", hooks=self._HOOKS)
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["extra_body"] == {"hooks": self._HOOKS}
+        assert kwargs["hooks"] == self._HOOKS
 
     def test_create_omits_hooks_by_default(self, tool_router, mock_client):
         tool_router.create(user_id="user_123")
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert "extra_body" not in kwargs
+        assert "hooks" not in kwargs
 
     @pytest.mark.parametrize(
         ("hooks", "expected"),
@@ -2940,6 +2954,38 @@ class TestSessionHooks:
             {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
         ]
 
+    @pytest.mark.parametrize(
+        "body",
+        [
+            pytest.param(_BLOCKED_CALL_JSON, id="blocked"),
+            pytest.param(
+                {
+                    "data": {"sent": True},
+                    "error": None,
+                    "log_id": "log_1",
+                    "result_type": "completed",
+                    "hook_results": [
+                        {"id": "block_injection", "status": "unavailable"}
+                    ],
+                },
+                id="completed",
+            ),
+        ],
+    )
+    def test_a_result_dumps_its_hook_results_as_the_dicts_it_holds(self, body):
+        """The client types ``hook_results`` as models and the SDK's result
+        holds them as its own dicts, so dumping it must not warn."""
+        client, _ = _answering_client(body)
+        result = _created_session(client).execute(
+            "GMAIL_SEND_EMAIL", arguments={"to": "ceo@rival.com"}
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            dumped = result.model_dump()
+
+        assert dumped["hook_results"] == body["hook_results"]
+
     def test_blocked_call_reaches_the_agent_as_a_failed_call(self):
         """Every provider hands the agent ``data``, ``error`` and
         ``successful``, so this is what the agent sees in any framework."""
@@ -2996,66 +3042,6 @@ class TestSessionHooks:
             {"id": "block_injection", "status": "unavailable"}
         ]
 
-    def test_blocked_response_from_typed_client_models(self):
-        """A regenerated client returns ``reason`` and ``hook_results`` as its
-        own nested models instead of dicts."""
-        from composio.core.models.tools import parse_blocked_response
-
-        class _Reason(BaseModel):
-            type: str
-            hook_id: str
-
-        class _HookResult(BaseModel):
-            id: str
-            status: str
-            outcome: t.Optional[str] = None
-
-        class _Blocked(BaseModel):
-            result_type: str
-            reason: _Reason
-            message: str
-            hook_results: t.List[_HookResult]
-
-        blocked = parse_blocked_response(
-            _Blocked(
-                result_type="blocked",
-                reason=_Reason(type="request_blocked", hook_id="no_external_email"),
-                message="Blocked by session policy",
-                hook_results=[
-                    _HookResult(
-                        id="no_external_email", status="evaluated", outcome="block"
-                    )
-                ],
-            ),
-            "Tool GMAIL_SEND_EMAIL",
-        )
-
-        assert blocked is not None
-        assert blocked.reason.hook_id == "no_external_email"
-        assert blocked.hook_results == [
-            {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
-        ]
-
-    def test_malformed_blocked_response_is_raised(self):
-        malformed = {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "reason"}
-        client, _ = _answering_client(malformed)
-
-        with pytest.raises(ValidationError):
-            _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
-
-    def test_malformed_hook_results_is_raised(self):
-        """A completed response whose hook results violate the schema raises a
-        malformed hook results error, not an unknown result_type."""
-        client, _ = _answering_client(
-            {
-                **_COMPLETED_JSON,
-                "hook_results": [{"id": "block_injection", "status": "nope"}],
-            }
-        )
-
-        with pytest.raises(ValidationError, match="malformed hook results"):
-            _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
-
     @pytest.mark.parametrize(
         "run",
         [
@@ -3085,19 +3071,31 @@ class TestSessionHooks:
             ],
         }
 
-    def test_proxy_execute_malformed_hook_results_is_raised(self):
+    def test_proxy_execute_returns_the_hook_results_of_a_sent_request(self):
         client, _ = _answering_client(
             {
                 "result_type": "completed",
                 "status": 200,
                 "data": {"id": 1},
                 "headers": {},
-                "hook_results": [{"id": "block_injection", "status": "nope"}],
+                "hook_results": [
+                    {
+                        "id": "no_external_email",
+                        "status": "evaluated",
+                        "outcome": "continue",
+                    },
+                    {"id": "block_injection", "status": "unavailable"},
+                ],
             }
         )
 
-        with pytest.raises(ValidationError, match="malformed hook results"):
-            _created_session(client).proxy_execute(**_PROXY_PARAMS)
+        result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
+
+        assert result["result_type"] == "completed"
+        assert result.get("hook_results") == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "continue"},
+            {"id": "block_injection", "status": "unavailable"},
+        ]
 
 
 class _NoInput(BaseModel):

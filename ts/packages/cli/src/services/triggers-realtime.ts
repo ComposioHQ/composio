@@ -13,7 +13,7 @@ import { JsonRecordSchema } from 'src/effects/json';
 import type {
   RealtimeAuthResponse as CliRealtimeAuthResponse,
   RealtimeCredentialsResponse as CliRealtimeCredentialsResponse,
-} from '@composio/client/resources/cli';
+} from '@composio/client/resources/_internal/cli';
 import { ComposioClientSingleton, ComposioSessionRepository } from 'src/services/composio-clients';
 import { idempotent, validated } from 'src/services/composio-request';
 
@@ -297,11 +297,11 @@ const makeTriggersRealtime = Effect.gen(function* () {
 
       return yield* listenWith({
         getRealtimeCredentials: () =>
-          client.cli.realtime
+          client._internal.cli.realtime
             .credentials({ ...idempotent, ...validated })
             .pipe(Effect.mapError(subscriptionError('Failed to fetch realtime credentials'))),
         authRealtimeChannel: params =>
-          client.cli.realtime
+          client._internal.cli.realtime
             .auth(params, idempotent)
             .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
         onEvent,

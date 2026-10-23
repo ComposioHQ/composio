@@ -12,6 +12,13 @@
 
 ### Patch Changes
 
+- A tool call or proxied request that a session hook blocks is now reported as
+  a failure carrying the hook's message. `composio execute` prints it as a
+  failed call (`successful: false`) with the message in `error`; on consumer
+  projects, whose calls go through the Dashboard, it used to fail as a response
+  the CLI could not read. `composio proxy` fails naming the hook instead of
+  printing a response with no status.
+
 - `composio connections list` now prints each account's `id`, its `alias`
   whenever it has one (previously only when a toolkit had several accounts),
   and `display_name` — the provider identity from `state.val.displayName`,

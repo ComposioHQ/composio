@@ -43,25 +43,36 @@ export type SessionConfigListResponse = z.infer<typeof SessionConfigListResponse
 const SessionConfigTagPolicySchema = z.object({
   enable: z.array(ToolRouterTagsParamSchema.element).optional(),
   disable: z.array(ToolRouterTagsParamSchema.element).optional(),
+  /** Tags whose tools need the user's approval before they run. */
+  require_approval: z.array(ToolRouterTagsParamSchema.element).optional(),
 });
+
+/** What in a policy entry needs the user's approval before it runs. */
+const requireApproval = { require_approval: z.array(z.string()).optional() };
+const ApprovalOnlyPolicySchema = z.object({ require_approval: z.array(z.string()) });
 
 /**
  * The access policy stored in a saved Session config, in the backend's
- * `enable`/`disable` shape. Toolkit slug keys and tag names are kept exactly
- * as the backend sends them.
+ * `enable`/`disable`/`require_approval` shape. Toolkit slug keys and tag names
+ * are kept exactly as the backend sends them.
  */
 export const SessionConfigPolicySchema = z.object({
   toolkits: z
-    .union([z.object({ enable: z.array(z.string()) }), z.object({ disable: z.array(z.string()) })])
+    .union([
+      z.object({ enable: z.array(z.string()), ...requireApproval }),
+      z.object({ disable: z.array(z.string()), ...requireApproval }),
+      ApprovalOnlyPolicySchema,
+    ])
     .optional(),
   /** Per-toolkit tool policy, keyed by toolkit slug. */
   tools: z
     .record(
       z.string(),
       z.union([
-        z.object({ enable: z.array(z.string()) }),
-        z.object({ disable: z.array(z.string()) }),
-        z.object({ tags: SessionConfigTagPolicySchema }),
+        z.object({ enable: z.array(z.string()), ...requireApproval }),
+        z.object({ disable: z.array(z.string()), ...requireApproval }),
+        z.object({ tags: SessionConfigTagPolicySchema, ...requireApproval }),
+        ApprovalOnlyPolicySchema,
       ])
     )
     .optional(),
