@@ -34448,7 +34448,7 @@
     ],
     "toolCount": 242,
     "triggerCount": 7,
-    "version": "20261022_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "SALESFORCE_ACCOUNT_CREATION_WITH_CONTENT_TYPE_OPTION",
@@ -64031,7 +64031,7 @@
     ],
     "toolCount": 58,
     "triggerCount": 1,
-    "version": "20260915_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "WHATSAPP_BLOCK_USERS",
@@ -109407,7 +109407,7 @@
     ],
     "toolCount": 57,
     "triggerCount": 0,
-    "version": "20260721_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "HARVEST_CREATE_CLIENT",
@@ -111999,7 +111999,7 @@
     ],
     "toolCount": 49,
     "triggerCount": 0,
-    "version": "20261021_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ZOHO_MAIL_ACCOUNTS_GET_SIGNATURES",
@@ -123139,6 +123139,641 @@
     ]
   },
   {
+    "slug": "aha",
+    "name": "Aha!",
+    "logo": "https://logos.composio.dev/api/aha",
+    "description": "Aha! helps product teams set strategy, prioritize ideas, plan roadmaps, and manage product development work.",
+    "category": "product management",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 112,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "AHA_ADD_PRODUCT_IDEA_PORTALS",
+        "name": "Add Product Idea Portals",
+        "description": "Add idea portal links to a product without replacing existing links."
+      },
+      {
+        "slug": "AHA_CONVERT_FEATURE_TO_EPIC",
+        "name": "Convert Feature to Epic",
+        "description": "Irreversibly convert an existing feature into an epic while preserving its data and relationships."
+      },
+      {
+        "slug": "AHA_CONVERT_REQUIREMENT_TO_FEATURE",
+        "name": "Convert Requirement to Feature",
+        "description": "Irreversibly convert an existing requirement into a feature."
+      },
+      {
+        "slug": "AHA_CREATE_CUSTOM_FIELD_OPTION",
+        "name": "Create Custom Field Option",
+        "description": "Create an option for one custom-field definition."
+      },
+      {
+        "slug": "AHA_CREATE_EPIC",
+        "name": "Create Epic",
+        "description": "Create an epic in a release or in a workspace's default release."
+      },
+      {
+        "slug": "AHA_CREATE_FEATURE",
+        "name": "Create Feature",
+        "description": "Create a feature in a release with its documented planning fields."
+      },
+      {
+        "slug": "AHA_CREATE_GOAL",
+        "name": "Create Goal",
+        "description": "Create a strategic goal in one Aha! workspace or product line."
+      },
+      {
+        "slug": "AHA_CREATE_IDEA",
+        "name": "Create Idea",
+        "description": "Create an idea in a product with the documented idea fields."
+      },
+      {
+        "slug": "AHA_CREATE_IDEA_THEME",
+        "name": "Create Idea Theme",
+        "description": "Create an idea theme in a product."
+      },
+      {
+        "slug": "AHA_CREATE_INITIATIVE",
+        "name": "Create Initiative",
+        "description": "Create a strategic initiative in one Aha! workspace or product line."
+      },
+      {
+        "slug": "AHA_CREATE_KEY_RESULT",
+        "name": "Create Key Result",
+        "description": "Create a key result under one strategic goal."
+      },
+      {
+        "slug": "AHA_CREATE_PARKING_LOT_RELEASE",
+        "name": "Create Parking-Lot Release",
+        "description": "Create a parking-lot release in a workspace."
+      },
+      {
+        "slug": "AHA_CREATE_PRODUCT",
+        "name": "Create Product",
+        "description": "Create an Aha! product workspace with a name, description, and reference prefix."
+      },
+      {
+        "slug": "AHA_CREATE_PRODUCT_CONTRIBUTOR",
+        "name": "Create Product Contributor",
+        "description": "Create an Aha! contributor user associated with a product."
+      },
+      {
+        "slug": "AHA_CREATE_PRODUCT_ROLLUP_RELEASE",
+        "name": "Create Product Roll-Up Release",
+        "description": "Create a roll-up release in a product line, optionally adding workspaces."
+      },
+      {
+        "slug": "AHA_CREATE_RELEASE_MILESTONE",
+        "name": "Create Release Milestone",
+        "description": "Create a phase or milestone in an Aha! release."
+      },
+      {
+        "slug": "AHA_CREATE_REQUIREMENT",
+        "name": "Create Requirement",
+        "description": "Create a requirement within one feature."
+      },
+      {
+        "slug": "AHA_CREATE_TODO",
+        "name": "Create To-Do",
+        "description": "Create a standalone personal to-do for the connected Aha! user."
+      },
+      {
+        "slug": "AHA_CREATE_WORKFLOW_STATUS_TIME",
+        "name": "Create Workflow Status Time",
+        "description": "Create a workflow status interval for one supported parent record. This endpoint requires activation by Aha! support."
+      },
+      {
+        "slug": "AHA_DELETE_CUSTOM_FIELD_OPTION",
+        "name": "Delete Custom Field Option",
+        "description": "Delete one option from an Aha! custom-field definition; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_EPIC",
+        "name": "Delete Epic",
+        "description": "Delete an epic by ID; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_FEATURE",
+        "name": "Delete Feature",
+        "description": "Delete one feature by ID or reference number; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_GOAL",
+        "name": "Delete Goal",
+        "description": "Delete one strategic goal; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_IDEA",
+        "name": "Delete Idea",
+        "description": "Delete an idea by ID or reference key; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_IDEA_THEME",
+        "name": "Delete Idea Theme",
+        "description": "Delete an idea theme by numeric ID; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_INITIATIVE",
+        "name": "Delete Initiative",
+        "description": "Delete one strategic initiative; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_KEY_RESULT",
+        "name": "Delete Key Result",
+        "description": "Delete one key result; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_RELEASE",
+        "name": "Delete Release",
+        "description": "Delete a release from a workspace; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_RELEASE_PHASE",
+        "name": "Delete Release Phase",
+        "description": "Delete a release phase by numeric ID; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_REQUIREMENT",
+        "name": "Delete Requirement",
+        "description": "Delete one requirement by ID or reference number; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_TODO",
+        "name": "Delete To-Do",
+        "description": "Delete one to-do by its Aha! task ID; it may remain restorable through the recycle bin for up to 30 days."
+      },
+      {
+        "slug": "AHA_DELETE_USER_CUSTOM_ROLE",
+        "name": "Delete User Custom Role",
+        "description": "Remove a user's custom role in one Aha! product."
+      },
+      {
+        "slug": "AHA_DELETE_USER_PRODUCT_ROLE",
+        "name": "Delete User Product Role",
+        "description": "Remove a user's role in one Aha! product."
+      },
+      {
+        "slug": "AHA_DELETE_WORKFLOW_STATUS_TIME",
+        "name": "Delete Workflow Status Time",
+        "description": "Delete a workflow status interval. This endpoint requires activation by Aha! support."
+      },
+      {
+        "slug": "AHA_DUPLICATE_RELEASE",
+        "name": "Duplicate Release",
+        "description": "Create a duplicate of an existing release."
+      },
+      {
+        "slug": "AHA_GET_CURRENT_USER",
+        "name": "Get Current User",
+        "description": "Return the connected Aha! user, account context, and product roles."
+      },
+      {
+        "slug": "AHA_GET_CUSTOM_LAYOUT",
+        "name": "Get Custom Layout",
+        "description": "Return one custom layout. Requires configuration-administrator access."
+      },
+      {
+        "slug": "AHA_GET_EPIC",
+        "name": "Get Epic",
+        "description": "Return one Aha! epic by its ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_FEATURE",
+        "name": "Get Feature",
+        "description": "Return detailed information for one feature by internal ID or human-readable reference number."
+      },
+      {
+        "slug": "AHA_GET_GOAL",
+        "name": "Get Goal",
+        "description": "Return one strategic goal by ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_IDEA",
+        "name": "Get Idea",
+        "description": "Return one idea by ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_IDEA_THEME",
+        "name": "Get Idea Theme",
+        "description": "Return one idea theme by ID."
+      },
+      {
+        "slug": "AHA_GET_IDENTITY_PROVIDER",
+        "name": "Get Identity Provider",
+        "description": "Return one identity provider configured for account SSO."
+      },
+      {
+        "slug": "AHA_GET_INITIATIVE",
+        "name": "Get Initiative",
+        "description": "Return one strategic initiative by ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_KEY_RESULT",
+        "name": "Get Key Result",
+        "description": "Return one key result by ID."
+      },
+      {
+        "slug": "AHA_GET_RELEASE",
+        "name": "Get Release",
+        "description": "Return one release by ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_RELEASE_PHASE",
+        "name": "Get Release Phase",
+        "description": "Return one release phase by ID."
+      },
+      {
+        "slug": "AHA_GET_REQUIREMENT",
+        "name": "Get Requirement",
+        "description": "Return one requirement by ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_ROLLUP_RELEASE",
+        "name": "Get Roll-Up Release",
+        "description": "Return one roll-up release by ID or reference number."
+      },
+      {
+        "slug": "AHA_GET_STRATEGIC_MODEL",
+        "name": "Get Strategic Model",
+        "description": "Return one strategic model by ID."
+      },
+      {
+        "slug": "AHA_GET_STRATEGIC_VISION",
+        "name": "Get Strategic Vision",
+        "description": "Return one strategic vision by ID."
+      },
+      {
+        "slug": "AHA_GET_TODO",
+        "name": "Get To-Do",
+        "description": "Return one to-do by its Aha! task ID."
+      },
+      {
+        "slug": "AHA_GET_USER",
+        "name": "Get User",
+        "description": "Get a specific Aha! user by ID."
+      },
+      {
+        "slug": "AHA_GET_WORKFLOW",
+        "name": "Get Workflow",
+        "description": "Return one workflow with its statuses and workflow kinds."
+      },
+      {
+        "slug": "AHA_GET_WORKFLOW_STATUS_TIME",
+        "name": "Get Workflow Status Time",
+        "description": "Return one workflow status interval. The endpoint must be enabled by Aha! support."
+      },
+      {
+        "slug": "AHA_GET_WORKSPACE",
+        "name": "Get Workspace",
+        "description": "Return one workspace and its applied template by ID."
+      },
+      {
+        "slug": "AHA_LIST_ALL_CUSTOM_FIELD_OPTIONS",
+        "name": "List All Custom Field Options",
+        "description": "Return all options configured for one custom-field definition."
+      },
+      {
+        "slug": "AHA_LIST_ASSIGNED_RECORDS",
+        "name": "List Assigned Records",
+        "description": "List one page of records assigned to the connected Aha! user, optionally by record type."
+      },
+      {
+        "slug": "AHA_LIST_ASSISTANT_USAGE",
+        "name": "List Assistant Usage",
+        "description": "Return one page of per-user AI assistant activity. The first page requires both start_at and end_at; subsequent pages accept the returned cursor alone."
+      },
+      {
+        "slug": "AHA_LIST_AUDITS",
+        "name": "List Audits",
+        "description": "Return one page of immutable Aha! record-change history, optionally filtered by the changed record or an associated parent record."
+      },
+      {
+        "slug": "AHA_LIST_CHILD_RELEASES",
+        "name": "List Child Releases",
+        "description": "Return releases under a roll-up release, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_CUSTOM_FIELD_OPTIONS",
+        "name": "List Custom Field Options",
+        "description": "Return selectable options for one custom-field definition."
+      },
+      {
+        "slug": "AHA_LIST_CUSTOM_FIELDS",
+        "name": "List Custom Fields",
+        "description": "Return custom-field definitions, keys, types, and worksheet metadata."
+      },
+      {
+        "slug": "AHA_LIST_CUSTOM_LAYOUTS",
+        "name": "List Custom Layouts",
+        "description": "Return custom layouts configured in the account."
+      },
+      {
+        "slug": "AHA_LIST_DELETIONS",
+        "name": "List Deletions",
+        "description": "Return records currently visible in the account recycle bin, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_EPICS",
+        "name": "List Epics",
+        "description": "Return one page of epics across the account or within a goal, initiative, release, or workspace."
+      },
+      {
+        "slug": "AHA_LIST_FEATURES",
+        "name": "List Features",
+        "description": "Return one page of features across the account or within a goal, initiative, epic, workspace, or release."
+      },
+      {
+        "slug": "AHA_LIST_GOALS",
+        "name": "List Goals",
+        "description": "Return one page of strategic goals across the account or within an initiative or product."
+      },
+      {
+        "slug": "AHA_LIST_IDEA_PORTALS",
+        "name": "List Idea Portals",
+        "description": "Return idea portals configured in the account or linked to one product, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_IDEAS",
+        "name": "List Ideas",
+        "description": "Search and filter ideas across the account or within one product, returning one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_IDEA_THEMES",
+        "name": "List Idea Themes",
+        "description": "Return idea themes across the account, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_IDENTITY_PROVIDERS",
+        "name": "List Identity Providers",
+        "description": "Return active identity providers available for account SSO."
+      },
+      {
+        "slug": "AHA_LIST_INITIATIVES",
+        "name": "List Initiatives",
+        "description": "Return one page of strategic initiatives across the account or within a goal or product."
+      },
+      {
+        "slug": "AHA_LIST_KEY_RESULTS",
+        "name": "List Key Results",
+        "description": "Return key results for one strategic goal, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_MY_PENDING_TODOS",
+        "name": "List My Pending To-Dos",
+        "description": "Deprecated compatibility action that lists one page of pending to-dos assigned to the connected Aha! user."
+      },
+      {
+        "slug": "AHA_LIST_PRODUCT_ROLLUP_RELEASES",
+        "name": "List Product Roll-Up Releases",
+        "description": "Return roll-up releases in one Aha! product line, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_PRODUCT_USERS",
+        "name": "List Product Users",
+        "description": "List one page of users and roles associated with an Aha! product."
+      },
+      {
+        "slug": "AHA_LIST_RELATED_IDEAS",
+        "name": "List Related Ideas",
+        "description": "Find ideas related to a term, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_RELEASE_PHASES",
+        "name": "List Release Phases",
+        "description": "Return release phases across the account or within one release, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_RELEASES",
+        "name": "List Releases",
+        "description": "Return releases associated with a workspace, goal, or initiative, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_REQUIREMENTS",
+        "name": "List Requirements",
+        "description": "Return requirements for one feature, optionally updated since a timestamp, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_ROLLUP_CHILD_RELEASES",
+        "name": "List Roll-Up Child Releases",
+        "description": "Return releases under a roll-up release, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_STRATEGY_MODELS",
+        "name": "List Strategy Models",
+        "description": "Return strategy models configured in the account, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_STRATEGY_VISIONS",
+        "name": "List Strategy Visions",
+        "description": "Return strategic vision records in the account, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_TODOS",
+        "name": "List To-Dos",
+        "description": "Return one page of account, assigned-user, or associated-record to-dos."
+      },
+      {
+        "slug": "AHA_LIST_USER_CUSTOM_ROLES",
+        "name": "List User Custom Roles",
+        "description": "List one page of an Aha! user's custom roles and their scopes."
+      },
+      {
+        "slug": "AHA_LIST_USER_PRODUCT_ROLES",
+        "name": "List User Product Roles",
+        "description": "List one page of an Aha! user's roles in individual products."
+      },
+      {
+        "slug": "AHA_LIST_USERS",
+        "name": "List Users",
+        "description": "Return account users and their seat and administrator flags, one page at a time."
+      },
+      {
+        "slug": "AHA_LIST_WORKFLOWS",
+        "name": "List Workflows",
+        "description": "Return workflows and statuses configured for one workspace."
+      },
+      {
+        "slug": "AHA_LIST_WORKFLOW_STATUS_TIMES",
+        "name": "List Workflow Status Times",
+        "description": "Return workflow status intervals for one supported parent record, one page at a time. The endpoint must be enabled by Aha! support."
+      },
+      {
+        "slug": "AHA_LIST_WORKSPACES",
+        "name": "List Workspaces",
+        "description": "Return Aha! workspaces and workspace lines available to the connected user, one page at a time."
+      },
+      {
+        "slug": "AHA_PROMOTE_IDEA",
+        "name": "Promote Idea",
+        "description": "Promote an idea to an epic, feature, initiative, or requirement."
+      },
+      {
+        "slug": "AHA_REPLACE_PRODUCT_IDEA_PORTALS",
+        "name": "Replace Product Idea Portals",
+        "description": "Replace every idea portal link on a product."
+      },
+      {
+        "slug": "AHA_RESTORE_DELETED_RECORD",
+        "name": "Restore Deleted Record",
+        "description": "Start restoring a record from the recycle bin within its retention period; restoration may continue asynchronously."
+      },
+      {
+        "slug": "AHA_UPDATE_CUSTOM_FIELD_OPTION",
+        "name": "Update Custom Field Option",
+        "description": "Update the value, color, or visibility of a custom-field option."
+      },
+      {
+        "slug": "AHA_UPDATE_EPIC",
+        "name": "Update Epic",
+        "description": "Update an epic by ID; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_FEATURE",
+        "name": "Update Feature",
+        "description": "Update one feature's planning fields; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_GOAL",
+        "name": "Update Goal",
+        "description": "Update one strategic goal; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_IDEA",
+        "name": "Update Idea",
+        "description": "Update an existing idea; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_IDEA_THEME",
+        "name": "Update Idea Theme",
+        "description": "Update an idea theme; provide a new name or description."
+      },
+      {
+        "slug": "AHA_UPDATE_INITIATIVE",
+        "name": "Update Initiative",
+        "description": "Update one strategic initiative; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_KEY_RESULT",
+        "name": "Update Key Result",
+        "description": "Update one key result; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_PRODUCT",
+        "name": "Update Product",
+        "description": "Update an Aha! product; provide a new name, description, or reference prefix."
+      },
+      {
+        "slug": "AHA_UPDATE_RELEASE",
+        "name": "Update Release",
+        "description": "Update a release by ID, optionally through a specified workspace, including dates, capacity, progress, parent, owner, goals, and initiatives; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_RELEASE_PHASE",
+        "name": "Update Release Phase",
+        "description": "Update a release phase's type, dates, description, or progress."
+      },
+      {
+        "slug": "AHA_UPDATE_REQUIREMENT",
+        "name": "Update Requirement",
+        "description": "Update one requirement; provide at least one field to change."
+      },
+      {
+        "slug": "AHA_UPDATE_ROLLUP_RELEASE",
+        "name": "Update Roll-Up Release",
+        "description": "Update a roll-up release or add workspaces to it."
+      },
+      {
+        "slug": "AHA_UPDATE_TODO",
+        "name": "Update To-Do",
+        "description": "Update an existing to-do's name or description; provide at least one of name or body."
+      },
+      {
+        "slug": "AHA_UPDATE_USER",
+        "name": "Update User",
+        "description": "Update an Aha! user; provide a new name or enabled state."
+      },
+      {
+        "slug": "AHA_UPDATE_USER_CUSTOM_ROLES",
+        "name": "Update User Custom Roles",
+        "description": "Assign a custom role to an Aha! user for one product."
+      },
+      {
+        "slug": "AHA_UPDATE_USER_PRODUCT_ROLES",
+        "name": "Update User Product Roles",
+        "description": "Assign a product role to an Aha! user for one product."
+      },
+      {
+        "slug": "AHA_UPDATE_WORKFLOW_STATUS_TIME",
+        "name": "Update Workflow Status Time",
+        "description": "Update a workflow status interval. This endpoint requires activation by Aha! support."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "aha_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": ""
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "subdomain",
+                "displayName": "Account Subdomain",
+                "type": "string",
+                "description": "The tenant label at the start of your Aha! account URL. For example, if you sign in at https://example.aha.io, enter example. Use the account where you want Composio to access records on your behalf.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "ahrefs_mcp",
     "name": "Ahrefs MCP",
     "logo": "https://logos.composio.dev/api/ahrefs_mcp",
@@ -127465,7 +128100,7 @@
     ],
     "toolCount": 56,
     "triggerCount": 0,
-    "version": "20261014_01",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ALPHA_VANTAGE_ALL_COMMODITIES",
@@ -127505,7 +128140,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127537,7 +128172,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127549,7 +128184,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127601,7 +128236,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127613,7 +128248,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127650,7 +128285,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127682,7 +128317,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127694,7 +128329,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127746,7 +128381,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127763,7 +128398,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127775,7 +128410,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -127812,7 +128447,7 @@
           "supported": true,
           "price": {
             "description": "Estimated $0.006 per 100 requests",
-            "discount": "0"
+            "discount": "65"
           }
         }
       },
@@ -188941,6 +189576,53 @@
     ]
   },
   {
+    "slug": "cve_now_mcp",
+    "name": "cve.now MCP",
+    "logo": "https://logos.composio.dev/api/cve_now_mcp",
+    "description": "cve.now by Sazabi provides a free public vulnerability feed, CVE/GHSA/OSV lookups, and exact package-version checks against its indexed catalog. No authentication required. No matches do not guarantee safety; model-written summaries are labeled and published under CC-BY 4.0, while upstream data retains its own licensing and attribution.",
+    "category": "model context protocol",
+    "authSchemes": [
+      "NO_AUTH"
+    ],
+    "toolCount": 3,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "CVE_NOW_MCP_CHECK_STACK",
+        "name": "Check stack",
+        "description": "Check exact package versions against cve.now's synced vulnerability catalog using a lockfile or package list. Inputs are sent to cve.now; avoid including secrets or private dependency details without authorization. No matches means none in this catalog, not a guarantee of safety."
+      },
+      {
+        "slug": "CVE_NOW_MCP_GET_VULNERABILITY",
+        "name": "Get vulnerability",
+        "description": "Get one vulnerability entry by CVE, GHSA or OSV id, as JSON."
+      },
+      {
+        "slug": "CVE_NOW_MCP_LIST_FEED",
+        "name": "List feed",
+        "description": "List the newest items in a cve.now feed (critical, all, kev, tech/<slug>, ecosystem/<eco>)."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "NO_AUTH",
+        "name": "cve_now_mcp_no_auth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "dadata_ru",
     "name": "DaData.ru",
     "logo": "https://logos.composio.dev/api/dadata_ru",
@@ -209367,6 +210049,193 @@
     ]
   },
   {
+    "slug": "ebay",
+    "name": "eBay",
+    "logo": "https://logos.composio.dev/api/ebay",
+    "description": "Access eBay public marketplace, taxonomy, notification, and developer APIs with application OAuth.",
+    "category": "ecommerce",
+    "authSchemes": [
+      "S2S_OAUTH2"
+    ],
+    "toolCount": 31,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "EBAY_BUY_BROWSE_CHECK_COMPATIBILITY",
+        "name": "Browse: Check Compatibility",
+        "description": "Check whether an eBay Motors part is compatible with a supplied car, truck, or motorcycle definition without changing the item."
+      },
+      {
+        "slug": "EBAY_BUY_BROWSE_GET_ITEM",
+        "name": "Browse: Get Item",
+        "description": "Retrieve complete details for one eBay listing or variation by either its RESTful item ID or legacy listing ItemID using an application access token."
+      },
+      {
+        "slug": "EBAY_BUY_BROWSE_GET_ITEMS",
+        "name": "Browse: Get Items",
+        "description": "Retrieve details for up to 20 eBay items or 10 item groups in one request. This limited-release operation requires selected-partner access."
+      },
+      {
+        "slug": "EBAY_BUY_BROWSE_GET_ITEMS_BY_ITEM_GROUP",
+        "name": "Browse: Get Items By Item Group",
+        "description": "Retrieve every purchasable item variation and shared description in an eBay Browse item group."
+      },
+      {
+        "slug": "EBAY_BUY_BROWSE_SEARCH",
+        "name": "Browse: Search",
+        "description": "Search eBay item summaries by keyword, category, product identifier, charity, compatibility, aspects, and Browse field filters, returning one page plus an opaque continuation cursor."
+      },
+      {
+        "slug": "EBAY_BUY_BROWSE_SEARCH_BY_IMAGE",
+        "name": "Browse: Search By Image",
+        "description": "Search eBay item summaries using a bare Base64-encoded image, optionally refine the matches, and return one page plus an opaque continuation cursor. To continue, pass the cursor and repeat the same image; search selectors are restored from the cursor."
+      },
+      {
+        "slug": "EBAY_BUY_DEAL_GET_DEAL_ITEMS",
+        "name": "Deal: Get Deal Items",
+        "description": "Retrieve one page of eBay deal items by category, commissionable status, delivery country, and marketplace. This Limited Release operation requires eBay Buy Deal approval."
+      },
+      {
+        "slug": "EBAY_BUY_DEAL_GET_EVENT",
+        "name": "Deal: Get Event",
+        "description": "Retrieve the details of one eBay deal event by event ID, including its coupons, dates, terms, and images. This limited-release operation requires eBay approval for the buy.deal scope."
+      },
+      {
+        "slug": "EBAY_BUY_DEAL_GET_EVENT_ITEMS",
+        "name": "Deal: Get Event Items",
+        "description": "Return one page of eBay Deal event items for an event, with optional category and delivery-country filters plus an opaque continuation cursor. This Limited Release operation requires eBay partner approval."
+      },
+      {
+        "slug": "EBAY_BUY_DEAL_GET_EVENTS",
+        "name": "Deal: Get Events",
+        "description": "Return one page of eBay deal events for a marketplace, including coupons, event terms, images, and an opaque continuation cursor. This limited-release operation requires eBay approval for the buy.deal scope."
+      },
+      {
+        "slug": "EBAY_BUY_FEED_GET_ITEM_FEED",
+        "name": "Feed: Get Item Feed",
+        "description": "Download one byte range of an eBay Item feed gzip file for a top-level category. The restricted Buy Feed API grant and eBay partner approval are required."
+      },
+      {
+        "slug": "EBAY_BUY_FEED_GET_ITEM_GROUP_FEED",
+        "name": "Feed: Get Item Group Feed",
+        "description": "Download an eBay Item Group feed gzip file, or an optional byte range, for a top-level category. The restricted Buy Feed API grant and eBay partner approval are required."
+      },
+      {
+        "slug": "EBAY_BUY_FEED_GET_ITEM_PRIORITY_FEED",
+        "name": "Feed: Get Item Priority Feed",
+        "description": "Download one byte range of an eBay Item Priority delta feed gzip file for a top-level category and date. Consume the daily Item and Item Group feeds before this feed. The restricted Buy Feed API grant and eBay partner approval are required."
+      },
+      {
+        "slug": "EBAY_BUY_FEED_GET_ITEM_SNAPSHOT_FEED",
+        "name": "Feed: Get Item Snapshot Feed",
+        "description": "Download one byte range of an hourly eBay Item Snapshot feed gzip file for a top-level category and UTC hour. The restricted Buy Feed API grant and eBay partner approval are required."
+      },
+      {
+        "slug": "EBAY_BUY_MARKETING_GET_MERCHANDISED_PRODUCTS",
+        "name": "Marketing: Get Merchandised Products",
+        "description": "Return eBay products selected by category and the BEST_SELLING metric, including catalog IDs, prices, images, reviews, and rating details. This limited-release operation requires eBay Buy Marketing approval."
+      },
+      {
+        "slug": "EBAY_COMMERCE_CHARITY_GET_CHARITY_ORG",
+        "name": "Charity: Get Charity Org",
+        "description": "Retrieve full details for one eBay-supported charitable organization by its charity organization ID."
+      },
+      {
+        "slug": "EBAY_COMMERCE_CHARITY_GET_CHARITY_ORGS",
+        "name": "Charity: Get Charity Orgs",
+        "description": "Search supported eBay charitable organizations by keywords or registration IDs, returning one page of complete organization details and an opaque continuation cursor."
+      },
+      {
+        "slug": "EBAY_COMMERCE_NOTIFICATION_GET_PUBLIC_KEY",
+        "name": "Notification: Get Public Key",
+        "description": "Retrieve the eBay public key identified by a push notification signature for validating that notification's payload. Cache returned keys temporarily instead of requesting one for every notification."
+      },
+      {
+        "slug": "EBAY_COMMERCE_NOTIFICATION_GET_TOPIC",
+        "name": "Notification: Get Topic",
+        "description": "Retrieve one eBay notification topic by ID, including its subscription scope requirements and supported payload configurations."
+      },
+      {
+        "slug": "EBAY_COMMERCE_NOTIFICATION_GET_TOPICS",
+        "name": "Notification: Get Topics",
+        "description": "Return one page of eBay notification topics, including subscription scope requirements, supported payload configurations, and a continuation cursor."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_FETCH_ITEM_ASPECTS",
+        "name": "Taxonomy: Fetch Item Aspects",
+        "description": "Download the complete gzipped JSON item-aspect dataset for every leaf category in an eBay category tree. The compressed file can exceed 100 MB and this bulk operation has a substantially lower daily quota than other Taxonomy operations."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_CATEGORY_SUGGESTIONS",
+        "name": "Taxonomy: Get Category Suggestions",
+        "description": "Find ranked eBay leaf-category suggestions for free-form item keywords, including each category's ancestor path to the category-tree root."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_CATEGORY_TREE",
+        "name": "Taxonomy: Get Category Tree",
+        "description": "Retrieve eBay's complete category tree when root_category_id is omitted, or retrieve the subtree rooted at root_category_id when it is provided. Both modes include recursively nested descendants."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_COMPATIBILITY_PROPERTIES",
+        "name": "Taxonomy: Get Compatibility Properties",
+        "description": "Retrieve the localized vehicle properties that define compatibility for an eBay parts category, such as Make, Model, Year, Engine, and Trim."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_COMPATIBILITY_PROPERTY_VALUES",
+        "name": "Taxonomy: Get Compatibility Property Values",
+        "description": "Retrieve the applicable values of one vehicle compatibility property for an eBay parts category, optionally narrowed by other property-value pairs."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_DEFAULT_CATEGORY_TREE_ID",
+        "name": "Taxonomy: Get Default Category Tree ID",
+        "description": "Retrieve the identifier and version of the default eBay category tree for a marketplace. Use the returned identifier with other Taxonomy operations."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_EXPIRED_CATEGORIES",
+        "name": "Taxonomy: Get Expired Categories",
+        "description": "Retrieve mappings from expired eBay leaf categories to the active leaf categories that replaced them. Only mapped category consolidations and splits are returned; expired categories without an active replacement are omitted."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TAXONOMY_GET_ITEM_ASPECTS_FOR_CATEGORY",
+        "name": "Taxonomy: Get Item Aspects for Category",
+        "description": "Retrieve complete eBay aspect metadata for a leaf category, including valid values, value dependencies, listing requirements, variation support, and format constraints."
+      },
+      {
+        "slug": "EBAY_COMMERCE_TRANSLATION_TRANSLATE",
+        "name": "Translation: Translate",
+        "description": "Translate one eBay listing title or description from a supported source language to a supported target language without changing a listing."
+      },
+      {
+        "slug": "EBAY_DEVELOPER_ANALYTICS_GET_RATE_LIMITS",
+        "name": "Analytics: Get Rate Limits",
+        "description": "Return application-level eBay API quota usage, remaining calls, and reset windows, optionally filtered by API context and name."
+      },
+      {
+        "slug": "EBAY_SHOPPING_UNAVAILABLE",
+        "name": "Shopping API Unavailable",
+        "description": "Compatibility-only action for retired eBay Shopping API calls. It always fails locally because eBay decommissioned Shopping; use Browse for items and Taxonomy for categories and aspects."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "S2S_OAUTH2",
+        "name": "ebay_s2s_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "ecologi",
     "name": "Ecologi",
     "logo": "https://logos.composio.dev/api/ecologi",
@@ -220046,7 +220915,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260615_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "FILLOUT_FORMS_AUTHORIZE_O_AUTH",
@@ -268636,6 +269505,242 @@
     ]
   },
   {
+    "slug": "judge_me",
+    "name": "Judge.me",
+    "logo": "https://logos.composio.dev/api/judgeme",
+    "description": "Judge.me helps online stores collect, manage, and display product and shop reviews.",
+    "category": "reviews",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 34,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "JUDGE_ME_BULK_CREATE_WEBHOOKS",
+        "name": "Bulk Create Webhooks",
+        "description": "Create multiple webhook subscriptions in one request."
+      },
+      {
+        "slug": "JUDGE_ME_BULK_UPDATE_REVIEW_VISIBILITY",
+        "name": "Bulk Update Review Visibility",
+        "description": "Sequentially publish, hide, archive, or unarchive 1-25 reviews. Each update uses a separate request, and the response reports a per-item outcome so one rejected update does not hide partial completion."
+      },
+      {
+        "slug": "JUDGE_ME_COUNT_REVIEWS",
+        "name": "Count Reviews",
+        "description": "Count management review records, optionally filtered by reviewer, product, and star rating. Use the storefront aggregate count action for widget-facing all-review or shop-review totals."
+      },
+      {
+        "slug": "JUDGE_ME_COUNT_STOREFRONT_REVIEWS",
+        "name": "Count Storefront Reviews",
+        "description": "Return the storefront aggregate review count for either all product and shop-level reviews or only shop-level reviews."
+      },
+      {
+        "slug": "JUDGE_ME_CREATE_CHECKOUT_COMMENT",
+        "name": "Create Checkout Comment",
+        "description": "Persist a customer's comment for a product through Judge.me's documented Checkout Comments operation. Requires the shop's Checkout Comments app entitlement."
+      },
+      {
+        "slug": "JUDGE_ME_CREATE_PRIVATE_REPLY",
+        "name": "Create Private Review Reply",
+        "description": "Create a private reply to a review and, by default, email it to the reviewer."
+      },
+      {
+        "slug": "JUDGE_ME_CREATE_PUBLIC_REPLY",
+        "name": "Create Public Review Reply",
+        "description": "Post a public reply to a review and optionally email it to the reviewer. Email sending defaults to enabled."
+      },
+      {
+        "slug": "JUDGE_ME_CREATE_REVIEW",
+        "name": "Create Review",
+        "description": "Submit a public web review in the background; no review is created when the shop disables web reviews."
+      },
+      {
+        "slug": "JUDGE_ME_CREATE_WEBHOOK",
+        "name": "Create Webhook",
+        "description": "Create one webhook subscription for a Judge.me event and callback URL."
+      },
+      {
+        "slug": "JUDGE_ME_DELETE_WEBHOOK",
+        "name": "Delete Webhook",
+        "description": "Delete the webhook subscription matching its current Judge.me event key and callback URL."
+      },
+      {
+        "slug": "JUDGE_ME_GET_ALL_REVIEWS_PAGE_WIDGET",
+        "name": "Get All Reviews Page Widget",
+        "description": "Return rendered HTML for one page of the shop's all-reviews page."
+      },
+      {
+        "slug": "JUDGE_ME_GET_CHECKOUT_COMMENTS_WIDGET",
+        "name": "Get Checkout Comments Widget",
+        "description": "Return rendered Checkout Comments widget HTML for one product; requires the Checkout Comments app."
+      },
+      {
+        "slug": "JUDGE_ME_GET_CURRENT_SHOP",
+        "name": "Get Current Shop",
+        "description": "Return identity, plan, platform, owner, and widget metadata for the OAuth-connected shop."
+      },
+      {
+        "slug": "JUDGE_ME_GET_FEATURED_REVIEWS_CAROUSEL",
+        "name": "Get Featured Reviews Carousel",
+        "description": "Return the rendered HTML for the shop's featured-reviews carousel."
+      },
+      {
+        "slug": "JUDGE_ME_GET_PRODUCT",
+        "name": "Get Product",
+        "description": "Return a product by Judge.me internal ID, external commerce-platform ID, or product handle."
+      },
+      {
+        "slug": "JUDGE_ME_GET_PRODUCT_PREVIEW_BADGE",
+        "name": "Get Product Preview Badge",
+        "description": "Return the rendered rating-and-review-count badge HTML for one product."
+      },
+      {
+        "slug": "JUDGE_ME_GET_PRODUCT_REVIEW_WIDGET",
+        "name": "Get Product Review Widget",
+        "description": "Return the rendered review-widget HTML for one product and, optionally, one review page."
+      },
+      {
+        "slug": "JUDGE_ME_GET_REVIEW",
+        "name": "Get Review",
+        "description": "Return one review by its Judge.me internal ID."
+      },
+      {
+        "slug": "JUDGE_ME_GET_REVIEWER",
+        "name": "Get Reviewer",
+        "description": "Return a reviewer by Judge.me internal ID, external commerce-platform ID, or email address."
+      },
+      {
+        "slug": "JUDGE_ME_GET_REVIEWS_RATING",
+        "name": "Get Reviews Rating",
+        "description": "Return the average rating for all product and shop-level reviews or for shop-level reviews only."
+      },
+      {
+        "slug": "JUDGE_ME_GET_REVIEWS_TAB_WIDGET",
+        "name": "Get Reviews Tab Widget",
+        "description": "Return the rendered floating reviews-tab HTML for a selected review type and page."
+      },
+      {
+        "slug": "JUDGE_ME_GET_SETTINGS",
+        "name": "Get Settings",
+        "description": "Return values for one or more named Judge.me shop settings."
+      },
+      {
+        "slug": "JUDGE_ME_GET_VERIFIED_REVIEWS_BADGE",
+        "name": "Get Verified Reviews Badge",
+        "description": "Return the rendered verified-review-count badge, or null when the shop has fewer than 20 verified reviews."
+      },
+      {
+        "slug": "JUDGE_ME_GET_WEBHOOK",
+        "name": "Get Webhook",
+        "description": "Return one webhook subscription by its Judge.me internal ID."
+      },
+      {
+        "slug": "JUDGE_ME_GET_WIDGET_PLACEHOLDER_HTML",
+        "name": "Get Widget Placeholder HTML",
+        "description": "Return the rendered placeholder HTML used before Judge.me widget JavaScript and CSS load."
+      },
+      {
+        "slug": "JUDGE_ME_GET_WIDGET_SETTINGS_HTML",
+        "name": "Get Widget Settings HTML",
+        "description": "Return the shop's rendered widget customization script and style HTML, not structured setting values."
+      },
+      {
+        "slug": "JUDGE_ME_LIST_REVIEWS",
+        "name": "List Reviews",
+        "description": "Return one page of reviews, optionally filtered by reviewer, product, rating, published-only state, or reviewer email. Full pages can yield a continuation whose final page is empty because Judge.me returns no total count."
+      },
+      {
+        "slug": "JUDGE_ME_LIST_WEBHOOKS",
+        "name": "List Webhooks",
+        "description": "Return all webhook subscriptions configured for the connected shop."
+      },
+      {
+        "slug": "JUDGE_ME_REQUEST_REVIEWER_DATA",
+        "name": "Request Reviewer Data",
+        "description": "Submit a reviewer data request for a customer email and one or more external order IDs. The submitted privacy workflow cannot be undone."
+      },
+      {
+        "slug": "JUDGE_ME_UNINSTALL_SHOP",
+        "name": "Uninstall Shop",
+        "description": "WARNING: This uninstalls Judge.me from the OAuth-connected shop and must only be called intentionally."
+      },
+      {
+        "slug": "JUDGE_ME_UPDATE_CURRENT_SHOP",
+        "name": "Update Current Shop",
+        "description": "Update selected profile and commerce metadata for the OAuth-connected shop. Use only with values intended to replace current shop data."
+      },
+      {
+        "slug": "JUDGE_ME_UPDATE_REVIEW_VISIBILITY",
+        "name": "Update Review Visibility",
+        "description": "Publish, hide, archive, or unarchive a review. Review text cannot be edited through this action."
+      },
+      {
+        "slug": "JUDGE_ME_UPDATE_WEBHOOK",
+        "name": "Update Webhook",
+        "description": "Replace a webhook subscription's event key and callback URL."
+      },
+      {
+        "slug": "JUDGE_ME_UPSERT_REVIEWER",
+        "name": "Create or Update Reviewer",
+        "description": "Create or update a reviewer selected by Judge.me ID, external commerce ID, or email."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "judgeme_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "public,read_shops,write_shops,read_widgets,read_products,read_reviewers,write_reviewers,read_reviews,write_reviews,read_settings,write_comments,write_replies,write_private_replies"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "jumpcloud",
     "name": "JumpCloud",
     "logo": "https://logos.composio.dev/api/jumpcloud",
@@ -281073,6 +282178,627 @@
     ]
   },
   {
+    "slug": "livechat",
+    "name": "LiveChat",
+    "logo": "https://logos.composio.dev/api/livechat",
+    "description": "Manage LiveChat agents, groups, bots, webhooks, properties, and customer conversations through server-side OAuth.",
+    "category": "customer support",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 111,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "LIVECHAT_ACCEPT_GREETING",
+        "name": "Accept Greeting",
+        "description": "Accept an incoming LiveChat greeting for an existing customer and mark that greeting as seen in the customer's live session. This changes greeting state."
+      },
+      {
+        "slug": "LIVECHAT_APPROVE_AGENT",
+        "name": "Approve Agent",
+        "description": "Approve a licensed LiveChat agent so they can use the application. This non-public operation requires the private subscription.lc:rw grant and changes the agent's approval state; do not retry it automatically."
+      },
+      {
+        "slug": "LIVECHAT_CANCEL_GREETING",
+        "name": "Cancel Greeting",
+        "description": "Cancel an incoming LiveChat invitation for an existing customer. This changes the greeting state in the customer's live session."
+      },
+      {
+        "slug": "LIVECHAT_CHECK_PRODUCT_LIMITS_FOR_PLAN",
+        "name": "Check Product Limits for Plan",
+        "description": "Read which current organization resources exceed a selected LiveChat plan's limits. This action requires the private subscription.lc:rw grant, which cannot be configured for ordinary public OAuth clients."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_AGENT",
+        "name": "Create Agent",
+        "description": "Create a normal-role licensed LiveChat user who must await approval. This safe baseline may consume a paid seat and send an irreversible account or approval email. Do not retry after an uncertain outcome. Use Create Privileged Agent only for approval bypass or an elevated role."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_AUTO_ACCESS",
+        "name": "Create Auto Access",
+        "description": "Add an ordered LiveChat auto-access rule. The rule immediately changes which groups customers matching its conditions can access."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_BOT",
+        "name": "Create Bot",
+        "description": "Create a LiveChat bot and return its write-once secret. Treat the secret as a credential and never log or replay it. The bot does not receive chats until its routing status is set; clean up only through a controlled lifecycle."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_BOT_TEMPLATE",
+        "name": "Create Bot Template",
+        "description": "Create a bot template for an application client ID and return its write-once secret. Treat the secret as a credential. This affects only the template and future installations; it does not create bots on existing installations."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_BOT_TEMPLATE_ACROSS_INSTALLATIONS",
+        "name": "Create Bot Template Across Installations",
+        "description": "Create a LiveChat bot template and also create a bot from it on every license where the app is already installed. This is a cross-license bulk creation and returns a sensitive write-once template secret."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_CANNED_RESPONSE",
+        "name": "Create Canned Response",
+        "description": "Create a group-owned LiveChat canned response. LiveChat sanitizes its text, and is_private controls whether other users can see it."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_GREETING",
+        "name": "Create Greeting",
+        "description": "Create a LiveChat greeting with trigger rules and optional rich content. An active greeting can immediately appear to matching visitors; use active=false while safely preparing it."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_GROUP",
+        "name": "Create Group",
+        "description": "Create a LiveChat routing group with its initial language and agent-priority map."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_PRIVILEGED_AGENT",
+        "name": "Create Privileged Agent",
+        "description": "Create a licensed LiveChat agent while explicitly bypassing approval and/or assigning an elevated administrator or viceowner role. This may consume a paid seat, send an irreversible account or approval email, and uses stronger or private grants than Create Agent. Do not retry after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_CREATE_TAG",
+        "name": "Create Tag",
+        "description": "Create a LiveChat tag and optionally assign it to groups. Tag-name duplicate matching is case insensitive."
+      },
+      {
+        "slug": "LIVECHAT_DEACTIVATE_CHAT",
+        "name": "Deactivate Chat",
+        "description": "Deactivate a LiveChat chat by closing its currently open thread. This takes effect immediately and prevents further messages to that thread. Use only for an explicitly selected chat; do not repeat after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_AGENT",
+        "name": "Delete Agent",
+        "description": "Permanently delete a licensed LiveChat agent. This irreversible operation removes the user from the license; verify the exact agent ID and do not retry automatically."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_AUTO_ACCESS",
+        "name": "Delete Auto Access",
+        "description": "Permanently delete an auto-access rule. This immediately changes customer access routing and should only target a confirmed rule ID."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_BOT",
+        "name": "Delete Bot",
+        "description": "Permanently delete a LiveChat bot. This irreversible operation can remove a bot from live routing; use an explicit verified bot ID and do not retry automatically."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_BOT_TEMPLATE",
+        "name": "Delete Bot Template",
+        "description": "Permanently delete only a bot template. Bots already installed from the template on existing licenses are not deleted."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_BOT_TEMPLATE_AND_INSTALLED_BOTS",
+        "name": "Delete Bot Template And Installed Bots",
+        "description": "Permanently delete a LiveChat bot template and every bot installed from it across all licenses. This cross-license bulk deletion can disrupt live routing and must not be retried automatically."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_CANNED_RESPONSE",
+        "name": "Delete Canned Response",
+        "description": "Permanently delete one canned response by ID, removing it from agent use. Use only a confirmed disposable or intentionally retired response."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_CHAT_PROPERTIES",
+        "name": "Delete Chat Properties",
+        "description": "Permanently delete selected registered property values from a live customer chat. Property data may contain PII; this action does not retry."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_EVENT",
+        "name": "Delete Event",
+        "description": "Delete one event from a specified LiveChat chat and thread. This is an irreversible customer-visible action: Customer Chat API responses hide the event, while Agent Chat can retain it as deleted or visible to elevated roles. Use only captured IDs from a disposable lifecycle and do not repeat after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_EVENT_PROPERTIES",
+        "name": "Delete Event Properties",
+        "description": "Permanently delete selected registered property values from a live customer-chat event. Property data may contain PII; this action does not retry."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_GREETING",
+        "name": "Delete Greeting",
+        "description": "Permanently delete a greeting, immediately stopping it from appearing to new matching visitors. Use only a confirmed disposable or retired greeting ID."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_GROUP",
+        "name": "Delete Group",
+        "description": "Permanently delete one LiveChat group by ID."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_GROUP_PROPERTIES",
+        "name": "Delete Group Properties",
+        "description": "Delete selected custom property values from one LiveChat group without unregistering their definitions."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_LICENSE_PROPERTIES",
+        "name": "Delete License Properties",
+        "description": "Delete selected license-level custom property values without unregistering their definitions."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_TAG",
+        "name": "Delete Tag",
+        "description": "Permanently delete the exact case-sensitive LiveChat tag, removing it from workflows that rely on that tag. Use a confirmed disposable or retired name."
+      },
+      {
+        "slug": "LIVECHAT_DELETE_THREAD_PROPERTIES",
+        "name": "Delete Thread Properties",
+        "description": "Permanently delete selected registered property values from a live customer-chat thread. Property data may contain PII; this action does not retry."
+      },
+      {
+        "slug": "LIVECHAT_DISABLE_LICENSE_WEBHOOKS",
+        "name": "Disable License Webhooks",
+        "description": "Disable all webhooks across the connected LiveChat license. Warning: this causes a license-wide webhook outage that persists through application reinstall."
+      },
+      {
+        "slug": "LIVECHAT_ENABLE_LICENSE_WEBHOOKS",
+        "name": "Enable License Webhooks",
+        "description": "Enable webhooks across the connected LiveChat license after they were explicitly disabled. Warning: this changes license-wide integration state and should not be treated as a guaranteed safe rollback without owner approval."
+      },
+      {
+        "slug": "LIVECHAT_EVALUATE_GOALS",
+        "name": "Evaluate Goals",
+        "description": "Trigger LiveChat goal evaluation for an offline customer. Achieved goals can record conversions and trigger configured integrations from the supplied session fields, group, and page URL."
+      },
+      {
+        "slug": "LIVECHAT_GET_AGENT",
+        "name": "Get Agent",
+        "description": "Return one LiveChat agent by ID, including any explicitly requested optional fields."
+      },
+      {
+        "slug": "LIVECHAT_GET_BOT",
+        "name": "Get Bot",
+        "description": "Return one LiveChat bot by ID with explicitly requested optional fields."
+      },
+      {
+        "slug": "LIVECHAT_GET_CUSTOMER",
+        "name": "Get Customer",
+        "description": "Return the customer profile for an explicit existing LiveChat entity through the server-side customer authorization bridge."
+      },
+      {
+        "slug": "LIVECHAT_GET_CUSTOMER_CHAT",
+        "name": "Get Customer Chat",
+        "description": "Return one existing customer's LiveChat chat and either its latest thread or a specified thread."
+      },
+      {
+        "slug": "LIVECHAT_GET_CUSTOMER_CONFIGURATION",
+        "name": "Get Customer Configuration",
+        "description": "Return versioned forms, buttons, integrations, and readable properties for a LiveChat customer group."
+      },
+      {
+        "slug": "LIVECHAT_GET_CUSTOMER_FORM",
+        "name": "Get Customer Form",
+        "description": "Return the enabled pre-chat or post-chat form for one LiveChat group."
+      },
+      {
+        "slug": "LIVECHAT_GET_CUSTOMER_LOCALIZATION",
+        "name": "Get Customer Localization",
+        "description": "Return versioned customer-facing localization phrases for a LiveChat group and language through LiveChat's public Customer Chat endpoint."
+      },
+      {
+        "slug": "LIVECHAT_GET_DYNAMIC_CUSTOMER_CONFIGURATION",
+        "name": "Get Dynamic Customer Configuration",
+        "description": "Return current customer-facing widget availability and the version identifiers needed for detailed configuration and localization reads."
+      },
+      {
+        "slug": "LIVECHAT_GET_GREETING",
+        "name": "Get Greeting",
+        "description": "Get one LiveChat greeting, including its rules and rich-message structure."
+      },
+      {
+        "slug": "LIVECHAT_GET_GROUP",
+        "name": "Get Group",
+        "description": "Return one LiveChat group by ID, including any explicitly requested optional fields."
+      },
+      {
+        "slug": "LIVECHAT_GET_LICENSE_WEBHOOKS_STATE",
+        "name": "Get License Webhooks State",
+        "description": "Return whether webhook delivery is enabled for the connected LiveChat license."
+      },
+      {
+        "slug": "LIVECHAT_GET_PREDICTED_AGENT",
+        "name": "Get Predicted Agent",
+        "description": "Return whether a new chat for an existing customer is predicted to queue and the agent predicted to receive it, when available."
+      },
+      {
+        "slug": "LIVECHAT_GET_PRODUCT_SOURCE",
+        "name": "Get Product Source",
+        "description": "Return the source parameters supplied when the Text product was activated."
+      },
+      {
+        "slug": "LIVECHAT_GET_URL_PREVIEW",
+        "name": "Get URL Preview",
+        "description": "Return LiveChat-hosted preview image URLs for a public webpage without changing chat state."
+      },
+      {
+        "slug": "LIVECHAT_ISSUE_BOT_TOKEN",
+        "name": "Issue Bot Token",
+        "description": "Issue a sensitive, non-revocable bot bearer token valid for 24 hours. The request secret and returned token must never be logged, stored in fixtures, or replayed; this action performs one request with no automatic loop."
+      },
+      {
+        "slug": "LIVECHAT_LIST_AGENTS",
+        "name": "List Agents",
+        "description": "List LiveChat agents, optionally filtering by group membership or suspension state."
+      },
+      {
+        "slug": "LIVECHAT_LIST_ALL_BOTS",
+        "name": "List All Bots",
+        "description": "List every bot in the LiveChat license, including bots not owned by the connected app. This is a privileged license-wide inventory read."
+      },
+      {
+        "slug": "LIVECHAT_LIST_ALL_PRIVATE_CANNED_RESPONSES",
+        "name": "List All Private Canned Responses",
+        "description": "Return one page including every private canned response across the requested LiveChat groups. This privileged read exposes private records beyond those normally accessible to the caller and never fetches later pages automatically."
+      },
+      {
+        "slug": "LIVECHAT_LIST_AUTO_ACCESSES",
+        "name": "List Auto Accesses",
+        "description": "List all LiveChat auto-access rules in their evaluation order."
+      },
+      {
+        "slug": "LIVECHAT_LIST_BOTS",
+        "name": "List Bots",
+        "description": "List only bots owned by the connected LiveChat app. Use List All Bots for the privileged license-wide inventory."
+      },
+      {
+        "slug": "LIVECHAT_LIST_BOT_TEMPLATES",
+        "name": "List Bot Templates",
+        "description": "List bot templates owned by a specified OAuth application client ID."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CANNED_RESPONSES",
+        "name": "List Canned Responses",
+        "description": "Return one page of canned responses accessible to the caller and a next_page_id for explicit continuation. This action never reads every private response or fetches subsequent pages automatically."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CHANNELS",
+        "name": "List Channels",
+        "description": "List summaries of communication channels used by the connected Text product."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CUSTOMER_BANS",
+        "name": "List Customer Bans",
+        "description": "List all active customer bans. Results can contain sensitive IP addresses and customer identifiers and should not be persisted unnecessarily."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CUSTOMER_CHATS",
+        "name": "List Customer Chats",
+        "description": "List one existing customer's chat summaries through LiveChat's server-side customer authorization bridge, returning one page at a time."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CUSTOMER_CHAT_THREADS",
+        "name": "List Customer Chat Threads",
+        "description": "List threads from one existing customer's chat through LiveChat's server-side customer authorization bridge, returning one page at a time."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CUSTOMER_GROUP_PROPERTIES",
+        "name": "List Customer Group Properties",
+        "description": "Read the custom property values a customer may access for one LiveChat group. Property values may contain customer data. Warning: live probes of this documented public endpoint currently return HTTP 405 or unsupported action; call it only to check whether provider support has been restored."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CUSTOMER_GROUP_STATUSES",
+        "name": "List Customer Group Statuses",
+        "description": "Return chat availability statuses for selected LiveChat groups or all groups visible to an existing customer."
+      },
+      {
+        "slug": "LIVECHAT_LIST_CUSTOMER_LICENSE_PROPERTIES",
+        "name": "List Customer License Properties",
+        "description": "Read the license property values visible to a LiveChat customer. Property values may contain customer data. Warning: live probes of this documented public endpoint currently return HTTP 405 or unsupported action; call it only to check whether provider support has been restored."
+      },
+      {
+        "slug": "LIVECHAT_LIST_GREETINGS",
+        "name": "List Greetings",
+        "description": "List a bounded page of LiveChat greetings, optionally filtered by group. Use the returned native next_page_id in a later call when present."
+      },
+      {
+        "slug": "LIVECHAT_LIST_GROUP_PROPERTIES",
+        "name": "List Group Properties",
+        "description": "Read group-level property values for selected LiveChat groups or a property namespace."
+      },
+      {
+        "slug": "LIVECHAT_LIST_GROUPS",
+        "name": "List Groups",
+        "description": "List all LiveChat groups, optionally requesting additional fields for each group."
+      },
+      {
+        "slug": "LIVECHAT_LIST_LICENSE_PROPERTIES",
+        "name": "List License Properties",
+        "description": "Read license-level property values, optionally narrowed to a namespace and property-name prefix."
+      },
+      {
+        "slug": "LIVECHAT_LIST_PROPERTY_DEFINITIONS",
+        "name": "List Property Definitions",
+        "description": "List private and public LiveChat property definitions owned by a specified OAuth application client ID."
+      },
+      {
+        "slug": "LIVECHAT_LIST_TAGS",
+        "name": "List Tags",
+        "description": "List LiveChat tags, optionally filtering by nested group IDs."
+      },
+      {
+        "slug": "LIVECHAT_LIST_WEBHOOK_NAMES",
+        "name": "List Webhook Names",
+        "description": "List webhook actions supported by LiveChat Configuration API version 3.6, including their accepted filters and additional payload data."
+      },
+      {
+        "slug": "LIVECHAT_LIST_WEBHOOKS",
+        "name": "List Webhooks",
+        "description": "List webhooks registered for a specified OAuth application client ID."
+      },
+      {
+        "slug": "LIVECHAT_MARK_EVENTS_AS_SEEN",
+        "name": "Mark Events as Seen",
+        "description": "Advance an existing customer's seen state in a LiveChat chat through an RFC 3339 timestamp. This emits a read-receipt state change for the chat."
+      },
+      {
+        "slug": "LIVECHAT_PUBLISH_PROPERTY",
+        "name": "Publish Property",
+        "description": "Publish a private property for access by tokens belonging to any Client ID. Warning: publication is irreversible; a published property cannot be unpublished or unregistered."
+      },
+      {
+        "slug": "LIVECHAT_REACTIVATE_EMAIL",
+        "name": "Reactivate Email",
+        "description": "Reactivate a bounced external email address for one LiveChat agent. Warning: this changes external email delivery state and may resume messages to that address."
+      },
+      {
+        "slug": "LIVECHAT_REGISTER_PROPERTY",
+        "name": "Register Property",
+        "description": "Register one private custom property definition for a LiveChat OAuth application."
+      },
+      {
+        "slug": "LIVECHAT_REGISTER_WEBHOOK",
+        "name": "Register Webhook",
+        "description": "Register one LiveChat webhook endpoint for an OAuth application and action."
+      },
+      {
+        "slug": "LIVECHAT_REQUEST_AGENT_UNSUSPENSION",
+        "name": "Request Agent Unsuspension",
+        "description": "Request unsuspension for the connected suspended agent. LiveChat sends external emails to the license owners and vice owners; do not retry this notification operation automatically."
+      },
+      {
+        "slug": "LIVECHAT_REQUEST_EMAIL_VERIFICATION",
+        "name": "Request Email Verification",
+        "description": "Send a verification email to an existing LiveChat customer. After confirmation, LiveChat sends the verified email to the supplied HTTPS callback exactly once and expects HTTP 200; failed callbacks are not retried."
+      },
+      {
+        "slug": "LIVECHAT_REQUEST_WELCOME_MESSAGE",
+        "name": "Request Welcome Message",
+        "description": "Request an asynchronous welcome message for an existing logged-in customer. This creates greeting session state, emits incoming_welcome_message later, and can affect AI or agent routing; the response reports the predicted route."
+      },
+      {
+        "slug": "LIVECHAT_RESET_BOT_SECRET",
+        "name": "Reset Bot Secret",
+        "description": "Irreversibly rotate a bot secret and return the sensitive replacement. The old credential stops working; update dependents immediately and never log, persist, replay, or automatically retry this operation."
+      },
+      {
+        "slug": "LIVECHAT_RESET_BOT_TEMPLATE_AND_INSTALLED_BOT_SECRETS",
+        "name": "Reset Bot Template And Installed Bot Secrets",
+        "description": "Irreversibly rotate a LiveChat bot template secret and set the replacement on every installed bot based on it across all licenses. This bulk credential rotation invalidates prior secrets; never log, replay, or automatically retry it."
+      },
+      {
+        "slug": "LIVECHAT_RESET_BOT_TEMPLATE_SECRET",
+        "name": "Reset Bot Template Secret",
+        "description": "Irreversibly rotate only a bot template secret and return the sensitive replacement. Existing installed bot secrets are unchanged; never log, replay, or automatically retry this action."
+      },
+      {
+        "slug": "LIVECHAT_RESUME_CHAT",
+        "name": "Resume Chat",
+        "description": "Resume an archived LiveChat chat for an existing customer entity. This is non-idempotent: a successful call creates a new thread and can create initial events, change access or continuous mode, and mark events seen. Do not repeat a call after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_SEND_EVENT",
+        "name": "Send Event",
+        "description": "Send one event into a real LiveChat chat for an existing customer. This is non-idempotent: a successful call creates and delivers the event and marks chat events seen for the customer. Do not repeat after an uncertain outcome, because duplicate messages or interactions can be delivered."
+      },
+      {
+        "slug": "LIVECHAT_SEND_FILE_EVENT",
+        "name": "Send File Event",
+        "description": "Upload one non-executable file of at most 10,000,000 bytes and irreversibly deliver it as a file event in an existing LiveChat chat. Delivery also marks chat events seen for the customer. If delivery fails after upload, the temporary uploaded file can remain without an event; do not retry after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_SEND_GREETING_BUTTON_CLICKED",
+        "name": "Send Greeting Button Clicked",
+        "description": "Record that an existing customer clicked a specific button in an incoming LiveChat greeting. This writes interaction state for the live session."
+      },
+      {
+        "slug": "LIVECHAT_SEND_RICH_MESSAGE_POSTBACK",
+        "name": "Send Rich Message Postback",
+        "description": "Send a button postback for an existing rich-message event. This is non-idempotent and changes the live interaction state; for an active thread it can emit an incoming-rich-message-postback notification. Do not repeat a call after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_SEND_SNEAK_PEEK",
+        "name": "Send Sneak Peek",
+        "description": "Send transient typed content into a real LiveChat chat before the customer submits it as a message. Agents may see the supplied text immediately. This is non-idempotent interaction activity; do not repeat after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_SET_CUSTOMER_SESSION_FIELDS",
+        "name": "Set Customer Session Fields",
+        "description": "Replace an existing LiveChat customer's ordered session fields. This mutates customer session/profile data and the values may contain PII."
+      },
+      {
+        "slug": "LIVECHAT_START_CHAT",
+        "name": "Start Chat",
+        "description": "Start a new LiveChat chat for an existing customer entity. This is non-idempotent: every successful call can create a real chat, thread, and initial events, and it also marks existing chat events seen for the customer. Do not repeat a call after an uncertain outcome."
+      },
+      {
+        "slug": "LIVECHAT_SUSPEND_AGENT",
+        "name": "Suspend Agent",
+        "description": "Suspend a licensed LiveChat agent. This non-public operation requires the private sessions--all:rw grant and can interrupt active sessions and live chat routing; do not retry it automatically."
+      },
+      {
+        "slug": "LIVECHAT_UNBAN_CUSTOMER",
+        "name": "Unban Customer",
+        "description": "Lift a customer ban by IP address or customer ID. Warning: this restores the customer's access to the connected LiveChat license."
+      },
+      {
+        "slug": "LIVECHAT_UNREGISTER_PROPERTY",
+        "name": "Unregister Property",
+        "description": "Permanently remove one custom property definition owned by an OAuth application."
+      },
+      {
+        "slug": "LIVECHAT_UNREGISTER_WEBHOOK",
+        "name": "Unregister Webhook",
+        "description": "Permanently remove one webhook registration owned by a LiveChat OAuth application."
+      },
+      {
+        "slug": "LIVECHAT_UNSUSPEND_AGENT",
+        "name": "Unsuspend Agent",
+        "description": "Unsuspend a licensed LiveChat agent. This non-public operation requires the private subscription.lc:rw grant and restores the agent's ability to participate in live routing; do not retry it automatically."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_AGENT",
+        "name": "Update Agent",
+        "description": "Update a licensed LiveChat agent. Role, group, login-status, chat-capacity, notification, and schedule changes can immediately alter permissions or live routing; verify the target and intended fields before calling."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_AUTO_ACCESS",
+        "name": "Update Auto Access",
+        "description": "Update or reorder an auto-access rule. Changes immediately affect customer access routing, so use a confirmed disposable or intended rule ID."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_BOT",
+        "name": "Update Bot",
+        "description": "Update a LiveChat bot. Group, priority, schedule, and chat-capacity changes can immediately alter live routing; verify the bot and intended fields before calling."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_BOT_TEMPLATE",
+        "name": "Update Bot Template",
+        "description": "Fully replace a LiveChat bot template for future installations. Existing installed bots are not changed. Omitted optional replacement fields are reset or cleared to provider defaults."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_CANNED_RESPONSE",
+        "name": "Update Canned Response",
+        "description": "Update an existing canned response while preserving omitted fields. Changing its group or privacy setting changes who can access it."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_CHAT_PROPERTIES",
+        "name": "Update Chat Properties",
+        "description": "Set registered custom property values on a live customer chat. This mutates chat state and values may contain PII."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_COMPANY_DETAILS",
+        "name": "Update Company Details",
+        "description": "Update license-level company details. Warning: this is an organization-wide change, and enrich=true may populate currently empty fields from the company domain."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_CUSTOMER",
+        "name": "Update Customer",
+        "description": "Partially update an existing LiveChat customer profile. This writes PII and may change omnichannel identity matching; omitted fields remain unchanged."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_EVENT_PROPERTIES",
+        "name": "Update Event Properties",
+        "description": "Set registered custom property values on a live customer-chat event. This mutates event state and values may contain PII."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_GREETING",
+        "name": "Update Greeting",
+        "description": "Update a greeting while preserving omitted fields. Rule, content, or active changes affect matching visitors immediately; deactivate before structural editing when appropriate."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_GROUP",
+        "name": "Update Group",
+        "description": "Update the name, language, or complete agent-priority map of an existing LiveChat group."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_GROUP_PROPERTIES",
+        "name": "Update Group Properties",
+        "description": "Set one or more custom property values on a LiveChat group."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_INSTALLED_BOTS_FROM_TEMPLATE",
+        "name": "Update Installed Bots From Template",
+        "description": "Fully replace a LiveChat bot template and propagate the replacement to every bot installed from it across all licenses. Omitted optional replacement fields are reset or cleared to provider defaults. This bulk cross-license update can immediately change live bot routing behavior."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_LICENSE_PROPERTIES",
+        "name": "Update License Properties",
+        "description": "Set one or more license-level custom property values grouped by namespace."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_TAG",
+        "name": "Update Tag",
+        "description": "Update a LiveChat tag identified by its exact case-sensitive name. When provided, group_ids replaces the tag's group assignment."
+      },
+      {
+        "slug": "LIVECHAT_UPDATE_THREAD_PROPERTIES",
+        "name": "Update Thread Properties",
+        "description": "Set registered custom property values on a live customer-chat thread. This mutates thread state and values may contain PII."
+      },
+      {
+        "slug": "LIVECHAT_UPLOAD_FILE",
+        "name": "Upload File",
+        "description": "Upload one non-executable file of at most 10,000,000 bytes for later use in a Customer Chat event. This creates a temporary provider-hosted file URL that expires after 24 hours unless used in send_event. Do not repeat after an uncertain outcome because each successful call uploads another file."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "livechat_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "access_rules:ro,access_rules:rw,accounts--all:rc,accounts--all:rw,accounts--my:ro,accounts--my:rw,accounts.roles.lc--all:rw,agents--all:ro,agents--all:rw,agents--my:ro,agents--my:rw,agents-bot--all:ro,agents-bot--all:rw,agents-bot--my:ro,agents-bot--my:rw,banlist_read,banlist_write,bots.templates:rw,canned_responses--all:ro,canned_responses--all:rw,canned_responses--groups:ro,canned_responses--groups:rw,customers:own,greetings:ro,greetings:rw,groups--all:ro,groups--all:rw,groups--my:ro,groups--my:rw,organization--my:rw,properties.configuration:rw,properties.group.value--all:ro,properties.group.value--all:rw,properties.group.value--my:rw,properties.license.value--all:ro,properties.license.value--all:rw,properties.license.value--my:ro,properties.license.value--my:rw,tags--all:ro,tags--all:rw,tags--groups:ro,tags--groups:rw,webhooks.configuration:rw,webhooks.state:ro,webhooks.state:rw"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "livesession",
     "name": "Livesession",
     "logo": "https://logos.composio.dev/api/livesession",
@@ -283695,7 +285421,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20261015_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "LUSHA_CREATE_SUBSCRIPTION",
@@ -283715,7 +285441,7 @@
           "supported": true,
           "price": {
             "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
-            "discount": "0"
+            "discount": "36"
           }
         }
       },
@@ -283757,7 +285483,7 @@
           "supported": true,
           "price": {
             "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
-            "discount": "0"
+            "discount": "36"
           }
         }
       },
@@ -283769,7 +285495,7 @@
           "supported": true,
           "price": {
             "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
-            "discount": "0"
+            "discount": "36"
           }
         }
       },
@@ -283781,7 +285507,7 @@
           "supported": true,
           "price": {
             "description": "Approximately $0.125 per API credit. Credits charged depend on the request and returned data.",
-            "discount": "0"
+            "discount": "36"
           }
         }
       },
@@ -285644,6 +287370,107 @@
     ]
   },
   {
+    "slug": "mailfloss",
+    "name": "mailfloss",
+    "logo": "https://logos.composio.dev/api/mailfloss",
+    "description": "mailfloss provides email verification APIs for checking individual addresses and processing asynchronous verification batches.",
+    "category": "email",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 12,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "MAILFLOSS_CANCEL_BATCH_VERIFICATION",
+        "name": "Cancel Batch Verification",
+        "description": "Cancel a pending or in-progress batch verification job. This irreversible operation stops remaining work and re-credits unprocessed emails; it is a no-op if the job has already completed. Composio generates an idempotency key when omitted and preserves it for retries within this execution. Reuse a caller-supplied key for the same cancellation across separate calls."
+      },
+      {
+        "slug": "MAILFLOSS_CHECK_API_KEY",
+        "name": "Check API Key",
+        "description": "Verify that the connected Mailfloss API key is valid. Uses the connection's Bearer credential and does not accept credentials, request widget tokens, or return signed-proof fields."
+      },
+      {
+        "slug": "MAILFLOSS_CREATE_BATCH_VERIFICATION",
+        "name": "Create Batch Verification",
+        "description": "Submit email addresses for asynchronous batch verification and return the job ID. Optionally request a completion webhook instead of polling. This billable action can fail with 402 insufficient_credits. Composio generates an idempotency key when none is supplied, so internal retries reuse the same key and email list. Separate action calls replay the cached response only when the caller reuses that key with identical emails; changing the list fails with 422, while a concurrent same-key request can fail with 409."
+      },
+      {
+        "slug": "MAILFLOSS_ERASE_VERIFICATION_RECORDS",
+        "name": "Erase Verification Records",
+        "description": "Permanently erase stored verification records for the supplied email addresses. This destructive data-privacy operation is irreversible; erased records cannot be recovered. Addresses with no stored records are a successful no-op. The body contains only the documented emails array. Composio generates an idempotency key when omitted and preserves it for retries within this execution."
+      },
+      {
+        "slug": "MAILFLOSS_GET_ACCOUNT",
+        "name": "Get Account",
+        "description": "Return the authenticated Mailfloss account holder's identity, contact details, security posture, notification preferences, and signup time. This read does not expose API credentials or two-factor secrets."
+      },
+      {
+        "slug": "MAILFLOSS_GET_BATCH_VERIFICATION_RESULTS",
+        "name": "Get Batch Verification Results",
+        "description": "Return one cursor-controlled page of stored batch results after organization floss-setting overrides. These statuses and reasons can differ from Verify Email's raw verdict for the same address; fetching stored results is not documented as consuming verification credits."
+      },
+      {
+        "slug": "MAILFLOSS_GET_BATCH_VERIFICATION_STATUS",
+        "name": "Get Batch Verification Status",
+        "description": "Read an asynchronous batch verification job's state and available counters. Polling is not documented as consuming verification credits; authentication, policy, not-found, rate-limit, and server responses remain errors rather than job states."
+      },
+      {
+        "slug": "MAILFLOSS_GET_JOB",
+        "name": "Get Verification Job",
+        "description": "Return one verification job and its complete verdict breakdown. Results are null until completion and include all per-reason counters when present."
+      },
+      {
+        "slug": "MAILFLOSS_GET_ORGANIZATION",
+        "name": "Get Organization",
+        "description": "Return the authenticated Mailfloss organization's plan, credit balances, current-period usage, trial state, account status, and feature entitlements. This is a read-only view and does not expose API or billing credentials."
+      },
+      {
+        "slug": "MAILFLOSS_GET_USAGE_REPORT",
+        "name": "Get Usage Report",
+        "description": "Return verification usage for a UTC calendar period, optionally scoped to one ESP connection. Lifetime reports contain only the authoritative total; their range, status counts, and reason counts are null."
+      },
+      {
+        "slug": "MAILFLOSS_LIST_JOBS",
+        "name": "List Verification Jobs",
+        "description": "Return one page of the organization's verification-job history, newest first, with optional source and lifecycle filters. Completed jobs include verdict totals; use Get Job for the full per-reason breakdown."
+      },
+      {
+        "slug": "MAILFLOSS_VERIFY_EMAIL",
+        "name": "Verify Email",
+        "description": "Verify one email address and return Mailfloss's raw engine verdict without organization floss-setting overrides. passed means safe to send, undeliverable is a hard failure, risky covers role, disposable, bounced, or complained addresses, and unknown includes accept-all addresses and transient SMTP failures. relay and gibberish are annotations and do not alter the verdict. Each successful call consumes one verification credit; a depleted balance fails with 402 insufficient_credits, so do not retry billable failures blindly."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "mailfloss_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your mailfloss API key from the mailfloss dashboard under Developers > API keys. Use a full-access key, or a restricted key that grants access to every toolkit operation you plan to use; mailfloss does not publish stable permission identifiers for these operations. Copy the complete key, including its mf_live_ or mf_rk_ prefix, and keep it secret.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "mails_so",
     "name": "Mails.so",
     "logo": "https://logos.composio.dev/api/mails_so",
@@ -287335,7 +289162,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20261014_01",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "MARKETSTACK_GET_DIVIDENDS",
@@ -287345,7 +289172,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287357,7 +289184,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287369,7 +289196,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 reference price per 10 API requests",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287381,7 +289208,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287393,7 +289220,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287405,7 +289232,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287417,7 +289244,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287429,7 +289256,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287441,7 +289268,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287453,7 +289280,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287465,7 +289292,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287477,7 +289304,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287489,7 +289316,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287501,7 +289328,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287513,7 +289340,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287525,7 +289352,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 per 10 stock requests. Requesting 2 stocks counts as 2 requests, even in one API call.",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287537,7 +289364,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 reference price per 10 API requests",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287549,7 +289376,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 reference price per 10 API requests",
-            "discount": "49"
+            "discount": "69"
           }
         }
       },
@@ -287561,7 +289388,7 @@
           "supported": true,
           "price": {
             "description": "$0.009 reference price per 10 API requests",
-            "discount": "49"
+            "discount": "69"
           }
         }
       }
@@ -291437,6 +293264,151 @@
     ]
   },
   {
+    "slug": "microsoft_advertising",
+    "name": "Microsoft Advertising",
+    "logo": "https://logos.composio.dev/api/microsoft_advertising",
+    "description": "Manage Microsoft Advertising accounts, campaigns, ad groups, and asynchronous reports through the documented v13 REST APIs.",
+    "category": "ads & conversion",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 14,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "MICROSOFT_ADVERTISING_ACTIVATE_AD_GROUPS",
+        "name": "Activate Ad Groups",
+        "description": "Activate up to 1,000 ad groups in a Microsoft Advertising campaign. WARNING: Activation can immediately make eligible ads deliver and incur spend when the parent campaign, bids, targeting, and ads permit delivery. Verify the selected IDs and campaign configuration before calling. Inspect partial_errors because Microsoft can accept the request while rejecting individual activations."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_ACTIVATE_CAMPAIGNS",
+        "name": "Activate Campaigns",
+        "description": "Activate 1 to 100 Microsoft Advertising campaigns. This can immediately make configured ads eligible for delivery and cause the account to incur ad spend. Inspect partial_errors because Microsoft can accept the request while rejecting individual campaign activations."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_CREATE_SEARCH_AD_GROUPS",
+        "name": "Create Search Ad Groups",
+        "description": "Create up to 1,000 Search ad groups under a Microsoft Advertising campaign. Ad groups default to Paused. HTTP success can include failed items, represented by null ad_group_ids and indexed partial_errors."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_CREATE_SEARCH_CAMPAIGNS",
+        "name": "Create Search Campaigns",
+        "description": "Create up to 100 Search campaigns with unshared budgets in a Microsoft Advertising account. Campaigns default to Paused. HTTP success can include failed items, represented by null campaign_ids and indexed partial_errors."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_DELETE_AD_GROUPS",
+        "name": "Delete Ad Groups",
+        "description": "Permanently delete 1 to 1,000 ad groups from a Microsoft Advertising campaign. This destructive operation cannot be undone. A successful HTTP response can still contain item-level failures in partial_errors."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_DELETE_CAMPAIGNS",
+        "name": "Delete Campaigns",
+        "description": "Permanently delete 1 to 100 campaigns from a Microsoft Advertising account. This destructive operation cannot be undone. A successful HTTP response can still contain item-level failures, which are preserved in partial_errors."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_GENERATE_ACCOUNT_PERFORMANCE_REPORT",
+        "name": "Generate Account Performance Report",
+        "description": "Submit an account-performance report without polling, or check an existing report_request_id once. A submission returns Pending promptly; wait 2 to 15 minutes before checking that ID again until Success. Does not download the ZIP."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_GET_CURRENT_USER",
+        "name": "Get Current Advertising User",
+        "description": "Return the connected Microsoft Advertising user and their customer/account roles; optionally look up another accessible user by ID."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_LIST_ACCOUNTS",
+        "name": "List Advertiser Accounts",
+        "description": "Return advertiser accounts accessible under a customer, including lifecycle and pause state needed before campaign work."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_LIST_AD_GROUPS",
+        "name": "List Ad Groups",
+        "description": "Return ad groups in a Microsoft Advertising campaign. Omit ad_group_ids to use the campaign-wide route, or supply up to 1,000 IDs to use Microsoft's ID-filtered route. ID-filtered responses preserve nullable ad-group slots and partial_errors instead of treating HTTP 200 as complete success."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_LIST_CAMPAIGNS",
+        "name": "List Campaigns",
+        "description": "Return campaigns in a Microsoft Advertising account. Omit campaign_ids to use the account-wide route, or supply up to 100 IDs to use Microsoft's ID-filtered route. ID-filtered responses preserve nullable campaign slots and matching partial_errors instead of treating HTTP 200 as complete success."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_LIST_CUSTOMERS",
+        "name": "List Accessible Customers",
+        "description": "Return Microsoft Advertising customers accessible to the connected user, optionally filtered by a case-insensitive name prefix."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_UPDATE_AD_GROUPS",
+        "name": "Update Ad Groups",
+        "description": "Partially update up to 1,000 ad groups in a Microsoft Advertising campaign. Only supplied fields are sent, so omitted settings remain unchanged. This action is financially consequential: increasing a CPC bid or expanding network reach can increase spend on an active ad group. Inspect partial_errors because Microsoft can accept the request while rejecting individual ad-group patches."
+      },
+      {
+        "slug": "MICROSOFT_ADVERTISING_UPDATE_CAMPAIGNS",
+        "name": "Update Campaigns",
+        "description": "Partially update up to 100 campaigns in a Microsoft Advertising account. Only supplied fields are sent, so omitted settings remain unchanged. This action is financially consequential: increasing a budget can increase spend on an active campaign. It can pause campaigns but cannot activate them; use ACTIVATE_CAMPAIGNS for activation. Inspect partial_errors because Microsoft can accept the request while rejecting individual campaign patches."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "microsoft_advertising_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "https://ads.microsoft.com/msads.manage,offline_access"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_secret",
+                "displayName": "Developer Token",
+                "type": "string",
+                "description": "Your production Microsoft Advertising developer token. Sign in with a Super Admin account at https://ads.microsoft.com/cc/Settings/DevSettings, request or copy the universal developer token, and enter it here. Sandbox developer tokens do not work with this production toolkit.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "onenote",
     "name": "Microsoft OneNote",
     "logo": "https://logos.composio.dev/api/onenote",
@@ -292581,6 +294553,222 @@
     ]
   },
   {
+    "slug": "microsoft_powerpoint",
+    "name": "Microsoft PowerPoint",
+    "logo": "https://logos.composio.dev/api/microsoft_powerpoint",
+    "description": "Create, find, inspect, fill, edit, format, share, preview, version, copy, upload, download, organize, and delete Microsoft PowerPoint files through Microsoft Graph and OneDrive, including slide, shape, chart, comment, and geometry workflows.",
+    "category": "documents",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 30,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "MICROSOFT_POWERPOINT_CHECK_IN_PRESENTATION",
+        "name": "Check In Presentation",
+        "description": "Check in a checked-out PowerPoint DriveItem and make its version available according to the SharePoint/document-library configuration. Microsoft Graph documents no atomic If-Match/eTag option for this operation."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_CHECK_OUT_PRESENTATION",
+        "name": "Check Out Presentation",
+        "description": "Check out a PowerPoint DriveItem where its SharePoint/document-library configuration supports checkout, preventing others from editing and hiding changes until check-in. Microsoft Graph documents no atomic If-Match/eTag option for this operation."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_COPY_PRESENTATION",
+        "name": "Copy Presentation",
+        "description": "Start an asynchronous Microsoft Graph copy of a PowerPoint presentation. A successful result means only that Graph accepted the submission; it does not mean the copy completed or ultimately succeeded. The action never returns the bearer-equivalent Location monitor URL. Discover the result by destination and filename with FIND_PRESENTATIONS. conflict_behavior is unsupported on OneDrive Personal. To preserve all versions, omit name and rename the copy after discovery."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_COPY_PRESENTATION_AND_WAIT",
+        "name": "Copy Presentation and Wait",
+        "description": "Submit a PowerPoint presentation copy with a required unique filename, then boundedly search the resolved destination folder for an exact-name candidate. Search results cannot be correlated to the copy request, so a discovered candidate is returned as discovered_unverified and may belong to another writer. The bearer-equivalent Graph monitor URL is never returned or read. An exact-name search result is returned only as an uncorrelated candidate, never as confirmed completion, because Graph's secret monitor URL is not exposed or consumed. A timeout or indeterminate result is not proof of failure: verify the destination before retrying. All-version-history copies require the asynchronous COPY_PRESENTATION workflow because Graph does not safely combine that option with a discovery name."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_CREATE_FOLDER",
+        "name": "Create Folder",
+        "description": "Create a folder for PowerPoint files in the current or an explicitly selected accessible drive."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_CREATE_PRESENTATION",
+        "name": "Create Presentation",
+        "description": "Create a bounded macro-free PPTX from one to 50 structured slides containing titles, plain text, nested bullets, rectangular tables, uploaded PNG images, and optional speaker notes. The generated Open XML package, relationships, and semantic readback are validated locally before exactly one Microsoft Graph upload. Limits include 500 content blocks, 500,000 text characters, 10,000 line breaks, 2,000 table cells, and 20 PNGs (10 MiB each, 25 MiB compressed and decoded in aggregate); the final package is limited to 50 MiB."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_CREATE_PRESENTATION_SHARING_LINK",
+        "name": "Create Presentation Sharing Link",
+        "description": "Create or return a view or edit sharing link for a PowerPoint presentation in the current or an explicitly selected drive."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_DELETE_FOLDER",
+        "name": "Delete Folder",
+        "description": "Move a folder to the Microsoft Graph recycle bin after a metadata preflight proves the DriveItem has a folder facet. Recycling a nonempty folder removes the entire descendant tree from its current location. Files are rejected. The preflight eTag is used for a concurrency-safe delete when available."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_DELETE_PRESENTATION",
+        "name": "Delete Presentation",
+        "description": "Move a PowerPoint presentation to the Microsoft Graph recycle bin. This action does not permanently erase the file. It can require a matching eTag or cTag and can send Microsoft's documented shared-lock or checkout bypass preferences."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_DOWNLOAD_PRESENTATION",
+        "name": "Download Presentation",
+        "description": "Download a PowerPoint file in its original format or export it as PDF or JPG. Export conversion is not presentation editing and accepts source files up to 2 MB."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_DOWNLOAD_PRESENTATION_VERSION",
+        "name": "Download Presentation Version",
+        "description": "Verify that the selected DriveItem is a PPTX, then download one retained previous version as a bounded PPTX file. Non-PPTX items are rejected before content download. Use LIST_PRESENTATION_VERSIONS to obtain a version ID, but do not use its first newest/current entry: Microsoft Graph refuses current-version content here. Use DOWNLOAD_PRESENTATION for the current version."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_FILL_TEMPLATE",
+        "name": "Fill PowerPoint Template",
+        "description": "Create one presentation from an existing designed PPTX template by replacing unique literal {{tokens}} simultaneously across reachable slides and speaker notes. The template is downloaded and its eTag is rechecked before one create upload; no intermediate provider copy is created. Every requested token must match."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_FIND_PRESENTATIONS",
+        "name": "Find Presentations",
+        "description": "List a folder or search a drive and return only PowerPoint files. Omit search_text to browse folder_id; provide it to search the full drive. A page can contain no matching files while has_more remains true."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_CURRENT_DRIVE",
+        "name": "Get Current Drive",
+        "description": "Return the signed-in user's default OneDrive ID and basic owner, type, and quota details. Use the drive ID to target other accessible-drive actions explicitly."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_PRESENTATION",
+        "name": "Get Presentation",
+        "description": "Return metadata for one PowerPoint file by item ID, including its current eTag for concurrency-safe updates."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_PRESENTATION_CONTENT",
+        "name": "Get Presentation Content",
+        "description": "Read bounded, text-first semantic content from a current macro-free PPTX, including slides, shapes, text, safe hyperlinks, alt text, image metadata, tables, and speaker notes. Default budgets are 100 slides, 200 shapes per slide, 100 paragraphs per shape, 100 runs per paragraph, 20,000 characters per shape, 100,000 total characters, 5,000 structural elements, and 100 comments per slide. Maxima are respectively 500, 1,000, 500, 500, 100,000, 500,000, 20,000, and 200. For ordinary reads, use slide_numbers for only the needed slides and lower budgets instead of reading a whole large deck. Formatting, geometry, supported chart data, and modern comments are opt-ins. Uses eTag consistency and never returns layouts, package bytes, raw XML, unsafe external targets, or preauthenticated URLs."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_PRESENTATION_LAYOUTS",
+        "name": "Get Presentation Layouts",
+        "description": "Download and validate the current macro-free PPTX, then return its complete bounded slide-layout catalog. Each layout has a unique opaque selector accepted by UPDATE_PRESENTATION_CONTENT add_slide, plus exact human-facing name and matchingName values and safe type/placeholder summaries for duplicate-name disambiguation. Never returns package paths, raw OOXML, package bytes, or download URLs."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_PRESENTATION_PREVIEW",
+        "name": "Get Presentation Preview",
+        "description": "Deprecated: return short-lived, human-embeddable UI preview material for a SharePoint or OneDrive presentation, including personal OneDrive. It does not return agent-readable slide content. Agents should use GET_PRESENTATION_CONTENT to inspect content, or DOWNLOAD_PRESENTATION with PDF/JPG output for a rendered artifact. The returned URL is caller-only and bearer-equivalent: never share, log, cache, or persist it."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_PRESENTATION_THUMBNAILS",
+        "name": "Get Presentation Thumbnails",
+        "description": "List generated thumbnail metadata for a PowerPoint presentation. Microsoft Graph represents only the first slide and can return an empty set; it does not provide per-slide thumbnails. Returned URLs are short-lived bearer-equivalent capabilities for the caller only and must not be shared, logged, cached, or persisted."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_GET_PRESENTATION_VERSION",
+        "name": "Get Presentation Version",
+        "description": "Retrieve compact metadata for one retained or current version of a PowerPoint file. Use List Presentation Versions to discover retained version IDs."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_INVITE_TO_PRESENTATION",
+        "name": "Invite People to Presentation",
+        "description": "Grant named people read or write access to a PowerPoint presentation. By default, send_invitation=true also causes Microsoft to send external invitation emails; set it false to grant permission without notifications. A 207 response preserves recipient-level errors and is never reported as complete success."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_LIST_PRESENTATION_VERSIONS",
+        "name": "List Presentation Versions",
+        "description": "List retained versions of a PowerPoint file in Microsoft Graph's newest-first order, one provider page at a time. Continue while has_more is true before treating the final version as the oldest retained version. The first entry is current: its metadata is readable, but Graph refuses its content through DOWNLOAD_PRESENTATION_VERSION. Choose a later entry for version download/restore, or use DOWNLOAD_PRESENTATION for current content. Version retention depends on the drive's configuration."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_REPLACE_PRESENTATION_FILE",
+        "name": "Replace Presentation File",
+        "description": "Replace the bytes of an existing PowerPoint DriveItem with a valid, non-macro-enabled PPTX package no larger than 250 MiB, optionally requiring a matching eTag."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_RESTORE_PRESENTATION_VERSION",
+        "name": "Restore Presentation Version",
+        "description": "Restore a retained previous version of a PowerPoint presentation as a new current version while preserving its version history."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_TRANSFORM_PRESENTATION_TEXT_AND_PROPERTIES",
+        "name": "Transform Presentation Text and Properties",
+        "description": "Transform text, slide order, or embedded core document properties inside a macro-free PPTX, then conditionally replace the same file. Supports literal, run-normalized text and {{placeholder}} replacement within DrawingML paragraphs, complete slide reordering, and core document-property updates. Provide at least one non-empty text_replacements, slide_order, or core_properties transformation. Rules run sequentially; a find string crosses a line break only when it includes a newline. Use UPDATE_PRESENTATION_METADATA instead to rename or move the DriveItem or change its filesystem metadata. It does not add or delete slides or edit layouts, themes, animations, charts, tables, or images."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_UPDATE_PRESENTATION_CONTENT",
+        "name": "Update Presentation Content",
+        "description": "Atomically update one macro-free PPTX under an exact eTag and one conditional upload. Supports slide lifecycle, shape and run edits, comments, native bar/line/pie charts, text boxes, PNG images, speaker notes, and tables. The delete_slide mode permanently removes a slide and eligible private dependencies; delete_shape permanently removes a top-level shape and unreferenced relationships; delete_comment permanently removes a root comment and its replies. Because this compatibility action exposes destructive modes, every call carries the static irreversible-update hint and requires irreversible-update approval, even when its submitted operations do not delete content; inspect targets before approval. Validates the package graph and semantic result. Limits include 50 MiB packages, 100 operations, 500,000 text characters, 20 uploaded PNGs, and 10,000 generated line breaks. Unsupported, shared, external, macro, combo, pivot, grouped, field, or ambiguous mutation targets are rejected before upload."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_UPDATE_PRESENTATION_CONTENT_DESTRUCTIVE",
+        "name": "Update Presentation Content Destructively",
+        "description": "Atomically update one macro-free PPTX with at least one irreversible delete operation, under an exact eTag and one conditional upload. delete_slide permanently removes a slide and eligible private dependencies; delete_shape permanently removes a top-level shape and unreferenced relationships; delete_comment permanently removes a root comment and its replies. Supporting non-delete operations may be included in the same transaction, but every call must contain delete_slide, delete_shape, or delete_comment and requires irreversible-update approval. Validates the package graph and semantic result. Limits include 50 MiB packages, 100 operations, 500,000 text characters, 20 uploaded PNGs, and 10,000 generated line breaks."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_UPDATE_PRESENTATION_CONTENT_SAFE",
+        "name": "Update Presentation Content Safely",
+        "description": "Atomically update one macro-free PPTX without delete operations, under an exact eTag and one conditional upload. Allowed operations are add_text_box, add_image, replace_image, set_existing_speaker_notes, add_table, add_slide, duplicate_slide, set_slide_hidden, set_shape_text, format_text_run, set_shape_bounds, set_shape_alt_text, set_shape_hyperlink, set_text_run_hyperlink, add_comment, reply_comment, add_chart, and replace_chart_data. delete_slide, delete_shape, and delete_comment are rejected during request validation before any network request. Validates the package graph and semantic result. Limits include 50 MiB packages, 100 operations, 500,000 text characters, 20 uploaded PNGs, and 10,000 generated line breaks."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_UPDATE_PRESENTATION_METADATA",
+        "name": "Update Presentation Metadata",
+        "description": "Update Microsoft Graph DriveItem metadata or path only: rename a PowerPoint presentation, move it within its current drive, or set supported filesystem metadata. This action does not edit slide text, slide order, document properties inside the PPTX package, or other presentation content. Optionally require a matching eTag. Provide at least one of name, parent_folder_id, description, created_datetime, or last_modified_datetime. OneDrive may accept a description without persisting it; the response reports that limitation."
+      },
+      {
+        "slug": "MICROSOFT_POWERPOINT_UPLOAD_NEW_PRESENTATION",
+        "name": "Upload New Presentation",
+        "description": "Create a new PPTX in a Microsoft Graph drive folder, with configurable filename-conflict behavior. The file must be a valid, non-macro-enabled PPTX package no larger than 250 MiB."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "microsoft_powerpoint_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "Files.ReadWrite.All,offline_access"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "microsoft_todo",
     "name": "Microsoft To Do",
     "logo": "https://logos.composio.dev/api/microsoft_todo",
@@ -292760,6 +294948,187 @@
                 "description": "Scopes to request from the user, comma separated",
                 "required": false,
                 "default": "Tasks.ReadWrite,User.Read,offline_access,openid,profile"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "microsoft_word",
+    "name": "Microsoft Word",
+    "logo": "https://logos.composio.dev/api/microsoft_word",
+    "description": "Microsoft Word tools for finding, downloading, updating, and managing DOCX files in OneDrive and SharePoint through Microsoft Graph",
+    "category": "documents",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 23,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "MICROSOFT_WORD_ADD_COMMENT",
+        "name": "Add Comment",
+        "description": "Add a Word comment to one exact paragraph selected by text or a READ_DOCX locator."
+      },
+      {
+        "slug": "MICROSOFT_WORD_APPEND_CONTENT",
+        "name": "Append Content",
+        "description": "Append plain text or supported Markdown paragraphs, headings, formatted runs, lists, rectangular tables, safe http/https/mailto links, and Courier New inline or fenced code to a DOCX body."
+      },
+      {
+        "slug": "MICROSOFT_WORD_COPY_DOCX",
+        "name": "Copy DOCX",
+        "description": "Copy a verified DOCX to a OneDrive or SharePoint folder, wait boundedly for the asynchronous operation, and return verified destination metadata. If waiting times out, the server-side copy may continue; inspect the destination before retrying to avoid creating another copy."
+      },
+      {
+        "slug": "MICROSOFT_WORD_CREATE_DOCX",
+        "name": "Create DOCX",
+        "description": "Create a safe DOCX containing styled paragraphs and formatted runs, bullet or decimal lists, rectangular tables, or constrained HTML/Markdown source with safe external links and inline or fenced code rendered in Courier New, plus validated inline PNG/JPEG images, page breaks, and default/first/even headers and footers. Literal content is escaped and raw XML or image URLs are never accepted. The create-only default fails on a filename conflict. overwrite_existing remains available for backward compatibility; prefer UPSERT_DOCX when replacement is intended."
+      },
+      {
+        "slug": "MICROSOFT_WORD_CREATE_DOCX_SHARING_LINK",
+        "name": "Create DOCX sharing link",
+        "description": "Create a view, edit, or embed sharing link for a verified DOCX. Returns Graph's capability-bearing URL; treat it as a secret. Sharing can change the document eTag, so call READ_DOCX again before editing. Setting retain_inherited_permissions=false removes all existing permissions when the item is shared for the first time."
+      },
+      {
+        "slug": "MICROSOFT_WORD_DELETE_DOCX",
+        "name": "Delete DOCX",
+        "description": "Move one DOCX to the provider recycle bin only when its current eTag matches. This action does not bypass shared locks or checked-out state. A successful result does not guarantee permanent erasure."
+      },
+      {
+        "slug": "MICROSOFT_WORD_EDIT_DOCX",
+        "name": "Edit DOCX",
+        "description": "Atomically edit literal text, paragraphs, independent Latin/non-complex and complex-script run formatting, lists, rectangular tables including plain cells and rows outside merged regions, uploaded inline PNG/JPEG images, semantic comments, tracked text changes, revision acceptance or rejection, safe external hyperlinks, paired footnotes, section headers or footers, and explicit page breaks in a DOCX. Targets are semantic locators from READ_DOCX and remain valid only for its eTag. The complete package is validated before one guarded replacement upload."
+      },
+      {
+        "slug": "MICROSOFT_WORD_EXPORT_DOCX",
+        "name": "Export DOCX to PDF",
+        "description": "Convert a DOCX of at most 2 MB to PDF through Microsoft Graph and return a temporary file reference. The provider's preauthenticated redirect URL is followed internally and is never returned."
+      },
+      {
+        "slug": "MICROSOFT_WORD_FILL_TEMPLATE",
+        "name": "Fill Template",
+        "description": "Fill run-spanning placeholders in main-document paragraphs of a validated DOCX template snapshot, then create and return a new document. Strict mode creates only after every requested placeholder is found; non-strict mode can create a partial fill and reports found, filled, and unfilled keys. If post-upload validation fails, the error identifies the retained destination item and gives guarded cleanup guidance."
+      },
+      {
+        "slug": "MICROSOFT_WORD_FIND_DOCX_FILES",
+        "name": "Find DOCX files",
+        "description": "Browse one folder or search a drive for DOCX files. Browse pages also return folders for navigation. Search results can be eventually consistent; use a direct read action when authoritative current state is required."
+      },
+      {
+        "slug": "MICROSOFT_WORD_FIND_SHAREPOINT_SITES",
+        "name": "Find SharePoint sites",
+        "description": "Find accessible SharePoint sites by keyword, or resolve one known hostname and site path to its site ID."
+      },
+      {
+        "slug": "MICROSOFT_WORD_GET_ACCOUNT_CONTEXT",
+        "name": "Get Microsoft Word account context",
+        "description": "Return the signed-in Microsoft identity and primary OneDrive identifiers needed to start OneDrive DOCX work. Microsoft Graph documents that GET /me/drive automatically provisions OneDrive when the delegated user is licensed but does not yet have a drive."
+      },
+      {
+        "slug": "MICROSOFT_WORD_INVITE_DOCX_RECIPIENTS",
+        "name": "Invite DOCX recipients",
+        "description": "Grant read or write access to required named recipients. send_invitation and require_sign_in are required; emailing an invitation is an irreversible external side effect. Partial success is reported per recipient. Sharing can change the document eTag, so call READ_DOCX again before editing. Setting retain_inherited_permissions=false removes all existing permissions when the item is shared for the first time."
+      },
+      {
+        "slug": "MICROSOFT_WORD_LIST_DOCX_VERSIONS",
+        "name": "List DOCX versions",
+        "description": "Validate the selected drive item as a DOCX, then return one page of retained versions in Microsoft Graph's newest-first order. Provider download URLs and raw identity objects are omitted."
+      },
+      {
+        "slug": "MICROSOFT_WORD_LIST_ONEDRIVES",
+        "name": "List OneDrive drives",
+        "description": "Return one page of drives available to the signed-in user as the Microsoft Word toolkit's OneDrive-drive selector for DOCX workflows. Unlike GET_ACCOUNT_CONTEXT, this lists drives without returning identity context or selecting only the primary drive. Use LIST_SHAREPOINT_LIBRARIES for a specific SharePoint site's document libraries; general OneDrive file automation may use ONE_DRIVE_LIST_DRIVES instead."
+      },
+      {
+        "slug": "MICROSOFT_WORD_LIST_SHAREPOINT_LIBRARIES",
+        "name": "List SharePoint document libraries",
+        "description": "Return one page of document libraries and available root folder item IDs for a SharePoint site ID."
+      },
+      {
+        "slug": "MICROSOFT_WORD_MOVE_OR_RENAME_DOCX",
+        "name": "Move or rename DOCX",
+        "description": "Rename a DOCX, move it within the same drive, or do both, guarded by its current eTag. At least one of new_name or destination_folder_id is required."
+      },
+      {
+        "slug": "MICROSOFT_WORD_READ_DOCX",
+        "name": "Read DOCX",
+        "description": "Safely inspect a DOCX as bounded rich OOXML: paragraphs and editable text segments, directly formatted runs, tables and merged-cell metadata, internal images, hyperlinks with withheld targets, paired footnotes, semantic comment threads, pending revisions, page breaks, sections with header/footer references, and the style catalog. Existing image framing is inspected without pixel decoding and image records share a 100-megapixel aggregate safety bound. Returns the current eTag required by every locator and never exposes download URLs, external relationship targets, or document bytes."
+      },
+      {
+        "slug": "MICROSOFT_WORD_REPLACE_TEXT",
+        "name": "Replace Text",
+        "description": "Replace literal text across Word run boundaries in a DOCX, optionally as tracked revisions. Uses an optional eTag guard and retries one definite stale unpinned write."
+      },
+      {
+        "slug": "MICROSOFT_WORD_RESOLVE_TRACKED_CHANGES",
+        "name": "Resolve Tracked Changes",
+        "description": "Accept or reject all pending tracked revisions, or selected revision locators returned by READ_DOCX."
+      },
+      {
+        "slug": "MICROSOFT_WORD_RESTORE_DOCX_VERSION",
+        "name": "Restore DOCX version",
+        "description": "Restore a retained DOCX version as a new current version, preserving version history, then observe the item's current metadata in a post-operation read. That metadata does not independently prove which version supplied the current content. A required eTag check rejects already-stale callers before mutation, but Graph does not document an atomic If-Match precondition for this operation."
+      },
+      {
+        "slug": "MICROSOFT_WORD_SHARE_DOCX",
+        "name": "Share DOCX",
+        "description": "Backward-compatible wrapper for sharing a verified DOCX. Prefer CREATE_DOCX_SHARING_LINK for links and INVITE_DOCX_RECIPIENTS for named recipients. mode defaults to create_link. Invite mode requires recipients, roles, send_invitation, and require_sign_in. create_link returns Graph's intended sharing capability URL so it can be delivered to the intended audience; treat that URL as a secret. Other capability tokens, raw identity data, and raw provider error details are omitted; a bounded provider reason may be returned for a failed request. Partial invite success is reported per recipient. Sharing can change the document eTag and invalidate READ_DOCX locators; call READ_DOCX again before editing. Password protection depends on tenant sharing policy and plan; personal OneDrive may require Microsoft 365 Personal or Family. Setting retain_inherited_permissions=false removes all existing permissions when the item is shared for the first time."
+      },
+      {
+        "slug": "MICROSOFT_WORD_UPSERT_DOCX",
+        "name": "Upsert DOCX",
+        "description": "Create or replace a same-name DOCX containing the same validated content supported by CREATE_DOCX. Replacement is always enabled; use CREATE_DOCX for create-only conflict behavior."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "microsoft_word_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "offline_access,User.Read,Files.ReadWrite.All,Sites.Read.All"
               }
             ]
           },
@@ -334538,7 +336907,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20261014_02",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "PROSPEO_BULK_ENRICH_COMPANIES",
@@ -334548,7 +336917,7 @@
           "supported": true,
           "price": {
             "description": "$0.024 per matched company; each match costs 1 credit, and repeats may be free",
-            "discount": "19"
+            "discount": "32"
           }
         }
       },
@@ -334560,7 +336929,7 @@
           "supported": true,
           "price": {
             "description": "$0.024 per found email; $0.245 per found mobile including email; repeats may be free",
-            "discount": "19"
+            "discount": "32"
           }
         }
       },
@@ -334572,7 +336941,7 @@
           "supported": true,
           "price": {
             "description": "$0.024 per matched company; each match costs 1 credit, and repeats may be free",
-            "discount": "19"
+            "discount": "32"
           }
         }
       },
@@ -334584,7 +336953,7 @@
           "supported": true,
           "price": {
             "description": "$0.024 per found email; $0.245 per found mobile including email; repeats may be free",
-            "discount": "19"
+            "discount": "32"
           }
         }
       },
@@ -334601,7 +336970,7 @@
           "supported": true,
           "price": {
             "description": "$0.024 per billed search pages; each page costs 1 credit, and empty or repeat pages may be free",
-            "discount": "19"
+            "discount": "32"
           }
         }
       },
@@ -334613,7 +336982,7 @@
           "supported": true,
           "price": {
             "description": "$0.024 per billed search pages; each page costs 1 credit, and empty or repeat pages may be free",
-            "discount": "19"
+            "discount": "32"
           }
         }
       },
@@ -372994,6 +375363,640 @@
     ]
   },
   {
+    "slug": "smarthr",
+    "name": "SmartHR",
+    "logo": "https://logos.composio.dev/api/smarthr",
+    "description": "SmartHR is a cloud human resources platform for managing employee records, organization data, payroll documents, and HR workflows.",
+    "category": "human resources",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 117,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "SMARTHR_BULK_CREATE_PAYSLIPS",
+        "name": "Bulk Create Payslips",
+        "description": "Create up to 100 sensitive payslip entries in one SmartHR payroll group. The connected API access token must have payroll Update permission and any applicable employee-field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_CREATE_DEPARTMENT",
+        "name": "Create Department",
+        "description": "Create a SmartHR department. The connected API access token must have the department resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_EMPLOYEE",
+        "name": "Create Employee",
+        "description": "Create an employee using the documented SmartHR employee fields. The connected API token must have employee resource and field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_CREATE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE",
+        "name": "Create Employee Custom Field Template",
+        "description": "Create an employee custom-field template. The connected API token must have the custom employee field resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE_GROUP",
+        "name": "Create Employee Custom Field Template Group",
+        "description": "Create an employee custom-field template group."
+      },
+      {
+        "slug": "SMARTHR_CREATE_EMPLOYEE_DEPENDENT",
+        "name": "Create Employee Dependent",
+        "description": "Create a dependent for one employee using the documented family fields. The connected API token must have the required family and employee-field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_CREATE_EMPLOYMENT_TYPE",
+        "name": "Create Employment Type",
+        "description": "Create a SmartHR employment type. The connected API access token must have the employment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_GRADE",
+        "name": "Create Grade",
+        "description": "Create a SmartHR grade. The connected API access token must have the grade resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_JOB_CATEGORY",
+        "name": "Create Job Category",
+        "description": "Create a SmartHR job category. The connected API access token must have the job category resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_JOB_TITLE",
+        "name": "Create Job Title",
+        "description": "Create a SmartHR job title. The connected API access token must have the job title resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_PAYROLL",
+        "name": "Create Payroll",
+        "description": "Create a sensitive SmartHR payroll group. The connected API access token must have payroll Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_PAYSLIP",
+        "name": "Create Payslip",
+        "description": "Create a sensitive employee payslip in one SmartHR payroll group. The connected API access token must have payslip resource Update permission, and employee-field Update permissions may constrain writable data."
+      },
+      {
+        "slug": "SMARTHR_CREATE_RECRUITMENT_TYPE",
+        "name": "Create Recruitment Type",
+        "description": "Create a SmartHR recruitment type. The connected API access token must have the recruitment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_TAX_WITHHOLDING",
+        "name": "Create Tax Withholding",
+        "description": "Create a sensitive SmartHR tax-withholding group in the unconfirmed state. The connected API access token must have tax-withholding-group Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_TAX_WITHHOLDING_SLIP",
+        "name": "Create Tax Withholding Slip",
+        "description": "Create a file-backed or field-backed sensitive tax-withholding slip for an employee in one SmartHR tax-withholding group. The connected API access token must have the tax-withholding-slip resource and applicable employee-field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_CREATE_USER_SAML_CONFIGURATION",
+        "name": "Create User SAML Configuration",
+        "description": "Create the SAML SSO account configuration for one SmartHR user. The tenant must have SAML SSO enabled, and the connected API access token must have the user resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_CREATE_WEBHOOK",
+        "name": "Create Webhook",
+        "description": "Create a SmartHR webhook configuration for future employee and dependent events. Matching events can send data to the configured destination, so confirm the URL, event selections, payload exposure, and secret token before calling. The connected API access token must have the webhook resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_DEPARTMENT",
+        "name": "Delete Department",
+        "description": "Deprecated: delete a SmartHR department by ID. Prefer SMARTHR_DISCONTINUE_DEPARTMENT because SmartHR no longer recommends department deletion. Deletion requires the department resource Update permission and fails when the department or a child department has a scheduled employee update whose effective date has not arrived."
+      },
+      {
+        "slug": "SMARTHR_DELETE_EMPLOYEE",
+        "name": "Delete Employee",
+        "description": "Permanently delete one employee by SmartHR employee ID. This requires the employee resource Update permission on the connected access token."
+      },
+      {
+        "slug": "SMARTHR_DELETE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE",
+        "name": "Delete Employee Custom Field Template",
+        "description": "Delete one employee custom-field template by ID. This permanently deletes all employee values set for the template. SmartHR rejects deletion when the field has a scheduled employee update whose effective date has not arrived."
+      },
+      {
+        "slug": "SMARTHR_DELETE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE_GROUP",
+        "name": "Delete Employee Custom Field Template Group",
+        "description": "Delete one employee custom-field template group by ID. This also permanently deletes every custom-field template in the group and all values set for those templates. SmartHR rejects deletion when a group field has a scheduled employee update whose effective date has not arrived."
+      },
+      {
+        "slug": "SMARTHR_DELETE_EMPLOYEE_DEPENDENT",
+        "name": "Delete Employee Dependent",
+        "description": "Permanently delete one dependent and their sensitive family data from an employee record. This cannot be undone."
+      },
+      {
+        "slug": "SMARTHR_DELETE_EMPLOYMENT_TYPE",
+        "name": "Delete Employment Type",
+        "description": "Delete one SmartHR employment type by ID. SmartHR does not allow deletion of a system-standard employment type or one referenced by a scheduled employee update whose effective date has not arrived. The connected API access token must have the employment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_GRADE",
+        "name": "Delete Grade",
+        "description": "Delete one SmartHR grade by ID. A grade referenced by a scheduled employee update whose effective date has not arrived cannot be deleted. The connected API access token must have the grade resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_JOB_CATEGORY",
+        "name": "Delete Job Category",
+        "description": "Delete one SmartHR job category by ID. A job category referenced by a scheduled employee update whose effective date has not arrived cannot be deleted. The connected API access token must have the job category resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_JOB_TITLE",
+        "name": "Delete Job Title",
+        "description": "Delete one SmartHR job title by ID. A job title referenced by a scheduled employee update whose effective date has not arrived cannot be deleted. The connected API access token must have the job title resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_PAYROLL",
+        "name": "Delete Payroll",
+        "description": "Permanently delete one sensitive SmartHR payroll group by ID. The connected API access token must have the payroll resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_PAYSLIP",
+        "name": "Delete Payslip",
+        "description": "Permanently delete one sensitive SmartHR payslip from its payroll group. The connected API access token must have the payslip resource Update permission, and employee fields may also require Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_RECRUITMENT_TYPE",
+        "name": "Delete Recruitment Type",
+        "description": "Delete one SmartHR recruitment type by ID. A recruitment type referenced by a scheduled employee update whose effective date has not arrived cannot be deleted. The connected API access token must have the recruitment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_TAX_WITHHOLDING",
+        "name": "Delete Tax Withholding",
+        "description": "Permanently delete one sensitive SmartHR tax-withholding group by ID. The connected API access token must have the tax-withholding-group resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_TAX_WITHHOLDING_SLIP",
+        "name": "Delete Tax Withholding Slip",
+        "description": "Permanently delete one sensitive SmartHR tax-withholding slip from its tax-withholding group. The connected API access token must have the tax-withholding-slip resource Update permission, and employee fields may also require Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_USER_SAML_CONFIGURATION",
+        "name": "Delete User SAML Configuration",
+        "description": "Delete the SAML SSO account configuration for one SmartHR user. The tenant must have SAML SSO enabled, and the connected API access token must have the user resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DELETE_WEBHOOK",
+        "name": "Delete Webhook",
+        "description": "Permanently delete one SmartHR webhook configuration by ID. The connected API access token must have the webhook resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DISABLE_USER_SAML_CONFIGURATION",
+        "name": "Disable User SAML Configuration",
+        "description": "Disable the SAML SSO account configuration for one SmartHR user. The tenant must have the SAML/SSO option enabled, and the connected API access token must have the user resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_DISCONTINUE_DEPARTMENT",
+        "name": "Discontinue Department",
+        "description": "Irreversibly discontinue one SmartHR department as of its final active date. The date must be in the past. SmartHR rejects discontinuation when a scheduled employee update references this department or a descendant; the connected access token must have department Update permission."
+      },
+      {
+        "slug": "SMARTHR_DOWNLOAD_BATCH_JOB_ATTACHMENT",
+        "name": "Download Batch Job Attachment",
+        "description": "Download the binary file for a SmartHR batch-job attachment. SmartHR deletes the provider attachment five minutes after it is retrieved, so use the returned offloaded file reference for subsequent work."
+      },
+      {
+        "slug": "SMARTHR_ENABLE_USER_SAML_CONFIGURATION",
+        "name": "Enable User SAML Configuration",
+        "description": "Enable the SAML SSO account configuration for one SmartHR user. The tenant must have the SAML/SSO option enabled, and the connected API access token must have the user resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_FINALIZE_PAYROLL",
+        "name": "Finalize Payroll",
+        "description": "Finalize one sensitive SmartHR payroll group. The connected API access token must have the payroll-group resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_GET_BATCH_JOB",
+        "name": "Get Batch Job",
+        "description": "Get one SmartHR background batch job by ID, optionally embedding its attachments. The access token needs the corresponding resource Reference permission."
+      },
+      {
+        "slug": "SMARTHR_GET_DEPARTMENT",
+        "name": "Get Department",
+        "description": "Get one SmartHR department by its department ID."
+      },
+      {
+        "slug": "SMARTHR_GET_EMPLOYEE",
+        "name": "Get Employee",
+        "description": "Get one employee by SmartHR employee ID, with optional comma-separated field selection. The access token needs employee Reference permission, and returned attributes may be limited by employee-field Reference permissions."
+      },
+      {
+        "slug": "SMARTHR_GET_EMPLOYEE_CUSTOM_FIELD_TEMPLATE",
+        "name": "Get Employee Custom Field Template",
+        "description": "Get one employee custom-field template by ID. Set embed to group to include the custom field group that contains the template."
+      },
+      {
+        "slug": "SMARTHR_GET_EMPLOYEE_CUSTOM_FIELD_TEMPLATE_GROUP",
+        "name": "Get Employee Custom Field Template Group",
+        "description": "Get one employee custom-field template group by ID. Set embed to templates to include the custom field templates belonging to the group."
+      },
+      {
+        "slug": "SMARTHR_GET_EMPLOYEE_DEPENDENT",
+        "name": "Get Employee Dependent",
+        "description": "Get one dependent belonging to an employee."
+      },
+      {
+        "slug": "SMARTHR_GET_EMPLOYEE_INPUT_FORM",
+        "name": "Get Employee Input Form",
+        "description": "Get one SmartHR employee information-collection form by ID, preserving its nested field groups, fields, and embedded custom-field definitions."
+      },
+      {
+        "slug": "SMARTHR_GET_EMPLOYMENT_TYPE",
+        "name": "Get Employment Type",
+        "description": "Get one SmartHR employment type by its employment type ID."
+      },
+      {
+        "slug": "SMARTHR_GET_GRADE",
+        "name": "Get Grade",
+        "description": "Get one SmartHR grade by its grade ID."
+      },
+      {
+        "slug": "SMARTHR_GET_JOB_CATEGORY",
+        "name": "Get Job Category",
+        "description": "Get one SmartHR job category by its job category ID."
+      },
+      {
+        "slug": "SMARTHR_GET_JOB_TITLE",
+        "name": "Get Job Title",
+        "description": "Get one SmartHR job title by its job title ID."
+      },
+      {
+        "slug": "SMARTHR_GET_MAIL_FORMAT",
+        "name": "Get Mail Format",
+        "description": "Get one SmartHR mail format by ID, optionally embedding the employee information-collection forms that use it."
+      },
+      {
+        "slug": "SMARTHR_GET_PAYMENT_PERIOD",
+        "name": "Get Payment Period",
+        "description": "Get one SmartHR payroll payment period by its payment period ID."
+      },
+      {
+        "slug": "SMARTHR_GET_PAYROLL",
+        "name": "Get Payroll",
+        "description": "Get one sensitive SmartHR payroll group by ID. The access token needs payroll Reference permission, and returned data may contain sensitive financial information."
+      },
+      {
+        "slug": "SMARTHR_GET_PAYSLIP",
+        "name": "Get Payslip",
+        "description": "Get one highly sensitive SmartHR payslip from a payroll group. The access token needs payslip Reference permission, and returned employee fields may be permission-filtered."
+      },
+      {
+        "slug": "SMARTHR_GET_RECRUITMENT_TYPE",
+        "name": "Get Recruitment Type",
+        "description": "Get one SmartHR recruitment type by its recruitment type ID."
+      },
+      {
+        "slug": "SMARTHR_GET_TAX_WITHHOLDING",
+        "name": "Get Tax Withholding",
+        "description": "Get one highly sensitive SmartHR tax-withholding group by ID. The access token needs tax-withholding-group Reference permission."
+      },
+      {
+        "slug": "SMARTHR_GET_TAX_WITHHOLDING_SLIP",
+        "name": "Get Tax Withholding Slip",
+        "description": "Get one highly sensitive SmartHR tax-withholding slip from a tax-withholding group. The access token needs tax-withholding-slip Reference permission, and employee fields may be permission-filtered."
+      },
+      {
+        "slug": "SMARTHR_GET_USER",
+        "name": "Get User",
+        "description": "Get one SmartHR user account by user ID with an optional related object embedded in the response."
+      },
+      {
+        "slug": "SMARTHR_GET_USER_SAML_CONFIGURATION",
+        "name": "Get User SAML Configuration",
+        "description": "Get the SAML SSO account configuration for one SmartHR user. This endpoint requires the tenant's SAML/SSO option to be enabled."
+      },
+      {
+        "slug": "SMARTHR_GET_WEBHOOK",
+        "name": "Get Webhook",
+        "description": "Get one SmartHR webhook configuration by webhook ID."
+      },
+      {
+        "slug": "SMARTHR_INVITE_EMPLOYEE",
+        "name": "Invite Employee",
+        "description": "Send the documented SmartHR invitation to one employee's configured email address. Repeating the action resends the invitation unless the employee has already accepted it; the inviter must be an administrator."
+      },
+      {
+        "slug": "SMARTHR_LIST_BANK_ACCOUNT_SETTINGS",
+        "name": "List Bank Account Settings",
+        "description": "List one page of SmartHR bank-account setting definitions. This does not return employee bank-account values."
+      },
+      {
+        "slug": "SMARTHR_LIST_BATCH_JOBS",
+        "name": "List Batch Jobs",
+        "description": "List one page of SmartHR background batch jobs. Optionally embed attachment metadata for each job."
+      },
+      {
+        "slug": "SMARTHR_LIST_BUSINESS_ESTABLISHMENTS",
+        "name": "List Business Establishments",
+        "description": "List one page of SmartHR business establishments, optionally embedding the social insurance representative, labor insurance representative, or company."
+      },
+      {
+        "slug": "SMARTHR_LIST_COMPANIES",
+        "name": "List Companies",
+        "description": "List one page of SmartHR companies with an optional embedded owner."
+      },
+      {
+        "slug": "SMARTHR_LIST_DEPARTMENTS",
+        "name": "List Departments",
+        "description": "List one page of SmartHR departments using the documented code and sort filters. Returns hierarchy and company details when present."
+      },
+      {
+        "slug": "SMARTHR_LIST_DEPENDENT_CUSTOM_FIELD_TEMPLATES",
+        "name": "List Dependent Custom Field Templates",
+        "description": "List one page of SmartHR custom-field templates for employee dependents."
+      },
+      {
+        "slug": "SMARTHR_LIST_DEPENDENT_RELATIONS",
+        "name": "List Dependent Relations",
+        "description": "List one page of configured SmartHR dependent relationship types."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYEE_CUSTOM_FIELD_TEMPLATE_GROUPS",
+        "name": "List Employee Custom Field Template Groups",
+        "description": "List one page of employee custom-field template groups. Set embed to templates to include the custom fields belonging to each group."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYEE_CUSTOM_FIELD_TEMPLATES",
+        "name": "List Employee Custom Field Templates",
+        "description": "List one page of SmartHR employee custom-field templates. Set embed to group to include each template's custom-field group."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYEE_DEPENDENTS",
+        "name": "List Employee Dependents",
+        "description": "List one page of sensitive family and dependent records for a SmartHR employee. The access token needs dependent Reference permission, and returned fields may be limited by employee-field Reference permissions."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYEE_INPUT_FORMS",
+        "name": "List Employee Input Forms",
+        "description": "List one page of SmartHR employee information-collection forms with their nested field definitions. Set embed to mail_format to include linked mail formats."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYEE_MATERNITY_CHILDCARE_LEAVES",
+        "name": "List Employee Maternity and Childcare Leaves",
+        "description": "List one page of sensitive maternity and childcare leave records for a SmartHR employee. The access token needs leave-record Reference permission."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYEES",
+        "name": "List Employees",
+        "description": "List one page of employees matching SmartHR's documented employee filters. Employee records contain sensitive HR data; use fields to request only the attributes needed."
+      },
+      {
+        "slug": "SMARTHR_LIST_EMPLOYMENT_TYPES",
+        "name": "List Employment Types",
+        "description": "List one page of SmartHR employment types."
+      },
+      {
+        "slug": "SMARTHR_LIST_GRADES",
+        "name": "List Grades",
+        "description": "List one page of SmartHR grades."
+      },
+      {
+        "slug": "SMARTHR_LIST_JOB_CATEGORIES",
+        "name": "List Job Categories",
+        "description": "List one page of SmartHR job categories."
+      },
+      {
+        "slug": "SMARTHR_LIST_JOB_TITLES",
+        "name": "List Job Titles",
+        "description": "List one page of SmartHR job titles using the documented sort option."
+      },
+      {
+        "slug": "SMARTHR_LIST_MAIL_FORMATS",
+        "name": "List Mail Formats",
+        "description": "List one page of SmartHR mail formats. Set embed to crew_input_forms to include the employee input forms linked to each format."
+      },
+      {
+        "slug": "SMARTHR_LIST_PAYMENT_PERIODS",
+        "name": "List Payment Periods",
+        "description": "List one page of SmartHR payroll payment periods."
+      },
+      {
+        "slug": "SMARTHR_LIST_PAYROLLS",
+        "name": "List Payrolls",
+        "description": "List one page of sensitive SmartHR payroll groups using payment-date and payment-type filters. The access token needs payroll Reference permission."
+      },
+      {
+        "slug": "SMARTHR_LIST_PAYSLIPS",
+        "name": "List Payslips",
+        "description": "List one page of highly sensitive SmartHR payslips in a payroll group. The access token needs payslip Reference permission, and employee fields may be permission-filtered."
+      },
+      {
+        "slug": "SMARTHR_LIST_RECRUITMENT_TYPES",
+        "name": "List Recruitment Types",
+        "description": "List one page of SmartHR recruitment types."
+      },
+      {
+        "slug": "SMARTHR_LIST_TAX_WITHHOLDINGS",
+        "name": "List Tax Withholdings",
+        "description": "List one page of sensitive SmartHR tax-withholding groups. The access token needs tax-withholding-group Reference permission."
+      },
+      {
+        "slug": "SMARTHR_LIST_TAX_WITHHOLDING_SLIPS",
+        "name": "List Tax Withholding Slips",
+        "description": "List one page of sensitive tax-withholding slips in a SmartHR tax-withholding group. The access token needs tax-withholding-slip Reference permission, and employee fields may be permission-filtered."
+      },
+      {
+        "slug": "SMARTHR_LIST_USERS",
+        "name": "List Users",
+        "description": "List one page of SmartHR user accounts with the documented sort and embed options, invitation status, role, and email-delivery status."
+      },
+      {
+        "slug": "SMARTHR_LIST_WEBHOOKS",
+        "name": "List Webhooks",
+        "description": "List one page of SmartHR webhook configurations."
+      },
+      {
+        "slug": "SMARTHR_PARTIALLY_UPDATE_DEPARTMENT",
+        "name": "Partially Update Department",
+        "description": "Partially update a SmartHR department by ID. The connected API access token must have the department resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_PARTIALLY_UPDATE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE",
+        "name": "Partially Update Employee Custom Field Template",
+        "description": "Partially update an employee custom-field template. Elements apply only to enum templates. When a future-dated employee update is pending for the template, SmartHR permits updating only the hint."
+      },
+      {
+        "slug": "SMARTHR_PARTIALLY_UPDATE_EMPLOYMENT_TYPE",
+        "name": "Partially Update Employment Type",
+        "description": "Partially update a SmartHR employment type by ID. SmartHR does not allow renaming a system preset employment type or updating an employment type used by a pending future-dated employee update. The connected API access token must have the employment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_PARTIALLY_UPDATE_PAYROLL",
+        "name": "Partially Update Payroll",
+        "description": "Partially update the administrator-facing and employee-facing names of a sensitive SmartHR payroll group by ID. Both names are required by SmartHR. The connected API access token must have the payroll resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_PARTIALLY_UPDATE_USER_SAML_CONFIGURATION",
+        "name": "Partially Update User SAML Configuration",
+        "description": "Partially update the SAML SSO account configuration for one SmartHR user. The tenant must have SAML SSO enabled, and the connected API access token must have the user resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_PARTIALLY_UPDATE_WEBHOOK",
+        "name": "Partially Update Webhook",
+        "description": "Partially update a SmartHR webhook by ID. Changing its destination or event selections can redirect future employee and dependent data externally, so confirm them before calling. The connected API access token must have the webhook resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_PUBLISH_PAYROLL",
+        "name": "Publish Payroll",
+        "description": "Irreversibly publish one sensitive SmartHR payroll group immediately or at a scheduled time within one month, optionally notifying employees. The connected API access token must have payroll Update permission."
+      },
+      {
+        "slug": "SMARTHR_REMOVE_EMPLOYEE_DEPARTMENTS",
+        "name": "Remove Employee Departments",
+        "description": "Remove all department assignments from one employee using the documented SmartHR endpoint. This requires the employee resource and field Update permissions assigned to the connected access token."
+      },
+      {
+        "slug": "SMARTHR_REOPEN_PAYROLL",
+        "name": "Reopen Payroll",
+        "description": "Reopen one sensitive SmartHR payroll group. Reopening a published payroll may also unpublish it. The connected API access token must have payroll Update permission."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_DEPARTMENT",
+        "name": "Replace Department",
+        "description": "Replace a SmartHR department through PUT. Omitted optional attributes are deleted; use the partial-update action to preserve attributes that are not being changed. Departments with pending employee updates in their hierarchy cannot be updated."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE",
+        "name": "Replace Employee Custom Field Template",
+        "description": "Replace an employee custom-field template through the documented PUT operation. Omitted optional attributes are deleted; use the PATCH action to preserve attributes that are not being changed. Existing dropdown elements omitted from elements are also deleted."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE_GROUP",
+        "name": "Replace Employee Custom Field Template Group",
+        "description": "Replace an employee custom-field template group through the documented PUT operation. Omitted optional attributes are deleted; use the PATCH action to preserve attributes that are not being changed."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_EMPLOYMENT_TYPE",
+        "name": "Replace Employment Type",
+        "description": "Replace a SmartHR employment type through PUT. Attributes omitted from the PUT contract are deleted; use the partial-update action to preserve them. System-standard employment types and employment types used by pending employee updates cannot be changed."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_GRADE",
+        "name": "Replace Grade",
+        "description": "Replace a SmartHR grade by ID using full PUT semantics. The PUT contract allows name and rank to be omitted. Grades used by pending future-dated employee updates cannot be changed. The connected API access token must have the grade resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_JOB_CATEGORY",
+        "name": "Replace Job Category",
+        "description": "Replace a SmartHR job category by ID using full PUT semantics. The PUT contract allows name to be omitted. Job categories used by pending future-dated employee updates cannot be changed. The connected API access token must have the job category resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_JOB_TITLE",
+        "name": "Replace Job Title",
+        "description": "Replace a SmartHR job title by ID using full PUT semantics. The PUT contract allows name and rank to be omitted. Job titles used by pending future-dated employee updates cannot be changed. The connected API access token must have the job title resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_RECRUITMENT_TYPE",
+        "name": "Replace Recruitment Type",
+        "description": "Replace a SmartHR recruitment type by ID using full PUT semantics. Name is required for the complete replacement. Recruitment types used by pending future-dated employee updates cannot be changed. The connected API access token must have the recruitment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_TAX_WITHHOLDING",
+        "name": "Replace Tax Withholding",
+        "description": "Replace a sensitive SmartHR tax-withholding group by ID using full PUT semantics. Name, status, and year are all required for the complete replacement. Finalized tax withholdings cannot be updated. The connected API access token must have the tax-withholding-group resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_REPLACE_WEBHOOK",
+        "name": "Replace Webhook",
+        "description": "Replace a SmartHR webhook through PUT. Omitted optional attributes are deleted; use the partial-update action to preserve attributes that are not being changed. Changing its destination or event selections can redirect future employee and dependent data externally, so confirm them before calling."
+      },
+      {
+        "slug": "SMARTHR_START_DEPENDENT_IMPORT_JOB",
+        "name": "Start Dependent Import Job",
+        "description": "Start an asynchronous SmartHR dependent-data import from a Base64-encoded CSV or Excel file. This creates a background job that processes sensitive family HR data; the connected API access token must have the corresponding resource and employee-field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_START_EMPLOYEE_EXPORT_JOB",
+        "name": "Start Employee Export Job",
+        "description": "Start a SmartHR background job that exports employee information using an existing custom download format. A successful 201 response only confirms that the asynchronous job was registered; use the batch-job actions to monitor it and retrieve any resulting attachment. The connected access token must have the required resource and employee-field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_START_EMPLOYEE_IMPORT_JOB",
+        "name": "Start Employee Import Job",
+        "description": "Start a SmartHR background job that inserts or updates employees from a sensitive base64-encoded CSV or Excel file. The connected API access token must have the required resource and employee-field Update permissions."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_EMPLOYEE",
+        "name": "Update Employee",
+        "description": "Update the supplied documented fields of one employee by SmartHR employee ID."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_EMPLOYEE_CUSTOM_FIELD_TEMPLATE_GROUP",
+        "name": "Update Employee Custom Field Template Group",
+        "description": "Update one or more supplied fields of an employee custom-field template group."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_EMPLOYEE_DEPENDENT",
+        "name": "Update Employee Dependent",
+        "description": "Update the supplied fields of one dependent belonging to an employee."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_GRADE",
+        "name": "Update Grade",
+        "description": "Update the supplied fields of a SmartHR grade by ID. Grades used by pending future-dated employee updates cannot be changed. The connected API access token must have the grade resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_JOB_CATEGORY",
+        "name": "Update Job Category",
+        "description": "Update the supplied fields of a SmartHR job category by ID. Job categories used by pending future-dated employee updates cannot be changed. The connected API access token must have the job category resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_JOB_TITLE",
+        "name": "Update Job Title",
+        "description": "Update the supplied fields of a SmartHR job title by ID. Job titles used by pending future-dated employee updates cannot be changed. The connected API access token must have the job title resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_RECRUITMENT_TYPE",
+        "name": "Update Recruitment Type",
+        "description": "Update a SmartHR recruitment type by ID. Recruitment types used by pending future-dated employee updates cannot be changed. The connected API access token must have the recruitment type resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_TAX_WITHHOLDING",
+        "name": "Update Tax Withholding",
+        "description": "Update the supplied fields of a sensitive SmartHR tax-withholding group by ID. SmartHR does not allow updates after the group is fixed. The connected API access token must have the tax-withholding-group resource Update permission."
+      },
+      {
+        "slug": "SMARTHR_UPDATE_TAX_WITHHOLDING_SLIP",
+        "name": "Update Tax Withholding Slip",
+        "description": "Update a sensitive SmartHR tax-withholding slip. The full body is required: structured updates require the complete identity, payer, tax-year, and payment body, and sparse field updates are rejected by SmartHR. Confirmed slips cannot be updated, and switching between file-backed and field-backed data requires deleting and recreating the slip. The connected API access token must have the tax-withholding-slip resource Update permission."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "smarthr_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "subdomain",
+                "displayName": "Tenant Subdomain",
+                "type": "string",
+                "description": "The subdomain from your SmartHR production URL. For example, enter \"example\" when your SmartHR URL is https://example.smarthr.jp. Do not enter the full URL or a sandbox (*.daruma.space) subdomain.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_api_key",
+                "displayName": "API Access Token",
+                "type": "string",
+                "description": "An API access token issued by a SmartHR administrator under Common Settings > External System Integration > Access Tokens. Ensure the token has the Reference and Update permissions required for the SmartHR resources you intend to use.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "smartlead",
     "name": "Smartlead",
     "logo": "https://logos.composio.dev/api/smartlead",
@@ -387884,6 +390887,192 @@
                 "description": "Scopes to request from the user, comma separated",
                 "required": false,
                 "default": ""
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "threads",
+    "name": "Threads",
+    "logo": "https://logos.composio.dev/api/threads",
+    "description": "Threads is Meta's social network for publishing posts, managing replies, discovering public content, and analyzing profile and post performance.",
+    "category": "social media accounts",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 24,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "THREADS_CREATE_AND_SHARE_POST",
+        "name": "Create and Share Post",
+        "description": "Create and publish a top-level Threads post and cross-share it to the linked Instagram account as a Story. Returns crossreshare_to_ig_status to report whether the Story cross-share succeeded independently of Threads publication."
+      },
+      {
+        "slug": "THREADS_CREATE_POST",
+        "name": "Create Post",
+        "description": "Create and publish a top-level Threads text, image, video, carousel, quote, poll, ghost, GIF, or text-attachment post, optionally with a location tag."
+      },
+      {
+        "slug": "THREADS_CREATE_REPLY",
+        "name": "Create Reply",
+        "description": "Create and publish a reply to a Threads post, including a text, image, video, carousel, quote, poll, GIF, or text-attachment reply."
+      },
+      {
+        "slug": "THREADS_DELETE_POST",
+        "name": "Delete Post",
+        "description": "Permanently delete a Threads post owned by the connected profile."
+      },
+      {
+        "slug": "THREADS_GET_LOCATION",
+        "name": "Get Location",
+        "description": "Retrieve one Threads location by ID for inspection or post tagging."
+      },
+      {
+        "slug": "THREADS_GET_MY_PROFILE",
+        "name": "Get My Profile",
+        "description": "Return the connected or app-scoped Threads user's profile and identity fields."
+      },
+      {
+        "slug": "THREADS_GET_POST",
+        "name": "Get Post",
+        "description": "Retrieve one Threads post by ID. Third-party posts may be unavailable until the Meta app has advanced access."
+      },
+      {
+        "slug": "THREADS_GET_POST_EMBED",
+        "name": "Get Post Embed",
+        "description": "Return embeddable HTML and oEmbed metadata for a public Threads post."
+      },
+      {
+        "slug": "THREADS_GET_POST_INSIGHTS",
+        "name": "Get Post Insights",
+        "description": "Return selected lifetime engagement metrics for one post owned by the connected Threads profile."
+      },
+      {
+        "slug": "THREADS_GET_PROFILE_INSIGHTS",
+        "name": "Get Profile Insights",
+        "description": "Return one time-window page of selected profile time-series, totals, link clicks, follower counts, or follower demographics for a Threads profile."
+      },
+      {
+        "slug": "THREADS_GET_PUBLISHING_LIMITS",
+        "name": "Get Publishing Limits",
+        "description": "Return current usage and configured quota for Threads posts, replies, deletes, location searches, or all publishing categories."
+      },
+      {
+        "slug": "THREADS_LIST_GHOST_POSTS",
+        "name": "List Ghost Posts",
+        "description": "List active and archived ghost posts created by the connected Threads profile, one cursor page at a time."
+      },
+      {
+        "slug": "THREADS_LIST_MY_MENTIONS",
+        "name": "List My Mentions",
+        "description": "List public Threads posts that mention the connected profile, one cursor page at a time. With development access, Threads may return only mentions made by app testers, so an empty page does not prove that no public mentions exist."
+      },
+      {
+        "slug": "THREADS_LIST_MY_POSTS",
+        "name": "List My Posts",
+        "description": "List posts created by the connected Threads profile, one cursor page at a time."
+      },
+      {
+        "slug": "THREADS_LIST_MY_REPLIES",
+        "name": "List My Replies",
+        "description": "List replies created by the connected Threads profile, one cursor page at a time."
+      },
+      {
+        "slug": "THREADS_LIST_PENDING_REPLIES",
+        "name": "List Pending Replies",
+        "description": "List one page of pending or ignored replies for an owned Threads post. The post must have been created with reply approvals enabled."
+      },
+      {
+        "slug": "THREADS_LIST_POST_REPLIES",
+        "name": "List Post Replies",
+        "description": "Return either immediate replies or the flattened full conversation for a Threads post, one cursor page at a time."
+      },
+      {
+        "slug": "THREADS_LIST_PUBLIC_PROFILE_POSTS",
+        "name": "List Public Profile Posts",
+        "description": "List one cursor page of posts from a qualifying public Threads profile by exact username. Standard or unreviewed app access is restricted to selected official Meta accounts, and returned post IDs may not support direct retrieval until the app has advanced access."
+      },
+      {
+        "slug": "THREADS_LOOKUP_PUBLIC_PROFILE",
+        "name": "Lookup Public Profile",
+        "description": "Look up a qualifying public Threads profile by exact username. Profiles generally need at least 100 followers, and standard or unreviewed app access is restricted to selected official Meta accounts."
+      },
+      {
+        "slug": "THREADS_REPOST_POST",
+        "name": "Repost Post",
+        "description": "Repost an existing Threads post to the connected profile; this creates a visible post."
+      },
+      {
+        "slug": "THREADS_REVIEW_PENDING_REPLY",
+        "name": "Review Pending Reply",
+        "description": "Approve or ignore one pending reply; an ignored reply can later be approved."
+      },
+      {
+        "slug": "THREADS_SEARCH_LOCATIONS",
+        "name": "Search Locations",
+        "description": "Search Threads locations by text, coordinates, or both. Returns the provider-ranked unpaginated result set."
+      },
+      {
+        "slug": "THREADS_SEARCH_POSTS",
+        "name": "Search Posts",
+        "description": "Search one page of Threads posts by keyword or topic tag. Broader public results require Meta advanced access, so an empty page may reflect app-review limits rather than no public matches."
+      },
+      {
+        "slug": "THREADS_SET_REPLY_VISIBILITY",
+        "name": "Set Reply Visibility",
+        "description": "Hide or unhide a top-level reply and its nested replies on a post managed by the connected profile."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "threads_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "threads_basic,threads_content_publish,threads_read_replies,threads_manage_replies,threads_manage_insights,threads_delete,threads_keyword_search,threads_manage_mentions,threads_profile_discovery,threads_location_tagging,threads_share_to_instagram"
               }
             ]
           },
@@ -420569,7 +423758,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20261014_01",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ZEROBOUNCE_ACTIVITY_DATA",
@@ -420591,7 +423780,7 @@
           "supported": true,
           "price": {
             "description": "$0.019 per scoring credit",
-            "discount": "0"
+            "discount": "83"
           }
         }
       },
@@ -420608,7 +423797,7 @@
           "supported": true,
           "price": {
             "description": "$0.019 per chargeable validation credit",
-            "discount": "0"
+            "discount": "83"
           }
         }
       },
@@ -420719,7 +423908,7 @@
           "supported": true,
           "price": {
             "description": "$0.019 per validation credit",
-            "discount": "0"
+            "discount": "83"
           }
         }
       }
