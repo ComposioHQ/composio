@@ -4,6 +4,7 @@
     "creating-triggers",
     "subscribing-to-events",
     "managing-triggers",
-    "custom-oauth-webhooks"
+    "custom-oauth-webhooks",
+    "troubleshooting"
   ]
 }
