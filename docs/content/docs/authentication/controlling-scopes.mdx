@@ -152,7 +152,7 @@ Changing an auth config does not change the permissions already granted to an ex
 
 When you add access, request the complete scope set the new connection needs. For example, a Google Super connection that needs Sheets, Tasks, Docs, and Slides should request all four capabilities together. Permissions still shown in Google Account settings do not prove that a newly issued connection has them.
 
-When you remove access, verify the new connection against your intended permissions before switching your application to it. If access must stop immediately, disable the old connection in Composio; changing the config alone does not disable it. Provider revocation has its own scope and can affect other credentials tied to the same grant. See [Connected accounts](/docs/auth-configuration/connected-accounts#revoke-accounts).
+When you remove access, verify the new connection against your intended permissions before switching your application to it. If access must stop immediately, disable the old connection in Composio; changing the config alone does not disable it. Provider revocation applies at the provider and can affect other credentials tied to the same grant. See [Connected accounts](/docs/auth-configuration/connected-accounts#revoke-accounts).
 
 ## Use the auth config in a session
 
