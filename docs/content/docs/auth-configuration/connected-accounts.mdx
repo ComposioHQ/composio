@@ -115,7 +115,7 @@ A stored `ACTIVE` status means the connection flow completed and credentials wer
 | A connection returns `403` or insufficient scopes | Compare the tool's permissions with the scopes available to the OAuth app and granted during authorization. Repeated reconnects to the same config will not fix an unavailable scope. |
 | Connections repeatedly expire after successful use | Check refresh permissions and provider app policy. Share the affected account IDs, execution IDs, timestamps, and redacted provider errors with support so the refresh history can be investigated. |
 
-For custom OAuth, preserve permissions required for ongoing access, such as Microsoft's `offline_access` or Salesforce's `refresh_token`, when choosing tool-specific scopes. Older auth configs may need an update and new authorization even after toolkit defaults are corrected.
+For custom OAuth, preserve permissions required for ongoing access, such as Microsoft's `offline_access` or Salesforce's `refresh_token`, when choosing tool-specific scopes. Changes to a toolkit's default scopes don't rewrite the scopes saved on an existing auth config. If an existing config omits a refresh permission, add it to the config's `scopes` and authorize a new connection.
 
 Never send access tokens, refresh tokens, client secrets, or API keys when reporting an authorization failure.
 
