@@ -10,7 +10,7 @@ A **session** is the runtime context for an agentic run: the scoped environment 
 
 Create a session for a user, then read its tools formatted for your framework. To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(user_id="user_123")
@@ -26,6 +26,17 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 
 const tools = await session.tools();
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>
@@ -109,7 +120,7 @@ Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessio
 
 When your model asks to call a session tool, execute it with `session.execute()`. It routes the call through the session's tool router, which is the only place session meta-tools run:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
@@ -133,6 +144,14 @@ if (result.resultType === 'failed') {
 }
 
 console.log(result.data);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool_slug": "COMPOSIO_SEARCH_TOOLS", "arguments": {"queries": [{"use_case": "send an email"}]}}'
 ```
 </Tab>
 </Tabs>
@@ -182,7 +201,7 @@ Every `create()` call returns a new session ID. Use it for a fresh task context.
 
 Sessions persist on the server and don't expire. For multi-turn conversations, store the session ID and reuse it with `composio.use()` instead of calling `create()` again.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.use("session_id")
@@ -198,15 +217,24 @@ const session = await composio.use("session_id");
 const tools = await session.tools();
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/session_id \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/session_id/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 You can also update a session in place instead of creating a new one:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(
-    toolkits=["gmail", "slack"],
+    toolkits={"enable": ["gmail", "slack"]},
     auth_configs={"gmail": "ac_new_config"},
     connected_accounts={"slack": ["ca_work_slack"]},
 )
@@ -223,6 +251,18 @@ await session.update({
   authConfigs: { gmail: "ac_new_config" },
   connectedAccounts: { slack: ["ca_work_slack"] },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/session_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkits": {"enable": ["gmail", "slack"]},
+    "auth_configs": {"gmail": "ac_new_config"},
+    "connected_accounts": {"slack": ["ca_work_slack"]}
+  }'
 ```
 </Tab>
 </Tabs>

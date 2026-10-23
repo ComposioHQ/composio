@@ -10,6 +10,7 @@ Documentation-site guidance for AI agents working under `docs/`.
 
 - Use the `docs-decisions` skill for docs content, changelogs, decisions, docs automation, or docs review.
 - Context references live under `docs/agent-guidance/context/`; use `docs/agent-guidance/context/twoslash.md` before editing typed MDX examples.
+- Read `docs/agent-guidance/context/code-examples.md` before editing code examples.
 - Agent workflow prompts live under `docs/agent-guidance/agents/`.
 - Changelog guidance lives at `docs/agent-guidance/guides/changelog.md`.
 - Decision records live under `docs/decisions/`; read `docs/decisions/README.md` first.
@@ -30,11 +31,18 @@ bun run test:integration
 bun run generate:toolkits
 bun run generate:meta-tools
 bun run generate:api-index
+bun run check:code-examples
+bun run check:api-snippets
+bun run check:python-snippets
+bun run test:python-snippets
+bun run check:typescript-snippets
+bun run inventory:code-examples
 ```
 
 ## Rules
 
-- TypeScript code blocks in MDX are checked during docs builds. Use `docs/agent-guidance/context/twoslash.md` before changing typed examples.
+- Production Twoslash and `check:typescript-snippets` cover different maintained TypeScript surfaces. Read `docs/agent-guidance/context/twoslash.md` for coverage, installed-version boundaries, and annotation rules.
+- Maintained operation examples offer Python, TypeScript, and API options, or a specific justified exception. Read `docs/agent-guidance/context/code-examples.md` for the full inventory, generated/historical limits, check commands, and scoped markers. Passing checks do not establish semantic equivalence or justify an exemption.
 - Parse untyped or external data (JSON files, fetched payloads, framework page data) once at the boundary with zod schemas and let `z.infer` types flow downstream. Never hand-roll structural guards (`'x' in obj` / `typeof` chains), cast parsed JSON with `as`, or fake validation with `z.custom(() => true)`.
 - Follow the root [Contribution Policy](../CONTRIBUTING.md#contribution-policy), including its designated PR reviewer and [third-party links policy](../CONTRIBUTING.md#third-party-links-in-docs). Authoritative technical references needed to use or contribute to Composio are allowed; other third-party links and promotional content must fit the listed exceptions. Route partnership requests to https://composio.dev/contact.
 - Internal docs links must be relative site paths such as `/docs/...`, `/reference/...`, or `/assets/...`.

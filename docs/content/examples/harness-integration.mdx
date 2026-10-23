@@ -76,7 +76,7 @@ Two settings are still worth passing at creation. `manageConnections: false` dro
 
 If you want a white-label flow, pass `authConfigs` at creation to pin the session to your own OAuth app. `session.authorize()` then sends the user through your consent screen instead of Composio's managed app. You can update those configs later, so migrating from a default app to your own app is a session patch, not a rebuild.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -104,6 +104,16 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# user_id is your own identifier, stable for the life of the account
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "manage_connections": {"enable": false}, "workbench": {"enable": false}}' \
+  | jq -r '.session_id')
+```
+</Tab>
 </Tabs>
 
 Create one session per user and reuse it. Sessions persist on the server and don't expire, so store the session id on the user record and pick it back up with `composio.use(sessionId)` on later requests. Calling `create()` again just makes another session.
@@ -112,7 +122,7 @@ Create one session per user and reuse it. Sessions persist on the server and don
 
 The catalog does not belong to a user. `composio.toolkits.list()` in Python or `composio.toolkits.get()` in TypeScript returns the app list independent of any session, so your integrations page can render before anyone signs in.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 page = composio.toolkits.list(limit=50)
@@ -137,11 +147,19 @@ for (const toolkit of toolkits) {
 // pass a cursor as { cursor } to request the next page
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/toolkits?limit=50" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Pass the response's next_cursor back as cursor= for the next page
+```
+</Tab>
 </Tabs>
 
 Filter by category or sort alphabetically. If you also need to know whether this user has a live connection, call `session.toolkits()` with the same toolkit list; it merges the global catalog with per-user connection state.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 developer = composio.toolkits.list(category="developer-tools", limit=50)
@@ -158,6 +176,15 @@ const developer = await composio.toolkits.get({ category: 'developer-tools', lim
 const connected = await session.toolkits({ isConnected: true, limit: 100 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/toolkits?category=developer-tools&limit=50" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+curl -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?is_connected=true&limit=100" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 <Callout type="info" title="Toolkits with no auth">
@@ -168,7 +195,7 @@ Toolkits where `isNoAuth` is true (search, scrapers, and similar) need no connec
 
 `session.authorize(slug)` starts the flow and returns a connection request with a redirect URL. Send the user there. Composio holds the credentials and refreshes them; no token ever lands in your code.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 request = session.authorize(
@@ -202,6 +229,15 @@ const account = await request.waitForConnection();
 console.log(`Connected account: ${account.id}`);
 ```
 </Tab>
+<Tab value="API">
+```bash
+# Redirect the user to the returned redirect_url
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "github", "callback_url": "https://your-app.com/composio/callback"}'
+```
+</Tab>
 </Tabs>
 
 In a web app, don't hold a request open on `waitForConnection`. Point `callbackUrl` at your own route and, when the user lands back on it, confirm with `session.toolkits({ toolkits: ['github'], isConnected: true })`. That check is authoritative and costs one call.
@@ -209,20 +245,25 @@ In a web app, don't hold a request open on `waitForConnection`. Point `callbackU
 <Callout type="info" title="White-label OAuth and migrating apps">
 By default, `session.authorize()` uses Composio's managed OAuth app. To brand the consent screen or control the OAuth client, create an auth config with your own credentials and pass it at session creation.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
+import os
+from typing import cast
+from composio.client.types import auth_config_create_params as auth_types
+
 auth_config = composio.auth_configs.create(
     toolkit="github",
     options={
         "type": "use_custom_auth",
         "auth_scheme": "OAUTH2",
         "name": "My GitHub App",
-        "credentials": {
+        # The generated credentials type omits OAuth client fields accepted by the API.
+        "credentials": cast(auth_types.AuthConfigUnionMember1Credentials, {
             "client_id": os.environ["GITHUB_CLIENT_ID"],
             "client_secret": os.environ["GITHUB_CLIENT_SECRET"],
             "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add",
-        },
+        }),
     },
 )
 
@@ -259,6 +300,37 @@ const session = await composio.sessions.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+AUTH_CONFIG_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit": {"slug": "github"},
+    "auth_config": {
+      "type": "use_custom_auth",
+      "authScheme": "OAUTH2",
+      "name": "My GitHub App",
+      "credentials": {
+        "client_id": "'"$GITHUB_CLIENT_ID"'",
+        "client_secret": "'"$GITHUB_CLIENT_SECRET"'",
+        "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add"
+      }
+    }
+  }' | jq -r '.auth_config.id')
+
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["github"]},
+    "auth_configs": {"github": "'"$AUTH_CONFIG_ID"'"},
+    "manage_connections": {"enable": false},
+    "workbench": {"enable": false}
+  }' | jq -r '.session_id')
+```
+</Tab>
 </Tabs>
 
 To migrate users from an existing token store, create a connected account directly with `composio.connectedAccounts.initiate()` (TypeScript) or `composio.connected_accounts.initiate()` (Python). You can update `authConfigs` on the session later, so moving from the default app to your own app is a patch rather than a rebuild.
@@ -272,7 +344,7 @@ Your harness can consume tools in two shapes. Load raw JSON Schema and call them
 
 `getRawComposioTools` returns tool definitions with no user context and no provider wrapping: a slug, a name, a description, and input parameters as plain JSON Schema. Take the toolkits you want to expose, pull their tools, and write them into whatever corpus your planner already searches.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 connected = session.toolkits(is_connected=True, limit=100)
@@ -314,6 +386,17 @@ for (const tool of tools) {
 }
 ```
 </Tab>
+<Tab value="API">
+```bash
+SLUGS=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?is_connected=true&limit=100" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq -r '[.items[].slug] | join(",")')
+
+# Each item has slug, description, and input_parameters (JSON Schema)
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=$SLUGS" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 <Callout type="warn" title="Pass `important: false` to fetch every tool, not a curated subset">
@@ -328,7 +411,7 @@ Fetch per toolkit rather than in one shot once a user has a lot connected. Thirt
 
 Create a session with `mcp: true` and hand `session.mcp.url` (and `session.mcp.headers` if required) to any MCP client. The server exposes the same tools and executes them under the session's connected accounts, so your harness talks the protocol instead of calling `session.execute()` directly.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
@@ -372,6 +455,27 @@ console.log(session.mcp.url);
 console.log(session.mcp.headers);
 ```
 </Tab>
+<Tab value="API">
+```bash
+# The direct-tools preset is these settings: no connection manager, sandbox,
+# search, or multi-execute, and every allowed tool preloaded
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}},
+    "manage_connections": {"enable": false},
+    "workbench": {"enable": false},
+    "preload": {"tools": "all"},
+    "search": {"enable": false},
+    "execute": {"enable_multi_execute": false}
+  }' | jq -r '.mcp.url'
+
+# MCP clients authenticate to that URL with the same x-api-key header
+```
+</Tab>
 </Tabs>
 
 Wire the URL into any MCP client. Examples for OpenAI Agents, Claude Agent SDK, and Vercel AI SDK are in the [sessions via MCP guide](/docs/sessions-via-mcp).
@@ -388,7 +492,7 @@ Wire the URL into any MCP client. Examples for OpenAI Agents, Claude Agent SDK, 
 
 If you scoped the session to specific toolkits, that filter is what gates execution later. When a user connects something new, widen the session rather than creating another one. `session.update()` is a patch: fields you omit are left alone.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(toolkits={"enable": [*slugs, "linear"]})
@@ -404,6 +508,15 @@ declare const slugs: string[];
 await session.update({ toolkits: { enable: [...slugs, 'linear'] } });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# List the toolkits already in your index, plus the new one
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkits": {"enable": ["github", "linear"]}}'
+```
+</Tab>
 </Tabs>
 
 A session created with no toolkit filter, as in the setup above, already allows everything and needs no update.
@@ -412,7 +525,7 @@ A session created with no toolkit filter, as in the setup above, already allows 
 
 Your planner picked a tool and produced arguments. `session.execute` runs it as this user's connected account and returns the result. No model, no retry loop, no interpretation.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = session.execute(
@@ -451,6 +564,23 @@ if (result.resultType === 'failed') {
 
 console.log(result.data);
 console.log(result.logId); // look this up in the dashboard
+```
+</Tab>
+<Tab value="API">
+```bash
+# The response carries result_type, data, error, and log_id
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GITHUB_CREATE_AN_ISSUE",
+    "arguments": {
+      "owner": "ComposioHQ",
+      "repo": "composio",
+      "title": "Tool schemas drift between staging and prod",
+      "body": "Filed by the harness."
+    }
+  }'
 ```
 </Tab>
 </Tabs>

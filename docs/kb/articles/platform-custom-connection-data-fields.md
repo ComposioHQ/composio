@@ -24,9 +24,28 @@ Crowdin expected:
 
 To verify the required field names, inspect toolkit metadata:
 
+### Python
+
+```python
+toolkit = composio.toolkits.get("crowdin")
+print(toolkit.auth_config_details)
+```
+
+### TypeScript
+
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+const toolkit = await composio.toolkits.get("crowdin");
+console.log(toolkit.authConfigDetails);
+```
+
+### API
+
 ```bash
-curl --location 'https://backend.composio.dev/api/v3.1/toolkits/<toolkit_slug>' \
-  --header 'x-api-key: <COMPOSIO_API_KEY>'
+curl --location 'https://backend.composio.dev/api/v3.1/toolkits/crowdin' \
+  --header "x-api-key: $COMPOSIO_API_KEY"
 ```
 
 Look under:

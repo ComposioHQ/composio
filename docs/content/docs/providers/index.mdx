@@ -70,6 +70,7 @@ Use TypeSafe's Jev model to select a Composio tool with a confidence score. The 
 
 Set `COMPOSIO_API_KEY` and `TYPESAFE_API_KEY` in your environment before running decisions.
 
+{/* code-example: no-api reason="TypeSafe provider decides tool calls with the Jev model client-side before execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
@@ -107,7 +108,24 @@ Use `provider.shortlist_tools()` to narrow the tools before deciding, or `provid
 npm install @composio/core @composio/typesafe @typesafe-ai/sdk@0.6.0 zod
 ```
 
-Import `TypesafeProvider` from `@composio/typesafe` and pass an instance as the `provider` option to `new Composio()`. Fetch tools with `composio.tools.get()`, then call `await provider.decide(toolSet, request)` and `await provider.execute(userId, decision, { arguments })`.
+```typescript
+import { Composio } from '@composio/core';
+import { TypesafeProvider } from '@composio/typesafe';
+
+const provider = new TypesafeProvider();
+const composio = new Composio({ provider });
+const toolSet = await composio.tools.get('user_123', {
+  tools: ['GITHUB_LIST_REPOSITORY_ISSUES'],
+});
+const decision = await provider.decide(toolSet, 'List the closed issues of ComposioHQ/composio');
+
+if (decision.kind !== 'abstain') {
+  const result = await provider.execute('user_123', decision, {
+    arguments: { owner: 'ComposioHQ', repo: 'composio' },
+  });
+  console.log(result.data);
+}
+```
 
 Use `provider.shortlistTools()` to narrow the tools before deciding, or `provider.confidenceGate()` to apply a minimum judgement score before execution. Destructive tools require explicit confirmation through `provider.execute(userId, decision, { confirm: true })`.
 

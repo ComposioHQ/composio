@@ -11,9 +11,45 @@ All endpoints in this section require a **project API key** (`x-api-key`) or a v
 
 ## List logs
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+page = composio.logs.search(
+    limit=20,
+    time_range={"from": 1744848000000, "to": 1744934400000},
+    filters=[
+        {"field": "toolkit_slug", "operator": "==", "value": "gmail"},
+        {"field": "status", "operator": "==", "value": "failed"},
+    ],
+)
+print(page.logs, page.next_cursor)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const { logs, nextCursor } = await composio.logs.search({
+  limit: 20,
+  timeRange: { from: 1744848000000, to: 1744934400000 },
+  filters: [
+    { field: 'toolkit_slug', operator: '==', value: 'gmail' },
+    { field: 'status', operator: '==', value: 'failed' },
+  ],
+});
+console.log(logs, nextCursor);
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "limit": 20,
@@ -27,6 +63,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
     ]
   }'
 ```
+</Tab>
+</Tabs>
 
 The response contains a page of log entries and a `next_cursor`:
 
@@ -91,10 +129,34 @@ Pass one or more filters in the `filters` array. Filters are **AND**-combined.
 
 Fetch one log by ID to get the **full** payload, including request/response bodies, timing breakdowns, and source metadata:
 
-```bash
-curl https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
-  -H "x-api-key: YOUR_PROJECT_API_KEY"
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+log = composio.logs.get("log_-jRTWClpBoVo")
+print(log.status, log.data)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const log = await composio.logs.get('log_-jRTWClpBoVo');
+console.log(log.status, log.data);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
 
 The detail response includes everything from the list shape plus:
 
@@ -109,26 +171,94 @@ This is the endpoint to call when you need to reconstruct *exactly* what happene
 
 ### Find failed Gmail tool calls in the last hour
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import time
+
+from composio import Composio
+
+composio = Composio()
+
+now = int(time.time() * 1000)
+page = composio.logs.search(
+    time_range={"from": now - 3_600_000, "to": now},
+    filters=[
+        {"field": "toolkit_slug", "operator": "==", "value": "gmail"},
+        {"field": "status", "operator": "==", "value": "failed"},
+    ],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const now = Date.now();
+const { logs } = await composio.logs.search({
+  timeRange: { from: now - 3_600_000, to: now },
+  filters: [
+    { field: 'toolkit_slug', operator: '==', value: 'gmail' },
+    { field: 'status', operator: '==', value: 'failed' },
+  ],
+});
+```
+</Tab>
+<Tab value="API">
 ```bash
 NOW=$(date +%s)000
 HOUR_AGO=$(( $(date +%s) - 3600 ))000
 curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"time_range\": { \"from\": ${HOUR_AGO}, \"to\": ${NOW} },
-    \"filters\": [
-      { \"field\": \"toolkit_slug\", \"operator\": \"==\", \"value\": \"gmail\" },
-      { \"field\": \"status\", \"operator\": \"==\", \"value\": \"failed\" }
+  -d '{
+    "time_range": { "from": '"$HOUR_AGO"', "to": '"$NOW"' },
+    "filters": [
+      { "field": "toolkit_slug", "operator": "==", "value": "gmail" },
+      { "field": "status", "operator": "==", "value": "failed" }
     ]
-  }"
+  }'
 ```
+</Tab>
+</Tabs>
 
 ### Get failures for a specific user
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+page = composio.logs.search(
+    filters=[
+        {"field": "user_id", "operator": "==", "value": "user_abc123"},
+        {"field": "status", "operator": "==", "value": "failed"},
+    ],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const { logs } = await composio.logs.search({
+  filters: [
+    { field: 'user_id', operator: '==', value: 'user_abc123' },
+    { field: 'status', operator: '==', value: 'failed' },
+  ],
+});
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "filters": [
@@ -137,13 +267,39 @@ curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
     ]
   }'
 ```
+</Tab>
+</Tabs>
 
 ### Fetch a single log's full request/response
 
-```bash
-curl https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
-  -H "x-api-key: YOUR_PROJECT_API_KEY"
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+log = composio.logs.get("log_-jRTWClpBoVo")
+print(log.status, log.data)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const log = await composio.logs.get('log_-jRTWClpBoVo');
+console.log(log.status, log.data);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
 
 ## Endpoints
 

@@ -20,7 +20,7 @@ Use session-level behavior tags when the agent may discover tools across
 multiple toolkits but should only receive tools marked as read-only. The same
 filters are enforced when the session executes tools.
 
-**Python**
+### Python
 
 ```python
 session = composio.sessions.create(
@@ -32,15 +32,27 @@ session = composio.sessions.create(
 )
 ```
 
-**TypeScript**
+### TypeScript
 
 ```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
 const session = await composio.create("user_123", {
   tags: {
     enable: ["readOnlyHint"],
     disable: ["destructiveHint"],
   },
 });
+```
+
+### API
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user_123","tags":{"enable":["readOnlyHint"],"disable":["destructiveHint"]}}'
 ```
 
 Behavior tags describe tool behavior. Inspect the tools the session exposes
@@ -54,7 +66,7 @@ For a workflow with a known set of operations, allow only the exact tool slugs
 it requires. An allowlist avoids admitting a newly added tool merely because it
 shares a toolkit or behavior tag.
 
-**Python**
+### Python
 
 ```python
 session = composio.sessions.create(
@@ -66,15 +78,27 @@ session = composio.sessions.create(
 )
 ```
 
-**TypeScript**
+### TypeScript
 
 ```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
 const session = await composio.create("user_123", {
   tools: {
     gmail: { enable: ["GMAIL_FETCH_EMAILS"] },
     github: { enable: ["GITHUB_GET_AN_ISSUE"] },
   },
 });
+```
+
+### API
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user_123","tools":{"gmail":{"enable":["GMAIL_FETCH_EMAILS"]},"github":{"enable":["GITHUB_GET_AN_ISSUE"]}}}'
 ```
 
 - [Enable and disable specific tools](https://docs.composio.dev/docs/configuring-sessions#enabling-or-disabling-specific-tools)
@@ -104,7 +128,7 @@ to the session, keyed by toolkit, or the session will not request those scopes.
 Set a global tag policy and override it only for a named toolkit. This is safer
 than relaxing the global policy for the entire session.
 
-**Python**
+### Python
 
 ```python
 session = composio.sessions.create(
@@ -117,9 +141,12 @@ session = composio.sessions.create(
 )
 ```
 
-**TypeScript**
+### TypeScript
 
 ```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
 const session = await composio.create("user_123", {
   tags: ["readOnlyHint"],
   tools: {
@@ -127,6 +154,15 @@ const session = await composio.create("user_123", {
     gmail: { tags: ["readOnlyHint"] },
   },
 });
+```
+
+### API
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user_123","tags":["readOnlyHint"],"tools":{"github":{"tags":{"disable":["destructiveHint"]}},"gmail":{"tags":["readOnlyHint"]}}}'
 ```
 
 - [Toolkit-specific tag filters](https://docs.composio.dev/docs/configuring-sessions#filtering-tools-by-tags)
@@ -137,7 +173,7 @@ Session tool filters govern app tools. Sessions also include remote sandbox
 tools by default. Disable the sandbox for a tightly constrained workflow that
 does not need Python, shell, file processing, or remote workbench execution.
 
-**Python**
+### Python
 
 ```python
 session = composio.sessions.create(
@@ -147,13 +183,25 @@ session = composio.sessions.create(
 )
 ```
 
-**TypeScript**
+### TypeScript
 
 ```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
 const session = await composio.create("user_123", {
   tags: ["readOnlyHint"],
   sandbox: { enable: false },
 });
+```
+
+### API
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user_123","tags":["readOnlyHint"],"workbench":{"enable":false}}'
 ```
 
 - [Disable the session sandbox](https://docs.composio.dev/docs/configuring-sessions#disabling-the-sandbox)

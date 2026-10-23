@@ -18,6 +18,7 @@ While developing, you want trigger events on your machine. The best option forwa
 Under the hood `subscribe()` opens the WebSocket via [Pusher](https://pusher.com/). This is an implementation detail, but worth knowing if your runtime restricts WebSocket clients — prefer the webhook/forwarding options below for anything you ship.
 </Callout>
 
+{/* code-example: no-api reason="subscribe() opens an SDK-managed realtime WebSocket; there is no REST call to stream events" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -52,8 +53,22 @@ await composio.triggers.subscribe(
 
 Filter the stream by `triggerId`, `triggerSlug`, `connectedAccountId`, `toolkits`, or `userId`, or pass no filters to receive every trigger event in the project.
 
-Subscription failures (for example a rejected auth request) do not reject the `subscribe()` promise — Pusher reports them asynchronously after it resolves. Pass an optional third callback to react to them programmatically:
+Subscription failures (for example a rejected auth request) do not reject the `subscribe()` promise in TypeScript — Pusher reports them asynchronously after it resolves. Pass an error callback to react to them programmatically: the `on_subscription_error` keyword in Python, or an optional third argument in TypeScript. In Python, failures raised while establishing the subscription (such as an auth rejection) invoke the callback and then re-raise from `subscribe()` instead of timing out.
 
+{/* code-example: no-api reason="subscription error callbacks are client-side SDK hooks on the realtime WebSocket" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+subscription = composio.triggers.subscribe(
+    on_subscription_error=lambda error: print("Trigger subscription failed:", error)
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
@@ -70,14 +85,8 @@ await composio.triggers.subscribe(
   }
 );
 ```
-
-In Python, pass the equivalent `on_subscription_error` keyword. Failures raised while establishing the subscription (such as an auth rejection) invoke the callback and then re-raise from `subscribe()` instead of timing out:
-
-```python
-subscription = composio.triggers.subscribe(
-    on_subscription_error=lambda error: print("Trigger subscription failed:", error)
-)
-```
+  </Tab>
+</Tabs>
 
 ### Forward to your local handler with the CLI (recommended)
 
@@ -113,7 +122,7 @@ Register the printed `ngrok-free.app` URL as your [webhook URL](#receive-events-
 
 Register your webhook URL once per project. Composio then `POST`s every trigger event to it. Set it from the SDK:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -141,6 +150,18 @@ console.log(`Delivering events to ${subscription.webhookUrl}`);
 // Store subscription.secret to verify signatures
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Creates the project subscription. If one already exists (409), update it with
+# PATCH /api/v3.1/webhook_subscriptions/{id} instead, as the SDK does.
+curl -s -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"webhook_url": "https://your-app.com/webhooks/composio", "enabled_events": ["composio.trigger.message"], "version": "V3"}' \
+  | jq '{webhook_url, secret}'
+# Store the secret to verify signatures
+```
+  </Tab>
 </Tabs>
 
 Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
@@ -155,6 +176,7 @@ For inbound events from a provider's OAuth app, use [webhook endpoints](/docs/se
 
 In your handler, pass the incoming request to `parse()`. It returns the typed, normalized payload. Pass `verifySecret` and it verifies the signature first, so one call both authenticates and parses.
 
+{/* code-example: no-api reason="parse() runs inside your webhook handler; it verifies and normalizes the incoming request in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -174,7 +196,7 @@ async def webhook_handler(request: Request):
         verify_secret=os.environ["COMPOSIO_WEBHOOK_SECRET"],
     )
 
-    if result["raw_payload"]["type"] == "composio.trigger.message":
+    if result["raw_payload"].get("type") == "composio.trigger.message":
         event = result["payload"]
         if event["trigger_slug"] == "GITHUB_COMMIT_EVENT":
             data = event["payload"]
@@ -220,7 +242,7 @@ Composio delivers other project events (like [connection expiry](/docs/authentic
 
 Each trigger type declares the shape of the `data` it sends. Inspect it before you write your handler:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -241,6 +263,13 @@ const composio = new Composio();
 const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
 console.log(triggerType.payload);
 // {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -s -X GET https://backend.composio.dev/api/v3.1/triggers_types/GITHUB_COMMIT_EVENT \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.payload'
+# {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
 ```
   </Tab>
 </Tabs>
@@ -304,6 +333,7 @@ Store the webhook secret securely as `COMPOSIO_WEBHOOK_SECRET`. Fetch it from th
 
 Every request includes `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. Compute `HMAC-SHA256` over `{webhook-id}.{webhook-timestamp}.{rawBody}` with your secret and compare it against the signature:
 
+{/* code-example: no-api reason="signature verification is local HMAC code in your webhook handler, not an API call" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python

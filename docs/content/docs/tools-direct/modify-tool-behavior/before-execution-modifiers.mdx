@@ -27,14 +27,17 @@ Below we use the `beforeExecute` modifier to modify the number of posts returned
 
 Since completion providers don't have a function execution step, Composio executes the tool call directly. The modifier is configured on the `tools.execute` method.
 
+{/* code-example: no-api reason="Before-execute modifier runs client-side in the SDK around an LLM tool-call loop" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
 from openai import OpenAI
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
+from composio_openai import OpenAIProvider
 
-composio = Composio(toolkit_versions={"hackernews": "latest"})
+provider = OpenAIProvider()
+composio = Composio(provider=provider, toolkit_versions={"hackernews": "latest"})
 openai_client = OpenAI()
 user_id = "user@email.com"
 
@@ -59,7 +62,7 @@ response = openai_client.chat.completions.create(
 print(response)
 
 # Execute the function calls
-result = composio.provider.handle_tool_calls(
+result = provider.handle_tool_calls(
     response=response,
     user_id="default",
     modifiers=[
@@ -114,6 +117,7 @@ if (tool_calls) {
 
 Agentic providers have a function execution step. The modifier is configured on the `tools.get` method which modifies the execution logic within the framework.
 
+{/* code-example: no-api reason="Before-execute modifier runs client-side inside the agentic framework's tool execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -191,16 +195,19 @@ The hook takes either a single `context` argument (preferred) or the legacy
 `context["source"]` — `"path"` for local filesystem inputs and `"url"` for
 `http(s)://...` inputs — so you can scope audits to just local paths:
 
+{/* code-example: no-api reason="before_file_upload hook runs client-side while the SDK uploads local files" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
 ```python
 from composio import Composio, before_file_upload
 
 @before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
-def audit_path(ctx) -> str | bool:
-    # ctx = {"path": ..., "source": "path" | "url", "tool": ..., "toolkit": ...}
-    if ctx["source"] != "path":
-        return ctx["path"]  # let URLs through untouched
+def audit_path(context) -> str | bool:
+    # context = {"path": ..., "source": "path" | "url", "tool": ..., "toolkit": ...}
+    if context["source"] != "path":
+        return context["path"]  # let URLs through untouched
     # return a new path string, or False to abort the upload
-    return ctx["path"]
+    return context["path"]
 
 composio = Composio(toolkit_versions={"googledrive": "latest"})
 composio.tools.execute(
@@ -211,6 +218,35 @@ composio.tools.execute(
     modifiers=[audit_path],
 )
 ```
+  </Tab>
+  <Tab value="TypeScript">
+In TypeScript, pass `beforeFileUpload` on the third argument to `tools.execute`. The context also includes `source: 'file'` for `File` objects.
+
+```typescript
+import { Composio, type beforeFileUploadModifier } from '@composio/core';
+
+const beforeFileUpload: beforeFileUploadModifier = (ctx) => {
+  // ctx = { path, source: 'path' | 'url' | 'file', toolSlug, toolkitSlug }
+  if (ctx.source !== 'path') {
+    return ctx.path; // let URLs and File objects through untouched
+  }
+  // return a new path string, or false to abort the upload
+  return ctx.path;
+};
+
+const composio = new Composio({ toolkitVersions: { googledrive: 'latest' } });
+await composio.tools.execute(
+  'GOOGLEDRIVE_UPLOAD_FILE',
+  {
+    userId: 'user_123',
+    arguments: { file_to_upload: '/path/to/document.pdf' },
+    dangerouslySkipVersionCheck: true, // required when running "latest"
+  },
+  { beforeFileUpload }
+);
+```
+  </Tab>
+</Tabs>
 
 - **Composition:** `before_file_upload`-type modifiers in the `modifiers` list are applied in **list order** (after filtering by each modifier’s `tools` / `toolkits` scope). Chaining works like a pipeline: each hook receives the path produced by the previous one.
 - **Relative to `before_execute`:** automatic file substitution runs **before** `before_execute` modifiers, matching TypeScript behavior (including tool router `execute_meta`).

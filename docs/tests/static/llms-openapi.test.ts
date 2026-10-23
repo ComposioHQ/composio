@@ -5,6 +5,7 @@ import {
   TOOL_VERSION_GUIDANCE,
 } from "../../lib/api-version-guidance";
 import { SESSION_GUARDRAILS } from "../../lib/llm-guardrails";
+import { parseCurlCommands, wordText } from "../../lib/api-snippets";
 
 let bundledSpec: Record<string, unknown> = {};
 
@@ -64,10 +65,45 @@ describe("LLM OpenAPI markdown", () => {
     });
 
     expect(markdown).toContain("**Endpoint:** `https://backend.example.com/v3.1/test`");
-    expect(markdown).toContain("### Example cURL Request");
+    for (const [label, language] of [["Python", "python"], ["TypeScript", "typescript"], ["API", "bash"]]) {
+      expect(markdown).toContain(`#### ${label}\n\n\`\`\`${language}\n`);
+    }
     expect(markdown).toContain(
       'curl -X GET "https://backend.example.com/v3.1/test"',
     );
+  });
+
+  test("raw request variants use organization authentication instead of a project key", async () => {
+    const markdown = await openapiPageToMarkdown({
+      url: "/reference/api-reference/organization/test",
+      data: {
+        title: "Organization request",
+        getOpenAPIPageProps: () => ({
+          payload: { bundled: {
+            paths: { "/api/v3.1/org/test": { post: {
+              security: [{ OrgApiKeyAuth: [] }],
+              requestBody: { content: { "application/json": { schema: { oneOf: [{
+                type: "object", required: ["title", "enabled", "value"],
+                properties: { title: { type: "string", example: "O'Reilly" }, enabled: { type: "boolean" }, value: { type: "null" } },
+              }] } } } },
+              responses: { "200": { description: "Success" } },
+            } } },
+            components: { securitySchemes: { OrgApiKeyAuth: { type: "apiKey", in: "header", name: "x-org-api-key" } } },
+          } },
+          operations: [{ path: "/api/v3.1/org/test", method: "POST" }],
+        }),
+      },
+    });
+    const snippets = [...markdown.matchAll(/```(python|typescript|bash)\n([\s\S]*?)```/g)];
+    expect(snippets.map((match) => match[1])).toEqual(["python", "typescript", "bash"]);
+    for (const snippet of snippets) {
+      expect(snippet[2]).toContain("x-org-api-key");
+      expect(snippet[2]).toContain("COMPOSIO_ORG_API_KEY");
+      expect(snippet[2]).not.toContain('"x-api-key"');
+    }
+    const curl = snippets.find((snippet) => snippet[1] === "bash")![2];
+    const request = parseCurlCommands(curl)[0];
+    expect(JSON.parse(wordText(request.data[0].value))).toEqual({ title: "O'Reilly", enabled: true, value: null });
   });
 
   test("renders webhook delivery headers and payload schema", async () => {

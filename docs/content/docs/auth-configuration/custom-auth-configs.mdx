@@ -104,15 +104,15 @@ Once you have the OAuth credentials, you can add them to the auth config in the 
 
 This auth config is now ready to be used in your application!
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Create a new connected account
 connection_request = composio.connected_accounts.initiate(
-    user_id="user_id",
+    user_id="user_123",
     auth_config_id="ac_1234",
 )
-print(connection_request)
+print(connection_request.redirect_url)
 
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
@@ -134,6 +134,21 @@ const connection = await composio.connectedAccounts.waitForConnection(
 );
 
 console.log(connection);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Create a new connected account
+RESPONSE=$(curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "ac_1234"}, "connection": {"user_id": "user_123"}}')
+echo "$RESPONSE" | jq -r '.redirect_url'
+CONNECTED_ACCOUNT_ID=$(echo "$RESPONSE" | jq -r '.id')
+
+# After the user finishes the redirect, check the connection
+curl -X GET https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
