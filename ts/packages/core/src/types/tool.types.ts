@@ -28,6 +28,11 @@ export const ToolInstantSchema = z.object({
 });
 export type ToolInstant = z.infer<typeof ToolInstantSchema>;
 
+const OptionalToolInstantSchema = z.unknown().transform(value => {
+  const instant = ToolInstantSchema.safeParse(value);
+  return instant.success ? instant.data : undefined;
+});
+
 // JSON Schema primitive types
 const JSONSchemaType = z.enum([
   'string',
@@ -208,7 +213,7 @@ export const ToolSchema = z.object({
     .optional(),
   scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
   isNoAuth: z.boolean().describe('Do the tool support no auth?').optional(),
-  instant: ToolInstantSchema.nullish().describe('Instant support and optional published pricing.'),
+  instant: OptionalToolInstantSchema.describe('Instant support and optional published pricing.'),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 

@@ -96,10 +96,11 @@ describe('Tools', () => {
       expect(tool.instant).toEqual({ supported: true });
     });
 
-    it('accepts null Instant and nullable pricing fields', async () => {
+    it('omits unsupported Instant metadata and accepts nullable pricing fields', async () => {
       mockClient.tools.list.mockResolvedValueOnce({
         items: [
           { ...toolMocks.rawTool, instant: null },
+          { ...toolMocks.rawTool, instant: { supported: false } },
           { ...toolMocks.rawTool, instant: { supported: true, price: null } },
           {
             ...toolMocks.rawTool,
@@ -112,7 +113,8 @@ describe('Tools', () => {
       const tools = await context.tools.getRawComposioTools({ tools: ['EXA_SEARCH'] });
 
       expect(tools.map(tool => tool.instant)).toEqual([
-        null,
+        undefined,
+        undefined,
         { supported: true, price: null },
         { supported: true, price: { description: null, discount: null } },
       ]);
