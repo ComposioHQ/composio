@@ -44,7 +44,7 @@ catalog:
   '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.32.1
   '@types/bun': ^1.4.3
-  ai: ^7.0.137
+  ai: ^7.0.146
   dotenv: ^18.0.8
   effect: 4.0.5
   hono: ^4.13.13
