@@ -15267,9 +15267,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "workbench_access_key": []
           }
         ],
         "parameters": [
