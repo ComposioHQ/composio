@@ -214,6 +214,40 @@ describe("LLM OpenAPI markdown", () => {
       "- `tree` (array<array<array<array<array<...>>>>>):",
     );
   });
+
+  test("union request samples keep the parent schema and bound circular unions", async () => {
+    const renderBody = async (schema: Record<string, unknown>, schemas: Record<string, unknown> = {}) => {
+      const markdown = await openapiPageToMarkdown({
+        url: "/reference/api-reference/test/postTest",
+        data: {
+          title: "Post test",
+          getOpenAPIPageProps: () => ({
+            payload: { bundled: {
+              paths: { "/v3.1/test": { post: {
+                requestBody: { content: { "application/json": { schema } } },
+                responses: { 200: { description: "Success" } },
+              } } },
+              components: { schemas },
+            } },
+            operations: [{ path: "/v3.1/test", method: "POST" }],
+          }),
+        },
+      });
+      const curl = [...markdown.matchAll(/```bash\n([\s\S]*?)```/g)][0][1];
+      return JSON.parse(wordText(parseCurlCommands(curl)[0].data[0].value));
+    };
+
+    expect(await renderBody({
+      type: "object",
+      properties: { name: { type: "string" }, id: { type: "integer" } },
+      oneOf: [{ required: ["name"] }, { required: ["id"] }],
+    })).toEqual({ name: "string", id: 1 });
+
+    expect(await renderBody(
+      { $ref: "#/components/schemas/Node" },
+      { Node: { oneOf: [{ $ref: "#/components/schemas/Node" }, { type: "string" }] } },
+    )).toBe("...");
+  });
 });
 
 /**

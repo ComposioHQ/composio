@@ -39,6 +39,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -d '{"user_id":"user_123","tags":{"enable":["readOnlyHint"],"disable":["destructiveHint"]}}'
 ```
 
+<!-- end-languages -->
+
 Behavior tags describe tool behavior. Inspect the tools the session exposes
 before rollout, especially when a workflow handles sensitive data.
 
@@ -84,6 +86,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "Content-Type: application/json" \
   -d '{"user_id":"user_123","tools":{"gmail":{"enable":["GMAIL_FETCH_EMAILS"]},"github":{"enable":["GITHUB_GET_AN_ISSUE"]}}}'
 ```
+
+<!-- end-languages -->
 
 - [Enable and disable specific tools](https://docs.composio.dev/docs/configuring-sessions#enabling-or-disabling-specific-tools)
 
@@ -143,6 +147,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -d '{"user_id":"user_123","tags":["readOnlyHint"],"tools":{"github":{"tags":{"disable":["destructiveHint"]}},"gmail":{"tags":["readOnlyHint"]}}}'
 ```
 
+<!-- end-languages -->
+
 - [Toolkit-specific tag filters](https://docs.composio.dev/docs/configuring-sessions#filtering-tools-by-tags)
 
 ## Disable the session sandbox when the workflow does not need code execution
@@ -181,5 +187,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "Content-Type: application/json" \
   -d '{"user_id":"user_123","tags":["readOnlyHint"],"workbench":{"enable":false}}'
 ```
+
+<!-- end-languages -->
 
 - [Disable the session sandbox](https://docs.composio.dev/docs/configuring-sessions#disabling-the-sandbox)

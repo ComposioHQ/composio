@@ -99,6 +99,8 @@ curl -s https://backend.composio.dev/api/v3.1/webhook_endpoints/we_123 \
   -H "x-api-key: $COMPOSIO_API_KEY" | jq -er '.data.webhook_signing_secret // error("Notion has not sent a verification token yet")'
 ```
 
+<!-- end-languages -->
+
 Paste the token back into Notion's verify field to complete setup. Continue with [Creating triggers](/docs/setting-up-triggers/creating-triggers#create-the-trigger).
 
 ## Notion database trigger fires for new pages, not updates

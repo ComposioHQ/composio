@@ -57,6 +57,8 @@ curl ...
 
 The FAQ and KB renderers turn these headings into persistent language tabs. Agent Markdown keeps the labels and all variants. For an unavailable SDK endpoint, a `> [!NOTE]` block under that language heading becomes an SDK-gap Callout.
 
+The last option runs until the next heading at the same or a higher level. When prose after the group applies to every language, close the group with `<!-- end-languages -->` on its own line before that prose. Without the marker, the renderers hide the shared prose inside the last tab.
+
 ## Exceptions and SDK gaps
 
 Use MDX comments in `.mdx` files and HTML comments in `.md`. A marker must be an actual comment node, not text inside code, an attribute, a string, or inline code. Local markers attach only across whitespace.

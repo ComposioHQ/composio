@@ -49,6 +49,11 @@ curl --fail-with-body \
   'https://backend.composio.dev/api/v3.1/toolkits/sharepoint_graph' \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+</Tab>
+
+</Tabs>
+
+
 
 Find the `OAUTH2` auth scheme and inspect `fields.auth_config_creation` and
 `fields.connected_account_initiation`. The `issuer` field appears under
@@ -57,9 +62,6 @@ Find the `OAUTH2` auth scheme and inspect `fields.auth_config_creation` and
 To apply the same tenant ID to new connections, [update your custom auth
 config](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid) with
 `shared_credentials.issuer`:
-</Tab>
-
-</Tabs>
 
 ### Update the auth config
 
@@ -107,15 +109,17 @@ curl --fail-with-body -X PATCH \
     }
   }'
 ```
+</Tab>
+
+</Tabs>
+
+
 
 Replace `<AUTH_CONFIG_ID>` with your SharePoint Graph custom auth config ID.
 Every new connection created through this auth config inherits the tenant ID.
 Create a new connection using that config and complete Microsoft sign-in to use
 the tenant-specific endpoint. This recipe configures new connections; it does
 not migrate existing connected accounts.
-</Tab>
-
-</Tabs>
 
 ## SharePoint REST APIs and SharePoint Graph are separate API families
 

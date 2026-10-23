@@ -34,12 +34,21 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ## How do I send an email with an attachment?
 
-Save the attachment as `report.pdf` beside your script. The SDKs upload the local file automatically; the API option shows the same staging requests explicitly. The `user-123` identity must already have an active Gmail connection.
+Save the attachment as `report.pdf` in the directory you run the example from. Automatic file upload is off by default, so the SDK examples enable it and allow uploads only from that directory; the API option shows the same staging requests explicitly. The `user-123` identity must already have an active Gmail connection.
 
 These examples deliberately use `latest` and opt out of the SDK version guard. Pin a tested [toolkit version](/docs/tools-direct/toolkit-versioning) in production.
 
 ### Python
 ```python
+import os
+
+from composio import Composio
+
+composio = Composio(
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=[os.getcwd()],
+)
+
 result = composio.tools.execute(
     slug="GMAIL_SEND_EMAIL",
     user_id="user-123",
@@ -56,6 +65,13 @@ result = composio.tools.execute(
 
 ### TypeScript
 ```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: [process.cwd()],
+});
+
 const result = await composio.tools.execute("GMAIL_SEND_EMAIL", {
   userId: "user-123",
   version: "latest",
@@ -101,6 +117,8 @@ curl --fail-with-body -X POST https://backend.composio.dev/api/v3.1/tools/execut
     }
   }'
 ```
+
+<!-- end-languages -->
 
 This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
 

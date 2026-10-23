@@ -515,6 +515,7 @@ result_1 = composio.tools.execute(
     "HACKERNEWS_GET_LATEST_POSTS",
     arguments={"size": 10},
     version="latest",
+    dangerously_skip_version_check=True,  # required when running "latest"
     user_id=user_id,
     modifiers=[before_execute_modifier],
 )
@@ -532,6 +533,7 @@ const result_1 = await composio.tools.execute(
     userId,
     arguments: { size: 10 },
     version: 'latest',
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   },
   {
     beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
@@ -579,6 +581,7 @@ result_2 = composio.tools.execute(
     "HACKERNEWS_GET_USER",
     arguments={"username": "pg"},
     version="latest",
+    dangerously_skip_version_check=True,  # required when running "latest"
     user_id=user_id,
     modifiers=[after_execute_modifier],
 )
@@ -598,6 +601,7 @@ const result_2 = await composio.tools.execute(
     userId,
     arguments: { username: 'pg' },
     version: 'latest',
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   },
   {
     afterExecute: ({ toolSlug, toolkitSlug, result }) => {

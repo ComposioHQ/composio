@@ -38,6 +38,8 @@ Success:
 }
 ```
 
+<!-- end-languages -->
+
 This only confirms that Apollo can serve the request. It does not check downstream dependencies.
 
 ### Deep dependency health
@@ -61,6 +63,8 @@ This only confirms that Apollo can serve the request. It does not check downstre
 curl -sS "$COMPOSIO_BASE_URL/api/deep_healthz" \
   -H "x-composio-admin-token: $COMPOSIO_ADMIN_TOKEN" | jq
 ```
+
+<!-- end-languages -->
 
 Example:
 
@@ -130,6 +134,8 @@ Example:
 curl -sS "$THERMOS_BASE_URL/api/health/deep" \
   -H "x-composio-admin-token: $COMPOSIO_ADMIN_TOKEN" | jq
 ```
+
+<!-- end-languages -->
 
 Example:
 

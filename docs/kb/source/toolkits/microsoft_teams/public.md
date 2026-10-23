@@ -58,6 +58,8 @@ curl --globoff 'https://backend.composio.dev/api/v3/tools/MICROSOFT_TEAMS_TEAMS_
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 
+<!-- end-languages -->
+
 Expected stale response includes `version: "00000000_00"` and `scopes: ["ChannelMessage.Read.Group"]`.
 
 ### Fetch current tool metadata
@@ -88,6 +90,8 @@ console.log(tool.scopes);
 curl --globoff 'https://backend.composio.dev/api/v3.1/tools/MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE?toolkit_versions%5Bmicrosoft_teams%5D=latest' \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+
+<!-- end-languages -->
 
 Expected clean response includes `ChannelMessage.Read.All`, not `ChannelMessage.Read.Group`.
 

@@ -42,7 +42,14 @@ export type MarkdownLanguageGroup = {
   tabs: { value: string; source: string; line: number }[];
 };
 
-/** Plain Markdown uses consecutive Python / TypeScript / API headings. */
+const isEndLanguages = (node: RootContent | undefined) =>
+  node?.type === 'html' && /^<!--\s*end-languages\s*-->$/.test(node.value.trim());
+
+/**
+ * Plain Markdown uses consecutive Python / TypeScript / API headings. The last
+ * option runs to the next heading unless `<!-- end-languages -->` closes the
+ * group first; the marker belongs to neither the options nor the shared prose.
+ */
 export function markdownLanguageGroups(source: string): MarkdownLanguageGroup[] {
   const nodes = parseExampleDocument(source, 'example.md').children;
   const groups: MarkdownLanguageGroup[] = [];
@@ -64,6 +71,7 @@ export function markdownLanguageGroups(source: string): MarkdownLanguageGroup[] 
       while (end < nodes.length) {
         const next = nodes[end];
         if (next.type === 'heading' && next.depth <= first.depth) break;
+        if (isEndLanguages(next)) break;
         end++;
       }
       const contentStart = heading.position?.end.offset ?? 0;
@@ -71,6 +79,11 @@ export function markdownLanguageGroups(source: string): MarkdownLanguageGroup[] 
       group.tabs.push({ value: toString(heading), source: source.slice(contentStart, contentEnd), line: heading.position?.start.line ?? 1 });
       group.end = contentEnd;
       cursor = end;
+      if (isEndLanguages(nodes[end])) {
+        group.end = nodes[end].position?.end.offset ?? contentEnd;
+        cursor = end + 1;
+        break;
+      }
     }
     groups.push(group);
     index = cursor - 1;

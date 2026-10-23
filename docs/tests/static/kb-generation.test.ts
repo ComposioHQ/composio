@@ -142,6 +142,29 @@ describe('public KB content generation', () => {
     expect(mdx).not.toContain('```text');
   });
 
+  test('end-languages moves shared prose after the generated Tabs', () => {
+    const mdx = markdownForMdx([
+      '### Python',
+      '```python',
+      'print("python option")',
+      '```',
+      '### TypeScript',
+      '```typescript',
+      'console.log("typescript option");',
+      '```',
+      '### API',
+      '```bash',
+      'curl https://backend.composio.dev/api/v3.1/toolkits',
+      '```',
+      '',
+      '<!-- end-languages -->',
+      '',
+      'Shared follow-up.',
+    ].join('\n'));
+    expect(mdx).toMatch(/<\/Tabs>\s+Shared follow-up\.$/);
+    expect(mdx).not.toContain('end-languages');
+  });
+
   test('turns Markdown SDK-gap notes into Callouts without leaking validation metadata into rendered prose', () => {
     const source = [
       '#### Python',

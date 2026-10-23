@@ -36,6 +36,8 @@ curl -X DELETE https://backend.composio.dev/api/v3.1/tool_router/session/trs_1a2
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 
+<!-- end-languages -->
+
 Deletion takes effect immediately. A deleted, missing, or inaccessible session returns 404 when retrieved; deleting a session does not delete its users, auth configs, or connected accounts.
 
 ## Select among multiple accounts with an alias or account ID

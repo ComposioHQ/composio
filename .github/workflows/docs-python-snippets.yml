@@ -50,8 +50,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
+      # The checker needs no generated files or native install hooks.
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Check real Python helper regressions
         run: bun scripts/python-snippets/test-helper.ts

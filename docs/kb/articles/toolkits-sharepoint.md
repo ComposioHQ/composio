@@ -37,6 +37,8 @@ curl --fail-with-body \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 
+<!-- end-languages -->
+
 Find the `OAUTH2` auth scheme and inspect `fields.auth_config_creation` and
 `fields.connected_account_initiation`. The `issuer` field appears under
 `connected_account_initiation`.
@@ -90,6 +92,8 @@ curl --fail-with-body -X PATCH \
     }
   }'
 ```
+
+<!-- end-languages -->
 
 Replace `<AUTH_CONFIG_ID>` with your SharePoint Graph custom auth config ID.
 Every new connection created through this auth config inherits the tenant ID.

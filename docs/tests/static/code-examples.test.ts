@@ -100,6 +100,14 @@ describe('Markdown options and agent output', () => {
     expect(faq[1].question).toBe('Next question');
   });
 
+  test('end-languages keeps shared prose after the group visible for every option', () => {
+    const shared = source.replace('\n\n## Next question', '\n\n<!-- end-languages -->\n\nShared follow-up.\n\n## Next question');
+    expect(violations(shared, 'faq.md')).toEqual([]);
+    const [options, after] = parseToolkitFaq(shared)[0].answer.slice(1);
+    expect(options.type === 'languages' && options.tabs.some((item) => item.html.includes('Shared follow-up'))).toBe(false);
+    expect(after).toEqual({ type: 'html', html: '<p>Shared follow-up.</p>' });
+  });
+
   test('a Markdown group exception cannot exempt the following operation', () => {
     const pair = `### Python\n\n${python}\n\n### TypeScript\n\n${typescript}\n`;
     const local = `<!-- code-example: no-api reason="local schema transformation" -->\n${pair}\n## Remote operation\n\n${pair}`;

@@ -260,7 +260,16 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
   if (schema.default !== undefined) return schema.default;
   if (schema.enum && schema.enum.length > 0) return schema.enum[0];
   const alternatives = schema.oneOf ?? schema.anyOf;
-  if (alternatives?.length) return generateSampleValue(alternatives[0], depth);
+  if (alternatives?.length) {
+    // An alternative applies alongside its parent, so merge it instead of
+    // discarding the parent's type and properties. Unions can be circular.
+    const { oneOf: _oneOf, anyOf: _anyOf, ...parent } = schema;
+    const alternative = alternatives[0];
+    const properties = parent.properties || alternative.properties
+      ? { ...parent.properties, ...alternative.properties }
+      : undefined;
+    return generateSampleValue({ ...parent, ...alternative, properties }, depth + 1);
+  }
 
   switch (schema.type) {
     case 'string':
