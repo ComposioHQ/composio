@@ -158,7 +158,9 @@ describe('CLI: composio login', () => {
         );
         expect(output).toContain('Then run this command to complete login:');
         expect(output).toContain('composio login --poll');
-        expect(output).toContain('hint: For agents:');
+        expect(output).toContain(
+          'hint: For agents: Show the URL and the confirmation code above to the user, so they can check that the browser page shows the same code, then run the command above.'
+        );
         expect(output).toContain('cached login key');
         expect(output).toContain('polls for up to 10 minutes');
         expect(output).not.toContain('Expires at:');

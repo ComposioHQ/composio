@@ -303,10 +303,10 @@ export const handleSessionKeyLogin = (
     const pendingLoginSession = yield* PendingLoginSession;
     const keyNotPending = invalidOptionValue(KEY_NOT_PENDING_MESSAGE, '--key');
     const pending = yield* pendingLoginSession.read.pipe(
+      // An expired cache is already deleted, so `--poll` cannot complete it either; its own
+      // error tells the user to start a new login.
       Effect.catchIf(
-        error =>
-          error instanceof PendingLoginError &&
-          (error.reason === 'missing' || error.reason === 'expired'),
+        error => error instanceof PendingLoginError && error.reason === 'missing',
         () => Effect.fail(keyNotPending)
       )
     );
