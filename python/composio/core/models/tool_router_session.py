@@ -1356,19 +1356,19 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         workbench_payload = sandbox if sandbox is not omit else workbench
 
         # The spec does not declare the ``expected_config_version`` precondition
-        # until ComposioHQ/platform#13157 lands, so it travels as an extra root
-        # body field.
+        # until https://github.com/ComposioHQ/platform/pull/14225 lands,
+        # so it travels as an extra root body field.
         extra_body: t.Optional[t.Dict[str, t.Any]] = (
             None
             if isinstance(precondition, Omit)
             else {"expected_config_version": precondition}
         )
 
-        # Until ComposioHQ/platform#13157 lands, the spec does not mark every
-        # policy block nullable although the API accepts ``None`` (it removes the
-        # stored override), nor the subfield removals inside
-        # ``manage_connections``, ``multi_account`` and ``experimental``; the
-        # values are serialized as-is.
+        # Until https://github.com/ComposioHQ/platform/pull/14226 lands,
+        # the spec does not mark every policy block nullable although the API
+        # accepts ``None`` (it removes the stored override), nor the subfield
+        # removals inside ``manage_connections``, ``multi_account`` and
+        # ``experimental``; the values are serialized as-is.
         try:
             response = self._client.tool_router.session.patch(
                 session_id=self.session_id,

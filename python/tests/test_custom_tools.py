@@ -904,7 +904,7 @@ class TestSessionContextImpl:
             custom_tools_map=m,
         )
         result = ctx.execute("GREP", {"pattern": "test"})
-        assert isinstance(result, SessionExecuteResponse)
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
         assert result.error is None
         assert result.log_id == ""
         assert result.data["matches"] == ["test"]
@@ -946,6 +946,27 @@ class TestSessionContextImpl:
             arguments={"arg": "val"},
             experimental=omit,
         )
+
+    def test_remote_fallback_returns_hook_results_as_dicts(self):
+        mock_client = mock_http_client(MagicMock)
+        hook_result = {"id": "h", "status": "evaluated", "outcome": "continue"}
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "completed",
+                    "data": {"remote": True},
+                    "error": None,
+                    "log_id": "log_123",
+                    "hook_results": [hook_result],
+                }
+            )
+        )
+        ctx = SessionContextImpl(client=mock_client, user_id="u", session_id="s")
+
+        result = ctx.execute("GMAIL_SEND_EMAIL", {"to": "a@b.com"})
+
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
+        assert result.hook_results == [hook_result]
 
     def test_remote_fallback_passes_inline_custom_tools(self):
         mock_client = mock_http_client(MagicMock)

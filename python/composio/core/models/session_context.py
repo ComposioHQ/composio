@@ -9,9 +9,6 @@ from __future__ import annotations
 import typing as t
 
 from composio_client import omit
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
-)
 from composio_client.types.tool_router.session_proxy_execute_params import Parameter
 from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteBlockedResponse,
@@ -34,6 +31,7 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
 from composio.core.models.tools import (
+    ToolRouterSessionExecuteResponse,
     _serialize_arguments,
     hook_results_of,
     require_execute_result,
@@ -175,7 +173,7 @@ class SessionContextImpl:
         self,
         tool_slug: str,
         arguments: t.Dict[str, t.Any],
-    ) -> SessionExecuteResponse:
+    ) -> ToolRouterSessionExecuteResponse:
         """Execute any tool from within a custom tool.
 
         Routes to sibling local tools in-process when available,
@@ -187,7 +185,7 @@ class SessionContextImpl:
         entry = find_custom_tool(self._custom_tools_map, tool_slug)
         if entry:
             result = execute_custom_tool(entry, arguments, self)
-            return SessionExecuteResponse(
+            return ToolRouterSessionExecuteResponse(
                 data=result["data"],
                 error=result["error"],
                 log_id="",

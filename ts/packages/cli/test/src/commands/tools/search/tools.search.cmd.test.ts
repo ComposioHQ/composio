@@ -3,11 +3,13 @@ import { ConfigProvider, Effect } from 'effect';
 import type {
   SessionCreateParams,
   SessionSearchParams,
+  SessionSearchResponse,
 } from '@composio/client/resources/tool-router';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
 import { CommandInputError } from 'src/commands/errors';
+import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 
 const testTools: Tools = [
   {
@@ -151,50 +153,53 @@ describe('CLI: composio search', () => {
     );
   });
 
+  /** A search that returns a reference to `customSlug`'s schema instead of the schema. */
+  const searchWithSchemaReference = (_sessionId: string, params: SessionSearchParams) =>
+    Effect.succeed<SessionSearchResponse>({
+      success: true,
+      error: null,
+      results: [
+        {
+          index: 1,
+          use_case: params.queries[0]?.use_case ?? '',
+          primary_tool_slugs: [customSlug],
+          related_tool_slugs: [],
+          toolkits: ['CUSTOM_DEEPWIKI'],
+        },
+      ],
+      tool_schemas: {
+        [customSlug]: {
+          tool_slug: customSlug,
+          toolkit: 'CUSTOM_DEEPWIKI',
+          description: 'Read wiki contents',
+          hasFullSchema: false,
+          schemaRef: {
+            tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+            args: { tool_slugs: [customSlug] },
+          },
+        },
+      },
+      toolkit_connection_statuses: [],
+      next_steps_guidance: [],
+      session: {
+        id: 'trs_test_session',
+        generate_id: false,
+        instructions: 'Reuse this session id for follow-up calls.',
+      },
+      time_info: {
+        current_time_utc: '2026-01-01T00:00:00.000Z',
+        current_time_utc_epoch_seconds: 1767225600,
+        message: 'UTC time',
+      },
+    });
+
   let schemaRequestSlugs: unknown;
 
   layer(
     TestLive({
       ...testLiveOptions,
       toolRouter: {
-        search: (_sessionId, params) =>
-          Effect.succeed({
-            success: true,
-            error: null,
-            results: [
-              {
-                index: 1,
-                use_case: params.queries[0]?.use_case ?? '',
-                primary_tool_slugs: [customSlug],
-                related_tool_slugs: [],
-                toolkits: ['CUSTOM_DEEPWIKI'],
-              },
-            ],
-            tool_schemas: {
-              [customSlug]: {
-                tool_slug: customSlug,
-                toolkit: 'CUSTOM_DEEPWIKI',
-                description: 'Read wiki contents',
-                hasFullSchema: false,
-                schemaRef: {
-                  tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
-                  args: { tool_slugs: [customSlug] },
-                },
-              },
-            },
-            toolkit_connection_statuses: [],
-            next_steps_guidance: [],
-            session: {
-              id: 'trs_test_session',
-              generate_id: false,
-              instructions: 'Reuse this session id for follow-up calls.',
-            },
-            time_info: {
-              current_time_utc: '2026-01-01T00:00:00.000Z',
-              current_time_utc_epoch_seconds: 1767225600,
-              message: 'UTC time',
-            },
-          }),
+        search: searchWithSchemaReference,
         executeMeta: (_sessionId, params) =>
           Effect.sync(() => {
             schemaRequestSlugs = params.arguments?.tool_slugs;
@@ -236,6 +241,33 @@ describe('CLI: composio search', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      ...testLiveOptions,
+      toolRouter: {
+        search: searchWithSchemaReference,
+        executeMeta: () =>
+          Effect.succeed({
+            result_type: 'blocked' as const,
+            reason: { type: 'request_blocked' as const, hook_id: 'hook_1' },
+            message: 'Blocked by policy',
+            log_id: 'log_blocked',
+          }),
+      },
+    })
+  )('[Given] a session hook blocks the schema lookup [Then] search fails with its message', it => {
+    it.effect("fails with the hook's message as the cause", () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['search', 'read wiki contents']).pipe(Effect.flip);
+
+        expect(failure).toMatchObject({ _tag: 'commands/ToolsSearchRequestError' });
+        expect(extractErrorDetails(failure).message).toBe(
+          'Failed to fetch custom tool schemas.\nCaused by: Blocked by policy'
+        );
+      })
+    );
+  });
 
   layer(TestLive(testLiveOptions))(
     '[Given] multiple queries [Then] the CLI returns a batched JSON response',

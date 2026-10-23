@@ -231,6 +231,20 @@ describe('DashboardToolExecution', () => {
     )
   );
 
+  it.effect('relays a call a session hook blocked as the backend sent it', () => {
+    const blocked = {
+      result_type: 'blocked',
+      reason: { type: 'request_blocked', hook_id: 'hook_1' },
+      message: 'Blocked by policy',
+      log_id: 'log_blocked',
+    };
+    return withDashboard(succeedWith({ ok: true, response: blocked }), dashboard =>
+      Effect.gen(function* () {
+        expect(yield* dashboard.execute(executeRequest)).toEqual(blocked);
+      })
+    );
+  });
+
   describe.each(['https://web.example.test', 'https://web.example.test/'])('%s', webURL => {
     it.effect(`builds the same request URL from ${webURL}`, () =>
       withDashboard(

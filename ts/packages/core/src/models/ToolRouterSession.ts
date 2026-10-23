@@ -897,7 +897,8 @@ export class ToolRouterSession<
           this.client.toolRouter.session.patch(
             this.sessionId,
             // `expected_config_version` and the nullable policy blocks are not in
-            // the spec until ComposioHQ/platform#13157 lands; the body is
+            // the spec until https://github.com/ComposioHQ/platform/pull/14225 and
+            // https://github.com/ComposioHQ/platform/pull/14226 land; the body is
             // serialized as-is.
             body as SessionPatchParams,
             { ...requestOptions, maxRetries: 0 }

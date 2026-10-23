@@ -10,12 +10,13 @@ from dataclasses import dataclass, field
 
 import typing_extensions as te
 from composio_client.types.tool_router import session_create_params
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
-)
 from pydantic import BaseModel
 
 from composio.utils.safe_path import SAFE_COMPONENT_REGEX
+
+if t.TYPE_CHECKING:
+    # tools.py imports this module, so the result type is imported for typing only.
+    from composio.core.models.tools import ToolRouterSessionExecuteResponse
 
 # ────────────────────────────────────────────────────────────────
 # Constants
@@ -156,7 +157,7 @@ class SessionContext(te.Protocol):
         self,
         tool_slug: str,
         arguments: t.Dict[str, t.Any],
-    ) -> SessionExecuteResponse:
+    ) -> ToolRouterSessionExecuteResponse:
         """Execute any Composio tool from within a custom tool.
 
         Returns the same response model as ``session.execute()``.

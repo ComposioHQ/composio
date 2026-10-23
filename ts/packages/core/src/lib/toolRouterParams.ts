@@ -169,8 +169,8 @@ export const transformToolRouterWorkbenchParams = transformToolRouterSandboxPara
  */
 /**
  * Widens the listed keys of a generated request type so `null` can travel on
- * the wire. The spec does not mark these nullable until ComposioHQ/platform#13157
- * lands.
+ * the wire. The spec does not mark these nullable until
+ * https://github.com/ComposioHQ/platform/pull/14226 lands.
  */
 type WithNull<T, K extends keyof T> = Omit<T, K> & { [P in K]?: NonNullable<T[P]> | null };
 
@@ -208,7 +208,8 @@ export const transformToolRouterHooksParams = (
  * Request body of `session.update()`. Extends the generated `SessionPatchParams`
  * with the nullable policy blocks (`null` removes the stored override) and the
  * `expected_config_version` root precondition, which the spec does not declare
- * until ComposioHQ/platform#13157 lands.
+ * until https://github.com/ComposioHQ/platform/pull/14225 and
+ * https://github.com/ComposioHQ/platform/pull/14226 land.
  */
 export type SessionPatchBody = Omit<
   WithNull<
