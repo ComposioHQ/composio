@@ -50,7 +50,7 @@
   ],
   "license": "ISC",
   "devDependencies": {
-    "@ai-sdk/provider-utils": "^5.0.58",
+    "@ai-sdk/provider-utils": "^5.0.59",
     "@langchain/core": "^1.2.18",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^26.6.4",
@@ -59,7 +59,7 @@
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.5.4",
+    "zod": "^4.6.6",
     "zod-3-25": "npm:zod@3.25.76",
     "zod-floor": "npm:zod@4.1.13",
     "zod-to-json-schema": "catalog:"
