@@ -1597,6 +1597,44 @@ class TestTriggerSubscriptionParsing:
         event = self._make_event(user_id="")
         assert subscription._filters_match(event, {"user_id": ""}, "cb") is False
 
+    # Toolkit slugs such as `one_drive`, `launch_darkly` and `agent_mail` contain
+    # an underscore, so the toolkit derived from the trigger slug's first segment
+    # is `ONE`, not `ONE_DRIVE`.
+    @staticmethod
+    def _v3_frame(trigger_slug):
+        return json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    "trigger_slug": trigger_slug,
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": "user-1",
+                    "log_id": "log-1",
+                },
+                "data": {},
+            }
+        )
+
+    @pytest.mark.parametrize("toolkit", ["one_drive", "ONE_DRIVE"])
+    def test_filters_match_toolkit_slug_with_underscore(self, subscription, toolkit):
+        """A `toolkit` filter matches events of a toolkit whose slug has an underscore."""
+        event = subscription._parse_payload(
+            self._v3_frame("ONE_DRIVE_FILE_CREATED_TRIGGER")
+        )
+        assert event is not None
+        assert subscription._filters_match(event, {"toolkit": toolkit}, "cb") is True
+
+    def test_filters_match_toolkit_prefix_needs_full_segment(self, subscription):
+        """A `toolkit` filter that only shares a prefix with the trigger slug does not match."""
+        event = subscription._parse_payload(self._v3_frame("ONE_DRIVEX_FILE_CREATED"))
+        assert event is not None
+        assert (
+            subscription._filters_match(event, {"toolkit": "one_drive"}, "cb") is False
+        )
+
     def test_truncate_frame_bounds_long_frames(self):
         """A long raw frame is truncated so PII-bearing frames aren't dumped."""
         short = "x" * 10
