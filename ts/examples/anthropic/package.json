@@ -15,14 +15,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.295",
-    "@anthropic-ai/sdk": "^0.133.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.304",
+    "@anthropic-ai/sdk": "^0.135.0",
     "@composio/anthropic": "workspace:*",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.18.0",
-    "ai": "^6.0.302",
+    "ai": "^6.0.311",
     "dotenv": "catalog:",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
