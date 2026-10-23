@@ -98,6 +98,8 @@ Composio's background token refresh uses the provider's refresh mechanism when t
 
 When a user needs to reconnect, create a fresh [hosted Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) with `connected_accounts.link()` in Python or `connectedAccounts.link()` in TypeScript. Use the intended user ID and auth config, redirect the user to the returned URL, and wait for the connection to become `ACTIVE`.
 
+If you use [sessions](/docs/configuring-sessions), call `session.authorize(toolkit)` instead. It always starts a new authorization flow, even when the user already has an active connection. See [Manually authenticating](/docs/authentication/manually-authenticating).
+
 Hosted links expire after 10 minutes. Generate a new link when the previous flow expires. Use the connected-account ID returned by the completed flow; do not assume reauthorization preserves the previous ID.
 
 By default, `link()` refuses a second active connection for the same user and auth config. If you need to validate a replacement while keeping the original connection, pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript. Verify the replacement's upstream identity and access, then update your application's account selection before removing the original.
