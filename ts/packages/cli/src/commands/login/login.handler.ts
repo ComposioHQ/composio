@@ -4,10 +4,11 @@ import { APP_VERSION } from 'src/constants';
 import {
   browserLogin,
   emitLoginComplete,
+  loginEmail,
   LoginSessionError,
+  mapSessionEnding,
   playgroundTestUserId,
   reportLoginAccount,
-  sessionEnding,
   settlingPendingLogin,
   storeCredentials,
   waitForLinkedSession,
@@ -112,17 +113,12 @@ const requireLinkedNow = (session: RetrievedSession) =>
     });
   });
 
-/** The cached login a poll can complete: its session id, its verifier, and when it expires. */
 type ProvableLogin = {
   readonly key: string;
   readonly verifier: string;
   readonly expiresAt: DateTime.Utc;
 };
 
-/**
- * The cached login with its verifier, or an expected failure when an older CLI cached it
- * without one: its session cannot be completed by anyone any more.
- */
 const provableLogin = (pending: PendingLogin) =>
   Effect.gen(function* () {
     if (pending.verifier === undefined) {
@@ -156,16 +152,14 @@ const loginWithKey = (
 ) =>
   Effect.gen(function* () {
     const client = yield* ComposioSessionRepository;
-    const getSession = client.getSession({ id: params.key, verifier: params.verifier }).pipe(
-      // A final answer from the API ends the login; any other failure keeps its cause.
-      Effect.mapError(cause =>
-        Option.getOrElse(
-          sessionEnding(cause),
-          () =>
+    const getSession = client
+      .getSession({ id: params.key, verifier: params.verifier })
+      .pipe(
+        mapSessionEnding(
+          cause =>
             new LoginSessionRequestError({ message: 'Failed to load the login session.', cause })
         )
-      )
-    );
+      );
     const linkedSession = yield* settlingPendingLogin(
       params.noWait
         ? Effect.flatMap(getSession, requireLinkedNow)
@@ -201,7 +195,7 @@ const loginWithKey = (
       linkAnalytics: true,
     });
 
-    const email = sessionInfo.org_member.email || linkedSession.account.email || undefined;
+    const email = loginEmail(sessionInfo, linkedSession);
     if (params.announce) {
       yield* emitLoginComplete({ email, orgId, orgName });
     }

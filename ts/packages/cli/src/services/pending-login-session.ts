@@ -24,7 +24,6 @@ export const PendingLogin = Schema.Struct({
   loginUrl: Schema.String,
   expiresAt: Schema.String,
   cachedAt: Schema.String,
-  /** The session's proof verifier; absent from a file an older CLI wrote. */
   verifier: Schema.optional(Schema.String),
 });
 export type PendingLogin = Schema.Schema.Type<typeof PendingLogin>;

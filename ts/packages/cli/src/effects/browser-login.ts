@@ -25,7 +25,6 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { linkAnalyticsIdentityForOrg } from './link-analytics-identity';
 import { runOrgSelection } from './select-org-project';
 
-/** The session exists but is not linked yet. */
 export class LoginSessionError extends Data.TaggedError('commands/LoginSessionError')<{
   readonly message: string;
   readonly status: string;
@@ -35,7 +34,6 @@ export class LoginSessionError extends Data.TaggedError('commands/LoginSessionEr
   }
 }
 
-/** Why the API, or the session's expiry, ended a login for good. */
 export type LoginSessionEndReason =
   | 'proof-rejected'
   | 'not-found'
@@ -44,7 +42,6 @@ export type LoginSessionEndReason =
   | 'upgrade-required'
   | 'expired';
 
-/** The login cannot complete any more; waiting longer would not change the answer. */
 export class LoginSessionEndedError extends Data.TaggedError('commands/LoginSessionEndedError')<{
   readonly message: string;
   readonly reason: LoginSessionEndReason;
@@ -81,7 +78,6 @@ const LOGIN_POLL_INTERVAL_SECONDS = 5;
 
 const POLL_COMMAND = 'composio login --poll';
 
-/** The 409 slug of a session another account approved after the first one did. */
 const LINK_CONFLICT_SLUG = 'CLI_SessionLinkConflict';
 
 export const LOGIN_PROOF_NOT_ACKNOWLEDGED_MESSAGE =
@@ -139,7 +135,6 @@ const formatLoginCompleteJson = (params: {
     org_name: params.orgName ?? '',
   });
 
-/** `Logged in as <email> (<org>)`, the org by name when it has one. */
 const formatLoginAccountLine = (params: {
   readonly email?: string;
   readonly orgId: string;
@@ -200,7 +195,6 @@ export const playgroundTestUserId = (
     Option.getOrUndefined
   );
 
-/** The session, or a failure naming its status while it is not linked yet. */
 const requireLinkedSession = (session: RetrievedSession) =>
   session.status === 'linked'
     ? Effect.succeed(session)
@@ -214,13 +208,7 @@ const requireLinkedSession = (session: RetrievedSession) =>
 const ended = (reason: LoginSessionEndReason, message: string, cause: unknown) =>
   Option.some(new LoginSessionEndedError({ reason, message, cause }));
 
-/**
- * The end a failed `get-session` call puts to the login, when the API's answer is final: a
- * rejected proof (401), a session that is gone (404), a key already issued or a login another
- * account cancelled (409), or a CLI too old to log in (410, whose text comes from the API).
- * Any other failure may pass, so it is none.
- */
-export const sessionEnding = (error: unknown): Option.Option<LoginSessionEndedError> => {
+const sessionEnding = (error: unknown): Option.Option<LoginSessionEndedError> => {
   if (!isAPIError(error)) return Option.none();
   switch (error.status) {
     case 401:
@@ -241,6 +229,17 @@ export const sessionEnding = (error: unknown): Option.Option<LoginSessionEndedEr
       return Option.none();
   }
 };
+
+/** Fails with the session's ending when the API's answer is final, otherwise with `fallback`. */
+export const mapSessionEnding =
+  <E, F>(fallback: (error: E) => F) =>
+  <A, R>(self: Effect.Effect<A, E, R>): Effect.Effect<A, LoginSessionEndedError | F, R> =>
+    Effect.mapError(self, error =>
+      Option.getOrElse(sessionEnding(error), (): LoginSessionEndedError | F => fallback(error))
+    );
+
+export const loginEmail = (sessionInfo: SessionInfoResponse, linkedSession: LinkedSession) =>
+  sessionInfo.org_member.email || linkedSession.account.email || undefined;
 
 /**
  * Checks the session behind a spinner until it is linked, every `LOGIN_POLL_INTERVAL_SECONDS`
@@ -278,10 +277,6 @@ export const waitForLinkedSession = <E, R>(
     );
   });
 
-/**
- * Clears the cached login once `self` settles it: when the session's key arrives, and when the
- * login ends for good. Any other failure keeps it for another `composio login --poll`.
- */
 export const settlingPendingLogin = <A, E, R>(self: Effect.Effect<A, E, R>) =>
   Effect.gen(function* () {
     const pendingLogin = yield* PendingLoginSession;
@@ -420,7 +415,7 @@ const completeOrgSelection = (params: {
       },
     });
     yield* emitLoginComplete({
-      email: sessionInfo.org_member.email || linkedSession.account.email || undefined,
+      email: loginEmail(sessionInfo, linkedSession),
       orgId,
       orgName: Option.match(selected, {
         onNone: () => sessionInfo.project.org.name ?? '',
@@ -524,7 +519,7 @@ export const browserLogin = (params: {
       waitForLinkedSession(
         client
           .getSession({ id: session.id, verifier: proof.verifier })
-          .pipe(Effect.mapError(error => Option.getOrElse(sessionEnding(error), () => error))),
+          .pipe(mapSessionEnding(error => error)),
         session.expiresAt
       )
     );

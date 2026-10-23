@@ -497,7 +497,6 @@ export class ComposioToolkitsRepository extends Context.Service<
   ).pipe(Layer.provide(ComposioClientSingleton.Default));
 }
 
-/** The header that carries a login's verifier; only `get-session` calls send it. */
 const CLI_SESSION_SECRET_HEADER = 'x-cli-session-secret';
 
 const CREATE_SESSION_PATH = '/api/v3.1/cli/create-session';
@@ -534,8 +533,7 @@ const makeComposioSessionRepository = Effect.gen(function* () {
       ),
     /**
      * Retrieves the current state of a CLI session by its id, proving with `verifier` that this
-     * terminal created it. The header name is added to the redaction list for the call, so a
-     * span or a rendering of the request shows it as redacted.
+     * terminal created it.
      */
     getSession: (session: { readonly id: string; readonly verifier: string }) =>
       client.pipe(
