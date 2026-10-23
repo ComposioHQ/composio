@@ -128,14 +128,6 @@
     "triggerCount": 6
   },
   {
-    "slug": "codeinterpreter",
-    "name": "Code Interpreter",
-    "logo": "https://logos.composio.dev/api/codeinterpreter",
-    "category": "developer tools",
-    "toolCount": 5,
-    "triggerCount": 0
-  },
-  {
     "slug": "serpapi",
     "name": "SerpApi",
     "logo": "https://logos.composio.dev/api/serpapi",
