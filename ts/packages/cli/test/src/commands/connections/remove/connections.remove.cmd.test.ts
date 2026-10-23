@@ -136,7 +136,14 @@ describe('CLI: composio connections remove', () => {
                   ),
               },
             ],
-            () => Response.json({ items: testConnections, next_cursor: null })
+            () =>
+              Response.json({
+                items: testConnections,
+                total_items: testConnections.length,
+                total_pages: 1,
+                current_page: 1,
+                next_cursor: null,
+              })
           )
         );
         const userContext = yield* ComposioUserContext;

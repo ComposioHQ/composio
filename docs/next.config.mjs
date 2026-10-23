@@ -15,10 +15,9 @@ const OPENAPI_SPEC_FILES = [
 const config = {
   reactStrictMode: true,
   experimental: {
-    // Static generation starts one worker per core (29 on Vercel's build
-    // machine), and each toolkit page holds megabytes of tool and trigger data,
-    // so the build ran out of memory. Half as many workers keeps it within the limit.
-    cpus: 15,
+    // Toolkit pages hold megabytes of tool and trigger data during generation.
+    // GitHub Actions needs fewer workers than Vercel's larger build machine.
+    cpus: process.env.GITHUB_ACTIONS === 'true' ? 2 : 15,
   },
   turbopack: {
     root: __dirname,

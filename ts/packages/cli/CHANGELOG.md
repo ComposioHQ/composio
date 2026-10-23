@@ -2,7 +2,29 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  gain `--fail-fast`: the listener stops at the first event it fails to save,
+  forward, or append to `--out`, prints how many events failed on stderr, and
+  exits 1. Without it, a failed event is still reported and skipped, and the
+  exit code stays 0.
+
 ### Patch Changes
+
+- `composio connections list` now prints each account's `id`, its `alias`
+  whenever it has one (previously only when a toolkit had several accounts),
+  and `display_name` — the provider identity from `state.val.displayName`,
+  trimmed and capped at 200 characters — when Composio has filled one in.
+  Nothing else is read from `state`.
+
+- `composio connections list`, `composio connections remove`, and
+  `composio dev connected-accounts list` exit 1 when the connected-accounts
+  response does not match the shape this CLI expects, naming the mismatched
+  fields. They used to warn and continue with the unchecked response.
+
+- The CLI now uses `@composio/client@2.0.0-rc.21` (up from `2.0.0-rc.20`). No
+  command changes.
 
 - `composio dev triggers create` now accepts `--user-id` and sends it with the
   request, so it works on projects with 2FA enabled, which require the user who
