@@ -1494,5 +1494,43 @@ describe('Triggers', () => {
 
       expect(mockCallback).toHaveBeenCalledTimes(1);
     });
+
+    // Toolkit slugs such as `one_drive`, `launch_darkly` and `agent_mail` contain an
+    // underscore, so the toolkit derived from the trigger slug's first segment is
+    // `ONE`, not `ONE_DRIVE`.
+    const oneDriveV3Payload = {
+      ...mockV3Payload,
+      metadata: { ...mockV3Payload.metadata, trigger_slug: 'ONE_DRIVE_FILE_CREATED_TRIGGER' },
+    };
+
+    it('should match a toolkit filter whose slug contains an underscore', async () => {
+      await triggers.subscribe(mockCallback, { toolkits: ['one_drive'] });
+      const filterCallback = vi.mocked(mockPusherService.subscribe).mock.calls[0][0];
+
+      filterCallback(oneDriveV3Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+    });
+
+    it('should match an underscore toolkit filter case-insensitively', async () => {
+      await triggers.subscribe(mockCallback, { toolkits: ['ONE_DRIVE'] });
+      const filterCallback = vi.mocked(mockPusherService.subscribe).mock.calls[0][0];
+
+      filterCallback(oneDriveV3Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not match a toolkit filter that only shares a prefix with the trigger slug', async () => {
+      await triggers.subscribe(mockCallback, { toolkits: ['one_drive'] });
+      const filterCallback = vi.mocked(mockPusherService.subscribe).mock.calls[0][0];
+
+      filterCallback({
+        ...mockV3Payload,
+        metadata: { ...mockV3Payload.metadata, trigger_slug: 'ONE_DRIVEX_FILE_CREATED' },
+      });
+
+      expect(mockCallback).not.toHaveBeenCalled();
+    });
   });
 });
