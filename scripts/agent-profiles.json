@@ -25,11 +25,11 @@
     "commands": [
       {
         "cwd": ".",
-        "argv": ["bun", "run", "--filter", "@composio/cli", "test"]
+        "argv": ["bun", "run", "turbo", "run", "test", "--filter=@composio/cli"]
       },
       {
         "cwd": ".",
-        "argv": ["bun", "run", "--filter", "@composio/cli", "typecheck"]
+        "argv": ["bun", "run", "turbo", "run", "typecheck", "--filter=@composio/cli"]
       }
     ]
   },
@@ -38,11 +38,11 @@
     "commands": [
       {
         "cwd": ".",
-        "argv": ["bun", "run", "--filter", "@composio/core", "test"]
+        "argv": ["bun", "run", "turbo", "run", "test", "--filter=@composio/core"]
       },
       {
         "cwd": ".",
-        "argv": ["bun", "run", "--filter", "@composio/core", "typecheck"]
+        "argv": ["bun", "run", "turbo", "run", "typecheck", "--filter=@composio/core"]
       }
     ]
   },
