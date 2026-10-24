@@ -24,6 +24,11 @@ checks after reading `typescript-testing` or `cli-e2e`. For publication, follow
 
 ## Carry a task between sessions
 
+The TypeScript CLI runs with Bun and uses `effect/cli` for argument validation and
+generated help. Start with `bun run agent:task --help` or
+`bun run agent:task init --help` to inspect commands and required flags.
+Task commands print JSON; verification streams check output to stderr.
+
 ```sh
 bun run agent:task init cli-output --goal "Reproduce the reported CLI output bug and verify the fix" --profile cli --source https://github.com/ComposioHQ/composio/issues/123 --authority "Implement locally; publication requires the current request"
 bun run agent:task status cli-output

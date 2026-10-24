@@ -8,6 +8,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
@@ -33,7 +34,8 @@ const fixture = () => {
   cleanups.push(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(path.join(root, 'scripts'));
   copyFileSync(script, path.join(root, 'scripts/agent-task.ts'));
-  writeFileSync(path.join(root, '.gitignore'), '.artifacts/\n');
+  symlinkSync(new URL('../node_modules', import.meta.url), path.join(root, 'node_modules'), 'dir');
+  writeFileSync(path.join(root, '.gitignore'), '.artifacts/\nnode_modules\n');
   writeFileSync(path.join(root, 'source.txt'), 'original');
   const profiles = {
     offline: {
@@ -156,6 +158,87 @@ function useOfflineProfile(f: Fixture) {
   profiles.interrupt.commands = profiles.offline.commands;
   writeFileSync(file, JSON.stringify(profiles));
 }
+
+test('CLI help describes commands and required initialization inputs without creating a task', () => {
+  const f = fixture();
+  const rootHelp = f.run('--help');
+  assert.equal(rootHelp.status, 0, rootHelp.stderr);
+  assert.match(rootHelp.stdout, /init/);
+  assert.match(rootHelp.stdout, /verify/);
+  const initHelp = f.run('init', '--help');
+  assert.equal(initHelp.status, 0, initHelp.stderr);
+  assert.match(initHelp.stdout, /--goal/);
+  assert.match(initHelp.stdout, /--profile/);
+  assert.equal(existsSync(path.join(f.root, '.artifacts/agent-tasks')), false);
+});
+
+test('invalid CLI inputs fail before creating task state', () => {
+  const f = fixture();
+  const missing = f.run('init', 'case', '--profile', 'offline');
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /goal/i);
+  const unknown = f.run(
+    'init',
+    'case',
+    '--goal',
+    'Check behavior',
+    '--profile',
+    'offline',
+    '--bogus'
+  );
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /bogus/i);
+  const completions = f.run('--completions', 'nope');
+  assert.equal(completions.status, 1);
+  assert.match(completions.stderr, /nope/);
+  const duplicate = f.run(
+    'init',
+    'case',
+    '--goal',
+    'A goal',
+    '--profile',
+    'offline',
+    '--profile',
+    'failure'
+  );
+  assert.equal(duplicate.status, 1);
+  assert.match(duplicate.stderr, /profile/);
+  const authority = f.run(
+    'init',
+    'case',
+    '--goal',
+    'A goal',
+    '--profile',
+    'offline',
+    '--authority',
+    'First scope',
+    '--authority',
+    'Other scope'
+  );
+  assert.equal(authority.status, 1);
+  assert.match(authority.stderr, /authority/);
+  assert.equal(existsSync(path.join(f.root, '.artifacts/agent-tasks')), false);
+});
+
+test('dash-leading task text is saved literally instead of activating built-in flags', () => {
+  const f = fixture();
+  assert.equal(
+    f.run(
+      'init',
+      'case',
+      '--goal',
+      '- Fix the CLI',
+      '--profile',
+      'offline',
+      '--authority',
+      '- No merge'
+    ).status,
+    0
+  );
+  assert.equal(existsSync(path.join(f.root, '.artifacts/agent-tasks/case/task.json')), true);
+  assert.equal(f.state('case').task.goal, '- Fix the CLI');
+  assert.equal(f.state('case').task.authority, '- No merge');
+});
 
 test('task context survives a fresh invocation and duplicate init preserves it', () => {
   const f = fixture();

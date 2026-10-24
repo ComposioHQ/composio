@@ -5,6 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { ChildProcessByStdio } from 'node:child_process';
 import type { Readable } from 'node:stream';
+import { Effect, Option, Runtime } from 'effect';
+import { Argument, Command as CliCommand, Flag } from 'effect/cli';
+import * as BunServices from '@effect/platform-bun/BunServices';
 
 type State = 'pending' | 'running' | 'passed' | 'failed' | 'interrupted' | 'stale';
 interface Command {
@@ -362,9 +365,74 @@ async function verify(id: string) {
   if (receipt.status !== 'passed') process.exitCode = 1;
 }
 
-async function main() {
-  const [command, id, ...args] = process.argv.slice(2);
-  if (command === 'list' && id === undefined) {
+const taskId = Argument.String('id').pipe(Argument.withDescription('Local task identifier'));
+const operation = (run: () => void | Promise<void>) =>
+  Effect.tryPromise({ try: async () => run(), catch: (error: unknown) => error });
+const stringFlag = (name: string) =>
+  Flag.String(name).pipe(
+    Flag.between(1, 1),
+    Flag.map(values => values[0]!)
+  );
+
+const initFlags = {
+  goal: stringFlag('goal').pipe(Flag.withDescription('Observable outcome to implement and verify')),
+  profile: stringFlag('profile').pipe(
+    Flag.withDescription('Check group from scripts/agent-profiles.json')
+  ),
+  source: stringFlag('source').pipe(
+    Flag.withDescription('Original issue or PR URL'),
+    Flag.optional
+  ),
+  authority: stringFlag('authority').pipe(
+    Flag.withDescription('User-authorized scope to preserve as context'),
+    Flag.optional
+  ),
+};
+const initCommand = CliCommand.make(
+  'init',
+  { id: taskId, ...initFlags },
+  ({ id, goal, profile, source, authority }) =>
+    operation(() => {
+      if (!goal.trim() || !profile)
+        throw new Error('Task initialization requires --goal and --profile.');
+      const directory = taskDirectory(id);
+      const task: Task = {
+        version: 1,
+        id,
+        goal,
+        profile,
+        source: Option.getOrNull(source),
+        authority: Option.getOrNull(authority),
+        nextStep: null,
+        blocker: null,
+        createdAt: now(),
+      };
+      profileFor(task);
+      fs.mkdirSync(tasksRoot, { recursive: true, mode: 0o700 });
+      fs.mkdirSync(directory, { mode: 0o700 });
+      writeJSON(path.join(directory, 'task.json'), task);
+      print(status(id));
+    })
+).pipe(
+  CliCommand.withDescription('Save a task goal and select its verification checks'),
+  CliCommand.withExamples([
+    {
+      command:
+        'bun run agent:task init cli-fix --goal "Fix the reported CLI behavior" --profile cli',
+      description: 'Start a CLI task',
+    },
+  ])
+);
+const statusCommand = CliCommand.make('status', { id: taskId }, ({ id }) =>
+  operation(() => print(status(id)))
+).pipe(
+  CliCommand.withDescription('Read saved context and check whether verification is still current')
+);
+const verifyCommand = CliCommand.make('verify', { id: taskId }, ({ id }) =>
+  operation(() => verify(id))
+).pipe(CliCommand.withDescription('Run the selected checks and retain a revision-bound receipt'));
+const listCommand = CliCommand.make('list', {}, () =>
+  operation(() => {
     const ids = fs.existsSync(tasksRoot)
       ? fs
           .readdirSync(tasksRoot)
@@ -373,46 +441,56 @@ async function main() {
           )
       : [];
     print(ids.sort().map(status));
-    return;
+  })
+).pipe(CliCommand.withDescription('List saved tasks and their verification status'));
+const rootCommand = CliCommand.make('agent:task').pipe(
+  CliCommand.withDescription('Preserve task context and run repository verification checks'),
+  CliCommand.withSubcommands([initCommand, statusCommand, verifyCommand, listCommand]),
+  CliCommand.withExamples([
+    { command: 'bun run agent:task status cli-fix', description: 'Resume a saved task' },
+    {
+      command: 'bun run agent:task verify cli-fix',
+      description: 'Verify the current revision after implementing the fix',
+    },
+  ])
+);
+
+function taskArguments(args: readonly string[]): string[] {
+  const valueFlags = new Set(Object.keys(initFlags).map(name => `--${name}`));
+  const result: string[] = [];
+  const tokens = args[Symbol.iterator]();
+  for (const token of tokens) {
+    if (valueFlags.has(token)) {
+      const value = tokens.next();
+      result.push(value.done ? token : `${token}=${value.value}`);
+    } else result.push(token);
   }
-  if (command === 'init') {
-    const options: Record<string, string> = {};
-    for (let i = 0; i < args.length; i += 2) {
-      const key = args[i].replace(/^--/, '');
-      if (
-        !args[i].startsWith('--') ||
-        !['goal', 'profile', 'source', 'authority'].includes(key) ||
-        !args[i + 1] ||
-        options[key] !== undefined
-      )
-        throw new Error('Expected --goal TEXT --profile NAME [--source URL] [--authority TEXT].');
-      options[key] = args[i + 1];
-    }
-    if (!options.goal?.trim() || !options.profile)
-      throw new Error('Task initialization requires --goal and --profile.');
-    const directory = taskDirectory(id);
-    const task: Task = {
-      version: 1,
-      id,
-      goal: options.goal,
-      profile: options.profile,
-      source: options.source ?? null,
-      authority: options.authority ?? null,
-      nextStep: null,
-      blocker: null,
-      createdAt: now(),
-    };
-    profileFor(task);
-    fs.mkdirSync(tasksRoot, { recursive: true, mode: 0o700 });
-    fs.mkdirSync(directory, { mode: 0o700 });
-    writeJSON(path.join(directory, 'task.json'), task);
-    print(status(id));
-  } else if (command === 'status' && args.length === 0) print(status(id));
-  else if (command === 'verify' && args.length === 0) await verify(id);
-  else throw new Error('Usage: agent-task.ts init|status|verify ID; agent-task.ts list');
+  return result;
 }
 
-main().catch((error: unknown) => {
+// Bind literal values before Effect scans built-in flags, so task text cannot activate help.
+// Verification owns signal cleanup so its command groups stop before the worktree lock is released.
+Effect.runPromise(
+  CliCommand.runWith(rootCommand, { version: '1' })(taskArguments(process.argv.slice(2))).pipe(
+    Effect.provide(BunServices.layer),
+    Effect.catchTags({
+      ShowHelp: (error: unknown) =>
+        Effect.sync(() => {
+          process.exitCode = Runtime.getErrorExitCode(error);
+        }),
+      UserError: (error: unknown) =>
+        Effect.sync(() => {
+          process.exitCode = Runtime.getErrorExitCode(error);
+        }),
+    }),
+    Effect.catch(error =>
+      Effect.sync(() => {
+        console.error(errorMessage(error));
+        process.exitCode = Runtime.getErrorExitCode(error);
+      })
+    )
+  )
+).catch((error: unknown) => {
   console.error(errorMessage(error));
   process.exitCode = 1;
 });

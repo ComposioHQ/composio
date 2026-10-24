@@ -153,6 +153,9 @@ importers:
       '@composio/openai':
         specifier: workspace:*
         version: link:ts/packages/providers/openai
+      '@effect/platform-bun':
+        specifier: 'catalog:'
+        version: 4.0.5(effect@4.0.5)
       '@types/bun':
         specifier: 'catalog:'
         version: 1.4.3
@@ -165,6 +168,9 @@ importers:
       '@vitest/ui':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.5
       husky:
         specifier: ^9.1.7
         version: 9.1.7
