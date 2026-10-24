@@ -32,6 +32,8 @@
     "test:provider-compatibility": "bun test test/provider-compatibility.test.ts",
     "test:toolchain": "bun run test/mise-bun-pin.test.ts",
     "test:context7": "node --test test/context7-check.test.mjs",
+    "agent:task": "bun scripts/agent-task.ts",
+    "test:agent-workflow": "bun test test/agent-task.test.ts",
     "check:context7": "node scripts/context7-check.mjs",
     "test:examples": "tsx ts/scripts/validate-examples.ts",
     "test:e2e": "turbo test:e2e --filter='@e2e-tests/*'",
@@ -54,9 +56,9 @@
     "check:peer-deps": "tsx ts/scripts/check-peer-deps.ts",
     "check:provider-compatibility": "tsx ts/scripts/check-provider-compatibility.ts",
     "update:peer-deps": "tsx ts/scripts/update-peer-deps.ts",
-    "validate:agent-skills": "node ts/scripts/validate-agent-skills.mjs",
+    "validate:agent-skills": "bun ts/scripts/validate-agent-skills.ts",
     "validate:changesets": "node ts/scripts/validate-changesets.mjs",
-    "validate:skill-routing": "node ts/scripts/test-skill-routing.mjs",
+    "validate:skill-routing": "bun ts/scripts/test-skill-routing.ts",
     "prepublish": "pnpm run build:packages",
     "changeset": "changeset",
     "changeset:version": "changeset version",
@@ -64,7 +66,8 @@
     "changeset:pre-enter": "changeset pre enter",
     "changeset:pre-exit": "changeset pre exit",
     "clean": "git clean -xdf .turbo node_modules ts/packages/**/.turbo ts/packages/**/node_modules ts/packages/**/dist",
-    "clean:workspace": "pnpm turbo clean"
+    "clean:workspace": "pnpm turbo clean",
+    "typecheck:agent-workflow": "bun node_modules/typescript/bin/tsc -p tsconfig.agent-workflow.json"
   },
   "devEngines": {
     "runtime": {

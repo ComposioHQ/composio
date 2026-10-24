@@ -1,0 +1,71 @@
+{
+  "workflow": {
+    "boundary": "offline workflow contracts and agent guidance",
+    "commands": [
+      {
+        "cwd": ".",
+        "argv": ["bun", "test", "test/agent-task.test.ts"]
+      },
+      {
+        "cwd": ".",
+        "argv": ["bun", "run", "typecheck:agent-workflow"]
+      },
+      {
+        "cwd": ".",
+        "argv": ["bun", "ts/scripts/validate-agent-skills.ts"]
+      },
+      {
+        "cwd": ".",
+        "argv": ["bun", "ts/scripts/test-skill-routing.ts"]
+      }
+    ]
+  },
+  "cli": {
+    "boundary": "offline CLI unit tests and TypeScript checks; no binary or live API proof",
+    "commands": [
+      {
+        "cwd": ".",
+        "argv": ["bun", "run", "--filter", "@composio/cli", "test"]
+      },
+      {
+        "cwd": ".",
+        "argv": ["bun", "run", "--filter", "@composio/cli", "typecheck"]
+      }
+    ]
+  },
+  "sdk-typescript": {
+    "boundary": "offline TypeScript core SDK unit tests and type checks; no provider or runtime packaging proof",
+    "commands": [
+      {
+        "cwd": ".",
+        "argv": ["bun", "run", "--filter", "@composio/core", "test"]
+      },
+      {
+        "cwd": ".",
+        "argv": ["bun", "run", "--filter", "@composio/core", "typecheck"]
+      }
+    ]
+  },
+  "sdk-python": {
+    "boundary": "offline Python SDK and selected provider checks through existing nox sessions",
+    "commands": [
+      {
+        "cwd": "python",
+        "argv": ["make", "chk"]
+      },
+      {
+        "cwd": "python",
+        "argv": ["make", "tst"]
+      }
+    ]
+  },
+  "release-metadata": {
+    "boundary": "offline release workflow and metadata checks; no hosted CI, publication, registry or consumer-install proof",
+    "commands": [
+      {
+        "cwd": ".",
+        "argv": ["bun", "run", "test:release-workflow"]
+      }
+    ]
+  }
+}
