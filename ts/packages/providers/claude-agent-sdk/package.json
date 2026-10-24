@@ -48,7 +48,7 @@
   "contributors": [
     "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@composio/json-schema-to-zod": "workspace:*",
     "zod": "^4.5.4"

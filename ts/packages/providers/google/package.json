@@ -44,7 +44,7 @@
     "gemini"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "peerDependencies": {
     "@composio/core": ">=0.16.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
     "@google/genai": "^1.1.0"

@@ -61,7 +61,7 @@
     "agent"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "safe-stable-stringify": "^3.0.0",
     "typebox": "1.4.2"
