@@ -154,8 +154,12 @@ const readFileContent = async (
       throw new Error('File system operations are not supported in this runtime environment');
     }
     const content = platform.readFileSync(filePath);
+    // Take the extension from the file name only: a dot in a directory name
+    // (or none at all) must not pull path components into the upload name.
+    const baseName = platform.basename(filePath);
+    const extension = baseName.includes('.') ? baseName.split('.').pop() : undefined;
     return {
-      fileName: generateTimestampedFilename(filePath.split('.').pop() || 'txt'),
+      fileName: generateTimestampedFilename(extension || 'txt'),
       content:
         content instanceof Uint8Array
           ? uint8ArrayToBase64(content)
