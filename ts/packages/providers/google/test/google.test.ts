@@ -56,7 +56,7 @@ describe('GoogleProvider', () => {
       expect(wrapped).toEqual({
         name: mockTool.slug,
         description: mockTool.description,
-        parameters: {
+        parametersJsonSchema: {
           type: 'object',
           description: mockTool.description,
           properties: mockTool.inputParameters?.properties || {},
@@ -76,7 +76,7 @@ describe('GoogleProvider', () => {
       expect(wrapped).toEqual({
         name: toolWithoutParams.slug,
         description: toolWithoutParams.description,
-        parameters: {
+        parametersJsonSchema: {
           type: 'object',
           description: toolWithoutParams.description,
           properties: {},
@@ -94,7 +94,7 @@ describe('GoogleProvider', () => {
         },
       });
 
-      expect(wrapped.parameters?.required).toEqual(['input']);
+      expect((wrapped.parametersJsonSchema as { required: string[] }).required).toEqual(['input']);
     });
 
     it('normalizes nested object schemas without treating property maps as schemas', () => {
@@ -110,7 +110,7 @@ describe('GoogleProvider', () => {
         },
       });
 
-      const params = wrapped.parameters as unknown as {
+      const params = wrapped.parametersJsonSchema as {
         properties: Record<string, unknown>;
       };
       expect(params.properties).toEqual({
@@ -120,6 +120,28 @@ describe('GoogleProvider', () => {
         },
       });
       expect(params.properties).not.toHaveProperty('type');
+    });
+
+    it('sends JSON Schema keywords through parametersJsonSchema, not parameters', () => {
+      // Gemini answers 400 ("Unknown name \"examples\"") when these keywords
+      // are sent in the OpenAPI-subset `parameters` field.
+      const properties = {
+        query: { type: 'string', examples: ['is:unread'] },
+        kind: { type: 'string', const: 'message' },
+        page_token: { anyOf: [{ type: 'string' }, { type: 'null' }], default: null },
+        format: { type: 'integer', enum: [0, 1] },
+      };
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: { type: 'object', properties, required: ['query'] },
+      });
+
+      expect(wrapped.parametersJsonSchema).toEqual({
+        type: 'object',
+        description: mockTool.description,
+        properties,
+        required: ['query'],
+      });
     });
   });
 
@@ -139,7 +161,7 @@ describe('GoogleProvider', () => {
       expect(wrapped[0]).toEqual({
         name: mockTool.slug,
         description: mockTool.description,
-        parameters: {
+        parametersJsonSchema: {
           type: 'object',
           description: mockTool.description,
           properties: mockTool.inputParameters?.properties || {},
@@ -150,7 +172,7 @@ describe('GoogleProvider', () => {
       expect(wrapped[1]).toEqual({
         name: anotherTool.slug,
         description: anotherTool.description,
-        parameters: {
+        parametersJsonSchema: {
           type: 'object',
           description: anotherTool.description,
           properties: anotherTool.inputParameters?.properties || {},
