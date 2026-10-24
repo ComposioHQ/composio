@@ -60,7 +60,7 @@
     "name": "Supabase",
     "logo": "https://logos.composio.dev/api/supabase",
     "category": "developer tools",
-    "toolCount": 131,
+    "toolCount": 132,
     "triggerCount": 0
   },
   {
@@ -84,7 +84,7 @@
     "name": "Twitter",
     "logo": "https://logos.composio.dev/api/twitter",
     "category": "social media accounts",
-    "toolCount": 83,
+    "toolCount": 84,
     "triggerCount": 0
   },
   {
@@ -108,7 +108,7 @@
     "name": "HubSpot",
     "logo": "https://logos.composio.dev/api/hubspot",
     "category": "crm",
-    "toolCount": 294,
+    "toolCount": 295,
     "triggerCount": 2
   },
   {
@@ -296,7 +296,7 @@
     "name": "ElevenLabs",
     "logo": "https://logos.composio.dev/api/elevenlabs",
     "category": "audio & speech",
-    "toolCount": 166,
+    "toolCount": 167,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -409,7 +409,7 @@
     "name": "Apollo",
     "logo": "https://logos.composio.dev/api/apollo",
     "category": "people & contact data",
-    "toolCount": 70,
+    "toolCount": 72,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -484,7 +484,7 @@
     "name": "Klaviyo",
     "logo": "https://logos.composio.dev/api/klaviyo",
     "category": "marketing automation",
-    "toolCount": 231,
+    "toolCount": 233,
     "triggerCount": 0
   },
   {
@@ -532,7 +532,7 @@
     "name": "Zoho",
     "logo": "https://logos.composio.dev/api/zoho",
     "category": "crm",
-    "toolCount": 98,
+    "toolCount": 100,
     "triggerCount": 0
   },
   {
@@ -639,7 +639,7 @@
     "name": "HeyGen",
     "logo": "https://logos.composio.dev/api/heygen",
     "category": "media generation",
-    "toolCount": 77,
+    "toolCount": 78,
     "triggerCount": 0
   },
   {
@@ -949,7 +949,7 @@
     "name": "Miro",
     "logo": "https://logos.composio.dev/api/miro",
     "category": "team collaboration",
-    "toolCount": 84,
+    "toolCount": 85,
     "triggerCount": 0
   },
   {
@@ -1117,7 +1117,7 @@
     "name": "Facebook",
     "logo": "https://logos.composio.dev/api/facebook",
     "category": "social media accounts",
-    "toolCount": 58,
+    "toolCount": 59,
     "triggerCount": 0
   },
   {
@@ -1168,7 +1168,7 @@
     "name": "Canva",
     "logo": "https://logos.composio.dev/api/canva",
     "category": "images & design",
-    "toolCount": 52,
+    "toolCount": 53,
     "triggerCount": 0
   },
   {
@@ -1736,7 +1736,7 @@
     "name": "Zoho Mail",
     "logo": "https://logos.composio.dev/api/zoho_mail",
     "category": "email",
-    "toolCount": 49,
+    "toolCount": 50,
     "triggerCount": 0
   },
   {
@@ -1848,7 +1848,7 @@
     "name": "Datadog",
     "logo": "https://logos.composio.dev/api/datadog",
     "category": "server monitoring",
-    "toolCount": 76,
+    "toolCount": 78,
     "triggerCount": 0
   },
   {
@@ -2059,7 +2059,7 @@
     "name": "Agent Mail",
     "logo": "https://logos.composio.dev/api/agent_mail",
     "category": "ai agents",
-    "toolCount": 21,
+    "toolCount": 23,
     "triggerCount": 1
   },
   {
@@ -2439,7 +2439,7 @@
     "name": "Apify",
     "logo": "https://logos.composio.dev/api/apify",
     "category": "web scraping & browser",
-    "toolCount": 184,
+    "toolCount": 185,
     "triggerCount": 0
   },
   {
@@ -3200,7 +3200,7 @@
     "name": "Browser Use",
     "logo": "https://logos.composio.dev/api/browseruse",
     "category": "web scraping & browser",
-    "toolCount": 47,
+    "toolCount": 48,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -4854,7 +4854,7 @@
     "name": "DigitalOcean",
     "logo": "https://logos.composio.dev/api/digital_ocean",
     "category": "developer tools",
-    "toolCount": 54,
+    "toolCount": 55,
     "triggerCount": 0
   },
   {
@@ -5294,7 +5294,7 @@
     "name": "Elorus",
     "logo": "https://logos.composio.dev/api/elorus",
     "category": "proposal & invoice management",
-    "toolCount": 19,
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -5636,7 +5636,7 @@
     "name": "Fathom",
     "logo": "https://logos.composio.dev/api/fathom",
     "category": "ai meeting assistants",
-    "toolCount": 9,
+    "toolCount": 10,
     "triggerCount": 1
   },
   {
@@ -7006,7 +7006,7 @@
     "name": "Hunter",
     "logo": "https://logo.clearbit.com/hunter.io",
     "category": "people & contact data",
-    "toolCount": 38,
+    "toolCount": 39,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -9679,7 +9679,7 @@
     "name": "PDF.co",
     "logo": "https://logos.composio.dev/api/pdf_co",
     "category": "documents",
-    "toolCount": 49,
+    "toolCount": 50,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -11582,7 +11582,7 @@
     "name": "Smartlead",
     "logo": "https://logos.composio.dev/api/smartlead",
     "category": "ai sales tools",
-    "toolCount": 40,
+    "toolCount": 42,
     "triggerCount": 0
   },
   {
@@ -12271,7 +12271,7 @@
     "name": "Ticktick",
     "logo": "https://logos.composio.dev/api/ticktick",
     "category": "productivity",
-    "toolCount": 21,
+    "toolCount": 23,
     "triggerCount": 0
   },
   {
@@ -12295,7 +12295,7 @@
     "name": "TikHub",
     "logo": "https://logos.composio.dev/api/tikhub",
     "category": "social & creator data",
-    "toolCount": 514,
+    "toolCount": 515,
     "triggerCount": 0,
     "instant": {
       "supported": true

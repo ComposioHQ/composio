@@ -13,7 +13,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 2,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
@@ -535,7 +535,7 @@
     ],
     "toolCount": 899,
     "triggerCount": 46,
-    "version": "20261014_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "GITHUB_ABORT_REPOSITORY_MIGRATION",
@@ -6559,7 +6559,7 @@
     ],
     "toolCount": 171,
     "triggerCount": 9,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "SLACK_ADD_CALL_PARTICIPANTS",
@@ -7545,9 +7545,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 131,
+    "toolCount": 132,
     "triggerCount": 0,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "SUPABASE_ALPHA_CREATE_API_KEY",
@@ -7708,6 +7708,11 @@
         "slug": "SUPABASE_CREATE_PROJECT_SIGNING_KEY",
         "name": "Create project signing key",
         "description": "Create a new signing key for JWT authentication in a Supabase project. The key is created in standby status by default and must be activated separately."
+      },
+      {
+        "slug": "SUPABASE_CREATE_SIGNED_UPLOAD_URL",
+        "name": "Create Signed Upload URL",
+        "description": "Create a two-hour signed authorization for uploading a Storage object. OAuth connections need ``secrets:read``. Fine-grained personal access tokens need ``api_gateway_keys_read`` and ``api_gateway_keys_secret_read``."
       },
       {
         "slug": "SUPABASE_CREATE_SSO_PROVIDER",
@@ -10193,9 +10198,9 @@
     "authSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 83,
+    "toolCount": 84,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "TWITTER_ADD_LIST_MEMBER",
@@ -10516,6 +10521,11 @@
         "slug": "TWITTER_SEARCH_FULL_ARCHIVE_COUNTS",
         "name": "Get full archive search counts",
         "description": "Returns a count of Tweets from the full archive that match a specified query, aggregated by day, hour, or minute; `start_time` must be before `end_time` if both are provided, and `since_id`/`until_id` cannot be used with `start_time`/`end_time`."
+      },
+      {
+        "slug": "TWITTER_SEARCH_NEWS",
+        "name": "Search X news",
+        "description": "Searches X for AI-generated news stories matching text."
       },
       {
         "slug": "TWITTER_SEARCH_RECENT_COUNTS",
@@ -11676,9 +11686,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 294,
+    "toolCount": 295,
     "triggerCount": 2,
-    "version": "20261020_01",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "HUBSPOT_ADD_ASSET_ASSOCIATION",
@@ -13059,6 +13069,11 @@
         "slug": "HUBSPOT_UPDATE_FEEDBACK_SUBMISSION",
         "name": "Update feedback submission by id",
         "description": "Partially updates writable properties of an existing HubSpot Feedback Submission, identified by its `feedbackSubmissionId` (which can be an internal object ID, or a unique property value if `idProperty` is specified)."
+      },
+      {
+        "slug": "HUBSPOT_UPDATE_LANDING_PAGE",
+        "name": "Update landing page",
+        "description": "Sparse-update a HubSpot landing page and return its updated state."
       },
       {
         "slug": "HUBSPOT_UPDATE_LINE_ITEM",
@@ -16049,7 +16064,7 @@
     ],
     "toolCount": 104,
     "triggerCount": 9,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "SLACKBOT_ADD_CALL_PARTICIPANTS",
@@ -19708,7 +19723,7 @@
     ],
     "toolCount": 118,
     "triggerCount": 0,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "BITBUCKET_APPROVE_PULL_REQUEST",
@@ -24863,9 +24878,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 166,
+    "toolCount": 167,
     "triggerCount": 0,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ELEVENLABS_ADD_A_PRONUNCIATION_DICTIONARY",
@@ -25158,6 +25173,11 @@
         "slug": "ELEVENLABS_GET_AGENT_BRANCH_PROCEDURE",
         "name": "Get Agent Branch Procedure",
         "description": "Retrieve a procedure from an ElevenLabs agent branch HEAD or version."
+      },
+      {
+        "slug": "ELEVENLABS_GET_AGENT_BRANCH_PROCEDURE_DRAFT",
+        "name": "Get Agent Branch Procedure Draft",
+        "description": "Retrieve a user's procedure draft, falling back to branch HEAD when none exists."
       },
       {
         "slug": "ELEVENLABS_GET_AGENT_DETAILS",
@@ -38171,9 +38191,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 70,
+    "toolCount": 72,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "APOLLO_ACTIVATE_SEQUENCE",
@@ -38273,6 +38293,11 @@
         "slug": "APOLLO_CREATE_SEQUENCE",
         "name": "Create Apollo Sequence",
         "description": "Create an Apollo outreach sequence, optionally including steps and email variants."
+      },
+      {
+        "slug": "APOLLO_CREATE_SEQUENCE_STEP",
+        "name": "Create Apollo Sequence Step",
+        "description": "Create one step at a specified position in an existing Apollo outreach sequence."
       },
       {
         "slug": "APOLLO_CREATE_TASK",
@@ -38377,6 +38402,11 @@
         "slug": "APOLLO_GET_TYPED_CUSTOM_FIELDS",
         "name": "Get typed custom fields",
         "description": "Retrieves all typed custom field definitions available in the Apollo.io instance, detailing their types and configurations. Call before constructing payloads for APOLLO_UPDATE_CONTACT or APOLLO_UPDATE_ACCOUNT — mismatched types or invalid enum options cause 400 errors."
+      },
+      {
+        "slug": "APOLLO_GET_USER",
+        "name": "Get Apollo User",
+        "description": "Retrieve one teammate in the connected Apollo workspace by Apollo user ID."
       },
       {
         "slug": "APOLLO_LIST_ACCOUNT_STAGES",
@@ -46284,9 +46314,9 @@
       "API_KEY",
       "OAUTH2"
     ],
-    "toolCount": 231,
+    "toolCount": 233,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "KLAVIYO_ADD_PROFILE_TO_LIST",
@@ -47229,6 +47259,11 @@
         "description": "Returns the requested flow analytics values data<br><br>*Rate limits*:<br>Burst: `1/s`<br>Steady: `2/m`<br>Daily: `225/d` **Scopes:** `flows:read`"
       },
       {
+        "slug": "KLAVIYO_QUERY_FORM_SERIES",
+        "name": "Query form series",
+        "description": "Return Klaviyo form performance metrics broken into time intervals."
+      },
+      {
         "slug": "KLAVIYO_QUERY_FORM_VALUES",
         "name": "Query form values",
         "description": "Return aggregate Klaviyo form performance statistics for a timeframe."
@@ -47392,6 +47427,11 @@
         "slug": "KLAVIYO_UPDATE_FLOW_STATUS",
         "name": "Update flow status",
         "description": "Update the status of a flow with the given flow ID, and all actions in that flow. Flow statuses: - 'draft': Flow is disabled; no messages will be sent - 'manual': Messages require manual approval before sending - 'live': Messages are sent automatically when triggered Rate limits: Burst: 3/s, Steady: 60/m Required scope: flows:write"
+      },
+      {
+        "slug": "KLAVIYO_UPDATE_FORM",
+        "name": "Update form",
+        "description": "Update a Klaviyo form's name or replace its complete stored definition. Omitted attributes remain unchanged; live versions and lifecycle fields cannot be edited."
       },
       {
         "slug": "KLAVIYO_UPDATE_IMAGE",
@@ -49214,7 +49254,7 @@
     ],
     "toolCount": 114,
     "triggerCount": 0,
-    "version": "20261022_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ATTIO_ASSERT_COMPANY",
@@ -49994,12 +50034,12 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260702_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "TEXT_TO_PDF_CONVERT_TEXT_TO_PDF",
         "name": "Convert Text to PDF",
-        "description": "Convert plain text or Markdown content into a downloadable PDF document. Supports Unicode characters, special symbols, and Markdown formatting including headers, lists, code blocks, links, and emphasis. Images require publicly accessible URLs to render. The response includes the generated PDF file, filename, and MIME type."
+        "description": "Convert plain text or Markdown content into a downloadable PDF document. Supports Unicode characters, special symbols, and Markdown formatting including headers, lists, code blocks, links, and emphasis. Images must use inline data URLs; external and local resources are rejected. The response includes the generated PDF file, filename, and MIME type."
       },
       {
         "slug": "TEXT_TO_PDF_DELETE_ASYNC_JOB",
@@ -50057,9 +50097,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 98,
+    "toolCount": 100,
     "triggerCount": 0,
-    "version": "20261021_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ZOHO_ADD_TAGS_TO_RECORDS",
@@ -50277,6 +50317,11 @@
         "description": "Retrieve one Zoho CRM permission profile and its expanded permissions."
       },
       {
+        "slug": "ZOHO_GET_RECORD",
+        "name": "Get Zoho CRM Record",
+        "description": "Retrieve one record from a standard or custom Zoho CRM module by ID. Use this generic action for custom modules and standard modules without a dedicated getter. Zoho truncates rich-text fields to 500 characters; use its Rich Text Fields API when full rich-text content is required."
+      },
+      {
         "slug": "ZOHO_GET_RECORD_EMAIL",
         "name": "Get Zoho CRM Record Email",
         "description": "Retrieve one email associated with a Zoho CRM record, including its body."
@@ -50330,6 +50375,11 @@
         "slug": "ZOHO_GET_ZOHO_USERS",
         "name": "Get Zoho CRM Users",
         "description": "Tool to retrieve users from Zoho CRM. Use when you need to fetch user information such as IDs, names, emails, roles, or status for setting Owner fields or performing user-related operations in CRM workflows."
+      },
+      {
+        "slug": "ZOHO_LIST_ACCESS_SETTINGS",
+        "name": "List Zoho CRM Access Settings",
+        "description": "List roles or permission profiles configured in Zoho CRM."
       },
       {
         "slug": "ZOHO_LIST_ACCOUNTS",
@@ -57040,9 +57090,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 77,
+    "toolCount": 78,
     "triggerCount": 0,
-    "version": "20261014_01",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "HEYGEN_ADD_LOOKS_TO_PHOTO_AVATAR_GROUP",
@@ -57148,6 +57198,11 @@
         "slug": "HEYGEN_GET_TRAINING_JOB_STATUS",
         "name": "Get training job status",
         "description": "Tool to retrieve the current training status and details of a photo avatar training job by group ID. Use when you need to check training progress, monitor job completion, or verify if training has finished successfully."
+      },
+      {
+        "slug": "HEYGEN_GET_VOICE",
+        "name": "Get Voice",
+        "description": "Retrieve one HeyGen v3 voice and its clone workflow status by ID."
       },
       {
         "slug": "HEYGEN_KEEP_ALIVE_STREAMING_SESSION",
@@ -67777,7 +67832,7 @@
     ],
     "toolCount": 510,
     "triggerCount": 48,
-    "version": "20261022_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -77469,9 +77524,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 84,
+    "toolCount": 85,
     "triggerCount": 0,
-    "version": "20261007_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "MIRO_ATTACH_TAG_TO_ITEM",
@@ -77647,6 +77702,11 @@
         "slug": "MIRO_DELETE_TEXT_ITEM",
         "name": "Delete Text Item",
         "description": "Tool to delete a text item from a board. Use when you need to remove a text item after confirming its board and item IDs."
+      },
+      {
+        "slug": "MIRO_DOWNLOAD_DOCUMENT_RESOURCE",
+        "name": "Download Document Resource",
+        "description": "Retrieve signed URL metadata for a Miro document resource."
       },
       {
         "slug": "MIRO_DOWNLOAD_IMAGE_RESOURCE",
@@ -85978,9 +86038,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 58,
+    "toolCount": 59,
     "triggerCount": 0,
-    "version": "20261022_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "FACEBOOK_ASSIGN_PAGE_TASK",
@@ -86181,6 +86241,11 @@
         "slug": "FACEBOOK_LIST_PUBLISHED_PAGE_POSTS",
         "name": "List Published Page Posts",
         "description": "List posts published by a Facebook Page, excluding unpublished posts."
+      },
+      {
+        "slug": "FACEBOOK_LIST_VIDEO_TAGS",
+        "name": "List Video Tags",
+        "description": "Return one page of people or Pages tagged on a Facebook video."
       },
       {
         "slug": "FACEBOOK_LIST_VIDEO_THUMBNAILS",
@@ -86917,9 +86982,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 52,
+    "toolCount": 53,
     "triggerCount": 0,
-    "version": "20261014_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "CANVA_ACCESS_USER_SPECIFIC_BRAND_TEMPLATES_LIST",
@@ -87010,6 +87075,11 @@
         "slug": "CANVA_GET_DESIGN_COMMENT_REPLY",
         "name": "Get specific design comment reply",
         "description": "Retrieves a specific reply to a comment or suggestion thread on a design. Use when you need to view details of a particular reply. This is a preview API. Public integrations that use it cannot pass Canva's review process."
+      },
+      {
+        "slug": "CANVA_GET_DESIGN_DATASET",
+        "name": "Get design dataset",
+        "description": "Get a design's autofill dataset definition and accepted field types."
       },
       {
         "slug": "CANVA_GET_DESIGN_EXPORT_JOB_RESULT",
@@ -111997,10 +112067,15 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 49,
+    "toolCount": 50,
     "triggerCount": 0,
-    "version": "20261023_00",
+    "version": "20261023_01",
     "tools": [
+      {
+        "slug": "ZOHO_MAIL_ACCOUNTS_CREATE_SIGNATURE",
+        "name": "Create Signature",
+        "description": "Create a signature, optionally assign it to users, and return it."
+      },
       {
         "slug": "ZOHO_MAIL_ACCOUNTS_GET_SIGNATURES",
         "name": "Get Signatures",
@@ -117428,9 +117503,9 @@
       "API_KEY",
       "BEARER_TOKEN"
     ],
-    "toolCount": 76,
+    "toolCount": 78,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "DATADOG_AGGREGATE_LOGS",
@@ -117521,6 +117596,11 @@
         "slug": "DATADOG_DELETE_SCHEDULE",
         "name": "Delete On-Call schedule",
         "description": "Deletes a Datadog On-Call schedule by ID. This action cannot be undone."
+      },
+      {
+        "slug": "DATADOG_GET_CUSTOM_EVALUATOR_CONFIGURATION",
+        "name": "Get Custom Evaluator Configuration",
+        "description": "Retrieve one custom Agent Observability evaluator configuration by name. Datadog currently exposes this read operation as a preview API."
       },
       {
         "slug": "DATADOG_GET_DASHBOARD",
@@ -117741,6 +117821,11 @@
         "slug": "DATADOG_SEARCH_LOGS",
         "name": "Search logs",
         "description": "Searches Datadog logs with advanced filtering capabilities. IMPORTANT NOTES: - Sort parameter is NOT supported by the Datadog Logs API and will cause errors - Time parameters must be in milliseconds (13-digit UNIX timestamps) - Limit parameter is passed as string to the API - Log content is nested under 'content' field in API response Useful for troubleshooting, monitoring application behavior, and analyzing log patterns."
+      },
+      {
+        "slug": "DATADOG_SEARCH_METRICS",
+        "name": "Search metrics",
+        "description": "Search metric names reported to Datadog in the last 24 hours. Datadog has deprecated this substring-search endpoint. Use it only when a name query is needed; use DATADOG_LIST_METRICS for timestamp-based discovery."
       },
       {
         "slug": "DATADOG_SEARCH_MONITOR_GROUPS",
@@ -122155,9 +122240,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 21,
+    "toolCount": 23,
     "triggerCount": 1,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "AGENT_MAIL_CREATE_DRAFT",
@@ -122235,6 +122320,11 @@
         "description": "List conversation threads in an AgentMail inbox with filters."
       },
       {
+        "slug": "AGENT_MAIL_LIST_WEBHOOKS",
+        "name": "List Webhooks",
+        "description": "List AgentMail webhook configurations."
+      },
+      {
         "slug": "AGENT_MAIL_QUERY_INBOX_EVENT_METRICS",
         "name": "Query Inbox Event Metrics",
         "description": "Query timestamped email-event counts for an AgentMail inbox."
@@ -122263,6 +122353,11 @@
         "slug": "AGENT_MAIL_UPDATE_DRAFT",
         "name": "Update Draft",
         "description": "Edit a draft, reschedule delivery, or cancel a scheduled send with null."
+      },
+      {
+        "slug": "AGENT_MAIL_UPDATE_INBOX",
+        "name": "Update Inbox",
+        "description": "Update an inbox's display name, status, or custom metadata."
       }
     ],
     "triggers": [
@@ -137964,9 +138059,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 184,
+    "toolCount": 185,
     "triggerCount": 0,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "APIFY_ACT_BUILDS_POST",
@@ -138857,6 +138952,11 @@
         "slug": "APIFY_USERS_ME_USAGE_MONTHLY_GET",
         "name": "Get Monthly Usage",
         "description": "Tool to get monthly usage summary with daily breakdown. Use when you need detailed usage information including storage, data transfer, and request queue metrics for the current or a specific billing cycle. This shows the same information as the Billing page in Apify console."
+      },
+      {
+        "slug": "APIFY_VALIDATE_ACTOR_INPUT",
+        "name": "Validate Actor Input",
+        "description": "Validate input against an Actor build without starting a run."
       },
       {
         "slug": "APIFY_WEBHOOK_DISPATCHES_GET",
@@ -155628,9 +155728,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 47,
+    "toolCount": 48,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "BROWSER_USE_ARCHIVE_WORKSPACE",
@@ -155686,6 +155786,11 @@
         "slug": "BROWSER_USE_DISCONNECT_INTEGRATION",
         "name": "Disconnect Integration",
         "description": "Disconnect a downstream provider from the Browser Use project, revoking its availability to future runs."
+      },
+      {
+        "slug": "BROWSER_USE_GET_BILLING_ACCOUNT",
+        "name": "Get Billing Account",
+        "description": "Return the connected Browser Use project's credit balances, plan, concurrency limits, and account identifiers."
       },
       {
         "slug": "BROWSER_USE_GET_BROWSER_SESSION",
@@ -183926,7 +184031,7 @@
     ],
     "toolCount": 384,
     "triggerCount": 0,
-    "version": "20260729_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "COUPA_ABANDON_AN_INVOICE",
@@ -185061,7 +185166,7 @@
       {
         "slug": "COUPA_INVOICES_LIST",
         "name": "List Invoices",
-        "description": "Tool to list invoices with optional pagination and filters. Use when you need to obtain invoice IDs or details for testing void invoice extensively."
+        "description": "List and filter Coupa invoices. To match an invoice to a purchase order, request invoice-lines with po-number, order-header-num, or order-line-id in fields, or filter on invoice-lines[po-number]; PO linkage is line-level and is not an invoice-header field."
       },
       {
         "slug": "COUPA_INVOICES_REMOVE_APPROVAL",
@@ -185081,7 +185186,7 @@
       {
         "slug": "COUPA_INVOICES_SHOW",
         "name": "Get Invoice",
-        "description": "Tool to retrieve a single invoice by ID. Use when you need detailed invoice information including line items, charges, attachments, and approval details."
+        "description": "Retrieve one invoice by its Coupa ID. Purchase-order linkage is line-level; use fields to request invoice-lines with po-number, order-header-num, or order-line-id."
       },
       {
         "slug": "COUPA_INVOICES_SUBMIT",
@@ -185311,7 +185416,7 @@
       {
         "slug": "COUPA_PURCHASE_ORDERS_INDEX",
         "name": "List Purchase Orders",
-        "description": "Tool to list purchase order headers. Use when you need to fetch filtered and paginated purchase order records from Coupa."
+        "description": "List filtered and paginated purchase order headers. Coupa supports contains, starts_with, ends_with, gt, lt, gt_or_eq, lt_or_eq, not_eq, in, not_in, and blank operators; no operator means exact match. To correlate POs with invoices, request po-number or order-line IDs here and request po-number, order-header-num, or order-line-id under invoice-lines from an invoice read action."
       },
       {
         "slug": "COUPA_PURCHASE_ORDERS_ISSUE",
@@ -201499,9 +201604,9 @@
       "API_KEY",
       "OAUTH2"
     ],
-    "toolCount": 54,
+    "toolCount": 55,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "DIGITAL_OCEAN_CREATE_CUSTOM_IMAGE",
@@ -201627,6 +201732,11 @@
         "slug": "DIGITAL_OCEAN_GET_ACTION",
         "name": "Get Action",
         "description": "Retrieve a DigitalOcean action by ID to inspect its status and metadata."
+      },
+      {
+        "slug": "DIGITAL_OCEAN_GET_CUSTOMER_BALANCE",
+        "name": "Get Customer Balance",
+        "description": "Retrieve current and month-to-date billing balances for the customer."
       },
       {
         "slug": "DIGITAL_OCEAN_GET_DROPLET_METRICS",
@@ -212285,9 +212395,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 19,
+    "toolCount": 21,
     "triggerCount": 0,
-    "version": "20261013_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "ELORUS_CREATE_EXPENSE",
@@ -212303,6 +212413,11 @@
         "slug": "ELORUS_CREATE_PRODUCT",
         "name": "CREATE_PRODUCT",
         "description": "Create a new product or service in Elorus. Use this to add items to your product catalog with pricing, tax settings, and inventory management options."
+      },
+      {
+        "slug": "ELORUS_DELETE_INVOICE",
+        "name": "Delete Invoice",
+        "description": "Permanently delete a draft invoice. Issued invoices cannot be deleted."
       },
       {
         "slug": "ELORUS_EMAIL_INVOICE",
@@ -212383,6 +212498,11 @@
         "slug": "ELORUS_UPDATE_CONTACT",
         "name": "Update Contact",
         "description": "Update an existing contact in Elorus by ID. Allows modifying contact details such as name, company, addresses, and communication preferences. Use this tool when you need to: - Update contact information (name, company, VAT number) - Modify contact addresses, emails, or phone numbers - Change contact type (client/supplier status) - Update language or currency preferences Note: At least one of first_name, last_name, or company must be provided in the update."
+      },
+      {
+        "slug": "ELORUS_UPDATE_EXPENSE",
+        "name": "Update Expense",
+        "description": "Replace an Elorus expense's editable details and complete line-item set."
       }
     ],
     "triggers": [],
@@ -219710,9 +219830,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 9,
+    "toolCount": 10,
     "triggerCount": 1,
-    "version": "20261007_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "FATHOM_CREATE_WEBHOOK",
@@ -219748,6 +219868,11 @@
         "slug": "FATHOM_LIST_MEETINGS",
         "name": "List Meetings",
         "description": "Tool to retrieve a paginated list of meeting recordings for the authenticated user or organization. Use when you need to fetch meetings with optional filtering by dates, domains, meeting type, or recorder. Supports data enrichment via include_* parameters."
+      },
+      {
+        "slug": "FATHOM_LIST_MEETING_TYPES",
+        "name": "List Meeting Types",
+        "description": "List the organization's active and inactive meeting types."
       },
       {
         "slug": "FATHOM_LIST_TEAM_MEMBERS",
@@ -259208,9 +259333,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 38,
+    "toolCount": 39,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "HUNTER_ACCOUNT_INFORMATION",
@@ -259375,6 +259500,11 @@
         "slug": "HUNTER_LIST_CAMPAIGNS",
         "name": "List Campaigns",
         "description": "Tool to get all email campaigns in your Hunter account. Campaigns are returned in reverse-chronological order by creation date. Use when you need to retrieve and filter campaigns by status (started/archived) with pagination support."
+      },
+      {
+        "slug": "HUNTER_LIST_COMPANIES",
+        "name": "List Companies",
+        "description": "List companies saved in the authenticated Hunter account."
       },
       {
         "slug": "HUNTER_LIST_CUSTOM_ATTRIBUTES",
@@ -322566,9 +322696,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 49,
+    "toolCount": 50,
     "triggerCount": 0,
-    "version": "20261014_01",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "PDF_CO_ACCOUNT_BALANCE_INFO",
@@ -322649,6 +322779,11 @@
         "slug": "PDF_CO_FILE_UPLOAD",
         "name": "Upload File",
         "description": "Tool to upload a local file or remote URL to PDF.co, returning a hosted URL for downstream processing. Use when a PDF.co tool (e.g., PDF_CO_PDF_FROM_HTML) requires a remote URL but you have a local file."
+      },
+      {
+        "slug": "PDF_CO_GET_PRESIGNED_UPLOAD_URL",
+        "name": "Get Presigned Upload URL",
+        "description": "Generate URLs for directly uploading a named file to PDF.co."
       },
       {
         "slug": "PDF_CO_JOB_CHECK",
@@ -376005,9 +376140,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 40,
+    "toolCount": 42,
     "triggerCount": 0,
-    "version": "20261022_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "SMARTLEAD_CREATE_CAMPAIGN",
@@ -376060,6 +376195,11 @@
         "description": "Return one offset-paginated page of email-level campaign statistics, optionally filtered by sequence step, engagement status, or sent time."
       },
       {
+        "slug": "SMARTLEAD_GET_DAY_WISE_OVERALL_STATS",
+        "name": "Get Day-Wise Overall Stats",
+        "description": "Retrieve account-wide daily Smartlead email engagement metrics for an inclusive date range and timezone."
+      },
+      {
         "slug": "SMARTLEAD_GET_DELIVERY_TEST",
         "name": "Get Smart Delivery Test",
         "description": "Get the documented configuration for one Smart Delivery spam test by ID."
@@ -376078,6 +376218,11 @@
         "slug": "SMARTLEAD_GET_LEAD_BY_EMAIL",
         "name": "Get Lead by Email",
         "description": "Find an account-wide Smartlead lead by exact email address and return its contact details and campaign memberships."
+      },
+      {
+        "slug": "SMARTLEAD_GET_LEAD_CAMPAIGN_OVERVIEW",
+        "name": "Get Lead Campaign Overview",
+        "description": "Retrieve a Smartlead lead by ID with every campaign membership, campaign status, and current sequence position."
       },
       {
         "slug": "SMARTLEAD_GET_LEAD_MESSAGE_HISTORY",
@@ -391714,10 +391859,15 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 21,
+    "toolCount": 23,
     "triggerCount": 0,
-    "version": "20261018_00",
+    "version": "20261023_00",
     "tools": [
+      {
+        "slug": "TICKTICK_ADD_TASK_COMMENT",
+        "name": "Add Task Comment",
+        "description": "Add a discussion comment to a task in a TickTick project."
+      },
       {
         "slug": "TICKTICK_BATCH_CREATE_OR_UPDATE_TASKS",
         "name": "Batch Create Or Update Tasks",
@@ -391757,6 +391907,11 @@
         "slug": "TICKTICK_DELETE_TASK",
         "name": "Delete Task",
         "description": "Tool to permanently delete a specific task — irreversible, no recovery. Use when you need to remove a task from a project after confirming both project and task IDs. Returns an empty data object on success; check status/success flags rather than response payload. When moving tasks between projects via create+delete, comments and history are lost."
+      },
+      {
+        "slug": "TICKTICK_FILTER_TASKS",
+        "name": "Filter Tasks",
+        "description": "Return tasks matching project, start-date, priority, tag, kind, and status filters."
       },
       {
         "slug": "TICKTICK_GET_PROJECT_BY_ID",
@@ -392078,9 +392233,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 514,
+    "toolCount": 515,
     "triggerCount": 0,
-    "version": "20261014_02",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "TIK_HUB_BILIBILI_APP_FETCH_BANGUMI_TAB",
@@ -397107,6 +397262,11 @@
             "discount": "0"
           }
         }
+      },
+      {
+        "slug": "TIK_HUB_XIAOHONGSHU_APP_V2_GET_USER_POSTED_NOTES",
+        "name": "List Xiaohongshu user posted notes",
+        "description": "Get one page of notes published by a Xiaohongshu user through TikHub, selected by user ID or share link."
       },
       {
         "slug": "TIK_HUB_XIAOHONGSHU_APP_V2_GET_VIDEO_NOTE_DETAIL",
@@ -411161,7 +411321,7 @@
     ],
     "toolCount": 152,
     "triggerCount": 0,
-    "version": "20261020_00",
+    "version": "20261023_00",
     "tools": [
       {
         "slug": "VERCEL_ADD_ENVIRONMENT_VARIABLE",
