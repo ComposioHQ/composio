@@ -12,6 +12,11 @@
 
 ### Patch Changes
 
+- Preserve the project's test user when `.composio/.env` selects the same
+  organization and project as the nearest `.composio/project.json`. Profiles from
+  a different organization or project do not supply a test user. Process environment
+  org/project overrides remain independent of repository configuration.
+
 - `composio proxy` now enforces the consumer permission policy that
   `composio execute` enforces, checked against the connected account the
   request uses. A denied request fails with the same permission error, and a
