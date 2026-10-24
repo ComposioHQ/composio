@@ -1,5 +1,14 @@
 # approvals-example
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [e87ed85]
+- Updated dependencies [3f3df9a]
+- Updated dependencies [7434e02]
+  - @composio/core@0.28.0
+
 ## 0.0.2
 
 ### Patch Changes

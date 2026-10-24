@@ -1,6 +1,6 @@
 {
   "name": "@e2e-tests/cf-workers-basic",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "private": true,
   "type": "module",
   "scripts": {
