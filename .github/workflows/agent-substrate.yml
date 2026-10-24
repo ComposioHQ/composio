@@ -3,11 +3,11 @@ name: Agent Substrate
 # Guards the repo-level AI-agent guidance — the files coding agents read —
 # so it cannot silently drift from reality:
 #
-#   * `pnpm validate:agent-skills`  — SKILL.md frontmatter and reference links,
+#   * `bun run validate:agent-skills`  — SKILL.md frontmatter and reference links,
 #     the .agents/skills <-> .claude/skills compatibility symlink, required
 #     nested AGENTS.md files, stale guidance references, and every pnpm/make/
 #     nox command mentioned in guidance checked against its real definition.
-#   * `pnpm validate:skill-routing` — deterministic routing smoke test: each
+#   * `bun run validate:skill-routing` — deterministic routing smoke test: each
 #     skill keeps a probe asserting it is the unique top match for a
 #     representative task, so description edits cannot silently break routing.
 #
@@ -15,8 +15,7 @@ name: Agent Substrate
 # point. It runs on every push and PR with no path filters: the
 # validate:agent-skills stale-guidance walk scans every text file in the
 # repo, so any change can affect the result. Both scripts are
-# dependency-free Node programs, but the standard toolchain setup is kept
-# so the pnpm script wiring is exercised too.
+# Bun TypeScript programs using the repository's existing dependencies.
 
 on:
   push:
@@ -52,10 +51,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate agent skills and guidance invariants
-        run: pnpm validate:agent-skills
+        run: bun run validate:agent-skills
 
       - name: Validate skill routing
-        run: pnpm validate:skill-routing
+        run: bun run validate:skill-routing
+
+      - name: Typecheck agent tooling
+        run: bun run typecheck:agent-workflow
+
+      - name: Verify resumable task and evidence contracts
+        run: bun run test:agent-workflow
 
       - name: Verify issue triage security boundary
         run: pnpm test:issue-triage

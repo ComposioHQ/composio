@@ -1,8 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { z } from 'zod';
 
 const repoRoot = process.cwd();
 
@@ -30,6 +31,7 @@ const expectedSkills = [
   'typescript-providers',
   'typescript-sdk',
   'typescript-testing',
+  'verify-change',
 ];
 
 const requiredAgentFiles = [
@@ -44,11 +46,12 @@ const requiredAgentFiles = [
   'python/providers/AGENTS.md',
 ];
 
-const errors = [];
+const errors: string[] = [];
 
-const fail = message => errors.push(message);
-const readJson = relativePath =>
-  JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8'));
+const fail = (message: string) => errors.push(message);
+const manifestSchema = z.object({ scripts: z.record(z.string(), z.string()).optional() });
+const readJson = (relativePath: string) =>
+  manifestSchema.parse(JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), 'utf8')));
 
 const rootScripts = new Set(Object.keys(readJson('package.json').scripts ?? {}));
 const docsScripts = new Set(Object.keys(readJson('docs/package.json').scripts ?? {}));
@@ -68,14 +71,15 @@ for (const match of makefile.matchAll(/\bnox\s+-s\s+([A-Za-z0-9_]+)/g)) {
   }
 }
 
-const parseFrontmatter = (content, relativePath) => {
+const frontmatterSchema = z.object({ name: z.string(), description: z.string() });
+const parseFrontmatter = (content: string, relativePath: string) => {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?/);
   if (!match) {
     fail(`${relativePath}: missing YAML frontmatter`);
     return null;
   }
 
-  const data = {};
+  const data: Record<string, string> = {};
   for (const line of match[1].split('\n')) {
     const keyMatch = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
     if (!keyMatch) {
@@ -98,18 +102,22 @@ const parseFrontmatter = (content, relativePath) => {
     }
   }
 
-  return { data };
+  const parsed = frontmatterSchema.safeParse(data);
+  return parsed.success ? { data: parsed.data } : null;
 };
 
 const skillsRoot = path.join(repoRoot, '.agents/skills');
+const skillDirNames = fs.existsSync(skillsRoot)
+  ? fs
+      .readdirSync(skillsRoot, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+  : [];
+
 if (!fs.existsSync(skillsRoot)) {
   fail('.agents/skills does not exist');
 } else {
-  const actualSkills = fs
-    .readdirSync(skillsRoot, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name)
-    .sort();
+  const actualSkills = [...skillDirNames].sort();
 
   const expected = [...expectedSkills].sort();
   if (actualSkills.join('\n') !== expected.join('\n')) {
@@ -228,6 +236,7 @@ for (const relativePath of ['docs/decisions/README.md', 'docs/agent-guidance/REA
 
 const ignoredDirs = new Set([
   '.git',
+  '.artifacts',
   '.generated',
   'node_modules',
   '.turbo',
@@ -273,7 +282,7 @@ const stalePatterns = [
   'CLI' + '.md',
 ];
 
-const walk = dir => {
+const walk = (dir: string): void => {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const absolutePath = path.join(dir, entry.name);
@@ -306,7 +315,7 @@ const walk = dir => {
 
 walk(repoRoot);
 
-const validatePnpmCommands = (relativePath, text) => {
+const validatePnpmCommands = (relativePath: string, text: string) => {
   const commandLines = text
     .split('\n')
     .map(line => line.trim().replace(/^\$\s+/, ''))
@@ -333,7 +342,7 @@ const validatePnpmCommands = (relativePath, text) => {
   }
 };
 
-const validateBunRunCommands = (relativePath, text) => {
+const validateBunRunCommands = (relativePath: string, text: string) => {
   const commandLines = text
     .split('\n')
     .map(line => line.trim().replace(/^\$\s+/, ''))
@@ -345,13 +354,15 @@ const validateBunRunCommands = (relativePath, text) => {
       continue;
     }
     const command = match[1];
-    if (!docsScripts.has(command)) {
-      fail(`${relativePath}: bun run command "${command}" is not a docs package.json script`);
+    if (!docsScripts.has(command) && !rootScripts.has(command)) {
+      fail(
+        `${relativePath}: bun run command "${command}" is not a root or docs package.json script`
+      );
     }
   }
 };
 
-const validateMakeCommands = (relativePath, text) => {
+const validateMakeCommands = (relativePath: string, text: string) => {
   const commandLines = text
     .split('\n')
     .map(line => line.trim().replace(/^\$\s+/, ''))
@@ -369,7 +380,7 @@ const validateMakeCommands = (relativePath, text) => {
   }
 };
 
-const validateNoxCommands = (relativePath, text) => {
+const validateNoxCommands = (relativePath: string, text: string) => {
   const commandLines = text
     .split('\n')
     .map(line => line.trim().replace(/^\$\s+/, ''))
@@ -389,21 +400,11 @@ const validateNoxCommands = (relativePath, text) => {
 
 // Derive the command-scan file set from the skills actually on disk so it can never
 // drift from `expectedSkills` (which serves only as the taxonomy gate above).
-const skillDirNames = fs.existsSync(skillsRoot)
-  ? fs
-      .readdirSync(skillsRoot, { withFileTypes: true })
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name)
-  : [];
-
 const commandFiles = [
   ...skillDirNames.flatMap(skillName => {
     const skillDir = path.join(skillsRoot, skillName);
-    if (!fs.existsSync(skillDir)) {
-      return [];
-    }
-    const files = [];
-    const collect = dir => {
+    const files: string[] = [];
+    const collect = (dir: string): void => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const absolutePath = path.join(dir, entry.name);
         if (entry.isDirectory()) {

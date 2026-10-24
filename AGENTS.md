@@ -30,6 +30,7 @@ Use the smallest relevant skill:
 
 - `repo-guidance`: repo layout, branch/PR workflow, changesets, generated files, or cross-repo maintenance.
 - `skill-maintenance`: adding or changing local skills, skill references, compatibility mirrors, or validation.
+- `verify-change`: resumable task records, verification profiles, revision-bound receipts, or carrying work between coding agents.
 - `bug-fixing`: fixing a defect and choosing regression tests.
 - `cross-sdk-parity`: aligning TypeScript and Python behavior, generated client bumps, or API contract drift.
 - `docs-decisions`: docs site work, changelogs, docs decisions, or docs automation.
@@ -78,11 +79,13 @@ pnpm typecheck
 pnpm test
 pnpm test:e2e
 pnpm test:e2e:cli
-pnpm validate:agent-skills
-pnpm validate:skill-routing
+bun run validate:agent-skills
+bun run validate:skill-routing
+bun run typecheck:agent-workflow
+bun run test:agent-workflow
 ```
 
-Both validators are dependency-free and deterministic. `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
+Both validators are deterministic Bun TypeScript programs; the guidance validator uses the existing Zod dependency to read package manifests. `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
 
 Python commands run from `python/` unless otherwise noted:
 
