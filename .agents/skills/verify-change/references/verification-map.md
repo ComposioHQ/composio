@@ -6,6 +6,9 @@ or Python development environment prepared. Profiles run existing checks and
 their normal environment setup (including nox environment creation); they do not
 choose a model.
 
+The CLI and TypeScript SDK profiles use package-scoped Turbo tasks so prerequisite
+workspace builds run before tests and type checks, including in a fresh checkout.
+
 | Profile            | Existing checks                                                                       | What remains outside its proof                                          |
 | ------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | `workflow`         | Bun task integration tests, their TypeScript check and both agent-guidance validators | Agent judgment, product behavior, hosted CI                             |
