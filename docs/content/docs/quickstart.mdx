@@ -67,6 +67,7 @@ OPENAI_API_KEY=your_openai_api_key
 <Step>
 <StepTitle>Create session and run agent</StepTitle>
 
+{/* code-example: no-api reason="OpenAI Agents SDK agent loop; the session tools are run by the agent framework" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -224,6 +225,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 <Step>
 <StepTitle>Create session and run agent</StepTitle>
 
+{/* code-example: no-api reason="Claude Agent SDK agent loop; the session tools are served through an in-process MCP server" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -321,7 +323,7 @@ I can use tools like Gmail, GitHub, Linear, Notion, and more.
 (Type 'exit' to exit)
 Example tasks:
   - 'Summarize my emails from today'
-  - 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+  - 'List all open issues on the composio github repository'
 `);
 
 let isFirstQuery = true;
@@ -395,6 +397,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 <Step>
 <StepTitle>Create session and run agent</StepTitle>
 
+{/* code-example: single-language reason="Vercel AI SDK has no Python SDK" */}
 ```typescript
 import "dotenv/config";
 import { anthropic } from "@ai-sdk/anthropic";

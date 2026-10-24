@@ -47,5 +47,11 @@ jobs:
       - name: TypeScript type check
         run: bun run types:check
 
+      - name: Check TypeScript snippet and KB language-option regressions
+        run: bun test tests/static/typescript-snippets.test.ts tests/static/kb-generation.test.ts
+
+      - name: Check authored TypeScript outside Twoslash build coverage
+        run: bun run check:typescript-snippets
+
       - name: Build (validates Twoslash TypeScript code blocks)
         run: bun run build

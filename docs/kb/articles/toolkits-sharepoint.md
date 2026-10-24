@@ -9,11 +9,35 @@ explains how tenant-specific sign-in differs from `common`.
 First, retrieve the toolkit's authentication fields with your Composio project
 API key:
 
+### Inspect the toolkit metadata
+
+#### Python
+
+```python
+from composio import Composio
+
+composio = Composio()
+print(composio.toolkits.get("sharepoint_graph"))
+```
+
+#### TypeScript
+
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+console.log(await composio.toolkits.get("sharepoint_graph"));
+```
+
+#### API
+
 ```bash
 curl --fail-with-body \
   'https://backend.composio.dev/api/v3.1/toolkits/sharepoint_graph' \
-  -H 'x-api-key: <COMPOSIO_API_KEY>'
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+
+<!-- end-languages -->
 
 Find the `OAUTH2` auth scheme and inspect `fields.auth_config_creation` and
 `fields.connected_account_initiation`. The `issuer` field appears under
@@ -23,10 +47,43 @@ To apply the same tenant ID to new connections, [update your custom auth
 config](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid) with
 `shared_credentials.issuer`:
 
+### Update the auth config
+
+#### Python
+
+The high-level Python update helper does not forward `shared_credentials`; use its public generated client.
+
+```python
+from composio import Composio
+
+composio = Composio()
+result = composio.client.auth_configs.update(
+    "<AUTH_CONFIG_ID>",
+    type="custom",
+    shared_credentials={"issuer": "<MICROSOFT_TENANT_ID>"},
+)
+print(result)
+```
+
+#### TypeScript
+
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+const result = await composio.getClient().authConfigs.update("<AUTH_CONFIG_ID>", {
+  type: "custom",
+  shared_credentials: { issuer: "<MICROSOFT_TENANT_ID>" },
+});
+console.log(result);
+```
+
+#### API
+
 ```bash
 curl --fail-with-body -X PATCH \
   'https://backend.composio.dev/api/v3.1/auth_configs/<AUTH_CONFIG_ID>' \
-  -H 'x-api-key: <COMPOSIO_API_KEY>' \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H 'content-type: application/json' \
   -d '{
     "type": "custom",
@@ -35,6 +92,8 @@ curl --fail-with-body -X PATCH \
     }
   }'
 ```
+
+<!-- end-languages -->
 
 Replace `<AUTH_CONFIG_ID>` with your SharePoint Graph custom auth config ID.
 Every new connection created through this auth config inherits the tenant ID.

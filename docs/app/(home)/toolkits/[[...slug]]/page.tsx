@@ -11,10 +11,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { resolveToolkit } from '@/lib/toolkit-resolution';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkRehype from 'remark-rehype';
-import { toHtml } from 'hast-util-to-html';
+import { parseToolkitFaq } from '@/lib/toolkit-faq';
 import type { Metadata } from 'next';
 import type { Tool, Trigger } from '@/types/toolkit';
 import type { FaqItem } from '@/components/toolkits/faq-section';
@@ -97,11 +94,6 @@ async function fetchDetailedTriggers(
   }
 }
 
-function markdownToHtml(md: string): string {
-  const tree = unified().use(remarkParse).parse(md);
-  const hast = unified().use(remarkRehype).runSync(tree);
-  return toHtml(hast);
-}
 
 async function readToolkitFaq(slug: string): Promise<FaqItem[] | null> {
   const filePath = join(process.cwd(), 'content/toolkits/faq', `${slug}.md`);
@@ -112,18 +104,7 @@ async function readToolkitFaq(slug: string): Promise<FaqItem[] | null> {
     return null;
   }
 
-  const items: FaqItem[] = [];
-  const sections = content.split(/^## /m).filter(Boolean);
-  for (const section of sections) {
-    const newlineIdx = section.indexOf('\n');
-    if (newlineIdx === -1) continue;
-    const question = section.slice(0, newlineIdx).trim();
-    const answerMd = section.slice(newlineIdx + 1).trim();
-    if (question && answerMd) {
-      items.push({ question, answer: markdownToHtml(answerMd) });
-    }
-  }
-  return items.length > 0 ? items : null;
+  return parseToolkitFaq(content);
 }
 
 export async function generateStaticParams() {

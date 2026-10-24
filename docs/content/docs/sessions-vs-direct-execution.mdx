@@ -34,7 +34,7 @@ Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring
 
 `composio.create()` returns [meta tools](/docs/how-composio-works#meta-tools):
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -60,6 +60,19 @@ const session = await composio.create("user_123");
 const tools = await session.tools();
 // Returns meta tools like COMPOSIO_SEARCH_TOOLS, COMPOSIO_MANAGE_CONNECTIONS,
 // COMPOSIO_MULTI_EXECUTE_TOOL, COMPOSIO_REMOTE_WORKBENCH, etc.
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+# Returns meta tools like COMPOSIO_SEARCH_TOOLS, COMPOSIO_MANAGE_CONNECTIONS,
+# COMPOSIO_MULTI_EXECUTE_TOOL, COMPOSIO_REMOTE_WORKBENCH, etc.
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>
@@ -89,7 +102,7 @@ Agent: "Created issue #42 on your-org/your-repo"
 
 Restrict toolkits, set auth configs, pin connected accounts:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -112,6 +125,19 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["github", "gmail"]},
+    "auth_configs": {"github": "ac_my_config"},
+    "connected_accounts": {"gmail": ["ca_work"]}
+  }'
+```
+</Tab>
 </Tabs>
 
 See [Configuring Sessions](/docs/configuring-sessions) for details.
@@ -120,7 +146,7 @@ See [Configuring Sessions](/docs/configuring-sessions) for details.
 
 Fetch tools by slug or toolkit. Pass them to your LLM or call `tools.execute()` without one.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -181,6 +207,27 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
   arguments: { owner: "my-org", repo: "my-repo", title: "Fix login bug" },
   dangerouslySkipVersionCheck: true, // required when running "latest"; or pin via version
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# Fetch specific tools
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_ISSUE,GITHUB_LIST_ISSUES&toolkit_versions=latest" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Or by toolkit
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=github&limit=50&toolkit_versions=latest" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Execute without an LLM
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_ISSUE \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "version": "latest",
+    "arguments": {"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"}
+  }'
 ```
 </Tab>
 </Tabs>

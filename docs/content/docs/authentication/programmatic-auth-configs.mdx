@@ -12,7 +12,7 @@ An [auth config](/docs/authentication#behind-the-scenes) is a blueprint for how 
 
 For OAuth2 toolkits, Composio maintains a managed app so you can create an auth config without bringing your own credentials. This is the fastest way to start.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -41,6 +41,15 @@ const authConfig = await composio.authConfigs.create('github', {
 console.log(authConfig.id); // ac_xxxxxxxx
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -s -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": {"slug": "github"}, "auth_config": {"type": "use_composio_managed_auth", "name": "GitHub"}}' \
+  | jq -r '.auth_config.id'  # ac_xxxxxxxx
+```
+</Tab>
 </Tabs>
 
 ## Your own OAuth2 credentials
@@ -51,11 +60,13 @@ Bring your own OAuth app to show your branding on consent screens, request custo
 https://backend.composio.dev/api/v3/toolkits/auth/callback
 ```
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 import os
+from typing import cast
 from composio import Composio
+from composio.client.types import auth_config_create_params as auth_types
 
 composio = Composio()
 
@@ -65,11 +76,12 @@ auth_config = composio.auth_configs.create(
         "type": "use_custom_auth",
         "auth_scheme": "OAUTH2",
         "name": "Notion",
-        "credentials": {
+        # The generated credentials type omits OAuth client fields accepted by the API.
+        "credentials": cast(auth_types.AuthConfigUnionMember1Credentials, {
             "client_id": os.environ["NOTION_CLIENT_ID"],
             "client_secret": os.environ["NOTION_CLIENT_SECRET"],
             "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
-        },
+        }),
     },
 )
 ```
@@ -92,6 +104,26 @@ const authConfig = await composio.authConfigs.create('notion', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit": {"slug": "notion"},
+    "auth_config": {
+      "type": "use_custom_auth",
+      "authScheme": "OAUTH2",
+      "name": "Notion",
+      "credentials": {
+        "client_id": "'"$NOTION_CLIENT_ID"'",
+        "client_secret": "'"$NOTION_CLIENT_SECRET"'",
+        "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback"
+      }
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 <Callout type="info">
@@ -102,7 +134,7 @@ Set `oauth_redirect_uri` to the exact URL registered in your provider's OAuth ap
 
 Toolkits that use API keys, bearer tokens, basic auth, or no auth follow the same call. Set `auth_scheme` to the toolkit's scheme and put the required fields in `credentials`. For a toolkit whose key the user supplies at connect time, pass empty `credentials`.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 auth_config = composio.auth_configs.create(
@@ -130,13 +162,21 @@ const authConfig = await composio.authConfigs.create('perplexityai', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": {"slug": "perplexityai"}, "auth_config": {"type": "use_custom_auth", "authScheme": "API_KEY", "name": "Perplexity AI", "credentials": {}}}'
+```
+</Tab>
 </Tabs>
 
 ## Use the auth config in a session
 
 Creating an auth config does not change which credentials a session uses. Pass the auth config ID to `authConfigs` (keyed by toolkit) when you create the session, and the session authenticates that toolkit with your config. Toolkits you leave out keep using Composio managed auth.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -156,6 +196,14 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "auth_configs": {"notion": "ac_your_notion_config"}}'
+```
+</Tab>
 </Tabs>
 
 See [Configuring sessions](/docs/configuring-sessions#custom-auth-configs) for how `authConfigs` interacts with account selection and precedence.
@@ -164,8 +212,18 @@ See [Configuring sessions](/docs/configuring-sessions#custom-auth-configs) for h
 
 You can fetch up to 200 auth configs per request. Set `limit` to `200` when listing auth configs to retrieve up to that many at once. Paginate through the results if you have more than 200 matching configs.
 
-In TypeScript, filter `authConfigs.list()` by name or ID with `search`. Disabled configs are excluded by default; set `showDisabled` to include them. Auth config responses use `id` as their canonical identifier.
+Filter auth configs by name or ID with `search` in either SDK or the API. Disabled configs are excluded by default; set `showDisabled` (`show_disabled` in Python) to include them. Auth config responses use `id` as their canonical identifier.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+configs = composio.auth_configs.list(search="github", show_disabled=True)
+
+for config in configs.items:
+    print(config.id)
+```
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 
@@ -180,12 +238,21 @@ for (const config of configs.items) {
   console.log(config.id);
 }
 ```
+</Tab>
+<Tab value="API">
+```bash
+curl -s -X GET "https://backend.composio.dev/api/v3.1/auth_configs?search=github&show_disabled=true" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq -r '.items[].id'
+```
+</Tab>
+</Tabs>
 
 ## Discover the required fields
 
 Different schemes need different credential fields. To build the `credentials` object dynamically, ask the toolkit which fields it requires for a given scheme before you create the config.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 fields = composio.toolkits.get_auth_config_creation_fields(
@@ -207,6 +274,13 @@ const fields = await composio.toolkits.getAuthConfigCreationFields('notion', 'OA
 });
 
 console.log(fields);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -s -X GET https://backend.composio.dev/api/v3.1/toolkits/notion \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq '.auth_config_details[] | select(.mode == "OAUTH2") | .fields.auth_config_creation.required'
 ```
 </Tab>
 </Tabs>

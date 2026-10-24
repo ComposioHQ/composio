@@ -12,7 +12,7 @@ For a runnable agent with work and personal Gmail accounts, follow the [multiple
 
 By default, each session uses **one account per toolkit**. Enable multi-account mode to let users connect and use multiple accounts for the same toolkit within a single session.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -40,6 +40,19 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# The SDKs default require_explicit_selection to true when multi-account mode is enabled
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "multi_account": {"enable": true, "max_accounts_per_toolkit": 3, "require_explicit_selection": true}
+  }'
+```
+</Tab>
 </Tabs>
 
 ### Configuration options
@@ -56,10 +69,14 @@ When multi-account mode is disabled (the default), each session uses the most re
 
 Call `session.authorize()` multiple times for the same toolkit. Each call creates a separate connected account.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(user_id="user_123", multi_account={"enable": True})
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    multi_account={"enable": True},
+)
 
 # Connect work account
 work_auth = session.authorize("gmail", alias="work-gmail")
@@ -94,6 +111,30 @@ console.log(`Connect personal Gmail: ${personalAuth.redirectUrl}`);
 const personalConnection = await personalAuth.waitForConnection();
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "multi_account": {"enable": true, "require_explicit_selection": true}
+  }' | jq -r '.session_id')
+
+# Connect work account
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail", "alias": "work-gmail"}' | jq -r '.redirect_url'
+
+# Connect personal account
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail", "alias": "personal-gmail"}' | jq -r '.redirect_url'
+```
+</Tab>
 </Tabs>
 
 ## Aliases
@@ -111,7 +152,7 @@ See [Identify the connected account](/docs/authentication/manually-authenticatin
 
 Pass `alias` to `session.authorize()`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(user_id="user_123")
@@ -129,13 +170,26 @@ const session = await composio.create("user_123");
 const connectionRequest = await session.authorize("gmail", { alias: "work-gmail" });
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail", "alias": "work-gmail"}'
+```
+</Tab>
 </Tabs>
 
 The direct-execution methods `connectedAccounts.initiate()` and `connectedAccounts.link()` accept the same `alias` parameter. To create another active connection for the same user and auth config, also pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript.
 
 ### Updating or clearing an alias
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 # Set or update an alias
@@ -158,13 +212,28 @@ await composio.connectedAccounts.update("ca_abc123", { alias: "work-gmail" });
 await composio.connectedAccounts.update("ca_abc123", { alias: "" });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# Set or update an alias
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_abc123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"alias": "work-gmail"}'
+
+# Clear an alias
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_abc123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"alias": ""}'
+```
+</Tab>
 </Tabs>
 
 ## Selecting a specific account for a session
 
 Pin a session to specific accounts by passing their IDs in the session config. To retrieve connected account IDs, see [List accounts](/docs/auth-configuration/connected-accounts#list-accounts).
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -190,13 +259,24 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "connected_accounts": {"gmail": ["ca_work_gmail_id"], "github": ["ca_personal_github_id"]}
+  }'
+```
+</Tab>
 </Tabs>
 
 ## Viewing session's active accounts
 
 Use `session.toolkits()` to see which accounts are currently active:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 toolkits = session.toolkits()
@@ -220,6 +300,14 @@ for (const toolkit of toolkits.items) {
     console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount.id}`);
   }
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq -r '.items[] | select(.connected_account) | "\(.name): \(.connected_account.id)"'
 ```
 </Tab>
 </Tabs>

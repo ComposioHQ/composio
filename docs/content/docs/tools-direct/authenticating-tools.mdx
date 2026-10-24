@@ -115,7 +115,7 @@ Redirect users to a Composio-hosted URL that handles the entire authentication p
   size="sm"
 />
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -155,6 +155,16 @@ const connectionRequest = await composio.connectedAccounts.link(userId, authConf
 });
 const redirectUrl = connectionRequest.redirectUrl;
 console.log(`Visit: ${redirectUrl} to authenticate your account`);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+REDIRECT_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-1349-129-12", "auth_config_id": "your_auth_config_id", "callback_url": "https://your-app.com/callback"}' \
+  | jq -r '.redirect_url')
+echo "Visit: $REDIRECT_URL to authenticate your account"
 ```
   </Tab>
 </Tabs>
@@ -198,10 +208,11 @@ Custom auth configs (your own OAuth app) and non-OAuth schemes (API key, bearer 
 
 For OAuth flows, you'll redirect users to complete authorization. You can specify a callback URL to control where users return after authentication:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
+from composio.types import auth_scheme
 
 composio = Composio(api_key="YOUR_COMPOSIO_API_KEY")
 
@@ -214,7 +225,8 @@ user_id = "user-1349-129-12"
 connection_request = composio.connected_accounts.initiate(
   user_id=user_id,
   auth_config_id=auth_config_id,
-  config={"auth_scheme": "OAUTH2"},
+  # The helper fills status="INITIALIZING"; its generated input type still requires it.
+  config=auth_scheme.oauth2({}),  # type: ignore[arg-type]
   callback_url="https://www.yourapp.com/callback"
 )
 print(f"Redirect URL: {connection_request.redirect_url}")
@@ -231,19 +243,20 @@ print(f"Connection established: {connected_account.id}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
-import { Composio } from '@composio/core';
+import { Composio, AuthScheme } from '@composio/core';
 
 const composio = new Composio({apiKey: "YOUR_COMPOSIO_API_KEY"});
 
 // Use the "AUTH CONFIG ID" from your dashboard
 const authConfigId = 'your_auth_config_id';
 // Use a unique identifier for each user in your application
-const userId = 'user_4567';
+const userId = 'user-1349-129-12';
 
 const connRequest = await composio.connectedAccounts.initiate(
   userId,
   authConfigId,
   {
+    config: AuthScheme.OAuth2({}),
     callbackUrl: 'https://www.yourapp.com/callback',
   }
 );
@@ -259,6 +272,20 @@ const connectedAccount = await connRequest.waitForConnection();
 console.log(`Connection established: ${connectedAccount.id}`);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+RESPONSE=$(curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "your_auth_config_id"}, "connection": {"user_id": "user-1349-129-12", "callback_url": "https://www.yourapp.com/callback", "state": {"authScheme": "OAUTH2", "val": {"status": "INITIALIZING"}}}}')
+echo "Redirect URL: $(echo "$RESPONSE" | jq -r '.connectionData.val.redirectUrl')"
+CONNECTED_ACCOUNT_ID=$(echo "$RESPONSE" | jq -r '.id')
+
+# After the user finishes the redirect, check the connection (poll until status is ACTIVE)
+curl -s -X GET https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '{id, status}'
+```
+  </Tab>
 </Tabs>
 
 <Callout type="info">
@@ -269,14 +296,22 @@ When using callback URLs with `initiate()`, the appended query parameters use ca
 
 Some services like Zendesk require additional parameters such as `subdomain`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
-# For Zendesk - include subdomain
+from composio import Composio
+from composio.types import auth_scheme
+
+composio = Composio(api_key="your_api_key")
+user_id = "user_123"
+auth_config_id = "ac_zendesk"
+
+# For Zendesk, include the subdomain. oauth2 fills status="INITIALIZING",
+# which its generated input type incorrectly requires callers to supply.
 connection_request = composio.connected_accounts.initiate(
   user_id=user_id,
   auth_config_id=auth_config_id,
-  config=auth_scheme.oauth2(subdomain="mycompany")  # For mycompany.zendesk.com
+  config=auth_scheme.oauth2({"subdomain": "mycompany"})  # type: ignore[arg-type]
 )
 ```
   </Tab>
@@ -295,6 +330,15 @@ const connRequest = await composio.connectedAccounts.initiate(userId, authConfig
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# For Zendesk - include subdomain
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "ac_zendesk"}, "connection": {"user_id": "user_123", "state": {"authScheme": "OAUTH2", "val": {"status": "INITIALIZING", "subdomain": "mycompany"}}}}'
+```
+  </Tab>
 </Tabs>
 
 #### API Key Connections
@@ -303,10 +347,11 @@ For API key authentication, you can either collect API keys from each user or us
 
 Here is how to initiate the flow:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
+from composio.types import auth_scheme
 
 composio = Composio(api_key="your_api_key")
 
@@ -314,7 +359,7 @@ composio = Composio(api_key="your_api_key")
 auth_config_id = "your_auth_config_id"
 
 # Use a unique identifier for each user in your application
-user_id = "user_12323"
+user_id = "user_12345678"
 
 # API key provided by the user (collected from your app's UI)
 # or use your own key
@@ -323,9 +368,8 @@ user_api_key = "user_api_key_here"
 connection_request = composio.connected_accounts.initiate(
   user_id=user_id,
   auth_config_id=auth_config_id,
-  config={
-    "auth_scheme": "API_KEY", "val": {"api_key": user_api_key}
-  }
+  # The helper fills status="ACTIVE"; its generated input type still requires it.
+  config=auth_scheme.api_key({"api_key": user_api_key}),  # type: ignore[arg-type]
 )
 
 print(f"Connection established: {connection_request.id}")
@@ -340,8 +384,9 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 // Use the "AUTH CONFIG ID" from your dashboard
 const authConfigId = 'your_auth_config_id';
 // Use a unique identifier for each user in your application
-const userId = 'user12345678';
+const userId = 'user_12345678';
 // API key provided by the user (collected from your app's UI)
+// or use your own key
 const userApiKey = 'user_api_key_here';
 
 const connectionRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
@@ -353,6 +398,16 @@ const connectionRequest = await composio.connectedAccounts.initiate(userId, auth
 console.log(`Connection established: ${connectionRequest.id}`);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# API key provided by the user (collected from your app's UI) or your own key
+curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "your_auth_config_id"}, "connection": {"user_id": "user_12345678", "state": {"authScheme": "API_KEY", "val": {"status": "ACTIVE", "api_key": "user_api_key_here"}}}}' \
+  | jq -r '"Connection established: \(.id)"'
+```
+  </Tab>
 </Tabs>
 
 ## Fetching the required config parameters for an Auth Config
@@ -361,7 +416,7 @@ When working with any toolkit, you can inspect an auth config to understand its 
 
 Here is how you would fetch the authentication method and input fields:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -395,6 +450,12 @@ const authConfig = await composio.authConfigs.get(authConfigId);
 
 console.log(`Authentication method: ${authConfig.authScheme}`);
 console.log(`Required fields:`, authConfig.expectedInputFields);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -s -X GET https://backend.composio.dev/api/v3.1/auth_configs/your_auth_config_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '{auth_scheme, expected_input_fields}'
 ```
   </Tab>
 </Tabs>
@@ -443,7 +504,7 @@ In all cases, the user must [re-authenticate](/docs/authentication#connection-li
 
 The `waitForConnection` method allows you to poll for a connection to become active after initiating authentication. This is useful when you need to ensure a connection is ready before proceeding.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Wait for the connection to be established
@@ -476,6 +537,26 @@ console.log(connectedAccount.id);
 // const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionId, 60000);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# CONNECTED_ACCOUNT_ID is the ID returned when you initiated or linked the account.
+DEADLINE=$((SECONDS + 60))
+while true; do
+  ACCOUNT=$(curl --fail-with-body -s https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+    -H "x-api-key: $COMPOSIO_API_KEY") || exit 1
+  STATUS=$(echo "$ACCOUNT" | jq -r '.status')
+  case "$STATUS" in
+    ACTIVE) echo "$ACCOUNT" | jq -r '.id'; break ;;
+    FAILED|EXPIRED|INACTIVE|REVOKED) echo "Connection ended: $STATUS" >&2; exit 1 ;;
+  esac
+  if [ "$SECONDS" -ge "$DEADLINE" ]; then
+    echo "Timed out waiting for authorization" >&2
+    exit 1
+  fi
+  sleep 1
+done
+```
+  </Tab>
 </Tabs>
 
 The method continuously polls the Composio API until the connection:
@@ -487,7 +568,7 @@ The method continuously polls the Composio API until the connection:
 
 You can check the status of a connected account programmatically:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Get a specific connected account
@@ -522,6 +603,17 @@ const filteredConnections = await composio.connectedAccounts.list({
 filteredConnections.items.forEach(connection => {
   console.log(`${connection.id}: ${connection.status}`);
 });
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Get a specific connected account
+curl -s -X GET https://backend.composio.dev/api/v3.1/connected_accounts/your_connected_account_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '"Status: \(.status)"'
+
+# Filter connections by user_id, auth_config_id, and status (only active accounts)
+curl -s -X GET "https://backend.composio.dev/api/v3.1/connected_accounts?user_ids=user_123&auth_config_ids=your_auth_config_id&statuses=ACTIVE" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[] | "\(.id): \(.status)"'
 ```
   </Tab>
 </Tabs>

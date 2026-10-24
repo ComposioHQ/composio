@@ -23,13 +23,13 @@ For a profile lookup during onboarding, use the proxy with the exact connected a
 
 ## Quick start
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
-session = composio.create("user_123", toolkits=["github"])
+session = composio.create(user_id="user_123", toolkits=["github"])
 
 response = session.proxy_execute(
     toolkit="github",
@@ -40,8 +40,12 @@ response = session.proxy_execute(
     ],
 )
 
-print(response["status"])
-print(response["data"])
+# A session hook can block the request; only a completed result has a response.
+if response["result_type"] == "completed":
+    print(response["status"])
+    print(response["data"])
+else:
+    print(response["message"])
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -63,6 +67,26 @@ console.log(status);
 console.log(data);
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github"]}}' | jq -r '.session_id')
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit_slug": "github",
+    "endpoint": "/repos/composiohq/composio/issues/1",
+    "method": "GET",
+    "parameters": [
+      {"name": "Accept", "value": "application/vnd.github.v3+json", "type": "header"}
+    ]
+  }'
+```
+</Tab>
 </Tabs>
 
 The `endpoint` is a path relative to the toolkit's base URL (`/repos/...` resolves against `api.github.com`). Pass an absolute URL only when you need a host that isn't the toolkit's standard API, such as a regional Salesforce or Zendesk domain.
@@ -79,13 +103,13 @@ Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the 
 
 Set `proxyExecute: true` (`proxy_execute=True` in Python) when creating a Session to expose the `COMPOSIO_PROXY_EXECUTE` meta tool:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
-session = composio.create("user_123", toolkits=["github"], proxy_execute=True)
+session = composio.create(user_id="user_123", toolkits=["github"], proxy_execute=True)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -97,6 +121,14 @@ const session = await composio.create("user_123", {
   toolkits: ["github"],
   proxyExecute: true,
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github"]}, "proxy_execute": {"enable": true}}'
 ```
 </Tab>
 </Tabs>
@@ -115,13 +147,13 @@ Proxy execute follows the session's toolkit lists: a call for a toolkit outside 
 
 Hint filters and per-toolkit tool rules do not apply, because a proxy request names an endpoint, not a tool. To remove the raw HTTP path from the session's sandbox, turn proxy execution off in the sandbox config:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-session = composio.sessions.create(
+session = composio.create(
     user_id="user_123",
     tags=["readOnlyHint"],
-    sandbox={"enable_proxy_execution": False}
+    sandbox={"enable": True, "enable_proxy_execution": False},
 )
 ```
 </Tab>
@@ -134,6 +166,18 @@ const session = await composio.create("user_123", {
   tags: ["readOnlyHint"],
   sandbox: { enable: true, enableProxyExecution: false },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tags": {"enable": ["readOnlyHint"]},
+    "workbench": {"enable": true, "enable_proxy_execution": false}
+  }'
 ```
 </Tab>
 </Tabs>
@@ -167,7 +211,7 @@ When the upstream returns a file, the binary entry carries `url`, `contentType`,
 Python when the upstream gives no expiry. The key is absent entirely when the
 response is not a file, so check for it before reading:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 if "binary_data" in response:
@@ -188,6 +232,16 @@ const response = await session.proxyExecute({
 if (response.binaryData) {
   console.log(response.binaryData.url);
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit_slug": "github", "endpoint": "/repos/composiohq/composio/issues/1", "method": "GET"}' \
+  | jq -r '.binary_data.url // empty'
 ```
 </Tab>
 </Tabs>

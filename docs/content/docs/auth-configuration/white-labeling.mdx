@@ -68,7 +68,7 @@ The Connect Link shows English by default. To show it in your user's language, a
 
 Use these values exactly as written. Any other value, including variants such as `es-MX` or `zh-cn`, shows English. The language stays the same for the whole flow, including the success or failure screen after the user returns from the OAuth provider.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from urllib.parse import urlencode
@@ -78,8 +78,10 @@ connection_request = composio.connected_accounts.link(
     auth_config_id="ac_abc",
 )
 
-# Show the Connect Link in Spanish
-connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+if connection_request.redirect_url:
+    # Show the Connect Link in Spanish
+    connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+    print(connect_url)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -95,6 +97,16 @@ if (connectionRequest.redirectUrl) {
   connectUrl.searchParams.set("locale", "es");
   console.log(connectUrl.toString());
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+# Show the Connect Link in Spanish
+curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "auth_config_id": "ac_abc"}' \
+  | jq -r '.redirect_url + "?locale=es"'
 ```
 </Tab>
 </Tabs>
@@ -153,7 +165,7 @@ Copy the auth config ID (e.g., `ac_1234abcd`).
 
 Pass your custom auth config ID when initiating a connection:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -179,6 +191,16 @@ const githubConn = await composio.connectedAccounts.initiate(
   "ac_your_github_config",
 );
 console.log("Redirect to:", githubConn.redirectUrl);
+```
+</Tab>
+<Tab value="API">
+```bash
+# White-labeled: users see your brand on the consent screen
+curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "ac_your_github_config"}, "connection": {"user_id": "user_123"}}' \
+  | jq -r '.redirect_url'
 ```
 </Tab>
 </Tabs>
@@ -209,7 +231,7 @@ By default, when you initiate a connection, Composio returns a shortened redirec
 
 To skip this and send users directly to the OAuth provider, pass `long_redirect_url: true` when initiating the connection:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -246,6 +268,20 @@ const githubConn = await composio.connectedAccounts.initiate(
 console.log("Redirect to:", githubConn.redirectUrl);
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "auth_config": {"id": "ac_your_github_config"},
+    "connection": {
+      "user_id": "user_123",
+      "state": {"authScheme": "OAUTH2", "val": {"status": "INITIALIZING", "long_redirect_url": true}}
+    }
+  }' | jq -r '.redirect_url'
+```
+</Tab>
 </Tabs>
 
 The redirect URL returned will point directly to the OAuth provider (e.g., `accounts.google.com/o/oauth2/auth?...`) instead of going through Composio first.
@@ -272,6 +308,7 @@ https://yourdomain.com/api/composio-redirect
 
 This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:
 
+{/* code-example: no-api reason="web-server callback handler that 302-redirects the browser; not a Composio API call" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python

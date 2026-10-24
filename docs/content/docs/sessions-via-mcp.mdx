@@ -22,7 +22,7 @@ If you use a scoped project API key, enable **Session management** to create and
 
 Opt into MCP by passing `mcp: true` when you create the session. The session then exposes its hosted MCP server. Read the URL and headers off `session.mcp`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -36,7 +36,6 @@ mcp_headers = session.mcp.headers
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -44,6 +43,15 @@ const session = await composio.create("user_123", { mcp: true });
 
 const mcpUrl = session.mcp.url;
 const mcpHeaders = session.mcp.headers;
+```
+</Tab>
+<Tab value="API">
+```bash
+# The MCP server accepts the same x-api-key header
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.mcp.url'
 ```
 </Tab>
 </Tabs>
@@ -88,7 +96,7 @@ Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (
 
 Combine `mcp: true` with the [direct-tools preset](/docs/configuring-sessions) to get one MCP URL that serves exactly the tools you list, with no search or meta tools in front of them. This is the closest equivalent to a classic hosted MCP server scoped to a handful of tools.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
@@ -109,7 +117,6 @@ print(session.mcp.url)
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio, SessionPreset } from "@composio/core";
 
 const composio = new Composio();
@@ -125,6 +132,24 @@ const session = await composio.create("user_123", {
 console.log(session.mcp.url);
 ```
 </Tab>
+<Tab value="API">
+```bash
+# The SDK's direct-tools preset sends the last five fields; prints a single MCP URL for just these two tools
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}},
+    "manage_connections": {"enable": false},
+    "workbench": {"enable": false},
+    "preload": {"tools": "all"},
+    "search": {"enable": false},
+    "execute": {"enable_multi_execute": false}
+  }' | jq -r '.mcp.url'
+```
+</Tab>
 </Tabs>
 
 Any MCP client pointed at that URL sees only `GMAIL_FETCH_EMAILS` and `GMAIL_CREATE_EMAIL_DRAFT`. See [Configuring Sessions](/docs/configuring-sessions) for the full set of toolkit, tool, and auth filters.
@@ -135,10 +160,17 @@ Pass `session.mcp.url` and `session.mcp.headers` to your framework's MCP client.
 
 For complete CrewAI and LangChain scripts, follow the [Python MCP research agent example](/examples/python-mcp-agents).
 
-<Tabs items={['OpenAI Agents (Python)', 'Claude Agent SDK (Python)', 'Vercel AI SDK (TypeScript)']}>
-<Tab value="OpenAI Agents (Python)">
+<Tabs items={['OpenAI Agents', 'Claude Agent SDK', 'Vercel AI SDK']}>
+<Tab value="OpenAI Agents">
+{/* code-example: no-api reason="OpenAI Agents HostedMCPTool configuration runs in the framework, outside Composio's HTTP API" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
 ```python
+from composio import Composio
 from agents import Agent, HostedMCPTool
+
+composio = Composio()
+session = composio.create(user_id="user_123", mcp=True)
 
 agent = Agent(
     name="Assistant",
@@ -156,9 +188,36 @@ agent = Agent(
 )
 ```
 </Tab>
-<Tab value="Claude Agent SDK (Python)">
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { Agent, hostedMcpTool } from '@openai/agents';
+
+const composio = new Composio();
+const session = await composio.create('user_123', { mcp: true });
+const agent = new Agent({
+  name: 'Assistant',
+  tools: [hostedMcpTool({
+    serverLabel: 'composio',
+    serverUrl: session.mcp.url,
+    headers: session.mcp.headers,
+    requireApproval: 'never',
+  })],
+});
+```
+</Tab>
+</Tabs>
+</Tab>
+<Tab value="Claude Agent SDK">
+{/* code-example: no-api reason="Claude Agent SDK HTTP transport configuration runs in the framework, not as a Composio REST operation" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
 ```python
+from composio import Composio
 from claude_agent_sdk import ClaudeAgentOptions
+
+composio = Composio()
+session = composio.create(user_id="user_123", mcp=True)
 
 options = ClaudeAgentOptions(
     mcp_servers={
@@ -171,9 +230,29 @@ options = ClaudeAgentOptions(
 )
 ```
 </Tab>
-<Tab value="Vercel AI SDK (TypeScript)">
+<Tab value="TypeScript">
 ```typescript
-// @noErrors
+import { Composio } from '@composio/core';
+import type { Options } from '@anthropic-ai/claude-agent-sdk';
+
+const composio = new Composio();
+const session = await composio.create('user_123', { mcp: true });
+const options: Options = {
+  mcpServers: {
+    composio: {
+      type: 'http',
+      url: session.mcp.url,
+      headers: session.mcp.headers,
+    },
+  },
+};
+```
+</Tab>
+</Tabs>
+</Tab>
+<Tab value="Vercel AI SDK">
+{/* code-example: single-language reason="Vercel AI SDK is a TypeScript framework; its MCP client has no Python package" */}
+```typescript
 import { Composio } from "@composio/core";
 import { createMCPClient } from "@ai-sdk/mcp";
 

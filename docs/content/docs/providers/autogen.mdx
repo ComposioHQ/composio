@@ -4,6 +4,8 @@ description: Build an agent with AutoGen and enable it to use 1000+ tools with C
 keywords: [autogen, microsoft autogen, ag2]
 ---
 
+{/* code-example: single-language-page reason="AutoGen provider is Python-only (no TypeScript package)" */}
+
 The AutoGen provider turns Composio tools into AutoGen [`FunctionTool`](https://microsoft.github.io/autogen/) objects and registers them with your agents. You connect an account, fetch the tools, register them with a caller and executor agent, and AutoGen handles the conversation and tool calls.
 
 The provider runs on the [`ag2`](https://github.com/ag2ai/ag2) distribution, the community-maintained continuation of AutoGen 0.2, so it works for AG2 projects out of the box.
@@ -38,7 +40,8 @@ from autogen import AssistantAgent, LLMConfig, UserProxyAgent
 from composio import Composio
 from composio_autogen import AutogenProvider
 
-composio = Composio(provider=AutogenProvider())
+provider = AutogenProvider()
+composio = Composio(provider=provider)
 
 # Create a session for your user
 session = composio.create(user_id="user_123")
@@ -62,7 +65,7 @@ user_proxy = UserProxyAgent(
 )
 
 # Register tools with both agents
-composio.provider.register_tools(caller=chatbot, executor=user_proxy, tools=tools)
+provider.register_tools(caller=chatbot, executor=user_proxy, tools=tools)
 
 response = user_proxy.initiate_chat(
     chatbot,
@@ -76,7 +79,7 @@ print(response.chat_history)
 
 ## Provider specifics
 
-AutoGen needs tools registered with two agents, not passed once. Call `composio.provider.register_tools(caller=..., executor=..., tools=tools)`: the `caller` decides which tool to invoke, and the `executor` runs it.
+AutoGen needs tools registered with two agents, not passed once. Call `provider.register_tools(caller=..., executor=..., tools=tools)` on the `AutogenProvider` instance you passed to `Composio`: the `caller` decides which tool to invoke, and the `executor` runs it.
 
 Each tool comes back as an AutoGen `FunctionTool` with a generated `name`. AutoGen caps function names at 64 characters, so the provider hashes and truncates long tool slugs to stay under the limit. The registered name will not always match the original Composio slug.
 

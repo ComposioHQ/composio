@@ -25,11 +25,41 @@ Subscribe to the `composio.connected_account.expired` event to detect this proac
 This event is only available with [V3 webhook payloads](/docs/setting-up-triggers/subscribing-to-events#webhook-payload-versions). New organizations use V3 by default.
 </Callout>
 
-Add `composio.connected_account.expired` to the subscription's `enabled_events`:
+Update your existing subscription to deliver both trigger messages and connection-expiry events. Replace `whs_123` with the ID from [List webhook subscriptions](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptions). Include any other events you want to keep in `enabled_events`.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+subscription = composio.webhooks.subscriptions.update(
+    "whs_123",
+    webhook_url="https://example.com/webhook",
+    enabled_events=[
+        "composio.trigger.message",
+        "composio.connected_account.expired",
+    ],
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const subscription = await composio.webhooks.subscriptions.update('whs_123', {
+  webhookUrl: 'https://example.com/webhook',
+  enabledEvents: ['composio.trigger.message', 'composio.connected_account.expired'],
+});
+```
+  </Tab>
+  <Tab value="API">
 ```bash
-curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
-  -H "X-API-KEY: <your-composio-api-key>" \
+curl -X PATCH https://backend.composio.dev/api/v3.1/webhook_subscriptions/whs_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "webhook_url": "https://example.com/webhook",
@@ -39,6 +69,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
     ]
   }'
 ```
+  </Tab>
+</Tabs>
 
 When a connection expires, Composio sends a webhook with the connected account details:
 
@@ -66,6 +98,7 @@ When a connection expires, Composio sends a webhook with the connected account d
 
 Route on `type` to handle expiry alongside trigger events:
 
+{/* code-example: no-api reason="webhook receiver framework code verifies incoming requests locally; the session and link API operations are shown in the authentication guide" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python

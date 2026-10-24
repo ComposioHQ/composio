@@ -15,7 +15,7 @@ A B2B agent serves organizations with multiple members. Before writing integrati
 
 Use globally unique, immutable IDs. Prefixing your member ID with the workspace ID makes the tenant boundary explicit even when member IDs are only unique inside one workspace.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -47,6 +47,17 @@ const session = await composio.create(composioUserId, {
   toolkits: ["slack", "salesforce"],
 });
 const tools = await session.tools();
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "org_42:user_7",
+    "toolkits": { "enable": ["slack", "salesforce"] }
+  }'
 ```
 </Tab>
 </Tabs>
