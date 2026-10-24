@@ -1,7 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Command } from 'effect/cli';
-import { orgsCmd$List } from './commands/orgs.list.cmd';
-import { orgsCmd$Switch } from './commands/orgs.switch.cmd';
+import { orgsCmd$List } from './list/orgs.list.cmd';
+import { orgsCmd$Switch } from './switch/orgs.switch.cmd';
 
 /**
  * CLI entry point for organization context commands.

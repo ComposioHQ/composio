@@ -34,20 +34,91 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ## How do I send an email with an attachment?
 
-When using the Composio SDK, pass a local file path or a public URL directly as a string to the `attachment` field. The SDK's auto-upload feature (enabled by default) handles uploading the file and converting it to the required format. You do not need to construct the `{ s3key, name, mimetype }` object manually.
+Save the attachment as `report.pdf` in the directory you run the example from. Automatic file upload is off by default, so the SDK examples enable it and allow uploads only from that directory; the API option shows the same staging requests explicitly. The `user-123` identity must already have an active Gmail connection.
 
+These examples deliberately use `latest` and opt out of the SDK version guard. Pin a tested [toolkit version](/docs/tools-direct/toolkit-versioning) in production.
+
+### Python
 ```python
+import os
+
+from composio import Composio
+
+composio = Composio(
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=[os.getcwd()],
+)
+
 result = composio.tools.execute(
     slug="GMAIL_SEND_EMAIL",
     user_id="user-123",
+    version="latest",
+    dangerously_skip_version_check=True,
     arguments={
         "recipient_email": "recipient@example.com",
         "subject": "Report attached",
         "body": "See attached.",
-        "attachment": "https://example.com/report.pdf",
+        "attachment": "./report.pdf",
     },
 )
 ```
+
+### TypeScript
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: [process.cwd()],
+});
+
+const result = await composio.tools.execute("GMAIL_SEND_EMAIL", {
+  userId: "user-123",
+  version: "latest",
+  dangerouslySkipVersionCheck: true,
+  arguments: {
+    recipient_email: "recipient@example.com",
+    subject: "Report attached",
+    body: "See attached.",
+    attachment: "./report.pdf",
+  },
+});
+```
+
+### API
+
+```bash
+MD5=$(openssl dgst -md5 -r report.pdf | cut -d ' ' -f 1)
+UPLOAD=$(curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/files/upload/request \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit_slug":"gmail","tool_slug":"GMAIL_SEND_EMAIL","filename":"report.pdf","mimetype":"application/pdf","md5":"'"$MD5"'"}')
+UPLOAD_URL=$(echo "$UPLOAD" | jq -r '.new_presigned_url')
+KEY=$(echo "$UPLOAD" | jq -r '.key')
+BACKEND=$(echo "$UPLOAD" | jq -r '.metadata.storage_backend')
+if [ "$BACKEND" = "azure_blob_storage" ]; then
+  curl --fail-with-body -X PUT "$UPLOAD_URL" --data-binary @report.pdf \
+    -H "Content-Type: application/pdf" -H "x-ms-blob-type: BlockBlob"
+else
+  curl --fail-with-body -X PUT "$UPLOAD_URL" --data-binary @report.pdf \
+    -H "Content-Type: application/pdf"
+fi
+curl --fail-with-body -X POST https://backend.composio.dev/api/v3.1/tools/execute/GMAIL_SEND_EMAIL \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id":"user-123",
+    "version":"latest",
+    "arguments":{
+      "recipient_email":"recipient@example.com",
+      "subject":"Report attached",
+      "body":"See attached.",
+      "attachment":{"name":"report.pdf","mimetype":"application/pdf","s3key":"'"$KEY"'"}
+    }
+  }'
+```
+
+<!-- end-languages -->
 
 This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
 

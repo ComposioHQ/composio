@@ -5,6 +5,7 @@ import { getKbCatalog, getKbGuideUrl, getPublishedKbGuides } from './repository'
 import type { KbCatalog, KbGuide } from './types';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
+import { markdownLanguageGroups, parseExampleDocument } from '../example-document';
 
 export interface KbGenerationSummary {
   published: number;
@@ -158,27 +159,17 @@ function escapeMdxProse(line: string): string {
   return result;
 }
 
-/**
- * Converts authoritative CommonMark into MDX-safe Markdown. The source and
- * article snapshots stay verbatim; only the generated presentation escapes MDX
- * expressions, normalizes autolinks, demotes identifier URLs to code spans,
- * and opts support snippets out of Twoslash.
- */
-export function markdownForMdx(markdown: string): string {
+/** Escape prose without changing code fence language or code content. */
+function escapeMarkdownForMdx(markdown: string): string {
   let fence: { marker: string; length: number } | null = null;
   return markdown.split('\n').map(line => {
     const match = line.match(/^(\s*)(`{3,}|~{3,})(.*)$/);
     if (match) {
-      const indentation = match[1] ?? '';
       const marker = match[2] ?? '';
       const info = match[3] ?? '';
       if (!fence) {
         fence = { marker: marker[0] ?? '`', length: marker.length };
-        const safeInfo = info.replace(
-          /^(\s*)(?:ts|tsx|typescript|js|jsx|javascript)(?=\s|$)/i,
-          '$1text',
-        );
-        return `${indentation}${marker}${safeInfo}`;
+        return line;
       }
       if (marker[0] === fence.marker && marker.length >= fence.length && info.trim() === '') {
         fence = null;
@@ -187,6 +178,55 @@ export function markdownForMdx(markdown: string): string {
     }
     return fence ? line : escapeMdxProse(line);
   }).join('\n');
+}
+
+function safeMarkdownForMdx(markdown: string): string {
+  const changes: { start: number; end: number; text: string }[] = [];
+  for (const node of parseExampleDocument(markdown, 'kb.md').children) {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (start === undefined || end === undefined) continue;
+    if (node.type === 'html' && /^<!--\s*code-example:/.test(node.value)) {
+      // Validation metadata belongs to the canonical authored Markdown, never
+      // visible prose in the generated article.
+      changes.push({ start, end, text: '' });
+    } else if (node.type === 'blockquote') {
+      const first = node.children[0];
+      const text = first?.type === 'paragraph' ? first.children[0] : undefined;
+      if (text?.type !== 'text' || !/^\[!NOTE\](?:\s|$)/.test(text.value)) continue;
+      const body = markdown.slice(start, end).split('\n')
+        .map((line) => line.replace(/^ {0,3}> ?/, '')).join('\n')
+        .replace(/^\[!NOTE\]\s*/, '');
+      changes.push({ start, end, text: `<Callout type="info">\n\n${markdownForMdx(body)}\n\n</Callout>` });
+    }
+  }
+  let result = '';
+  let cursor = 0;
+  for (const change of changes) {
+    result += escapeMarkdownForMdx(markdown.slice(cursor, change.start)) + change.text;
+    cursor = change.end;
+  }
+  return result + escapeMarkdownForMdx(markdown.slice(cursor));
+}
+
+/**
+ * Preserve authoritative CommonMark as the agent-facing source, while turning
+ * its language headings and NOTE blocks into real Fumadocs Tabs and Callouts.
+ * TypeScript fences keep their language and remain type-checkable.
+ */
+export function markdownForMdx(markdown: string): string {
+  let result = '';
+  let cursor = 0;
+  for (const group of markdownLanguageGroups(markdown)) {
+    result += safeMarkdownForMdx(markdown.slice(cursor, group.start));
+    result += `<Tabs groupId="language" items={${JSON.stringify(group.tabs.map((tab) => tab.value))}} persist>\n`;
+    for (const tab of group.tabs) {
+      result += `\n<Tab value="${tab.value}">\n${markdownForMdx(tab.source).trim()}\n</Tab>\n`;
+    }
+    result += '\n</Tabs>\n\n';
+    cursor = group.end;
+  }
+  return result + safeMarkdownForMdx(markdown.slice(cursor));
 }
 
 function rewriteSourceRepositoryLinks(markdown: string, guide: KbGuide, guides: KbGuide[]): string {

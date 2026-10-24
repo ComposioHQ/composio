@@ -155,7 +155,7 @@ export const normalizeAgentIdentity = (
     fallbackAgentKey
   );
 
-type SafeAgentSummary = {
+export type SafeAgentSummary = {
   readonly account_type: 'agent';
   readonly status: AgentStatus;
   readonly slug: string | null;
@@ -178,6 +178,22 @@ export const safeAgentSummary = (identity: AgentIdentity): SafeAgentSummary => (
   claimed_by: identity.claimed_by ?? null,
   claimed_at: identity.claimed_at ?? null,
 });
+
+/** The title both agent summary notes print. */
+export const AGENT_SUMMARY_NOTE_TITLE = 'Composio Agent';
+
+/**
+ * The note lines every agent summary shares, in print order. Callers append their
+ * command-specific last line (whoami: claimed by; signup: where the agent key lives).
+ */
+export const agentSummaryLines = (summary: SafeAgentSummary): readonly string[] => [
+  `Type: agent`,
+  `Status: ${summary.status}`,
+  `Email: ${summary.email ?? 'unknown'}`,
+  `Slug: ${summary.slug ?? 'unknown'}`,
+  `Current Org ID: ${summary.org_id ?? 'pending'}`,
+  `Project ID: ${summary.project_id ?? 'pending'}`,
+];
 
 export const agentConfigPath = Effect.gen(function* () {
   const path = yield* Path.Path;
@@ -460,7 +476,8 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
       });
     }
 
-    yield* ctx.login(userApiKey, orgId);
+    // agents.composio.dev issued this key, not whichever backend an earlier login recorded.
+    yield* ctx.login(userApiKey, orgId, undefined, { issuer: 'environment' });
     // Best-effort analytics stitch after the credential persists; must never break login.
     yield* getSessionInfoByUserApiKey({ userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),

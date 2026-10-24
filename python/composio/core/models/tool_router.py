@@ -47,6 +47,7 @@ from composio.core.models.tool_router_constants import (
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
+    ToolRouterHook,
     ToolRouterInstantConfig,
     ToolRouterProxyExecuteConfig,
     ToolRouterSession,
@@ -778,6 +779,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
         proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -809,6 +811,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
         proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -839,6 +842,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
         proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -969,6 +973,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                         the sandbox ``proxy_execute()`` helper, and the API rejects it
                         together with ``sandbox={"enable_proxy_execution": True}``.
                         Leaving it out keeps the meta tool off.
+        :param hooks: Optional hooks that run on this session's tool calls. A
+                        ``before_execute`` hook can block a call before it runs;
+                        an ``after_execute`` hook can block its result before the
+                        agent sees it. A blocked call comes back with
+                        ``result_type="blocked"``. Cannot be combined with
+                        ``experimental={"session_config_id": ...}``.
         :param instant: Experimental Instant usage policy. The project
                         must allow Instant usage. ``False`` disables it for this
                         Session; a policy can restrict eligible toolkits and tools.
@@ -1179,6 +1189,18 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             create_params["instant"] = instant
         if proxy_execute is not None:
             create_params["proxy_execute"] = _proxy_execute_payload(proxy_execute)
+        if hooks is not None:
+            if (
+                experimental is not None
+                and t.cast(t.Dict[str, t.Any], experimental).get("session_config_id")
+                is not None
+            ):
+                raise InvalidParams(
+                    "`hooks` cannot be combined with "
+                    "`experimental={'session_config_id': ...}`; create the session "
+                    "from the saved config and add hooks in a separate update() call"
+                )
+            create_params["hooks"] = hooks
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {

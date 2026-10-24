@@ -1,6 +1,7 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
@@ -18,6 +19,7 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
+import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import type {
   InstantCharge,
   ToolExecuteParams,
@@ -123,27 +125,33 @@ const resolveInput = (input: Option.Option<string>) =>
 // Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` below).
 const invalidArguments = commandInputError('execute');
 
-type ToolExecutionErrorFields = {
-  readonly reason:
-    | 'invalid_arguments'
-    | 'file_input'
-    | 'connected_account'
-    | 'missing_user_id'
-    | 'connection_check'
-    | 'execution_failed'
-    | 'parallel_failed';
+// The reasons below are the ones this file constructs each error with; TypeScript cannot infer a
+// union from scattered constructor calls, so a new reason is added here next to its first use.
+
+/**
+ * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
+ * id to run it for, or (with `--parallel`) a toolkit the user has not connected. An expected
+ * failure: `cli-main.ts` prints the message and exits 1.
+ */
+export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
+  readonly reason: 'file_input' | 'missing_user_id' | 'connection_check';
   readonly message: string;
   readonly toolSlug?: string;
-  readonly cause?: unknown;
-};
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
-export class ToolExecutionError extends Data.TaggedError(
-  'ToolExecutionError'
-)<ToolExecutionErrorFields> {}
-
-class ReportedToolExecutionError extends Data.TaggedError(
-  'ReportedToolExecutionError'
-)<ToolExecutionErrorFields> {}
+/**
+ * A failed execution whose result is already on stdout as `{ "successful": false, ... }`.
+ * `cli-main.ts` prints nothing more for it and exits 1.
+ */
+export class ReportedToolExecutionError extends Data.TaggedError('ReportedToolExecutionError')<{
+  readonly reason: 'connection_check' | 'execution_failed' | 'parallel_failed';
+  readonly message: string;
+  readonly toolSlug?: string;
+}> {}
 
 const parseArguments = (raw: string) =>
   Effect.fromResult(
@@ -920,6 +928,14 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
       );
 
+    // Root `execute` (the consumer surface, which is also what `composio run`
+    // spawns) goes through the Dashboard; `dev playground-execute` stays on the
+    // backend. The one exception is a backend URL overridden without a
+    // matching `COMPOSIO_WEB_URL`: the key is never sent to another
+    // deployment's Dashboard.
+    const executesViaDashboard =
+      params.surface === 'root' && (yield* resolveConsumerExecutionTransport) === 'dashboard';
+
     return {
       ui,
       executor,
@@ -930,6 +946,9 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       executeOutputDir,
       executeParams: {
         userId: resolvedUserId.value,
+        target: executesViaDashboard
+          ? { kind: 'dashboard', orgId: resolvedProject.orgId }
+          : { kind: 'backend' },
         arguments: args,
         client,
         projectScope: {
@@ -1065,7 +1084,7 @@ const runConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* new ToolExecutionError({
+      return yield* new ReportedToolExecutionError({
         reason: 'connection_check',
         toolSlug: params.slug,
         message,

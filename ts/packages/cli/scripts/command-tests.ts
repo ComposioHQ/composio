@@ -17,35 +17,7 @@ const TEST_SUFFIX = '.cmd.test.ts';
 
 // Command paths are relative to src/commands/; tests are relative to
 // test/src/commands/. Both use forward slashes.
-export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [
-  { command: 'agent/commands/agent.claim.cmd.ts', reason: 'no test yet' },
-  { command: 'agent/commands/agent.inbox.cmd.ts', reason: 'no test yet' },
-  { command: 'agent/commands/agent.signup.cmd.ts', reason: 'no test yet' },
-  { command: 'agent/commands/agent.whoami.cmd.ts', reason: 'no test yet' },
-  { command: 'artifacts.cmd.ts', reason: 'no test yet' },
-  { command: 'connections/commands/connections.remove.cmd.ts', reason: 'no test yet' },
-  { command: 'debug.cmd.ts', reason: 'no test yet' },
-  {
-    command: 'logs/commands/logs.triggers.cmd.ts',
-    reason: 'covered by logs.triggers.client.cmd.test.ts; split pending',
-  },
-  { command: 'orgs/commands/orgs.list.cmd.ts', reason: 'no test yet' },
-  { command: 'signup.cmd.ts', reason: 'no test yet' },
-  {
-    command: 'triggers/commands/triggers.create.cmd.ts',
-    reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
-  },
-  {
-    command: 'triggers/commands/triggers.disable.cmd.ts',
-    reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
-  },
-  {
-    command: 'triggers/commands/triggers.enable.cmd.ts',
-    reason: 'covered by triggers.mutations.cmd.test.ts; split pending',
-  },
-  { command: 'triggers/commands/triggers.listen.cmd.ts', reason: 'no test yet' },
-  { command: 'upgrade.cmd.ts', reason: 'no test yet' },
-];
+export const COMMAND_TEST_EXEMPTIONS: readonly CommandTestExemption[] = [];
 
 // A group entry is `<dir>.cmd.ts` or `root-<dir>.cmd.ts` inside `<dir>/` when
 // `<dir>/` holds other command modules; it only wires subcommands and is

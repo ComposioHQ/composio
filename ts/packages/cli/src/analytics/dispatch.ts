@@ -1,11 +1,22 @@
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import process from 'node:process';
 import type { PlatformError } from 'effect/PlatformError';
-import { Cause, Clock, DateTime, Effect, FileSystem, Option, Path, Predicate } from 'effect';
+import {
+  Cause,
+  Clock,
+  DateTime,
+  Effect,
+  FileSystem,
+  Option,
+  Path,
+  Predicate,
+  Schema,
+} from 'effect';
 import { Base64Url } from 'effect/encoding';
 import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
 import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
+import { resolveBackend, withoutTrailingSlashes } from 'src/config/backend';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
 import { sha256Hex } from 'src/utils/checksums';
@@ -155,6 +166,21 @@ const readAnalyticsState = Effect.gen(function* () {
   return yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
 });
 
+/**
+ * The stored analytics install ID, for first-party requests that should join
+ * the CLI's own events. `None` when telemetry is disabled or no ID is stored or
+ * readable. Read-only: it never creates an ID, takes no lock, and cannot fail.
+ */
+export const readInstallIdWhenTelemetryEnabled = Effect.gen(function* () {
+  if (!(yield* postHogEnabled)) {
+    return Option.none<string>();
+  }
+  const state = yield* readAnalyticsState;
+  return typeof state?.install_id === 'string' && state.install_id.length > 0
+    ? Option.some(state.install_id)
+    : Option.none<string>();
+}).pipe(Effect.catch(() => Effect.succeed(Option.none<string>())));
+
 const recoverStaleAnalyticsStateLock = (
   fs: FileSystem.FileSystem,
   lockPath: string
@@ -263,8 +289,21 @@ const getOrCreateInstallIdUnlocked = Effect.gen(function* () {
   return installId;
 });
 
+// A process whose bounded lock wait expired (a live lock held elsewhere) must
+// still adopt an install_id another process already persisted, so concurrent
+// first-run events converge on one identity instead of each racer minting its
+// own. The fallback only reads: persistence stays exclusive to the lock-holding
+// path, and an unlocked write here could clobber a concurrent state merge.
+const adoptOrMintInstallId = Effect.gen(function* () {
+  const state = yield* readAnalyticsState;
+  if (typeof state?.install_id === 'string' && state.install_id.length > 0) {
+    return state.install_id;
+  }
+  return yield* makeInstallId;
+});
+
 const getOrCreateInstallId = withAnalyticsStateLock(getOrCreateInstallIdUnlocked).pipe(
-  Effect.catch(() => makeInstallId)
+  Effect.catch(() => adoptOrMintInstallId)
 );
 
 const mergeAnalyticsStateUnlocked = (installId: string, patch: Partial<AnalyticsState>) =>
@@ -441,11 +480,26 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
   },
 });
 
-// The same URL the CLI itself talks to: `COMPOSIO_BASE_URL`, else the `COMPOSIO_ENVIRONMENT`
-// default. The persisted login URL is not consulted, matching `ComposioUserContext`.
-export const readApiBaseUrl = Effect.orDie(APP_CONFIG.BASE_URL).pipe(
-  Effect.map(url => url.replace(/\/+$/u, ''))
+// A stored login in user_data.json: its key and the backend that issued it. The keychain
+// modes keep the key out of the file, and then this reports no key to send either.
+const decodeStoredLogin = Schema.decodeUnknownOption(
+  Schema.Struct({ api_key: Schema.NonEmptyString, base_url: Schema.NonEmptyString })
 );
+
+// The same URL the CLI itself talks to, resolved like `ComposioUserContext` does: an env var
+// that selects a backend, else the stored login's backend, else production.
+export const readApiBaseUrl = Effect.gen(function* () {
+  const env = yield* Effect.orDie(APP_CONFIG.BACKEND);
+  const envApiKey = yield* Effect.orDie(APP_CONFIG.USER_API_KEY);
+  const stored =
+    envApiKey === undefined
+      ? Option.map(decodeStoredLogin(yield* readUserConfig), login => ({
+          baseURL: login.base_url,
+          webURL: Option.none<string>(),
+        }))
+      : Option.none();
+  return withoutTrailingSlashes(resolveBackend(env, stored).baseURL);
+});
 
 const getCliCodactFailuresEndpoint = Effect.map(
   readApiBaseUrl,

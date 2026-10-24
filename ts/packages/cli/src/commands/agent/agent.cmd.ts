@@ -1,9 +1,9 @@
 import { Command } from 'effect/cli';
-import { agentCmd$Claim } from './commands/agent.claim.cmd';
-import { agentCmd$Inbox } from './commands/agent.inbox.cmd';
-import { agentCmd$Login } from './commands/agent.login.cmd';
-import { agentCmd$Signup } from './commands/agent.signup.cmd';
-import { agentCmd$Whoami } from './commands/agent.whoami.cmd';
+import { agentCmd$Claim } from './claim/agent.claim.cmd';
+import { agentCmd$Inbox } from './inbox/agent.inbox.cmd';
+import { agentCmd$Login } from './login/agent.login.cmd';
+import { agentCmd$Signup } from './signup/agent.signup.cmd';
+import { agentCmd$Whoami } from './whoami/agent.whoami.cmd';
 
 export const agentCmd = Command.make('agent').pipe(
   Command.withDescription('Manage Composio agent identity, inbox, and handoff.'),

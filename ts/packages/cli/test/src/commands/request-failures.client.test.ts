@@ -52,21 +52,21 @@ const rejectedRequests: ReadonlyArray<{
   {
     command: 'dev logs tools <id>',
     args: ['dev', 'logs', 'tools', 'log_1'],
-    resources: ['logs'],
+    resources: ['_internal'],
     tag: 'commands/ToolLogsRequestError',
     message: 'Failed to fetch tool log "log_1".',
   },
   {
     command: 'dev logs triggers',
     args: ['dev', 'logs', 'triggers'],
-    resources: ['logs'],
+    resources: ['_internal'],
     tag: 'commands/TriggerLogsRequestError',
     message: 'Failed to fetch trigger logs.',
   },
   {
     command: 'dev logs triggers <id>',
     args: ['dev', 'logs', 'triggers', 'log_1'],
-    resources: ['logs'],
+    resources: ['_internal'],
     tag: 'commands/TriggerLogsRequestError',
     message: 'Failed to fetch trigger log "log_1".',
   },
@@ -79,7 +79,8 @@ const rejectedRequests: ReadonlyArray<{
   },
   {
     command: 'connections remove',
-    args: ['connections', 'remove', 'gmail'],
+    // Without a terminal, removing needs --yes before any request is sent.
+    args: ['connections', 'remove', 'gmail', '--yes'],
     resources: ['connectedAccounts'],
     tag: 'commands/ConnectionsRemovalRequestError',
     message: 'Failed to list connections.',

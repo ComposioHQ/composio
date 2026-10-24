@@ -16,12 +16,32 @@ import {
   McpServerGetResponse,
   dereferenceJsonSchema,
   normalizeToolArguments,
-  jsonSchemaToZodSchema,
+  JsonSchemaToZodError,
 } from '@composio/core';
+import { jsonSchemaToZod, type JsonSchema } from '@composio/json-schema-to-zod/v4';
+import type { ZodType } from 'zod/v4';
 import {
   tool as sdkTool,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
+
+/**
+ * Builds the Zod v4 schema the SDK registers. The SDK renders it as the tool's
+ * JSON Schema with `z.toJSONSchema`, and the v4 builder forwards `format`,
+ * `contentEncoding`, `contentMediaType`, and `type: "integer"` into the
+ * schema's metadata, so those keywords reach the model. It accepts and rejects
+ * the same values as the v3 builder behind `jsonSchemaToZodSchema`.
+ */
+const toInputSchema = (schema: Record<string, unknown>): ZodType => {
+  try {
+    return jsonSchemaToZod(schema as JsonSchema);
+  } catch (error) {
+    const detail = error instanceof Error ? `: ${error.message}` : '';
+    throw new JsonSchemaToZodError(`Failed to convert JSON Schema to Zod Schema${detail}`, {
+      cause: error,
+    });
+  }
+};
 
 /**
  * Type for a single Claude Agent SDK MCP tool definition
@@ -111,7 +131,7 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     //
     // A tool with no input parameters stays closed: the fallback spells out
     // `additionalProperties: false`, because a bare `properties: {}` is now an open object.
-    const inputZodSchema = jsonSchemaToZodSchema(
+    const inputZodSchema = toInputSchema(
       dereferenceJsonSchema(
         composioTool.inputParameters ?? {
           type: 'object',
@@ -128,7 +148,7 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
     const defineTool = sdkTool as unknown as (
       name: string,
       description: string,
-      inputSchema: ReturnType<typeof jsonSchemaToZodSchema>,
+      inputSchema: ZodType,
       handler: (
         args: Record<string, unknown>
       ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>

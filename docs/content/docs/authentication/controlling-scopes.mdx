@@ -28,7 +28,7 @@ Toolkit auth details also expose `required_scopes` (Python) or `requiredScopes` 
 
 Pass a `scopes` field in `credentials` to override the defaults while still using Composio's managed OAuth app. Give scopes as a comma-separated string.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -58,16 +58,33 @@ const authConfig = await composio.authConfigs.create('hubspot', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit": {"slug": "hubspot"},
+    "auth_config": {
+      "type": "use_composio_managed_auth",
+      "name": "HubSpot",
+      "credentials": {"scopes": "sales-email-read,tickets"}
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 ## Set scopes with your own OAuth app
 
 When you bring your own OAuth credentials, put `scopes` alongside the client ID and secret. Make sure your OAuth app has those scopes approved in the provider's portal.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 import os
+from typing import cast
+from composio.client.types import auth_config_create_params as auth_types
 
 auth_config = composio.auth_configs.create(
     toolkit="github",
@@ -75,11 +92,12 @@ auth_config = composio.auth_configs.create(
         "type": "use_custom_auth",
         "auth_scheme": "OAUTH2",
         "name": "GitHub",
-        "credentials": {
+        # The generated credentials type omits OAuth client fields accepted by the API.
+        "credentials": cast(auth_types.AuthConfigUnionMember1Credentials, {
             "client_id": os.environ["GITHUB_CLIENT_ID"],
             "client_secret": os.environ["GITHUB_CLIENT_SECRET"],
             "scopes": "repo,read:org",
-        },
+        }),
     },
 )
 ```
@@ -102,18 +120,44 @@ const authConfig = await composio.authConfigs.create('github', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit": {"slug": "github"},
+    "auth_config": {
+      "type": "use_custom_auth",
+      "authScheme": "OAUTH2",
+      "name": "GitHub",
+      "credentials": {
+        "client_id": "'"$GITHUB_CLIENT_ID"'",
+        "client_secret": "'"$GITHUB_CLIENT_SECRET"'",
+        "scopes": "repo,read:org"
+      }
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 ## Update scopes on an existing config
 
 Change the scopes on an auth config you already created without recreating it.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+The high-level `auth_configs.update()` helper does not forward `scopes` or `user_scopes`. Use the public generated client for these fields:
+
 ```python
-composio.auth_configs.update(
+from composio import Composio
+
+composio = Composio()
+composio.client.auth_configs.update(
     "ac_1234",
-    {"type": "default", "scopes": "repo,read:org,read:user"},
+    type="default",
+    scopes="repo,read:org,read:user",
 )
 ```
 </Tab>
@@ -128,6 +172,14 @@ await composio.authConfigs.update('ac_1234', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/auth_configs/ac_1234 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "default", "scopes": "repo,read:org,read:user"}'
+```
+</Tab>
 </Tabs>
 
 <Callout type="warn">
@@ -138,7 +190,7 @@ Changing scopes affects new connections only. Users with an existing [connected 
 
 Setting scopes on an auth config does nothing until a session uses it. Pass the auth config ID to `authConfigs` (keyed by toolkit) when you create the session, and the session requests your scopes when the user connects that toolkit.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -156,6 +208,14 @@ const authConfig = { id: 'ac_your_github_config' };
 const session = await composio.create('user_123', {
   authConfigs: { github: authConfig.id },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "auth_configs": {"github": "ac_your_github_config"}}'
 ```
 </Tab>
 </Tabs>

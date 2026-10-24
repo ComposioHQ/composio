@@ -31,7 +31,6 @@ export const parityPages = [
     facts: [
       ['typescript-provider-install', 'npm install @composio/core @composio/anthropic @anthropic-ai/sdk'],
       ['python-provider-install', 'pip install composio composio_anthropic anthropic'],
-      ['provider-loop-example', 'results = composio.provider.handle_tool_calls(response=response, session=session)'],
       ['provider-version-condition', 'requires `composio` newer than 0.19.0 (Python) or `@composio/core` ≥ 0.17.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript)'],
     ],
   },

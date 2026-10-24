@@ -2,19 +2,13 @@ import {
   ToolkitRetrieveResponse as RawToolkitRetrieveResponse,
   ToolkitListResponse as RawToolkitListResponse,
   ToolkitRetrieveCategoriesResponse as RawToolkitRetrieveCategoriesResponse,
-  type Toolkits as ClientToolkits,
+  type ToolkitRetrieveChangelogResponse as RawToolkitRetrieveChangelogResponse,
+  type ToolkitRetrieveMultiResponse as RawToolkitRetrieveMultiResponse,
+  type ToolkitRecommendScopesParams as RawToolkitRecommendScopesParams,
+  type ToolkitRecommendScopesResponse as RawToolkitRecommendScopesResponse,
+  type ToolkitRetrieveScopesGrantContextParams as RawToolkitRetrieveScopesGrantContextParams,
+  type ToolkitRetrieveScopesGrantContextResponse as RawToolkitRetrieveScopesGrantContextResponse,
 } from '@composio/client/resources/toolkits';
-
-// The `/toolkits/multi` and `/toolkits/changelog` response types are only
-// reachable through the resource class namespace on the published subpath.
-type RawToolkitRetrieveChangelogResponse = ClientToolkits.ToolkitRetrieveChangelogResponse;
-type RawToolkitRetrieveMultiResponse = ClientToolkits.ToolkitRetrieveMultiResponse;
-type RawToolkitRecommendScopesParams = ClientToolkits.ToolkitRecommendScopesParams;
-type RawToolkitRecommendScopesResponse = ClientToolkits.ToolkitRecommendScopesResponse;
-type RawToolkitRetrieveScopesGrantContextParams =
-  ClientToolkits.ToolkitRetrieveScopesGrantContextParams;
-type RawToolkitRetrieveScopesGrantContextResponse =
-  ClientToolkits.ToolkitRetrieveScopesGrantContextResponse;
 import {
   ToolKitListResponse,
   ToolKitListResponseSchema,
@@ -158,7 +152,7 @@ export const transformToolkitRetrieveResponse = (
           name: category.name,
         })),
         availableVersions: response.meta.available_versions,
-        // appUrl: response.meta.app_url, @TODO Update the client type to include this
+        ...(response.meta.app_url != null && { appUrl: response.meta.app_url }),
       },
       isLocalToolkit: response.is_local_toolkit,
       composioManagedAuthSchemes: response.composio_managed_auth_schemes,

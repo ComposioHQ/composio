@@ -1,5 +1,6 @@
-import { Config, Schema } from 'effect';
+import { Config, Option, Schema } from 'effect';
 import * as constants from 'src/constants';
+import type { EnvBackend } from './backend';
 import { flag, optionalLogLevel, optionalString } from './env';
 
 const ENVIRONMENT = optionalString('COMPOSIO_ENVIRONMENT');
@@ -13,12 +14,39 @@ const url = (name: string, prodDefault: string, stagingDefault: string) =>
     )
   );
 
+const BASE_URL = url('COMPOSIO_BASE_URL', constants.DEFAULT_BASE_URL, constants.STAGING_BASE_URL);
+const WEB_URL = url('COMPOSIO_WEB_URL', constants.DEFAULT_WEB_URL, constants.STAGING_WEB_URL);
+
+const BACKEND: Config.Config<EnvBackend> = Config.all({
+  baseURL: BASE_URL,
+  webURL: WEB_URL,
+  explicitBaseURL: optionalString('COMPOSIO_BASE_URL'),
+  explicitWebURL: optionalString('COMPOSIO_WEB_URL'),
+  environment: ENVIRONMENT,
+}).pipe(
+  Config.map(({ baseURL, webURL, explicitBaseURL, explicitWebURL, environment }) => ({
+    baseURL,
+    webURL,
+    selectedBy:
+      explicitBaseURL !== undefined
+        ? Option.some('COMPOSIO_BASE_URL' as const)
+        : environment !== undefined
+          ? Option.some('COMPOSIO_ENVIRONMENT' as const)
+          : Option.none(),
+    webURLSet: explicitWebURL !== undefined,
+  }))
+);
+
 /**
  * The `COMPOSIO_*` variables users set to configure the CLI, documented in the README.
  *
- * URL precedence (highest → lowest):
- *   COMPOSIO_BASE_URL  →  COMPOSIO_ENVIRONMENT-derived  →  DEFAULT_BASE_URL
- *   COMPOSIO_WEB_URL   →  COMPOSIO_ENVIRONMENT-derived  →  DEFAULT_WEB_URL
+ * URL precedence (highest → lowest), applied by `resolveBackend` in `./backend.ts`:
+ *   COMPOSIO_BASE_URL  →  COMPOSIO_ENVIRONMENT-derived  →  stored login's `base_url`  →  DEFAULT_BASE_URL
+ *   COMPOSIO_WEB_URL   →  COMPOSIO_ENVIRONMENT-derived  →  stored login's `web_url`   →  DEFAULT_WEB_URL
+ *
+ * The stored login's URLs are the backend `composio login` recorded. They apply only while
+ * neither COMPOSIO_BASE_URL nor COMPOSIO_ENVIRONMENT is set, and only to the stored key: a key
+ * from COMPOSIO_USER_API_KEY uses the env-selected URLs.
  */
 export const APP_CONFIG = {
   // The API key for the Composio API
@@ -27,11 +55,14 @@ export const APP_CONFIG = {
   // The deployment environment ("production" | "staging"). Controls URL defaults.
   ENVIRONMENT,
 
-  // The base URL for the Composio API
-  BASE_URL: url('COMPOSIO_BASE_URL', constants.DEFAULT_BASE_URL, constants.STAGING_BASE_URL),
+  // The base URL for the Composio API the environment selects, before a stored login applies
+  BASE_URL,
 
-  // The base URL for the Composio web app
-  WEB_URL: url('COMPOSIO_WEB_URL', constants.DEFAULT_WEB_URL, constants.STAGING_WEB_URL),
+  // The base URL for the Composio web app the environment selects, before a stored login applies
+  WEB_URL,
+
+  // Both URLs above, with which variables set them; `resolveBackend` takes it
+  BACKEND,
 
   // The cache directory for the Composio CLI
   CACHE_DIR: optionalString('COMPOSIO_CACHE_DIR'),

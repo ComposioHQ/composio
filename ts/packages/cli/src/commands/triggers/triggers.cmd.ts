@@ -3,10 +3,10 @@ import { Command } from 'effect/cli';
 import { rejectsSharedFlags } from 'src/commands/surface';
 import { triggersCmd$Info } from './info/triggers.info.cmd';
 import { triggersCmd$List } from './list/triggers.list.cmd';
-import { triggersCmd$Status } from './commands/triggers.status.cmd';
-import { triggersCmd$Create } from './commands/triggers.create.cmd';
-import { triggersCmd$Enable } from './commands/triggers.enable.cmd';
-import { triggersCmd$Disable } from './commands/triggers.disable.cmd';
+import { triggersCmd$Status } from './status/triggers.status.cmd';
+import { triggersCmd$Create } from './create/triggers.create.cmd';
+import { triggersCmd$Enable } from './enable/triggers.enable.cmd';
+import { triggersCmd$Disable } from './disable/triggers.disable.cmd';
 import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
 
 /**
@@ -24,7 +24,7 @@ export const triggersCmd = Command.make('triggers').pipe(
     triggersCmd$List.pipe(rejectsSharedFlags('dev triggers list')),
     triggersCmd$Info.pipe(rejectsSharedFlags('dev triggers info')),
     triggersCmd$Status.pipe(rejectsSharedFlags('dev triggers status')),
-    triggersCmd$Create.pipe(rejectsSharedFlags('dev triggers create')),
+    triggersCmd$Create.pipe(rejectsSharedFlags('dev triggers create', ['--project-name'])),
     triggersCmd$Enable.pipe(rejectsSharedFlags('dev triggers enable')),
     triggersCmd$Disable.pipe(rejectsSharedFlags('dev triggers disable')),
   ]),

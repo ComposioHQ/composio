@@ -37,7 +37,7 @@ import {
   SessionCreateParams,
   SessionCreateResponse,
   SessionRetrieveResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type {
   CustomTool,
   CustomToolkit,
@@ -52,6 +52,7 @@ import {
   transformToolRouterMultiAccountParams,
   transformToolRouterInstantParams,
   transformToolRouterProxyExecuteParams,
+  transformToolRouterHooksParams,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
@@ -292,6 +293,9 @@ export class ToolRouter<
       multi_account: multiAccountPayload,
       ...(routerConfig.proxyExecute !== undefined && {
         proxy_execute: transformToolRouterProxyExecuteParams(routerConfig.proxyExecute),
+      }),
+      ...(routerConfig.hooks !== undefined && {
+        hooks: transformToolRouterHooksParams(routerConfig.hooks),
       }),
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {

@@ -102,6 +102,19 @@ def chk_examples(session: Session):
         )
 
 
+# Providers the `tst` environment installs that the free-form argument matrix
+# in tests/test_provider_argument_serialization.py covers.
+TST_MATRIX_PROVIDERS = (
+    "crewai",
+    "langchain",
+    "langgraph",
+    "gemini",
+    "openai_agents",
+    "google_adk",
+    "llamaindex",
+)
+
+
 @nox.session
 def tst(session: Session):
     """Run the Python unit test suite."""
@@ -114,8 +127,12 @@ def tst(session: Session):
     session.install("./providers/openai_agents")
     session.install("./providers/claude_agent_sdk")
     session.install("./providers/anthropic")
+    session.install("./providers/google_adk")
+    session.install("./providers/llamaindex")
+    # The free-form argument matrix fails, rather than skips, for these.
+    env = {"COMPOSIO_EXPECTED_PROVIDERS": " ".join(TST_MATRIX_PROVIDERS)}
     if session.posargs:
-        session.run("pytest", *session.posargs, "-v", "--tb=short")
+        session.run("pytest", *session.posargs, "-v", "--tb=short", env=env)
         return
     # Separate runs: the provider packages' `test_provider.py` files share a
     # basename with tests/, which pytest cannot collect in a single session.
@@ -125,7 +142,7 @@ def tst(session: Session):
         "providers/claude_agent_sdk/tests",
         "providers/anthropic/tests",
     ):
-        session.run("pytest", test_path, "-v", "--tb=short")
+        session.run("pytest", test_path, "-v", "--tb=short", env=env)
 
 
 @nox.session
@@ -137,8 +154,10 @@ def tst_autogen(session: Session):
         "pytest",
         "tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_honors_skip_defaults",
         "tests/test_provider.py::TestAgenticSkipDefaultsParity::test_autogen_signature_preserves_default",
+        "tests/test_provider_argument_serialization.py",
         "-v",
         "--tb=short",
+        env={"COMPOSIO_EXPECTED_PROVIDERS": "autogen"},
     )
 
 

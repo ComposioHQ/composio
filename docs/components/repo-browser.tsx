@@ -1,24 +1,6 @@
 import { preloadFile } from '@pierre/diffs/ssr';
 import { RepoBrowserClient, type RepoFile } from './repo-browser-client';
-import slackBot from '@/lib/slack-bot-source.json';
-import localWorkbench from '@/lib/local-workbench-source.json';
-import standup from '@/lib/standup-bot-source.json';
-import imessage from '@/lib/imessage-source.json';
-
-interface SourceFile {
-  path: string;
-  contents: string;
-  composio: boolean;
-}
-
-// JSON imports must be static, so map each example's committed snapshot here and
-// pick one with the `source` prop. The default keeps the Slack bot page working.
-const SOURCES = {
-  'slack-bot': slackBot,
-  'local-workbench': localWorkbench,
-  standup,
-  imessage,
-} as const;
+import { EXAMPLE_SOURCES } from '@/lib/example-sources';
 
 /**
  * RepoBrowser — a real slice of an example project as a browsable tree + code
@@ -34,11 +16,11 @@ export async function RepoBrowser({
   caption = 'a slice of the real project, the Composio files do the work',
   heightClass,
 }: {
-  source?: keyof typeof SOURCES;
+  source?: keyof typeof EXAMPLE_SOURCES;
   caption?: string | null;
   heightClass?: string;
 }) {
-  const data = SOURCES[source] as SourceFile[];
+  const data = EXAMPLE_SOURCES[source];
 
   const files: RepoFile[] = [];
   for (const f of data) {

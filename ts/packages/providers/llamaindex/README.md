@@ -40,7 +40,7 @@ const result = await myAgent.run(
 console.log(result.data.result);
 ```
 
-The provider converts each tool's JSON Schema parameters to Zod and wires execution through Composio, so LlamaIndex can call the tools directly.
+The provider gives LlamaIndex each tool's JSON Schema as the parameters the model sees, with internal `$ref`s inlined, and validates tool-call arguments with a Zod schema built from the same JSON Schema. Execution is wired through Composio, so LlamaIndex can call the tools directly.
 
 ## Links
 

@@ -203,6 +203,9 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
                   toolInputRequiredError('COMPOSIO_GET_TOOL_SCHEMAS', schemaResponse)
                 );
               }
+              if (schemaResponse.result_type === 'blocked') {
+                return yield* schemasFailed(new Error(schemaResponse.message));
+              }
               if (schemaResponse.error) {
                 return yield* schemasFailed(new Error(schemaResponse.error));
               }

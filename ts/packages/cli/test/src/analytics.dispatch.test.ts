@@ -165,6 +165,26 @@ describe('CLI analytics dispatch', () => {
     }
   );
 
+  it.effect('sends failures to the backend the stored login was issued by', () => {
+    const home = tempy.temporaryDirectory();
+    const cacheDir = tempy.temporaryDirectory();
+    vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+    // Blank reads as unset, whatever the host environment holds.
+    vi.stubEnv('COMPOSIO_BASE_URL', '');
+    vi.stubEnv('COMPOSIO_ENVIRONMENT', '');
+    vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+    writeFileSync(
+      path.join(cacheDir, USER_CONFIG_FILE_NAME),
+      JSON.stringify({ api_key: 'uak_staging', base_url: 'https://staging-backend.composio.dev/' })
+    );
+
+    return Effect.gen(function* () {
+      expect(yield* readApiBaseUrl).toBe('https://staging-backend.composio.dev');
+      vi.stubEnv('COMPOSIO_ENVIRONMENT', 'production');
+      expect(yield* readApiBaseUrl).toBe('https://backend.composio.dev');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
   it.effect('ignores malformed worker payloads', () => {
     const home = tempy.temporaryDirectory();
 
@@ -604,6 +624,41 @@ describe('CLI analytics dispatch', () => {
 
       expect(completedBeforeDeadline).toBe(true);
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('adopts the persisted install_id when the bounded lock wait expires', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = path.join(home, 'composio.ts');
+    const composioDir = path.join(home, '.composio');
+    const lockPath = path.join(composioDir, 'analytics.json.lock');
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+    mkdirSync(composioDir, { recursive: true });
+    writeFileSync(scriptPath, '');
+    // A live lock that is never released drives this process through the full
+    // bounded wait; the identity another run already persisted must still win
+    // over minting a fresh install_id, and the fallback must not rewrite state
+    // without holding the lock.
+    writeFileSync(lockPath, 'other-process');
+    writeFileSync(
+      path.join(composioDir, 'analytics.json'),
+      JSON.stringify({ install_id: 'install_persisted' })
+    );
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED });
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ installId: string }>(args[2]!);
+      expect(payload.installId).toBe('install_persisted');
+
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as { install_id: string };
+      expect(persisted.install_id).toBe('install_persisted');
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 

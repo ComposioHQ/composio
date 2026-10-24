@@ -22,12 +22,19 @@ bun run test:integration
 bun run generate:toolkits
 bun run generate:meta-tools
 bun run generate:api-index
+bun run check:code-examples
+bun run check:api-snippets
+bun run check:python-snippets
+bun run test:python-snippets
+bun run check:typescript-snippets
+bun run inventory:code-examples
 ```
 
 ## Rules
 
 - Branch docs work from `next` and target PRs at `next`.
-- TypeScript code blocks are checked by the docs build. Read the Twoslash context before changing typed examples.
+- Production Twoslash and the standalone TypeScript snippet gate cover different maintained surfaces. Read the Twoslash context before changing typed examples.
+- Maintained operations offer Python, TypeScript, and API options or a specific justified exception. Read `docs/agent-guidance/context/code-examples.md` for scope, generated/historical limits, and narrow markers. Static checks do not prove equivalence or exemption reasons.
 - Use relative site links, not absolute docs URLs, for internal links.
 - Generated OpenAPI, toolkit, and meta-tool data should be changed through their scripts.
 - Prefer cURL for API interactions because docs are read by humans and agents.
