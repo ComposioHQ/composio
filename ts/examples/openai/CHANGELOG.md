@@ -1,5 +1,16 @@
 # openai-example
 
+## 0.1.21
+
+### Patch Changes
+
+- Updated dependencies [e87ed85]
+- Updated dependencies [3f3df9a]
+- Updated dependencies [7434e02]
+  - @composio/core@0.28.0
+  - @composio/openai@0.13.0
+  - @composio/openai-agents@0.11.2
+
 ## 0.1.20
 
 ### Patch Changes
