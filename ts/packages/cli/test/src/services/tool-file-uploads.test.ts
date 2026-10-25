@@ -488,3 +488,118 @@ describe('uploadToolInputFiles — URL download size cap', () => {
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
   });
 });
+
+describe('multiple PowerPoint images', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect('keeps each nested image reference paired with its uploaded bytes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-multiple-images-'));
+    const first = path.join(root, 'first.png');
+    const second = path.join(root, 'second.png');
+    writeFileSync(first, 'first image bytes');
+    writeFileSync(second, 'second image bytes');
+    const { client, requests } = stubComposioClient(request => {
+      const { filename } = request.body as { filename: string };
+      return Response.json({
+        new_presigned_url: `https://1.1.1.1/${filename}`,
+        key: `uploads/${filename}`,
+      });
+    });
+    const uploaded = new Map<string, string>();
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      uploaded.set(url, Buffer.from(init.body as Uint8Array).toString());
+      return new Response(null, { status: 200 });
+    });
+    const schema = {
+      type: 'object',
+      properties: {
+        slides: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              blocks: {
+                type: 'array',
+                items: {
+                  oneOf: [
+                    { properties: { type: { const: 'text' }, text: { type: 'string' } } },
+                    { properties: { type: { const: 'image' }, image: { file_uploadable: true } } },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const arguments_ = {
+      filename: 'two-images.pptx',
+      slides: [
+        {
+          blocks: [
+            { type: 'text', text: 'Keep this' },
+            { type: 'image', image: first },
+          ],
+        },
+        { blocks: [{ type: 'image', image: second }] },
+      ],
+    };
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+      const result = yield* uploadToolInputFiles({
+        fs: fsApi,
+        path: pathApi,
+        toolSlug: 'MICROSOFT_POWERPOINT_CREATE_PRESENTATION',
+        arguments_,
+        inputSchema: schema,
+        client,
+      });
+      expect(requests).toHaveLength(2);
+      expect(uploaded).toEqual(
+        new Map([
+          ['https://1.1.1.1/first.png', 'first image bytes'],
+          ['https://1.1.1.1/second.png', 'second image bytes'],
+        ])
+      );
+      expect(result).toEqual({
+        filename: 'two-images.pptx',
+        slides: [
+          {
+            blocks: [
+              { type: 'text', text: 'Keep this' },
+              {
+                type: 'image',
+                image: {
+                  name: 'first.png',
+                  mimetype: 'image/png',
+                  s3key: 'uploads/first.png',
+                },
+              },
+            ],
+          },
+          {
+            blocks: [
+              {
+                type: 'image',
+                image: {
+                  name: 'second.png',
+                  mimetype: 'image/png',
+                  s3key: 'uploads/second.png',
+                },
+              },
+            ],
+          },
+        ],
+      });
+      expect(arguments_.slides[0]?.blocks[1]?.image).toBe(first);
+      expect(arguments_.slides[1]?.blocks[0]?.image).toBe(second);
+    }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  });
+});
