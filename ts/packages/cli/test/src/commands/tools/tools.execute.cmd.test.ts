@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Exit, Option } from 'effect';
+import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Schema } from 'effect';
 import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -120,6 +120,120 @@ const parseLastJson = (lines: ReadonlyArray<string>) =>
   };
 
 describe('CLI: composio execute', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Nested Image Edit',
+            slug: 'NESTED_IMAGE_EDIT_TOOL',
+            description: 'Edit fixture',
+            tags: ['test'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                item_id: { type: 'string' },
+                operations: {
+                  type: 'array',
+                  items: {
+                    oneOf: [
+                      {
+                        type: 'object',
+                        properties: { type: { const: 'set_text' }, text: { type: 'string' } },
+                        required: ['type', 'text'],
+                      },
+                      {
+                        type: 'object',
+                        properties: {
+                          type: { const: 'add_image' },
+                          image: { type: 'object', file_uploadable: true },
+                        },
+                        required: ['type', 'image'],
+                      },
+                      {
+                        type: 'object',
+                        properties: {
+                          type: { const: 'replace_image' },
+                          image: { type: 'object', file_uploadable: true },
+                        },
+                        required: ['type', 'image'],
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )('nested --file array injection', it => {
+    it.effect('preserves sibling operations and injects into the selected array element', () =>
+      Effect.gen(function* () {
+        const operations = [{ type: 'set_text', text: 'Preserve me' }, { type: 'add_image' }];
+        yield* cli([
+          'execute',
+          'NESTED_IMAGE_EDIT_TOOL',
+          '--skip-connection-check',
+          '--dry-run',
+          '--file',
+          '/tmp/dogfood.png',
+          '-d',
+          JSON.stringify({ item_id: 'deck', operations }),
+        ]);
+        const output = Schema.decodeUnknownSync(Schema.Struct({ arguments: Schema.Unknown }))(
+          parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }))
+        );
+        expect(output.arguments).toEqual({
+          item_id: 'deck',
+          operations: [
+            { type: 'set_text', text: 'Preserve me' },
+            { type: 'add_image', image: '/tmp/dogfood.png' },
+          ],
+        });
+        expect(operations).toEqual([
+          { type: 'set_text', text: 'Preserve me' },
+          { type: 'add_image' },
+        ]);
+      })
+    );
+
+    it.effect.each([
+      {
+        operations: [{ type: 'add_image' }, { type: 'replace_image' }],
+        message: 'multiple file_uploadable inputs',
+      },
+      {
+        operations: [{ type: 'add_image', image: '/tmp/existing.png' }],
+        message: 'already set in -d',
+      },
+      { operations: [], message: 'no matching file_uploadable input' },
+      {
+        operations: [{ type: 'set_text', text: 'Keep' }],
+        message: 'no matching file_uploadable input',
+      },
+    ])('rejects without overwriting: $message ($operations)', scenario =>
+      Effect.gen(function* () {
+        const failure = yield* cli([
+          'execute',
+          'NESTED_IMAGE_EDIT_TOOL',
+          '--skip-connection-check',
+          '--dry-run',
+          '--file',
+          '/tmp/dogfood.png',
+          '-d',
+          JSON.stringify({ operations: scenario.operations }),
+        ]).pipe(Effect.flip);
+        expect(String(failure)).toContain(scenario.message);
+      })
+    );
+  });
+
   it.effect('returns a CLI validation error for malformed parallel arguments', () =>
     Effect.gen(function* () {
       const failure = yield* parseParallelExecuteArgs(['--parallel', '--data', '{}'], {
@@ -1934,7 +2048,7 @@ describe('CLI: composio execute', () => {
             recipient_email: 'a@b.com',
             attachment: {
               name: path.basename(tempFile),
-              mimetype: 'application/octet-stream',
+              mimetype: 'text/plain',
               s3key: `uploads/${path.basename(tempFile)}`,
             },
           });
@@ -1943,7 +2057,7 @@ describe('CLI: composio execute', () => {
             expect.objectContaining({
               method: 'PUT',
               headers: expect.objectContaining({
-                'Content-Type': 'application/octet-stream',
+                'Content-Type': 'text/plain',
               }),
             })
           );
@@ -2024,7 +2138,7 @@ describe('CLI: composio execute', () => {
             channels: 'C123',
             file: {
               name: path.basename(tempFile),
-              mimetype: 'application/octet-stream',
+              mimetype: 'image/png',
               s3key: `uploads/${path.basename(tempFile)}`,
             },
           });
@@ -2110,7 +2224,7 @@ describe('CLI: composio execute', () => {
             payload: {
               file: {
                 name: path.basename(tempFile),
-                mimetype: 'application/octet-stream',
+                mimetype: 'image/png',
                 s3key: `uploads/${path.basename(tempFile)}`,
               },
             },

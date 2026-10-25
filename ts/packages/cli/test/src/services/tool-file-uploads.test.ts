@@ -15,6 +15,7 @@ import {
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
 import {
+  findFileUploadablePaths,
   schemaHasFileUploadable,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -29,6 +30,120 @@ const inputSchema = {
     attachment: { file_uploadable: true, type: 'string' },
   },
 };
+
+describe('file argument paths', () => {
+  const schema = {
+    type: 'object',
+    properties: {
+      operations: {
+        type: 'array',
+        items: {
+          oneOf: [
+            {
+              properties: { type: { const: 'add_image' }, image: { file_uploadable: true } },
+              required: ['type'],
+            },
+            {
+              properties: { type: { const: 'replace_image' }, image: { file_uploadable: true } },
+              required: ['type'],
+            },
+            {
+              properties: { type: { const: 'set_text' }, text: { type: 'string' } },
+              required: ['type'],
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  it('binds the selected union branch to the existing array index', () => {
+    expect(
+      findFileUploadablePaths(schema, [], {
+        operations: [{ type: 'set_text', text: 'keep' }, { type: 'add_image' }],
+      })
+    ).toEqual([['operations', 1, 'image']]);
+  });
+
+  it('does not invent array entries or choose between multiple image operations', () => {
+    expect(findFileUploadablePaths(schema, [], { operations: [] })).toEqual([]);
+    expect(findFileUploadablePaths(schema, [], { operations: [{ type: 'set_text' }] })).toEqual([]);
+    expect(
+      findFileUploadablePaths(schema, [], {
+        operations: [{ type: 'add_image' }, { type: 'replace_image' }],
+      })
+    ).toEqual([
+      ['operations', 0, 'image'],
+      ['operations', 1, 'image'],
+    ]);
+  });
+
+  it('preserves tuple indices, including preceding boolean schemas', () => {
+    expect(
+      findFileUploadablePaths(
+        { type: 'array', items: [true, { file_uploadable: true }] },
+        [],
+        ['keep', undefined]
+      )
+    ).toEqual([[1]]);
+  });
+});
+
+describe('local file MIME metadata', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect.each([
+    { filename: 'picture.png', expectedMime: 'image/png' },
+    { filename: 'picture.JPG', expectedMime: 'image/jpeg' },
+    { filename: 'document.pdf', expectedMime: 'application/pdf' },
+    {
+      filename: 'slides.pptx',
+      expectedMime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    },
+    {
+      filename: 'document.docx',
+      expectedMime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    },
+    { filename: 'unknown.extension-dogfood', expectedMime: 'application/octet-stream' },
+    { filename: 'no-extension', expectedMime: 'application/octet-stream' },
+  ])(
+    'uses the same MIME for the request, upload, and hydrated $filename',
+    ({ filename, expectedMime }) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-mime-'));
+      const file = path.join(root, filename);
+      writeFileSync(file, 'fixture bytes');
+      const { client, requests } = makeClient();
+      const uploadFetch = vi.fn(async () => new Response(null, { status: 200 }));
+      vi.stubGlobal('fetch', uploadFetch);
+      return Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const result = yield* uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: file },
+          inputSchema,
+          client,
+        });
+        expect(requests[0]?.body).toMatchObject({ mimetype: expectedMime });
+        expect(uploadFetch).toHaveBeenCalledWith(
+          'https://1.1.1.1/put',
+          expect.objectContaining({
+            headers: expect.objectContaining({ 'Content-Type': expectedMime }),
+          })
+        );
+        expect(result.attachment).toMatchObject({ name: filename, mimetype: expectedMime });
+      }).pipe(
+        Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+      );
+    }
+  );
+});
 
 // The client over a transport that answers the presigned-URL request with
 // `presigned`, and records each request it receives.
@@ -154,7 +269,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
           path: '/api/v3.1/files/upload/request',
           body: {
             filename: 'document.pdf',
-            mimetype: 'application/octet-stream',
+            mimetype: 'application/pdf',
             md5: '5d41402abc4b2a76b9719d911017c592',
             tool_slug: 'GMAIL_SEND_EMAIL',
             toolkit_slug: 'gmail',

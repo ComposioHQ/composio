@@ -12,6 +12,11 @@
 
 ### Patch Changes
 
+- Local file uploads now use the filename's MIME type instead of always declaring
+  `application/octet-stream`. `execute --file` preserves arrays and injects into
+  the single matching upload field in an existing array item; ambiguous targets
+  require explicit JSON. This fixes Word and PowerPoint image editing through the CLI.
+
 - `composio proxy` now enforces the consumer permission policy that
   `composio execute` enforces, checked against the connected account the
   request uses. A denied request fails with the same permission error, and a

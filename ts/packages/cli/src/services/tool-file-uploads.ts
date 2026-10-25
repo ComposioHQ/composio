@@ -7,6 +7,7 @@ import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
 import type { ComposioClientShape, ComposioError } from '@composio/client/effect';
 import { Data, Effect, Predicate } from 'effect';
+import mime from 'mime';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { idempotent } from 'src/services/composio-request';
 
@@ -55,12 +56,6 @@ const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isObje
 
 const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
   Array.isArray(value) ? value.filter(isSchemaRecord) : [];
-
-// `items` is either one schema or a tuple of schemas; keep only the schema records.
-const getItemSchemas = (items: unknown): ReadonlyArray<JsonSchema> => {
-  if (Array.isArray(items)) return items.filter(isSchemaRecord);
-  return isSchemaRecord(items) ? [items] : [];
-};
 
 const getSchemaVariants = (schema: JsonSchema | undefined): ReadonlyArray<JsonSchema> => [
   ...getSchemaVariant(schema?.anyOf),
@@ -141,10 +136,21 @@ export const schemaHasFileUploadable = (schema: JsonSchema | undefined): boolean
   return false;
 };
 
+// Bind array schemas to the caller's existing items. A schema-only path loses
+// the index and would cause --file to replace the array with an object.
+const matchesDiscriminants = (schema: JsonSchema, value: unknown): boolean => {
+  if (!isSchemaRecord(schema.properties) || !isSchemaRecord(value)) return true;
+  return Object.entries(schema.properties).every(([key, property]) => {
+    if (!isSchemaRecord(property) || !Object.hasOwn(property, 'const')) return true;
+    return value[key] === property.const;
+  });
+};
+
 export const findFileUploadablePaths = (
   schema: JsonSchema | undefined,
-  basePath: ReadonlyArray<string> = []
-): ReadonlyArray<ReadonlyArray<string>> => {
+  basePath: ReadonlyArray<string | number> = [],
+  value?: unknown
+): ReadonlyArray<ReadonlyArray<string | number>> => {
   if (!schema) return [];
 
   if (schema.file_uploadable === true) {
@@ -153,21 +159,34 @@ export const findFileUploadablePaths = (
 
   const directPropertyPaths = isSchemaRecord(schema.properties)
     ? Object.entries(schema.properties).flatMap(([key, property]) =>
-        isSchemaRecord(property) ? findFileUploadablePaths(property, [...basePath, key]) : []
+        isSchemaRecord(property)
+          ? findFileUploadablePaths(
+              property,
+              [...basePath, key],
+              isSchemaRecord(value) ? value[key] : undefined
+            )
+          : []
       )
     : [];
 
-  const variantPaths = getSchemaVariants(schema).flatMap(variant =>
-    findFileUploadablePaths(variant, basePath)
-  );
+  const variantPaths = getSchemaVariants(schema)
+    .filter(variant => matchesDiscriminants(variant, value))
+    .flatMap(variant => findFileUploadablePaths(variant, basePath, value));
 
-  const itemPaths = getItemSchemas(schema.items).flatMap(item =>
-    findFileUploadablePaths(item, basePath)
-  );
+  const itemPaths = Array.isArray(value)
+    ? value.flatMap((item, index) => {
+        const itemSchema = Array.isArray(schema.items) ? schema.items[index] : schema.items;
+        return findFileUploadablePaths(
+          isSchemaRecord(itemSchema) ? itemSchema : undefined,
+          [...basePath, index],
+          item
+        );
+      })
+    : [];
 
   const seen = new Set<string>();
   return [...directPropertyPaths, ...variantPaths, ...itemPaths].filter(pathParts => {
-    const key = pathParts.join('.');
+    const key = JSON.stringify(pathParts);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -240,7 +259,7 @@ const readFileFromDisk = (fs: FileSystem.FileSystem, path: Path.Path, filePath: 
       // wider ArrayBufferLike-backed Uint8Array that FileSystem returns.
       bytes: new Uint8Array(bytes),
       fileName: path.basename(filePath),
-      mimeType: 'application/octet-stream',
+      mimeType: mime.getType(path.basename(filePath)) ?? 'application/octet-stream',
     };
   });
 
@@ -379,10 +398,11 @@ const hydrateFileUploads = (
     }
 
     if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
-      const itemSchema = getItemSchemas(schema.items).at(0);
-
       return yield* Effect.all(
-        value.map(item => hydrateFileUploads(item, itemSchema, ctx)),
+        value.map((item, index) => {
+          const itemSchema = Array.isArray(schema.items) ? schema.items[index] : schema.items;
+          return hydrateFileUploads(item, isSchemaRecord(itemSchema) ? itemSchema : undefined, ctx);
+        }),
         { concurrency: 'unbounded' }
       );
     }

@@ -50,7 +50,11 @@ import {
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
-import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
+import {
+  findFileUploadablePaths,
+  normalizeFileUploadSchema,
+  schemaHasFileUploadable,
+} from 'src/services/tool-file-uploads';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -168,44 +172,39 @@ const parseArguments = (raw: string) =>
 
 const hasNestedKey = (
   record: Record<string, unknown>,
-  pathParts: ReadonlyArray<string>
+  pathParts: ReadonlyArray<string | number>
 ): boolean => {
   let current: unknown = record;
   for (const key of pathParts) {
-    if (!isPlainRecord(current)) {
-      return false;
-    }
-    if (!(key in current)) {
-      return false;
-    }
-    current = current[key];
+    if (Array.isArray(current) && typeof key === 'number' && key < current.length) {
+      current = current[key];
+    } else if (isPlainRecord(current) && typeof key === 'string' && Object.hasOwn(current, key)) {
+      current = current[key];
+    } else return false;
   }
   return true;
 };
 
 const setNestedKey = (
   record: Record<string, unknown>,
-  pathParts: ReadonlyArray<string>,
+  pathParts: ReadonlyArray<string | number>,
   value: unknown
 ): Record<string, unknown> => {
-  if (pathParts.length === 0) return record;
-
-  const clone: Record<string, unknown> = { ...record };
-  let current = clone;
-
-  for (const [index, key] of pathParts.entries()) {
-    if (index === pathParts.length - 1) {
-      current[key] = value;
-      break;
+  const set = (current: unknown, remaining: ReadonlyArray<string | number>): unknown => {
+    const [key, ...rest] = remaining;
+    if (key === undefined) return value;
+    if (typeof key === 'number') {
+      if (!Array.isArray(current)) return current;
+      const copy = [...current];
+      copy[key] = set(copy[key], rest);
+      return copy;
     }
-
-    const next = current[key];
-    const nextObject = isPlainRecord(next) ? { ...next } : {};
-    current[key] = nextObject;
-    current = nextObject;
-  }
-
-  return clone;
+    const copy = isPlainRecord(current) ? { ...current } : {};
+    copy[key] = set(copy[key], rest);
+    return copy;
+  };
+  const updated = set(record, pathParts);
+  return isPlainRecord(updated) ? updated : record;
 };
 
 const injectSingleFileArgument = (params: {
@@ -215,13 +214,15 @@ const injectSingleFileArgument = (params: {
   readonly schema: Record<string, unknown>;
 }) =>
   Effect.gen(function* () {
-    const uploadablePaths = findFileUploadablePaths(params.schema);
+    const uploadablePaths = findFileUploadablePaths(params.schema, [], params.args);
 
     if (uploadablePaths.length === 0) {
       return yield* new ToolExecutionError({
         reason: 'file_input',
         toolSlug: params.slug,
-        message: `Tool "${params.slug}" has no file_uploadable input. Remove --file or pass JSON via -d.`,
+        message: schemaHasFileUploadable(params.schema)
+          ? `Tool "${params.slug}" has no matching file_uploadable input in the supplied arguments. Supply the target array item with -d, or remove --file.`
+          : `Tool "${params.slug}" has no file_uploadable input. Remove --file or pass JSON via -d.`,
       });
     }
 
