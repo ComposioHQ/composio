@@ -5,21 +5,32 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 
-const workflow = z.object({
-  jobs: z.object({
-    publish: z.object({
-      steps: z.array(z.object({ name: z.string(), run: z.string().optional() })),
-    }),
-  }),
-}).parse(Bun.YAML.parse(readFileSync(
-  resolve(process.cwd(), '..', '.github/workflows/docs-kb-publish.yml'),
-  'utf8',
-)));
+const workflowSchema = z.object({
+  jobs: z.record(z.string(), z.object({
+    defaults: z.object({ run: z.object({ shell: z.string().optional() }) }).optional(),
+    steps: z.array(z.object({ name: z.string(), run: z.string().optional(), shell: z.string().optional() })),
+  })),
+});
+const workflows = {
+  publish: workflowSchema.parse(Bun.YAML.parse(readFileSync(
+    resolve(process.cwd(), '..', '.github/workflows/docs-kb-publish.yml'), 'utf8',
+  ))),
+  refresh: workflowSchema.parse(Bun.YAML.parse(readFileSync(
+    resolve(process.cwd(), '..', '.github/workflows/docs-update-kb.yml'), 'utf8',
+  ))),
+};
 
-function runStep(name: string, root: string, env: Record<string, string> = {}) {
-  const script = workflow.jobs.publish.steps.find(step => step.name === name)?.run;
+function runStep(
+  name: string, root: string, env: Record<string, string> = {}, job: 'publish' | 'refresh' = 'publish',
+) {
+  const definition = workflows[job].jobs[job]!;
+  const step = definition.steps.find(step => step.name === name);
+  const script = step?.run;
   if (!script) throw new Error(`Missing workflow step: ${name}`);
-  return spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script], {
+  // Match the Actions runner: implicit bash omits pipefail; explicit bash enables it.
+  const shell = step?.shell ?? definition.defaults?.run.shell;
+  const shellFlags = shell === 'bash' ? ['--noprofile', '--norc', '-e', '-o', 'pipefail'] : ['-e'];
+  return spawnSync('bash', [...shellFlags, '-c', script], {
     cwd: root,
     encoding: 'utf8',
     env: {
@@ -28,7 +39,8 @@ function runStep(name: string, root: string, env: Record<string, string> = {}) {
       FIXTURE_ROOT: root,
       RUNNER_TEMP: root,
       GH_REPO: 'ComposioHQ/composio',
-      PUBLISH_BRANCH: 'docs/kb-front-desk-2',
+      PUBLISH_BRANCH: job === 'publish' ? 'docs/kb-front-desk-2' : 'docs/auto-update-kb',
+      GUIDE_SLUG: 'sdk-example',
       ...env,
     },
   });
@@ -67,7 +79,7 @@ fi
 }
 
 const earlierPublication = {
-  head: { ref: 'docs/kb-front-desk-1' },
+  head: { ref: 'docs/kb-front-desk-1', repo: { full_name: 'ComposioHQ/composio' } },
   html_url: 'https://github.com/ComposioHQ/composio/pull/1',
 };
 
@@ -76,7 +88,7 @@ describe('KB publication workflow', () => {
     const root = fixture();
     try {
       const unrelated = { head: { ref: 'docs/unrelated' }, html_url: 'unrelated' };
-      const currentDraft = { head: { ref: 'docs/kb-front-desk-2' }, html_url: 'current' };
+      const currentDraft = { head: { ref: 'docs/kb-front-desk-2', repo: { full_name: 'ComposioHQ/composio' } }, html_url: 'current' };
       writeFileSync(join(root, 'current.jsonl'),
         `${JSON.stringify([unrelated, currentDraft])}\n${JSON.stringify([earlierPublication])}\n`);
       writeFileSync(join(root, 'after.jsonl'), `${JSON.stringify([unrelated, currentDraft])}\n`);
@@ -94,6 +106,41 @@ describe('KB publication workflow', () => {
     }
   });
 
+  test.each(['publish', 'refresh'] as const)('%s ignores fork PRs that imitate publication branches', job => {
+    const root = fixture();
+    try {
+      const forkPrs = ['docs/kb-front-desk-hold', 'docs/auto-update-kb'].map(ref => ({
+        head: { ref, repo: { full_name: 'outsider/composio' } }, html_url: 'fork-pr',
+      }));
+      writeFileSync(join(root, 'current.jsonl'), JSON.stringify(forkPrs));
+      const result = runStep('Wait for earlier KB publications', root, {}, job);
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toContain('fork-pr');
+      expect(readFileSync(join(root, 'sleeps'), 'utf8')).toBe('');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ['publish', 'docs/auto-update-kb'],
+    ['refresh', 'docs/kb-front-desk-1'],
+  ] as const)('%s waits for the other publication path to merge', (job, ref) => {
+    const root = fixture();
+    try {
+      writeFileSync(join(root, 'current.jsonl'), JSON.stringify([{
+        head: { ref, repo: { full_name: 'ComposioHQ/composio' } }, html_url: 'earlier-kb-publication',
+      }]));
+      writeFileSync(join(root, 'after.jsonl'), '[]');
+      const result = runStep('Wait for earlier KB publications', root, {}, job);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('earlier-kb-publication');
+      expect(readFileSync(join(root, 'calls'), 'utf8').trim().split('\n')).toHaveLength(2);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test('fails with a recovery instruction when an earlier publication stays open', () => {
     const root = fixture();
     try {
@@ -102,7 +149,7 @@ describe('KB publication workflow', () => {
       const result = runStep('Wait for earlier KB publications', root);
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain('Merge or close them, then rerun this approval.');
+      expect(result.stderr).toContain('Merge or close them, then rerun this workflow.');
       expect(readFileSync(join(root, 'calls'), 'utf8').trim().split('\n')).toHaveLength(60);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -126,13 +173,25 @@ describe('KB publication workflow', () => {
     const root = fixture();
     try {
       writeFileSync(join(root, 'report.json'), JSON.stringify({
-        findings: [{ severity: 'warning', kind: 'unedited-support-prose' }],
+        findings: [{ severity: 'warning', kind: 'unedited-support-prose', guideSlug: 'sdk-example' }],
       }));
 
       const result = runStep('Regenerate KB pages', root);
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('Rewrite it for public readers');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('allows an approval when only another guide has support-facing prose', () => {
+    const root = fixture();
+    try {
+      writeFileSync(join(root, 'report.json'), JSON.stringify({
+        findings: [{ severity: 'warning', kind: 'unedited-support-prose', guideSlug: 'other-guide' }],
+      }));
+      expect(runStep('Regenerate KB pages', root).status).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

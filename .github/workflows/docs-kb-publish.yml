@@ -10,7 +10,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-kb-publish
+  # Shared with docs-update-kb: both workflows replace the KB snapshot.
+  group: docs-kb-publication
   cancel-in-progress: false
   queue: max
 
@@ -22,6 +23,7 @@ jobs:
       pull-requests: read
     defaults:
       run:
+        shell: bash
         working-directory: ./docs
 
     steps:
@@ -47,7 +49,7 @@ jobs:
         run: |
           for ((attempt = 1; attempt <= 60; attempt++)); do
             pending=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=next&per_page=100" \
-              --jq '.[] | select(.head.ref | startswith("docs/kb-front-desk-")) | select(.head.ref != env.PUBLISH_BRANCH) | .html_url')
+              --jq '.[] | select(.head.repo.full_name == env.GH_REPO) | select(.head.ref == "docs/auto-update-kb" or (.head.ref | startswith("docs/kb-front-desk-"))) | select(.head.ref != env.PUBLISH_BRANCH) | .html_url')
             if [ -z "$pending" ]; then
               exit 0
             fi
@@ -57,7 +59,7 @@ jobs:
               sleep 30
             fi
           done
-          echo "Earlier KB publications are still open. Merge or close them, then rerun this approval." >&2
+          echo "Earlier KB publications are still open. Merge or close them, then rerun this workflow." >&2
           exit 1
 
       - name: Checkout docs repository
@@ -80,11 +82,13 @@ jobs:
           bun scripts/publish-kb-guide.ts "$RUNNER_TEMP/kb-guide.json"
 
       - name: Regenerate KB pages
+        env:
+          GUIDE_SLUG: ${{ github.event.client_payload.guide.slug }}
         run: |
           bun run generate:kb
           bun run check:kb
           bun run verify:kb --json | tee "$RUNNER_TEMP/kb-verify.json"
-          if ! jq -e '[.findings[] | select(.kind == "unedited-support-prose")] | length == 0' "$RUNNER_TEMP/kb-verify.json"; then
+          if ! jq -e '[.findings[] | select(.kind == "unedited-support-prose" and .guideSlug == env.GUIDE_SLUG)] | length == 0' "$RUNNER_TEMP/kb-verify.json"; then
             echo "KB publication contains support-facing prose. Rewrite it for public readers before approving again." >&2
             exit 1
           fi
