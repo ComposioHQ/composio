@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { inflateSync } from 'node:zlib';
 import { GET, parseOgParams, toolkitCardTitle } from '../../app/api/og/route';
 import { getOgImageUrl } from '../../lib/source';
 import { HOME_OG_DESCRIPTION } from '../../lib/toolkit-count';
@@ -12,6 +13,64 @@ async function expectPng(url: string) {
   expect(bytes.readUInt32BE(16)).toBe(1200);
   expect(bytes.readUInt32BE(20)).toBe(630);
 }
+
+/** Decodes the route's 8-bit RGB/RGBA PNG output into unfiltered pixel rows. */
+function decodePng(bytes: Buffer) {
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  const [depth, colorType] = [bytes[24], bytes[25]];
+  expect(depth).toBe(8);
+  expect([2, 6]).toContain(colorType);
+  const channels = colorType === 6 ? 4 : 3;
+  const chunks: Buffer[] = [];
+  for (let at = 8; at < bytes.length; ) {
+    const length = bytes.readUInt32BE(at);
+    if (bytes.toString('ascii', at + 4, at + 8) === 'IDAT') chunks.push(bytes.subarray(at + 8, at + 8 + length));
+    at += length + 12;
+  }
+  const raw = inflateSync(Buffer.concat(chunks));
+  const stride = width * channels;
+  const pixels = Buffer.alloc(height * stride);
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)];
+    for (let x = 0; x < stride; x++) {
+      const value = raw[y * (stride + 1) + 1 + x];
+      const left = x >= channels ? pixels[y * stride + x - channels] : 0;
+      const up = y > 0 ? pixels[(y - 1) * stride + x] : 0;
+      const upLeft = y > 0 && x >= channels ? pixels[(y - 1) * stride + x - channels] : 0;
+      const p = left + up - upLeft;
+      const [pa, pb, pc] = [Math.abs(p - left), Math.abs(p - up), Math.abs(p - upLeft)];
+      const predictor = [0, left, up, (left + up) >> 1, pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft][filter];
+      pixels[y * stride + x] = (value + predictor) & 0xff;
+    }
+  }
+  return { width, height, channels, pixels };
+}
+
+/** Horizontal center of the dark title glyphs below the header row. */
+async function titleCenter(title: string) {
+  const response = await GET(new Request(`https://docs.composio.dev/api/og?theme=light&title=${encodeURIComponent(title)}`));
+  const { width, height, channels, pixels } = decodePng(Buffer.from(await response.arrayBuffer()));
+  let [left, right] = [width, -1];
+  for (let y = 150; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const at = (y * width + x) * channels;
+      if (pixels[at] < 90 && pixels[at + 1] < 90 && pixels[at + 2] < 90) {
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+    }
+  }
+  expect(right).toBeGreaterThan(left);
+  return (left + right) / 2;
+}
+
+test('titles render horizontally centered whether or not they can wrap', async () => {
+  // Single words cannot wrap; balanced wrapping once pushed them ~100px right.
+  for (const title of ['Firewall', 'Introduction', 'Tool Router']) {
+    expect(Math.abs((await titleCenter(title)) - 600)).toBeLessThan(15);
+  }
+});
 
 test('docs host renders a PNG for the advertised title URL', async () => {
   for (const title of ['Welcome', 'Authentication & OAuth / setup', 'Very long title '.repeat(20), '']) {

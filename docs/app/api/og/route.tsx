@@ -208,12 +208,20 @@ function Chip({ children, c }: { children: string; c: Palette }) {
   );
 }
 
+// Satori balances by shrinking the measured box until the line count would
+// grow. Text with no break opportunity never wraps, so the box shrinks below
+// the drawn glyphs and flex centering shifts the text right. Balance only
+// text that can actually wrap.
+function balanceIfBreakable(text: string) {
+  return /\s/.test(text) ? ({ textWrap: 'balance' } as const) : {};
+}
+
 function Title({ children, size, c }: { children: string; size: number; c: Palette }) {
   return (
     <div style={{
       display: 'flex', fontFamily: sans, fontWeight: 500, fontSize: size, lineHeight: 1.08,
       letterSpacing: size >= 60 ? -2 : -1.2, color: c.ink, maxWidth: 1000, lineClamp: 3,
-      justifyContent: 'center', textAlign: 'center', textWrap: 'balance',
+      justifyContent: 'center', textAlign: 'center', ...balanceIfBreakable(children),
     }}>
       {children}
     </div>
@@ -233,7 +241,7 @@ function Description({ children, c }: { children: string; c: Palette }) {
   return (
     <div style={{
       display: 'flex', fontFamily: sans, fontSize: 30, lineHeight: 1.4, color: c.soft, maxWidth: 900, lineClamp: 2,
-      justifyContent: 'center', textAlign: 'center', textWrap: 'balance',
+      justifyContent: 'center', textAlign: 'center', ...balanceIfBreakable(children),
     }}>
       {children}
     </div>
