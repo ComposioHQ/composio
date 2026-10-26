@@ -447,7 +447,12 @@ export function buildSupportKnowledgeSnapshot(input: {
   const sourceFiles = new Map<string, string>();
   const articleFiles = new Map<string, string>();
   const previousAliases = previousAliasesBySource(publicDocuments, input.previousManifest);
-  const guides = publicDocuments.map(document => {
+  const portalGuides = input.previousManifest?.guides
+    .filter(guide => guide.managedBy === 'support-portal') ?? [];
+  const portalSlugs = new Set(portalGuides.map(guide => guide.slug));
+  const guides = publicDocuments.filter(document => !portalSlugs.has(
+    slugify(document.relativePath.replace(/\/public\.md$/, '')),
+  )).map(document => {
     const previousGuide = previousGuideForSource(document, input.previousManifest);
     const source = normalizedSource(document);
     const sourceIsUnchanged = input.previousSourceFiles?.get(document.relativePath) === source;
@@ -476,6 +481,28 @@ export function buildSupportKnowledgeSnapshot(input: {
     return guide;
   });
 
+  // An approval takes ownership of the complete guide, including its source snapshot.
+  // Missing bytes are an error rather than permission to discard an approved edit.
+  for (const guide of portalGuides) {
+    for (const reference of guide.sources) {
+      const source = input.previousSourceFiles?.get(reference.sourcePath);
+      if (source === undefined) throw new Error(`Missing portal source: ${reference.sourcePath}`);
+      sourceFiles.set(reference.sourcePath, source);
+    }
+    if (guide.articlePath) {
+      const article = input.previousArticleFiles?.get(guide.articlePath);
+      if (article === undefined) throw new Error(`Missing portal article: ${guide.articlePath}`);
+      articleFiles.set(guide.articlePath, article);
+    }
+    guides.push(guide);
+  }
+  const topics = topicDefinitions(publicDocuments, input.previousManifest);
+  const topicSlugs = new Set(topics.map(topic => topic.slug));
+  const portalTopics = new Set(portalGuides.flatMap(guide => guide.topics));
+  for (const topic of input.previousManifest?.topics ?? []) {
+    if (portalTopics.has(topic.slug) && !topicSlugs.has(topic.slug)) topics.push(topic);
+  }
+
   return {
     manifest: {
       schemaVersion: 2,
@@ -485,7 +512,7 @@ export function buildSupportKnowledgeSnapshot(input: {
         capturedAt: input.now.toISOString().slice(0, 10),
         contentHash: sourceContentHash(sourceFiles),
       },
-      topics: topicDefinitions(publicDocuments, input.previousManifest),
+      topics,
       guides,
     },
     sourceFiles,
