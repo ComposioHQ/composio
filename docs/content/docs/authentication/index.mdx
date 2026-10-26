@@ -1,7 +1,7 @@
 ---
 title: Authentication
-description: Understand how Composio handles user authentication to toolkits
-keywords: [connect link, oauth, auth config, in-chat auth, dynamic auth]
+description: How Composio connects each user's accounts, where their credentials live, and how your app and model act on them without receiving OAuth tokens
+keywords: [connect link, oauth, auth config, in-chat auth, dynamic auth, token custody, credential isolation]
 ---
 
 Composio organizes everything around your **users**. A user is whoever your agent acts on behalf of: a person in your app, identified by a [`userID`](/docs/how-composio-works) you choose. Authentication is always per user. Each user connects their own accounts, their Gmail, their GitHub, their Slack, and Composio stores and refreshes those credentials against that `userID`.
@@ -21,9 +21,18 @@ Because connections are stored under the `userID`, use a stable identifier, like
 
 Your users connect their accounts through a secure [Connect Link](/reference/api-reference/connected-accounts/postConnectedAccountsLink), and Composio manages their tokens for you.
 
-See [Token custody architecture](/docs/security/token-custody) for where credentials live, what your application receives, and how deployment options change custody.
-
 <ManageConnectionsVisual />
+
+## Where credentials live
+
+When users connect through a Connect Link and your agent acts through tools, your application never handles their OAuth tokens. Composio stores each connected account's credentials encrypted at rest and refreshes OAuth tokens before they expire. When your agent calls a tool, your backend sends a user ID or connected account ID plus the tool arguments. Composio adds the credential to the provider request server-side and returns the provider's response. Your application and the model receive tool results, not tokens.
+
+- **No token export.** Connected-account API responses redact credentials by default, for both Composio-managed and custom auth configs. Reading account state isn't a supported way to retrieve tokens.
+- **Raw API access without the token.** For endpoints a tool doesn't cover, [Proxy Execute](/docs/extending-sessions/proxy-execute) sends an authenticated request to the provider and returns the response. It requires its own API key permission.
+- **Least-privilege keys and sessions.** [Scoped API keys](/reference/authenticating-to-composio/project-api-key-permissions) separate session management from tool execution, and [session configuration](/docs/configuring-sessions) limits which toolkits and tools an agent can call.
+- **Custody you choose.** In the default Composio Cloud deployment, Composio holds the encrypted credentials. Private VPC, self-hosted, and customer-managed key deployments change that boundary. With customer-managed keys, a proxy in your cloud decrypts credentials under your KMS keys, and Composio doesn't hold the key material.
+
+If you [import existing credentials](/docs/authentication/importing-existing-connections), your application handles those tokens once before sending them to Composio. See [Token custody architecture](/docs/security/token-custody) for the full request flow, redaction scope, and [deployment options](/docs/security/token-custody#deployment-options).
 
 ## How Composio handles authentication
 

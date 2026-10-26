@@ -31,6 +31,8 @@ If it is unclear whether the goal is to integrate Composio into the application 
 
 - [Core concepts](https://docs.composio.dev/docs/how-composio-works.md): Understand users, sessions, toolkits, and tool execution.
 - [Authentication](https://docs.composio.dev/docs/authentication.md): Distinguish auth configs from connected accounts and connect your application's users.
+- [Token custody](https://docs.composio.dev/docs/security/token-custody.md): Where credentials live, why your app and model get results instead of tokens, and VPC, self-hosted, and customer-managed key options.
+- [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
 - [Configure sessions](https://docs.composio.dev/docs/configuring-sessions.md): Select toolkits, auth configs, and connected accounts for a user.
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose the provider for your agent framework.
 - [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
