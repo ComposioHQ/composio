@@ -222,6 +222,7 @@ describe('CLI: composio dev connected-accounts link', () => {
           yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
+          expect(lines).toContain('Using global test user id "global-default"');
           expect(parseLastLine(lines)).toMatchObject({
             total: 1,
             items: [{ id: 'con_global', user_id: 'global-default' }],

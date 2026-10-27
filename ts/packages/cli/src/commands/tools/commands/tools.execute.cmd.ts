@@ -863,7 +863,11 @@ const emitCachedSchema = (
     );
   });
 
-const resolveExecuteContext = (params: RunToolsExecuteParams) =>
+const resolveExecuteContext = (
+  params: RunToolsExecuteParams,
+  /** The acting user; `--parallel` resolves it once for all its tools. */
+  user: ReturnType<typeof actingUser> = actingUser()
+) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const executor = yield* ToolsExecutor;
@@ -871,7 +875,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
-    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
+    const { userId: resolvedUserId, project: resolvedProject } = yield* user.pipe(
       // C2: fail with MissingActingUserError itself; this keeps the `ToolExecutionError` tag
       // that `cli.command.failed` reports as `error_name`.
       Effect.catchTag('commands/MissingActingUserError', error =>
@@ -1705,23 +1709,29 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       return yield* runParallelSchemaFetchFromParsed(params);
     }
 
+    // Resolved once, so a test user's notice prints once; each tool still fails on its own
+    // input before it fails on a missing user.
+    const user = Effect.fromResult(yield* Effect.result(actingUser()));
     const contexts = yield* Effect.forEach(
       params.specs,
       spec =>
-        resolveExecuteContext({
-          slug: spec.slug,
-          data: spec.data,
-          file: Option.none(),
-          account: spec.account,
-          projectName: params.projectName,
-          surface: params.surface,
-          projectMode: params.projectMode,
-          getSchema: params.getSchema,
-          dryRun: params.dryRun,
-          skipConnectionCheck: params.skipConnectionCheck,
-          skipToolParamsCheck: params.skipToolParamsCheck,
-          skipChecks: params.skipChecks,
-        }),
+        resolveExecuteContext(
+          {
+            slug: spec.slug,
+            data: spec.data,
+            file: Option.none(),
+            account: spec.account,
+            projectName: params.projectName,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            getSchema: params.getSchema,
+            dryRun: params.dryRun,
+            skipConnectionCheck: params.skipConnectionCheck,
+            skipToolParamsCheck: params.skipToolParamsCheck,
+            skipChecks: params.skipChecks,
+          },
+          user
+        ),
       { concurrency: 'unbounded' }
     );
     const entries = contexts.map((context, index) => ({

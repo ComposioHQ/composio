@@ -98,10 +98,8 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
       )
     );
 
-    // C2: `actingUser` prints the notice for every command.
-    const notice = Option.flatMap(user, resolved => resolved.fallbackNotice);
-    if (Option.isSome(notice)) {
-      yield* ui.log.warn(notice.value);
+    // `actingUserOption` named the test user standing in; say how to pick another.
+    if (Option.isSome(Option.flatMap(user, resolved => resolved.fallbackNotice))) {
       yield* ui.log.message('To show status for a specific user, use `--user-id`.');
     }
 

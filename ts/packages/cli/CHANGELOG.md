@@ -26,6 +26,12 @@
 
 ### Patch Changes
 
+- Every `composio dev` command that acts as a user now names the test user it
+  falls back to on stderr (`Using test user id "…"` for the directory's,
+  `Using global test user id "…"` for the global one) when you pass no
+  `--user-id`. `composio dev playground-execute` printed nothing before; with
+  `--parallel` it names the user once.
+
 - A missing user id now gets the same message on every command of a tree.
   Root commands (`composio execute`, `search`, `link`, `listen`, `proxy`,
   `connections`) report a missing consumer user id and point at

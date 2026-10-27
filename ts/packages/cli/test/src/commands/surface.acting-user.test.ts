@@ -14,9 +14,11 @@ import {
 import type { ProjectKeys } from 'src/models/project-keys';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { mockAccountResources } from 'test/__utils__/layers/accounts';
 import { makeOrgProject } from 'test/__utils__/models/account';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const ORG_ID = 'org_test';
 const CONSUMER_USER_ID = `consumer-user-${ORG_ID}`;
@@ -50,7 +52,8 @@ const PROJECT_NAMES: Record<ProjectName, Option.Option<string>> = {
   other: Option.some('other'),
 };
 
-const actingUserLayer = (fixture: Fixture) => {
+/** `warnings` collects what the code under test warns on stderr. */
+const actingUserLayer = (fixture: Fixture, warnings: Array<string>) => {
   const has = (candidate: Exclude<Candidates, 'none'>) =>
     CANDIDATE_ORDER.indexOf(candidate) >= CANDIDATE_ORDER.indexOf(fixture.candidates);
   const directory: ProjectKeys = {
@@ -86,6 +89,16 @@ const actingUserLayer = (fixture: Fixture) => {
   } as unknown as ComposioClientShape;
 
   return Layer.mergeAll(
+    Layer.succeed(
+      TerminalUI,
+      TerminalUI.of({
+        ...terminalUITestImpl,
+        log: {
+          ...terminalUITestImpl.log,
+          warn: message => Effect.sync(() => warnings.push(message)),
+        },
+      })
+    ),
     Layer.succeed(
       CommandSurface,
       CommandSurface.of({
@@ -171,17 +184,26 @@ const cases = TREES.flatMap(tree =>
 const run = <
   A,
   E,
-  R extends CommandSurface | ComposioUserContext | ProjectContext | ComposioClientSingleton,
+  R extends
+    CommandSurface | ComposioUserContext | ProjectContext | ComposioClientSingleton | TerminalUI,
 >(
   effect: Effect.Effect<A, E, R>,
-  fixture: Fixture
-) => effect.pipe(Effect.provide(actingUserLayer(fixture)));
+  fixture: Fixture,
+  warnings: Array<string> = []
+) => effect.pipe(Effect.provide(actingUserLayer(fixture, warnings)));
+
+/** The notice printed for the rule's user: one line for a test user standing in, else none. */
+const expectedNotices = (fixture: Fixture) =>
+  Option.toArray(Option.flatMap(expectedUser(fixture), fallbackNotice));
 
 describe('actingUser', () => {
   it.effect.each(cases)('[Given] $name [Then] acts as the rule’s user', fixture =>
     Effect.gen(function* () {
-      const result = yield* run(Effect.result(actingUser()), fixture);
+      const warnings: Array<string> = [];
+      const result = yield* run(Effect.result(actingUser()), fixture, warnings);
       const expected = expectedUser(fixture);
+
+      expect(warnings).toEqual(expectedNotices(fixture));
 
       if (Option.isNone(expected)) {
         expect(result).toMatchObject({ failure: { _tag: 'commands/MissingActingUserError' } });
@@ -272,8 +294,11 @@ describe('an empty consumer user id', () => {
 describe('actingUserOption', () => {
   it.effect.each(cases)('[Given] $name [Then] finds the rule’s user, or none', fixture =>
     Effect.gen(function* () {
-      const user = yield* run(actingUserOption(), fixture);
+      const warnings: Array<string> = [];
+      const user = yield* run(actingUserOption(), fixture, warnings);
       const expected = expectedUser(fixture);
+
+      expect(warnings).toEqual(expectedNotices(fixture));
       // Only the project --project-name names is resolved on the dev tree.
       const project =
         fixture.tree === 'dev' && fixture.projectName === 'absent'

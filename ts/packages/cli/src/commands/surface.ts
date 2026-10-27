@@ -8,6 +8,7 @@ import {
   type ResolvedCommandProject,
 } from 'src/services/command-project';
 import { ProjectContext } from 'src/services/project-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 
 /** The command tree a command was invoked from. */
@@ -158,6 +159,15 @@ const noticeBySource: Record<ActingUserSource, (userId: string) => Option.Option
 export const fallbackNotice = (user: Omit<ActingUser, 'project'>): Option.Option<string> =>
   noticeBySource[user.source](user.userId);
 
+/** Prints `fallbackNotice` on stderr when a test user stands in. */
+const announceFallback = (user: Option.Option<Omit<ActingUser, 'project'>>) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* Effect.transposeOption(
+      Option.map(Option.flatMap(user, fallbackNotice), notice => ui.log.warn(notice))
+    );
+  });
+
 /** The consumer user of a consumer project; an empty id counts as none. */
 const consumerUser = (project: ResolvedCommandProject) =>
   pipe(
@@ -187,7 +197,8 @@ const devUser = (namedProjectId: Option.Option<string>) =>
  * The acting user, resolved against the project the command runs in. On the root tree, the
  * consumer user of the consumer project. On the dev tree, against the developer project
  * (`--project-name`, else the directory's): `--user-id`, then the directory test user (only
- * for the directory's own project), then the global test user. Fails with
+ * for the directory's own project), then the global test user; a test user standing in is
+ * named on stderr (`fallbackNotice`). Fails with
  * `ProjectResolutionError` when the project cannot be resolved and `MissingActingUserError`
  * when no step finds a user.
  */
@@ -204,6 +215,7 @@ export const actingUser = (options: ActingUserOptions = {}) =>
       tree === 'root'
         ? consumerUser(project)
         : yield* devUser(Option.as(surface.projectName, project.projectId));
+    yield* announceFallback(user);
     if (Option.isNone(user)) {
       const message = options.missingUserMessage ?? defaultMissingUserMessage(tree);
       return yield* new MissingActingUserError({
@@ -219,7 +231,8 @@ export const actingUser = (options: ActingUserOptions = {}) =>
  * The acting user for a command that also runs without one, by the same rule as `actingUser`.
  * On the dev tree it resolves only the project `--project-name` names, so `project` is none when
  * the command runs against the directory's project through the default client; on the root
- * tree it is the consumer project. Fails only when that project cannot be resolved.
+ * tree it is the consumer project. Names a test user standing in on stderr, as `actingUser`
+ * does. Fails only when that project cannot be resolved.
  */
 export const actingUserOption = () =>
   Effect.gen(function* () {
@@ -240,6 +253,7 @@ export const actingUserOption = () =>
       )
     );
     const user = yield* devUser(Option.map(namedProject, project => project.projectId));
+    yield* announceFallback(user);
     return Option.map(user, (found): ActingUser<Option.Option<ResolvedCommandProject>> => ({
       ...found,
       project: namedProject,

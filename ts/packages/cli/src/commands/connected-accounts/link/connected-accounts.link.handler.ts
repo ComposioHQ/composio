@@ -5,7 +5,6 @@ import { commandInputError } from 'src/commands/errors';
 import {
   actingUser,
   CommandSurface,
-  fallbackNotice,
   type CommandTree,
   type MissingActingUserError,
 } from 'src/commands/surface';
@@ -488,10 +487,6 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
       Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('legacy'))
     );
     const { userId: resolvedUserId, project: resolvedProject } = acting;
-    // C2: `actingUser` prints the notice for every command.
-    yield* Effect.transposeOption(
-      Option.map(fallbackNotice(acting), notice => ui.log.warn(notice))
-    );
 
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
     const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
