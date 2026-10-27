@@ -65,6 +65,8 @@ Each command uses `effect/cli`'s `Command.make()` pattern. Current top-level com
 
 Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
+To find a command's source, grep [`src/commands/COMMANDS.md`](src/commands/COMMANDS.md) for its path: one row per command registration with its tree (root or `dev`), the `.cmd.ts` file that defines it, other registrations of the same definition (root shortcuts such as `link`), whether it needs a login, and whether it is unlisted or experimental. It is generated from the command tree (`test/src/commands/commands-map.test.ts`, which finds each registration's definition among the `.cmd.ts` exports); after adding, moving, or renaming a command, run `pnpm --filter @composio/cli run commands:map` and commit the result. `pnpm test` fails while it is stale.
+
 #### Command module layout
 
 Every command is a directory named after the command, holding files that share the command's dotted basename. A group is a directory named after the group, whose entry file `<group>.cmd.ts` only lists subcommands.
