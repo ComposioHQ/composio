@@ -385,7 +385,7 @@
     "name": "Salesforce",
     "logo": "https://logos.composio.dev/api/salesforce",
     "category": "crm",
-    "toolCount": 242,
+    "toolCount": 316,
     "triggerCount": 7
   },
   {
@@ -516,7 +516,7 @@
     "name": "Google Meet",
     "logo": "https://logos.composio.dev/api/googlemeet",
     "category": "video conferencing",
-    "toolCount": 15,
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -767,7 +767,7 @@
     "name": "Meta Ads",
     "logo": "https://logos.composio.dev/api/metaads",
     "category": "ads & conversion",
-    "toolCount": 74,
+    "toolCount": 78,
     "triggerCount": 0
   },
   {
@@ -783,7 +783,7 @@
     "name": "Google Super",
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
-    "toolCount": 520,
+    "toolCount": 557,
     "triggerCount": 48
   },
   {
@@ -893,7 +893,7 @@
     "name": "Google Ads",
     "logo": "https://logos.composio.dev/api/googleads",
     "category": "ads & conversion",
-    "toolCount": 49,
+    "toolCount": 76,
     "triggerCount": 0
   },
   {
@@ -1513,6 +1513,14 @@
     "logo": "https://logos.composio.dev/api/kommo",
     "category": "crm",
     "toolCount": 53,
+    "triggerCount": 0
+  },
+  {
+    "slug": "deel",
+    "name": "Deel",
+    "logo": "https://logos.composio.dev/api/deel",
+    "category": "hr talent & recruitment",
+    "toolCount": 436,
     "triggerCount": 0
   },
   {
@@ -2941,7 +2949,7 @@
     "name": "Bitly",
     "logo": "https://logos.composio.dev/api/bitly",
     "category": "url shortener",
-    "toolCount": 10,
+    "toolCount": 85,
     "triggerCount": 0
   },
   {
@@ -6890,6 +6898,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "hibob",
+    "name": "HiBob",
+    "logo": "https://logos.composio.dev/api/hibob",
+    "category": "human resources",
+    "toolCount": 208,
+    "triggerCount": 0
+  },
+  {
     "slug": "higgsfield",
     "name": "Higgsfield",
     "logo": "https://logos.composio.dev/api/higgsfield",
@@ -7533,6 +7549,14 @@
     "instant": {
       "supported": true
     }
+  },
+  {
+    "slug": "jibble",
+    "name": "Jibble",
+    "logo": "https://logos.composio.dev/api/jibble",
+    "category": "human resources",
+    "toolCount": 68,
+    "triggerCount": 0
   },
   {
     "slug": "jigsawstack",
@@ -11833,6 +11857,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "smartsheet",
+    "name": "Smartsheet",
+    "logo": "https://logos.composio.dev/api/smartsheet",
+    "category": "project management",
+    "toolCount": 185,
+    "triggerCount": 0
+  },
+  {
     "slug": "smol_machines",
     "name": "Smol Machines",
     "logo": "https://logos.composio.dev/api/smol_machines",
@@ -12195,7 +12227,7 @@
     "name": "Supermemory",
     "logo": "https://logos.composio.dev/api/supermemory",
     "category": "artificial intelligence",
-    "toolCount": 11,
+    "toolCount": 86,
     "triggerCount": 0
   },
   {
@@ -13647,6 +13679,14 @@
     "logo": "https://logos.composio.dev/api/zoho_sign",
     "category": "signatures",
     "toolCount": 43,
+    "triggerCount": 0
+  },
+  {
+    "slug": "zoho_work_drive",
+    "name": "Zoho WorkDrive",
+    "logo": "https://logos.composio.dev/api/zoho_workdrive",
+    "category": "file management & storage",
+    "toolCount": 220,
     "triggerCount": 0
   },
   {
