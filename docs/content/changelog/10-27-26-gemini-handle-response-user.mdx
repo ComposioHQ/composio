@@ -8,8 +8,8 @@ With Automatic Function Calling turned off, `GeminiProvider.handle_response(resp
 
 ### Bug Fixes
 
-- **Gemini** (`composio-gemini`): `handle_response` accepts `user_id=` or `session=`, with the same names as `GoogleProvider.handle_response` in `composio-google`. Every call in the response runs for that user or Tool Router session. With `user_id`, pass any execution modifiers as `modifiers=`; the ones given to `tools.get()` do not apply.
-- Without a user or session, `handle_response` still uses the stored executor, so a process that fetches tools for a single user keeps working unchanged. If a tool in the response was fetched for more than one user or session, it raises a `ValueError` instead of picking one, and executes nothing.
+- **Gemini** (`composio-gemini`): `handle_response` accepts `user_id=` or `session=`, with the same names as `GoogleProvider.handle_response` in `composio-google`. Each call runs exactly as the tool fetched for that user or Tool Router session would: with the modifiers given to `tools.get()`, and through the session's routing, so local custom tools in a `COMPOSIO_MULTI_EXECUTE_TOOL` batch run in process.
+- Without a user or session, `handle_response` keeps working for a process that has fetched tools for a single user or session. Once the provider has wrapped tools for more than one, it raises a `ValueError` instead of picking one, and executes nothing.
 
 **Before:**
 
@@ -29,5 +29,5 @@ composio.provider.handle_response(response, user_id="alice")
 # The tool executes as alice
 
 composio.provider.handle_response(response)
-# ValueError: the tool was fetched for more than one user or session
+# ValueError: tools were wrapped for more than one user or session
 ```

@@ -226,11 +226,8 @@ class TestWrapTool:
         execute_tool = create_mock_execute_tool()
         provider.wrap_tool(tool, execute_tool)
 
-        assert "GITHUB_STAR_REPO" in provider._executors
-        stored_execute_tool, _aliases, _args_schema = provider._executors[
-            "GITHUB_STAR_REPO"
-        ]
-        assert stored_execute_tool is execute_tool
+        assert provider._executors == {execute_tool: {"GITHUB_STAR_REPO": execute_tool}}
+        assert "GITHUB_STAR_REPO" in provider._schemas
 
     def test_callable_executes_correctly(self):
         from composio_gemini import GeminiProvider
@@ -523,10 +520,13 @@ class TestWrapTools:
             create_mock_tool("GITHUB_STAR_REPO", "github"),
             create_mock_tool("GMAIL_SEND_EMAIL", "gmail"),
         ]
-        provider.wrap_tools(tools, create_mock_execute_tool())
+        execute_tool = create_mock_execute_tool()
+        provider.wrap_tools(tools, execute_tool)
 
-        assert "GITHUB_STAR_REPO" in provider._executors
-        assert "GMAIL_SEND_EMAIL" in provider._executors
+        assert set(provider._executors[execute_tool]) == {
+            "GITHUB_STAR_REPO",
+            "GMAIL_SEND_EMAIL",
+        }
 
     def test_empty_list(self):
         from composio_gemini import GeminiProvider
@@ -932,7 +932,18 @@ class TestHandleResponseUser:
     fetch binds is the one the SDK really builds.
     """
 
-    SLUG = "GMAIL_FETCH_EMAILS"
+    GMAIL = "GMAIL_FETCH_EMAILS"
+    NOTION = "NOTION_CREATE_PAGE"
+    SCHEMA = {
+        "type": "object",
+        "properties": {"query": {"type": "string"}},
+        "required": ["query"],
+    }
+
+    def _tool(self, slug: str) -> Tool:
+        return create_mock_tool(
+            slug, slug.split("_")[0].lower(), input_parameters=self.SCHEMA
+        )
 
     @pytest.fixture
     def composio(self):
@@ -942,15 +953,7 @@ class TestHandleResponseUser:
         composio = Composio(
             provider=GeminiProvider(), api_key="test-key", allow_tracking=False
         )
-        tool = create_mock_tool(
-            self.SLUG,
-            "gmail",
-            input_parameters={
-                "type": "object",
-                "properties": {"query": {"type": "string"}},
-                "required": ["query"],
-            },
-        )
+        tools = {slug: self._tool(slug) for slug in (self.GMAIL, self.NOTION)}
 
         def execute(*, tool_slug, arguments, user_id, **_kwargs):
             return MagicMock(
@@ -964,7 +967,11 @@ class TestHandleResponseUser:
             )
 
         with (
-            patch.object(composio.tools, "get_raw_composio_tools", return_value=[tool]),
+            patch.object(
+                composio.tools,
+                "get_raw_composio_tools",
+                side_effect=lambda **kwargs: [tools[s] for s in kwargs["tools"]],
+            ),
             patch.object(
                 type(composio.tools._client),
                 "without_retries",
@@ -974,7 +981,8 @@ class TestHandleResponseUser:
             without_retries.return_value.tools.execute.side_effect = execute
             yield composio
 
-    def _response(self):
+    @staticmethod
+    def _response(*slugs: str):
         return genai_types.GenerateContentResponse(
             candidates=[
                 genai_types.Candidate(
@@ -983,57 +991,101 @@ class TestHandleResponseUser:
                         parts=[
                             genai_types.Part(
                                 function_call=genai_types.FunctionCall(
-                                    name=self.SLUG, args={"query": "is:unread"}
+                                    name=slug, args={"query": "is:unread"}
                                 )
                             )
+                            for slug in slugs
                         ],
                     )
                 )
             ]
         )
 
-    def _executed_for(self, composio, **kwargs) -> str:
-        parts, executed = composio.provider.handle_response(self._response(), **kwargs)
+    def _executed_for(self, composio, *slugs: str, **kwargs) -> list[str]:
+        parts, executed = composio.provider.handle_response(
+            self._response(*slugs), **kwargs
+        )
         assert executed is True
-        return parts[0].function_response.response["user_id"]
+        return [part.function_response.response["user_id"] for part in parts]
 
     def test_explicit_user_wins_over_last_fetch(self, composio):
-        composio.tools.get(user_id="alice", tools=[self.SLUG])
-        composio.tools.get(user_id="bob", tools=[self.SLUG])
+        composio.tools.get(user_id="alice", tools=[self.GMAIL])
+        composio.tools.get(user_id="bob", tools=[self.GMAIL])
 
-        assert self._executed_for(composio, user_id="alice") == "alice"
-        assert self._executed_for(composio, user_id="bob") == "bob"
+        assert self._executed_for(composio, self.GMAIL, user_id="alice") == ["alice"]
+        assert self._executed_for(composio, self.GMAIL, user_id="bob") == ["bob"]
 
-    def test_rejects_ambiguous_call_without_user(self, composio):
-        composio.tools.get(user_id="alice", tools=[self.SLUG])
-        composio.tools.get(user_id="bob", tools=[self.SLUG])
+    @pytest.mark.parametrize(
+        "bob_slug",
+        [GMAIL, NOTION],
+        ids=["same-slug", "disjoint-slugs"],
+    )
+    def test_rejects_call_without_user_once_two_users_fetched(self, composio, bob_slug):
+        composio.tools.get(user_id="alice", tools=[self.GMAIL])
+        composio.tools.get(user_id="bob", tools=[bob_slug])
         execute = composio.tools._client.without_retries.tools.execute
 
         with pytest.raises(ValueError, match="user_id="):
-            composio.provider.handle_response(self._response())
+            composio.provider.handle_response(self._response(self.GMAIL))
         execute.assert_not_called()
 
     def test_single_user_without_user_still_works(self, composio):
-        composio.tools.get(user_id="alice", tools=[self.SLUG])
-        composio.tools.get(user_id="alice", tools=[self.SLUG])
+        composio.tools.get(user_id="alice", tools=[self.GMAIL])
+        composio.tools.get(user_id="alice", tools=[self.NOTION])
 
-        assert self._executed_for(composio) == "alice"
+        assert self._executed_for(composio, self.GMAIL, self.NOTION) == [
+            "alice",
+            "alice",
+        ]
 
-    def test_session_executes_through_session(self, composio):
-        composio.tools.get(user_id="alice", tools=[self.SLUG])
+    def test_rejects_user_with_no_fetched_tools(self, composio):
+        composio.tools.get(user_id="alice", tools=[self.GMAIL])
+
+        with pytest.raises(ValueError, match="user_id"):
+            composio.provider.handle_response(
+                self._response(self.GMAIL), user_id="carol"
+            )
+
+    def test_fetch_during_execution_does_not_switch_user(self, composio):
+        """Executors are picked before any call runs (review of #5120)."""
+        composio.tools.get(user_id="alice", tools=[self.GMAIL, self.NOTION])
+        execute = composio.tools._client.without_retries.tools.execute
+        alice_execute = execute.side_effect
+
+        def fetch_for_bob_then_execute(**kwargs):
+            execute.side_effect = alice_execute
+            composio.tools.get(user_id="bob", tools=[self.NOTION])
+            return alice_execute(**kwargs)
+
+        execute.side_effect = fetch_for_bob_then_execute
+
+        # Without a user: Bob's fetch mid-response would make a later lookup
+        # ambiguous, but the response was resolved before it.
+        assert self._executed_for(composio, self.GMAIL, self.NOTION) == [
+            "alice",
+            "alice",
+        ]
+        with pytest.raises(ValueError, match="user_id="):
+            composio.provider.handle_response(self._response(self.GMAIL))
+
+    def test_session_runs_through_its_own_executor(self, composio):
+        """``session=`` keeps the routing ``session.tools()`` installed, which
+        runs local custom tools in a batch in process."""
+        from composio.core.provider import bind_execution_target
+
+        composio.tools.get(user_id="alice", tools=[self.GMAIL])
         session = Mock()
-        session.execute.return_value = MagicMock(
-            data={"user_id": "session"}, error=None, result_type="completed"
+        routing_execute = bind_execution_target(
+            Mock(return_value={"data": {"user_id": "session"}, "successful": True}),
+            session,
         )
+        composio.provider.wrap_tools([self._tool(self.GMAIL)], routing_execute)
 
-        assert self._executed_for(composio, session=session) == "session"
-        session.execute.assert_called_once_with(
-            tool_slug=self.SLUG, arguments={"query": "is:unread"}
+        assert self._executed_for(composio, self.GMAIL, session=session) == ["session"]
+        routing_execute.assert_called_once_with(
+            slug=self.GMAIL, arguments={"query": "is:unread"}
         )
-
-    def test_rejects_modifiers_without_user(self, composio):
-        with pytest.raises(ValueError, match="modifiers"):
-            composio.provider.handle_response(self._response(), modifiers=[])
+        session.execute.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

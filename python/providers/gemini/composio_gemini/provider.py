@@ -5,7 +5,7 @@ Calling (AFC). The SDK can introspect the callable's signature to derive
 FunctionDeclaration schemas and auto-execute tool calls in the chat loop.
 """
 
-import functools
+import threading
 import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
@@ -13,9 +13,13 @@ from inspect import Parameter, Signature
 from pydantic import BaseModel
 
 from composio.client.types import Tool
-from composio.core.provider import AgenticProvider, ToolCallSession
+from composio.core.provider import (
+    AgenticProvider,
+    ToolCallExecutionTarget,
+    ToolCallSession,
+    get_execution_target,
+)
 from composio.core.provider.agentic import AgenticProviderExecuteFn
-from composio.types import Modifiers
 from composio.utils.shared import (
     ToolSchemaAliases,
     alias_tool_input_schema,
@@ -109,22 +113,15 @@ def _afc_annotation(annotation: t.Any, schema: t.Any = None) -> t.Any:
     return annotation
 
 
-_AMBIGUOUS = object()
-"""Marks a slug wrapped for more than one execution context."""
-
-
 def _execution_context(execute_tool: AgenticProviderExecuteFn) -> object:
     """Identify who a wrapped tool executes as.
 
-    ``tools.get(user_id=...)`` binds the user into a ``functools.partial``, so
-    two fetches for the same user share a context. Any other execute function,
-    such as a Tool Router session's, is its own context.
+    ``tools.get(user_id=...)`` and ``session.tools()`` record their user ID or
+    session on the execute function, so two fetches for the same user share a
+    context. Any other execute function is its own context.
     """
-    if isinstance(execute_tool, functools.partial):
-        user_id = execute_tool.keywords.get("user_id")
-        if user_id is not None:
-            return ("user_id", user_id)
-    return execute_tool
+    target = get_execution_target(execute_tool)
+    return execute_tool if target is None else target
 
 
 def _process_execution_result(result: t.Any) -> t.Dict:
@@ -158,14 +155,15 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
 
     def __init__(self, **kwargs: t.Any):
         super().__init__(**kwargs)
-        self._executors: t.Dict[
-            str,
-            t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases, t.Type[BaseModel]],
-        ] = {}
-        # The execution context each slug was wrapped for, or ``_AMBIGUOUS``
-        # once it has been wrapped for two, so ``handle_response`` never runs a
-        # call as whichever user fetched the tools last.
-        self._executor_contexts: t.Dict[str, object] = {}
+        # Guards the registries below: tools can be fetched on one thread while
+        # ``handle_response`` reads them on another.
+        self._lock = threading.Lock()
+        # Argument schema per slug, shared by every user.
+        self._schemas: t.Dict[str, t.Tuple[ToolSchemaAliases, t.Type[BaseModel]]] = {}
+        # Execute function per slug, for each user ID or session the tools
+        # were fetched for, so ``handle_response`` runs a call as the caller's
+        # user rather than whoever fetched the tool last.
+        self._executors: t.Dict[object, t.Dict[str, AgenticProviderExecuteFn]] = {}
 
     def wrap_tool(
         self,
@@ -185,10 +183,10 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # validation model needs them: without a default every optional field
         # would be required.
         args_schema = json_schema_to_model(aliases.schema, skip_default=False)
-        self._executors[tool.slug] = (execute_tool, aliases, args_schema)
         context = _execution_context(execute_tool)
-        if self._executor_contexts.setdefault(tool.slug, context) != context:
-            self._executor_contexts[tool.slug] = _AMBIGUOUS
+        with self._lock:
+            self._schemas[tool.slug] = (aliases, args_schema)
+            self._executors.setdefault(context, {})[tool.slug] = execute_tool
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
@@ -254,7 +252,6 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         response: t.Any,
         *,
         user_id: t.Optional[str] = None,
-        modifiers: t.Optional[Modifiers] = None,
         session: t.Optional[ToolCallSession] = None,
     ) -> tuple[list, bool]:
         """Manually handle function calls in a Gemini response.
@@ -265,12 +262,11 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         handle execution automatically.
 
         A Gemini response does not say which user it belongs to. Pass the
-        ``user_id`` the tools were fetched for, or the Tool Router ``session``
-        that produced them, and every call runs for that target. Direct
-        execution with ``user_id`` applies ``modifiers`` passed here, not the
-        ones given to ``tools.get()``. Without a target, each call runs through
-        the executor stored when its tool was wrapped; that raises if the tool
-        was wrapped for more than one user or session.
+        ``user_id`` given to ``tools.get()``, or the Tool Router ``session``
+        whose ``tools()`` produced the tools, and each call runs exactly as
+        the matching wrapped tool would, with the same modifiers and session
+        routing. Without either, the provider must have wrapped tools for a
+        single user or session only; otherwise this raises ``ValueError``.
 
         Returns:
             tuple: ``(function_responses, executed)`` where *function_responses*
@@ -284,8 +280,6 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                 user_id=user_id, session=session
             )
         )
-        if modifiers is not None and user_id is None:
-            raise ValueError("modifiers can only be used with user_id")
 
         if not HAS_GENAI:
             return [], False
@@ -300,46 +294,32 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         function_calls = [
             part.function_call
             for part in candidate.content.parts
-            if hasattr(part, "function_call")
-            and part.function_call
-            and part.function_call.name in self._executors
+            if hasattr(part, "function_call") and part.function_call
         ]
-        if target is None:
-            ambiguous = sorted(
-                {
-                    fc.name
-                    for fc in function_calls
-                    if self._executor_contexts.get(fc.name) is _AMBIGUOUS
-                }
-            )
-            if ambiguous:
-                raise ValueError(
-                    f"Tools {ambiguous} were fetched for more than one user or "
-                    "session, so the user to execute them for is ambiguous. "
-                    "Pass the user the response belongs to: "
-                    "handle_response(response, user_id=...) or "
-                    "handle_response(response, session=...)."
-                )
+
+        # Pick every executor and schema before running any call, so a
+        # concurrent fetch cannot change who a later call in this response
+        # runs as.
+        with self._lock:
+            known_calls = [fc for fc in function_calls if fc.name in self._schemas]
+            if not known_calls:
+                return [], False
+            executors = self._executors_for(target)
+            calls = [
+                (fc, executors[fc.name], *self._schemas[fc.name])
+                for fc in known_calls
+                if fc.name in executors
+            ]
 
         function_responses: list = []
-        for fc in function_calls:
+        for fc, execute_tool, aliases, args_schema in calls:
             # Same validate -> serialize -> alias sequence as the AFC callable.
-            execute_tool, aliases, args_schema = self._executors[fc.name]
             arguments = validate_and_serialize_tool_arguments(
                 args_schema,
                 normalize_tool_arguments(_to_serializable(dict(fc.args))),
             )
             arguments = aliases.restore_arguments(arguments)
-            result = (
-                execute_tool(slug=fc.name, arguments=arguments)
-                if target is None
-                else self.execute_tool_for_target(
-                    target=target,
-                    slug=fc.name,
-                    arguments=arguments,
-                    modifiers=modifiers,
-                )
-            )
+            result = execute_tool(slug=fc.name, arguments=arguments)
             processed = _process_execution_result(result)
 
             function_responses.append(
@@ -351,3 +331,29 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             )
 
         return function_responses, bool(function_responses)
+
+    def _executors_for(
+        self,
+        target: t.Optional[ToolCallExecutionTarget],
+    ) -> t.Dict[str, AgenticProviderExecuteFn]:
+        """Return the execute functions for *target*. Call with the lock held."""
+        if target is None:
+            if len(self._executors) > 1:
+                raise ValueError(
+                    "This provider has wrapped tools for more than one user or "
+                    "session, so the user to execute the response as is "
+                    "ambiguous. Pass the user the response belongs to: "
+                    "handle_response(response, user_id=...) or "
+                    "handle_response(response, session=...)."
+                )
+            return next(iter(self._executors.values()), {})
+
+        executors = self._executors.get(target)
+        if executors is None:
+            source = (
+                "composio.tools.get() for this user_id"
+                if isinstance(target, str)
+                else "this session's tools()"
+            )
+            raise ValueError(f"This provider has not wrapped any tools from {source}.")
+        return executors
