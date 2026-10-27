@@ -16,15 +16,11 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
-import {
-  formatConnectedAccountChoices,
-  resolveConnectedAccountSelection,
-} from 'src/services/connected-account-selection';
+import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
-import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import { idempotent } from 'src/services/composio-request';
 
 type TriggerCreateParams = NonNullable<
@@ -34,7 +30,6 @@ type TriggerCreateParams = NonNullable<
 export class ListenCommandError extends Data.TaggedError('commands/ListenCommandError')<{
   readonly reason:
     | 'project_context'
-    | 'connected_accounts'
     | 'connected_account_not_found'
     | 'unknown_trigger'
     | 'create_trigger'
@@ -157,9 +152,9 @@ const assertSupportedListenParams = (params: {
 /**
  * Fails with an `unknown_trigger` error when `slug` is not a known trigger type.
  *
- * Called when no active connected account matched, and when creating the temporary trigger fails,
- * so a mistyped slug is reported as such instead of as a missing connection or a generic creation
- * failure. Neither call site is on the happy path, which makes no additional request.
+ * Called when the toolkit has no active connected account, and when creating the temporary trigger
+ * fails, so a mistyped slug is reported as such instead of as a missing connection or a generic
+ * creation failure. Neither call site is on the happy path, which makes no additional request.
  */
 const assertTriggerTypeExists = (params: {
   client: ComposioClientShape;
@@ -202,60 +197,23 @@ const resolveConnectedAccountIdForTrigger = (params: {
       );
     }
 
-    const connectedAccounts = yield* params.client.connectedAccounts
-      .list(
-        {
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [params.consumerUserId],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        },
-        idempotent
-      )
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new ListenCommandError({
-              reason: 'connected_accounts',
-              message: `Failed to list connected accounts for "${toolkitSlug}": Error: ${cause.message}`,
-              slug: params.slug,
-              toolkitSlug,
-              cause,
-            })
-        )
-      );
-    const selectableAccounts = yield* decodeConnectedAccountItems(connectedAccounts.items).pipe(
-      Effect.mapError(
-        cause =>
-          new ListenCommandError({
-            reason: 'connected_accounts',
-            message: `Connected accounts for toolkit "${toolkitSlug}" did not match the expected response shape.`,
-            slug: params.slug,
-            toolkitSlug,
-            cause,
-          })
-      )
-    );
-    const selectedAccount = resolveConnectedAccountSelection(
-      selectableAccounts,
-      Option.getOrUndefined(params.account)
-    );
-    if (selectedAccount?.id) {
-      return selectedAccount.id;
+    // The resolver `composio execute` and `composio proxy` use, so all three pick the same
+    // account for the same `--account` (or its absence) and fail the same way when they cannot.
+    const connectedAccountId = yield* resolveConnectedAccountForToolkit({
+      client: params.client,
+      toolkitSlug,
+      userId: params.consumerUserId,
+      selector: params.account,
+    });
+    if (connectedAccountId) {
+      return connectedAccountId;
     }
 
     yield* assertTriggerTypeExists({ client: params.client, slug: params.slug, toolkitSlug });
 
-    const choices = formatConnectedAccountChoices(selectableAccounts);
-    const suffix =
-      Option.isSome(params.account) && choices.length > 0
-        ? ` Available accounts: ${choices.join(', ')}.`
-        : '';
     return yield* new ListenCommandError({
       reason: 'connected_account_not_found',
-      message: Option.isSome(params.account)
-        ? `No connected account matched "${params.account.value}" for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
-        : `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`,
+      message: `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`,
       slug: params.slug,
       toolkitSlug,
     });

@@ -12,6 +12,13 @@
 
 ### Patch Changes
 
+- `composio listen` now picks the connected account for a trigger slug the way
+  `composio execute` and `composio proxy` do, through the same resolver, so the
+  three commands choose the same account for the same `--account` (or its
+  absence). An `--account` that matches no active account, or a failed account
+  lookup, now fails with the message those commands print, as a plain message
+  on stderr with exit 1.
+
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
   it could name an older version than the one `composio upgrade` then
