@@ -26,17 +26,17 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.73
+  '@ai-sdk/mcp': ^2.0.80
   '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.5.1'
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
-  '@cloudflare/workers-types': ^5.20261012.1
-  '@composio/client': 2.0.0-rc.19
-  '@effect/language-service': ^0.87.4
-  '@effect/platform-bun': 4.0.3
-  '@effect/vitest': 4.0.3
+  '@cloudflare/workers-types': ^5.20261019.1
+  '@composio/client': 2.0.0-rc.22
+  '@effect/language-service': ^0.87.5
+  '@effect/platform-bun': 4.0.5
+  '@effect/vitest': 4.0.5
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
@@ -44,19 +44,19 @@ catalog:
   '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.32.1
   '@types/bun': ^1.4.3
-  ai: ^7.0.137
-  dotenv: ^18.0.6
-  effect: 4.0.3
+  ai: ^7.0.146
+  dotenv: ^18.0.8
+  effect: 4.0.5
   hono: ^4.13.13
-  openai: ^7.32.0
+  openai: ^7.39.0
   picocolors: ^1.1.1
   publint: ^0.3.25
   tsdown: ^0.23.1
   tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^5.0.4
-  vitest: ^5.0.3
-  wrangler: ^4.149.0
+  '@vitest/ui': ^5.0.5
+  vitest: ^5.0.5
+  wrangler: ^4.151.2
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 

@@ -139,6 +139,75 @@ describe('CLI process error handling', () => {
     expect(result.stderr).not.toContain('Sources');
   });
 
+  // Each of these used to print its message only to a terminal and exit 0, so a script, CI or
+  // an agent saw nothing and a successful exit; `connections remove` used to answer its own
+  // confirmation prompt with "no".
+  it.each([
+    {
+      command: 'whoami',
+      args: ['whoami'],
+      loggedIn: false,
+      message: 'You are not logged in yet. Please run `composio login`.',
+    },
+    {
+      command: 'dev connected-accounts info',
+      args: ['dev', 'connected-accounts', 'info'],
+      loggedIn: true,
+      message: 'Missing required argument: <id>',
+    },
+    {
+      command: 'triggers info',
+      args: ['triggers', 'info'],
+      loggedIn: true,
+      message: 'Missing required argument: <slug>',
+    },
+    {
+      command: 'connections remove gmail',
+      args: ['connections', 'remove', 'gmail'],
+      loggedIn: true,
+      message: '`composio connections remove` needs --yes when not running interactively.',
+    },
+    {
+      command: 'dev projects list',
+      args: ['dev', 'projects', 'list'],
+      loggedIn: true,
+      message: 'No current org is configured.',
+    },
+  ])(
+    'reports `composio $command` on a redirected stderr and exits 1',
+    ({ args, loggedIn, message }) => {
+      const configDirectory = tempy.temporaryDirectory();
+      if (loggedIn) {
+        fs.writeFileSync(
+          path.join(configDirectory, 'user_data.json'),
+          JSON.stringify({
+            api_key: 'test-api-key',
+            base_url: 'https://backend.composio.dev',
+            web_url: 'https://platform.composio.dev',
+            org_id: null,
+            test_user_id: null,
+          })
+        );
+      }
+
+      const result = spawnSync('bun', ['run', 'src/bin.ts', ...args], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CI: '1',
+          NO_COLOR: '1',
+          COMPOSIO_CACHE_DIR: configDirectory,
+        },
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain(message);
+      expect(result.stderr).not.toContain('CommandInputError');
+    }
+  );
+
   it('reports a bare `composio run` as a usage error without a defect dump', () => {
     const configDirectory = tempy.temporaryDirectory();
 
@@ -363,8 +432,17 @@ const fakeComposio = (req: IncomingMessage, res: ServerResponse) => {
 /** Shorter than the tests' 30s timeout. */
 const CLI_DEADLINE_MS = 20_000;
 
-const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
+const runCliAgainst = (
+  baseUrl: string,
+  args: ReadonlyArray<string>,
+  options: {
+    /** Writes files into the CLI's cache directory before it starts. */
+    readonly seed?: (configDirectory: string) => void;
+    readonly env?: Readonly<Record<string, string>>;
+  } = {}
+) => {
   const configDirectory = tempy.temporaryDirectory();
+  options.seed?.(configDirectory);
   fs.writeFileSync(
     path.join(configDirectory, 'user_data.json'),
     JSON.stringify({
@@ -394,6 +472,7 @@ const runCliAgainst = (baseUrl: string, args: ReadonlyArray<string>) => {
           COMPOSIO_BASE_URL: baseUrl,
           COMPOSIO_WEB_URL: baseUrl,
           COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
+          ...options.env,
         },
       });
       let stdout = '';
@@ -522,6 +601,119 @@ describe('account selection errors', () => {
         expect(result.stderr).not.toContain('💥');
         expect(result.stderr).not.toContain('ConnectedAccountResolutionError');
         expect(result.stderr).not.toContain('composio-cli');
+      }),
+    30_000
+  );
+});
+
+describe('expected failures without the crash banner', () => {
+  /**
+   * The connected-toolkits cache turned on, and fresh with no toolkit connected for the consumer
+   * user `fakeComposio` resolves.
+   */
+  const noConnectedToolkits = {
+    env: { COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'false' },
+    seed: (configDirectory: string) =>
+      fs.writeFileSync(
+        path.join(configDirectory, 'consumer-short-term-cache.json'),
+        JSON.stringify({
+          'org_test:consumer-user-test': {
+            toolkits: [],
+            // The spawned CLI reads the real clock, so the entry must outlive any test run.
+            expiresAt: '2999-01-01T00:00:00.000Z',
+          },
+        })
+      ),
+  };
+
+  /** `fakeComposio`, except the consumer project has no consumer user. */
+  const withoutConsumerUser = (req: IncomingMessage, res: ServerResponse) =>
+    new URL(req.url ?? '/', 'http://127.0.0.1').pathname.endsWith('/org/consumer/project/resolve')
+      ? sendJson(res, 200, {
+          org_id: 'org_test',
+          project_id: 'proj_test',
+          project_nano_id: 'pr_test',
+          project_name: 'consumer',
+          consumer_user_id: '',
+        })
+      : fakeComposio(req, res);
+
+  const notConnected = (toolkit: string) =>
+    `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
+
+  it.each([
+    {
+      name: '`login --poll` without a pending login',
+      args: ['login', '--poll'],
+      setup: {},
+      server: fakeComposio,
+      tag: 'PendingLoginError',
+      message: 'No pending login found. Run `composio login < /dev/null` first.',
+    },
+    {
+      name: '`execute --file` for a tool without a file input',
+      args: ['execute', 'GMAIL_FETCH_EMAILS', '--file', 'report.pdf', '-d', '{}'],
+      setup: {},
+      server: fakeComposio,
+      tag: 'ToolExecutionError',
+      message:
+        'Tool "GMAIL_FETCH_EMAILS" has no file_uploadable input. Remove --file or pass JSON via -d.',
+    },
+    {
+      name: '`proxy` without a consumer user',
+      args: [
+        'proxy',
+        'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+        '--toolkit',
+        'gmail',
+      ],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'ProxyCommandError',
+      message: 'No consumer project user is available for proxy execution in this context.',
+    },
+  ])(
+    '[Given] $name [Then] prints the message without the banner and exits 1',
+    ({ args, setup, server, tag, message }) =>
+      withHttpServer(server, async baseUrl => {
+        const result = await runCliAgainst(baseUrl, args, setup);
+
+        expect(result.status).toBe(1);
+        expect(result.stdout).toBe('');
+        expect(result.stderr.trim()).toBe(message);
+        expect(result.stderr).not.toContain('💥');
+        expect(result.stderr).not.toContain(tag);
+        expect(result.stderr).not.toContain('composio-cli');
+      }),
+    30_000
+  );
+
+  it.each([
+    {
+      name: '`execute` with a toolkit that is not connected',
+      args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
+    },
+    {
+      name: '`proxy` with a toolkit that is not connected',
+      args: [
+        'proxy',
+        'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+        '--toolkit',
+        'gmail',
+      ],
+    },
+  ])(
+    '[Given] $name [Then] prints only the failed result and exits 1',
+    ({ args }) =>
+      withHttpServer(fakeComposio, async baseUrl => {
+        const result = await runCliAgainst(baseUrl, args, noConnectedToolkits);
+
+        expect(result.status).toBe(1);
+        expect(JSON.parse(result.stdout)).toMatchObject({
+          successful: false,
+          error: notConnected('gmail'),
+        });
+        expect(result.stderr).toBe('');
       }),
     30_000
   );

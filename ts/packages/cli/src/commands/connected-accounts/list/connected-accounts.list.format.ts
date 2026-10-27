@@ -8,10 +8,6 @@ import { formatConnectedAccountsTable } from '../format';
 export const FETCHING_CONNECTED_ACCOUNTS_MESSAGE = 'Fetching connected accounts...';
 export const LIST_CONNECTED_ACCOUNTS_FAILED_MESSAGE = 'Failed to list connected accounts.';
 
-/** The failure when the response shape drifted so far that `items` is not a list. */
-export const CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE =
-  'Connected accounts response was not the shape this CLI understands; run `composio upgrade`.';
-
 /**
  * The warning for an empty page, naming the first filter that was given: `--toolkits`, then
  * `--user-id`, then `--status`.

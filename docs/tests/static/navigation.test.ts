@@ -58,6 +58,7 @@ describe("Navigation - meta.json validity", () => {
     expect(separators).toEqual([
       "---Get Started---",
       "---Core concepts---",
+      "---Governance---",
       "---Guides---",
       "---Direct execution (legacy)---",
       "---Migration and security---",

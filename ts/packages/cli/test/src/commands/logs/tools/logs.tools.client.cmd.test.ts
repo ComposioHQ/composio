@@ -43,7 +43,7 @@ describe('CLI: composio dev logs tools over the API client', () => {
   layer(testLayer)('[Given] a page of tool logs', it => {
     it.effect('[Then] the logs are listed as a table and printed as the API returned them', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json(page));
+        const stub = stubClientResources(['_internal'], () => Response.json(page));
         yield* cli(['dev', 'logs', 'tools', '--toolkit', 'gmail']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
@@ -87,7 +87,7 @@ describe('CLI: composio dev logs tools over the API client', () => {
       },
     ])('[Then] each user id is sent as a search param when passed $name', ({ args }) =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        const stub = stubClientResources(['_internal'], () => Response.json({ data: [] }));
         yield* cli(args).pipe(Effect.provide(stub.layer));
 
         expect(stub.requests).toMatchObject([
@@ -107,7 +107,7 @@ describe('CLI: composio dev logs tools over the API client', () => {
   layer(testLayer)('[Given] the API rejects the request', it => {
     it.effect('[Then] the command fails with the status and response body as the cause', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () =>
+        const stub = stubClientResources(['_internal'], () =>
           Response.json(
             { error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 } },
             { status: 403 }
@@ -147,7 +147,7 @@ describe('CLI: composio dev logs tools over the API client', () => {
             },
           ],
         };
-        const stub = stubClientResources(['logs'], () => Response.json(driftedPage));
+        const stub = stubClientResources(['_internal'], () => Response.json(driftedPage));
         yield* cli(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
@@ -179,7 +179,7 @@ describe('CLI: composio dev logs tools over the API client', () => {
           payloadReceived: { recipient_email: 'a@b.c' },
           response: { id: 'msg_1' },
         };
-        const stub = stubClientResources(['logs'], () => Response.json(driftedLog));
+        const stub = stubClientResources(['_internal'], () => Response.json(driftedLog));
         yield* cli(['dev', 'logs', 'tools', 'log_drift_1']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 

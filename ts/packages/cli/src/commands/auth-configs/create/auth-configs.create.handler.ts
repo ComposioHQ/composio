@@ -61,7 +61,10 @@ export const buildAuthConfigCreateRequest = (input: {
       auth_config: {
         type: 'use_custom_auth' as const,
         // The API validates the scheme and answers an unknown one with its own error and hint.
-        authScheme: authScheme as AuthConfigCreateRequest.UnionMember1['authScheme'],
+        authScheme: authScheme as Extract<
+          NonNullable<AuthConfigCreateRequest['auth_config']>,
+          { authScheme: unknown }
+        >['authScheme'],
         name: input.name,
         credentials:
           input.customCredentials || input.scopes

@@ -80,3 +80,23 @@ export const terminalUITestImpl = TerminalUI.of({
 });
 
 export const TerminalUITest = Layer.succeed(TerminalUI, terminalUITestImpl);
+
+/** An interactive terminal (all streams a TTY) whose confirmation prompt answers `confirmed`. */
+export const terminalUIWithConfirm = (confirmed: boolean) =>
+  TerminalUI.of({
+    ...terminalUITestImpl,
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: true },
+        stdout: { isTTY: true },
+        stderr: { isTTY: true },
+      })
+    ),
+    confirm: () => Effect.succeed(confirmed),
+  });
+
+/** An interactive terminal whose confirmation prompt must never be shown. */
+export const terminalUIWithoutPrompt = TerminalUI.of({
+  ...terminalUIWithConfirm(false),
+  confirm: () => Effect.die('the confirmation prompt must not be shown'),
+});

@@ -52,7 +52,7 @@ import { telemetry } from '../telemetry/Telemetry';
 import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
-import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import {
@@ -72,7 +72,7 @@ import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
 type ToolRouterSessionExecuteOptions = {
-  experimental?: SessionExecuteParams.Experimental;
+  experimental?: NonNullable<SessionExecuteParams['experimental']>;
 };
 
 type RawToolParameters =
@@ -1362,7 +1362,7 @@ export class Tools<
     }
     // convert the headers and query to the composio format
     // { name: string, type: 'header' | 'query', value: string }
-    const parameters: ComposioToolProxyParams.Parameter[] = [];
+    const parameters: NonNullable<ComposioToolProxyParams['parameters']>[number][] = [];
     const parameterTypes = {
       header: 'header',
       query: 'query',

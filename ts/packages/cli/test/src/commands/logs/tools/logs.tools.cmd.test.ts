@@ -79,7 +79,7 @@ describe('CLI: composio dev logs tools', () => {
     it.effect('[Then] it warns and prints the empty page as the API returned it', () =>
       Effect.gen(function* () {
         const page = { data: [], nextCursor: null };
-        const stub = stubClientResources(['logs'], () => Response.json(page));
+        const stub = stubClientResources(['_internal'], () => Response.json(page));
         yield* cli(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
         const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
         const stdout = yield* MockConsole.getLines({ stream: 'stdout' });
@@ -99,7 +99,7 @@ describe('CLI: composio dev logs tools', () => {
       '[Then] each is sent as search params in a fixed order and the limit is clamped',
       () =>
         Effect.gen(function* () {
-          const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+          const stub = stubClientResources(['_internal'], () => Response.json({ data: [] }));
           yield* cli([
             'dev',
             'logs',
@@ -167,7 +167,7 @@ describe('CLI: composio dev logs tools', () => {
     it.effect('[Then] it lists the logs, hints at the first one, and prints the cursor', () =>
       Effect.gen(function* () {
         const page = { data: [log], nextCursor: 42 };
-        const stub = stubClientResources(['logs'], () => Response.json(page));
+        const stub = stubClientResources(['_internal'], () => Response.json(page));
         yield* cli(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
         const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
         const stdout = yield* MockConsole.getLines({ stream: 'stdout' });
@@ -186,7 +186,7 @@ describe('CLI: composio dev logs tools', () => {
     it.effect('[Then] it fetches that log alone and prints it as the API returned it', () =>
       Effect.gen(function* () {
         const toolLog = { ...log, payloadReceived: { to: 'a@b.c' }, response: { id: 'msg_1' } };
-        const stub = stubClientResources(['logs'], () => Response.json(toolLog));
+        const stub = stubClientResources(['_internal'], () => Response.json(toolLog));
         yield* cli(['dev', 'logs', 'tools', 'log_1']).pipe(Effect.provide(stub.layer));
         const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
         const stdout = yield* MockConsole.getLines({ stream: 'stdout' });
@@ -203,7 +203,7 @@ describe('CLI: composio dev logs tools', () => {
   layer(testLayer)('[Given] an empty log id argument', it => {
     it.effect('[Then] it lists logs instead of fetching one', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        const stub = stubClientResources(['_internal'], () => Response.json({ data: [] }));
         yield* cli(['dev', 'logs', 'tools', '']).pipe(Effect.provide(stub.layer));
 
         expect(stub.requests).toMatchObject([{ method: 'POST' }]);
@@ -214,7 +214,7 @@ describe('CLI: composio dev logs tools', () => {
   layer(testLayer)('[Given] the API rejects the request for one log', it => {
     it.effect('[Then] the failure names the log id', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () =>
+        const stub = stubClientResources(['_internal'], () =>
           Response.json(
             { error: { message: 'Not found', code: 1404, slug: 'Not_Found', status: 404 } },
             { status: 404 }

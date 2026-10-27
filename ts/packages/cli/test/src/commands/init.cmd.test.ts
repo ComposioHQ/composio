@@ -1,9 +1,15 @@
+import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeOrgProject } from 'test/__utils__/models/account';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 describe('CLI: composio dev init', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
   describe('dev init --help', () => {
     layer(TestLive({ fixture: 'typescript-project' }))(it => {
       it.effect('[Then] shows --no-browser and --yes, no --org-id or --project-id', () =>
@@ -18,6 +24,42 @@ describe('CLI: composio dev init', () => {
         })
       );
     });
+  });
+
+  describe('dev init without a usable login', () => {
+    layer(TestLive({ fixture: 'user-config-example' }))(it => {
+      it.effect('[Given] an API key but no org [Then] fails with a usage error', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['dev', 'init', '--yes']).pipe(Effect.flip);
+
+          // `cli-main.ts` prints the message on stderr and exits 1.
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev init',
+            message: 'No global API key or org ID found. Please try `composio login` first.',
+          });
+        })
+      );
+    });
+  });
+
+  describe('dev init in an org without projects', () => {
+    layer(TestLive({ fixture: 'user-config-with-global-context', accountData: { projects: [] } }))(
+      it => {
+        it.effect('[Given] no projects [Then] says so on a redirected stderr and exits 1', () =>
+          Effect.gen(function* () {
+            const terminal = redirectedTerminalUI();
+            yield* cli(['dev', 'init', '--yes']).pipe(Effect.provide(terminal.layer));
+
+            expect(terminal.stderr()).toBe(
+              'No projects found for your organization.\nCreate a project at https://platform.composio.dev, then run `composio dev init` again.\n'
+            );
+            expect(terminal.stdout()).toBe('');
+            expect(process.exitCode).toBe(1);
+          })
+        );
+      }
+    );
   });
 
   describe('dev init with the API unreachable', () => {

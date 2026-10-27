@@ -4,6 +4,8 @@ description: Build an agent with Vercel AI SDK and enable it to use 1000+ tools 
 keywords: [ai sdk, vercel]
 ---
 
+{/* code-example: single-language-page reason="Vercel AI SDK provider is TypeScript-only" */}
+
 The Vercel AI SDK provider transforms Composio tools into Vercel's [tool format](https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling) with built-in execution, so you don't write a manual agentic loop. Each wrapped tool carries its own `execute` function, and the AI SDK calls it for you.
 
 <Steps>
@@ -57,7 +59,7 @@ console.log(text);
 
 ## Provider specifics
 
-**Strict mode.** Some models reject tool schemas that contain optional parameters. Pass `strict: true` to the provider to normalize each tool's input schema for OpenAI structured outputs before it reaches the AI SDK: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the tool's own schema accepts `null` for that parameter, so nullable fields still receive an explicit `null`. Tools whose schema cannot be expressed in strict mode, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, keep their original schema and log a warning:
+**Strict mode.** Pass `strict: true` to the provider to rewrite each tool's input schema into the form OpenAI strict mode (structured outputs) accepts before it reaches the AI SDK: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the tool's own schema accepts `null` for that parameter, so nullable fields still receive an explicit `null`. Tools whose schema cannot be expressed in strict mode, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, keep their original schema and log a warning:
 
 ```typescript
 // @noErrors
@@ -67,8 +69,14 @@ import { VercelProvider } from "@composio/vercel";
 const composio = new Composio({ provider: new VercelProvider({ strict: true }) });
 ```
 
+The option does not set the AI SDK's per-tool `strict` flag, so the model provider does not enforce the schema. It does change what the provider accepts locally: tool-call arguments are validated against the rewritten schema, so a call that leaves out an optional parameter instead of sending `null` fails validation, and those `null`s are dropped before the tool runs, as described above. If you set that flag yourself, use it only with OpenAI models and only on tools that did not log the warning above, since OpenAI rejects a tool that kept its original schema. Don't set it for Anthropic models: Anthropic strict mode allows at most 16 parameters with union types and 24 optional parameters across all strict tools in a request, and the rewrite turns every optional parameter into a union, so a request with about ten Composio tools is rejected. Anthropic strict mode also rejects recursive definitions and keywords such as `minimum` and `maximum` that some Composio tools use.
+
 <Callout type="info">
 The provider sends each Composio tool's JSON Schema to the model as is, so keywords such as `format`, `contentEncoding`, and `contentMediaType` reach it, and validates tool-call arguments with a Zod schema built from the same JSON Schema. It also normalizes tool arguments, so it still works when a model emits tool input as a JSON string rather than an object.
+</Callout>
+
+<Callout type="warn">
+`tool.inputSchema` is an AI SDK `Schema`. If you validate arguments yourself, import `asSchema` from `ai` and call `await asSchema(tool.inputSchema).validate(value)` instead of `tool.inputSchema.safeParse(value)`.
 </Callout>
 
 ## Next

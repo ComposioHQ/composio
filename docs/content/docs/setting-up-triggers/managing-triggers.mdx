@@ -10,7 +10,7 @@ After a trigger is created, you manage it over its lifecycle: list active instan
 
 List the trigger instances you've created. Results are cursor-paginated.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -26,7 +26,10 @@ for trigger in active.items:
 
 # Paginate with cursor
 if active.next_cursor:
-    next_page = composio.triggers.list_active(cursor=active.next_cursor)
+    next_page = composio.triggers.list_active(
+        connected_account_ids=["ca_def456"],
+        cursor=active.next_cursor,
+    )
 ```
   </Tab>
   <Tab value="TypeScript">
@@ -45,8 +48,25 @@ for (const trigger of active.items) {
 
 // Paginate with cursor
 if (active.nextCursor) {
-  const nextPage = await composio.triggers.listActive({ cursor: active.nextCursor });
+  const nextPage = await composio.triggers.listActive({
+    connectedAccountIds: ['ca_def456'],
+    cursor: active.nextCursor,
+  });
 }
+```
+  </Tab>
+  <Tab value="API">
+```bash
+RESPONSE=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/trigger_instances/active?connected_account_ids=ca_def456" \
+  -H "x-api-key: $COMPOSIO_API_KEY")
+echo "$RESPONSE" | jq -r '.items[] | "\(.id) (\(.trigger_name)) - disabled: \(.disabled_at != null)"'
+NEXT_CURSOR=$(echo "$RESPONSE" | jq -r '.next_cursor // empty')
+
+# Fetch another page only when the response supplies a cursor.
+if [ -n "$NEXT_CURSOR" ]; then
+  curl -X GET "https://backend.composio.dev/api/v3.1/trigger_instances/active?connected_account_ids=ca_def456&cursor=$NEXT_CURSOR" \
+    -H "x-api-key: $COMPOSIO_API_KEY"
+fi
 ```
   </Tab>
 </Tabs>
@@ -59,11 +79,13 @@ if (active.nextCursor) {
 | `auth_config_ids` / `authConfigIds` | Array of auth config IDs |
 | `show_disabled` / `showDisabled` | Include disabled triggers (default: `false`) |
 
+Keep the same filters on every page. To find paused instances after reconnecting an account, include `show_disabled=True` in Python or `showDisabled: true` in TypeScript.
+
 ## Enable / Disable triggers
 
 Pause a trigger temporarily without deleting it:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Disable a trigger
@@ -85,13 +107,28 @@ await composio.triggers.disable('ti_abcd123');
 await composio.triggers.enable('ti_abcd123');
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Disable a trigger
+curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "disable"}'
+
+# Re-enable when needed
+curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "enable"}'
+```
+  </Tab>
 </Tabs>
 
 ## Deleting triggers
 
 Permanently remove a trigger instance:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 composio.triggers.delete(trigger_id="ti_abcd123")
@@ -105,8 +142,16 @@ const composio = new Composio();
 await composio.triggers.delete('ti_abcd123');
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X DELETE https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 <Callout type="warn">
 Deleting a trigger is permanent. Use `disable()` instead to temporarily stop receiving events.
 </Callout>
+
+If an enabled trigger isn't delivering events, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).

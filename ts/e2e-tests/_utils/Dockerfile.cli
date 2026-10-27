@@ -1,5 +1,5 @@
 # Reusable Dockerfile for CLI e2e tests (debian runtime)
-# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.22.3 --build-arg NODE_VERSION_DIGEST=sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 -t test-name .
+# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.23.4 --build-arg NODE_VERSION_DIGEST=sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d -t test-name .
 
 ARG NODE_VERSION
 # Digest pin for the node:${NODE_VERSION}-slim base image; must come from toolchain-versions.json (no default on purpose so builds fail loudly instead of silently floating).

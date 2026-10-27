@@ -73,15 +73,17 @@ The Connect Link shows English by default. To show it in your user's language, a
 
 Use these values exactly as written. Any other value, including variants such as `es-MX` or `zh-cn`, shows English. The language stays the same for the whole flow, including the success or failure screen after the user returns from the OAuth provider.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from urllib.parse import urlencode
 
 connection_request = session.authorize("gmail")
 
-# Show the Connect Link in Spanish
-connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+if connection_request.redirect_url:
+    # Show the Connect Link in Spanish
+    connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+    print(connect_url)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -98,6 +100,18 @@ if (connectionRequest.redirectUrl) {
   connectUrl.searchParams.set("locale", "es");
   console.log(connectUrl.toString());
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+REDIRECT_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail"}' | jq -r '.redirect_url')
+
+# Show the Connect Link in Spanish
+echo "$REDIRECT_URL?locale=es"
 ```
 </Tab>
 </Tabs>
@@ -151,6 +165,7 @@ https://yourdomain.com/api/composio-redirect
 
 This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:
 
+{/* code-example: no-api reason="web-server redirect handler code; nothing to call on the Composio API" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -162,7 +177,7 @@ app = FastAPI()
 @app.get("/api/composio-redirect")
 def composio_redirect(request: Request):
     composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
-    return RedirectResponse(url=f"{composio_url}?{request.url.query}")
+    return RedirectResponse(url=f"{composio_url}?{request.url.query}", status_code=302)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -205,7 +220,7 @@ For FAQs and setup guides for individual toolkits, browse the [toolkits page](/t
 
 By default, after OAuth completes, users land on a Composio-hosted success page that shows Composio branding. To bypass this page and send users to your own domain instead, pass a `callbackUrl` when calling `session.authorize()`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 connection_request = session.authorize(
@@ -223,6 +238,15 @@ const session = await composio.create("user_123");
 const connectionRequest = await session.authorize("gmail", {
   callbackUrl: "https://your-app.com/callback",
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail", "callback_url": "https://your-app.com/callback"}'
 ```
 </Tab>
 </Tabs>

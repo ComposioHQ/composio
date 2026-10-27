@@ -68,16 +68,20 @@ describe('CLI: composio dev connected-accounts info', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
-    '[Given] no ID argument [Then] shows missing argument warning',
+    '[Given] no ID argument [Then] fails with a usage error',
     it => {
-      it.effect('warns about missing argument', () =>
+      it.effect('raises a CommandInputError naming <id>', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'connected-accounts', 'info']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const failure = yield* cli(['dev', 'connected-accounts', 'info']).pipe(Effect.flip);
 
-          expect(output).toContain('Missing required argument');
-          expect(output).toContain('composio dev connected-accounts info');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '<id>',
+            message: expect.stringMatching(
+              /^Missing required argument: <id>\n[^]*composio dev connected-accounts info /
+            ),
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
         })
       );
     }

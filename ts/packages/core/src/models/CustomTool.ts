@@ -37,7 +37,7 @@ import {
 import type {
   SessionCreateResponse,
   SessionRetrieveResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import { ValidationError } from '../errors';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import {

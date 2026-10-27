@@ -1,10 +1,10 @@
-import { Data, Effect, Predicate, String } from 'effect';
+import { Data, Effect, String } from 'effect';
 import type { RequestOptions } from '@composio/client/effect';
 import type { OrgListResponse, ProjectListResponse } from '@composio/client/resources/org';
 import type {
   ConsumerListConnectedToolkitsResponse,
   ProjectResolveResponse,
-} from '@composio/client/resources/org/consumer';
+} from '@composio/client/resources/_internal/org/consumer';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
 import { LatestToolVersionResponse } from 'src/models/tools';
 import { ComposioClientSingleton } from './composio-clients';
@@ -39,37 +39,17 @@ const requireSessionProject = (
       )
     : Effect.succeed({ ...info, project: info.project });
 
-/**
- * The org member's user id, falling back to the member id. The backend still
- * sends `org_member.user_id` although the v3.1 spec omits it, and the persisted
- * test user id derives from it, so it is read defensively.
- */
-export const sessionUserIdOf = (info: SessionInfoResponse): string => {
-  const member: object = info.org_member;
-  return Predicate.hasProperty(member, 'user_id') && Predicate.isString(member.user_id)
-    ? member.user_id
-    : info.org_member.id;
-};
+/** The org member's id. The persisted playground test user id derives from it. */
+export const sessionUserIdOf = (info: SessionInfoResponse): string => info.org_member.id;
 
-/**
- * The project API key carried by a session, or null. The v3.1 spec names the
- * field `key`, and older responses spell it `api_key`; reading both keeps
- * `composio dev init` from minting a second key when the backend sends the
- * older spelling.
- */
-export const sessionProjectApiKeyOf = (info: SessionInfoResponse): string | null => {
-  const apiKey: object | null = info.api_key;
-  if (apiKey === null) return null;
-  if (Predicate.hasProperty(apiKey, 'api_key') && Predicate.isString(apiKey.api_key)) {
-    return apiKey.api_key;
-  }
-  return info.api_key?.key ?? null;
-};
+/** The project API key carried by a session, or null. */
+export const sessionProjectApiKeyOf = (info: SessionInfoResponse): string | null =>
+  info.api_key?.key ?? null;
 
 /**
  * A single project entry returned by GET /api/v3.1/org/project/list.
  */
-export type OrgProject = ProjectListResponse.Data;
+export type OrgProject = ProjectListResponse['data'][number];
 
 export interface OrganizationSummary {
   readonly id: string;
@@ -99,7 +79,7 @@ export const listOrganizations = (params: {
       { ...idempotent, ...validated }
     );
     const organizations = response.organizations.map(
-      (organization: OrgListResponse.Organization) =>
+      (organization: OrgListResponse['organizations'][number]) =>
         ({ id: organization.id, name: organization.name }) satisfies OrganizationSummary
     );
 
@@ -280,7 +260,7 @@ export const resolveConsumerProject = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
-    return yield* client.org.consumer.project.resolve(
+    return yield* client._internal.org.consumer.project.resolve(
       {
         'x-user-api-key': params.apiKey,
         'x-org-id': params.orgId,
@@ -335,7 +315,7 @@ export const getConsumerConnectedToolkits = (params: {
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
-    return yield* client.org.consumer.listConnectedToolkits(
+    return yield* client._internal.org.consumer.listConnectedToolkits(
       {
         user_id: params.consumerUserId,
         'x-user-api-key': params.apiKey,

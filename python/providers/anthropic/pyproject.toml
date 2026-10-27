@@ -1,6 +1,6 @@
 [project]
 name = "composio-anthropic"
-version = "0.28.0"
+version = "0.30.0"
 description = "Use Composio to get an array of tools with your Anthropic LLMs."
 readme = "README.md"
 requires-python = ">=3.11,<3.16"
@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "anthropic>=0.120.0",
+    "anthropic>=0.120.0,<3",
     "composio",
 ]
 

@@ -69,6 +69,7 @@ Nano IDs are short, unique, and prefixed to indicate the resource type.
 
 Upgrade to the latest SDK version using the appropriate package manager:
 
+{/* code-example: no-api reason="installing SDK packages is a local package-manager operation" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```bash
@@ -100,6 +101,7 @@ We have deprecated "toolsets" in favor of "providers". This change allows Compos
 
 Previously, you needed to import and use a framework-specific `ComposioToolSet` class:
 
+{/* code-example: no-api reason="historical ComposioToolSet constructor names are obsolete; the following current group includes the catalog HTTP equivalent" */}
 <Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
   <Tab value="Python (previous)">
 ```python
@@ -121,7 +123,7 @@ const toolset = new OpenAIToolSet();
 
 The SDK structure is now framework-agnostic and includes the OpenAI provider out of the box:
 
-<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio
@@ -131,7 +133,7 @@ composio = Composio()
 # composio = Composio(provider=LangchainProvider())
 
 tools = composio.tools.get(
-    user_id="0001",
+    user_id="user@example.com",
     tools=["LINEAR_CREATE_LINEAR_ISSUE", "GITHUB_CREATE_COMMIT"]
 )
 # tools returned is formatted for the provider. by default, OpenAI.
@@ -139,7 +141,6 @@ tools = composio.tools.get(
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
 // import { VercelProvider } from '@composio/vercel';
 
@@ -152,6 +153,14 @@ const tools = await composio.tools.get('user@example.com', {
   tools: ['LINEAR_CREATE_LINEAR_ISSUE', 'GITHUB_CREATE_COMMIT'],
 });
 // tools returned is formatted for the provider. by default, OpenAI.
+```
+  </Tab>
+  <Tab value="API">
+The API returns raw tool definitions. The SDK converts them to the selected provider's format locally.
+
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=LINEAR_CREATE_LINEAR_ISSUE,GITHUB_CREATE_COMMIT" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -169,6 +178,7 @@ Previously, you could filter tools by:
 
 You could also specify an `important` flag to retrieve the most important tools:
 
+{/* code-example: no-api reason="historical get_tools/getTools names and app filters are obsolete; the following current group shows equivalent catalog HTTP requests" */}
 <Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
   <Tab value="Python (previous)">
 ```python
@@ -212,7 +222,7 @@ The `important` flag has been removed. Instead, tools are returned in order of i
 Since `user_id` is now explicitly required, the `check_connected_accounts` flag is no longer necessary.
 </Callout>
 
-<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio
@@ -230,12 +240,11 @@ tools_3 = composio.tools.get(
     tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT", "GITHUB_CREATE_A_COMMIT"],
 )
 
-tools_4 = composio.tools.get(user_id="john", search="hackernews posts")
+tools_4 = composio.tools.get(user_id=user_id, search="hackernews posts")
 ```
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
 
 const userId = 'user@acme.org';
@@ -247,7 +256,7 @@ const tools_1 = await composio.tools.get(userId, {
 });
 
 const tools_2 = await composio.tools.get(userId, {
-  toolkits: ['GITHUB'],
+  toolkits: ['SLACK'],
   limit: 5, // Default limit=20
 });
 
@@ -260,13 +269,28 @@ const tools_4 = await composio.tools.get(userId, {
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB,LINEAR&limit=20" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=SLACK&limit=5" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_AN_ISSUE,GITHUB_CREATE_AN_ISSUE_COMMENT,GITHUB_CREATE_A_COMMIT" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?query=hackernews%20posts&limit=20" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 ### Fetching raw tool data
 
 To examine the raw schema definition of a tool for understanding input/output parameters or building custom logic around tool definitions, use the following methods:
 
-<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio
@@ -280,14 +304,19 @@ print(tool.model_dump_json())
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_OCTOCAT');
+const tool = await composio.tools.getRawComposioToolBySlug('HACKERNEWS_GET_LATEST_POSTS');
 
 console.log(JSON.stringify(tool, null, 2));
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tools/HACKERNEWS_GET_LATEST_POSTS \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -302,14 +331,17 @@ For agentic frameworks, the tool object returned from `tools.get` is now the res
 For non-agentic frameworks, Composio provides a helper function to execute tool calls.
 </Callout>
 
+{/* code-example: no-api reason="the OpenAI provider formats tool schemas and dispatches model-generated tool calls in-process; this orchestration helper has no single HTTP operation" */}
 <Tabs groupId="language" items={['Python v3', 'TypeScript v3']} persist>
   <Tab value="Python v3">
 ```python
 from composio import Composio
 from openai import OpenAI
+from composio_openai import OpenAIProvider
 
 openai_client = OpenAI()
-composio = Composio()
+provider = OpenAIProvider()
+composio = Composio(provider=provider, toolkit_versions={"github": "latest"})
 
 tools = composio.tools.get(user_id="user@acme.com", tools=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
 response = openai_client.chat.completions.create(
@@ -318,41 +350,27 @@ response = openai_client.chat.completions.create(
     tools=tools,
 )
 
-result = composio.provider.handle_tool_calls(user_id="user@acme.com", response=response)
+result = provider.handle_tool_calls(user_id="user@acme.com", response=response)
 print(result)
 ```
   </Tab>
   <Tab value="TypeScript v3">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
-import { AnthropicProvider } from '@composio/anthropic';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-const anthropic = new Anthropic();
-const composio = new Composio({
-  provider: new AnthropicProvider(),
-});
+const openai = new OpenAI();
+const composio = new Composio({ toolkitVersions: { github: 'latest' } });
 
-const userId = 'user@example.com';
-const tools = await composio.tools.get(userId, {
-  toolkits: ['GMAIL'],
-});
-
-const msg = await anthropic.messages.create({
-  model: 'claude-3-7-sonnet-latest',
+const tools = await composio.tools.get('user@acme.com', { tools: ['GITHUB_GET_THE_ZEN_OF_GITHUB'] });
+const response = await openai.chat.completions.create({
+  model: 'gpt-4.1',
+  messages: [{ role: 'user', content: 'gimme some zen.' }],
   tools: tools,
-  messages: [
-    {
-      role: 'user',
-      content: "Say hi to 'soham@composio.dev'",
-    },
-  ],
-  max_tokens: 1024,
 });
 
-const result = await composio.provider.handleToolCalls(userId, msg);
-console.log('Tool results:', result);
+const result = await composio.provider.handleToolCalls('user@acme.com', response);
+console.log(result);
 ```
   </Tab>
 </Tabs>
@@ -363,6 +381,7 @@ For more information on executing tools for different frameworks, see [Replacing
 
 Tool processors have been renamed to *tool modifiers* and now provide an improved developer experience. The implementation is now available in TypeScript too! (previously Python-only).
 
+{/* code-example: single-language reason="Legacy Python-only tool processors shown as previous code" */}
 ```python title="Python (previous)"
 from composio_openai import ComposioToolSet, Action
 
@@ -404,12 +423,14 @@ While tool processors could previously be applied during SDK initialization, too
 
 The following example demonstrates schema modifier usage, applicable across all providers:
 
+{/* code-example: no-api reason="schema modifiers transform tool definitions in the local SDK provider pipeline" */}
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio, schema_modifier
 from composio.types import Tool
 
+composio = Composio()
 user_id = "your@email.com"
 
 @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
@@ -429,13 +450,13 @@ tools = composio.tools.get(
         modify_schema,
     ]
 )
+print(tools)
 ```
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
-import { OpenAI } from 'openai';
+
 
 const userId = 'your@email.com';
 const composio = new Composio();
@@ -450,10 +471,10 @@ const tools = await composio.tools.get(
     modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
       if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
         const { inputParameters } = schema;
-        if (inputParameters?.properties) {
-          delete inputParameters.properties['page'];
+        if (inputParameters) {
+          if (inputParameters.properties) delete inputParameters.properties['page'];
+          inputParameters.required = ['size'];
         }
-        inputParameters.required = ['size'];
       }
       return schema;
     },
@@ -469,9 +490,16 @@ console.log(JSON.stringify(tools, null, 2));
 
 The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers):
 
+{/* code-example: no-api reason="before-execution modifiers run local callbacks to rewrite arguments before the SDK sends a tool request" */}
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
 ```python
+from composio import Composio, before_execute
+from composio.types import ToolExecuteParams
+
+composio = Composio()
+user_id = "user@example.com"
+
 @before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
 def before_execute_modifier(
     tool: str,
@@ -479,25 +507,38 @@ def before_execute_modifier(
     params: ToolExecuteParams,
 ) -> ToolExecuteParams:
     params["arguments"]["size"] = 1
+    print(params)
     return params
 
 
-# Get tools
-tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+result_1 = composio.tools.execute(
+    "HACKERNEWS_GET_LATEST_POSTS",
+    arguments={"size": 10},
+    version="latest",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    user_id=user_id,
+    modifiers=[before_execute_modifier],
+)
 ```
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const userId = 'user@example.com';
 const result_1 = await composio.tools.execute(
   'HACKERNEWS_GET_LATEST_POSTS',
   {
     userId,
-    arguments: JSON.parse(toolArgs),
+    arguments: { size: 10 },
+    version: 'latest',
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   },
   {
     beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
       if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
+        params.arguments ??= {};
         params.arguments.size = 1;
       }
       console.log(params);
@@ -513,9 +554,16 @@ const result_1 = await composio.tools.execute(
 
 The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers):
 
+{/* code-example: no-api reason="after-execution modifiers transform responses locally after the HTTP request has completed" */}
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
 ```python
+from composio import Composio, after_execute
+from composio.types import ToolExecutionResponse
+
+composio = Composio()
+user_id = "user@example.com"
+
 @after_execute(tools=["HACKERNEWS_GET_USER"])
 def after_execute_modifier(
     tool: str,
@@ -529,23 +577,36 @@ def after_execute_modifier(
         },
     }
 
-tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
+result_2 = composio.tools.execute(
+    "HACKERNEWS_GET_USER",
+    arguments={"username": "pg"},
+    version="latest",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    user_id=user_id,
+    modifiers=[after_execute_modifier],
+)
 ```
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
+import { Composio } from '@composio/core';
+import { z } from 'zod';
+
+const composio = new Composio();
+const userId = 'user@example.com';
+const profileSchema = z.object({ karma: z.number() });
 const result_2 = await composio.tools.execute(
   'HACKERNEWS_GET_USER',
   {
     userId,
-    arguments: JSON.parse(toolArgs),
+    arguments: { username: 'pg' },
+    version: 'latest',
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   },
   {
     afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       if (toolSlug === 'HACKERNEWS_GET_USER') {
-        const { data } = result;
-        const { karma } = data.response_data as { karma: number };
+        const { karma } = profileSchema.parse(result.data);
         return {
           ...result,
           data: { karma },
@@ -563,6 +624,7 @@ const result_2 = await composio.tools.execute(
 
 Custom tools are now session-scoped. Define local tools with the experimental custom-tools API and attach them when creating or reusing a session.
 
+{/* code-example: no-api reason="custom tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -641,6 +703,7 @@ For most use cases, you will create auth configs through the dashboard, and this
 
 Creating auth configs programmatically in the previous SDK:
 
+{/* code-example: no-api reason="historical integration names are obsolete; the following current group includes auth config creation over HTTP" */}
 <Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
   <Tab value="Python (previous)">
 ```python
@@ -670,10 +733,10 @@ import { OpenAIToolSet } from "composio-core";
 const composioToolset = new OpenAIToolSet();
 
 const integration = await composioToolset.integrations.create({
-    name: "gmail_integration",
-    appUniqueKey: "gmail",
+    name: "github_integration",
+    appUniqueKey: "github",
     forceNewIntegration: true,
-    useComposioAuth: false,
+    useComposioAuth: true,
     // For useComposioAuth: false, you can provide your own OAuth app credentials here
     // authScheme: "OAUTH2",
     // authConfig: {
@@ -689,7 +752,7 @@ console.log(integration.id)
 
 Creating auth configs programmatically in the current SDK:
 
-<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio
@@ -698,8 +761,9 @@ composio = Composio()
 
 # Use composio managed auth
 auth_config = composio.auth_configs.create(
-    toolkit="notion",
+    toolkit="LINEAR",
     options={
+        "name": "Linear",
         "type": "use_composio_managed_auth",
         # "type": "use_custom_auth",
         # "auth_scheme": "OAUTH2",
@@ -715,7 +779,6 @@ print(auth_config)
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
@@ -732,6 +795,14 @@ const authConfig = await composio.authConfigs.create('LINEAR', {
 });
 
 console.log(authConfig);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit":{"slug":"LINEAR"},"auth_config":{"name":"Linear","type":"use_composio_managed_auth"}}'
 ```
   </Tab>
 </Tabs>
@@ -758,6 +829,7 @@ Connected accounts now use nano IDs instead of UUIDs:
 
 Previously, you might have initiated a connection like this:
 
+{/* code-example: no-api reason="historical entity/integration connection names are obsolete; the following current group includes connection initiation and status polling over HTTP" */}
 <Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
   <Tab value="Python (previous)">
 ```python
@@ -820,7 +892,7 @@ if (connectionRequest?.redirectUrl) {
 
 The current process for initiating a connection is as follows:
 
-<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio
@@ -839,11 +911,13 @@ print(connection_request.redirect_url)
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
+
+# If you only have the connection request ID, you can also wait using:
+composio.connected_accounts.wait_for_connection(connection_request.id)
 ```
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -857,10 +931,44 @@ const { redirectUrl, id } = connRequest;
 console.log(redirectUrl);
 
 // Wait for the connection to be established
-await connRequest.waitForConnection();
+const connectedAccount = await connRequest.waitForConnection();
+console.log(connectedAccount);
 
 // If you only have the connection request ID, you can also wait using:
 await composio.connectedAccounts.waitForConnection(id);
+```
+  </Tab>
+  <Tab value="API">
+Open `redirect_url` to authenticate, then poll the connected account until it becomes `ACTIVE`. This Bash example waits up to 60 seconds, matching the SDK helper's default timeout.
+
+```bash
+CONNECTION=$(curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config":{"id":"ac_1234"},"connection":{"user_id":"user@email.com"}}')
+echo "$CONNECTION" | jq -r '.redirect_url'
+CONNECTED_ACCOUNT_ID=$(echo "$CONNECTION" | jq -r '.id')
+
+DEADLINE=$((SECONDS + 60))
+STATUS=""
+while [ "$SECONDS" -lt "$DEADLINE" ]; do
+  ACCOUNT=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID" \
+    -H "x-api-key: $COMPOSIO_API_KEY")
+  STATUS=$(echo "$ACCOUNT" | jq -r '.status')
+  if [ "$STATUS" = "ACTIVE" ]; then
+    echo "$ACCOUNT"
+    break
+  fi
+  if [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "EXPIRED" ]; then
+    echo "Connection failed: $STATUS" >&2
+    exit 1
+  fi
+  sleep 2
+done
+if [ "$STATUS" != "ACTIVE" ]; then
+  echo "Connection did not become ACTIVE within 60 seconds" >&2
+  exit 1
+fi
 ```
   </Tab>
 </Tabs>
@@ -875,7 +983,7 @@ The process for creating triggers and specifying their configuration has been re
 
 Some triggers require configuration, such as repository names for GitHub triggers or channel names for Slack triggers. The process usually follows the pattern of fetching the trigger type and then creating the trigger with the appropriate configuration.
 
-<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
 ```python
 from composio import Composio
@@ -906,24 +1014,18 @@ print(trigger_config.config)
 trigger = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
     user_id=user_id,
-    trigger_config={"repo": "composiohq", "owner": "composio"},
+    trigger_config={"owner": "composiohq", "repo": "composio"},
 )
 print(trigger)
-
-
-# Managing triggers
-
-composio.triggers.enable(id="ti_abcd123")
 ```
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-const userId = 'user@acme.com';
+const userId = 'user@example.com';
 // Fetch the trigger details
 const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
 console.log(JSON.stringify(triggerType.config, null, 2));
@@ -956,6 +1058,17 @@ const createResponse = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVE
 console.log(createResponse);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/triggers_types/GITHUB_COMMIT_EVENT \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GITHUB_COMMIT_EVENT/upsert \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"user@example.com","trigger_config":{"owner":"composiohq","repo":"composio"}}'
+```
+  </Tab>
 </Tabs>
 
 #### Enabling/Disabling triggers
@@ -964,9 +1077,12 @@ You can enable or disable triggers through either the SDK or the dashboard. The 
 
 Managing triggers with the SDK:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
+from composio import Composio
+
+composio = Composio()
 # Disable a trigger instance
 disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
 print(disabled_instance)
@@ -974,17 +1090,33 @@ print(disabled_instance)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
-// @noErrors
-await composio.triggers.disable("ti_abcd123");
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+// Disable a trigger instance
+const disabledInstance = await composio.triggers.disable("ti_abcd123");
+console.log(disabledInstance);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Disable a trigger instance
+curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "disable"}'
 ```
   </Tab>
 </Tabs>
 
 If needed, the trigger can be enabled again.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
+from composio import Composio
+
+composio = Composio()
 # Enable a trigger instance
 enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
 print(enabled_instance)
@@ -992,8 +1124,21 @@ print(enabled_instance)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
-// @noErrors
-await composio.triggers.enable("ti_abcd123");
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+// Enable a trigger instance
+const enabledInstance = await composio.triggers.enable("ti_abcd123");
+console.log(enabledInstance);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Enable a trigger instance
+curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "enable"}'
 ```
   </Tab>
 </Tabs>
@@ -1004,6 +1149,7 @@ We recommend listening to triggers through webhooks. The following are example r
 
 For development, you can also [listen to triggers through the SDK](/docs/setting-up-triggers/subscribing-to-events#receive-events-locally).
 
+{/* code-example: single-language reason="Framework picker: FastAPI is Python, Next.js is TypeScript" */}
 <Tabs items={['FastAPI', 'Next.js']}>
   <Tab value="FastAPI">
 ```python title="app/route.py"
