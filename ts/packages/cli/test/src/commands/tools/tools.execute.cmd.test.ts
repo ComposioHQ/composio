@@ -2405,6 +2405,64 @@ describe('CLI: composio execute', () => {
           expect(lines.join('\n')).not.toContain('Dry run successful');
         })
       );
+
+      // The real call refuses the file whatever the skip flags say, so the
+      // dry run must too.
+      it.effect('reports the same problem under --dry-run --skip-checks', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-checks',
+            '--dry-run',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('Dry run successful');
+        })
+      );
+
+      it.effect('reports the same problem under --parallel --dry-run', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-connection-check',
+            '--dry-run',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(output).toMatchObject({
+            successful: false,
+            results: [
+              {
+                slug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+                successful: false,
+                error: expect.stringContaining('cannot upload local files'),
+              },
+            ],
+          });
+        })
+      );
     }
   );
 
