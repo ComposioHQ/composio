@@ -92,7 +92,7 @@ export const runTriggersCreate = ({
       yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
     }
 
-    const createdOpt = yield* ui
+    const created = yield* ui
       .withSpinner(
         `Creating trigger "${triggerName.value}"...`,
         repo.createTrigger(triggerName.value, {
@@ -102,22 +102,15 @@ export const runTriggersCreate = ({
         })
       )
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: `Failed to create trigger "${triggerName.value}".`,
             hint: 'List available trigger types with:\n> composio dev triggers list',
-            fallbackValue: Option.none(),
           })
         )
       );
 
-    if (Option.isNone(createdOpt)) {
-      return;
-    }
-
-    const created = createdOpt.value;
     yield* ui.log.success(`Trigger created: ${created.trigger_id}`);
     yield* ui.log.step(
       `To check status:\n> composio dev triggers status --trigger-ids "${created.trigger_id}"`

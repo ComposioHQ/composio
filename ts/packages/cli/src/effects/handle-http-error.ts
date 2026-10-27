@@ -13,10 +13,9 @@ export interface Suggestion {
 
 const noSuggestions: ReadonlyArray<Suggestion> = [];
 
-export interface HandleClientApiErrorOptions<A> {
+export interface HandleClientApiErrorOptions {
   readonly fallbackMessage: string;
   readonly hint: string;
-  readonly fallbackValue: A;
   readonly searchForSuggestions?: () => Effect.Effect<ReadonlyArray<Suggestion>, unknown, never>;
 }
 
@@ -44,9 +43,9 @@ const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
  * The final rendering is `reportFailure`'s (`src/effects/report-failure.ts`):
  * the message and hint reach stderr as plain lines when it is not a TTY, and
  * the handler fails with a `ReportedFailure`, so the process exits 1 and
- * callers such as scripts and agents can detect the failure. The effect never
- * produces `fallbackValue`; it only types the recovery for callers that keep
- * an `Option` result.
+ * callers such as scripts and agents can detect the failure. The handler never
+ * succeeds, so the recovered effect keeps the request's own success type and
+ * the caller reads the result straight through.
  *
  * Used by info/delete/create commands that share the same error-handling shape.
  *
@@ -69,15 +68,14 @@ const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
  *     handleClientApiError(ui, {
  *       fallbackMessage: `Failed to fetch auth config "${id}".`,
  *       hint: 'Browse available auth configs:\n> composio dev auth-configs list',
- *       fallbackValue: Option.none(),
  *     })
  *   )
  * )
  * ```
  */
 export const handleClientApiError =
-  <A>(ui: TerminalUI, opts: HandleClientApiErrorOptions<A>) =>
-  (e: ClientApiError): Effect.Effect<A, ReportedFailure> =>
+  (ui: TerminalUI, opts: HandleClientApiErrorOptions) =>
+  (e: ClientApiError): Effect.Effect<never, ReportedFailure> =>
     Effect.gen(function* () {
       const report = yield* reportOf(e);
       const message = report.message ?? opts.fallbackMessage;

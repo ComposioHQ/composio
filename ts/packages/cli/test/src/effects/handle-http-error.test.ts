@@ -51,7 +51,6 @@ const clientDecodeError = new ClientDecodeError({
 const options = {
   fallbackMessage: 'Failed to fetch auth config "ac_missing".',
   hint: 'Browse available auth configs:\n> composio dev auth-configs list',
-  fallbackValue: 'fallback' as const,
 };
 
 // A TerminalUI whose stderr is not a TTY, recording every line the handler

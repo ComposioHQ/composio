@@ -594,7 +594,6 @@ describe('composio-clients', () => {
           handleClientApiError(ui, {
             fallbackMessage: 'fallback',
             hint: 'hint',
-            fallbackValue: undefined,
           })(error)
         );
 

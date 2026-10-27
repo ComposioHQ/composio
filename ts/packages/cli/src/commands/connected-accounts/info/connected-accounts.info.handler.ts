@@ -28,28 +28,20 @@ const showConnectedAccount = (id: string) =>
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 
-    const item = yield* ui
+    const account = yield* ui
       .withSpinner(fetchingConnectedAccountMessage(id), repo.getConnectedAccount(id))
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: `Failed to fetch connected account "${id}".`,
             hint: BROWSE_CONNECTED_ACCOUNTS_HINT,
-            fallbackValue: Option.none(),
           })
         )
       );
 
-    yield* Option.match(item, {
-      onNone: () => Effect.void,
-      onSome: account =>
-        Effect.gen(function* () {
-          yield* ui.note(formatConnectedAccountInfo(account), connectedAccountInfoTitle(account));
-          yield* ui.output(formatConnectedAccountInfoJson(account));
-        }),
-    });
+    yield* ui.note(formatConnectedAccountInfo(account), connectedAccountInfoTitle(account));
+    yield* ui.output(formatConnectedAccountInfoJson(account));
   });
 
 /**

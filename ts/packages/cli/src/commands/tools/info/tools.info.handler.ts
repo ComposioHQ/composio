@@ -40,7 +40,6 @@ const fetchTool = (slug: string) =>
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
     return yield* ui.withSpinner(fetchingToolMessage(slug), repo.getToolDetailed(slug)).pipe(
-      Effect.asSome,
       Effect.catchTag(
         CLIENT_API_ERROR_TAGS,
         handleClientApiError(ui, {
@@ -49,7 +48,6 @@ const fetchTool = (slug: string) =>
             commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
             commandHintStep('Then list tools', 'root.tools.list'),
           ].join('\n'),
-          fallbackValue: Option.none<ToolRetrieveResponse>(),
           searchForSuggestions: () =>
             repo
               .searchTools({ search: slug, limit: 3 })
@@ -85,13 +83,6 @@ export const runToolsInfo = ({ slug }: ToolsInfoParams) =>
     return yield* Option.match(slug, {
       onNone: () => Effect.fail(missingSlug()),
       onSome: slugValue =>
-        fetchTool(slugValue).pipe(
-          Effect.flatMap(
-            Option.match({
-              onNone: () => Effect.void,
-              onSome: tool => showTool(slugValue, tool),
-            })
-          )
-        ),
+        fetchTool(slugValue).pipe(Effect.flatMap(tool => showTool(slugValue, tool))),
     });
   });
