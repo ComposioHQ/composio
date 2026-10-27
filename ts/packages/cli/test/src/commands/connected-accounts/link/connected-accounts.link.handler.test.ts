@@ -118,6 +118,8 @@ interface LinkFixture {
   readonly connectedAccountsListFails?: boolean;
   /** Makes the first N `connectedAccounts.retrieve` calls fail, for the polling retries. */
   readonly retrieveFailsFirst?: number;
+  /** The consumer project's user id; the mock client's default otherwise. */
+  readonly consumerUserId?: string;
   /** Replaces the headless test terminal, e.g. with `redirectedTerminalUI`. */
   readonly terminal?: Layer.Layer<TerminalUI>;
 }
@@ -197,7 +199,10 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
     // client's full response types; `test-layer.ts` shadows its mock client the same way.
     ({
       ...baseClient,
-      ...mockAccountResources({ projects: [DEVELOPER_PROJECT] }, scope),
+      ...mockAccountResources(
+        { projects: [DEVELOPER_PROJECT], consumerUserId: fixture.consumerUserId },
+        scope
+      ),
       ...connectedAccountsResources,
       link: {
         create: (linkParams: { auth_config_id: string; user_id: string }) =>
@@ -606,6 +611,34 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
     })
   );
 
+  it.effect.each([
+    {
+      tree: 'root',
+      surface: CommandSurface.root,
+      message: 'Missing consumer user id. Run `composio login` and try again.',
+    },
+    {
+      tree: 'dev',
+      surface: devSurface(),
+      message:
+        'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
+    },
+  ])('[Given] no user on the $tree tree [Then] fails with that tree’s message', c =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({
+        surface: c.surface,
+        directoryProject: directory(Option.none()),
+        consumerUserId: '',
+      });
+      const error = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.flip,
+        Effect.provide(layer)
+      );
+
+      expect(error).toMatchObject({ message: c.message });
+    })
+  );
+
   it.effect(
     '[Given] dev --project-name and no user anywhere [Then] fails pointing at --user-id',
     () =>
@@ -680,7 +713,8 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
       expect(error).toMatchObject({
         _tag: 'commands/MissingLinkUserIdError',
         flow: 'legacy',
-        message: 'Missing user id. Provide --user-id or run composio dev init to set test_user_id.',
+        message:
+          'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
       });
     })
   );

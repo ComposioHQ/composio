@@ -125,11 +125,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         : undefined;
 
     const runSearchRequest = Effect.gen(function* () {
-      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-        // C2: root `search` stops telling a consumer to provide --user-id.
-        missingUserMessage: () =>
-          'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-      }).pipe(
+      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
         // C2: fail with MissingActingUserError itself; this keeps the `CommandInputError` tag
         // that `cli.command.failed` reports as `error_name`.
         Effect.catchTag('commands/MissingActingUserError', error =>

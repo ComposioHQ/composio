@@ -52,6 +52,8 @@ export interface AccountTestData {
   connectedToolkits?: ReadonlyArray<string>;
   latestToolVersion?: { readonly tool_slug: string; readonly version: string };
   projectApiKey?: string;
+  /** The consumer project's `consumer_user_id`; `consumer-user-<org id>` by default. */
+  consumerUserId?: string;
   onRequest?: (request: MockAccountRequest) => void;
 }
 
@@ -158,7 +160,7 @@ export const mockAccountResources = (accountData: AccountTestData, base: MockReq
                 org_id: orgId,
                 project_type: 'CONSUMER' as const,
                 config: { consumer_experience_enabled: true, enhanced_controls: false },
-                consumer_user_id: `consumer-user-${orgId}`,
+                consumer_user_id: accountData.consumerUserId ?? `consumer-user-${orgId}`,
               });
             },
           },

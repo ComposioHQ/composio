@@ -26,6 +26,15 @@
 
 ### Patch Changes
 
+- A missing user id now gets the same message on every command of a tree.
+  Root commands (`composio execute`, `search`, `link`, `listen`, `proxy`,
+  `connections`) report a missing consumer user id and point at
+  `composio login`; root `execute`, `search`, and `link` no longer tell you to
+  pass `--user-id`, which the root tree does not take, and `listen` and `proxy`
+  no longer describe a missing "project context". `composio dev` commands point
+  at `--user-id` or `composio dev init`, or at `--user-id` or `composio login`
+  with `--project-name`.
+
 - An empty consumer user id now counts as no user on every command.
   `composio execute`, `composio search`, and `composio link` fail with the
   missing-user error and exit 1, as `composio connections`, `composio listen`,

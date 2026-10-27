@@ -6,7 +6,6 @@ import {
   actingUser,
   CommandSurface,
   fallbackNotice,
-  missingUserIdMessage,
   type CommandTree,
   type MissingActingUserError,
 } from 'src/commands/surface';
@@ -408,14 +407,9 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
     const toolkitSlug = params.toolkit.value;
 
     const clientSingleton = yield* ComposioClientSingleton;
-    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-      // C2: the message fits the tree.
-      missingUserMessage: projectName =>
-        missingUserIdMessage(
-          projectName,
-          'Missing user id. Provide --user-id, or run composio dev init or composio login first.'
-        ),
-    }).pipe(Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('list')));
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
+      Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('list'))
+    );
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
 
     const accounts = yield* ui.withSpinner(
@@ -490,14 +484,9 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
         invalidOptionValueFor(tree)(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config')
       );
     }
-    const acting = yield* actingUser({
-      // C2: the message fits the tree.
-      missingUserMessage: name =>
-        missingUserIdMessage(
-          name,
-          'Missing user id. Provide --user-id or run composio dev init to set test_user_id.'
-        ),
-    }).pipe(Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('legacy')));
+    const acting = yield* actingUser().pipe(
+      Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('legacy'))
+    );
     const { userId: resolvedUserId, project: resolvedProject } = acting;
     // C2: `actingUser` prints the notice for every command.
     yield* Effect.transposeOption(
@@ -585,11 +574,9 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
 
     const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const clientSingleton = yield* ComposioClientSingleton;
-    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-      // C2: the message fits the tree.
-      missingUserMessage: () =>
-        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-    }).pipe(Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('tool-router')));
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
+      Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('tool-router'))
+    );
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
     const existingAccounts = yield* existingAccountsForHints({
       client,

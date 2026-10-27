@@ -638,6 +638,9 @@ describe('expected failures without the crash banner', () => {
         })
       : fakeComposio(req, res);
 
+  /** Every root-tree command without a consumer user says this. */
+  const ROOT_MISSING_USER = 'Missing consumer user id. Run `composio login` and try again.';
+
   const notConnected = (toolkit: string) =>
     `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
 
@@ -670,17 +673,17 @@ describe('expected failures without the crash banner', () => {
       setup: {},
       server: withoutConsumerUser,
       tag: 'ProxyCommandError',
-      message: 'No consumer project user is available for proxy execution in this context.',
+      message: ROOT_MISSING_USER,
     },
-    // An empty consumer user id is no user; these commands used to act as the user "".
+    // An empty consumer user id is no user; these commands used to act as the user "", and
+    // told a consumer to pass --user-id, which the root tree does not take.
     {
       name: '`execute` without a consumer user',
       args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
       setup: {},
       server: withoutConsumerUser,
       tag: 'ToolExecutionError',
-      message:
-        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+      message: ROOT_MISSING_USER,
     },
     {
       name: '`search` without a consumer user',
@@ -688,8 +691,7 @@ describe('expected failures without the crash banner', () => {
       setup: {},
       server: withoutConsumerUser,
       tag: 'CommandInputError',
-      message:
-        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+      message: ROOT_MISSING_USER,
     },
     {
       name: '`link` without a consumer user',
@@ -697,8 +699,7 @@ describe('expected failures without the crash banner', () => {
       setup: {},
       server: withoutConsumerUser,
       tag: 'MissingLinkUserIdError',
-      message:
-        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+      message: ROOT_MISSING_USER,
     },
   ])(
     '[Given] $name [Then] prints the message without the banner and exits 1',
