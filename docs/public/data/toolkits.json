@@ -27840,7 +27840,7 @@
     ],
     "toolCount": 27,
     "triggerCount": 0,
-    "version": "20261022_00",
+    "version": "20261027_00",
     "tools": [
       {
         "slug": "PEOPLEDATALABS_BULK_RETRIEVE_PERSONS",
@@ -64997,9 +64997,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 29,
+    "toolCount": 30,
     "triggerCount": 0,
-    "version": "20261026_00",
+    "version": "20261027_00",
     "tools": [
       {
         "slug": "DYNAMICS365_CREATE_ANNOTATION",
@@ -65020,6 +65020,11 @@
         "slug": "DYNAMICS365_CREATE_PRODUCT_PRICE_LIST_ITEM",
         "name": "Create Product Price List Item",
         "description": "Add an existing product and unit to an existing Dynamics price list."
+      },
+      {
+        "slug": "DYNAMICS365_CREATE_SOCIAL_ACTIVITY",
+        "name": "Create Social Activity",
+        "description": "Create a Dataverse social activity and return its stored representation."
       },
       {
         "slug": "DYNAMICS365_CREATE_TASK",
@@ -339272,6 +339277,9 @@
   {
     "slug": "openweb_ninja",
     "name": "OpenWeb Ninja",
+    "instant": {
+      "supported": true
+    },
     "logo": "https://logos.composio.dev/api/openweb_ninja",
     "description": "OpenWeb Ninja provides native APIs for web search, AI answers, e-commerce, finance, jobs, maps, news, real estate, contact enrichment, traffic, and web scraping.",
     "category": "ai web scraping",
@@ -339280,7 +339288,7 @@
     ],
     "toolCount": 164,
     "triggerCount": 0,
-    "version": "20261026_00",
+    "version": "20261027_00",
     "tools": [
       {
         "slug": "OPENWEB_NINJA_AUTOCOMPLETE_LOCAL_BUSINESS_QUERY",
@@ -339315,7 +339323,14 @@
       {
         "slug": "OPENWEB_NINJA_CALCULATE_LOCAL_RANK_GRID_COORDINATES",
         "name": "Calculate local rank grid coordinates",
-        "description": "Calculate a geographic coordinate grid from a center point and radius."
+        "description": "Calculate a geographic coordinate grid from a center point and radius.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_CHAT_WITH_CHATGPT",
@@ -339335,12 +339350,26 @@
       {
         "slug": "OPENWEB_NINJA_CONVERT_AMAZON_ASIN_TO_GTIN",
         "name": "Convert Amazon ASIN to GTIN",
-        "description": "Convert an Amazon ASIN to GTIN, EAN, or UPC identifiers."
+        "description": "Convert an Amazon ASIN to GTIN, EAN, or UPC identifiers.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_CONVERT_AMAZON_GTIN_TO_ASIN",
         "name": "Convert Amazon GTIN to ASIN",
-        "description": "Find Amazon products by GTIN, EAN, UPC, or ISBN."
+        "description": "Find Amazon products by GTIN, EAN, UPC, or ISBN.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_ESTIMATE_JOB_SALARY",
@@ -339360,12 +339389,26 @@
       {
         "slug": "OPENWEB_NINJA_GET_AMAZON_INFLUENCER_PROFILE",
         "name": "Get Amazon influencer profile",
-        "description": "Get profile details from an Amazon Influencer store page."
+        "description": "Get profile details from an Amazon Influencer store page.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_AMAZON_PRODUCT_CATEGORY_LIST",
         "name": "Get Amazon product category list",
-        "description": "Get Amazon product categories for a marketplace country."
+        "description": "Get Amazon product categories for a marketplace country.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_AMAZON_PRODUCT_DETAILS",
@@ -339385,7 +339428,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_AMAZON_SELLER_PROFILE",
         "name": "Get Amazon seller profile",
-        "description": "Get profile details from an Amazon seller profile page."
+        "description": "Get profile details from an Amazon seller profile page.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_API_USAGE",
@@ -339405,7 +339455,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_COSTCO_PRODUCT_DETAILS",
         "name": "Get Costco product details",
-        "description": "Get full details for a Costco product by item identifier."
+        "description": "Get full details for a Costco product by item identifier.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_DRIVING_DIRECTIONS",
@@ -339490,7 +339547,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_GOOGLE_MAPS_TRAFFIC_ALERTS",
         "name": "Traffic Alerts",
-        "description": "Get live traffic incidents within a geographic bounding box."
+        "description": "Get live traffic incidents within a geographic bounding box.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.007 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_GOOGLE_SHOPPING_PRODUCT_DETAILS",
@@ -339500,17 +339564,38 @@
       {
         "slug": "OPENWEB_NINJA_GET_GOOGLE_SHOPPING_PRODUCT_PRICE_HISTORY",
         "name": "Google Shopping Product Price History",
-        "description": "Get a Google Shopping product's price history across selected stores."
+        "description": "Get a Google Shopping product's price history across selected stores.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_HOME_DEPOT_ITEM_LOOKUP",
         "name": "Home Depot Item Lookup",
-        "description": "Look up Home Depot products by model or item number, one page at a time."
+        "description": "Look up Home Depot products by model or item number, one page at a time.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_HOME_DEPOT_PRODUCT_DETAILS",
         "name": "Home Depot Product Details",
-        "description": "Get full details for a Home Depot product by item number or URL."
+        "description": "Get full details for a Home Depot product by item number or URL.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_JOB_DETAILS",
@@ -339540,7 +339625,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_LOCAL_RANK_GRID",
         "name": "Full Grid Search",
-        "description": "Get a business's local-search ranking across a coordinate grid."
+        "description": "Get a business's local-search ranking across a coordinate grid.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_NEWS_BY_TOPIC_SECTION",
@@ -339550,7 +339642,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_NEWS_FULL_STORY_COVERAGE",
         "name": "Full Story Coverage",
-        "description": "Get full coverage for a news story, including related articles and posts."
+        "description": "Get full coverage for a news story, including related articles and posts.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_PLAY_STORE_APP_DETAILS",
@@ -339560,7 +339659,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_REDFIN_MARKET_TRENDS",
         "name": "Redfin Market Trends",
-        "description": "Get Redfin housing market trends for a region."
+        "description": "Get Redfin housing market trends for a region.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_REDFIN_PROPERTY_DETAILS",
@@ -339575,7 +339681,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_TRUSTPILOT_CATEGORY_DETAILS",
         "name": "Trustpilot Category Details",
-        "description": "Get full details and category relationships for a Trustpilot category."
+        "description": "Get full details and category relationships for a Trustpilot category.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_TRUSTPILOT_COMPANY_DETAILS",
@@ -339585,7 +339698,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_TRUSTPILOT_CONSUMER_DETAILS",
         "name": "Trustpilot Consumer Details",
-        "description": "Get the full details of a Trustpilot consumer."
+        "description": "Get the full details of a Trustpilot consumer.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_WALMART_PRODUCT_DETAILS",
@@ -339595,7 +339715,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_WAYFAIR_PRODUCT_DETAILS",
         "name": "Wayfair Product Details",
-        "description": "Get detailed Wayfair product information by SKU."
+        "description": "Get detailed Wayfair product information by SKU.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_WAZE_DRIVING_DIRECTIONS",
@@ -339610,17 +339737,38 @@
       {
         "slug": "OPENWEB_NINJA_GET_ZILLOW_AGENT_PROPERTIES_FOR_RENT",
         "name": "Zillow Agent Rental Listings",
-        "description": "Get one page of an agent's current Zillow rental listings."
+        "description": "Get one page of an agent's current Zillow rental listings.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_ZILLOW_AGENT_PROPERTIES_FOR_SALE",
         "name": "Zillow Agent Active Listings",
-        "description": "Get one page of an agent's current Zillow for-sale listings."
+        "description": "Get one page of an agent's current Zillow for-sale listings.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_ZILLOW_AGENT_PROPERTIES_SOLD",
         "name": "Zillow Agent Sold Listings",
-        "description": "Get one page of an agent's past Zillow sales."
+        "description": "Get one page of an agent's past Zillow sales.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_GET_ZILLOW_PROPERTY_BY_ADDRESS",
@@ -339635,7 +339783,14 @@
       {
         "slug": "OPENWEB_NINJA_GET_ZILLOW_ZESTIMATE",
         "name": "Zillow Zestimate",
-        "description": "Get the Zestimate value for a Zillow property."
+        "description": "Get the Zestimate value for a Zillow property.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_BEST_SELLERS",
@@ -339645,22 +339800,50 @@
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_DEAL_PRODUCTS",
         "name": "Amazon Deal Products",
-        "description": "Get one page of products belonging to an Amazon deal."
+        "description": "Get one page of products belonging to an Amazon deal.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_DEALS",
         "name": "Amazon Deals",
-        "description": "Get one page of Amazon deals with category, rating, price, discount, brand, and Prime filters."
+        "description": "Get one page of Amazon deals with category, rating, price, discount, brand, and Prime filters.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_INFLUENCER_POST_PRODUCTS",
         "name": "Amazon Influencer Post Products",
-        "description": "Get one page of products related to an Amazon influencer List post."
+        "description": "Get one page of products related to an Amazon influencer List post.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_INFLUENCER_POSTS",
         "name": "Amazon Influencer Posts",
-        "description": "Get one page of an Amazon influencer's posts."
+        "description": "Get one page of an Amazon influencer's posts.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_PRODUCT_OFFERS",
@@ -339680,12 +339863,26 @@
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_SELLER_PRODUCTS",
         "name": "Amazon Seller Products",
-        "description": "Get one page of products sold by an Amazon seller."
+        "description": "Get one page of products sold by an Amazon seller.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_SELLER_REVIEWS",
         "name": "Amazon Seller Reviews",
-        "description": "Get one page of Amazon seller reviews and feedback."
+        "description": "Get one page of Amazon seller reviews and feedback.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.003 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_AMAZON_TOP_PRODUCT_REVIEWS",
@@ -339700,7 +339897,14 @@
       {
         "slug": "OPENWEB_NINJA_LIST_EBAY_SELLER_FEEDBACK",
         "name": "Seller Feedback",
-        "description": "Get one page of feedback and reviews for an eBay seller."
+        "description": "Get one page of feedback and reviews for an eBay seller.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_FINANCE_CURRENCY_NEWS",
@@ -339745,22 +339949,50 @@
       {
         "slug": "OPENWEB_NINJA_LIST_GOOGLE_SHOPPING_PRODUCT_REVIEWS",
         "name": "Product Reviews",
-        "description": "Get one page of Google Shopping product reviews."
+        "description": "Get one page of Google Shopping product reviews.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_GOOGLE_SHOPPING_STORE_REVIEWS",
         "name": "Store Reviews",
-        "description": "Get one page of Google Shopping store reviews."
+        "description": "Get one page of Google Shopping store reviews.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_HOME_DEPOT_PRODUCT_REVIEWS",
         "name": "Product Reviews",
-        "description": "Get one page of customer reviews for a Home Depot product."
+        "description": "Get one page of customer reviews for a Home Depot product.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_HOME_DEPOT_PRODUCTS_BY_CATEGORY",
         "name": "Products By Category",
-        "description": "Browse one page of Home Depot products in a category."
+        "description": "Browse one page of Home Depot products in a category.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_LOCAL_BUSINESS_PHOTOS",
@@ -339780,7 +340012,14 @@
       {
         "slug": "OPENWEB_NINJA_LIST_NEWS_LANGUAGES",
         "name": "Language List",
-        "description": "Get valid news languages for a country code."
+        "description": "Get valid news languages for a country code.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_NEWS_LOCAL_HEADLINES",
@@ -339825,7 +340064,14 @@
       {
         "slug": "OPENWEB_NINJA_LIST_TRUSTPILOT_CONSUMER_REVIEWS",
         "name": "Consumer Reviews",
-        "description": "Get one page of reviews written by a Trustpilot consumer."
+        "description": "Get one page of reviews written by a Trustpilot consumer.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_WALMART_PRODUCT_OFFERS",
@@ -339845,12 +340091,26 @@
       {
         "slug": "OPENWEB_NINJA_LIST_WAYFAIR_PRODUCT_REVIEWS",
         "name": "Product Reviews",
-        "description": "Get one page of Wayfair product reviews by SKU."
+        "description": "Get one page of Wayfair product reviews by SKU.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_WAZE_ALERTS_AND_JAMS",
         "name": "Alerts and Jams",
-        "description": "Get Waze alerts and traffic jams in a geographic area."
+        "description": "Get Waze alerts and traffic jams in a geographic area.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_LIST_WAZE_VENUES",
@@ -339900,7 +340160,14 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_COSTCO_PRODUCTS",
         "name": "Search",
-        "description": "Search Costco products by keyword and offset."
+        "description": "Search Costco products by keyword and offset.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_EBAY_PRODUCTS",
@@ -339960,7 +340227,14 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_HOME_DEPOT_PRODUCTS",
         "name": "Search",
-        "description": "Search Home Depot products and return one result page."
+        "description": "Search Home Depot products and return one result page.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_IMAGES",
@@ -340020,17 +340294,38 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_REDFIN_PROPERTIES",
         "name": "Search",
-        "description": "Search Redfin property listings by location (5-digit US zip code, Canadian postal-code area, or a Redfin URL). Returns one page; pass next_cursor to continue."
+        "description": "Search Redfin property listings by location (5-digit US zip code, Canadian postal-code area, or a Redfin URL). Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_REDFIN_PROPERTIES_BY_COORDINATES",
         "name": "Search by Coordinates",
-        "description": "Search Redfin property listings within a geographic bounding box defined by Northeast (NE) and Southwest (SW) latitude/longitude corners. Returns one page; pass next_cursor to continue."
+        "description": "Search Redfin property listings within a geographic bounding box defined by Northeast (NE) and Southwest (SW) latitude/longitude corners. Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_REDFIN_PROPERTIES_BY_POLYGON",
         "name": "Search by Polygon",
-        "description": "Search Redfin property listings within a custom polygon area. Returns one page; pass next_cursor to continue."
+        "description": "Search Redfin property listings within a custom polygon area. Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_SHORTS",
@@ -340045,7 +340340,14 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_TRUSTPILOT_CATEGORIES",
         "name": "Category Search",
-        "description": "Search public Trustpilot business categories using a search query."
+        "description": "Search public Trustpilot business categories using a search query.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_TRUSTPILOT_COMPANIES",
@@ -340065,7 +340367,14 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_WAYFAIR_PRODUCTS",
         "name": "Search",
-        "description": "Search for Wayfair products by keyword or browse by brand/manufacturer. Returns one page; pass next_cursor to continue."
+        "description": "Search for Wayfair products by keyword or browse by brand/manufacturer. Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_WEB",
@@ -340085,7 +340394,14 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_ZILLOW_AGENTS",
         "name": "Agent Search",
-        "description": "Search for real estate agents by location and optionally by name. Returns one page; pass next_cursor to continue."
+        "description": "Search for real estate agents by location and optionally by name. Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_ZILLOW_PROPERTIES",
@@ -340095,12 +340411,26 @@
       {
         "slug": "OPENWEB_NINJA_SEARCH_ZILLOW_PROPERTIES_BY_COORDINATES",
         "name": "Search by Coordinates",
-        "description": "Search for properties in a specific geographic location, by a center latitude, longitude point and a diameter. Returns one page; pass next_cursor to continue."
+        "description": "Search for properties in a specific geographic location, by a center latitude, longitude point and a diameter. Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "OPENWEB_NINJA_SEARCH_ZILLOW_PROPERTIES_BY_POLYGON",
         "name": "Search by Polygon",
-        "description": "Search for properties in a specific geographic polygon area. Returns one page; pass next_cursor to continue."
+        "description": "Search for properties in a specific geographic polygon area. Returns one page; pass next_cursor to continue.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.005 per request credit.",
+            "discount": "0"
+          }
+        }
       }
     ],
     "triggers": [],
@@ -363204,6 +363534,97 @@
                 "default": "75"
               }
             ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "quickenrich",
+    "name": "QuickEnrich",
+    "logo": "https://logos.composio.dev/api/quickenrich",
+    "description": "QuickEnrich provides employee and company search, contact discovery, and enrichment APIs for sales and go-to-market workflows.",
+    "category": "ai sales tools",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 10,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "QUICKENRICH_FIND_EMPLOYEE_EMAIL_BILLABLE",
+        "name": "Find Employee Email (Billable, Sensitive)",
+        "description": "Ordinarily look up sensitive employee and email data by LinkedIn URL or a complete name-and-company tuple, without reverifying stored data. A found email consumes 1 credit; an empty result is not billed according to the documentation."
+      },
+      {
+        "slug": "QUICKENRICH_FIND_EMPLOYEE_PHONE_BILLABLE",
+        "name": "Find Employee Phone (Billable, Sensitive)",
+        "description": "Find sensitive employee phone data by LinkedIn URL or a complete name-and-company tuple. A returned phone consumes 1 credit; an empty HTTP 200 result is not billed according to the documentation."
+      },
+      {
+        "slug": "QUICKENRICH_LIST_COMPANY_SERVICES",
+        "name": "List Company Services (Public, Credit-Free)",
+        "description": "Return public, documented credit-free company-service values for finder filters, optionally narrowed by an autocomplete query; no API key is required by this operation."
+      },
+      {
+        "slug": "QUICKENRICH_LIST_FILTER_VALUES",
+        "name": "List Filter Values (Public, Credit-Free)",
+        "description": "Return the public, documented credit-free exact values accepted by one country-code, industry, employee-range, employee-band alias, or revenue-range finder filter. No API key is required by these operations."
+      },
+      {
+        "slug": "QUICKENRICH_LOOK_UP_EMPLOYEE_BY_EMAIL_BILLABLE",
+        "name": "Look Up Employee by Email (Billable, Sensitive)",
+        "description": "Reverse-look up sensitive employee and company data from an exact email address. A matching record with a real email consumes 1 credit; HTTP 200 can still mean no match."
+      },
+      {
+        "slug": "QUICKENRICH_REVEAL_CONTACT_DETAILS_BILLABLE",
+        "name": "Reveal Contact Details (Billable, Sensitive)",
+        "description": "BILLABLE AND SENSITIVE: reveal a contact's available personal email and/or phone using exactly one documented identifier mode. A successful reveal consumes an undocumented number of credits; a missing target returns 404."
+      },
+      {
+        "slug": "QUICKENRICH_REVERIFY_EMPLOYEE_EMAIL_BILLABLE",
+        "name": "Reverify Employee Email (Billable, Sensitive)",
+        "description": "GTM UNLIMITED, BILLABLE, SENSITIVE, AND POTENTIALLY ~30 SECONDS: request reverification of stored employee email data when its verification date is missing or older than 7 days. Find the employee by LinkedIn URL or a complete name-and-company tuple. A found email consumes 1 credit. Reverification may update verification data or remove an undeliverable stored email."
+      },
+      {
+        "slug": "QUICKENRICH_SEARCH_COMPANIES_BILLABLE",
+        "name": "Search Companies (Billable)",
+        "description": "Search companies with typed include/exclude and full-text filters. QuickEnrich documents a charge of 1 credit per returned company unless the account has the applicable unlimited subscription. Each call returns exactly one page; HTTP 200 with an empty data list is a valid no-company result."
+      },
+      {
+        "slug": "QUICKENRICH_SEARCH_EMPLOYEE_DATASET_BILLABLE",
+        "name": "Search Employee Dataset (Billable, Sensitive)",
+        "description": "Return exactly one provider page of up to 20 sensitive employee contacts for a company, optionally filtered by title and email availability. This action can consume credits: with a title, billing is per returned contact with an email or phone; without a title, the provider documents a flat charge when the page has results. HTTP 200 with an empty data list is a valid no-match result."
+      },
+      {
+        "slug": "QUICKENRICH_SEARCH_MASKED_CONTACTS",
+        "name": "Search Masked Contacts (Credit-Free, Sensitive)",
+        "description": "Search sensitive masked contact identity and company data with include/exclude filters. QuickEnrich documents this search as credit-free. Results expose availability flags, not direct personal email or phone values; use the separate billable reveal action only when those details are needed."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "quickenrich_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "QuickEnrich API Key",
+                "type": "string",
+                "description": "Create or copy your API key in the QuickEnrich dashboard under Settings -> API Key. QuickEnrich keys use the qe_ prefix. Keep this key secret; contact QuickEnrich support if API-key access is not available in your account.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
           }
         }
       }
@@ -430584,6 +431005,146 @@
                 "default": null
               }
             ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "trello_mcp",
+    "name": "Trello MCP",
+    "logo": "https://logos.composio.dev/api/trello_mcp",
+    "description": "Atlassian's official Trello MCP server lets agents work with Trello boards, lists, cards, the member Inbox, and Planner while respecting the connected user's Trello permissions.",
+    "category": "model context protocol",
+    "authSchemes": [
+      "DCR_OAUTH"
+    ],
+    "toolCount": 15,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_BOARD",
+        "name": "Trelloreadboard",
+        "description": "Read Trello boards. Supports listing boards the authenticated user is a member of, listing all boards a user can access within a specific workspace (regardless of membership), fetching a single board by ARI or URL, listing labels on a board, listing a board's custom field definitions, and listing a board's action/history."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_CARD",
+        "name": "Trelloreadcard",
+        "description": "Fetch a Trello card's full details, or list cards across a board or list to surface open work items.\nUse this tool when you know the specific board, list, or card you want to inspect.\nFor keyword-based discovery across all boards/cards, use trelloSearch instead.\nActions:\n- \"get\": fetch a single card by id or card URL (cardIdOrUrl required). Returns core card\n  fields, labels (up to 25; truncation signalled via labelsHasMore), and comments\n  (up to 25; truncation signalled via commentsHasMore).\n- \"list_by_board\": fetch all cards for a board grouped by list (boardIdOrUrl required).\n  Response: { lists: [{ id, name, cards: [...] }], hasNextPage, nextCursor }.\n  Each page contains up to 5 lists (configurable via limit); each list contains all its cards.\n  Filter by card state: \"open\" (default), \"archived\", or \"all\".\n  Use cursor/limit to paginate over lists (max 50 lists per page).\n- \"list_by_list\": fetch cards in a Trello list (listId required) with cursor-based pagination.\n  Use this when the user asks for cards in a list or all cards from a specific list.\n  Response: { cards: [...], pageInfo: { hasNextPage, endCursor } }.\n  Filter by card state: \"open\" (default), \"archived\", or \"all\".\n  Use cursor/limit to paginate (max 50 cards per page).\n- \"get_comment\": fetch a single comment on a card by its action ID (cardIdOrUrl and commentId required).\n  For this action, cardIdOrUrl must be a Trello card ARI so the workspace is explicit for authorization.\n  Response: { id, text, createdAt, lastEditedAt, creator, cardId }.\n- \"list_comments\": list comments on a card, newest first (cardIdOrUrl required).\n  Response: { comments: [{ id, text, createdAt, lastEditedAt, creator }], pageInfo: { hasNextPage, endCursor } }.\n  Use cursor/limit to paginate (default 25, max 50 comments per page).\n- \"list_attachments\": list files and links attached to a card (cardIdOrUrl required).\n  Response: { attachments: [{ id, name, fileName, url, mimeType, bytes, createdAt, isUpload, isMalicious }], pageInfo: { hasNextPage, endCursor } }.\n  Use cursor/limit to paginate (default 25, max 50 attachments per page).\n- \"list_custom_field_items\": list the custom field values set on a card (cardIdOrUrl required).\n  Pairs with trelloReadBoard \"list_custom_fields\" for the field definitions these values belong to.\n  Response: { customFieldItems: [{ id, customField: { id, name, type }, value: { text, number, date, checked, optionId } }], pageInfo: { hasNextPage, endCursor } }.\n  Only the value field matching the customField.type is populated (e.g. text fields set value.text). optionId references a customField option for list/dropdown fields.\n  Use cursor/limit to paginate (default 25, max 50 items per page).\n- \"list_activity\": list a card's full activity history, newest first (cardIdOrUrl required).\n  Unlike \"list_comments\" this is unfiltered: comments, moves between lists, member add/remove,\n  due-date changes, attachments and checklist item state changes all appear in one feed.\n  Response: { activity: [{ id, type, displayKey, date, creator, ...typeSpecificFields }], pageInfo: { hasNextPage, endCursor } }.\n  Every entry has id, type, displayKey, date and creator. Type-specific fields are present only\n  for their own action type and omitted otherwise: commentText/commentLastEditedAt, listBefore/listAfter,\n  member, attachment, dueDate, checkItem. Other action types appear with the common fields alone.\n  Trello reuses \"type\" across different edits (a list move and a due-date change are both \"updateCard\"),\n  so branch on \"displayKey\" or on which type-specific field is present, rather than on \"type\" alone.\n  Same entry shape as trelloReadBoard \"list_activity\", minus its \"card\" field.\n  Every entry is an action on the card you asked for; name that entity type when you report one.\n  Use \"list_comments\" when the user only wants the discussion; use \"list_activity\" for\n  \"what happened to this card\" or \"who changed this and when\".\n  Use cursor/limit to paginate (default 25, max 50 entries per page).\n\nDue date timezone handling: Card due dates (due.date) are stored as UTC ISO 8601 timestamps.\nFor \"today\" or date-based due-date requests, first call trelloReadMember (get_me) for prefs.timezone and interpret due dates in the user's local time."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_CHECKLIST",
+        "name": "Trelloreadchecklist",
+        "description": "Read Trello checklists (and their check items) attached to a card. Supported actions: \"list_by_card\" — list checklists on a card (cardId required); cursor/limit page the checklists. \"get\" — fetch a single checklist by id (checklistId required). In both actions each checklist is returned with its complete `items` list embedded."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_INBOX",
+        "name": "Trelloreadinbox",
+        "description": "Triage and review the authenticated user's Trello Inbox — the personal quick-capture board where new cards and notifications land. Use this specifically for the user's Inbox board. For cards on other boards or lists, use trelloReadCard instead. Actions: \"get\" — return the Inbox board details (id, objectId, lastActivityAt). No additional arguments are needed. \"list_cards\" — list cards in the Inbox with optional filtering and pagination. Each card includes labels and up to 25 checklists (truncation signalled via checklistsHasMore). Filter by card state: \"open\" (default), \"archived\", or \"all\". Use cursor/limit to paginate (limit defaults to 25, max 50)."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_LIST",
+        "name": "Trelloreadlist",
+        "description": "Read Trello lists. Supported actions: \"list_by_board\" — list the open lists on a board (id, name, position, objectId) with cursor-based pagination (limit defaults to 25, max 50); \"get\" — return a single list by id, including up to 25 nested cards (id, name).\n- \"list_activity\" — page through open cards currently in a list and return each card's recent activity. Only the cards are paginated (cursor/limit, defaults to 25 cards, max 50); each card returns its 25 most recent activity entries. Use trelloReadCard to get a single card's full history.\n  Every entry is an action on the card it is grouped under; name that entity type when you report one."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_MEMBER",
+        "name": "Trelloreadmember",
+        "description": "Get a Trello member's profile. Call action=\"get_me\" FIRST before any due-date query (e.g. \"cards due today\", \"overdue cards\") to get prefs.timezone (e.g. \"America/Los_Angeles\") so due dates can be interpreted in the user's local time rather than UTC. Also use action=\"get_me\" to look up the current user's username, fullName, email, or avatarUrl. Supported actions: \"get_me\" — returns the authenticated user's Trello member profile (id, username, fullName, email, avatarUrl, url, prefs) via the Trello GraphQL API. \"get\" — returns another Trello member's profile (id, username, fullName, avatarUrl, url, prefs) by memberId. \"list_by_board\" — lists a board's members with their board role (admin, member, observer) by boardId, with cursor-based pagination (limit defaults to 25, max 100). \"list_by_workspace\" — lists a workspace's members with their workspace role (admin, member) by workspaceId, with the same cursor-based pagination. Workspace membership cannot be filtered by role. \"list_by_card\" — returns a paginated list of members assigned to a card, with nextCursor and hasMore."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_PLANNER",
+        "name": "Trelloreadplanner",
+        "description": "Read Trello Planner information for the authenticated user. Supported actions: \"get\" — returns the current member's planner (id, primaryAccountId, primaryCalendarId, primaryCalendar details); \"list_events\" — lists calendar events for a given planner calendar in a time window (plannerCalendarId, providerAccountId, start, end required; limit defaults to 25, max 50; cursor-based pagination supported); \"get_event\" — returns a single calendar event by provider event id (eventId, providerAccountId, plannerCalendarId required). Timezone handling: start and end must be UTC ISO 8601. For relative time queries like \"today\" or \"this week\", first use the \"get\" action to retrieve primaryCalendar.timezone, then convert to UTC before calling \"list_events\"."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_READ_WORKSPACE",
+        "name": "Trelloreadworkspace",
+        "description": "Read Trello workspaces (organizations) the current user has access to. Supported actions: \"list\" — list workspaces visible to the authenticated user (cursor-based pagination, limit defaults to 25, max 100); \"get\" — fetch detailed data for a single workspace by id (typically used after \"list\" to drill into a workspace)."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_SEARCH",
+        "name": "Trellosearch",
+        "description": "Discover Trello boards or cards by keyword across all workspaces. Use this when the user wants to find something by name or content but does not know which board it is on. If the user already knows the board or list they want to browse, use trelloReadCard (list_by_board or list_by_list) instead — it is faster and returns richer grouped results. Supported actions: \"search_boards\" — search for boards by name, always include each board's `url` verbatim in the response; \"search_cards\" — search for cards by name/content. Both support optional workspace scoping and cursor-based pagination. Both actions return open (non-archived) results by default. To search archived items instead, include `is:archived` in the query. \"search_cards\" additionally supports boardIds scoping and qualifiers: label:, board:, list:, member:, due:, has:. For archived/closed cards, use `is:archived` or `is:closed` (they are equivalent for cards only). For archived boards, use `is:archived` only — boards do not support the `is:closed` alias. Due date timezone handling: Trello due-date search qualifiers use UTC boundaries. For \"today\" or date-based due-date queries, first call trelloReadMember (get_me) for prefs.timezone and account for the user's local timezone."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_WRITE_BOARD",
+        "name": "Trellowriteboard",
+        "description": "Create Trello boards. Supported actions: \"create\" — create a Trello board in a workspace with a name, visibility, and optional preferences."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_WRITE_CARD",
+        "name": "Trellowritecard",
+        "description": "Create, update, move, archive, mark Trello cards done, or manage labels on cards. Supported actions: \"create\" — create a card on a list (listId and name required; desc, due, pos optional); \"update\" — update an existing card (cardId required; at least one of name, desc, due required); \"move\" — move a card to another list, optionally across boards (cardId and listId required, where listId is the destination list; boardId is optional and only needed when moving to a list on a different board; pos is optional and sets the card position in the destination list); \"archive\" — archive a card (cardId required); \"mark_done\" — mark a card as complete (cardId required); \"attach_label\" — attach a label to a card (cardId and labelId required); \"detach_label\" — detach a label from a card (cardId and labelId required). \"add_comment\" — post a comment on a card (cardId and text required); \"update_comment\" — replace the text of an existing comment on a card (cardId, commentId and text required)."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_WRITE_CHECKLIST",
+        "name": "Trellowritechecklist",
+        "description": "Write Trello checklists and their check items. Actions: \"create\" — add a new checklist to a card by cardId and name, optionally placed at \"top\", \"bottom\", or an explicit numeric position. Returns the created checklist as a TrelloChecklist (id, objectId, name, position, checkItems[]). \"add_item\" — append a new check item to an existing checklist by checklistId and text, optionally placed at \"top\", \"bottom\", or an explicit numeric position. Returns the created check item (id, name, state, position) using the same normalized shape as trelloReadChecklist. \"update_item\" — update an existing check item by checklistId and itemId; supports renaming (text), toggling completion (checked), repositioning (pos), and moving to another checklist on the same card (toChecklistId). Returns the updated check item. \"update\" — rename a checklist (`name`) and/or change its position on its card (`pos`) by checklistId. At least one of `name` or `pos` must be supplied. Returns the resulting checklist in the same normalized shape as trelloReadChecklist (id, name, position, checkItems[])."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_WRITE_INBOX",
+        "name": "Trellowriteinbox",
+        "description": "Write Trello Inbox cards. Supported actions: \"create\" — create a new card in the Trello Inbox (name required; desc and due are optional). The Inbox list is resolved automatically — no listId needed. \"update\" — update fields on an existing Inbox card (cardId required; at least one of name, desc, or due required). \"move\" — move an Inbox card to another list and board (cardId, listId, and boardId required; pos optional). \"archive\" — archive an existing Inbox card (cardId required; no other fields allowed). Returns the created, updated, moved, or archived card including its id."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_WRITE_LIST",
+        "name": "Trellowritelist",
+        "description": "Create, update, archive, or move a Trello list. Supported actions: \"create\" — create a new list on a board (boardId and name required; pos optional); \"update\" — rename an existing list (listId and name required); \"archive\" — soft-delete (close) a list (listId required); \"move\" — reposition a list, optionally moving it to another board (listId and pos required; boardId is optional and only needed when moving the list to a different board)."
+      },
+      {
+        "slug": "TRELLO_MCP_TRELLO_WRITE_PLANNER",
+        "name": "Trellowriteplanner",
+        "description": "Create Trello Planner calendar events and manage card-event links. Supported actions: \"create_event\" — create a calendar event (title, start, and end required; if cardId is provided, the event is linked to that card and title defaults to the card name); \"link_card_to_event\" — link an existing card to an existing event (cardId and eventId required); \"unlink_card_from_event\" — unlink a card from an event (cardId and eventId required). providerAccountId and calendarId are optional for all actions; when omitted the user's primary calendar account is used."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "DCR_OAUTH",
+        "name": "trello_mcp_DCR_OAuth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "offline_access,read:me,read:account,read:board:trello,write:board:trello,read:organization:trello,write:organization:trello,read:member:trello,read:member.inbox:trello,write:member.inbox:trello,read:member.planner:trello,write:member.planner:trello"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
             "optional": []
           }
         }
