@@ -1,11 +1,6 @@
 import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import { Array as Arr, Effect, Option } from 'effect';
-import {
-  actingUserOption,
-  devActingUser,
-  fallbackNotice,
-  type ActingUser,
-} from 'src/commands/surface';
+import { actingUserOption, fallbackNotice } from 'src/commands/surface';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
@@ -27,35 +22,6 @@ export type ToolkitsListParams = {
 };
 
 type SessionToolkitItem = SessionToolkitsResponse['items'][number];
-
-/** The user whose connection status the list shows, and the notice printed when it is a fallback. */
-export type ToolkitsListUser = {
-  readonly id: string;
-  readonly fallbackNotice: Option.Option<string>;
-};
-
-const toolkitsListUser = (user: Omit<ActingUser, 'project'>): ToolkitsListUser => ({
-  id: user.userId,
-  fallbackNotice: fallbackNotice(user),
-});
-
-/**
- * The `dev` group's `--user-id`, then the directory's test user id, then the global one: the
- * acting-user rule (`devActingUser`) over given candidates.
- */
-export const resolveToolkitsListUser = (candidates: {
-  readonly flag: Option.Option<string>;
-  readonly projectTestUserId: Option.Option<string>;
-  readonly globalTestUserId: Option.Option<string>;
-}): Option.Option<ToolkitsListUser> =>
-  Option.map(
-    devActingUser({
-      flag: candidates.flag,
-      directoryTestUserId: candidates.projectTestUserId,
-      globalTestUserId: candidates.globalTestUserId,
-    }),
-    toolkitsListUser
-  );
 
 /**
  * Applies `--connected` to the merged rows. The filter needs the session's connection data; when a
@@ -88,18 +54,17 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
 
     const clampedLimit = clampLimit(limit);
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const acting = yield* actingUserOption();
-    const user = Option.map(acting, toolkitsListUser);
+    const user = yield* actingUserOption();
     // The client of the project --project-name names; none keeps the default client.
     const namedClient = yield* Effect.transposeOption(
       Option.map(
-        Option.flatMap(acting, found => found.project),
+        Option.flatMap(user, found => found.project),
         project => clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
       )
     );
 
     // `actingUserOption` named the test user standing in; say how to pick another.
-    if (Option.isSome(Option.flatMap(user, resolved => resolved.fallbackNotice))) {
+    if (Option.isSome(Option.flatMap(user, fallbackNotice))) {
       yield* ui.log.message('To show status for a specific user, use `--user-id`.');
     }
 
@@ -124,7 +89,7 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
             onSome: Effect.succeed,
             onNone: () => clientSingleton.get(),
           });
-          const { sessionId } = yield* resolveToolRouterSession(client, resolved.id);
+          const { sessionId } = yield* resolveToolRouterSession(client, resolved.userId);
           return Option.some({ client, sessionId });
         }).pipe(
           Effect.catch(error =>

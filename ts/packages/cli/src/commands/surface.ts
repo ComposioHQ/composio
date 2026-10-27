@@ -131,7 +131,7 @@ const directoryTestUserId = (
   );
 
 /** The dev tree's rule over its candidates: `--user-id`, the directory test user, the global one. */
-export const devActingUser = (candidates: {
+const devActingUser = (candidates: {
   readonly flag: Option.Option<string>;
   readonly directoryTestUserId: Option.Option<string>;
   readonly globalTestUserId: Option.Option<string>;
