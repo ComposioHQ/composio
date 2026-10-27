@@ -1343,6 +1343,28 @@ class TestBooleanDefaultCoercion:
 
     @pytest.mark.unit
     @pytest.mark.schema
+    def test_type_list_inside_any_of_with_string_default_coerced(self):
+        """A list-valued `type` inside an anyOf option also drives coercion."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "anyOf": [{"type": ["integer", "null"]}],
+                    "default": "5",
+                    "description": "Page size.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["limit"]
+
+        assert prop.get("default") == 5
+
+    @pytest.mark.unit
+    @pytest.mark.schema
     def test_float_with_string_default_coerced(self):
         """Test that string float defaults are coerced."""
         json_schema = {
