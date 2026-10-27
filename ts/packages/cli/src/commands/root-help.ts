@@ -1,6 +1,7 @@
 import { Console, Context, Effect } from 'effect';
 import { CliConfig, CliOutput, Command, GlobalFlag } from 'effect/cli';
-import type { NotLoggedInError } from 'src/commands/errors';
+import type { CommandInputError, NotLoggedInError } from 'src/commands/errors';
+import type { CommandSurface } from 'src/commands/surface';
 import { beginAtCommandPath } from 'src/invocation/command-identity';
 import type { ComposioUserContext } from 'src/services/user-context';
 import { withRegisteredSubcommands } from 'src/commands/registration';
@@ -61,8 +62,8 @@ export const buildHelpCommand = (commands: ReadonlyArray<Command.Command.Any>) =
     string,
     Record<never, never>,
     Record<never, never>,
-    NotLoggedInError,
-    RootHelpContext | ComposioUserContext
+    CommandInputError | NotLoggedInError,
+    RootHelpContext | ComposioUserContext | CommandSurface
   > =>
     Command.make(name, {}, () => showCommandHelp(path)).pipe(
       Command.withDescription(description ?? 'Show command help.'),

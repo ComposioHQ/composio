@@ -168,10 +168,10 @@ describe('lifecycle telemetry from the command identity', () => {
       family: 'command',
       outcome: 'failed',
     },
-    // `rejectsSharedFlags` on the `logs` group fails before `dev logs tools` is reached.
+    // The `logs` group declares --project-name unsupported; its subcommand rejects it once it began.
     {
       args: ['dev', 'logs', 'tools', '--project-name', 'p'],
-      path: 'dev logs',
+      path: 'dev logs tools',
       family: 'command',
       outcome: 'failed',
     },
