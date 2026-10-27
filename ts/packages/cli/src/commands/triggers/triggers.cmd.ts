@@ -1,6 +1,6 @@
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
-import { rejectsSharedFlags } from 'src/commands/surface';
+import { NO_SHARED_FLAGS } from 'src/commands/surface';
 import { triggersCmd$Info } from './info/triggers.info.cmd';
 import { triggersCmd$List } from './list/triggers.list.cmd';
 import { triggersCmd$Status } from './status/triggers.status.cmd';
@@ -22,12 +22,12 @@ export const triggersCmd = Command.make('triggers').pipe(
   Command.withDescription('Inspect and subscribe to trigger events.'),
   withRegisteredSubcommands([
     triggersCmd$Listen,
-    triggersCmd$List.pipe(rejectsSharedFlags('dev triggers list')),
-    triggersCmd$Info.pipe(rejectsSharedFlags('dev triggers info')),
-    triggersCmd$Status.pipe(rejectsSharedFlags('dev triggers status')),
-    triggersCmd$Create.pipe(rejectsSharedFlags('dev triggers create', ['--project-name'])),
-    triggersCmd$Enable.pipe(rejectsSharedFlags('dev triggers enable')),
-    triggersCmd$Disable.pipe(rejectsSharedFlags('dev triggers disable')),
+    triggersCmd$List.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    triggersCmd$Info.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    triggersCmd$Status.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    triggersCmd$Create.pipe(withCommandMeta({ sharedFlags: { projectName: false } })),
+    triggersCmd$Enable.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    triggersCmd$Disable.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
   ]),
   withCommandMeta({ requiresLogin: true })
 );

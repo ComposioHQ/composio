@@ -11,7 +11,8 @@
  */
 import { Effect, Option } from 'effect';
 import { Command } from 'effect/cli';
-import type { NotLoggedInError } from 'src/commands/errors';
+import type { CommandInputError, NotLoggedInError } from 'src/commands/errors';
+import { type CommandSurface, rejectUnsupportedSharedFlags } from 'src/commands/surface';
 import { assertLoggedIn } from 'src/effects/require-auth';
 import {
   childIdentity,
@@ -22,23 +23,34 @@ import type { ComposioUserContext } from 'src/services/user-context';
 
 /**
  * Records the running registration as the command this invocation runs, then enforces what its
- * `CommandMeta` requires: a login fails after the identity is recorded, so `NotLoggedInError`
- * is reported against the command the user ran.
+ * `CommandMeta` requires: a shared flag it cannot honor, then a login. Both fail after the
+ * identity is recorded, so the failure is reported against the command the user ran, even when
+ * a group above it declared the requirement.
  */
 const beginSelected = (input: unknown) =>
   Effect.gen(function* () {
     const identity = yield* CommandRegistration;
     const invocation = yield* CommandInvocation;
     yield* invocation.begin(identity, Option.some(input));
+    yield* rejectUnsupportedSharedFlags(identity.meta);
     if (identity.meta.requiresLogin) {
       yield* assertLoggedIn;
     }
   });
 
-/** A command as a group registers it: its handler may now fail with `NotLoggedInError`. */
+/**
+ * A command as a group registers it: its handler may now fail with `NotLoggedInError` or a
+ * rejected shared flag's `CommandInputError`.
+ */
 export type Registered<C> =
   C extends Command.Command<infer Name, infer Input, infer ContextInput, infer E, infer R>
-    ? Command.Command<Name, Input, ContextInput, E | NotLoggedInError, R | ComposioUserContext>
+    ? Command.Command<
+        Name,
+        Input,
+        ContextInput,
+        E | NotLoggedInError | CommandInputError,
+        R | ComposioUserContext | CommandSurface
+      >
     : never;
 
 /**

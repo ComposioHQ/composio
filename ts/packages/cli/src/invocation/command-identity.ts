@@ -32,6 +32,9 @@ export type InvocationHookName = (typeof INVOCATION_HOOKS)[number];
  */
 export type HookPolicy = boolean | ((input: unknown) => boolean);
 
+/** The `dev` group's shared flags (`--user-id`, `--project-name`), by their `CommandSurface` field. */
+export type SharedFlagName = 'userId' | 'projectName';
+
 /**
  * What a command declares about itself, under one annotation key (`Command.annotate`, or
  * `withCommandMeta`). Every field is optional; what an absent field means is set once, in
@@ -54,6 +57,13 @@ export interface CommandMetaShape {
    * above it, says otherwise; a policy is inherited per hook.
    */
   readonly hooks?: Partial<Readonly<Record<InvocationHookName, HookPolicy>>>;
+  /**
+   * Which of the `dev` group's shared flags the command can honor. Every one can unless the
+   * command, or a group above it, says `false`; inherited per flag. A flag the command cannot
+   * honor fails with `CommandInputError` right after the command began, naming the registration
+   * that declared it (`src/commands/registration.ts`), instead of being accepted and ignored.
+   */
+  readonly sharedFlags?: Partial<Readonly<Record<SharedFlagName, boolean>>>;
 }
 
 export const CommandMeta = Context.Reference<CommandMetaShape>('commands/CommandMeta', {
@@ -65,6 +75,11 @@ export interface ResolvedCommandMeta {
   readonly telemetryFamily: TelemetryFamily;
   readonly requiresLogin: boolean;
   readonly hooks: Readonly<Record<InvocationHookName, HookPolicy>>;
+  /**
+   * For each shared flag the command cannot honor, the command path of the registration that
+   * declared so: itself, or the group above it whose subcommands inherit it.
+   */
+  readonly unsupportedSharedFlags: Partial<Readonly<Record<SharedFlagName, ReadonlyArray<string>>>>;
 }
 
 const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
@@ -74,14 +89,30 @@ const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
   backgroundUpdateCheck: true,
 };
 
-/** Resolves what a command declares (`own`) under a parent registration's resolved meta. */
+const SHARED_FLAG_NAMES: ReadonlyArray<SharedFlagName> = ['userId', 'projectName'];
+
+/**
+ * Resolves what a command registered at `path` declares (`own`) under a parent registration's
+ * resolved meta.
+ */
 export const resolveCommandMeta = (
   parent: ResolvedCommandMeta | undefined,
-  own: CommandMetaShape
+  own: CommandMetaShape,
+  path: ReadonlyArray<string> = []
 ): ResolvedCommandMeta => ({
   telemetryFamily: own.telemetryFamily ?? 'command',
   requiresLogin: own.requiresLogin ?? parent?.requiresLogin ?? false,
   hooks: { ...(parent?.hooks ?? EVERY_HOOK), ...own.hooks },
+  unsupportedSharedFlags: Object.fromEntries(
+    SHARED_FLAG_NAMES.flatMap(flag => {
+      const declared = own.sharedFlags?.[flag];
+      if (declared === undefined) {
+        const inherited = parent?.unsupportedSharedFlags[flag];
+        return inherited === undefined ? [] : [[flag, inherited]];
+      }
+      return declared ? [] : [[flag, path]];
+    })
+  ),
 });
 
 /** Whether `hook` runs for a command with `meta`, given the input `effect/cli` parsed for it. */
@@ -100,7 +131,7 @@ export const commandMetaOf = (command: Command.Command.Any): CommandMetaShape =>
 
 /**
  * Adds `meta` to what `self` already declares in its `CommandMeta` annotation; a hook policy
- * replaces only that hook's. `withCommandMeta({ requiresLogin: true })` makes a command, or a
+ * replaces only that hook's, and a shared-flag declaration only that flag's. `withCommandMeta({ requiresLogin: true })` makes a command, or a
  * group entry and every subcommand under it, require a logged-in user.
  */
 export const withCommandMeta =
@@ -113,6 +144,7 @@ export const withCommandMeta =
       ...current,
       ...meta,
       hooks: { ...current.hooks, ...meta.hooks },
+      sharedFlags: { ...current.sharedFlags, ...meta.sharedFlags },
     });
   };
 
@@ -133,10 +165,10 @@ export const ROOT_IDENTITY: CommandIdentity = {
 export const childIdentity = (
   parent: CommandIdentity,
   child: Command.Command.Any
-): CommandIdentity => ({
-  path: [...parent.path, child.name],
-  meta: resolveCommandMeta(parent.meta, commandMetaOf(child)),
-});
+): CommandIdentity => {
+  const path = [...parent.path, child.name];
+  return { path, meta: resolveCommandMeta(parent.meta, commandMetaOf(child), path) };
+};
 
 /** The command path as telemetry records it: the names joined by spaces, `composio` for the root. */
 export const commandPathOf = (identity: CommandIdentity): string =>
