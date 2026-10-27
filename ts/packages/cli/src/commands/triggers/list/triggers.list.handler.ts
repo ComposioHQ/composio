@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { CommandSurface } from 'src/commands/surface';
+import { commandHintStep } from 'src/services/command-hints';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -13,14 +14,27 @@ export type TriggersListParams = {
 
 const invalidToolkit = commandInputError('triggers list');
 
+const findToolkitHint = commandHintStep('Find the toolkit for a task with', 'root.search', {
+  query: '<what you want to do>',
+});
+
 /**
- * The commands the hints name, on the tree the command runs in. Toolkits are listed only under
- * `dev`, so both trees point there, as `tools list` does.
+ * The hints, on the tree the command runs in. Toolkits are listed only under `dev`, so the root
+ * tree finds a toolkit through `composio search` instead.
  */
-const triggersListHints = Effect.map(CommandSurface, ({ tree }) => ({
-  noResultsCommand: 'composio dev toolkits list',
-  infoCommand: tree === 'dev' ? 'composio dev triggers info' : 'composio triggers info',
-}));
+const triggersListHints = Effect.map(CommandSurface, ({ tree }) =>
+  tree === 'dev'
+    ? {
+        invalidToolkitHint: commandHintStep('List valid toolkits with', 'dev.toolkits.list'),
+        noResultsHint: commandHintStep('Verify the toolkit slug with', 'dev.toolkits.list'),
+        infoCommand: 'composio dev triggers info',
+      }
+    : {
+        invalidToolkitHint: findToolkitHint,
+        noResultsHint: findToolkitHint,
+        infoCommand: 'composio triggers info',
+      }
+);
 
 /**
  * List available trigger types with optional toolkit filters.
@@ -34,7 +48,7 @@ const triggersListHints = Effect.map(CommandSurface, ({ tree }) => ({
 export const runTriggersList = ({ toolkit, limit }: TriggersListParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { noResultsCommand, infoCommand } = yield* triggersListHints;
+    const { invalidToolkitHint, noResultsHint, infoCommand } = yield* triggersListHints;
     const repo = yield* ComposioToolkitsRepository;
     const clampedLimit = clampLimit(limit);
 
@@ -42,7 +56,7 @@ export const runTriggersList = ({ toolkit, limit }: TriggersListParams) =>
       Effect.catchTag('services/InvalidToolkitsError', error =>
         Effect.gen(function* () {
           const availableExample = error.availableToolkits.slice(0, 8).join(', ');
-          yield* ui.log.step(`List valid toolkits with:\n> ${noResultsCommand}`);
+          yield* ui.log.step(invalidToolkitHint);
           return yield* Effect.fail(
             invalidToolkit(
               `Toolkit "${toolkit}" is not available. ${availableExample ? `Examples: ${availableExample}` : ''}`,
@@ -60,9 +74,7 @@ export const runTriggersList = ({ toolkit, limit }: TriggersListParams) =>
     const triggerTypes = allTriggerTypes.slice(0, clampedLimit);
 
     if (triggerTypes.length === 0) {
-      yield* ui.log.warn(
-        `No trigger types found in toolkit "${toolkit}". Verify the toolkit slug with:\n> ${noResultsCommand}`
-      );
+      yield* ui.log.warn(`No trigger types found in toolkit "${toolkit}". ${noResultsHint}`);
       return;
     }
 

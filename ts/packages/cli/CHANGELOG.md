@@ -107,8 +107,9 @@
   the "No current org configured" error pointed at `composio dev orgs list` and
   `composio dev orgs switch`; they now name `composio orgs list` and
   `composio orgs switch`. `composio triggers list` with an unknown toolkit
-  pointed at `composio toolkits list`; it now names
-  `composio dev toolkits list`, as `composio tools list` does.
+  pointed at `composio toolkits list`; it now suggests
+  `composio search "<what you want to do>"` to find the toolkit.
+  `composio dev triggers list` still names `composio dev toolkits list`.
 
 - A `composio dev` command that cannot honor `--user-id` or `--project-name`
   now rejects it before checking that you are logged in, and the message names
