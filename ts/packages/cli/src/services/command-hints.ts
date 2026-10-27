@@ -22,7 +22,6 @@ export type CommandHintId =
   | 'dev.playgroundExecute.getSchema'
   | 'dev.logs.tools'
   | 'dev.logs.triggers'
-  | 'dev.orgs.switch'
   | 'dev.projects.list'
   | 'dev.toolkits.list'
   | 'dev.connectedAccounts.link'
@@ -94,10 +93,6 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   },
   'dev.logs.triggers': {
     example: params => `composio dev logs triggers "${getParam(params, 'logId', '<log_id>')}"`,
-  },
-  'dev.orgs.switch': {
-    example: () => 'composio dev orgs switch',
-    links: ['dev.init', 'dev.projects.list'],
   },
   'dev.projects.list': {
     example: () => 'composio dev projects list',

@@ -49,7 +49,7 @@ export class ProjectResolutionError extends Data.TaggedError('services/ProjectRe
 const missingOrg = () =>
   new ProjectResolutionError({
     reason: 'missing_org',
-    message: 'No current org configured. Run `composio login` or `composio dev orgs switch`.',
+    message: 'No current org configured. Run `composio login` or `composio orgs switch`.',
   });
 
 /**

@@ -71,9 +71,10 @@ describe('CLI: composio dev triggers list', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] root triggers list with nonexistent toolkit [Then] shows root toolkit hint',
+    '[Given] root triggers list with nonexistent toolkit [Then] points at the toolkit list',
     it => {
-      it.effect('uses root toolkit command in the no-results hint', () =>
+      // Toolkits are listed only under `dev`; `composio toolkits list` does not exist.
+      it.effect('names `composio dev toolkits list` in the no-results hint', () =>
         Effect.gen(function* () {
           const failure = yield* cli(['triggers', 'list', 'nonexistent']).pipe(Effect.flip);
           expect(failure).toMatchObject({
@@ -84,8 +85,7 @@ describe('CLI: composio dev triggers list', () => {
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('composio toolkits list');
-          expect(output).not.toContain('composio dev toolkits list');
+          expect(output).toContain('List valid toolkits with:\n> composio dev toolkits list');
         })
       );
     }
