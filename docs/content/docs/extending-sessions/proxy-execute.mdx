@@ -54,7 +54,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create('user_123', { toolkits: ['github'] });
 // ---cut---
-const { status, data } = await session.proxyExecute({
+const response = await session.proxyExecute({
   toolkit: 'github',
   endpoint: '/repos/composiohq/composio/issues/1',
   method: 'GET',
@@ -63,8 +63,12 @@ const { status, data } = await session.proxyExecute({
   ],
 });
 
-console.log(status);
-console.log(data);
+if (response.resultType === 'completed') {
+  console.log(response.status);
+  console.log(response.data);
+} else {
+  console.log(response.message);
+}
 ```
 </Tab>
 <Tab value="API">
@@ -194,9 +198,11 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 ## Response shape
 
-The call forwards the upstream response's status, headers, and parsed body.
-Both SDKs expose the same fields; each spells them the way its language does, so
-TypeScript reads them as properties and Python as dictionary keys.
+Check `resultType` (`result_type` in Python) before reading HTTP response fields.
+A `completed` result forwards the upstream response's status, headers, and parsed body.
+Both SDKs expose the same fields; TypeScript uses properties and Python uses dictionary keys.
+
+A session hook can return `blocked` with a `message` and `blockReason` (`block_reason` in Python) instead of an HTTP response. The block reason's `type` is `request_blocked` if the request was stopped before execution, or `response_blocked` if the request ran but its response was withheld. A blocked result has no `status`, `data`, `headers`, or binary data.
 
 | TypeScript | Python | Type | Description |
 |---|---|---|---|
@@ -229,7 +235,7 @@ const response = await session.proxyExecute({
   method: 'GET',
 });
 // ---cut---
-if (response.binaryData) {
+if (response.resultType === 'completed' && response.binaryData) {
   console.log(response.binaryData.url);
 }
 ```
@@ -252,7 +258,7 @@ Don't set the `Authorization` header yourself through `parameters`. Composio inj
 
 ## Error handling
 
-`status` and `data` reflect exactly what the toolkit API returned, so check `status` and branch on the common failures.
+For completed results, `status` and `data` reflect what the toolkit API returned. Check `status` and branch on the common failures.
 
 If the call needs user input before it can run, the SDK raises `ToolInputRequiredError` in Python or `ComposioToolInputRequiredError` in TypeScript instead of returning an HTTP response. Nothing was executed. See [Handling requests for user input](/docs/how-composio-works#handling-requests-for-user-input) for the error fields and continuation state.
 

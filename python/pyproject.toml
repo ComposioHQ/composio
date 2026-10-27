@@ -75,5 +75,5 @@ docs-snippets = [
 # pnpm's `minimumReleaseAge`.
 release = [
     "build==1.6.1",
-    "setuptools==84.0.0",
+    "setuptools==84.1.0",
 ]
