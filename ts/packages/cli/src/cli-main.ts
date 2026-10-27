@@ -8,7 +8,8 @@
  * `Runtime.defaultTeardown` exits with its `[Runtime.errorExitCode]` (1 when unset), 0 on
  * success, and 130 on interruption.
  */
-import { Cause, ConfigProvider, Effect, Layer, Logger, Option, Runtime } from 'effect';
+import { Cause, ConfigProvider, Effect, Layer, Logger, Runtime } from 'effect';
+import * as Path from 'effect/Path';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
@@ -30,11 +31,7 @@ import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
-import {
-  ComposioUserContext,
-  ComposioUserContextLive as _ComposioUserContextLive,
-} from 'src/services/user-context';
-import { formatBackendMismatch } from 'src/config/backend';
+import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
@@ -47,17 +44,16 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
-import { showPluginAcquisitionHint } from 'src/services/plugin-hint';
-import { showUpdateNotice } from 'src/services/update-check';
+import { PluginHint } from 'src/services/plugin-hint';
+import { UpdateNotice } from 'src/services/update-check';
+import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
+import type { HookInvocation } from 'src/services/invocation-hook';
+import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
 import {
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
   getExecuteCommandToolSlug,
-  getPrimaryLifecycleFailedEvent,
-  getPrimaryLifecycleInvokedEvent,
-  getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
-import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getVersion } from 'src/effects/version';
 import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -148,6 +144,28 @@ export const PendingLoginSessionLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
+export const BackendMismatchWarningLive = Layer.provide(
+  BackendMismatchWarning.Default,
+  Layer.mergeAll(ComposioUserContextLive, TerminalUILive)
+) satisfies RequiredLayer;
+
+// `Path.layer`, not `BunPath.layer`: the update notice and the plugin hint have always resolved
+// their state files with Effect's own path implementation.
+export const UpdateNoticeLive = Layer.provide(
+  UpdateNotice.Default,
+  Layer.mergeAll(TerminalUILive, BunFileSystem.layer, Path.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const PluginHintLive = Layer.provide(
+  PluginHint.Default,
+  Layer.mergeAll(TerminalUILive, BunFileSystem.layer, Path.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const CommandLifecycleTelemetryLive = Layer.provide(
+  CommandLifecycleTelemetry.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, TerminalUILive)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(LogLevelFromConfigLive)),
   NodeOs.Default,
@@ -173,6 +191,10 @@ const layers = Layer.mergeAll(
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
+  BackendMismatchWarningLive,
+  UpdateNoticeLive,
+  PluginHintLive,
+  CommandLifecycleTelemetryLive,
   Layer.merge(
     Logger.layer([withoutClientNotices(Logger.consolePretty())]),
     Layer.succeed(Logger.LogToStderr, true)
@@ -221,22 +243,15 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
       commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId
         ? { runId: commandTelemetryContext.runId }
         : {};
-    return yield* trackCliEventEffect(
-      getPrimaryLifecycleInvokedEvent(commandTelemetryContext)
-    ).pipe(
+    const telemetry = yield* CommandLifecycleTelemetry;
+    return yield* telemetry.invoked(commandTelemetryContext).pipe(
       Effect.andThen(runWithArgs(argv, bootstrap)),
       Effect.scoped,
       Effect.mapError(error =>
         CliError.isCliError(error) ? error : mapOnlyComposioOverrideError({ error })
       ),
-      Effect.tap(() =>
-        trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
-      ),
-      Effect.tapCause(cause =>
-        trackCliEventEffect(
-          getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
-        )
-      )
+      Effect.tap(() => telemetry.succeeded(commandTelemetryContext)),
+      Effect.tapCause(cause => telemetry.failed(commandTelemetryContext, cause))
     );
   });
 
@@ -248,30 +263,19 @@ export type CliBootstrapOptions = {
   readonly argv: ReadonlyArray<string>;
 };
 
-/** Writes `message` to stderr: as a decorated warning on a terminal, as plain text otherwise. */
-const warn = (message: string) =>
+/** Runs the hooks every invocation gets before its command, in order, on stderr. */
+const runInvocationHooks = (invocation: HookInvocation) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    if ((yield* ui.capabilities).canDecorate) {
-      yield* ui.log.warn(message);
-    } else {
-      yield* ui.error(`Warning: ${message}`);
-    }
+    const backendMismatchWarning = yield* BackendMismatchWarning;
+    const updateNotice = yield* UpdateNotice;
+    const pluginHint = yield* PluginHint;
+    yield* backendMismatchWarning.run(invocation);
+    yield* updateNotice.run(invocation);
+    yield* pluginHint.run(invocation);
   });
-
-/** Warns, before any request, when an env var sends the stored key to another backend. */
-const warnOnBackendMismatch = Effect.gen(function* () {
-  const ctx = yield* ComposioUserContext;
-  yield* Option.match(ctx.backendMismatch, {
-    onNone: () => Effect.void,
-    onSome: mismatch => warn(formatBackendMismatch(mismatch)),
-  });
-});
 
 const cliProgram = (argv: ReadonlyArray<string>) =>
-  warnOnBackendMismatch.pipe(
-    Effect.andThen(showUpdateNotice(argv)),
-    Effect.andThen(showPluginAcquisitionHint(argv)),
+  runInvocationHooks({ argv }).pipe(
     Effect.andThen(runWithTelemetry(argv)),
     // A usage mistake, a missing setup or login, or a failure a remote service reported clearly
     // (see `ExpectedFailure`) is not a broken invariant: print the message and exit 1 instead of
