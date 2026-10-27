@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -55,10 +56,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio dev triggers info', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] root triggers info [Then] displays trigger info with root-level hint',
     it => {
@@ -113,7 +110,9 @@ describe('CLI: composio dev triggers info', () => {
             message:
               'Missing required argument: <slug>\nTry specifying a trigger slug, e.g.:\n> composio dev triggers info "GMAIL_NEW_GMAIL_MESSAGE"',
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
 

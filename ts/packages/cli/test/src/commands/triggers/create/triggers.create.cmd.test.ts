@@ -1,4 +1,4 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import type { TriggerInstanceUpsertParams } from '@composio/client/resources/trigger-instances';
 import { isUsageFailure } from 'src/commands/errors';
@@ -240,9 +240,10 @@ describe('CLI: composio dev triggers create', () => {
             option,
             message: expect.stringMatching(message),
           });
-          // `cli-main.ts` prints a usage failure on stderr and exits 1.
-          expect(isUsageFailure(failure)).toBe(true);
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else. The suite shares one
+          // console, so this case's line is the last one.
+          assert(isUsageFailure(failure));
+          expect((yield* MockConsole.getLines()).at(-1)).toBe(failure.message);
         })
       );
     }

@@ -40,7 +40,7 @@ describe('runAuthConfigsInfo', () => {
           /^Missing required argument: <id>\n[\s\S]*> composio dev auth-configs list$/
         ),
       });
-      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      // The invocation prints a usage failure on stderr and exits 1.
       expect(isUsageFailure(failure)).toBe(true);
       expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);

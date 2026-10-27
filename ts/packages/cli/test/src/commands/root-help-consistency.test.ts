@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { afterEach } from 'vitest';
 import { buildRootCommand } from 'src/commands';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -33,10 +32,6 @@ const visibleCommandPaths = commandPaths(
   .map(path => ({ path, command: path.join(' ') }));
 
 describe('framework command help', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive())(it => {
     it.effect.each(visibleCommandPaths)(
       'renders $command from the same definitions used by parsing',

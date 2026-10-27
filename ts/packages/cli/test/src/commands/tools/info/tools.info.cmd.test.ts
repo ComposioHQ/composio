@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -76,10 +77,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio tools info', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays tool info',
     it => {
@@ -144,7 +141,9 @@ describe('CLI: composio tools info', () => {
             option: '<slug>',
             message: expect.stringContaining('Missing required argument: <slug>'),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }

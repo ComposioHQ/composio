@@ -11,7 +11,6 @@ import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/age
 describe('CLI: composio agent inbox', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {

@@ -931,11 +931,14 @@ describe('CLI: composio execute', () => {
           ]);
 
           expect(recordedExecuteParams[0]?.account).toBe('ca_1');
-          // Every lookup — account selection, the permission gate, error
-          // mapping — must ask for the project execute resolved.
-          expect(recordedProjectToolkitScopes.length).toBeGreaterThan(0);
-          expect(recordedProjectToolkitScopes).toEqual(
-            recordedProjectToolkitScopes.map(() => ({
+          // The invocation's telemetry resolves the tool's toolkit first, before execute knows
+          // its project. Every lookup execute makes after it — account selection, the
+          // permission gate, error mapping — must ask for the project execute resolved.
+          const [telemetryScope, ...executeScopes] = recordedProjectToolkitScopes;
+          expect(telemetryScope).toBeUndefined();
+          expect(executeScopes.length).toBeGreaterThan(0);
+          expect(executeScopes).toEqual(
+            executeScopes.map(() => ({
               orgId: 'org_test',
               projectId: 'consumer_project_test',
             }))

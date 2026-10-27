@@ -24,7 +24,6 @@ import {
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, beforeEach, it, vi } from 'vitest';
-import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import { buildRunHelpersSource, inferCliInvocationPrefix } from 'src/commands/run.cmd';
 import {
   extractInlineExecuteToolSlugs,
@@ -38,8 +37,7 @@ import {
   writeInstalledReleaseTag,
 } from 'src/services/run-companion-modules';
 import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
-import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { cli, MockConsole, recordedInvocationCalls, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { CommandRunner } from 'src/services/command-runner';
 import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
@@ -136,7 +134,6 @@ const inspectRunCommand = (command: ChildProcess.Command) => {
 
 describe('CLI: composio run', () => {
   afterEach(() => {
-    process.exitCode = undefined;
     commandRuns
       .mockReset()
       .mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(0)));
@@ -146,28 +143,29 @@ describe('CLI: composio run', () => {
   });
 
   layer(RunTestLive())(it => {
-    it.effect('[Given] a root run telemetry id [Then] the child receives the same run id', () =>
-      Effect.gen(function* () {
-        const telemetryContext = createCliCommandTelemetryContext(
-          ['bun', 'composio', '--telemetry-debug', 'run', 'console.log("hi")'],
-          '0.0.0-test',
-          { stdoutIsTTY: false, stderrIsTTY: false },
-          { invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN, parentRunId: undefined }
-        );
-        const runId = telemetryContext.runId;
-        assertDefined(runId);
+    it.effect(
+      '[Given] a root run [Then] the child receives the run id its telemetry recorded',
+      () =>
+        Effect.gen(function* () {
+          let childRunId: string | undefined;
+          commandRuns.mockImplementation(command => {
+            childRunId = inspectRunCommand(command).env.COMPOSIO_CLI_PARENT_RUN_ID;
+            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
+          });
 
-        commandRuns.mockImplementation(command => {
-          expect(inspectRunCommand(command).env.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
-          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-        });
+          // The invocation mints the run id for its telemetry and hands it to the command, instead
+          // of publishing it through process-wide state.
+          yield* cli(['--telemetry-debug', 'run', 'console.log("hi")']);
 
-        // The bootstrap hands the run id it minted for telemetry to the command, the way
-        // `cli-main.ts` does, instead of publishing it through process-wide state.
-        yield* cli(['--telemetry-debug', 'run', 'console.log("hi")'], { runId });
-
-        expect(commandRuns).toHaveBeenCalledTimes(1);
-      })
+          expect(commandRuns).toHaveBeenCalledTimes(1);
+          const invoked = (yield* recordedInvocationCalls).find(
+            call => call.service === 'CommandLifecycleTelemetry' && call.event === 'invoked'
+          );
+          const runId =
+            invoked?.service === 'CommandLifecycleTelemetry' ? invoked.context.runId : undefined;
+          assertDefined(runId);
+          expect(childRunId).toBe(runId);
+        })
     );
   });
 

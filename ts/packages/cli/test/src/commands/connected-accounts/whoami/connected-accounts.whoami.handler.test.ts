@@ -104,7 +104,7 @@ describe('runConnectedAccountsWhoami', () => {
         option: '<id>',
         message: `${MISSING_ID_MESSAGE}\n${missingIdHint('whoami')}`,
       });
-      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      // The invocation prints a usage failure on stderr and exits 1.
       expect(isUsageFailure(failure)).toBe(true);
       expect(yield* stderrLines).toEqual([]);
       expect(yield* stdoutLines).toEqual([]);

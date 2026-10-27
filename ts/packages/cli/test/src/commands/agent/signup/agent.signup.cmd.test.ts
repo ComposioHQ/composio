@@ -13,7 +13,6 @@ import { exitCodeOf } from 'test/__utils__/exit-code';
 describe('CLI: composio agent signup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {

@@ -303,7 +303,7 @@ describe('showUpdateNotice', () => {
   );
 });
 
-// ── UpdateNotice (the service cli-main runs) ────────────────────────────
+// ── UpdateNotice (the service the invocation runs) ────────────────────────────
 
 describe('UpdateNotice', () => {
   /** `UpdateNotice.Default` over a home directory in `tempDir` and a recording, decorating stderr. */
