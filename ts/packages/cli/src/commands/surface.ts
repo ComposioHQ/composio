@@ -106,13 +106,12 @@ const defaultMissingUserMessage =
 export interface ActingUserOptions {
   /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. */
   readonly missingUserMessage?: (projectName: Option.Option<string>) => string;
-  /** Departures from the rule that commands still make. C2: drop them, with a CHANGELOG note. */
+  /** Departures from the rule that some commands keep, as they behaved before `actingUser`. */
   readonly legacy?: {
     /**
      * Accept an empty consumer user id as the consumer user, as `execute`, `search`, `link` and
      * `run` do; without it an empty id counts as none, as `connections`, `listen` and `proxy` do.
      */
-    // C2: treat an empty consumer user id as missing everywhere
     readonly acceptEmptyConsumerUserId?: boolean;
     /** On the dev tree without `--project-name`, act as the consumer user, ignoring `--user-id`. */
     readonly consumerWithoutProjectName?: boolean;

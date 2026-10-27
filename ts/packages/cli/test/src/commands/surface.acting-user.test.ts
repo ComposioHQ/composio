@@ -287,7 +287,7 @@ describe('actingUser', () => {
   );
 });
 
-// C2: treat an empty consumer user id as missing everywhere
+// Commands passing `acceptEmptyConsumerUserId` count an empty consumer user id as a user.
 describe('an empty consumer user id', () => {
   const ACCEPT_EMPTY = { legacy: { acceptEmptyConsumerUserId: true } } satisfies ActingUserOptions;
   const sites = [

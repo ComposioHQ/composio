@@ -126,14 +126,14 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
 
     const runSearchRequest = Effect.gen(function* () {
       const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-        // C2: treat an empty consumer user id as missing everywhere
+        // As before `actingUser`, an empty consumer user id still counts as a user.
         legacy: { acceptEmptyConsumerUserId: true },
-        // C2: root `search` stops telling a consumer to provide --user-id.
+        // Keep the earlier message, which mentions --user-id, over the root tree's default.
         missingUserMessage: () =>
           'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
       }).pipe(
-        // C2: fail with MissingActingUserError itself; this keeps the `CommandInputError` tag
-        // that `cli.command.failed` reports as `error_name`.
+        // Re-fail with the `CommandInputError` the command has always failed with, so
+        // `cli.command.failed` keeps reporting it as `error_name`.
         Effect.catchTag('commands/MissingActingUserError', error =>
           Effect.fail(invalidSearchInput(error.message, '--user-id'))
         )

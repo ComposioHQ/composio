@@ -49,7 +49,7 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
     );
     const resolvedUserId = Option.map(acting, found => found.userId);
 
-    // C2: `actingUser` prints the notice for every command.
+    // The acting-user helpers leave the test-user notice to the command, so print it here.
     yield* Option.match(acting, {
       onSome: found =>
         Effect.transposeOption(Option.map(fallbackNotice(found), notice => ui.log.warn(notice))),

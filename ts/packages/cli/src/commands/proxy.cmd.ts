@@ -305,12 +305,12 @@ export const proxyCmd = Command.make('proxy', {
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
       const { userId: consumerUserId, project: resolvedProject } = yield* actingUser({
-        // C2: the message fits the tree.
+        // Keep the command's own missing-user message rather than the tree's default.
         missingUserMessage: () =>
           'No consumer project user is available for proxy execution in this context.',
       }).pipe(
-        // C2: fail with MissingActingUserError itself; this keeps the `ProxyCommandError` tag
-        // that `cli.command.failed` reports as `error_name`.
+        // Re-fail with the `ProxyCommandError` the command has always failed with, so
+        // `cli.command.failed` keeps reporting it as `error_name`.
         Effect.catchTag('commands/MissingActingUserError', error =>
           Effect.fail(new ProxyCommandError({ message: error.message }))
         )

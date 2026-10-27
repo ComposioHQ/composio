@@ -98,7 +98,7 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
       )
     );
 
-    // C2: `actingUser` prints the notice for every command.
+    // The acting-user helpers leave the test-user notice to the command, so print it here.
     const notice = Option.flatMap(user, resolved => resolved.fallbackNotice);
     if (Option.isSome(notice)) {
       yield* ui.log.warn(notice.value);
