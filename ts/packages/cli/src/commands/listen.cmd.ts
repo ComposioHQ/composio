@@ -16,6 +16,7 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import {
   formatConnectedAccountChoices,
   resolveConnectedAccountSelection,
@@ -521,6 +522,7 @@ export const listenCmd = Command.make(
       const path = yield* Path.Path;
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
+      const shutdown = yield* ShutdownSignal;
 
       const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
 
@@ -701,7 +703,8 @@ export const listenCmd = Command.make(
                   orgId: resolvedProject.orgId,
                   projectId: resolvedProject.projectId,
                 },
-                onEvent
+                onEvent,
+                { onSubscribed: shutdown.cooperate(LISTENER_STOP) }
               )
               .pipe(Effect.onInterrupt(() => ui.log.info(`Stopped listening for events ${slug}.`)));
 
@@ -714,9 +717,12 @@ export const listenCmd = Command.make(
               );
             }
 
-            // Without --max-events, --timeout or --fail-fast nothing resolves stopWhenDone, so
-            // this waits on the listener until it is interrupted.
-            const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+            // Ctrl-C or SIGTERM after the subscription is a clean stop: exit 0 after the release.
+            const stopReason = yield* Effect.raceAllFirst([
+              listenEffect,
+              Deferred.await(stopWhenDone),
+              Effect.as(shutdown.requested, 'signal' as const),
+            ]);
             if (stopReason === 'max-events' || stopReason === 'timeout') {
               yield* finishAcceptedEvents(events, failed);
             }
@@ -746,8 +752,8 @@ export const listenCmd = Command.make(
             if (created !== null) {
               yield* disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id });
             }
-            // Runs on every stop of the use phase — max-events, timeout, --fail-fast, and the
-            // interruption by Ctrl+C or SIGTERM — so a piped caller always gets the count.
+            // Runs on every stop of the use phase — max-events, timeout, --fail-fast, Ctrl+C or
+            // SIGTERM, and an interruption — so a piped caller always gets the count.
             yield* writeFailures.report;
           })
       ).pipe(

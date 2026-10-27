@@ -50,6 +50,7 @@ import { CliUserConfig } from 'src/models/cli-user-config';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { ShutdownSignal } from 'src/services/shutdown-signal';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
 import { DashboardToolExecutionTest, type DashboardTestResponder } from '../layers/dashboard';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
@@ -393,16 +394,18 @@ export const TestLayer = (input?: TestLiveInput) =>
     const TriggersRealtimeTest = Layer.succeed(
       TriggersRealtime,
       TriggersRealtime.of({
-        listen: onEvent =>
+        listen: (onEvent, options) =>
           Effect.gen(function* () {
+            yield* options?.onSubscribed ?? Effect.void;
             yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
             return yield* Effect.never;
-          }),
-        listenInProject: (_scope, onEvent) =>
+          }).pipe(Effect.scoped),
+        listenInProject: (_scope, onEvent, options) =>
           Effect.gen(function* () {
+            yield* options?.onSubscribed ?? Effect.void;
             yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
             return yield* Effect.never;
-          }),
+          }).pipe(Effect.scoped),
       })
     );
 
@@ -894,6 +897,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioClientSingletonTest,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
+      // No runner signals tests; a suite that needs one provides its own controller's service.
+      ShutdownSignal.Default,
       ComposioToolkitsRepositoryTest,
       ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,

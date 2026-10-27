@@ -8,6 +8,7 @@ import {
   Schema,
   Context,
   Layer,
+  type Scope,
 } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import type {
@@ -35,6 +36,14 @@ export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
   readonly message: string;
   readonly cause?: unknown;
 }> {}
+
+export interface ListenOptions {
+  /**
+   * Runs once the subscription exists, in a scope that stays open while it does: the place to
+   * register for a cooperative stop (`ShutdownSignal.cooperate`).
+   */
+  readonly onSubscribed?: Effect.Effect<void, never, Scope.Scope>;
+}
 
 const subscriptionError = (message: string) => (cause: unknown) =>
   new TriggerRealtimeSubscriptionError({ message, cause });
@@ -101,6 +110,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
       socket_id: string;
     }) => Effect.Effect<CliRealtimeAuthResponse, TriggerRealtimeSubscriptionError>;
     onEvent: (data: RawRealtimeEvent) => void;
+    options?: ListenOptions;
   }) =>
     Effect.acquireUseRelease(
       Effect.gen(function* () {
@@ -264,7 +274,10 @@ const makeTriggersRealtime = Effect.gen(function* () {
           },
         };
       }),
-      () => Effect.never,
+      () =>
+        Effect.andThen(params.options?.onSubscribed ?? Effect.void, Effect.never).pipe(
+          Effect.scoped
+        ),
       resource =>
         Effect.tryPromise({
           try: () => resource.shutdown(),
@@ -272,7 +285,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
         }).pipe(Effect.catch(() => Effect.void))
     );
 
-  const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
+  const listen = (onEvent: (data: RawRealtimeEvent) => void, options?: ListenOptions) =>
     listenWith({
       getRealtimeCredentials: () =>
         sessionRepo
@@ -283,11 +296,13 @@ const makeTriggersRealtime = Effect.gen(function* () {
           .authRealtimeChannel(params)
           .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
       onEvent,
+      options,
     });
 
   const listenInProject = (
     scope: { orgId: string; projectId: string },
-    onEvent: (data: RawRealtimeEvent) => void
+    onEvent: (data: RawRealtimeEvent) => void,
+    options?: ListenOptions
   ) =>
     Effect.gen(function* () {
       const client = yield* clientSingleton.getFor({
@@ -305,6 +320,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
             .auth(params, idempotent)
             .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
         onEvent,
+        options,
       });
     });
 

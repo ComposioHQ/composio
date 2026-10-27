@@ -9,6 +9,7 @@ import { APP_CONFIG } from 'src/config';
 import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { matchesTriggerListenFilters } from '../filter';
 import {
   formatTriggerListenSummary,
@@ -181,6 +182,7 @@ export const triggersCmd$Listen = Command.make(
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
+      const shutdown = yield* ShutdownSignal;
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
       const configuredWebhookSecret = yield* APP_CONFIG.WEBHOOK_SECRET;
@@ -346,14 +348,17 @@ export const triggersCmd$Listen = Command.make(
         );
       };
 
+      // From the subscription on, Ctrl-C and SIGTERM stop the listener instead of interrupting it.
+      const listenOptions = { onSubscribed: shutdown.cooperate(LISTENER_STOP) };
       // The default credentials serve the configured project; a named one needs its own.
       const listenEffect = (runEvent: RunEvent) =>
         (Option.isSome(surface.projectName)
           ? realtime.listenInProject(
               { orgId: project.orgId, projectId: project.projectId },
-              onEvent(runEvent)
+              onEvent(runEvent),
+              listenOptions
             )
-          : realtime.listen(onEvent(runEvent))
+          : realtime.listen(onEvent(runEvent), listenOptions)
         ).pipe(
           Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
         );
@@ -364,20 +369,22 @@ export const triggersCmd$Listen = Command.make(
         const events = yield* FiberSet.make();
         const runEvent = yield* FiberSet.runtime(events)();
         // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
-        // the listener until it is interrupted.
-        const stopReason = yield* Effect.raceFirst(
+        // the listener until Ctrl-C or SIGTERM stops it or another signal interrupts it.
+        const stopReason = yield* Effect.raceAllFirst([
           listenEffect(runEvent),
-          Deferred.await(stopWhenDone)
-        );
+          Deferred.await(stopWhenDone),
+          shutdown.requested,
+        ]);
         if (stopReason === 'max-events') {
           yield* finishAcceptedEvents(events, failed);
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
       }).pipe(
         Effect.scoped,
-        // An onExit finalizer, so the summaries print on every stop — including the
-        // interruption by Ctrl+C or SIGTERM, where the code after this block would not run. With
-        // --fail-fast a summary fails the command, so the second one still prints after it.
+        // An onExit finalizer, so the summaries print on every stop — including an
+        // interruption (a signal before the subscription, or SIGHUP), where the code after this
+        // block would not run. With --fail-fast a summary fails the command, so the second one
+        // still prints after it.
         Effect.onExit(() =>
           Effect.gen(function* () {
             const forwarded = yield* Effect.exit(forwardFailures.report);

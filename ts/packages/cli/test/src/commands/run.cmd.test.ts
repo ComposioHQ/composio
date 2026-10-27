@@ -7,9 +7,23 @@ import { describe, expect, layer } from '@effect/vitest';
 import { assertDefined } from '@effect/vitest/utils';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as Path from 'effect/Path';
-import { ConfigProvider, Deferred, Effect, Fiber, Layer, Runtime, Sink, Stream } from 'effect';
+import {
+  Cause,
+  ConfigProvider,
+  Deferred,
+  Effect,
+  Exit,
+  Fiber,
+  Layer,
+  Option,
+  PlatformError,
+  Runtime,
+  Sink,
+  Stream,
+} from 'effect';
+import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
-import { afterEach, it, vi } from 'vitest';
+import { afterEach, beforeEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import { buildRunHelpersSource, inferCliInvocationPrefix } from 'src/commands/run.cmd';
 import {
@@ -28,7 +42,14 @@ import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context'
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { CommandRunner } from 'src/services/command-runner';
-import { ChildProcessExited } from 'src/effects/child-process-exited';
+import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
+import { ExitAction, exitActionFor } from 'src/run-main';
+import {
+  makeShutdownController,
+  ShutdownSignal,
+  type ShutdownController,
+  type TerminationSignal,
+} from 'src/services/shutdown-signal';
 
 const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_RUN_ACP_ONLY: '1',
@@ -54,9 +75,14 @@ const tempScript = Effect.acquireRelease(
 const SCRIPT = 'console.log("hi")';
 const SCRIPT_FLAGS = ['--perf-debug', '--tool-debug', '--telemetry-debug', '--help', '--version'];
 
-const commandRuns = vi.fn((_: ChildProcess.Command) =>
-  Effect.succeed(ChildProcessSpawner.ExitCode(0))
+const commandRuns = vi.fn(
+  (
+    _: ChildProcess.Command
+  ): Effect.Effect<ChildProcessSpawner.ExitCode, PlatformError.PlatformError> =>
+    Effect.succeed(ChildProcessSpawner.ExitCode(0))
 );
+/** Whether the stub child is still running, which the escalation after a signal checks. */
+const childRunning = vi.fn(() => false);
 
 // `composio run` starts the child through the platform `ChildProcessSpawner` so it owns the
 // pid it forwards signals to, so the stub has to replace the spawner rather than
@@ -68,7 +94,7 @@ const stubHandle = (command: ChildProcess.Command): ChildProcessSpawner.ChildPro
   ChildProcessSpawner.makeHandle({
     pid: ChildProcessSpawner.ProcessId(STUB_CHILD_PID),
     exitCode: Effect.suspend(() => commandRuns(command)),
-    isRunning: Effect.succeed(false),
+    isRunning: Effect.sync(() => childRunning()),
     kill: () => Effect.void,
     stdin: Sink.drain,
     stdout: Stream.empty,
@@ -114,6 +140,7 @@ describe('CLI: composio run', () => {
     commandRuns
       .mockReset()
       .mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(0)));
+    childRunning.mockReset().mockImplementation(() => false);
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -144,46 +171,154 @@ describe('CLI: composio run', () => {
     );
   });
 
-  layer(RunTestLive())(it => {
-    it.effect(
-      '[Given] a terminal interrupt [Then] it forwards the signal to the child process group and unregisters its handlers',
-      () =>
-        Effect.gen(function* () {
-          const signalled: Array<readonly [number, string]> = [];
-          vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
-            signalled.push([Number(pid), String(signal)]);
-            return true;
-          });
+  describe('signals', () => {
+    // The runner's controller for this run: the test delivers the CLI's signals through it.
+    let controller: ShutdownController = makeShutdownController();
+    const signalled: Array<readonly [number, string]> = [];
+    // Completes once `process.kill` received each signal, so a test can wait for delivery.
+    let delivered = new Map<string, Deferred.Deferred<void>>();
+    const deliveryOf = (signal: string) => {
+      const deferred = delivered.get(signal) ?? Deferred.makeUnsafe<void>();
+      delivered.set(signal, deferred);
+      return deferred;
+    };
 
-          const sigintBaseline = process.listenerCount('SIGINT');
-          const sigtermBaseline = process.listenerCount('SIGTERM');
-          const registeredWhileRunning: Array<{ sigint: number; sigterm: number }> = [];
+    beforeEach(() => {
+      controller = makeShutdownController();
+      signalled.length = 0;
+      delivered = new Map();
+      vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+        signalled.push([Number(pid), String(signal)]);
+        Deferred.doneUnsafe(deliveryOf(String(signal)), Effect.void);
+        return true;
+      });
+    });
 
-          commandRuns.mockImplementation(() =>
-            Effect.sync(() => {
-              registeredWhileRunning.push({
-                sigint: process.listenerCount('SIGINT') - sigintBaseline,
-                sigterm: process.listenerCount('SIGTERM') - sigtermBaseline,
-              });
-              // Stand in for the terminal delivering Ctrl-C to the CLI only: the child is
-              // detached into its own process group and never sees it directly.
-              process
-                .listeners('SIGINT')
-                .slice(sigintBaseline)
-                .forEach(listener => listener('SIGINT'));
-              return ChildProcessSpawner.ExitCode(0);
-            })
-          );
-
-          yield* cli(['run', 'console.log("hi")']);
-
-          expect(registeredWhileRunning[0]).toEqual({ sigint: 1, sigterm: 1 });
-          // Negative pid: the detached child leads its own process group.
-          expect(signalled).toEqual([[-STUB_CHILD_PID, 'SIGINT']]);
-          expect(process.listenerCount('SIGINT')).toBe(sigintBaseline);
-          expect(process.listenerCount('SIGTERM')).toBe(sigtermBaseline);
-        })
+    /** `composio run` with the CLI receiving `signal` while the child runs. */
+    const runWithSignals = Effect.suspend(() =>
+      Effect.exit(
+        cli(['run', 'console.log("hi")']).pipe(
+          Effect.provideService(ShutdownSignal, controller.service)
+        )
+      )
     );
+
+    /** A child that, once the CLI took `signal`, waits for it and then ends with `ends`. */
+    const childEndingAfter = (
+      signal: 'SIGINT' | 'SIGTERM' | 'SIGHUP',
+      ends: Effect.Effect<ChildProcessSpawner.ExitCode, PlatformError.PlatformError>
+    ) =>
+      commandRuns.mockImplementation(() =>
+        Effect.sync(() => expect(controller.offer(signal)).toBe(true)).pipe(
+          Effect.andThen(Deferred.await(deliveryOf(signal))),
+          Effect.andThen(ends)
+        )
+      );
+
+    /** The spawner's failure for a child a signal ended. */
+    const killedBy = (signal: TerminationSignal) =>
+      Effect.fail(
+        PlatformError.systemError({
+          _tag: 'Unknown',
+          module: 'ChildProcess',
+          method: 'exitCode',
+          cause: new Error(`Process interrupted due to receipt of signal: '${signal}'`),
+        })
+      );
+
+    layer(RunTestLive())(it => {
+      it.effect.each(['SIGINT', 'SIGTERM', 'SIGHUP'] as const)(
+        '[Given] the CLI receives %s [Then] it forwards it to the child process group',
+        signal =>
+          Effect.gen(function* () {
+            childEndingAfter(signal, Effect.succeed(ChildProcessSpawner.ExitCode(0)));
+
+            const exit = yield* runWithSignals;
+
+            // Negative pid: the detached child leads its own process group.
+            expect(signalled).toEqual([[-STUB_CHILD_PID, signal]]);
+            // A script that handles the signal and exits 0 makes the run succeed.
+            expect(exitCodeOf(exit)).toBe(0);
+          })
+      );
+
+      it.effect(
+        '[Given] the child exits non-zero after the signal [Then] the run mirrors its code',
+        () =>
+          Effect.gen(function* () {
+            childEndingAfter('SIGINT', Effect.succeed(ChildProcessSpawner.ExitCode(7)));
+
+            const exit = yield* runWithSignals;
+
+            expect(exitCodeOf(exit)).toBe(7);
+          })
+      );
+
+      it.effect('[Given] the signal ends the child [Then] the runner re-raises that signal', () =>
+        Effect.gen(function* () {
+          childEndingAfter('SIGTERM', killedBy('SIGTERM'));
+
+          const exit = yield* runWithSignals;
+          const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
+
+          expect(failure).toBeInstanceOf(ChildProcessSignaled);
+          expect(Runtime.getErrorReported(failure)).toBe(false);
+          expect(exitActionFor(exit, Option.some('SIGTERM'))).toEqual(
+            ExitAction.Reraise({ signal: 'SIGTERM' })
+          );
+        })
+      );
+
+      it.effect(
+        '[Given] a child that ignores the signal [Then] it gets SIGTERM, then SIGKILL, and the run mirrors SIGKILL',
+        () =>
+          Effect.gen(function* () {
+            childRunning.mockImplementation(() => true);
+            const killed = deliveryOf('SIGKILL');
+            childEndingAfter(
+              'SIGINT',
+              Deferred.await(killed).pipe(Effect.andThen(killedBy('SIGKILL')))
+            );
+
+            const fiber = yield* Effect.forkChild(runWithSignals);
+            yield* Deferred.await(deliveryOf('SIGINT'));
+            yield* TestClock.adjust('2 seconds');
+            yield* Deferred.await(deliveryOf('SIGTERM'));
+            yield* TestClock.adjust('2 seconds');
+            const exit = yield* Fiber.join(fiber);
+
+            expect(signalled).toEqual([
+              [-STUB_CHILD_PID, 'SIGINT'],
+              [-STUB_CHILD_PID, 'SIGTERM'],
+              [-STUB_CHILD_PID, 'SIGKILL'],
+            ]);
+            expect(exitActionFor(exit, Option.some('SIGINT'))).toEqual(
+              ExitAction.Reraise({ signal: 'SIGKILL' })
+            );
+          })
+      );
+
+      it.effect(
+        '[Given] a second signal [Then] forcing the exit kills the child group and re-raises',
+        () =>
+          Effect.gen(function* () {
+            const forced = yield* Deferred.make<{ readonly reraise: boolean }>();
+            commandRuns.mockImplementation(() =>
+              Effect.sync(() => {
+                controller.offer('SIGINT');
+                // What the runner does on the second signal, while the child still runs.
+                Deferred.doneUnsafe(forced, Effect.succeed(controller.force()));
+                return ChildProcessSpawner.ExitCode(0);
+              })
+            );
+
+            yield* runWithSignals;
+
+            expect(yield* Deferred.await(forced)).toEqual({ reraise: true });
+            expect(signalled).toContainEqual([-STUB_CHILD_PID, 'SIGKILL']);
+          })
+      );
+    });
   });
 
   layer(RunTestLive())(it => {

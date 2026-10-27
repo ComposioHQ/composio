@@ -740,3 +740,66 @@ describe('expected failures without the crash banner', () => {
     30_000
   );
 });
+
+describe('signals', () => {
+  /**
+   * Runs `composio orgs list` against a backend that never answers, sends `signal` once the
+   * request arrives, and reports how the process ended.
+   */
+  const signalBlockedCommand = async (signal: NodeJS.Signals) => {
+    let child: ReturnType<typeof spawn> | undefined;
+    let ended: { code: number | null; signal: NodeJS.Signals | null } | undefined;
+    // Holds every request open: the command blocks until the signal ends it.
+    await withHttpServer(
+      () => child?.kill(signal),
+      async baseUrl => {
+        const configDirectory = tempy.temporaryDirectory();
+        fs.writeFileSync(
+          path.join(configDirectory, 'user_data.json'),
+          JSON.stringify({ api_key: 'uak_test', base_url: baseUrl, web_url: baseUrl, org_id: null })
+        );
+        const {
+          COMPOSIO_USER_API_KEY: _apiKey,
+          COMPOSIO_ENVIRONMENT: _environment,
+          ...host
+        } = process.env;
+        const spawned = spawn('bun', ['run', 'src/bin.ts', 'orgs', 'list'], {
+          cwd: process.cwd(),
+          env: {
+            ...host,
+            CI: '1',
+            NO_COLOR: '1',
+            COMPOSIO_CACHE_DIR: configDirectory,
+            COMPOSIO_BASE_URL: baseUrl,
+            COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
+          },
+          stdio: 'ignore',
+        });
+        child = spawned;
+        ended = await new Promise((resolve, reject) => {
+          const deadline = setTimeout(() => {
+            spawned.kill('SIGKILL');
+            reject(new Error(`CLI did not exit within ${CLI_DEADLINE_MS}ms after ${signal}`));
+          }, CLI_DEADLINE_MS);
+          spawned.once('close', (code, endSignal) => {
+            clearTimeout(deadline);
+            resolve({ code, signal: endSignal });
+          });
+        });
+      }
+    );
+    return ended;
+  };
+
+  it.each([
+    { signal: 'SIGINT', code: 130 },
+    { signal: 'SIGTERM', code: 143 },
+    { signal: 'SIGHUP', code: 129 },
+  ] as const)(
+    '[Given] a one-shot command waiting on the backend [When] it receives $signal [Then] it exits $code',
+    async ({ signal, code }) => {
+      expect(await signalBlockedCommand(signal)).toEqual({ code, signal: null });
+    },
+    30_000
+  );
+});
