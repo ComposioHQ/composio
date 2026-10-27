@@ -239,6 +239,73 @@ describe('ToolRouter', () => {
       expect(bodies[4]).not.toHaveProperty('proxy_execute');
     });
 
+    it('sends hooks in snake_case, and omits them otherwise', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
+
+      await toolRouter.create(userId, {
+        hooks: [
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            appliesTo: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      });
+      await toolRouter.create(userId);
+
+      const bodies = mockClient.toolRouter.session.create.mock.calls.map(call => call[0]);
+      expect(bodies[0]).toMatchObject({
+        hooks: [
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            applies_to: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      });
+      expect(bodies[1]).not.toHaveProperty('hooks');
+    });
+
+    it('rejects a prompt injection check on a before_execute hook, as the API does', async () => {
+      await expect(
+        toolRouter.create(userId, {
+          hooks: [
+            {
+              type: 'before_execute',
+              id: 'block_injection',
+              appliesTo: 'all',
+              // @ts-expect-error a before_execute hook only takes a condition_check handler
+              handler: { type: 'prompt_injection_check', action: 'block' },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects hooks together with a saved session config', async () => {
+      await expect(
+        toolRouter.create(
+          userId,
+          // @ts-expect-error hooks cannot be combined with sessionConfigId
+          {
+            hooks: [
+              {
+                type: 'after_execute',
+                id: 'block_injection',
+                appliesTo: 'all',
+                handler: { type: 'prompt_injection_check', action: 'block' },
+              },
+            ],
+            experimental: { sessionConfigId: 'sc_1' },
+          }
+        )
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
     it('rejects a proxyExecute block without enable', async () => {
       await expect(
         // @ts-expect-error enable is required

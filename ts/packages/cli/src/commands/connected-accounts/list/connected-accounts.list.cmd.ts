@@ -21,6 +21,16 @@ const limit = Flag.Int('limit').pipe(
   Flag.withDescription('Number of results per page (1-1000)')
 );
 
+/**
+ * List connected accounts with optional filters.
+ *
+ * @example
+ * ```bash
+ * composio dev connected-accounts list
+ * composio dev connected-accounts list --toolkits "gmail"
+ * composio dev connected-accounts list --user-id "default" --status ACTIVE
+ * ```
+ */
 export const connectedAccountsCmd$List = Command.make(
   'list',
   { toolkits, status, limit },

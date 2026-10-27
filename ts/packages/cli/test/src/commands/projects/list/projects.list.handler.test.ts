@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Console, Effect, Layer, Option } from 'effect';
 import { runProjectsList } from 'src/commands/projects/list/projects.list.handler';
+import { isUsageFailure } from 'src/commands/errors';
 import {
   NO_CURRENT_ORG_MESSAGE,
+  NO_CURRENT_ORG_OUTRO,
   NO_PROJECTS_MESSAGE,
 } from 'src/commands/projects/list/projects.list.format';
 import type { OrgProject } from 'src/services/composio-account';
@@ -113,14 +115,21 @@ describe('runProjectsList', () => {
     { orgId: Option.none<string>(), current: Option.none<string>(), label: 'no org at all' },
     { orgId: Option.some(''), current: Option.some('org_current'), label: 'an empty --org-id' },
     { orgId: Option.none<string>(), current: Option.some(''), label: 'an empty current org' },
-  ])('[Given] $label [Then] warns and sends no request', ({ orgId, current }) => {
+  ])('[Given] $label [Then] fails with a usage error before any request', ({ orgId, current }) => {
     const { layer, outputs, requests } = projectsListTest({ orgId: current });
     return Effect.gen(function* () {
-      yield* runProjectsList({ orgId, limit: 50 });
+      const failure = yield* runProjectsList({ orgId, limit: 50 }).pipe(Effect.flip);
 
+      expect(failure).toMatchObject({
+        _tag: 'commands/CommandInputError',
+        command: 'dev projects list',
+        option: '--org-id',
+        message: `${NO_CURRENT_ORG_MESSAGE}\n${NO_CURRENT_ORG_OUTRO}`,
+      });
+      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      expect(isUsageFailure(failure)).toBe(true);
       expect(requests).toEqual([]);
       expect(outputs).toEqual([]);
-      expect(yield* MockConsole.getLines({ stream: 'stderr' })).toContain(NO_CURRENT_ORG_MESSAGE);
     }).pipe(Effect.provide(layer));
   });
 
@@ -138,12 +147,13 @@ describe('runProjectsList', () => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect('[Given] no projects [Then] warns and outputs nothing', () => {
+  it.effect('[Given] no projects [Then] warns and prints an empty list', () => {
     const { layer, outputs } = projectsListTest({ projects: [] });
     return Effect.gen(function* () {
       yield* runProjectsList({ orgId: Option.none(), limit: 50 });
 
-      expect(outputs).toEqual([]);
+      // Piped callers get the parseable empty result, not silence.
+      expect(outputs).toEqual(['[]']);
       expect(yield* MockConsole.getLines({ stream: 'stderr' })).toEqual([NO_PROJECTS_MESSAGE]);
     }).pipe(Effect.provide(layer));
   });

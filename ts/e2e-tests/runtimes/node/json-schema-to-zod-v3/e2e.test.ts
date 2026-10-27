@@ -11,7 +11,7 @@ import { describe, it, expect } from 'bun:test';
 import zodToJsonSchema from 'zod-to-json-schema';
 
 e2e(import.meta.url, {
-  versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
+  versions: { node: ['22.23.4', '24.22.1', '26.12.1'] },
   defineTests: () => {
     describe('json-schema-to-zod with Zod v3', () => {
       describe('Basic functionality', () => {

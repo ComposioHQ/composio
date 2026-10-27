@@ -2,7 +2,174 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  gain `--fail-fast`: the listener stops at the first event it fails to save,
+  forward, or append to `--out`, prints how many events failed on stderr, and
+  exits 1. Without it, a failed event is still reported and skipped, and the
+  exit code stays 0.
+
 ### Patch Changes
+
+- `composio upgrade` no longer starts with a stale "Update available" line.
+  The line came from the cached daily update check, so right after a release
+  it could name an older version than the one `composio upgrade` then
+  installed. Upgrading also refreshes that cache with the latest stable release
+  it found, so later commands stop suggesting an older version. Installing a
+  specific version, a beta, or a pinned release tag leaves the cache unchanged.
+
+- `composio proxy` now enforces the consumer permission policy that
+  `composio execute` enforces, checked against the connected account the
+  request uses. A denied request fails with the same permission error, and a
+  request that needs approval opens the same approval page, before anything is
+  sent.
+
+- A tool call or proxied request that a session hook blocks is now reported as
+  a failure carrying the hook's message. `composio execute` prints it as a
+  failed call (`successful: false`) with the message in `error`; on consumer
+  projects, whose calls go through the Dashboard, it used to fail as a response
+  the CLI could not read. `composio proxy` fails naming the hook instead of
+  printing a response with no status.
+
+- `composio connections list` now prints each account's `id`, its `alias`
+  whenever it has one (previously only when a toolkit had several accounts),
+  and `display_name` — the provider identity from `state.val.displayName`,
+  trimmed and capped at 200 characters — when Composio has filled one in.
+  Nothing else is read from `state`.
+
+- `composio connections list`, `composio connections remove`, and
+  `composio dev connected-accounts list` exit 1 when the connected-accounts
+  response does not match the shape this CLI expects, naming the mismatched
+  fields. They used to warn and continue with the unchecked response.
+
+- The CLI now uses `@composio/client@2.0.0-rc.22` (up from `2.0.0-rc.20`). No
+  command changes.
+
+- `composio dev triggers create` now accepts `--user-id` and sends it with the
+  request, so it works on projects with 2FA enabled, which require the user who
+  owns the connected account. It used to reject `--user-id` and send no user,
+  so creating a trigger on those projects always failed. Without `--user-id`
+  it sends the project's test user id, else the global test user id, and names
+  the one it used on stderr; with neither configured it sends no user, as
+  before. Given a user and no `--connected-account-id`, the API picks that
+  user's first active connection for the trigger's toolkit.
+
+- More expected errors now print as a plain message on stderr and exit 1, like
+  other usage errors. They used to print under a `💥` banner with the error tag
+  and a stack location, as if the CLI had crashed. The message itself is
+  unchanged, and nothing is printed on stdout. This covers:
+  - `composio execute` without a user id, or with a `--file` the tool has no
+    file input for (or whose field `-d` already sets)
+  - `composio proxy` when the project has no consumer user
+  - `composio link` without a user id, or when the authorization is not
+    finished before the CLI stops waiting
+  - `composio login` with an `--org` that does not exist, a session key that
+    expired or is not linked yet, a login that is not finished in time, or
+    `--poll` without a pending (or with an expired) login
+  - `composio generate` outside a recognizable JavaScript or Python project, or
+    without `@composio/core` or `composio-core` installed
+  - a `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>` override naming a toolkit or version
+    that does not exist
+
+- `composio execute` and `composio proxy` no longer print a `💥` banner after
+  reporting that the toolkit is not connected (when the connected-account cache
+  is on). The message, tips, and `{"successful": false, ...}` JSON on stdout
+  are unchanged, and the exit code is still 1.
+
+- `composio link` and `composio dev connected-accounts link` now exit 1 with
+  the usage message on stderr when their flags can't run: a toolkit together
+  with `--auth-config`, neither a toolkit nor `--auth-config`, `--auth-config`
+  without a developer project, and `--list` without a toolkit or with
+  `--auth-config`. They used to exit 0, and printed the message only when
+  stderr was a terminal, so scripts, CI and agents saw no output and a
+  successful exit. The messages are unchanged.
+- These commands now exit 1 and print their message on stderr. They used to
+  exit 0, and printed the message only when stderr was a terminal, so scripts,
+  CI and agents saw no output and a successful exit. The messages are
+  unchanged.
+  - Missing input, before any request: `composio whoami` without a login,
+    `composio dev projects list` without `--org-id` or a current org,
+    `composio triggers info` and `composio dev triggers info` without a
+    `<slug>`, `composio dev toolkits info` without a `<slug>`,
+    `composio dev triggers disable` without an `<id>`, and
+    `composio dev connected-accounts info` and
+    `composio dev connected-accounts whoami` without an `<id>`.
+  - Missing input that needs one lookup first: `composio dev init` without a
+    stored API key or org (it checks your saved login), and
+    `composio connections remove` with a selector that matches no connection
+    or more than one (it fetches your connections). Both fail before they
+    change anything.
+  - Failures after a request: `composio dev toolkits info` for a toolkit it
+    cannot fetch or find, `composio dev toolkits version` for a toolkit it
+    cannot fetch, `composio dev init` in an org without projects, and
+    `composio link` and `composio dev connected-accounts link` when the link
+    request fails, the link response is incomplete, the `--alias` is already
+    taken, or an account already exists and no `--alias` was passed.
+- These commands already exited 1 but printed their message only when stderr
+  was a terminal; they now print it on stderr either way:
+  `composio dev toolkits list` and `composio dev toolkits search` when the
+  request fails, `composio listen`, `composio dev listen` and
+  `composio dev triggers listen` when the realtime subscription fails, and
+  the `composio agent` commands, `composio signup` and `composio login` when
+  the stored agent identity can't be used.
+- `composio connections remove` gains `--yes` (`-y`) to remove without the
+  confirmation prompt, and `composio logout` accepts `--yes` (`-y`) next to
+  `--force` (`-f`). When not running interactively, both used to answer their
+  own prompt with "no", remove nothing and exit 0; without `--yes` they now
+  exit 1 with "needs --yes when not running interactively" on stderr, before
+  any request (for `logout`, only when logged in as an agent, the case that
+  asks). Declining the prompt on a terminal still removes nothing and exits 0.
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  now print how many events they failed to save, forward, or append to `--out`
+  on stderr when they stop, including on Ctrl+C. The per-event warnings were
+  shown only when stderr was a terminal. One failed event still does not stop
+  the listener, and the exit code is unchanged.
+- `composio listen --max-events N` now stops after N matching events even when
+  saving one of them fails. It used to keep listening until interrupted.
+
+## 0.5.0
+
+### Minor Changes
+
+- Breaking: some commands now exit 1 where they used to exit 0. Scripts and
+  agents that read the exit code to decide whether a call worked now get the
+  right answer; a script that relied on exit 0 after a failed execution must
+  handle exit 1. Output on stdout and stderr is unchanged.
+
+- `composio execute` now exits 1 when a tool execution fails: the tool
+  reported a failure, the Composio Dashboard or backend could not run it, or,
+  with `--parallel`, any one of the calls failed. It used to exit 0. Meta tools
+  behave the same. The `{"successful": false, ...}` JSON on stdout and the
+  messages on stderr are unchanged. In `composio run`, `execute()` still
+  rejects with the tool's error message and the failed result.
+
+- These commands now exit 1 instead of 0 when their input is missing or
+  invalid, printing the same message and example on stderr and nothing on
+  stdout. No request is sent.
+  - `composio dev auth-configs info` without an `<id>`
+  - `composio dev auth-configs create` with `--custom-credentials` that is not
+    a JSON object
+  - `composio tools info` without a `<slug>`
+  - `composio dev triggers create` without a `<trigger-name>`, or with
+    `--trigger-config` that is not a JSON object
+  - `composio dev triggers enable` without an `<id>`
+
+- `composio orgs switch` now exits 1 and asks you to run `composio login`
+  when the stored `api_key` is empty. It used to warn and exit 0. Nothing is
+  written in either case.
+
+### Patch Changes
+
+- `composio dev connected-accounts list` now reports a response whose `items`
+  is not a list as a request error and exits 1. It used to crash.
+
+- `composio execute` and `composio proxy` now report an `--account` that
+  matches no connected account (`No connected account matched "…"`) as one
+  line on stderr and exit 1, like other usage errors. They used to print it
+  under a `💥` banner with the error tag and a stack location, as if the CLI had
+  crashed. A failure to load the toolkit's connected accounts is reported the
+  same way. Nothing is printed on stdout.
 
 - `composio execute` now sends the execution itself (single, `--parallel`, and
   meta tools) through the Composio Dashboard instead of calling the backend
@@ -27,16 +194,6 @@
   `COMPOSIO_DISABLE_TELEMETRY`, or `CI`): when telemetry is off, or no install
   ID is stored, the header is not sent. It is never sent to the backend API.
 
-- These commands now exit 1 instead of 0 when their input is missing or
-  invalid, printing the same message and example on stderr and nothing on
-  stdout. No request is sent.
-  - `composio dev auth-configs info` without an `<id>`
-  - `composio dev auth-configs create` with `--custom-credentials` that is not
-    a JSON object
-  - `composio tools info` without a `<slug>`
-  - `composio dev triggers create` without a `<trigger-name>`, or with
-    `--trigger-config` that is not a JSON object
-  - `composio dev triggers enable` without an `<id>`
 - The CLI now calls the backend you logged in to. `composio login` already
   recorded it as `base_url` in `user_data.json`, but every command replaced it
   with the production default unless `COMPOSIO_BASE_URL` or
@@ -52,6 +209,7 @@
   environment selects, since agents.composio.dev issued its key. A rejected
   user API key now prints how to log in again, naming the backend and
   Dashboard when they are not production's.
+
 - `composio link` and `composio dev connected-accounts link` reword their usage
   and status messages on stderr: the rejected `--auth-config` on the root
   command, a toolkit passed together with `--auth-config`, a missing toolkit,
@@ -59,8 +217,13 @@
   developer project, an incomplete link response, a toolkit whose auth
   Composio does not manage, and the waiting and timeout lines shown while a
   link is pending. Exit codes and the JSON printed on stdout are unchanged.
-- The CLI now uses `@composio/client@2.0.0-rc.19` (up from `2.0.0-rc.17`). No
-  command changes.
+
+- The CLI now uses `@composio/client@2.0.0-rc.20` (up from `2.0.0-rc.17`),
+  which drops the Stainless resource structure: resource classes, class
+  statics, namespace-member types and the `.js`/`.mjs` subpath spellings are
+  gone. The CLI's type imports move to the one `@composio/client/resources/*`
+  spelling; no command changes.
+
 - API requests now authenticate through the API client's `auth` option (the
   logged-in user's API key, or no credential before login) and name the org and
   project through its `scope`, instead of the CLI placing `x-user-api-key`,
@@ -68,6 +231,7 @@
   unchanged. The CLI no longer keeps a client per API key and project for the
   life of the process, so the user API key is held only by the client making
   the request.
+
 - The API client's deprecation notices are dropped by the CLI's logger instead
   of being turned off in the client. Nothing new is printed.
 

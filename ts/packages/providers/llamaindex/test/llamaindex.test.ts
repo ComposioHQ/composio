@@ -5,18 +5,13 @@ import { Tool } from '@composio/core';
 // Mock the llamaindex module
 vi.mock('llamaindex', () => {
   return {
-    tool: vi.fn().mockImplementation(config => ({
-      metadata: {
-        name: config.name,
-        description: config.description,
-        parameters: config.parameters,
-      },
-      call: config.execute,
-      // Mock LlamaIndex tool properties
-      _type: 'llamaindex_tool',
-      _config: config,
-    })),
-    JSONValue: {},
+    FunctionTool: class {
+      constructor(
+        readonly call: (input: unknown) => unknown,
+        readonly metadata: { name: string; description: string; parameters: unknown },
+        readonly zodType: unknown
+      ) {}
+    },
   };
 });
 

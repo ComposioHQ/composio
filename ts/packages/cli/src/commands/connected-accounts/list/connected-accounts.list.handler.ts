@@ -1,6 +1,9 @@
 import { Array as Arr, Effect, Option } from 'effect';
 import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
-import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import {
+  CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+  decodeConnectedAccountList,
+} from 'src/effects/decode-connected-account-list';
 import { failedWith } from 'src/effects/request-error';
 import type { KnownConnectedAccountStatus } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -60,18 +63,20 @@ export const runConnectedAccountsList = ({
         )
         .pipe(failedWith(ConnectedAccountsListRequestError, LIST_CONNECTED_ACCOUNTS_FAILED_MESSAGE))
     );
-    const result = yield* decodeConnectedAccountListWithFallback(rawResult);
+    const result = yield* decodeConnectedAccountList(rawResult).pipe(
+      failedWith(ConnectedAccountsListRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
+    );
 
     yield* Arr.match(result.items, {
       onEmpty: () => ui.log.warn(noConnectedAccountsMessage({ toolkits, userId, status })),
-      onNonEmpty: items =>
+      onNonEmpty: nonEmptyItems =>
         Effect.gen(function* () {
-          yield* ui.log.info(listingMessage(items, result.total_items));
-          const firstId = Arr.headNonEmpty(items).id;
+          yield* ui.log.info(listingMessage(nonEmptyItems, result.total_items));
+          const firstId = Arr.headNonEmpty(nonEmptyItems).id;
           if (firstId) {
             yield* ui.log.step(viewDetailsHint(firstId));
           }
-          yield* ui.output(formatConnectedAccountsJson(items));
+          yield* ui.output(formatConnectedAccountsJson(nonEmptyItems));
         }),
     });
   });

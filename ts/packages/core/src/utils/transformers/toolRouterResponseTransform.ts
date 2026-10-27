@@ -4,14 +4,28 @@
 import type {
   SessionExecuteResponse,
   SessionProxyExecuteResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
 import { ValidationError } from '../../errors/ValidationErrors';
-import type { ToolRouterSessionExecuteResponse } from '../../types/toolRouter.types';
+import type {
+  ToolRouterBlockReason,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionProxyExecuteResponse,
+} from '../../types/toolRouter.types';
 
-/** The `result_type` values of a call that ran. `input_required` is raised before this is read. */
-const ExecutedResponseSchema = z.object({ result_type: z.enum(['completed', 'failed']) });
+/**
+ * The `result_type` values of a call that ran. `input_required` and `blocked`
+ * are handled before this is read.
+ */
+const ExecutedResponseSchema = z.object({
+  result_type: z.enum(['completed', 'failed']),
+});
+
+/** The `reason` of a call a session hook blocked, in camelCase. */
+const toBlockReason = (
+  reason: Extract<SessionExecuteResponse, { result_type: 'blocked' }>['reason']
+): ToolRouterBlockReason => ({ type: reason.type, hookId: reason.hook_id });
 
 /**
  * Whether a session tool execution succeeded. `resultType` decides: a `failed`
@@ -210,8 +224,24 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
  * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
-export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: string) {
+export function transformExecuteResponse(
+  raw: SessionExecuteResponse,
+  toolSlug: string
+): ToolRouterSessionExecuteResponse {
   assertNotInputRequired(raw, `Tool ${toolSlug}`);
+  if (raw.result_type === 'blocked') {
+    // The agent reads `error`, so a blocked call reaches it as a failed call
+    // with the hook's message.
+    return {
+      data: {},
+      error: raw.message,
+      logId: raw.log_id ?? '',
+      resultType: 'blocked',
+      blockReason: toBlockReason(raw.reason),
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+      ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    };
+  }
   const executed = ExecutedResponseSchema.safeParse(raw);
   if (!executed.success) {
     throw new ValidationError(
@@ -225,5 +255,41 @@ export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: 
     logId: raw.log_id,
     resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+  };
+}
+
+/**
+ * Projects a session proxy execute response onto the SDK's shape: a request a
+ * session hook blocked comes back as `resultType: 'blocked'` with no HTTP
+ * response.
+ */
+export function transformProxyExecuteResponse(
+  raw: SessionProxyExecuteResponse,
+  subject: string
+): ToolRouterSessionProxyExecuteResponse {
+  assertNotInputRequired(raw, subject);
+  if (raw.result_type === 'blocked') {
+    return {
+      resultType: 'blocked',
+      blockReason: toBlockReason(raw.reason),
+      message: raw.message,
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+    };
+  }
+  return {
+    resultType: 'completed',
+    status: raw.status,
+    data: raw.data,
+    headers: raw.headers,
+    ...(raw.binary_data && {
+      binaryData: {
+        contentType: raw.binary_data.content_type,
+        size: raw.binary_data.size,
+        url: raw.binary_data.url,
+        expiresAt: raw.binary_data.expires_at,
+      },
+    }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
   };
 }

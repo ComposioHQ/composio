@@ -36,6 +36,7 @@ OPENAI_API_KEY=xxxxxxxxx
 <Step>
 **Create session and run**
 
+{/* code-example: no-api reason="LlamaIndex agent integration via the Composio LlamaIndex provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
@@ -93,6 +94,10 @@ console.log(result.data.result);
 </Tabs>
 </Step>
 </Steps>
+
+## TypeScript tool schemas
+
+The TypeScript provider passes each tool's JSON Schema directly to the model, preserving keywords such as `format`, `contentEncoding`, and `contentMediaType`. Tool arguments are still validated before execution.
 
 ## Next
 

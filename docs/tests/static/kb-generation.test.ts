@@ -17,6 +17,14 @@ import { generateKbContent, markdownForMdx } from '@/lib/kb/generate';
 import { buildKbCatalog } from '@/lib/kb/catalog';
 import { createKbArticleReader, getKbCatalog } from '@/lib/kb/repository';
 import type { KbManifest } from '@/lib/kb/types';
+import { evaluate } from '@mdx-js/mdx';
+import { createElement } from 'react';
+import * as jsxRuntime from 'react/jsx-runtime';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from '@/components/callout';
+import { checkCodeExamples, parseCodeExamples, walkCodeExamples } from '@/lib/code-examples';
+import { componentsToMarkdown } from '@/lib/example-document';
 
 const temporaryDirectories: string[] = [];
 
@@ -99,10 +107,106 @@ describe('public KB content generation', () => {
     ].join('\n'))).toBe([
       'Use &#123;"field": "value"&#125;, `<placeholder>`, and [https://example.com/path](https://example.com/path).',
       '',
-      '```text',
+      '```ts',
       'await undeclaredClient.run();',
       '```',
     ].join('\n'));
+  });
+
+  test('renders language headings as real selectable tabs and preserves agent-facing language labels', async () => {
+    const source = [
+      '## Operation',
+      '### Python',
+      '```python',
+      'print("python option")',
+      '```',
+      '### TypeScript',
+      '```typescript',
+      'console.log("typescript option");',
+      '```',
+      '### API',
+      '```bash',
+      'curl https://backend.composio.dev/api/v3.1/toolkits',
+      '```',
+    ].join('\n');
+    const mdx = markdownForMdx(source);
+    expect(checkCodeExamples([{ path: 'generated.mdx', source: mdx }], { requireApi: true })).toEqual([]);
+    const { default: Content } = await evaluate(mdx, jsxRuntime);
+    const html = renderToStaticMarkup(createElement(Content, { components: { Tabs, Tab, Callout } }));
+    expect(html).toContain('role="tablist"');
+    for (const label of ['Python', 'TypeScript', 'API']) {
+      expect(html).toContain(`>${label}</button>`);
+      expect(componentsToMarkdown(mdx)).toContain(`**${label}:**`);
+    }
+    expect(mdx).toContain('```typescript');
+    expect(mdx).not.toContain('```text');
+  });
+
+  test('end-languages moves shared prose after the generated Tabs', () => {
+    const mdx = markdownForMdx([
+      '### Python',
+      '```python',
+      'print("python option")',
+      '```',
+      '### TypeScript',
+      '```typescript',
+      'console.log("typescript option");',
+      '```',
+      '### API',
+      '```bash',
+      'curl https://backend.composio.dev/api/v3.1/toolkits',
+      '```',
+      '',
+      '<!-- end-languages -->',
+      '',
+      'Shared follow-up.',
+    ].join('\n'));
+    expect(mdx).toMatch(/<\/Tabs>\s+Shared follow-up\.$/);
+    expect(mdx).not.toContain('end-languages');
+  });
+
+  test('turns Markdown SDK-gap notes into Callouts without leaking validation metadata into rendered prose', () => {
+    const source = [
+      '#### Python',
+      '> [!NOTE]',
+      '> The SDK does not expose this admin endpoint.',
+      '#### TypeScript',
+      '> [!NOTE]',
+      '> The SDK does not expose this admin endpoint.',
+      '#### API',
+      '<!-- code-example: unchecked-api rule="api-legacy-version" operation="GET /api/healthz" reason="Self-hosted admin liveness is unversioned." -->',
+      '```bash',
+      'curl "$COMPOSIO_BASE_URL/api/healthz"',
+      '```',
+    ].join('\n');
+    const mdx = markdownForMdx(source);
+    expect(mdx.match(/<Callout type="info">/g)).toHaveLength(2);
+    expect(mdx).not.toContain('code-example:');
+    expect(checkCodeExamples([{ path: 'generated.mdx', source: mdx }], { requireApi: true })).toEqual([]);
+  });
+
+  test('preserves typed source code and options in every migrated curated KB article', () => {
+    const cases = [
+      ['platform-session-tool-policies.md', 4],
+      ['mcp-tool-router-sessions.md', 1],
+      ['platform-custom-connection-data-fields.md', 1],
+      ['platform-health-endpoints.md', 4],
+      ['toolkits-microsoft-teams.md', 2],
+    ] as const;
+    for (const [article, expectedGroups] of cases) {
+      const source = readFileSync(join(process.cwd(), 'kb/articles', article), 'utf8');
+      const mdx = markdownForMdx(source);
+      const parsed = parseCodeExamples(mdx, article.replace('.md', '.mdx'));
+      let groups = 0;
+      walkCodeExamples(parsed.units, (unit) => {
+        if (unit.type === 'tabs' && unit.groupId === 'language') {
+          groups++;
+          expect(unit.items).toEqual(['Python', 'TypeScript', 'API']);
+        }
+      });
+      expect(groups, article).toBe(expectedGroups);
+      expect(checkCodeExamples([{ path: `${article}x`, source: mdx }], { requireApi: true })).toEqual([]);
+    }
   });
 
   test('demotes bare identifier URLs to code spans so they never publish as dead links', () => {

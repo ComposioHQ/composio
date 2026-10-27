@@ -28,6 +28,9 @@ from httpx import URL, Client, Response, Timeout
 
 from composio.exceptions import ComposioError
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
+from composio.utils.toolkit_deprecation import (
+    install_hook as _install_toolkit_deprecation_hook,
+)
 
 
 def _distribution_version(name: str) -> str:
@@ -403,6 +406,12 @@ class HttpClient(BaseComposio, WithLogger):
         # key back, and `auth` is the generated `/auth` resource.
         self.sdk_auth: Auth = auth
         _install_client_log_forwarder(self._logger)
+        # Warns once per deprecated toolkit version reported through the
+        # `Composio-Deprecated-Toolkits` response header. The hook lives on the
+        # underlying httpx client, which `copy()` / `with_options()` (and so
+        # `without_retries`) reuse, so clones share it. Idempotent, and a
+        # user-supplied client keeps its own hooks.
+        _install_toolkit_deprecation_hook(self._client)
         self.provider = provider
         self.request_ctx = contextvars.ContextVar[RequestContext](
             "request_ctx",
@@ -414,7 +423,7 @@ class HttpClient(BaseComposio, WithLogger):
         # Lazily-built sibling client with retries disabled; see `without_retries`.
         self._without_retries: t.Optional[te.Self] = None
 
-    def copy(  # type: ignore[override]
+    def with_options(  # type: ignore[override]
         self,
         *,
         _extra_kwargs: t.Mapping[str, t.Any] = {},
@@ -423,13 +432,13 @@ class HttpClient(BaseComposio, WithLogger):
         """
         Clone the client, re-injecting the SDK-only constructor keywords.
 
-        The generated ``copy`` rebuilds the client via ``type(self)(...)`` with
-        the parent's ``auth``, ``scope``, ``identity`` and options, but cannot
-        know ``provider``, which this subclass requires, or the SDK logger.
-        Threading them through ``_extra_kwargs`` makes ``copy`` /
+        The generated ``with_options`` rebuilds the client via ``type(self)(...)``
+        with the parent's ``auth``, ``scope``, ``identity`` and options, but
+        cannot know ``provider``, which this subclass requires, or the SDK
+        logger. Threading them through ``_extra_kwargs`` makes
         ``with_options`` work (e.g. ``with_options(max_retries=0)``).
         """
-        return super().copy(  # type: ignore[misc]
+        return super().with_options(  # type: ignore[misc]
             _extra_kwargs={
                 "provider": self.provider,
                 # Share the parent's logger; otherwise constructing the clone
@@ -440,11 +449,6 @@ class HttpClient(BaseComposio, WithLogger):
             },
             **kwargs,
         )
-
-    # Re-alias `with_options` to this override. The base class binds
-    # `with_options = copy` at class-definition time, so without this it would
-    # still resolve to the base `copy` and miss the `provider` re-injection.
-    with_options = copy
 
     @property
     def without_retries(self) -> te.Self:

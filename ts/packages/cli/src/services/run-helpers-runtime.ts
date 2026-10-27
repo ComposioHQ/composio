@@ -439,6 +439,9 @@ const createExecutePayloadMaterializer = (params: {
   return materializeExecutePayload;
 };
 
+const isReportedFailure = (result: RunCliResult): boolean =>
+  Predicate.isObject(result) && result.successful === false;
+
 const createCliRunner = (params: {
   readonly cliPrefix: ReadonlyArray<string>;
   readonly helperContext: RunHelperContext;
@@ -549,7 +552,10 @@ const createCliRunner = (params: {
       )
     );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
-    if (exitCode !== 0) {
+    // A failed execution exits 1 with its `successful: false` result on stdout. That result is
+    // the answer, so it goes back to the caller (`execute()` throws its error message) instead
+    // of a generic exit-code error.
+    if (exitCode !== 0 && !isReportedFailure(result)) {
       perfDebugLog('error', requestId, { exitCode, stderr: stderr.trim() || undefined });
       helperDebugLog('cli.error', {
         requestId,

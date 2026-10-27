@@ -8,12 +8,15 @@ from pathlib import Path
 import typing_extensions as te
 from composio_client import APIStatusError, omit
 from composio_client.types.tool_router.session_execute_meta_response import (
+    SessionExecuteMetaBlockedResponse,
     SessionExecuteMetaInputRequiredResponse,
-    SessionExecuteMetaResponse,
+    SessionExecuteMetaResult,
 )
 from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteBlockedResponse,
     SessionExecuteInputRequiredResponse,
     SessionExecuteResponse,
+    SessionExecuteResult,
 )
 from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteInputRequiredResponse,
@@ -30,7 +33,10 @@ from composio.client.types import (
 )
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
-from composio.core.models.custom_tool_types import InlineCustomToolsWirePayload
+from composio.core.models.custom_tool_types import (
+    InlineCustomToolsWirePayload,
+    ToolRouterHookResult,
+)
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
@@ -169,35 +175,105 @@ def require_executed(
     )
 
 
+class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
+    """Result of a session tool execution.
+
+    The client's model, with ``hook_results`` as the SDK's own
+    :class:`ToolRouterHookResult` dicts, as they were before the client typed
+    them. ``instant_charge`` is present only when the Session sets
+    ``instant.return_instant_charge`` and a charge is available.
+    """
+
+    hook_results: t.Optional[t.List[ToolRouterHookResult]] = None  # type: ignore[assignment]
+
+
+def _session_execute_result(
+    fields: t.Mapping[str, t.Any], fields_set: t.AbstractSet[str]
+) -> ToolRouterSessionExecuteResponse:
+    """The SDK's result over fields the client already parsed, without parsing them again."""
+    return ToolRouterSessionExecuteResponse.model_construct(
+        _fields_set=set(fields_set), **fields
+    )
+
+
+def hook_results_of(
+    hook_results: t.Optional[t.Sequence[PydanticBaseModel]],
+) -> t.Optional[t.List[ToolRouterHookResult]]:
+    """The client's typed ``hook_results`` as the SDK's own plain dicts.
+
+    The SDK returns hook results as :class:`ToolRouterHookResult` dicts, as it
+    did before the client typed them.
+    """
+    if hook_results is None:
+        return None
+    return [
+        t.cast(ToolRouterHookResult, hook_result.model_dump())
+        for hook_result in hook_results
+    ]
+
+
+def _blocked_execute_result(
+    blocked: t.Union[SessionExecuteBlockedResponse, SessionExecuteMetaBlockedResponse],
+) -> ToolRouterSessionExecuteResponse:
+    """A call a session hook blocked, as the session execute model.
+
+    The agent reads ``error``, so a blocked call reaches it as a failed call
+    with the hook's message. The fields are carried over as the client parsed
+    them instead of being validated a second time.
+    """
+    fields: t.Dict[str, t.Any] = {
+        "data": {},
+        "error": blocked.message,
+        "log_id": blocked.log_id or "",
+        "result_type": "blocked",
+        "block_reason": {
+            "type": blocked.reason.type,
+            "hook_id": blocked.reason.hook_id,
+        },
+    }
+    hook_results = hook_results_of(blocked.hook_results)
+    if hook_results is not None:
+        fields["hook_results"] = hook_results
+    if blocked.instant_charge is not None:
+        # The client's model: the provider execute path reads it as one.
+        fields["instant_charge"] = blocked.instant_charge
+    return _session_execute_result(fields, fields.keys())
+
+
 def require_execute_result(
-    response: t.Union[SessionExecuteResponse, SessionExecuteInputRequiredResponse],
+    response: SessionExecuteResult,
     slug: str,
-) -> SessionExecuteResponse:
+) -> ToolRouterSessionExecuteResponse:
     """Narrow a session execute response to a tool that ran.
 
-    Every session execute response carries a ``result_type``. One without it,
-    or with a value this SDK does not know, is neither a success nor a failure,
-    so it is raised instead of being read as one. The TypeScript SDK applies
-    the same rule.
+    Every session execute response carries a ``result_type``. A ``blocked``
+    call (a session hook blocked it) is returned as a result with empty
+    ``data``, the hook's message in ``error``, and ``block_reason``. One
+    without a ``result_type``, or with a value this SDK does not know, is
+    neither a success nor a failure, so it is raised instead of being read as
+    one. The TypeScript SDK applies the same rule.
 
     :raises ToolInputRequiredError: If the tool asked for user input instead of
         running.
     :raises ValidationError: If ``result_type`` is missing or unknown.
     """
+    if isinstance(response, SessionExecuteBlockedResponse):
+        return _blocked_execute_result(response)
     executed = require_executed(response, f"Tool {slug}")
-    if getattr(executed, "result_type", None) not in ("completed", "failed"):
+    if executed.result_type not in ("completed", "failed"):
         raise ValidationError(
             f"Tool {slug} returned an execute response without a known result_type"
         )
-    return executed
+    return _session_execute_result(
+        {**dict(executed), "hook_results": hook_results_of(executed.hook_results)},
+        executed.model_fields_set,
+    )
 
 
 def require_execute_meta_result(
-    response: t.Union[
-        SessionExecuteMetaResponse, SessionExecuteMetaInputRequiredResponse
-    ],
+    response: SessionExecuteMetaResult,
     slug: str,
-) -> SessionExecuteResponse:
+) -> ToolRouterSessionExecuteResponse:
     """Narrow a session execute_meta response to a meta tool that ran.
 
     The meta endpoint answers in the same shape as session execute, so the
@@ -208,6 +284,8 @@ def require_execute_meta_result(
         running.
     :raises ValidationError: If ``result_type`` is missing or unknown.
     """
+    if isinstance(response, SessionExecuteMetaBlockedResponse):
+        return _blocked_execute_result(response)
     executed = require_executed(response, f"Tool {slug}")
     # Carry the fields over as the client parsed them instead of validating
     # them a second time.

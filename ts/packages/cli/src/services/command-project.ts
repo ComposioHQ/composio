@@ -1,5 +1,6 @@
 import { isAPIError } from '@composio/client/effect';
 import { Data, Effect, Option } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from './project-context';
 import { ComposioUserContext } from './user-context';
@@ -39,7 +40,11 @@ export class ProjectResolutionError extends Data.TaggedError('services/ProjectRe
     | 'request_failed';
   readonly message: string;
   readonly cause?: unknown;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 const missingOrg = () =>
   new ProjectResolutionError({

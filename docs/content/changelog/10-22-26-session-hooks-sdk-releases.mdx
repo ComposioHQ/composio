@@ -1,0 +1,49 @@
+---
+title: 'SDK releases: session hooks in Python 0.30.0 and TypeScript 0.27.0'
+description: 'Block tool calls or results with session hooks, inspect hook outcomes, and handle blocked proxy requests.'
+date: '2026-10-22'
+---
+
+You can now attach hooks to a session to block a tool call before it runs or block its result before your agent sees it.
+
+### Release versions
+
+| SDK                              | Version  |
+| -------------------------------- | -------- |
+| Python `composio`                | `0.30.0` |
+| TypeScript `@composio/core`      | `0.27.0` |
+| TypeScript `@composio/slim`      | `0.27.0` |
+| TypeScript `@composio/anthropic` | `0.11.6` |
+
+All 13 Python provider packages are released at `0.30.0`.
+
+### What's new
+
+- **Session hooks.** Pass `hooks` when you create or update a session. Hooks can run before execution or after execution, and can apply to selected toolkits. Updating `hooks` replaces the whole list; `None` in Python or `null` in TypeScript removes every hook. You cannot combine `hooks` with `experimental.session_config_id` in Python or `experimental.sessionConfigId` in TypeScript in the same call.
+- **Hook outcomes.** Session execution returns `result_type="blocked"` in Python or `resultType: 'blocked'` in TypeScript when a hook blocks a call or result. The response contains empty `data`, the hook's message in `error`, and `block_reason` or `blockReason`. When hooks apply, inspect `hook_results` or `hookResults` for their outcomes. Provider integrations return blocked execution as a failed tool call with the hook's message.
+
+### Migration notes
+
+<Callout type="warn">
+  Session proxy execution now distinguishes completed requests from blocked requests. A blocked
+  request has no HTTP response. Check the result type before reading HTTP response fields.
+</Callout>
+
+In Python, replace direct access to a proxy response's `status` with a result-type check:
+
+Before: `print(response.status)`.
+
+After: `print(response["status"] if response["result_type"] == "completed" else response["message"])`.
+
+In TypeScript, make the equivalent check:
+
+Before: `console.log(response.status)`.
+
+After: `console.log(response.resultType === 'completed' ? response.status : response.message)`.
+
+This applies to `session.proxy_execute()` and `ctx.proxy_execute()` in Python, and `session.proxyExecute()` and `ctx.proxyExecute()` in TypeScript.
+
+### Bug fixes
+
+- **Python custom-tool annotations.** `@composio.experimental.tool` reports unresolved input annotations when you register the tool, with the affected parameter and the original resolution error.
+- **Anthropic provider dependencies.** The TypeScript Anthropic provider removes its unused `@mastra/mcp` peer dependency, avoiding unrelated packages during installation.

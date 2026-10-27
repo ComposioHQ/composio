@@ -1,5 +1,6 @@
 import type { ComposioClientShape } from '@composio/client/effect';
 import { Data, Effect, Option, Schema } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import type { TerminalUI } from 'src/services/terminal-ui';
@@ -244,7 +245,11 @@ export class ConnectedAccountResolutionError extends Data.TaggedError(
   readonly message: string;
   readonly toolkitSlug: string;
   readonly cause?: unknown;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 export const resolveConnectedAccountForToolkit = (params: {
   readonly client: ComposioClientShape;

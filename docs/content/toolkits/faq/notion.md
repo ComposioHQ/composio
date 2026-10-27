@@ -24,29 +24,84 @@ It depends on the integration type. OAuth apps (public) let users select which p
 
 With Composio-managed Notion credentials, the webhook ingress endpoint is already provisioned, so just create the trigger. If you bring your own Notion OAuth app, the verification flow runs in reverse from Slack's: Notion sends a verification token to the ingress endpoint, and you paste that token back into Notion to finalize.
 
-1. **Create the endpoint.**
+### Create the endpoint
 
-   ```bash
-   curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
-     -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-     -H "Content-Type: application/json" \
-     -d '{"toolkit_slug": "notion", "client_id": "<YOUR_NOTION_OAUTH_CLIENT_ID>"}'
-   ```
+#### Python
 
-   Save the returned `id` and `webhook_url`.
+```python
+from composio import Composio
 
-2. **Paste the `webhook_url` into Notion** under your integration's Webhook settings. Notion will POST a verification token to the URL.
+composio = Composio()
+endpoint = composio.webhooks.endpoints.create(
+    toolkit_slug="notion",
+    client_id="YOUR_NOTION_OAUTH_CLIENT_ID",
+)
+print(endpoint.root.id, endpoint.root.webhook_url)
+```
 
-3. **Read the token from Composio.**
+#### TypeScript
 
-   ```bash
-   curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-     -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
-   ```
+```typescript
+import { Composio } from '@composio/core';
 
-   The token is in `data.webhook_signing_secret`.
+const composio = new Composio();
+const endpoint = await composio.webhooks.endpoints.create({
+  toolkitSlug: 'notion',
+  clientId: 'YOUR_NOTION_OAUTH_CLIENT_ID',
+});
+console.log(endpoint.id, endpoint.webhookUrl);
+```
 
-4. **Paste the token back into Notion's verify field** to complete setup. Continue with [Creating triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#create-the-trigger).
+#### API
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_endpoints \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit_slug": "notion", "client_id": "YOUR_NOTION_OAUTH_CLIENT_ID"}'
+```
+
+### Complete Notion verification
+
+Save the returned `id` and `webhook_url`. Paste `webhook_url` into your Notion integration's Webhook settings. Notion sends a verification token to that URL.
+
+Replace `we_123` with the saved endpoint ID and read the token:
+
+#### Python
+
+```python
+from composio import Composio
+
+composio = Composio()
+endpoint = composio.webhooks.endpoints.get("we_123")
+token = endpoint.data.get("webhook_signing_secret") if endpoint.data is not None else None
+if token is None:
+    raise RuntimeError("Notion has not sent a verification token yet")
+print(token)
+```
+
+#### TypeScript
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const endpoint = await composio.webhooks.endpoints.get('we_123');
+const token = endpoint.data?.webhook_signing_secret;
+if (token == null) throw new Error('Notion has not sent a verification token yet');
+console.log(token);
+```
+
+#### API
+
+```bash
+curl -s https://backend.composio.dev/api/v3.1/webhook_endpoints/we_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -er '.data.webhook_signing_secret // error("Notion has not sent a verification token yet")'
+```
+
+<!-- end-languages -->
+
+Paste the token back into Notion's verify field to complete setup. Continue with [Creating triggers](/docs/setting-up-triggers/creating-triggers#create-the-trigger).
 
 ## Notion database trigger fires for new pages, not updates
 

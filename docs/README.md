@@ -28,6 +28,10 @@ docs/
 └── public/               # Static assets
 ```
 
+## Social Preview Images
+
+`app/api/og/route.tsx` renders `/api/og` cards. Titles and descriptions apply `textWrap: 'balance'` only when they contain whitespace: Satori undermeasures balanced text that cannot wrap, which shifts single-word titles right. Preview with `/api/og?title=Firewall&description=Block+tool+calls+and+tool+results+you+don%27t+want+your+agent+to+act+on`; add `theme=light` for the light variant.
+
 ## Adding Content
 
 Create an `.mdx` file in `content/`, add frontmatter, then add to `meta.json`:
@@ -75,6 +79,10 @@ All TypeScript code blocks in MDX files are **type-checked at build time** using
 - Run `bun run build` locally to validate before pushing
 
 See the [Twoslash guide](agent-guidance/context/twoslash.md) for complete example patterns and troubleshooting.
+
+## Redirects
+
+Define permanent redirects in `next.config.mjs` and cover legacy entry points in `tests/integration/redirects.test.ts`. `/docs/getting-started` redirects to `/docs/quickstart` so stale links found by agents still reach the current guide.
 
 ## Search
 

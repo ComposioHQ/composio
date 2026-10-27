@@ -58,6 +58,27 @@ describe('CLI: composio orgs switch', () => {
     );
   });
 
+  layer(TestLive({ fixture: 'user-config-with-empty-api-key' }))(
+    '[Given] a stored login whose api key is empty',
+    it => {
+      it.effect('[Then] fails with NotLoggedInError and leaves the stored config untouched', () =>
+        Effect.gen(function* () {
+          const error = yield* cli(['orgs', 'switch', '--org-id', 'org_selected']).pipe(
+            Effect.flip
+          );
+
+          expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
+          expect(yield* MockConsole.getLines({ stream: 'stdout' })).toEqual([]);
+          expect(yield* readStoredUserConfig).toEqual({
+            api_key: '',
+            org_id: 'org_1',
+            project_id: 'project_1',
+          });
+        })
+      );
+    }
+  );
+
   const testConfigProvider = ConfigProvider.fromEnvRecord({
     COMPOSIO_USER_API_KEY: 'uak_switch_test',
   });

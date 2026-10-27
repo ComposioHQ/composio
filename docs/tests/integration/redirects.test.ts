@@ -31,6 +31,7 @@ const REDIRECTS = [
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
+  { from: "/docs/getting-started", to: "/docs/quickstart" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox/remote" },
@@ -40,6 +41,12 @@ const REDIRECTS = [
   { from: "/docs/white-labeling-authentication", to: "/docs/authentication/white-labeling-authentication" },
   { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
   { from: "/docs/manually-authenticating", to: "/docs/authentication/manually-authenticating" },
+  { from: "/docs/security", to: "/docs/security/overview" },
+  { from: "/docs/self-hosting", to: "/docs/security/token-custody#deployment-options" },
+  { from: "/docs/auth", to: "/docs/authentication" },
+  { from: "/docs/auth-management/overview", to: "/docs/authentication" },
+  { from: "/docs/managed-auth", to: "/docs/authentication/custom-app-vs-managed-app" },
+  { from: "/docs/authentication/overview", to: "/docs/authentication" },
 ];
 
 describe("Redirects - key patterns", () => {

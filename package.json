@@ -69,7 +69,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": ">=24.17.0 <25",
+      "version": ">=24.22.1 <25",
       "onFail": "warn"
     }
   },
@@ -86,14 +86,14 @@
     "@vitest/ui": "catalog:",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "oxlint": "1.87.0",
-    "oxlint-plugin-eslint": "1.87.0",
-    "prettier": "^3.9.8",
+    "oxlint": "1.89.0",
+    "oxlint-plugin-eslint": "1.89.0",
+    "prettier": "^3.9.10",
     "publint": "catalog:",
     "semver": "^7.8.5",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "turbo": "^2.11.7",
+    "turbo": "^2.11.9",
     "typescript": "catalog:",
     "typescript6": "catalog:ts6",
     "vitest": "catalog:",

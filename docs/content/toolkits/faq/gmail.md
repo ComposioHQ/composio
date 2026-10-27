@@ -34,44 +34,14 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ## How do I send an email with an attachment?
 
-Use a [session](/docs/quickstart) so your agent discovers the email tool at runtime instead of hard-coding an action slug. Upload the attachment to the session's sandbox, then pass its sandbox path in the request.
+Use a [session](/docs/quickstart) so your agent discovers the email tool at runtime instead of hard-coding an action slug.
 
-Install `composio`, `composio-openai-agents`, and `openai-agents`, and set `COMPOSIO_API_KEY` and `OPENAI_API_KEY`. [Connect Gmail for your user](/docs/authentication/manually-authenticating), and replace `./report.pdf` and the recipient below with your own values.
+1. [Connect Gmail for your user](/docs/authentication/manually-authenticating), then create a session for the same user and give your agent the session tools.
+2. Upload `./report.pdf` to that session with the experimental `session.experimental.files` API. See [sandbox files and mounts](/docs/sandbox/remote#files-and-mounts) for Python, TypeScript, and API examples. The agent can read the uploaded file in the remote sandbox, not from your application's local filesystem.
+3. Ask the agent to send the email with your recipient, subject, body, and the uploaded file's sandbox path. For a file mounted at `/mnt/files/report.pdf`, instruct it to use the sandbox's `get_mount_file_s3_key("report.pdf")` helper and pass the returned key to the discovered email tool in a file object with `name`, `mimetype`, and `s3key`. A sandbox path is not a storage key. See [session files and toolkit attachments](/kb/guide/mcp-tool-router-files).
+4. Check the tool result before reporting that the email was sent. If the tool fails, report the error.
 
-```python
-from agents import Agent, Runner
-from composio import Composio
-from composio_openai_agents import OpenAIAgentsProvider
-
-composio = Composio(provider=OpenAIAgentsProvider())
-session = composio.create(user_id="user-123", toolkits=["gmail"])
-
-uploaded = session.experimental.files.upload("./report.pdf")
-attachment_path = (
-    f"{uploaded.sandbox_mount_prefix.rstrip('/')}/"
-    f"{uploaded.mount_relative_path.lstrip('/')}"
-)
-
-agent = Agent(
-    name="Email assistant",
-    instructions=(
-        "Discover the appropriate tools to send the requested email. "
-        "Use the remote sandbox's get_mount_file_s3_key helper to get the "
-        "attachment's storage key. Pass it to the email tool in a file object "
-        "with name, mimetype, and s3key, not as a sandbox path. "
-        "If a tool fails, report the error instead of claiming the email was sent."
-    ),
-    tools=session.tools(),
-)
-result = Runner.run_sync(
-    agent,
-    "Send an email to recipient@example.com with subject 'Report attached' "
-    f"and body 'See attached.', attaching {attachment_path}.",
-)
-print(result.final_output)
-```
-
-The agent can read the uploaded file in the remote sandbox, not from your application's local filesystem. This uses an explicit upload and does not require automatic file handling. The files API is experimental. See [sandbox files and mounts](/docs/sandbox/remote#files-and-mounts) for upload options and limits.
+Automatic file upload is off by default. This workflow uploads the file explicitly and does not require enabling automatic file handling. The session files API is experimental and may change.
 
 ## Why can Gmail filter setup show an app-blocked error?
 

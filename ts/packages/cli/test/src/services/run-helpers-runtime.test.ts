@@ -342,6 +342,36 @@ describe('run-helpers-runtime', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('[Given] `composio execute` exits 1 with a failed result [Then] execute() rejects with the result error', async () => {
+    const childScript = [
+      'console.log(JSON.stringify({ successful: false, data: {}, error: "User not found" }));',
+      'process.exit(1);',
+    ].join('\n');
+    await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+
+    const returned = readInstalledFunction('execute')('HACKERNEWS_GET_USER', {
+      username: 'nobody',
+    });
+
+    await expect(returned).rejects.toBeInstanceOf(Error);
+    await expect(returned).rejects.toMatchObject({
+      message: 'User not found',
+      slug: 'HACKERNEWS_GET_USER',
+      result: { successful: false, error: 'User not found' },
+    });
+  });
+
+  it('[Given] a CLI child exits non-zero without a failed result [Then] the helper rejects with the exit code', async () => {
+    const childScript = ['console.error("boom");', 'process.exit(2);'].join('\n');
+    await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+
+    await expect(readInstalledFunction('search')('test')).rejects.toMatchObject({
+      message: expect.stringContaining('failed with exit code 2'),
+      exitCode: 2,
+      stderr: 'boom',
+    });
+  });
+
   it('[Given] normalized false flags [Then] nested CLI children receive false explicitly', async () => {
     vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
     vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');

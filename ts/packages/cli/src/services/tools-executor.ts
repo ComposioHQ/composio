@@ -136,7 +136,7 @@ export const ToolsExecutor = Context.Service<ToolsExecutor>('services/ToolsExecu
  * session executions.
  */
 export const isExecutionSuccessful = (raw: {
-  readonly result_type: 'completed' | 'failed';
+  readonly result_type: 'completed' | 'failed' | 'blocked';
 }): boolean => raw.result_type === 'completed';
 
 /** A Tool Router answer that carries a result rather than a request for more input. */
@@ -170,11 +170,16 @@ export const normalizeResponse = (
   raw: ExecutedSessionResponse,
   permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => {
+  // A call a session hook blocked carries the hook's message instead of a
+  // result. Like `@composio/core`, the CLI reports it as a failed call with
+  // that message.
+  const outcome =
+    raw.result_type === 'blocked'
+      ? { data: {}, error: raw.message, logId: raw.log_id ?? '' }
+      : { data: raw.data, error: raw.error, logId: raw.log_id };
   const response: ToolExecuteResponse = {
     successful: isExecutionSuccessful(raw),
-    data: raw.data,
-    error: raw.error,
-    logId: raw.log_id,
+    ...outcome,
     ...(permissionGateResult?.approvalStatus
       ? { permissionApproval: permissionGateResult.approvalStatus }
       : {}),

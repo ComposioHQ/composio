@@ -39,6 +39,7 @@ The script calls Gmail's [`users.getProfile`](https://developers.google.com/work
 
 Replace `example.com` in the script with your allowed domain. Run the script, open the printed Connect Link, and complete authentication within five minutes. The script polls its own connection request, so it doesn't need an HTTP callback handler.
 
+{/* code-example: no-api reason="Runnable onboarding script: SDK connection polling, local domain validation, and conditional disable" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
@@ -83,9 +84,9 @@ try:
         method="GET",
         connected_account_id=account.id,
     )
-    if response["status"] != 200:
+    if response.status != 200:
         raise RuntimeError("Gmail profile request failed")
-    email = approved_email(response["data"])
+    email = approved_email(response.data)
 except Exception:
     # Also reject missing identity, insufficient scopes, and timeouts.
     composio.connected_accounts.disable(request.id)

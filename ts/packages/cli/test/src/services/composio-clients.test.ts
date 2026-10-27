@@ -578,10 +578,12 @@ describe('composio-clients', () => {
         expect(error).toMatchObject({ details: { message: 'Bad input', code: 1001 } });
         assert(isClientApiError(error));
 
+        const plain: string[] = [];
         const errors: string[] = [];
         const steps: string[] = [];
         const ui = TerminalUI.of({
           ...terminalUITestImpl,
+          error: message => Effect.sync(() => void plain.push(message)),
           log: {
             ...terminalUITestImpl.log,
             error: message => Effect.sync(() => void errors.push(message)),
@@ -595,8 +597,10 @@ describe('composio-clients', () => {
           fallbackValue: undefined,
         })(error).pipe(Effect.provide(proc.layer));
 
-        expect(errors).toEqual(['Bad input']);
-        expect(steps).toEqual(['hint']);
+        // On a non-TTY the failure is two plain stderr lines: the message, then the hint.
+        expect(plain).toEqual(['Bad input', 'hint']);
+        expect(errors).toEqual([]);
+        expect(steps).toEqual([]);
         expect(proc.exitCode()).toBe(1);
       }).pipe(Effect.provide(withRepository))
     );

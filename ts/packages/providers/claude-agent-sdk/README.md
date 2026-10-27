@@ -55,6 +55,8 @@ For multi-turn conversations, store `session.sessionId` and reuse it with `compo
 
 The Claude Agent SDK provides tools to agents through MCP (Model Context Protocol) servers. `ClaudeAgentSDKProvider` converts each Composio tool definition into an MCP tool and routes execution back through Composio, so `createSdkMcpServer` can serve them in process; no separate server to run.
 
+Each tool's input schema is built as a Zod v4 schema, which the SDK turns back into the JSON Schema the model sees. The provider carries `format`, `contentEncoding`, `contentMediaType`, and `type: "integer"` through that round trip, and validates tool-call arguments as the other Zod-based providers do. It requires zod 4.1.13 or newer.
+
 ## Links
 
 - [Composio quickstart](https://docs.composio.dev/docs/quickstart)

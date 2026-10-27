@@ -226,6 +226,53 @@ describe('transformToolRouterUpdateParams', () => {
     });
   });
 
+  it('maps hooks to snake_case, and null removes every hook', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        hooks: [
+          {
+            type: 'before_execute',
+            id: 'no_external_email',
+            name: 'No external email',
+            appliesTo: { toolkits: ['gmail'] },
+            handler: {
+              type: 'condition_check',
+              condition: 'Sending email to anyone outside example.org',
+              action: 'block',
+            },
+          },
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            appliesTo: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      })
+    ).toEqual({
+      hooks: [
+        {
+          type: 'before_execute',
+          id: 'no_external_email',
+          name: 'No external email',
+          applies_to: { toolkits: ['gmail'] },
+          handler: {
+            type: 'condition_check',
+            condition: 'Sending email to anyone outside example.org',
+            action: 'block',
+          },
+        },
+        {
+          type: 'after_execute',
+          id: 'block_injection',
+          applies_to: 'all',
+          handler: { type: 'prompt_injection_check', action: 'block' },
+        },
+      ],
+    });
+    expect(transformToolRouterUpdateParams({ hooks: null })).toEqual({ hooks: null });
+  });
+
   it('keeps an empty toolkit allowlist in the request', () => {
     expect(transformToolRouterUpdateParams({ toolkits: [] })).toEqual({
       toolkits: { enable: [] },
