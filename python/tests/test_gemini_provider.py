@@ -6,11 +6,12 @@ Verifies:
 - wrap_tools returns list of callables
 - Callables are AFC-compatible (work with google-genai's function map)
 - handle_response dispatches function calls via stored executors (backward compat)
+  and runs each call for the user or session the caller passes
 - _process_execution_result helper
 """
 
 import inspect
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import pytest
 
@@ -921,6 +922,118 @@ class TestHandleResponse:
         function_responses, executed = provider.handle_response(response)
         assert executed is False
         assert function_responses == []
+
+
+@requires_genai
+class TestHandleResponseUser:
+    """A function call runs for the user its tools were fetched for (#5112).
+
+    These go through ``Composio.tools.get()`` so the execute function each
+    fetch binds is the one the SDK really builds.
+    """
+
+    SLUG = "GMAIL_FETCH_EMAILS"
+
+    @pytest.fixture
+    def composio(self):
+        from composio import Composio
+        from composio_gemini import GeminiProvider
+
+        composio = Composio(
+            provider=GeminiProvider(), api_key="test-key", allow_tracking=False
+        )
+        tool = create_mock_tool(
+            self.SLUG,
+            "gmail",
+            input_parameters={
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+            },
+        )
+
+        def execute(*, tool_slug, arguments, user_id, **_kwargs):
+            return MagicMock(
+                **{
+                    "model_dump.return_value": {
+                        "data": {"user_id": user_id},
+                        "error": None,
+                        "successful": True,
+                    }
+                }
+            )
+
+        with (
+            patch.object(composio.tools, "get_raw_composio_tools", return_value=[tool]),
+            patch.object(
+                type(composio.tools._client),
+                "without_retries",
+                new_callable=PropertyMock,
+            ) as without_retries,
+        ):
+            without_retries.return_value.tools.execute.side_effect = execute
+            yield composio
+
+    def _response(self):
+        return genai_types.GenerateContentResponse(
+            candidates=[
+                genai_types.Candidate(
+                    content=genai_types.Content(
+                        role="model",
+                        parts=[
+                            genai_types.Part(
+                                function_call=genai_types.FunctionCall(
+                                    name=self.SLUG, args={"query": "is:unread"}
+                                )
+                            )
+                        ],
+                    )
+                )
+            ]
+        )
+
+    def _executed_for(self, composio, **kwargs) -> str:
+        parts, executed = composio.provider.handle_response(self._response(), **kwargs)
+        assert executed is True
+        return parts[0].function_response.response["user_id"]
+
+    def test_explicit_user_wins_over_last_fetch(self, composio):
+        composio.tools.get(user_id="alice", tools=[self.SLUG])
+        composio.tools.get(user_id="bob", tools=[self.SLUG])
+
+        assert self._executed_for(composio, user_id="alice") == "alice"
+        assert self._executed_for(composio, user_id="bob") == "bob"
+
+    def test_rejects_ambiguous_call_without_user(self, composio):
+        composio.tools.get(user_id="alice", tools=[self.SLUG])
+        composio.tools.get(user_id="bob", tools=[self.SLUG])
+        execute = composio.tools._client.without_retries.tools.execute
+
+        with pytest.raises(ValueError, match="user_id="):
+            composio.provider.handle_response(self._response())
+        execute.assert_not_called()
+
+    def test_single_user_without_user_still_works(self, composio):
+        composio.tools.get(user_id="alice", tools=[self.SLUG])
+        composio.tools.get(user_id="alice", tools=[self.SLUG])
+
+        assert self._executed_for(composio) == "alice"
+
+    def test_session_executes_through_session(self, composio):
+        composio.tools.get(user_id="alice", tools=[self.SLUG])
+        session = Mock()
+        session.execute.return_value = MagicMock(
+            data={"user_id": "session"}, error=None, result_type="completed"
+        )
+
+        assert self._executed_for(composio, session=session) == "session"
+        session.execute.assert_called_once_with(
+            tool_slug=self.SLUG, arguments={"query": "is:unread"}
+        )
+
+    def test_rejects_modifiers_without_user(self, composio):
+        with pytest.raises(ValueError, match="modifiers"):
+            composio.provider.handle_response(self._response(), modifiers=[])
 
 
 # ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@ Calling (AFC). The SDK can introspect the callable's signature to derive
 FunctionDeclaration schemas and auto-execute tool calls in the chat loop.
 """
 
+import functools
 import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
@@ -12,8 +13,9 @@ from inspect import Parameter, Signature
 from pydantic import BaseModel
 
 from composio.client.types import Tool
-from composio.core.provider import AgenticProvider
+from composio.core.provider import AgenticProvider, ToolCallSession
 from composio.core.provider.agentic import AgenticProviderExecuteFn
+from composio.types import Modifiers
 from composio.utils.shared import (
     ToolSchemaAliases,
     alias_tool_input_schema,
@@ -107,6 +109,24 @@ def _afc_annotation(annotation: t.Any, schema: t.Any = None) -> t.Any:
     return annotation
 
 
+_AMBIGUOUS = object()
+"""Marks a slug wrapped for more than one execution context."""
+
+
+def _execution_context(execute_tool: AgenticProviderExecuteFn) -> object:
+    """Identify who a wrapped tool executes as.
+
+    ``tools.get(user_id=...)`` binds the user into a ``functools.partial``, so
+    two fetches for the same user share a context. Any other execute function,
+    such as a Tool Router session's, is its own context.
+    """
+    if isinstance(execute_tool, functools.partial):
+        user_id = execute_tool.keywords.get("user_id")
+        if user_id is not None:
+            return ("user_id", user_id)
+    return execute_tool
+
+
 def _process_execution_result(result: t.Any) -> t.Dict:
     """Process a tool execution result into a dict suitable for Gemini function responses."""
     if not isinstance(result, dict):
@@ -142,6 +162,10 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             str,
             t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases, t.Type[BaseModel]],
         ] = {}
+        # The execution context each slug was wrapped for, or ``_AMBIGUOUS``
+        # once it has been wrapped for two, so ``handle_response`` never runs a
+        # call as whichever user fetched the tools last.
+        self._executor_contexts: t.Dict[str, object] = {}
 
     def wrap_tool(
         self,
@@ -162,6 +186,9 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # would be required.
         args_schema = json_schema_to_model(aliases.schema, skip_default=False)
         self._executors[tool.slug] = (execute_tool, aliases, args_schema)
+        context = _execution_context(execute_tool)
+        if self._executor_contexts.setdefault(tool.slug, context) != context:
+            self._executor_contexts[tool.slug] = _AMBIGUOUS
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
@@ -222,7 +249,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
 
     # --- Backward compatibility: manual function calling ---
 
-    def handle_response(self, response: t.Any) -> tuple[list, bool]:
+    def handle_response(
+        self,
+        response: t.Any,
+        *,
+        user_id: t.Optional[str] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        session: t.Optional[ToolCallSession] = None,
+    ) -> tuple[list, bool]:
         """Manually handle function calls in a Gemini response.
 
         Provided for backward compatibility with code that uses manual function
@@ -230,11 +264,29 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         ``wrap_tools()`` to ``GenerateContentConfig(tools=...)`` and AFC will
         handle execution automatically.
 
+        A Gemini response does not say which user it belongs to. Pass the
+        ``user_id`` the tools were fetched for, or the Tool Router ``session``
+        that produced them, and every call runs for that target. Direct
+        execution with ``user_id`` applies ``modifiers`` passed here, not the
+        ones given to ``tools.get()``. Without a target, each call runs through
+        the executor stored when its tool was wrapped; that raises if the tool
+        was wrapped for more than one user or session.
+
         Returns:
             tuple: ``(function_responses, executed)`` where *function_responses*
             are ``genai_types.Part`` objects ready to send back, and *executed*
             is ``True`` if any functions were executed.
         """
+        target = (
+            None
+            if user_id is None and session is None
+            else self.resolve_tool_call_execution_target(
+                user_id=user_id, session=session
+            )
+        )
+        if modifiers is not None and user_id is None:
+            raise ValueError("modifiers can only be used with user_id")
+
         if not HAS_GENAI:
             return [], False
 
@@ -245,17 +297,32 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         if not (hasattr(candidate, "content") and candidate.content.parts):
             return [], False
 
+        function_calls = [
+            part.function_call
+            for part in candidate.content.parts
+            if hasattr(part, "function_call")
+            and part.function_call
+            and part.function_call.name in self._executors
+        ]
+        if target is None:
+            ambiguous = sorted(
+                {
+                    fc.name
+                    for fc in function_calls
+                    if self._executor_contexts.get(fc.name) is _AMBIGUOUS
+                }
+            )
+            if ambiguous:
+                raise ValueError(
+                    f"Tools {ambiguous} were fetched for more than one user or "
+                    "session, so the user to execute them for is ambiguous. "
+                    "Pass the user the response belongs to: "
+                    "handle_response(response, user_id=...) or "
+                    "handle_response(response, session=...)."
+                )
+
         function_responses: list = []
-        executed = False
-
-        for part in candidate.content.parts:
-            if not (hasattr(part, "function_call") and part.function_call):
-                continue
-
-            fc = part.function_call
-            if fc.name not in self._executors:
-                continue
-
+        for fc in function_calls:
             # Same validate -> serialize -> alias sequence as the AFC callable.
             execute_tool, aliases, args_schema = self._executors[fc.name]
             arguments = validate_and_serialize_tool_arguments(
@@ -263,7 +330,16 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                 normalize_tool_arguments(_to_serializable(dict(fc.args))),
             )
             arguments = aliases.restore_arguments(arguments)
-            result = execute_tool(slug=fc.name, arguments=arguments)
+            result = (
+                execute_tool(slug=fc.name, arguments=arguments)
+                if target is None
+                else self.execute_tool_for_target(
+                    target=target,
+                    slug=fc.name,
+                    arguments=arguments,
+                    modifiers=modifiers,
+                )
+            )
             processed = _process_execution_result(result)
 
             function_responses.append(
@@ -273,6 +349,5 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                     )
                 )
             )
-            executed = True
 
-        return function_responses, executed
+        return function_responses, bool(function_responses)

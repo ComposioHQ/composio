@@ -36,7 +36,15 @@ response = chat.send_message(
 print(response.text)
 ```
 
-If you disable Automatic Function Calling and handle function calls yourself, `composio.provider.handle_response(response)` executes the function calls in a Gemini response and returns `Part` objects ready to send back.
+If you disable Automatic Function Calling and handle function calls yourself, `composio.provider.handle_response(response, session=session)` executes the function calls in a Gemini response through that session and returns `Part` objects ready to send back. For tools fetched with `composio.tools.get(user_id=...)`, pass `user_id=` instead:
+
+```python
+function_responses, executed = composio.provider.handle_response(
+    response, user_id="user_123"
+)
+```
+
+A Gemini response does not record which user it belongs to, so pass the user or session whenever one `Composio` instance serves more than one. Without one, `handle_response` raises a `ValueError` for a tool fetched for more than one user or session. With `user_id`, pass any execution modifiers to `handle_response(..., modifiers=...)`; the ones given to `tools.get()` do not apply.
 
 ## composio-gemini vs composio-google
 
