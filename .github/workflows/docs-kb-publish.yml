@@ -1,0 +1,134 @@
+name: Docs - Publish KB Guide
+
+# The support portal sends this when someone approves a KB guide that Front Desk drafted: a new guide, a
+# rewrite or a retirement. It becomes one PR on next that merges itself once checks pass.
+on:
+  repository_dispatch:
+    types: [kb-guide-approved]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Shared with docs-update-kb: both workflows replace the KB snapshot.
+  group: docs-kb-publication
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./docs
+
+    steps:
+      - name: Check request
+        env:
+          DRAFT_ID: ${{ github.event.client_payload.draft_id }}
+        run: |
+          if ! [[ "$DRAFT_ID" =~ ^[0-9]+$ ]]; then
+            echo "draft_id must be a number" >&2
+            exit 1
+          fi
+        working-directory: .
+
+      # A finished workflow may still have a PR waiting on checks or review.
+      # Wait before checkout so each approval starts from the preceding merge.
+      - name: Wait for earlier KB publications
+        timeout-minutes: 31
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PUBLISH_BRANCH: docs/kb-front-desk-${{ github.event.client_payload.draft_id }}
+        run: |
+          for ((attempt = 1; attempt <= 60; attempt++)); do
+            pending=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=next&per_page=100" \
+              --jq '.[] | select(.head.repo.full_name == env.GH_REPO) | select(.head.ref == "docs/auto-update-kb" or (.head.ref | startswith("docs/kb-front-desk-"))) | select(.head.ref != env.PUBLISH_BRANCH) | .html_url')
+            if [ -z "$pending" ]; then
+              exit 0
+            fi
+            echo "Waiting for earlier KB publications to merge or close:"
+            echo "$pending"
+            if [ "$attempt" -lt 60 ]; then
+              sleep 30
+            fi
+          done
+          echo "Earlier KB publications are still open. Merge or close them, then rerun this workflow." >&2
+          exit 1
+
+      - name: Checkout docs repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Apply the approved guide
+        env:
+          GUIDE: ${{ toJSON(github.event.client_payload.guide) }}
+        run: |
+          printf '%s' "$GUIDE" > "$RUNNER_TEMP/kb-guide.json"
+          bun scripts/publish-kb-guide.ts "$RUNNER_TEMP/kb-guide.json"
+
+      - name: Regenerate KB pages
+        env:
+          GUIDE_SLUG: ${{ github.event.client_payload.guide.slug }}
+        run: |
+          bun run generate:kb
+          bun run check:kb
+          bun run verify:kb --json | tee "$RUNNER_TEMP/kb-verify.json"
+          if ! jq -e '[.findings[] | select(.kind == "unedited-support-prose" and .guideSlug == env.GUIDE_SLUG)] | length == 0' "$RUNNER_TEMP/kb-verify.json"; then
+            echo "KB publication contains support-facing prose. Rewrite it for public readers before approving again." >&2
+            exit 1
+          fi
+
+      - name: Generate composio PR token
+        id: write-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Create pull request
+        id: pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.write-token.outputs.token }}
+          commit-message: 'docs(kb): ${{ github.event.client_payload.summary }}'
+          title: 'docs(kb): ${{ github.event.client_payload.summary }}'
+          body: |
+            KB guide approved in the support portal by ${{ github.event.client_payload.approved_by }}.
+
+            - Guide: `${{ github.event.client_payload.guide.slug }}` (${{ github.event.client_payload.guide.action }})
+            - Draft: ${{ github.event.client_payload.portal_url }}
+
+            Front Desk drafted it; the approver reviewed and edited it in the portal. This PR merges itself
+            once checks pass.
+          branch: docs/kb-front-desk-${{ github.event.client_payload.draft_id }}
+          base: next
+          add-paths: |
+            docs/kb/
+            docs/content/kb/
+
+      - name: Merge once checks pass
+        if: steps.pr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ steps.write-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.pull-request-number }}
+        run: gh pr merge "$PR" --auto --squash

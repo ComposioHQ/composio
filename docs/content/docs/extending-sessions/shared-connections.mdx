@@ -29,7 +29,7 @@ Typical use cases:
 
 Pass an `experimental` block to `link()` (`accountType` in TypeScript, `account_type` in Python) set to `"SHARED"`, and optionally an initial ACL. Omit the ACL block to keep the default deny-by-default state (only the creator can use it until you grant access).
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Create a SHARED Gmail connection that any userId can use,
@@ -82,6 +82,26 @@ const connected = await connectionRequest.waitForConnection();
 console.log(`Shared connection ready: ${connected.id}`);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Create a SHARED Gmail connection that any userId can use,
+# except `user_bob`. Send user_admin to the returned redirect_url.
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_admin",
+    "auth_config_id": "ac_gmail_shared",
+    "experimental": {
+      "account_type": "SHARED",
+      "acl_config_for_shared": {
+        "allow_all_users": true,
+        "not_allowed_user_ids": ["user_bob"]
+      }
+    }
+  }'
+```
+  </Tab>
 </Tabs>
 
 The returned `connectedAccountId` (`ca_...`) is the ID you'll pin into other users' sessions.
@@ -96,13 +116,13 @@ Pin the SHARED connection into a session through `connectedAccounts`. The sessio
 
 The session config itself is **not** experimental. You pin the connection by ID exactly as you would a PRIVATE one.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # user_alice starts a session that pins the shared Gmail connection.
 # Gmail tools loaded from this session will resolve to that connection
 # even though user_alice did not create it.
-session = composio.sessions.create(
+session = composio.create(
     user_id="user_alice",
     connected_accounts={
         "gmail": ["ca_gmail_shared"],
@@ -127,6 +147,15 @@ const session = await composio.create("user_alice", {
 });
 
 const tools = await session.tools();
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# user_alice starts a session that pins the shared Gmail connection.
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_alice", "connected_accounts": {"gmail": ["ca_gmail_shared"]}}'
 ```
   </Tab>
 </Tabs>
@@ -166,7 +195,7 @@ Each list accepts up to 1000 entries; each `userID` is 1..256 characters.
 
 Call `updateAcl()` on the connected accounts namespace to change access after creation. It follows PATCH semantics: pass only the fields you want to change, omit a field to leave it unchanged, and pass an empty array to clear an allow or deny list.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Open access to everyone.
@@ -212,6 +241,28 @@ await composio.connectedAccounts.updateAcl("ca_gmail_shared", {
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Open access to everyone.
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_gmail_shared \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"experimental": {"acl_config_for_shared": {"allow_all_users": true}}}'
+
+# Add a targeted allow list (without touching the wildcard or deny list).
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_gmail_shared \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"experimental": {"acl_config_for_shared": {"allowed_user_ids": ["user_alice", "user_bob"]}}}'
+
+# Revoke the allow list; only the creator can use it again
+# (unless allow_all_users is true).
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_gmail_shared \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"experimental": {"acl_config_for_shared": {"allowed_user_ids": []}}}'
+```
+  </Tab>
 </Tabs>
 
 <Callout type="warn">
@@ -232,7 +283,7 @@ By default `list()` returns **PRIVATE only**, so shared accounts must be request
 
 The filter is a flat query param on the wire (`?account_type=...`), so it stays flat in both SDKs, unlike the create and update surfaces, which nest under `experimental`.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # List every SHARED connection the caller has visibility into.
@@ -268,13 +319,24 @@ const sharedForAlice = await composio.connectedAccounts.list({
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# List every SHARED connection the caller has visibility into.
+curl -X GET "https://backend.composio.dev/api/v3.1/connected_accounts?account_type=SHARED" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Scope to a single user's SHARED connections.
+curl -X GET "https://backend.composio.dev/api/v3.1/connected_accounts?account_type=SHARED&user_ids=user_alice" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 ## Inspecting the ACL
 
 `get()` and `list()` responses surface `accountType` and `aclConfigForShared` under the same `experimental` block as the request shape. The `aclConfigForShared` field is populated only when the caller is the connection's creator or is using an API key. Other callers see the `experimental` block without that field.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 account = composio.connected_accounts.get("ca_gmail_shared")
@@ -313,6 +375,14 @@ if (account.experimental) {
     console.log("ACL hidden");
   }
 }
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# experimental.account_type is "PRIVATE" or "SHARED";
+# experimental.acl_config_for_shared is absent when you can't see the ACL.
+curl -s -X GET https://backend.composio.dev/api/v3.1/connected_accounts/ca_gmail_shared \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.experimental'
 ```
   </Tab>
 </Tabs>

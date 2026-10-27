@@ -5,6 +5,8 @@ keywords: [eve, agent framework, provider, experimental, typescript]
 experimental: true
 ---
 
+{/* code-example: single-language-page reason="eve and @composio/experimental/eve are TypeScript-only" */}
+
 The eve provider adapts Composio tools for the [eve](https://github.com/vercel/eve) agent framework. With `EveProvider` registered, `session.tools()` returns eve-native `defineTool`s, so an eve agent gets the Tool Router meta-tools and any preloaded custom toolkits from one call. The provider also ships a `(ctx, next)` hook interface to intercept, allow, deny, or rewrite meta-tool calls before the model sees the result.
 
 <Callout type="warning">

@@ -18,7 +18,7 @@ Pass `version` directly to `composio.tools.execute()` to pin one call. The per-c
 
 These examples use `20251027_00`. Replace it with an available version you have tested for your toolkit.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -54,17 +54,29 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
 console.log(result);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_LIST_STARGAZERS \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-k7334", "version": "20251027_00", "arguments": {"owner": "ComposioHQ", "repo": "composio"}}'
+```
+  </Tab>
 </Tabs>
 
 A dated version passes the direct-execution version check without a bypass flag. See [Direct Tool Execution](/docs/tools-direct/executing-tools#direct-tool-execution) for more examples.
 
 ## Find available versions
 
-To view available versions, go to [Dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) > **All Toolkits** > select a toolkit. The version dropdown shows the latest and all available versions:
+To view recent versions, go to [Dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) > **All Toolkits** > select a toolkit. Use the version dropdown to choose a version:
 
 ![Toolkit version selector on the Composio dashboard](/images/toolkit-version-dashboard.png)
 
 You can also find the latest version for each toolkit on the [Toolkits](/toolkits) page in the docs. Select a toolkit to see its current version and available tools.
+
+<Callout type="info">
+The toolkit metadata's `available_versions` list (`availableVersions` in TypeScript) contains at most the 50 newest versions. A version dropping out of that list does not retire it or stop pinned execution. Use the [deprecation and sunset policy](#deprecation-and-sunset), response warnings, and execution errors to determine when you need to upgrade. Keep your tested version in your own configuration rather than replacing it just because it is absent from the discovery list.
+</Callout>
 
 <Callout type="info">
 Starting from Python SDK v0.9.0 and TypeScript SDK v0.2.0, specifying versions is required for manual tool execution — and `"latest"` is **not** accepted there on its own. To run the newest version with `tools.execute()`, pass `dangerously_skip_version_check=True` (TypeScript: `dangerouslySkipVersionCheck: true`) on the call; otherwise pin a dated version. `"latest"` works without the flag everywhere else (fetching tools, sessions).
@@ -78,15 +90,53 @@ The v3 API defaults to the base version (`00000000_00`) when you don't specify a
 
 For example, a v3 tools-list request without `toolkit_versions` returns the base version:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+base_version = composio.client.get(
+    "/api/v3/tools",
+    cast_to=object,
+    query={"toolkit_slug": "googledrive"},
+)
+latest_version = composio.client.get(
+    "/api/v3/tools",
+    cast_to=object,
+    query={"toolkit_slug": "googledrive", "toolkit_versions": "latest"},
+)
+print(base_version, latest_version)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const client = composio.getClient();
+const baseVersion = await client.get<unknown>('/api/v3/tools', {
+  query: { toolkit_slug: 'googledrive' },
+});
+const latestVersion = await client.get<unknown>('/api/v3/tools', {
+  query: { toolkit_slug: 'googledrive', toolkit_versions: 'latest' },
+});
+console.log(baseVersion, latestVersion);
+```
+</Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-legacy-version" operation="GET /api/v3/tools" reason="this example deliberately compares the previous REST version's default with an explicit latest version" */}
 ```bash
 # Without toolkit_versions: returns tools from the base version
-curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive' \
-  -H 'x-api-key: YOUR_API_KEY'
+curl -X GET "https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 
 # With toolkit_versions=latest: returns tools from the latest version
-curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
-  -H 'x-api-key: YOUR_API_KEY'
+curl -X GET "https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+</Tab>
+</Tabs>
 
 ## Configuration methods
 
@@ -94,6 +144,7 @@ To use the same version across calls, set a default at SDK initialization or thr
 
 ### SDK initialization
 
+{/* code-example: no-api reason="SDK constructor option sets client-side default toolkit versions" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -142,6 +193,9 @@ Versions follow the format `YYYYMMDD_NN`:
 - `YYYYMMDD`: Release date
 - `NN`: Sequential release number
 
+{/* code-example: no-api reason="Shows SDK toolkit_versions value formats, not an HTTP call" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
 ```python
 # Pin to a specific version
 toolkit_versions = {"github": "20251027_00"}
@@ -150,6 +204,18 @@ toolkit_versions = {"github": "20251027_00"}
 # dangerously_skip_version_check=True on the execute call)
 toolkit_versions = {"github": "latest"}
 ```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// Pin to a specific version
+const pinned = { github: "20251027_00" };
+
+// Always use the newest tools (manual execution additionally requires
+// dangerouslySkipVersionCheck: true on the execute call)
+const newest = { github: "latest" };
+```
+  </Tab>
+</Tabs>
 
 ## Choosing between `latest` and a pinned version
 
@@ -175,7 +241,7 @@ Most agentic applications — including all [session-based](/docs/configuring-se
 
 Check available versions using:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Get toolkit information including available versions
@@ -199,6 +265,12 @@ const toolkit = await composio.toolkits.get("github");
 console.log("Toolkit:", toolkit.name);
 console.log("Available Versions:", toolkit.meta.availableVersions);
 console.log("Latest Version:", toolkit.meta.availableVersions?.[0]);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/toolkits/github \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -225,6 +297,7 @@ Single-toolkit routes carry the header: toolkit get, tool get, tool execute, tex
 
 Both SDKs read the header and warn once per process for each deprecated toolkit version. The call still succeeds.
 
+{/* code-example: no-api reason="SDK deprecation warning output and local warning/logger filtering" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```text
@@ -245,7 +318,13 @@ warnings.filterwarnings("ignore", category=ComposioDeprecationWarning)
 [Deprecation] Toolkit GMAIL version 20250114_00 was deprecated on 2026-05-27 (lifecycle) and will stop working on 2026-08-27. Pin a newer version with toolkitVersions: { gmail: '<version>' } or COMPOSIO_TOOLKIT_VERSION_GMAIL. See https://docs.composio.dev/docs/tools-direct/toolkit-versioning#deprecation-and-sunset.
 ```
 
-The warning goes through the SDK logger at the `warn` level. Silence it with `logLevel: 'error'` in the constructor or `COMPOSIO_LOG_LEVEL=error` in the environment.
+The warning goes through the SDK logger at the `warn` level. Silence it with `logLevel: 'error'` in the constructor or `COMPOSIO_LOG_LEVEL=error` in the environment:
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ logLevel: 'error' });
+```
   </Tab>
 </Tabs>
 

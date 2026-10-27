@@ -140,34 +140,38 @@ export const mockAccountResources = (accountData: AccountTestData, base: MockReq
           );
         },
       },
-      consumer: {
-        project: {
-          resolve: (
-            params: { 'x-user-api-key': string; 'x-org-id': string },
+    },
+    _internal: {
+      org: {
+        consumer: {
+          project: {
+            resolve: (
+              params: { 'x-user-api-key': string; 'x-org-id': string },
+              options?: RequestOptions
+            ) => {
+              record('org.consumer.project.resolve', options, params);
+              const orgId = params['x-org-id'];
+              return Effect.succeed({
+                project_id: 'consumer_project_id_test',
+                project_nano_id: 'consumer_project_test',
+                project_name: 'Consumer Project',
+                org_id: orgId,
+                project_type: 'CONSUMER' as const,
+                config: { consumer_experience_enabled: true, enhanced_controls: false },
+                consumer_user_id: `consumer-user-${orgId}`,
+              });
+            },
+          },
+          listConnectedToolkits: (
+            params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
             options?: RequestOptions
           ) => {
-            record('org.consumer.project.resolve', options, params);
-            const orgId = params['x-org-id'];
-            return Effect.succeed({
-              project_id: 'consumer_project_id_test',
-              project_nano_id: 'consumer_project_test',
-              project_name: 'Consumer Project',
-              org_id: orgId,
-              project_type: 'CONSUMER' as const,
-              config: { consumer_experience_enabled: true, enhanced_controls: false },
-              consumer_user_id: `consumer-user-${orgId}`,
-            });
+            record('org.consumer.listConnectedToolkits', options, params);
+            return withTestData(
+              accountData.connectedToolkits,
+              'org.consumer.listConnectedToolkits'
+            ).pipe(Effect.map(toolkits => ({ toolkits: [...toolkits] })));
           },
-        },
-        listConnectedToolkits: (
-          params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
-          options?: RequestOptions
-        ) => {
-          record('org.consumer.listConnectedToolkits', options, params);
-          return withTestData(
-            accountData.connectedToolkits,
-            'org.consumer.listConnectedToolkits'
-          ).pipe(Effect.map(toolkits => ({ toolkits: [...toolkits] })));
         },
       },
     },

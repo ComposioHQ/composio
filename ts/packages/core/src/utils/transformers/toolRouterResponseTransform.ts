@@ -8,53 +8,24 @@ import type {
 import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
 import { ValidationError } from '../../errors/ValidationErrors';
-import {
-  ToolRouterHookResultSchema,
-  type ToolRouterSessionExecuteResponse,
-  type ToolRouterSessionProxyExecuteResponse,
+import type {
+  ToolRouterBlockReason,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionProxyExecuteResponse,
 } from '../../types/toolRouter.types';
 
 /**
  * The `result_type` values of a call that ran. `input_required` and `blocked`
- * are handled before this is read. `hook_results` is validated in its own step
- * so a shape drift there doesn't read as an unknown `result_type`.
+ * are handled before this is read.
  */
 const ExecutedResponseSchema = z.object({
   result_type: z.enum(['completed', 'failed']),
 });
 
-/** A call a session hook blocked. The generated client does not type it yet. */
-const BlockedResponseSchema = z.object({
-  result_type: z.literal('blocked'),
-  reason: z.object({
-    type: z.enum(['request_blocked', 'response_blocked']),
-    hook_id: z.string(),
-  }),
-  message: z.string(),
-  // Only session execute carries these; session proxy execute leaves them out.
-  log_id: z.string().optional(),
-  instant_charge: z.unknown().optional(),
-  hook_results: z.array(ToolRouterHookResultSchema).optional(),
-});
-type BlockedResponse = z.infer<typeof BlockedResponseSchema>;
-
-const IsBlockedSchema = z.object({ result_type: z.literal('blocked') });
-
-/**
- * Reads a `blocked` response, or returns `undefined` for any other
- * `result_type`. A `blocked` response that does not match its schema is
- * raised rather than read as a result.
- */
-function parseBlockedResponse(raw: unknown, subject: string): BlockedResponse | undefined {
-  if (!IsBlockedSchema.safeParse(raw).success) return undefined;
-  const blocked = BlockedResponseSchema.safeParse(raw);
-  if (!blocked.success) {
-    throw new ValidationError(`${subject} returned a malformed blocked response`, {
-      cause: blocked.error,
-    });
-  }
-  return blocked.data;
-}
+/** The `reason` of a call a session hook blocked, in camelCase. */
+const toBlockReason = (
+  reason: Extract<SessionExecuteResponse, { result_type: 'blocked' }>['reason']
+): ToolRouterBlockReason => ({ type: reason.type, hookId: reason.hook_id });
 
 /**
  * Whether a session tool execution succeeded. `resultType` decides: a `failed`
@@ -251,25 +222,24 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * Transforms a raw session execute API response to camelCase.
  *
  * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
- * @throws {ValidationError} If the response carries no `result_type`, one this SDK does not know, or malformed `hook_results`
+ * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
 export function transformExecuteResponse(
   raw: SessionExecuteResponse,
   toolSlug: string
 ): ToolRouterSessionExecuteResponse {
   assertNotInputRequired(raw, `Tool ${toolSlug}`);
-  const blocked = parseBlockedResponse(raw, `Tool ${toolSlug}`);
-  if (blocked) {
+  if (raw.result_type === 'blocked') {
     // The agent reads `error`, so a blocked call reaches it as a failed call
     // with the hook's message.
     return {
       data: {},
-      error: blocked.message,
-      logId: blocked.log_id ?? '',
+      error: raw.message,
+      logId: raw.log_id ?? '',
       resultType: 'blocked',
-      blockReason: { type: blocked.reason.type, hookId: blocked.reason.hook_id },
-      ...(blocked.hook_results !== undefined && { hookResults: blocked.hook_results }),
-      ...(blocked.instant_charge !== undefined && { instantCharge: blocked.instant_charge }),
+      blockReason: toBlockReason(raw.reason),
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+      ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
     };
   }
   const executed = ExecutedResponseSchema.safeParse(raw);
@@ -279,28 +249,15 @@ export function transformExecuteResponse(
       { cause: executed.error }
     );
   }
-  const hookResults = CompletedHookResultsSchema.safeParse(raw);
-  if (!hookResults.success) {
-    throw new ValidationError(`Tool ${toolSlug} returned malformed hook results`, {
-      cause: hookResults.error,
-    });
-  }
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
     resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
-    ...(hookResults.data.hook_results !== undefined && {
-      hookResults: hookResults.data.hook_results,
-    }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
   };
 }
-
-/** Hook results on a call that ran: session execute, or a proxied request that was sent. */
-const CompletedHookResultsSchema = z.object({
-  hook_results: z.array(ToolRouterHookResultSchema).optional(),
-});
 
 /**
  * Projects a session proxy execute response onto the SDK's shape: a request a
@@ -312,20 +269,13 @@ export function transformProxyExecuteResponse(
   subject: string
 ): ToolRouterSessionProxyExecuteResponse {
   assertNotInputRequired(raw, subject);
-  const blocked = parseBlockedResponse(raw, subject);
-  if (blocked) {
+  if (raw.result_type === 'blocked') {
     return {
       resultType: 'blocked',
-      blockReason: { type: blocked.reason.type, hookId: blocked.reason.hook_id },
-      message: blocked.message,
-      ...(blocked.hook_results !== undefined && { hookResults: blocked.hook_results }),
+      blockReason: toBlockReason(raw.reason),
+      message: raw.message,
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
     };
-  }
-  const hookResults = CompletedHookResultsSchema.safeParse(raw);
-  if (!hookResults.success) {
-    throw new ValidationError(`${subject} returned malformed hook results`, {
-      cause: hookResults.error,
-    });
   }
   return {
     resultType: 'completed',
@@ -340,8 +290,6 @@ export function transformProxyExecuteResponse(
         expiresAt: raw.binary_data.expires_at,
       },
     }),
-    ...(hookResults.data.hook_results !== undefined && {
-      hookResults: hookResults.data.hook_results,
-    }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
   };
 }

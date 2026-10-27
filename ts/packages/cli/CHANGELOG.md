@@ -2,7 +2,35 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  gain `--fail-fast`: the listener stops at the first event it fails to save,
+  forward, or append to `--out`, prints how many events failed on stderr, and
+  exits 1. Without it, a failed event is still reported and skipped, and the
+  exit code stays 0.
+
 ### Patch Changes
+
+- `composio upgrade` no longer starts with a stale "Update available" line.
+  The line came from the cached daily update check, so right after a release
+  it could name an older version than the one `composio upgrade` then
+  installed. Upgrading also refreshes that cache with the latest stable release
+  it found, so later commands stop suggesting an older version. Installing a
+  specific version, a beta, or a pinned release tag leaves the cache unchanged.
+
+- `composio proxy` now enforces the consumer permission policy that
+  `composio execute` enforces, checked against the connected account the
+  request uses. A denied request fails with the same permission error, and a
+  request that needs approval opens the same approval page, before anything is
+  sent.
+
+- A tool call or proxied request that a session hook blocks is now reported as
+  a failure carrying the hook's message. `composio execute` prints it as a
+  failed call (`successful: false`) with the message in `error`; on consumer
+  projects, whose calls go through the Dashboard, it used to fail as a response
+  the CLI could not read. `composio proxy` fails naming the hook instead of
+  printing a response with no status.
 
 - `composio connections list` now prints each account's `id`, its `alias`
   whenever it has one (previously only when a toolkit had several accounts),
@@ -15,7 +43,7 @@
   response does not match the shape this CLI expects, naming the mismatched
   fields. They used to warn and continue with the unchecked response.
 
-- The CLI now uses `@composio/client@2.0.0-rc.21` (up from `2.0.0-rc.20`). No
+- The CLI now uses `@composio/client@2.0.0-rc.22` (up from `2.0.0-rc.20`). No
   command changes.
 
 - `composio dev triggers create` now accepts `--user-id` and sends it with the

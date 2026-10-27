@@ -13,6 +13,9 @@ from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
 from composio_client.types.tool_router.session_proxy_execute_params import Parameter
+from composio_client.types.tool_router.session_proxy_execute_response import (
+    SessionProxyExecuteBlockedResponse,
+)
 
 from composio.client import HttpClient
 from composio.core.models.custom_tool_execution import (
@@ -32,8 +35,7 @@ from composio.core.models.inline_custom_tools_payload import (
 )
 from composio.core.models.tools import (
     _serialize_arguments,
-    parse_blocked_response,
-    parse_hook_results,
+    hook_results_of,
     require_execute_result,
     require_executed,
 )
@@ -93,32 +95,30 @@ def proxy_execute_impl(
     subject = f"{method} proxy call for toolkit {toolkit}"
     # Disable retries: a proxied call is a non-idempotent write, and a silent
     # retry after a read timeout can duplicate the side effect.
-    response = require_executed(
-        client.without_retries.tool_router.session.proxy_execute(
-            session_id=session_id,
-            toolkit_slug=toolkit,
-            endpoint=endpoint,
-            method=method,
-            body=body if body is not None else omit,
-            parameters=api_params if api_params else omit,
-        ),
-        subject,
+    raw = client.without_retries.tool_router.session.proxy_execute(
+        session_id=session_id,
+        toolkit_slug=toolkit,
+        endpoint=endpoint,
+        method=method,
+        body=body if body is not None else omit,
+        parameters=api_params if api_params else omit,
     )
 
     # A blocked request has no HTTP response, so it is read before ``status``.
-    blocked = parse_blocked_response(response, subject)
-    if blocked is not None:
+    if isinstance(raw, SessionProxyExecuteBlockedResponse):
         blocked_result: ToolRouterSessionProxyExecuteBlocked = {
             "result_type": "blocked",
             "block_reason": {
-                "type": blocked.reason.type,
-                "hook_id": blocked.reason.hook_id,
+                "type": raw.reason.type,
+                "hook_id": raw.reason.hook_id,
             },
-            "message": blocked.message,
+            "message": raw.message,
         }
-        if blocked.hook_results is not None:
-            blocked_result["hook_results"] = blocked.hook_results
+        blocked_hook_results = hook_results_of(raw.hook_results)
+        if blocked_hook_results is not None:
+            blocked_result["hook_results"] = blocked_hook_results
         return blocked_result
+    response = require_executed(raw, subject)
 
     # ``status`` and ``size`` are ``float`` on the generated model and pydantic
     # coerces, so they arrive as ``200.0``/``123.0``. Narrow them here: an HTTP
@@ -129,7 +129,7 @@ def proxy_execute_impl(
         "data": response.data,
         "headers": response.headers,
     }
-    hook_results = parse_hook_results(response, subject)
+    hook_results = hook_results_of(response.hook_results)
     if hook_results is not None:
         result["hook_results"] = hook_results
     binary_data = response.binary_data

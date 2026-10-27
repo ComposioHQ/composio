@@ -17,7 +17,7 @@ Approvals are experimental. They need `composio` newer than 0.27.0 or `@composio
 
 You choose which tools need approval with their [tags](/docs/tool-tags) when you create a session. For example, this session asks the user before any tool that creates, updates or deletes something:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -39,11 +39,22 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tags": { "require_approval": ["createHint", "updateHint", "destructiveHint"] }
+  }'
+```
+</Tab>
 </Tabs>
 
 To handle a toolkit differently, override the session-wide `tags` in `tools.<toolkit>.tags`. This session asks before the same tools everywhere, except GitHub, where it only asks before tools that delete:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -73,6 +84,20 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tags": { "require_approval": ["createHint", "updateHint", "destructiveHint"] },
+    "tools": {
+      "github": { "tags": { "require_approval": ["destructiveHint"] } }
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 The override replaces the session-wide `tags` for that toolkit, including any tags you block, so list everything you still want for it.
@@ -81,7 +106,7 @@ The override replaces the session-wide `tags` for that toolkit, including any ta
 
 When a tool needs approval, `session.execute()` raises an error:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio.exceptions import ToolInputRequiredError
@@ -114,6 +139,20 @@ try {
     requestState = error.requestState;
   }
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+RESPONSE=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GMAIL_SEND_EMAIL",
+    "arguments": { "recipient_email": "priya@acme.com", "subject": "Q3 numbers" }
+  }')
+# "result_type": "input_required" means the tool did not run
+echo "$RESPONSE" | jq '.input_requests'
+REQUEST_STATE=$(echo "$RESPONSE" | jq -r '.request_state')
 ```
 </Tab>
 </Tabs>
@@ -155,7 +194,7 @@ The questions follow the format of [MCP elicitation](https://modelcontextprotoco
 
 Send the same call again with the user's answers:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = session.execute(
@@ -191,6 +230,21 @@ const result = await session.execute('GMAIL_SEND_EMAIL', args, {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GMAIL_SEND_EMAIL",
+    "arguments": { "recipient_email": "priya@acme.com", "subject": "Q3 numbers" },
+    "input_responses": {
+      "elicit_0f2f8872eea523ed": { "action": "accept", "content": { "decision": "approve" } }
+    },
+    "request_state": "'"$REQUEST_STATE"'"
+  }'
+```
+</Tab>
 </Tabs>
 
 When the user picks **Always approve**, their approval lasts for the rest of the session. Later calls to that tool on the same connected account run without asking again.
@@ -199,7 +253,7 @@ When the user picks **Always approve**, their approval lasts for the rest of the
 
 Approvals use MCP [elicitation](https://modelcontextprotocol.io/specification/2026-07-28/client/elicitation), which lets a server ask the user for input through the client. When your agent connects to the session [over MCP](/docs/sessions-via-mcp), clients that support elicitation, like Claude Code, ask the user for you. With clients that don't support elicitation, calls that need approval are denied. To run them without approval instead, set `no_elicitation_support_fallback` to `"allow"`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -231,6 +285,23 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "gmail": {
+        "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+        "require_approval": ["GMAIL_SEND_EMAIL"]
+      }
+    },
+    "experimental": { "no_elicitation_support_fallback": "allow" }
+  }'
+```
+</Tab>
 </Tabs>
 
 ## Current limitations
@@ -244,6 +315,7 @@ const session = await composio.create('user_123', {
 
 An agent loop with Claude that asks for approval in the terminal:
 
+{/* code-example: no-api reason="agent loop with the Anthropic provider; the approval handling runs client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python

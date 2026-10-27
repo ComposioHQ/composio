@@ -11,12 +11,15 @@ Developers integrating Composio into their AI applications. They need:
 
 ## What CI Already Catches
 
-Don't comment on these - automated checks handle them:
+Use CI output as evidence, not as a reason to skip changed code:
 
-- **TypeScript errors** - Twoslash validates all TS code blocks at build time
+- **TypeScript errors** — Production Twoslash covers configured MDX collections; the standalone gate covers maintained API overviews, authored reference, FAQ, and KB inputs. Generated SDK symbol fragments, historical code, and blanket-suppressed build-only examples are not certified.
 - **Frontmatter schema** - Date format, required fields validated automatically
 - **MDX syntax** - Build fails on invalid JSX/markdown
 - **Import errors** - Missing components fail the build
+- **Code example structure** — `check:code-examples` validates maintained options and marker placement, not exemption reasons or semantic equivalence.
+- **API snippets** — `check:api-snippets` checks supported curl syntax and committed OpenAPI constraints. Dynamic data, schema drift, response/jq behavior, and scoped exceptions still need review.
+- **Python snippets** — `check:python-snippets` checks syntax and SDK-attributed mypy errors against local SDK/provider source. Other diagnostics are separate; this is not a published-release or runtime check.
 
 ## What You Review
 
@@ -33,12 +36,13 @@ Don't comment on these - automated checks handle them:
 | Logical error | Steps are out of order, or prerequisite is mentioned after it's needed |
 | CI/non-interactive gap | Code works locally (interactive auth prompt) but would fail in CI/GitHub Actions with no explanation |
 | Missing index entry | New cookbook or page added but not listed in the parent index page or `meta.json` |
+| Cross-language drift | Tabs exist but do different things (different IDs, args, steps, or output), or an exemption marker's reason is wrong |
 
 **Don't flag:**
 - Style preferences ("I'd phrase this differently")
 - Minor wording tweaks that don't affect understanding
 - Formatting (prettier handles this)
-- TypeScript types (Twoslash handles this)
+- Type errors already reported by CI, unless the review identifies a false negative, suppression, uncovered surface, or incompatible installed SDK version
 
 ### Component Files (.tsx)
 
@@ -59,8 +63,8 @@ Quick checks:
 
 ## Review Process
 
-1. Run `git diff` to see what changed
-2. Read the changed files
+1. Run `git status --short`, inspect the actual tracked diff, and include relevant untracked files.
+2. Account for every changed file. Inspect the full example inventory and each added exemption; do not treat marker syntax or passing gates as correctness proof.
 3. For each file, ask: "Would a developer copying this get stuck?"
 4. If yes → Comment with the specific fix
 5. If no issues → Approve with "Looks good"

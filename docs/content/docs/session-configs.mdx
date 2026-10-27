@@ -6,6 +6,13 @@ keywords: [session config, sessionConfigId, saved config, access policy, dashboa
 
 A **Session config** is a saved, named access policy (`sc_…`) that you build in the Composio Dashboard under Sessions → Configs. Start a session from one instead of repeating `toolkits`, `tools`, and `tags` in your code:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+<Callout type="info">
+Listing Session configs and creating a session from one are not yet available in the Python SDK. Use the [List Session configs](/reference/api-reference/tool-router/getSessionConfigs) and [Create a session](/reference/api-reference/tool-router/postToolRouterSession) endpoints.
+</Callout>
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
@@ -20,6 +27,23 @@ const session = await composio.sessions.create("user_123", {
 
 console.log(session.experimental.sourceSessionConfig); // { id: "sc_..." }
 ```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_CONFIG_ID=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/session_configs?search=support" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[0].id')
+
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_123"},
+    "experimental": {"session_config_id": "'"$SESSION_CONFIG_ID"'"}
+  }' | jq '.experimental.source_session_config'
+```
+</Tab>
+</Tabs>
 
 The backend resolves the config when it creates the session, so the session gets exactly the access the config grants. Later edits to the config in the Dashboard don't change sessions that already exist.
 
@@ -33,6 +57,13 @@ The top-level `composio.sessionConfigs` read methods are available in TypeScript
 
 `composio.sessionConfigs.get(id)` adds the `description` and the stored policy under `config`:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+<Callout type="info">
+Retrieving a Session config is not yet available in the Python SDK. Use the [Retrieve a Session config](/reference/api-reference/tool-router/getSessionConfigsBySessionConfigId) endpoint.
+</Callout>
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
@@ -43,6 +74,14 @@ const sessionConfig = await composio.sessionConfigs.get("sc_123");
 console.log(sessionConfig.config);
 // { toolkits: { enable: ["github"] }, tags: { disable: ["destructiveHint"] } }
 ```
+</Tab>
+<Tab value="API">
+```bash
+curl -s -X GET https://backend.composio.dev/api/v3.1/session_configs/sc_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.config'
+```
+</Tab>
+</Tabs>
 
 A saved policy uses `enable` and `disable`, the same shape you send on create. `session.config` is the server's snapshot of a live session and names the same lists `enabled` and `disabled`.
 
@@ -60,6 +99,18 @@ Live verification accepted `DIRECT_TOOLS` with a saved config that provided a po
 
 Pass `sessionConfigId` in the `experimental` block of `session.update()` to replace the session's toolkit, tool, and tag access with the config's policy. Other settings are preserved.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.use("session_id")
+
+session.update(experimental={"session_config_id": "sc_123"})
+```
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
@@ -69,6 +120,16 @@ const session = await composio.sessions.use("session_id");
 
 await session.update({ experimental: { sessionConfigId: "sc_123" } });
 ```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/session_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"experimental": {"session_config_id": "sc_123"}}'
+```
+</Tab>
+</Tabs>
 
 The same rule applies here: `sessionConfigId` can't be combined with `toolkits`, `tools`, or `tags`, and `null` counts as set. A saved config and custom tools don't mix on update either: if the session was created with inline custom tools, the backend rejects a conflicting config with a `400`.
 

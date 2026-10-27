@@ -71,7 +71,7 @@ After you enter the required credentials, click **Create** and copy the auth con
 
 Creating the auth config isn't enough on its own. A session uses your config only when you pass its ID to `authConfigs`, keyed by toolkit. Toolkits you leave out keep using Composio managed auth.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -99,6 +99,15 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# toolkits not listed in auth_configs still use Composio managed auth
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "auth_configs": {"github": "ac_your_github_config"}}'
+```
+</Tab>
 </Tabs>
 </Step>
 </Steps>
@@ -107,7 +116,7 @@ const session = await composio.create("user_123", {
 
 You don't have to pick one approach for all toolkits. Use your own credentials for toolkits where users see consent screens (GitHub, Google, Slack) and Composio managed auth for the rest. Each toolkit gets its own auth config independently.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -132,6 +141,18 @@ const session = await composio.create("user_123", {
     // everything else uses Composio managed auth automatically
   },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# everything else uses Composio managed auth automatically
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config", "google": "ac_your_google_config"}
+  }'
 ```
 </Tab>
 </Tabs>

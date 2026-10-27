@@ -25,7 +25,7 @@ This is useful when:
 
 For services that use API key authentication (e.g., SendGrid, Tavily, PostHog):
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -36,7 +36,8 @@ composio = Composio(api_key="your-api-key")
 connection = composio.connected_accounts.initiate(
     user_id="user_123",
     auth_config_id="ac_your_auth_config",
-    config=auth_scheme.api_key({
+    # The helper fills status="ACTIVE"; its generated input type still requires it.
+    config=auth_scheme.api_key({  # type: ignore[arg-type]
         "api_key": "sg-existing-sendgrid-key",
     }),
 )
@@ -66,6 +67,21 @@ const connection = await composio.connectedAccounts.initiate(
 console.log('Connected:', connection.id);
 ```
 </Tab>
+<Tab value="API">
+```bash
+# API key connections are immediately active
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "auth_config": {"id": "ac_your_auth_config"},
+    "connection": {
+      "user_id": "user_123",
+      "state": {"authScheme": "API_KEY", "val": {"status": "ACTIVE", "api_key": "sg-existing-sendgrid-key"}}
+    }
+  }' | jq -r '.id'
+```
+</Tab>
 </Tabs>
 
 ## Bearer tokens
@@ -76,7 +92,7 @@ Since you're providing your own token, Composio won't handle OAuth refresh. You'
 
 After [creating an auth config](/docs/authentication/programmatic-auth-configs) with `authScheme: "BEARER_TOKEN"`, use the snippet below to create a connected account:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -87,7 +103,8 @@ composio = Composio(api_key="your-api-key")
 connection = composio.connected_accounts.initiate(
     user_id="user_123",
     auth_config_id="ac_your_auth_config",
-    config=auth_scheme.bearer_token({
+    # The helper fills status="ACTIVE"; its generated input type still requires it.
+    config=auth_scheme.bearer_token({  # type: ignore[arg-type]
         "token": "existing-bearer-token",
     }),
 )
@@ -117,11 +134,26 @@ const connection = await composio.connectedAccounts.initiate(
 console.log('Connected:', connection.id);
 ```
 </Tab>
+<Tab value="API">
+```bash
+# Bearer token connections are immediately active
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "auth_config": {"id": "ac_your_auth_config"},
+    "connection": {
+      "user_id": "user_123",
+      "state": {"authScheme": "BEARER_TOKEN", "val": {"status": "ACTIVE", "token": "existing-bearer-token"}}
+    }
+  }' | jq -r '.id'
+```
+</Tab>
 </Tabs>
 
 ## Basic auth
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -132,7 +164,8 @@ composio = Composio(api_key="your-api-key")
 connection = composio.connected_accounts.initiate(
     user_id="user_123",
     auth_config_id="ac_your_auth_config",
-    config=auth_scheme.basic({
+    # The helper fills status="ACTIVE"; its generated input type still requires it.
+    config=auth_scheme.basic({  # type: ignore[arg-type]
         "username": "user@example.com",
         "password": "existing-password",
     }),
@@ -164,6 +197,21 @@ const connection = await composio.connectedAccounts.initiate(
 console.log('Connected:', connection.id);
 ```
 </Tab>
+<Tab value="API">
+```bash
+# Basic auth connections are immediately active
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "auth_config": {"id": "ac_your_auth_config"},
+    "connection": {
+      "user_id": "user_123",
+      "state": {"authScheme": "BASIC", "val": {"status": "ACTIVE", "username": "user@example.com", "password": "existing-password"}}
+    }
+  }' | jq -r '.id'
+```
+</Tab>
 </Tabs>
 
 ## Updating credentials
@@ -172,18 +220,18 @@ When credentials expire or rotate, update them in place without recreating the c
 
 <Tabs groupId="auth-scheme" items={['Bearer token', 'API key', 'Basic auth']} persist>
 <Tab value="Bearer token">
-<Tabs groupId="language" items={['Python', 'TypeScript', 'curl']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-composio.connected_accounts.update(
-    "ca_your_connection_id",
-    connection={
-        "state": {
-            "authScheme": "BEARER_TOKEN",
-            "val": {"token": "new-access-token"},
-        },
+from composio.client.types import connected_account_patch_params
+
+connection: connected_account_patch_params.Connection = {
+    "state": {
+        "auth_scheme": "BEARER_TOKEN",
+        "val": {"token": "new-access-token"},
     },
-)
+}
+composio.connected_accounts.update("ca_your_connection_id", connection=connection)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -202,29 +250,29 @@ await composio.connectedAccounts.update('ca_your_connection_id', {
 });
 ```
 </Tab>
-<Tab value="curl">
+<Tab value="API">
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
-  -H 'x-api-key: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_your_connection_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{"connection":{"state":{"authScheme":"BEARER_TOKEN","val":{"token":"new-access-token"}}}}'
 ```
 </Tab>
 </Tabs>
 </Tab>
 <Tab value="API key">
-<Tabs groupId="language" items={['Python', 'TypeScript', 'curl']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-composio.connected_accounts.update(
-    "ca_your_connection_id",
-    connection={
-        "state": {
-            "authScheme": "API_KEY",
-            "val": {"generic_api_key": "new-api-key"},
-        },
+from composio.client.types import connected_account_patch_params
+
+connection: connected_account_patch_params.Connection = {
+    "state": {
+        "auth_scheme": "API_KEY",
+        "val": {"generic_api_key": "new-api-key"},
     },
-)
+}
+composio.connected_accounts.update("ca_your_connection_id", connection=connection)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -243,29 +291,29 @@ await composio.connectedAccounts.update('ca_your_connection_id', {
 });
 ```
 </Tab>
-<Tab value="curl">
+<Tab value="API">
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
-  -H 'x-api-key: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_your_connection_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{"connection":{"state":{"authScheme":"API_KEY","val":{"generic_api_key":"new-api-key"}}}}'
 ```
 </Tab>
 </Tabs>
 </Tab>
 <Tab value="Basic auth">
-<Tabs groupId="language" items={['Python', 'TypeScript', 'curl']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-composio.connected_accounts.update(
-    "ca_your_connection_id",
-    connection={
-        "state": {
-            "authScheme": "BASIC",
-            "val": {"username": "user@example.com", "password": "new-password"},
-        },
+from composio.client.types import connected_account_patch_params
+
+connection: connected_account_patch_params.Connection = {
+    "state": {
+        "auth_scheme": "BASIC",
+        "val": {"username": "user@example.com", "password": "new-password"},
     },
-)
+}
+composio.connected_accounts.update("ca_your_connection_id", connection=connection)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -284,11 +332,11 @@ await composio.connectedAccounts.update('ca_your_connection_id', {
 });
 ```
 </Tab>
-<Tab value="curl">
+<Tab value="API">
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
-  -H 'x-api-key: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_your_connection_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{"connection":{"state":{"authScheme":"BASIC","val":{"username":"user@example.com","password":"new-password"}}}}'
 ```
 </Tab>
@@ -300,11 +348,11 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
 
 Pass the auth config or connection ID when creating a session:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
-    "user_123",
+    user_id="user_123",
     auth_configs={"gmail": "ac_your_auth_config"},
     toolkits=["gmail"],
 )
@@ -320,6 +368,18 @@ const session = await composio.create('user_123', {
   authConfigs: { gmail: 'ac_your_auth_config' },
   toolkits: ['gmail'],
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"gmail": "ac_your_auth_config"},
+    "toolkits": {"enable": ["gmail"]}
+  }'
 ```
 </Tab>
 </Tabs>

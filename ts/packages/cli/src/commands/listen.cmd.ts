@@ -1,11 +1,12 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { reportFailure } from 'src/effects/report-failure';
+import { eventCount, finishAcceptedEvents, makeSinkFailures } from './triggers/sink-failures';
 import { commandInputError } from 'src/commands/errors';
 import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import type { ComposioClientShape } from '@composio/client/effect';
-import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
+import { Data, Deferred, Effect, FiberSet, Result, Option, Predicate } from 'effect';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
@@ -84,6 +85,11 @@ const account = Flag.String('account').pipe(
     'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
   Flag.optional
+);
+
+const failFast = Flag.Boolean('fail-fast').pipe(
+  Flag.withDescription('Stop at the first event that fails to save, and exit 1'),
+  Flag.withDefault(false)
 );
 
 const debug = Flag.Boolean('debug').pipe(
@@ -507,13 +513,12 @@ const resolveListenSetup = (params: {
 
 export const listenCmd = Command.make(
   'listen',
-  { slug, params, maxEvents, timeout, stream, account, debug },
-  ({ slug, params, maxEvents, timeout, stream, account, debug }) =>
+  { slug, params, maxEvents, timeout, stream, account, failFast, debug },
+  ({ slug, params, maxEvents, timeout, stream, account, failFast, debug }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const services = yield* Effect.context<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
@@ -559,24 +564,20 @@ export const listenCmd = Command.make(
       yield* fs.makeDirectory(triggerDir, { recursive: true });
       yield* fs.writeFileString(streamFilePath, '', { flag: 'a' });
 
-      const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout'>();
+      const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout' | 'failed'>();
+      // Its own signal, so a --fail-fast failure also ends finishAcceptedEvents' wait.
+      const failed = yield* Deferred.make<void>();
       let matchingEvents = 0;
-      // Per-event write failures are recovered so one bad event never stops the listener; they
-      // are counted here and summed up on plain stderr on every stop — including Ctrl+C and
-      // SIGTERM, which runMain turns into a fiber interruption — since a piped caller sees
-      // none of the `ui.log.warn` decoration. The release hook below runs on all of them.
-      let eventWriteFailures = 0;
-      const recordWriteFailure = (error: unknown) =>
-        Effect.gen(function* () {
-          eventWriteFailures += 1;
-          yield* ui.log.warn(errorMessage(error));
-        });
-      const reportWriteFailures = () =>
-        eventWriteFailures > 0
-          ? ui.error(
-              `${eventWriteFailures} event${eventWriteFailures === 1 ? '' : 's'} failed to write while listening.`
-            )
-          : Effect.void;
+      const writeFailures = makeSinkFailures({
+        ui,
+        failFast,
+        stop: Effect.andThen(
+          Deferred.succeed(failed, undefined),
+          Deferred.succeed(stopWhenDone, 'failed')
+        ).pipe(Effect.asVoid),
+        summary: count => `${eventCount(count)} failed to write while listening.`,
+      });
+      const recordWriteFailure = (error: unknown) => writeFailures.record(errorMessage(error));
       const seenEventIds = new Set<string>();
 
       yield* Effect.acquireUseRelease(
@@ -602,6 +603,10 @@ export const listenCmd = Command.make(
             ),
         createdTrigger =>
           Effect.gen(function* () {
+            // Scoped below: a stop other than --max-events or --timeout interrupts the event
+            // callbacks still running before the release hook sums up.
+            const events = yield* FiberSet.make();
+            const runEvent = yield* FiberSet.runtime(events)();
             yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);
             if (debug) {
               const debugMsg =
@@ -618,7 +623,7 @@ export const listenCmd = Command.make(
             }
 
             const onEvent = (eventData: Record<string, unknown>) => {
-              Effect.runForkWith(services)(
+              runEvent(
                 Effect.gen(function* () {
                   if (debug) {
                     yield* emitStreamLine(
@@ -709,11 +714,12 @@ export const listenCmd = Command.make(
               );
             }
 
-            if (maxEventsLimit === undefined && timeoutMs === undefined) {
-              return yield* listenEffect;
-            }
-
+            // Without --max-events, --timeout or --fail-fast nothing resolves stopWhenDone, so
+            // this waits on the listener until it is interrupted.
             const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+            if (stopReason === 'max-events' || stopReason === 'timeout') {
+              yield* finishAcceptedEvents(events, failed);
+            }
             if (stopReason === 'max-events') {
               yield* ui.outro(
                 formatStopMessage({
@@ -734,15 +740,15 @@ export const listenCmd = Command.make(
                 })
               );
             }
-          }),
+          }).pipe(Effect.scoped),
         created =>
           Effect.gen(function* () {
             if (created !== null) {
               yield* disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id });
             }
-            // Runs on every stop of the use phase — max-events, timeout, and the interruption
-            // of an unlimited wait — so a piped caller always gets the failure count.
-            yield* reportWriteFailures();
+            // Runs on every stop of the use phase — max-events, timeout, --fail-fast, and the
+            // interruption by Ctrl+C or SIGTERM — so a piped caller always gets the count.
+            yield* writeFailures.report;
           })
       ).pipe(
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
@@ -766,6 +772,9 @@ export const listenCmd = Command.make(
     },
     {
       command: 'composio listen GMAIL_NEW_GMAIL_MESSAGE --account work --timeout 5m',
+    },
+    {
+      command: 'composio listen GMAIL_NEW_GMAIL_MESSAGE --max-events 5 --fail-fast',
     },
     {
       command: "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",

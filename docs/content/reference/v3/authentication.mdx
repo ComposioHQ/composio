@@ -22,17 +22,69 @@ Get it from the dashboard: open **Organization Settings → General Settings** a
 
 Include your API key in the request header:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+print(composio.client.get("/api/v3/tools", cast_to=object))
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+console.log(await composio.getClient().get<unknown>('/api/v3/tools'));
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl https://backend.composio.dev/api/v3/tools \
+curl -X GET https://backend.composio.dev/api/v3/tools \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+</Tab>
+</Tabs>
 
 For organization-level endpoints:
 
+The Python SDK also requires `COMPOSIO_API_KEY` to initialize. These raw calls explicitly send the organization header for the historical v3 route.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio()
+projects = composio.client.get(
+    "/api/v3/org/owner/project/list",
+    cast_to=object,
+    headers={"x-api-key": None, "x-org-api-key": os.environ["COMPOSIO_ORG_API_KEY"]},
+)
+print(projects)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: null,
+  orgApiKey: process.env.COMPOSIO_ORG_API_KEY,
+});
+console.log(await composio.getClient().get<unknown>('/api/v3/org/owner/project/list'));
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl https://backend.composio.dev/api/v3/org/projects \
+curl -X GET https://backend.composio.dev/api/v3/org/owner/project/list \
   -H "x-org-api-key: $COMPOSIO_ORG_API_KEY"
 ```
+</Tab>
+</Tabs>
 
 <Cards>
   <Card title="Errors" href="/reference/v3/errors">

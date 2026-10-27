@@ -28,7 +28,7 @@ To write a custom prompt check, use the `condition_check` hook. It lets you bloc
 
 Here's a `before_execute` hook that stops your agent from sharing internal pricing with customers:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -70,11 +70,33 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "no_pricing_to_customers",
+        "type": "before_execute",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "condition_check",
+          "condition": "Sharing internal pricing with anyone outside acme.com",
+          "action": "block"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
 </Tabs>
 
 When your agent tries to email internal pricing to someone outside your company, the email isn't sent, and the following is returned when the tool is executed:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = session.execute(
@@ -88,8 +110,8 @@ result = session.execute(
 
 print(result.result_type)   # 'blocked'
 print(result.error)         # 'Blocked by session policy'
-print(result.block_reason)  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
-print(result.hook_results)  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
+print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
+print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -117,6 +139,22 @@ console.log(result);
 // }
 ```
 </Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GMAIL_SEND_EMAIL",
+    "arguments": {
+      "recipient_email": "jane@customer.com",
+      "subject": "Pricing",
+      "body": "Our internal floor price is $40 per seat."
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 If you use the SDK with an agent framework, your agent sees the message in `error`.
@@ -125,7 +163,7 @@ If more than one hook applies to a call, `hookResults` has an entry for each one
 
 Here's an `after_execute` hook that keeps emails with passwords or API keys away from your agent:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -169,6 +207,29 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "no_secrets_in_results",
+        "type": "after_execute",
+        "name": "No secrets in emails",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "condition_check",
+          "condition": "An email that contains a password, API key or access token",
+          "action": "block"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
 </Tabs>
 
 When Gmail returns an email with a password in it, your agent doesn't receive the email.
@@ -203,7 +264,7 @@ For projects with ZDR enabled, we don't have context about your agent's historic
 
 To block prompt injection, use the `prompt_injection_check` hook. It screens each tool result and blocks it if it contains a prompt injection.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -237,6 +298,24 @@ const session = await composio.create('user_123', {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "block_injection",
+        "type": "after_execute",
+        "applies_to": "all",
+        "handler": {"type": "prompt_injection_check", "action": "block"}
+      }
+    ]
+  }'
+```
+</Tab>
 </Tabs>
 
 `prompt_injection_check` only works in `after_execute` hooks, since tool results are where outside content reaches your agent.
@@ -257,7 +336,7 @@ Keep in mind that hooks don't currently run on Composio meta tools themselves, s
 
 To change a session's checks, pass a new `hooks` list to `session.update()`. The new list replaces the old one, so include every hook you want to keep. To remove them all, pass `null` (`None` in Python).
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(hooks=[...])  # every hook you want to keep
@@ -271,6 +350,24 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create('user_123');
 // ---cut---
 await session.update({ hooks: [/* every hook you want to keep */] });
+```
+</Tab>
+<Tab value="API">
+```bash
+# Every hook you want to keep; send "hooks": null to remove them all
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hooks": [
+      {
+        "id": "block_injection",
+        "type": "after_execute",
+        "applies_to": "all",
+        "handler": {"type": "prompt_injection_check", "action": "block"}
+      }
+    ]
+  }'
 ```
 </Tab>
 </Tabs>

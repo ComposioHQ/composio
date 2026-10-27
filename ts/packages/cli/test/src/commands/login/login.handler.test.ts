@@ -81,7 +81,6 @@ const HOME_SESSION_INFO = makeSessionInfo({
   orgId: 'org_home',
   orgName: 'Home Org',
   orgMemberId: 'member_home',
-  userId: 'user_123',
   email: 'cli@example.com',
 });
 
@@ -93,7 +92,6 @@ const sessionInfoFor = (scope: MockRequestScope) =>
         orgId: scope.orgId,
         orgName: `${scope.orgId} name`,
         orgMemberId: `member_${scope.orgId}`,
-        userId: 'user_123',
         email: 'cli@example.com',
       });
 
@@ -389,7 +387,7 @@ describe('handlePollLogin', () => {
         yield* handlePollLogin({ noSkillInstall: true });
 
         expect(logins).toEqual([
-          { apiKey: 'uak_linked', orgId: 'org_first', testUserId: 'pg-test-user_123' },
+          { apiKey: 'uak_linked', orgId: 'org_first', testUserId: 'pg-test-member_org_first' },
         ]);
         expect(analytics.linked).toEqual(['member_org_first']);
         expect(Option.isNone(pending.current())).toBe(true);
@@ -511,7 +509,7 @@ describe('handleDirectLogin', () => {
       });
 
       expect(logins).toEqual([
-        { apiKey: 'uak_direct', orgId: 'org_second', testUserId: 'pg-test-user_123' },
+        { apiKey: 'uak_direct', orgId: 'org_second', testUserId: 'pg-test-member_home' },
       ]);
       expect(outputs).toEqual([
         JSON.stringify({ email: 'cli@example.com', org_id: 'org_second', org_name: 'Second Org' }),

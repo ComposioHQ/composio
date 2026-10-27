@@ -32,6 +32,8 @@ Composio supports two integration modes: **Native Tools** (with a provider packa
 
 ### Native Tools
 
+#### Python
+
 \`\`\`python
 # ✅ CORRECT — Python (defaults to OpenAI)
 from composio import Composio
@@ -42,6 +44,8 @@ tools = session.tools()
 # Pass tools to your agent/LLM framework
 \`\`\`
 
+#### TypeScript
+
 \`\`\`typescript
 // ✅ CORRECT — TypeScript (defaults to OpenAI)
 import { Composio } from "@composio/core";
@@ -50,6 +54,29 @@ const composio = new Composio();
 const session = await composio.create("user_123");
 const tools = await session.tools();
 // Pass tools to your agent/LLM framework
+\`\`\`
+
+#### API
+
+This produces the same default OpenAI function-tool shape, fetching every page.
+
+\`\`\`bash
+set -euo pipefail
+SESSION=$(curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \\
+  -H "x-api-key: $COMPOSIO_API_KEY" -H "Content-Type: application/json" \\
+  -d '{"user_id":"user_123"}')
+SESSION_ID=$(echo "$SESSION" | jq -r '.session_id')
+TOOLS='[]'
+CURSOR=''
+while true; do
+  PAGE=$(curl --fail-with-body -s --get "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools" \\
+    -H "x-api-key: $COMPOSIO_API_KEY" --data-urlencode 'limit=500' --data-urlencode "cursor=$CURSOR")
+  TOOLS=$(jq -cn --argjson existing "$TOOLS" --argjson page "$PAGE" \\
+    '$existing + [$page.items[] | {type:"function",function:{name:.slug,description:.description,parameters:.input_parameters}}]')
+  CURSOR=$(echo "$PAGE" | jq -r '.next_cursor // empty')
+  [ -n "$CURSOR" ] || break
+done
+printf '%s\\n' "$TOOLS"
 \`\`\`
 
 For other providers, pass the provider explicitly. Provider packages follow the naming convention: \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript.

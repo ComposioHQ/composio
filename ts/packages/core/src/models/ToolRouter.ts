@@ -53,7 +53,6 @@ import {
   transformToolRouterInstantParams,
   transformToolRouterProxyExecuteParams,
   transformToolRouterHooksParams,
-  type SessionCreateBody,
   resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
@@ -277,7 +276,7 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateBody = {
+    const payload: SessionCreateParams = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,

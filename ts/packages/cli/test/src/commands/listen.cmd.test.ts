@@ -193,6 +193,20 @@ describe('CLI: composio listen', () => {
       })
     );
 
+    // No --max-events or --timeout: only --fail-fast can stop this run.
+    it.effect('[Then] --fail-fast stops at the first failed write and exits 1', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI();
+        yield* cli(['listen', 'composio.connected_account.expired', '--fail-fast']).pipe(
+          Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+        );
+
+        expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+        expect(process.exitCode).toBe(1);
+      })
+    );
+
     it.effect('[Then] sums the write failures up on stderr when the timeout stops it', () =>
       Effect.gen(function* () {
         yield* enableListen;

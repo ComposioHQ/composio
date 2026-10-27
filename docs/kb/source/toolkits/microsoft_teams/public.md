@@ -37,21 +37,61 @@ Debug steps:
 
 - If an existing auth config already includes the invalid scope, update or recreate it and reconnect. Existing connected accounts may need refresh/reconnect depending on how the customer propagates scope changes.
 
-Minimal stale-path repro:
+### Compare the legacy response
+
+#### Python
+
+> [!NOTE]
+> The Python SDK does not select the legacy `/api/v3` metadata route. Use the API option to reproduce this route-specific stale response.
+
+#### TypeScript
+
+> [!NOTE]
+> The TypeScript SDK does not select the legacy `/api/v3` metadata route. Use the API option to reproduce this route-specific stale response.
+
+#### API
+
+<!-- code-example: unchecked-api rule="api-legacy-version" operation="GET /api/v3/tools/{tool_slug}" reason="This diagnostic intentionally reproduces the stale v3 metadata route; the clean example below uses v3.1." -->
 
 ```bash
 curl --globoff 'https://backend.composio.dev/api/v3/tools/MICROSOFT_TEAMS_TEAMS_GET_MESSAGE' \
-  -H 'x-api-key: <key>'
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+
+<!-- end-languages -->
 
 Expected stale response includes `version: "00000000_00"` and `scopes: ["ChannelMessage.Read.Group"]`.
 
-Clean path:
+### Fetch current tool metadata
+
+#### Python
+
+```python
+from composio import Composio
+
+composio = Composio(toolkit_versions={"microsoft_teams": "latest"})
+tool = composio.tools.get_raw_composio_tool_by_slug("MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE")
+print(tool.scopes)
+```
+
+#### TypeScript
+
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ toolkitVersions: { microsoft_teams: "latest" } });
+const tool = await composio.tools.getRawComposioToolBySlug("MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE");
+console.log(tool.scopes);
+```
+
+#### API
 
 ```bash
-curl --globoff 'https://backend.composio.dev/api/v3.1/tools/MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE' \
-  -H 'x-api-key: <key>'
+curl --globoff 'https://backend.composio.dev/api/v3.1/tools/MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE?toolkit_versions%5Bmicrosoft_teams%5D=latest' \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+
+<!-- end-languages -->
 
 Expected clean response includes `ChannelMessage.Read.All`, not `ChannelMessage.Read.Group`.
 

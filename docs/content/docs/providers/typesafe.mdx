@@ -9,7 +9,7 @@ The TypeSafe provider lets [Jev](https://docs.typesafe.ai/introduction) choose a
 
 ## Install
 
-<Tabs items={['Python', 'TypeScript']}>
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
 <PackageInstall packages="composio composio-typesafe typesafe-sdk==0.6.0" ecosystem="python" />
@@ -37,7 +37,8 @@ export TYPESAFE_API_KEY="your-typesafe-key"
 
 Fetch the tools you want Jev to choose between, then pass a request to `decide`. These Hacker News tools need no connected account.
 
-<Tabs items={['Python', 'TypeScript']}>
+{/* code-example: no-api reason="TypeSafe provider decide() selects tools with the Jev model in the SDK; no Composio REST equivalent" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
 ```python

@@ -35,15 +35,49 @@ Project management endpoints use the `x-org-api-key` header, not the regular `x-
 
 There is no limit on the number of projects per organization. Project names must be unique within the organization. Create a project with `should_create_api_key: true` to get an API key back in the response:
 
+The Python SDK also needs `COMPOSIO_API_KEY` to initialize. Its generated organization client selects the organization key for this operation.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"])
+project = composio.client.org.owner.project.create(
+    name="my-staging-project",
+    should_create_api_key=True,
+)
+print(project)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: null,
+  orgApiKey: process.env.COMPOSIO_ORG_API_KEY,
+});
+const project = await composio.getClient().post<unknown>('/api/v3.1/org/owner/project/new', {
+  body: { name: 'my-staging-project', should_create_api_key: true },
+});
+console.log(project);
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/org/owner/project/new \
-  -H "x-org-api-key: YOUR_ORG_API_KEY" \
+  -H "x-org-api-key: $COMPOSIO_ORG_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my-staging-project",
     "should_create_api_key": true
   }'
 ```
+</Tab>
+</Tabs>
 
 ```json
 {

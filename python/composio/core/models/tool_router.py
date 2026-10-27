@@ -1200,8 +1200,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                     "`experimental={'session_config_id': ...}`; create the session "
                     "from the saved config and add hooks in a separate update() call"
                 )
-            # The generated client has no typed parameter for ``hooks`` yet.
-            create_params["extra_body"] = {"hooks": hooks}
+            create_params["hooks"] = hooks
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {

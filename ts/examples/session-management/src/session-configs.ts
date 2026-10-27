@@ -80,10 +80,12 @@ async function expectStatus(status: number, run: () => Promise<unknown>): Promis
 
 /** The saved policy uses enable/disable; the session snapshot uses enabled/disabled. */
 function toolkitsAsSnapshot(policy: SessionConfigPolicy): unknown {
-  if (!policy.toolkits) return undefined;
-  return 'enable' in policy.toolkits
-    ? { enabled: policy.toolkits.enable }
-    : { disabled: policy.toolkits.disable };
+  const toolkits = policy.toolkits;
+  if (!toolkits) return undefined;
+  if ('enable' in toolkits) return { enabled: toolkits.enable };
+  if ('disable' in toolkits) return { disabled: toolkits.disable };
+  // An approval-only policy filters no toolkit.
+  return undefined;
 }
 
 function sameToolkits(actual: unknown, expected: unknown): boolean {

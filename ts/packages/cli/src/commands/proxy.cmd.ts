@@ -9,6 +9,7 @@ import { ExpectedFailure } from 'src/effects/expected-failure';
 import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
+import { gateToolExecution } from 'src/services/tool-permissions';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
@@ -351,16 +352,26 @@ export const proxyCmd = Command.make('proxy', {
                 selector: account,
               })
             : undefined;
-          const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
-            toolkits: [normalizedToolkit],
-            connectedAccounts: selectedConnectedAccountId
-              ? { [normalizedToolkit]: selectedConnectedAccountId }
-              : undefined,
-            cacheScope: {
-              orgId: resolvedProject.orgId,
-              projectId: resolvedProject.projectId,
-              consumerUserId,
-            },
+          const { sessionId, permissionSnapshot, connectedAccounts, connectedAccountWordIds } =
+            yield* resolveToolRouterSession(client, consumerUserId, {
+              toolkits: [normalizedToolkit],
+              connectedAccounts: selectedConnectedAccountId
+                ? { [normalizedToolkit]: selectedConnectedAccountId }
+                : undefined,
+              cacheScope: {
+                orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
+                consumerUserId,
+              },
+            });
+
+          // Same consumer permission gate as `composio execute`, checked against
+          // the account the session will use (explicit `--account` or default).
+          yield* gateToolExecution({
+            toolSlug: normalizedToolkit,
+            connectedAccountId: connectedAccounts?.[normalizedToolkit],
+            connectedAccountWordId: connectedAccountWordIds?.[normalizedToolkit],
+            snapshot: permissionSnapshot,
           });
 
           const failed = (cause: unknown) =>
@@ -386,18 +397,29 @@ export const proxyCmd = Command.make('proxy', {
             )
             .pipe(
               Effect.mapError(failed),
-              Effect.flatMap(response =>
-                response.result_type === 'input_required'
-                  ? Effect.fail(
-                      failed(
-                        toolInputRequiredError(
-                          `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
-                          response
-                        )
+              Effect.flatMap(response => {
+                if (response.result_type === 'input_required') {
+                  return Effect.fail(
+                    failed(
+                      toolInputRequiredError(
+                        `${normalizedMethod} proxy call via "${normalizedToolkit}"`,
+                        response
                       )
                     )
-                  : Effect.succeed(response)
-              ),
+                  );
+                }
+                // A session hook blocked the request: there is no HTTP
+                // response to print, only the hook's message.
+                if (response.result_type === 'blocked') {
+                  return Effect.fail(
+                    new ProxyRequestError({
+                      message: `${normalizedMethod} proxy call via "${normalizedToolkit}" was blocked by session hook "${response.reason.hook_id}": ${response.message}`,
+                      cause: response.reason,
+                    })
+                  );
+                }
+                return Effect.succeed(response);
+              }),
               Effect.matchEffect({
                 onFailure: error =>
                   handleProxyExecutionError({

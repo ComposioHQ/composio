@@ -23,13 +23,13 @@ For a profile lookup during onboarding, use the proxy with the exact connected a
 
 ## Quick start
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
-session = composio.create("user_123", toolkits=["github"])
+session = composio.create(user_id="user_123", toolkits=["github"])
 
 response = session.proxy_execute(
     toolkit="github",
@@ -40,8 +40,12 @@ response = session.proxy_execute(
     ],
 )
 
-print(response["status"])
-print(response["data"])
+# A session hook can block the request; only a completed result has a response.
+if response["result_type"] == "completed":
+    print(response["status"])
+    print(response["data"])
+else:
+    print(response["message"])
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -50,7 +54,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create('user_123', { toolkits: ['github'] });
 // ---cut---
-const { status, data } = await session.proxyExecute({
+const response = await session.proxyExecute({
   toolkit: 'github',
   endpoint: '/repos/composiohq/composio/issues/1',
   method: 'GET',
@@ -59,8 +63,32 @@ const { status, data } = await session.proxyExecute({
   ],
 });
 
-console.log(status);
-console.log(data);
+if (response.resultType === 'completed') {
+  console.log(response.status);
+  console.log(response.data);
+} else {
+  console.log(response.message);
+}
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github"]}}' | jq -r '.session_id')
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit_slug": "github",
+    "endpoint": "/repos/composiohq/composio/issues/1",
+    "method": "GET",
+    "parameters": [
+      {"name": "Accept", "value": "application/vnd.github.v3+json", "type": "header"}
+    ]
+  }'
 ```
 </Tab>
 </Tabs>
@@ -79,13 +107,13 @@ Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the 
 
 Set `proxyExecute: true` (`proxy_execute=True` in Python) when creating a Session to expose the `COMPOSIO_PROXY_EXECUTE` meta tool:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
-session = composio.create("user_123", toolkits=["github"], proxy_execute=True)
+session = composio.create(user_id="user_123", toolkits=["github"], proxy_execute=True)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -97,6 +125,14 @@ const session = await composio.create("user_123", {
   toolkits: ["github"],
   proxyExecute: true,
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github"]}, "proxy_execute": {"enable": true}}'
 ```
 </Tab>
 </Tabs>
@@ -115,13 +151,13 @@ Proxy execute follows the session's toolkit lists: a call for a toolkit outside 
 
 Hint filters and per-toolkit tool rules do not apply, because a proxy request names an endpoint, not a tool. To remove the raw HTTP path from the session's sandbox, turn proxy execution off in the sandbox config:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-session = composio.sessions.create(
+session = composio.create(
     user_id="user_123",
     tags=["readOnlyHint"],
-    sandbox={"enable_proxy_execution": False}
+    sandbox={"enable": True, "enable_proxy_execution": False},
 )
 ```
 </Tab>
@@ -134,6 +170,18 @@ const session = await composio.create("user_123", {
   tags: ["readOnlyHint"],
   sandbox: { enable: true, enableProxyExecution: false },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tags": {"enable": ["readOnlyHint"]},
+    "workbench": {"enable": true, "enable_proxy_execution": false}
+  }'
 ```
 </Tab>
 </Tabs>
@@ -150,9 +198,11 @@ const session = await composio.create("user_123", {
 
 ## Response shape
 
-The call forwards the upstream response's status, headers, and parsed body.
-Both SDKs expose the same fields; each spells them the way its language does, so
-TypeScript reads them as properties and Python as dictionary keys.
+Check `resultType` (`result_type` in Python) before reading HTTP response fields.
+A `completed` result forwards the upstream response's status, headers, and parsed body.
+Both SDKs expose the same fields; TypeScript uses properties and Python uses dictionary keys.
+
+A session hook can return `blocked` with a `message` and `blockReason` (`block_reason` in Python) instead of an HTTP response. The block reason's `type` is `request_blocked` if the request was stopped before execution, or `response_blocked` if the request ran but its response was withheld. A blocked result has no `status`, `data`, `headers`, or binary data.
 
 | TypeScript | Python | Type | Description |
 |---|---|---|---|
@@ -167,7 +217,7 @@ When the upstream returns a file, the binary entry carries `url`, `contentType`,
 Python when the upstream gives no expiry. The key is absent entirely when the
 response is not a file, so check for it before reading:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 if "binary_data" in response:
@@ -185,9 +235,19 @@ const response = await session.proxyExecute({
   method: 'GET',
 });
 // ---cut---
-if (response.binaryData) {
+if (response.resultType === 'completed' && response.binaryData) {
   console.log(response.binaryData.url);
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit_slug": "github", "endpoint": "/repos/composiohq/composio/issues/1", "method": "GET"}' \
+  | jq -r '.binary_data.url // empty'
 ```
 </Tab>
 </Tabs>
@@ -198,7 +258,7 @@ Don't set the `Authorization` header yourself through `parameters`. Composio inj
 
 ## Error handling
 
-`status` and `data` reflect exactly what the toolkit API returned, so check `status` and branch on the common failures.
+For completed results, `status` and `data` reflect what the toolkit API returned. Check `status` and branch on the common failures.
 
 If the call needs user input before it can run, the SDK raises `ToolInputRequiredError` in Python or `ComposioToolInputRequiredError` in TypeScript instead of returning an HTTP response. Nothing was executed. See [Handling requests for user input](/docs/how-composio-works#handling-requests-for-user-input) for the error fields and continuation state.
 
