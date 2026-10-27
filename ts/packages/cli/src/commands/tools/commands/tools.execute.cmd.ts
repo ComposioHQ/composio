@@ -134,12 +134,12 @@ const invalidArguments = commandInputError('execute');
 // union from scattered constructor calls, so a new reason is added here next to its first use.
 
 /**
- * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
- * id to run it for, or (with `--parallel`) a toolkit the user has not connected. An expected
+ * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, or (with
+ * `--parallel`) a toolkit the user has not connected. An expected
  * failure: `cli-main.ts` prints the message and exits 1.
  */
 export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
-  readonly reason: 'file_input' | 'missing_user_id' | 'connection_check';
+  readonly reason: 'file_input' | 'connection_check';
   readonly message: string;
   readonly toolSlug?: string;
 }> {
@@ -875,19 +875,7 @@ const resolveExecuteContext = (
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
-    const { userId: resolvedUserId, project: resolvedProject } = yield* user.pipe(
-      // C2: fail with MissingActingUserError itself; this keeps the `ToolExecutionError` tag
-      // that `cli.command.failed` reports as `error_name`.
-      Effect.catchTag('commands/MissingActingUserError', error =>
-        Effect.fail(
-          new ToolExecutionError({
-            reason: 'missing_user_id',
-            toolSlug: params.slug,
-            message: error.message,
-          })
-        )
-      )
-    );
+    const { userId: resolvedUserId, project: resolvedProject } = yield* user;
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,

@@ -125,13 +125,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         : undefined;
 
     const runSearchRequest = Effect.gen(function* () {
-      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
-        // C2: fail with MissingActingUserError itself; this keeps the `CommandInputError` tag
-        // that `cli.command.failed` reports as `error_name`.
-        Effect.catchTag('commands/MissingActingUserError', error =>
-          Effect.fail(invalidSearchInput(error.message, '--user-id'))
-        )
-      );
+      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser();
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,

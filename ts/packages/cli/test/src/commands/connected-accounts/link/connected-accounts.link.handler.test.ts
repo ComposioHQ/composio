@@ -649,8 +649,7 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
         ).pipe(Effect.flip, Effect.provide(layer));
 
         expect(error).toMatchObject({
-          _tag: 'commands/MissingLinkUserIdError',
-          flow: 'list',
+          _tag: 'commands/MissingActingUserError',
           message:
             'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
         });
@@ -711,8 +710,7 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
       ).pipe(Effect.flip, Effect.provide(layer));
 
       expect(error).toMatchObject({
-        _tag: 'commands/MissingLinkUserIdError',
-        flow: 'legacy',
+        _tag: 'commands/MissingActingUserError',
         message:
           'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
       });

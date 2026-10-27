@@ -12,10 +12,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
 import { idempotent } from 'src/services/composio-request';
-import {
-  ConnectionsRemovalRequestError,
-  MissingConnectionRemovalConsumerUserIdError,
-} from './connections.remove.errors';
+import { ConnectionsRemovalRequestError } from './connections.remove.errors';
 
 /** The flags of `composio connections remove`. */
 export type ConnectionsRemoveParams = {
@@ -105,13 +102,7 @@ export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) 
       return yield* invalidInput(NEEDS_YES_MESSAGE, '--yes');
     }
     const clientSingleton = yield* ComposioClientSingleton;
-    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser().pipe(
-      // C2: fail with MissingActingUserError itself, an expected failure; this keeps the
-      // defect this command failed with and its `cli.command.failed` `error_name`.
-      Effect.catchTag('commands/MissingActingUserError', error =>
-        Effect.fail(new MissingConnectionRemovalConsumerUserIdError({ message: error.message }))
-      )
-    );
+    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
 
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,

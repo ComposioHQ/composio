@@ -26,6 +26,19 @@
 
 ### Patch Changes
 
+- `composio connections list`, `composio connections remove`, and
+  `composio listen` without a consumer user now print the message on stderr
+  and exit 1, like other expected errors. They used to print it under a `💥`
+  banner with the error tag and a stack location. Telemetry: every missing-user
+  failure now reports `error_name` `commands/MissingActingUserError` in
+  `cli.command.failed` and the command-family failure events, replacing
+  `ToolExecutionError` (execute), `commands/CommandInputError` (search),
+  `commands/MissingLinkUserIdError` (link),
+  `commands/MissingConnectionsConsumerUserIdError` (connections list),
+  `commands/MissingConnectionRemovalConsumerUserIdError` (connections remove),
+  `commands/ListenCommandError` (listen), and `commands/ProxyCommandError`
+  (proxy). Other failures of those commands keep their names.
+
 - Every `composio dev` command that acts as a user now names the test user it
   falls back to on stderr (`Using test user id "…"` for the directory's,
   `Using global test user id "…"` for the global one) when you pass no

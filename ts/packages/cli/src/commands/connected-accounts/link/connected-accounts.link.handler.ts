@@ -2,12 +2,7 @@ import { Effect, Match, Option, Schedule, pipe } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { commandInputError } from 'src/commands/errors';
-import {
-  actingUser,
-  CommandSurface,
-  type CommandTree,
-  type MissingActingUserError,
-} from 'src/commands/surface';
+import { actingUser, CommandSurface, type CommandTree } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { failedWith } from 'src/effects/request-error';
@@ -35,7 +30,6 @@ import {
   ConnectedAccountsDecodeError,
   ConnectedAccountsRequestError,
   ConnectionPollingError,
-  MissingLinkUserIdError,
 } from './connected-accounts.link.errors';
 import {
   AUTH_CONFIG_SCOPE_MESSAGE,
@@ -102,13 +96,6 @@ const consumerScope = (project: ResolvedCommandProject) =>
       consumerUserId,
     }))
   );
-
-/**
- * C2: fail with `MissingActingUserError` itself. This keeps the tag `cli.command.failed`
- * reports as `error_name`, and the one the handler tests match.
- */
-const missingLinkUserId = (flow: LinkFlow) => (error: MissingActingUserError) =>
-  Effect.fail(new MissingLinkUserIdError({ message: error.message, flow }));
 
 /** The directory's project keys, or none when the directory is not initialized or unreadable. */
 const directoryProject = Effect.gen(function* () {
@@ -406,9 +393,7 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
     const toolkitSlug = params.toolkit.value;
 
     const clientSingleton = yield* ComposioClientSingleton;
-    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
-      Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('list'))
-    );
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser();
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
 
     const accounts = yield* ui.withSpinner(
@@ -483,9 +468,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
         invalidOptionValueFor(tree)(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config')
       );
     }
-    const acting = yield* actingUser().pipe(
-      Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('legacy'))
-    );
+    const acting = yield* actingUser();
     const { userId: resolvedUserId, project: resolvedProject } = acting;
 
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
@@ -569,9 +552,7 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
 
     const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const clientSingleton = yield* ComposioClientSingleton;
-    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser().pipe(
-      Effect.catchTag('commands/MissingActingUserError', missingLinkUserId('tool-router'))
-    );
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser();
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
     const existingAccounts = yield* existingAccountsForHints({
       client,

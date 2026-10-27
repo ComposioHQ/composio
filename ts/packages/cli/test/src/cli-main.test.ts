@@ -672,7 +672,7 @@ describe('expected failures without the crash banner', () => {
       ],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'ProxyCommandError',
+      tag: 'MissingActingUserError',
       message: ROOT_MISSING_USER,
     },
     // An empty consumer user id is no user; these commands used to act as the user "", and
@@ -682,7 +682,7 @@ describe('expected failures without the crash banner', () => {
       args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'ToolExecutionError',
+      tag: 'MissingActingUserError',
       message: ROOT_MISSING_USER,
     },
     {
@@ -690,7 +690,7 @@ describe('expected failures without the crash banner', () => {
       args: ['search', 'send an email'],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'CommandInputError',
+      tag: 'MissingActingUserError',
       message: ROOT_MISSING_USER,
     },
     {
@@ -698,7 +698,32 @@ describe('expected failures without the crash banner', () => {
       args: ['link', 'gmail', '--no-wait'],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'MissingLinkUserIdError',
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // These printed the defect banner for a missing consumer user.
+    {
+      name: '`connections list` without a consumer user',
+      args: ['connections', 'list'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`connections remove` without a consumer user',
+      args: ['connections', 'remove', 'gmail', '--yes'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`listen` without a consumer user',
+      args: ['listen', 'GMAIL_NEW_GMAIL_MESSAGE'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
       message: ROOT_MISSING_USER,
     },
   ])(
