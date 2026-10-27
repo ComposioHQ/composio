@@ -131,8 +131,9 @@ export const commandMetaOf = (command: Command.Command.Any): CommandMetaShape =>
 
 /**
  * Adds `meta` to what `self` already declares in its `CommandMeta` annotation; a hook policy
- * replaces only that hook's, and a shared-flag declaration only that flag's. `withCommandMeta({ requiresLogin: true })` makes a command, or a
- * group entry and every subcommand under it, require a logged-in user.
+ * replaces only that hook's, and a shared-flag declaration only that flag's.
+ * `withCommandMeta({ requiresLogin: true })` makes a command, or a group entry and every
+ * subcommand under it, require a logged-in user.
  */
 export const withCommandMeta =
   (meta: CommandMetaShape) =>
