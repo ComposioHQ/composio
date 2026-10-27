@@ -13,15 +13,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-support-knowledge-refresh
-  cancel-in-progress: true
+  # Shared with portal publications so neither snapshots an outdated KB.
+  group: docs-kb-publication
+  cancel-in-progress: false
+  queue: max
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
+      docs_base_sha: ${{ steps.docs-base.outputs.sha }}
       changed: ${{ steps.rebuild.outputs.changed }}
       upstream_changed: ${{ steps.source.outputs.upstream_changed }}
       commit: ${{ steps.source.outputs.commit }}
@@ -30,6 +34,31 @@ jobs:
         working-directory: ./docs
 
     steps:
+      # A finished workflow may still have a PR waiting on checks or review.
+      # Wait before checkout so each approval starts from the preceding merge.
+      - name: Wait for earlier KB publications
+        timeout-minutes: 31
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PUBLISH_BRANCH: docs/auto-update-kb
+        run: |
+          for ((attempt = 1; attempt <= 60; attempt++)); do
+            pending=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=next&per_page=100" \
+              --jq '.[] | select(.head.repo.full_name == env.GH_REPO) | select(.head.ref == "docs/auto-update-kb" or (.head.ref | startswith("docs/kb-front-desk-"))) | select(.head.ref != env.PUBLISH_BRANCH) | .html_url')
+            if [ -z "$pending" ]; then
+              exit 0
+            fi
+            echo "Waiting for earlier KB publications to merge or close:"
+            echo "$pending"
+            if [ "$attempt" -lt 60 ]; then
+              sleep 30
+            fi
+          done
+          echo "Earlier KB publications are still open. Merge or close them, then rerun this workflow." >&2
+          exit 1
+
       # If the app has no installation on support-knowledge, this fails
       # with 404. Degrade to an upstream-sync skip instead of killing the
       # whole job: the stale-artifact rebuild below needs only this repo.
@@ -47,7 +76,14 @@ jobs:
       - name: Checkout docs repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: next
           persist-credentials: false
+
+      - name: Record docs base
+        id: docs-base
+        run: |
+          docs_base_sha=$(git rev-parse HEAD)
+          echo "sha=$docs_base_sha" >> "$GITHUB_OUTPUT"
 
       - name: Checkout support knowledge
         if: steps.upstream-token.outcome == 'success'
@@ -151,6 +187,8 @@ jobs:
       - name: Checkout docs repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Apply the artifacts relative to the exact tree that produced them.
+          ref: ${{ needs.refresh.outputs.docs_base_sha }}
           persist-credentials: false
 
       - name: Download verified KB artifacts
