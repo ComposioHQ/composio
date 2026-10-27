@@ -516,6 +516,7 @@ _MIME_TO_EXT: t.Dict[str, str] = {
     "text/plain": "txt",
     "text/html": "html",
     "text/css": "css",
+    "text/csv": "csv",
     "text/javascript": "js",
     "application/json": "json",
     "application/xml": "xml",

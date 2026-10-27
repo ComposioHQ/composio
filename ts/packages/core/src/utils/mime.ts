@@ -7,6 +7,7 @@ export function getExtensionFromMimeType(mimeType: string): string {
     'text/plain': 'txt',
     'text/html': 'html',
     'text/css': 'css',
+    'text/csv': 'csv',
     'text/javascript': 'js',
     'application/json': 'json',
     'application/xml': 'xml',
