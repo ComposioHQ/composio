@@ -12,8 +12,8 @@ export interface HookInvocation {
 }
 
 /**
- * A hook `cli-main.ts` runs once per invocation, before the command. Its output goes to stderr;
- * it fails the invocation only with the errors `E` names.
+ * A hook the invocation (`src/invocation/invocation.ts`) runs once, before the command. Its
+ * output goes to stderr; it fails the invocation only with the errors `E` names.
  */
 export interface InvocationHookShape<E = never> {
   readonly run: (invocation: HookInvocation) => Effect.Effect<void, E>;

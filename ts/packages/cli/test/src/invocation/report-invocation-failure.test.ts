@@ -2,8 +2,8 @@ import { describe, expect, it } from '@effect/vitest';
 import { Cause, Console, Effect, Exit, Layer } from 'effect';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { reportUnreportedCause } from 'src/cli-main';
 import { ReportedFailure } from 'src/effects/report-failure';
+import { reportInvocationFailure } from 'src/invocation/invocation';
 import { MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
@@ -18,7 +18,7 @@ const TestLayer = Layer.mergeAll(
 
 const report = (cause: Cause.Cause<unknown>) =>
   Effect.gen(function* () {
-    const exit = yield* Effect.exit(reportUnreportedCause(cause));
+    const exit = yield* Effect.exit(reportInvocationFailure(cause));
     const stderr = yield* MockConsole.getLines({ stream: 'stderr' });
     return { exit, stderr };
   }).pipe(Effect.provide(TestLayer));
@@ -26,7 +26,7 @@ const report = (cause: Cause.Cause<unknown>) =>
 const failureOf = (exit: Exit.Exit<unknown, unknown>) =>
   Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
 
-describe('reportUnreportedCause', () => {
+describe('reportInvocationFailure', () => {
   it.effect('[Given] an interruption alone [Then] it stays an interruption and exits 130', () =>
     Effect.gen(function* () {
       const { exit, stderr } = yield* report(Cause.interrupt());
@@ -51,9 +51,11 @@ describe('reportUnreportedCause', () => {
 
   it.effect('[Given] an unreported defect [Then] it is printed once and exits 1', () =>
     Effect.gen(function* () {
-      const { exit, stderr } = yield* report(Cause.die(new Error('boom')));
+      const defect = new Error('boom');
 
-      expect(failureOf(exit)).toBeInstanceOf(ReportedFailure);
+      const { exit, stderr } = yield* report(Cause.die(defect));
+
+      expect(failureOf(exit)).toBe(defect);
       expect(exitCodeOf(exit)).toBe(1);
       expect(stderr).toHaveLength(1);
       expect(stderr[0]).toContain('boom');
