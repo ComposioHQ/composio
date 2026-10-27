@@ -7,7 +7,7 @@ import {
 import { failedWith, requestError } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import {
   getConnectedAccountPermissionGroup,
@@ -78,16 +78,13 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const toolkitSlug = Option.getOrUndefined(toolkit);
-    const resolvedProject = yield* resolveCommandProject({
-      mode: 'consumer',
-    });
-
-    const consumerUserId = resolvedProject.consumerUserId;
-    if (!consumerUserId) {
-      return yield* new MissingConnectionsConsumerUserIdError({
-        message: 'Missing consumer user id. Run `composio login` and try again.',
-      });
-    }
+    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser().pipe(
+      // C2: fail with MissingActingUserError itself, an expected failure; this keeps the
+      // defect this command failed with and its `cli.command.failed` `error_name`.
+      Effect.catchTag('commands/MissingActingUserError', error =>
+        Effect.fail(new MissingConnectionsConsumerUserIdError({ message: error.message }))
+      )
+    );
 
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,

@@ -7,7 +7,6 @@ import {
   type ProjectMode,
   type ResolvedCommandProject,
 } from 'src/services/command-project';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 
@@ -55,24 +54,6 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
       projectName: Option.getOrUndefined(surface.projectName),
     });
   });
-
-/**
- * The developer project the `dev` group's `--project-name` names, with its client, or none when
- * the flag is absent and the command keeps the directory's project and its default client.
- */
-export const namedProject = Effect.gen(function* () {
-  const surface = yield* CommandSurface;
-  if (Option.isNone(surface.projectName)) {
-    return Option.none();
-  }
-  const project = yield* resolveSurfaceProject('developer');
-  const clientSingleton = yield* ComposioClientSingleton;
-  const client = yield* clientSingleton.getFor({
-    orgId: project.orgId,
-    projectId: project.projectId,
-  });
-  return Option.some({ projectId: project.projectId, client });
-});
 
 // --- acting user ------------------------------------------------------------------------------
 
@@ -140,7 +121,7 @@ export interface ActingUserOptions {
  * borrow it, so the command falls back to the global test user; `namedProjectId` is the id of
  * the project `--project-name` resolved to, or none without the flag.
  */
-export const directoryTestUserId = (
+const directoryTestUserId = (
   directoryProject: Option.Option<{
     readonly projectId: string;
     readonly testUserId: Option.Option<string>;

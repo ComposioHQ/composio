@@ -1,13 +1,16 @@
 import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import { Array as Arr, Effect, Option } from 'effect';
-import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
+import {
+  actingUserOption,
+  devActingUser,
+  fallbackNotice,
+  type ActingUser,
+} from 'src/commands/surface';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
-import { ProjectContext } from 'src/services/project-context';
 import { reportFailure } from 'src/effects/report-failure';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import {
@@ -31,25 +34,28 @@ export type ToolkitsListUser = {
   readonly fallbackNotice: Option.Option<string>;
 };
 
+const toolkitsListUser = (user: Omit<ActingUser, 'project'>): ToolkitsListUser => ({
+  id: user.userId,
+  fallbackNotice: fallbackNotice(user),
+});
+
 /**
- * The `dev` group's `--user-id`, then the directory's test user id, then the global one.
+ * The `dev` group's `--user-id`, then the directory's test user id, then the global one: the
+ * acting-user rule (`devActingUser`) over given candidates.
  */
 export const resolveToolkitsListUser = (candidates: {
   readonly flag: Option.Option<string>;
   readonly projectTestUserId: Option.Option<string>;
   readonly globalTestUserId: Option.Option<string>;
 }): Option.Option<ToolkitsListUser> =>
-  Option.firstSomeOf([
-    Option.map(candidates.flag, id => ({ id, fallbackNotice: Option.none<string>() })),
-    Option.map(candidates.projectTestUserId, id => ({
-      id,
-      fallbackNotice: Option.some(`Using test user id "${id}"`),
-    })),
-    Option.map(candidates.globalTestUserId, id => ({
-      id,
-      fallbackNotice: Option.some(`Using global test user id "${id}"`),
-    })),
-  ]);
+  Option.map(
+    devActingUser({
+      flag: candidates.flag,
+      directoryTestUserId: candidates.projectTestUserId,
+      globalTestUserId: candidates.globalTestUserId,
+    }),
+    toolkitsListUser
+  );
 
 /**
  * Applies `--connected` to the merged rows. The filter needs the session's connection data; when a
@@ -76,29 +82,26 @@ export const applyConnectedFilter = (
  */
 export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams) =>
   Effect.gen(function* () {
-    const { userId } = yield* CommandSurface;
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
     const clientSingleton = yield* ComposioClientSingleton;
-    const projectContext = yield* ProjectContext;
-    const userContext = yield* ComposioUserContext;
 
     const clampedLimit = clampLimit(limit);
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const project = yield* namedProject;
-    const resolvedProjectContext = yield* projectContext.resolve;
-    const user = resolveToolkitsListUser({
-      flag: userId,
-      projectTestUserId: directoryTestUserId(
-        resolvedProjectContext,
-        Option.map(project, named => named.projectId)
-      ),
-      globalTestUserId: userContext.data.testUserId,
-    });
+    const acting = yield* actingUserOption();
+    const user = Option.map(acting, toolkitsListUser);
+    // The client of the project --project-name names; none keeps the default client.
+    const namedClient = yield* Effect.transposeOption(
+      Option.map(
+        Option.flatMap(acting, found => found.project),
+        project => clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
+      )
+    );
 
-    const fallbackNotice = Option.flatMap(user, resolved => resolved.fallbackNotice);
-    if (Option.isSome(fallbackNotice)) {
-      yield* ui.log.warn(fallbackNotice.value);
+    // C2: `actingUser` prints the notice for every command.
+    const notice = Option.flatMap(user, resolved => resolved.fallbackNotice);
+    if (Option.isSome(notice)) {
+      yield* ui.log.warn(notice.value);
       yield* ui.log.message('To show status for a specific user, use `--user-id`.');
     }
 
@@ -119,8 +122,8 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
       onNone: () => Effect.succeedNone,
       onSome: resolved =>
         Effect.gen(function* () {
-          const client = yield* Option.match(project, {
-            onSome: named => Effect.succeed(named.client),
+          const client = yield* Option.match(namedClient, {
+            onSome: Effect.succeed,
             onNone: () => clientSingleton.get(),
           });
           const { sessionId } = yield* resolveToolRouterSession(client, resolved.id);
