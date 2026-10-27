@@ -60,8 +60,8 @@ export interface CommandMetaShape {
   /**
    * Which of the `dev` group's shared flags the command can honor. Every one can unless the
    * command, or a group above it, says `false`; inherited per flag. A flag the command cannot
-   * honor fails with `CommandInputError` right after the command began, naming the registration
-   * that declared it (`src/commands/registration.ts`), instead of being accepted and ignored.
+   * honor fails with `CommandInputError` right after the command began, naming the command that
+   * ran (`src/commands/registration.ts`), instead of being accepted and ignored.
    */
   readonly sharedFlags?: Partial<Readonly<Record<SharedFlagName, boolean>>>;
 }
@@ -75,11 +75,8 @@ export interface ResolvedCommandMeta {
   readonly telemetryFamily: TelemetryFamily;
   readonly requiresLogin: boolean;
   readonly hooks: Readonly<Record<InvocationHookName, HookPolicy>>;
-  /**
-   * For each shared flag the command cannot honor, the command path of the registration that
-   * declared so: itself, or the group above it whose subcommands inherit it.
-   */
-  readonly unsupportedSharedFlags: Partial<Readonly<Record<SharedFlagName, ReadonlyArray<string>>>>;
+  /** The shared flags the command cannot honor, declared on itself or on a group above it. */
+  readonly unsupportedSharedFlags: ReadonlyArray<SharedFlagName>;
 }
 
 const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
@@ -91,28 +88,20 @@ const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
 
 const SHARED_FLAG_NAMES: ReadonlyArray<SharedFlagName> = ['userId', 'projectName'];
 
-/**
- * Resolves what a command registered at `path` declares (`own`) under a parent registration's
- * resolved meta.
- */
+/** Resolves what a command declares (`own`) under a parent registration's resolved meta. */
 export const resolveCommandMeta = (
   parent: ResolvedCommandMeta | undefined,
-  own: CommandMetaShape,
-  path: ReadonlyArray<string> = []
+  own: CommandMetaShape
 ): ResolvedCommandMeta => ({
   telemetryFamily: own.telemetryFamily ?? 'command',
   requiresLogin: own.requiresLogin ?? parent?.requiresLogin ?? false,
   hooks: { ...(parent?.hooks ?? EVERY_HOOK), ...own.hooks },
-  unsupportedSharedFlags: Object.fromEntries(
-    SHARED_FLAG_NAMES.flatMap(flag => {
-      const declared = own.sharedFlags?.[flag];
-      if (declared === undefined) {
-        const inherited = parent?.unsupportedSharedFlags[flag];
-        return inherited === undefined ? [] : [[flag, inherited]];
-      }
-      return declared ? [] : [[flag, path]];
-    })
-  ),
+  unsupportedSharedFlags: SHARED_FLAG_NAMES.filter(flag => {
+    const declared = own.sharedFlags?.[flag];
+    return declared === undefined
+      ? (parent?.unsupportedSharedFlags.includes(flag) ?? false)
+      : !declared;
+  }),
 });
 
 /** Whether `hook` runs for a command with `meta`, given the input `effect/cli` parsed for it. */
@@ -168,7 +157,7 @@ export const childIdentity = (
   child: Command.Command.Any
 ): CommandIdentity => {
   const path = [...parent.path, child.name];
-  return { path, meta: resolveCommandMeta(parent.meta, commandMetaOf(child), path) };
+  return { path, meta: resolveCommandMeta(parent.meta, commandMetaOf(child)) };
 };
 
 /** The command path as telemetry records it: the names joined by spaces, `composio` for the root. */

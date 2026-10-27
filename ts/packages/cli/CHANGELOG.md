@@ -61,9 +61,11 @@
   `composio dev toolkits list`, as `composio tools list` does.
 
 - A `composio dev` command that cannot honor `--user-id` or `--project-name`
-  now rejects it before checking that you are logged in, with the same
-  message, and telemetry records the failure against the command you ran
-  (`dev logs tools`) instead of its group (`dev logs`).
+  now rejects it before checking that you are logged in, and the message names
+  the exact subcommand you ran instead of the group that declared the
+  restriction: `composio dev logs tools --project-name x` now names
+  `composio dev logs tools`, where it named `composio dev logs`. Telemetry
+  records the failure against that subcommand too.
 
 - CLI telemetry now records a command that prints its own
   failure and exits 1 (a failed API request, an alias conflict on

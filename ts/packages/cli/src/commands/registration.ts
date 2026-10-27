@@ -32,7 +32,7 @@ const beginSelected = (input: unknown) =>
     const identity = yield* CommandRegistration;
     const invocation = yield* CommandInvocation;
     yield* invocation.begin(identity, Option.some(input));
-    yield* rejectUnsupportedSharedFlags(identity.meta);
+    yield* rejectUnsupportedSharedFlags(identity);
     if (identity.meta.requiresLogin) {
       yield* assertLoggedIn;
     }

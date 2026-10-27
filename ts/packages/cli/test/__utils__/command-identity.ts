@@ -8,4 +8,4 @@ import {
 export const commandIdentity = (
   path: ReadonlyArray<string>,
   meta: CommandMetaShape = {}
-): CommandIdentity => ({ path, meta: resolveCommandMeta(undefined, meta, path) });
+): CommandIdentity => ({ path, meta: resolveCommandMeta(undefined, meta) });
