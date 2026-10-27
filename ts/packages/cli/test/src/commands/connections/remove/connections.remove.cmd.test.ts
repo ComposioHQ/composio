@@ -288,6 +288,52 @@ describe('CLI: composio connections remove', () => {
         expect(process.exitCode).toBeUndefined();
       })
     );
+
+    it.effect(
+      '[Given] --yes and a selector that matches several connections [Then] removes nothing and fails with a usage error',
+      () =>
+        Effect.gen(function* () {
+          headlessDeleteCalls.length = 0;
+
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          const failure = yield* cli(['connections', 'remove', 'github', '--yes']).pipe(
+            Effect.flip
+          );
+
+          // `cli-main.ts` prints the message on stderr and exits 1.
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'connections remove',
+            option: '<account>',
+            message: expect.stringContaining('Multiple connections matched "github"'),
+          });
+          expect(headlessDeleteCalls).toEqual([]);
+        })
+    );
+
+    it.effect(
+      '[Given] --yes and a selector that matches no connection [Then] removes nothing and fails with a usage error',
+      () =>
+        Effect.gen(function* () {
+          headlessDeleteCalls.length = 0;
+
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          const failure = yield* cli(['connections', 'remove', 'nothing-matches', '-y']).pipe(
+            Effect.flip
+          );
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'connections remove',
+            option: '<account>',
+            message:
+              'No connection matched "nothing-matches". Run `composio connections list` to inspect available connections.',
+          });
+          expect(headlessDeleteCalls).toEqual([]);
+        })
+    );
   });
 
   const interactiveYesDeleteCalls: string[] = [];
