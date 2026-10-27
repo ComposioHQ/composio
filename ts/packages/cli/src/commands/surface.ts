@@ -1,7 +1,7 @@
 import { Array as Arr, Context, Data, Effect, Layer, Option, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
-import type { ResolvedCommandMeta, SharedFlagName } from 'src/invocation/command-identity';
+import type { CommandIdentity, SharedFlagName } from 'src/invocation/command-identity';
 import {
   resolveCommandProject,
   type ProjectMode,
@@ -288,17 +288,17 @@ export const rejectSharedFlags = (command: string, messages: Record<SharedFlag, 
 
 /**
  * Fails with a `CommandInputError` when the surface carries a shared flag the selected command
- * cannot honor (`CommandMeta.sharedFlags`), naming the registration that declared so. Without it
- * the flag would be accepted and ignored. The registration runs it right after the command began
- * (`src/commands/registration.ts`).
+ * cannot honor (`CommandMeta.sharedFlags`), naming the command that ran even when a group above
+ * it declared so. Without it the flag would be accepted and ignored. The registration runs it
+ * right after the command began (`src/commands/registration.ts`).
  */
-export const rejectUnsupportedSharedFlags = (meta: ResolvedCommandMeta) =>
+export const rejectUnsupportedSharedFlags = (identity: CommandIdentity) =>
   Effect.flatMap(
-    givenSharedFlag(name => meta.unsupportedSharedFlags[name] !== undefined),
+    givenSharedFlag(name => identity.meta.unsupportedSharedFlags.includes(name)),
     Option.match({
       onNone: () => Effect.void,
-      onSome: ({ name, flag }) => {
-        const command = (meta.unsupportedSharedFlags[name] ?? []).join(' ');
+      onSome: ({ flag }) => {
+        const command = identity.path.join(' ');
         return Effect.fail(commandInputError(command)(unsupportedSharedFlag(command)[flag], flag));
       },
     })

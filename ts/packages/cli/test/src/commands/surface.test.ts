@@ -351,24 +351,14 @@ describe('CommandSurface: playground-execute --parallel finds its command name',
 });
 
 // `dev logs tools|triggers` honor --user-id as their filter and reject only --project-name.
-// `declaredBy` is the registration that declares a flag unsupported for every command under it:
-// the message names it, while the failure is recorded against the command that ran.
+// `dev logs`, `dev auth-configs` and `dev projects` declare the flags unsupported for every
+// command under them; the message still names the command that ran.
 const rejectingCommands = [
   { command: ['init'], args: [], flags: ['--project-name', '--user-id'] },
-  { command: ['logs', 'tools'], declaredBy: 'dev logs', args: [], flags: ['--project-name'] },
-  { command: ['logs', 'triggers'], declaredBy: 'dev logs', args: [], flags: ['--project-name'] },
-  {
-    command: ['auth-configs', 'list'],
-    declaredBy: 'dev auth-configs',
-    args: [],
-    flags: ['--project-name', '--user-id'],
-  },
-  {
-    command: ['projects', 'list'],
-    declaredBy: 'dev projects',
-    args: [],
-    flags: ['--project-name', '--user-id'],
-  },
+  { command: ['logs', 'tools'], args: [], flags: ['--project-name'] },
+  { command: ['logs', 'triggers'], args: [], flags: ['--project-name'] },
+  { command: ['auth-configs', 'list'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['projects', 'list'], args: [], flags: ['--project-name', '--user-id'] },
   { command: ['toolkits', 'search'], args: ['email'], flags: ['--project-name', '--user-id'] },
   { command: ['toolkits', 'version'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
   {
@@ -391,7 +381,7 @@ const rejectingCommands = [
   { command: ['triggers', 'create'], args: ['GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name'] },
   { command: ['triggers', 'enable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
   { command: ['triggers', 'disable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
-].flatMap(({ command, declaredBy, args, flags }) =>
+].flatMap(({ command, args, flags }) =>
   flags.flatMap(flag =>
     (['before', 'after'] as const).map(position => {
       const path = ['dev', ...command].join(' ');
@@ -402,7 +392,6 @@ const rejectingCommands = [
             : ['dev', ...command, ...args, flag, 'other'],
         flag,
         path,
-        declaredBy: declaredBy ?? path,
         name: `${path} ${flag} (${position} the command)`,
       };
     })
@@ -422,7 +411,7 @@ describe('CommandSurface: dev commands that cannot honor a shared flag reject it
       }),
     })
   )(it => {
-    it.effect.each(rejectingCommands)('rejects `$name`', ({ argv, flag, path, declaredBy }) =>
+    it.effect.each(rejectingCommands)('rejects `$name`', ({ argv, flag, path }) =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -432,9 +421,9 @@ describe('CommandSurface: dev commands that cannot honor a shared flag reject it
         const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
         expect(error).toBeInstanceOf(CommandInputError);
         expect(error).toMatchObject({
-          command: declaredBy,
+          command: path,
           option: flag,
-          message: rejectionMessage(declaredBy, flag),
+          message: rejectionMessage(path, flag),
         });
         const lifecycle = (yield* recordedInvocationCalls).flatMap(call =>
           call.service === 'CommandLifecycleTelemetry' && call.event !== 'pluginHintShown'
