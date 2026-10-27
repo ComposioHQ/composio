@@ -241,50 +241,6 @@ describe('actingUser', () => {
       expect(error).toMatchObject({ message: 'No user for other.' });
     })
   );
-
-  it.effect.each([
-    {
-      name: 'the consumer project without --project-name ignores --user-id',
-      options: { legacy: { consumerWithoutProjectName: true } },
-      fixture: { tree: 'dev', candidates: 'flag', projectName: 'absent' },
-      expected: { userId: CONSUMER_USER_ID, source: 'consumer', projectId: CONSUMER_PROJECT_ID },
-    },
-    {
-      name: 'the consumer project still yields to --project-name',
-      options: { legacy: { consumerWithoutProjectName: true } },
-      fixture: { tree: 'dev', candidates: 'directory', projectName: 'same' },
-      expected: {
-        userId: 'directory-user',
-        source: 'directory-test-user',
-        projectId: DIRECTORY_PROJECT_ID,
-      },
-    },
-    {
-      name: 'skipping the directory test user falls back to the global one',
-      options: { legacy: { skipDirectoryTestUser: true } },
-      fixture: { tree: 'dev', candidates: 'directory', projectName: 'same' },
-      expected: {
-        userId: 'global-user',
-        source: 'global-test-user',
-        projectId: DIRECTORY_PROJECT_ID,
-      },
-    },
-  ] satisfies ReadonlyArray<{
-    name: string;
-    options: ActingUserOptions;
-    fixture: Fixture;
-    expected: { userId: string; source: ActingUserSource; projectId: string };
-  }>)('[Given] legacy: $name', ({ options, fixture, expected }) =>
-    Effect.gen(function* () {
-      const user = yield* run(actingUser(options), fixture);
-
-      expect(user).toMatchObject({
-        userId: expected.userId,
-        source: expected.source,
-        project: { projectId: expected.projectId },
-      });
-    })
-  );
 });
 
 // `execute`, `search`, `link` and `run` used to accept an empty consumer user id as the user.

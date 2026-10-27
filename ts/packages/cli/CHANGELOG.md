@@ -4,6 +4,20 @@
 
 ### Minor Changes
 
+- `composio dev connected-accounts link <toolkit>` (with or without `--list`)
+  now acts on your developer project, like the other `composio dev` commands:
+  the directory's project, or the one `--project-name` names. It links or lists
+  accounts for `--user-id` when given, else the directory's test user id (for
+  the directory's own project), else the global test user id. Without
+  `--project-name` it used to act as your consumer user on your consumer
+  project and silently ignore `--user-id`; outside a directory set up with
+  `composio dev init` it now fails asking for one. With `--project-name`,
+  linking a toolkit now also uses the directory's test user when the name is
+  the directory's own project. `composio link` is unchanged. With
+  `--auth-config`, a missing developer project is now reported before a
+  missing user id. On the dev tree, the alias hints point at
+  `composio dev playground-execute` and `composio dev connected-accounts list`.
+
 - `composio listen`, `composio dev listen` and `composio dev triggers listen`
   gain `--fail-fast`: the listener stops at the first event it fails to save,
   forward, or append to `--out`, prints how many events failed on stderr, and

@@ -106,13 +106,6 @@ const defaultMissingUserMessage =
 export interface ActingUserOptions {
   /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. */
   readonly missingUserMessage?: (projectName: Option.Option<string>) => string;
-  /** Departures from the rule that commands still make. C2: drop them, with a CHANGELOG note. */
-  readonly legacy?: {
-    /** On the dev tree without `--project-name`, act as the consumer user, ignoring `--user-id`. */
-    readonly consumerWithoutProjectName?: boolean;
-    /** Skip the directory test user on the dev tree. */
-    readonly skipDirectoryTestUser?: boolean;
-  };
 }
 
 /**
@@ -174,27 +167,21 @@ const consumerUser = (project: ResolvedCommandProject) =>
   );
 
 /** The dev tree's user for a project, `namedProjectId` being the `--project-name` project's id. */
-const devUser = (namedProjectId: Option.Option<string>, options: ActingUserOptions) =>
+const devUser = (namedProjectId: Option.Option<string>) =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
     const userContext = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
-    const directoryProject = options.legacy?.skipDirectoryTestUser
-      ? Option.none()
-      : yield* projectContext.resolve.pipe(Effect.option, Effect.map(Option.flatten));
+    const directoryProject = yield* projectContext.resolve.pipe(
+      Effect.option,
+      Effect.map(Option.flatten)
+    );
     return devActingUser({
       flag: surface.userId,
       directoryTestUserId: directoryTestUserId(directoryProject, namedProjectId),
       globalTestUserId: userContext.data.testUserId,
     });
   });
-
-/** The tree whose rule applies: the surface's, unless a legacy option says otherwise. */
-const ruleTree = (surface: CommandSurfaceShape, options: ActingUserOptions): CommandTree =>
-  surface.tree === 'dev' &&
-  !(options.legacy?.consumerWithoutProjectName && Option.isNone(surface.projectName))
-    ? 'dev'
-    : 'root';
 
 /**
  * The acting user, resolved against the project the command runs in. On the root tree, the
@@ -207,7 +194,7 @@ const ruleTree = (surface: CommandSurfaceShape, options: ActingUserOptions): Com
 export const actingUser = (options: ActingUserOptions = {}) =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
-    const tree = ruleTree(surface, options);
+    const tree = surface.tree;
     const project = yield* resolveCommandProject(
       tree === 'root'
         ? { mode: 'consumer' }
@@ -216,7 +203,7 @@ export const actingUser = (options: ActingUserOptions = {}) =>
     const user =
       tree === 'root'
         ? consumerUser(project)
-        : yield* devUser(Option.as(surface.projectName, project.projectId), options);
+        : yield* devUser(Option.as(surface.projectName, project.projectId));
     if (Option.isNone(user)) {
       const message = options.missingUserMessage ?? defaultMissingUserMessage(tree);
       return yield* new MissingActingUserError({
@@ -234,10 +221,10 @@ export const actingUser = (options: ActingUserOptions = {}) =>
  * the command runs against the directory's project through the default client; on the root
  * tree it is the consumer project. Fails only when that project cannot be resolved.
  */
-export const actingUserOption = (options: ActingUserOptions = {}) =>
+export const actingUserOption = () =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
-    if (ruleTree(surface, options) === 'root') {
+    if (surface.tree === 'root') {
       const project = yield* resolveCommandProject({ mode: 'consumer' });
       return Option.map(
         consumerUser(project),
@@ -252,10 +239,7 @@ export const actingUserOption = (options: ActingUserOptions = {}) =>
         resolveCommandProject({ mode: 'developer', projectName })
       )
     );
-    const user = yield* devUser(
-      Option.map(namedProject, project => project.projectId),
-      options
-    );
+    const user = yield* devUser(Option.map(namedProject, project => project.projectId));
     return Option.map(user, (found): ActingUser<Option.Option<ResolvedCommandProject>> => ({
       ...found,
       project: namedProject,
