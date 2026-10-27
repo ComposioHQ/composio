@@ -23,7 +23,8 @@ const loadSsrfSafeFetch = Effect.promise(() => import('@composio/core/utils/ssrf
 export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUploadError')<{
   readonly cause?: unknown;
   readonly message: string;
-  readonly reason: 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
+  readonly reason:
+    'not-uploadable' | 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
   readonly status?: number;
 }> {}
 
@@ -56,6 +57,12 @@ const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isObje
 
 const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
   Array.isArray(value) ? value.filter(isSchemaRecord) : [];
+
+// `items` is either one schema for every element or a tuple of per-index schemas.
+const itemSchemaAt = (items: unknown, index: number): JsonSchema | undefined => {
+  const itemSchema = Array.isArray(items) ? items[index] : items;
+  return isSchemaRecord(itemSchema) ? itemSchema : undefined;
+};
 
 const getSchemaVariants = (schema: JsonSchema | undefined): ReadonlyArray<JsonSchema> => [
   ...getSchemaVariant(schema?.anyOf),
@@ -174,14 +181,9 @@ export const findFileUploadablePaths = (
     .flatMap(variant => findFileUploadablePaths(variant, basePath, value));
 
   const itemPaths = Array.isArray(value)
-    ? value.flatMap((item, index) => {
-        const itemSchema = Array.isArray(schema.items) ? schema.items[index] : schema.items;
-        return findFileUploadablePaths(
-          isSchemaRecord(itemSchema) ? itemSchema : undefined,
-          [...basePath, index],
-          item
-        );
-      })
+    ? value.flatMap((item, index) =>
+        findFileUploadablePaths(itemSchemaAt(schema.items, index), [...basePath, index], item)
+      )
     : [];
 
   const seen = new Set<string>();
@@ -192,6 +194,180 @@ export const findFileUploadablePaths = (
     return true;
   });
 };
+
+// Wording of inputs that take a file on the caller's machine, as the tool
+// catalog writes it: "Path to the local file to attach", "Local filesystem path
+// to the file to upload", "Path to the file to upload".
+const LOCAL_FILE_DESCRIPTION =
+  /\blocal(?:ly)?[\s-]+(?:file|path|filesystem|file\s*system|disk)\b|\bpath\b[^.]{0,40}\bfile\b[^.]{0,40}\bupload/i;
+
+const describesLocalFile = (schema: JsonSchema): boolean =>
+  [schema.title, schema.description].some(
+    text => Predicate.isString(text) && LOCAL_FILE_DESCRIPTION.test(text)
+  );
+
+// A path-shaped value: a separator or an extension, and no URL scheme. Keeps a
+// bare word such as "claude_code" from matching a file of that name.
+const looksLikeFilePath = (path: Path.Path, value: string): boolean =>
+  !/^[a-z][a-z0-9+.-]*:\/\//i.test(value) &&
+  (value.includes('/') || value.includes('\\') || path.extname(value) !== '');
+
+type LocalPathArgument = {
+  readonly argumentPath: ReadonlyArray<string>;
+  readonly value: string;
+};
+
+/**
+ * The schema and every `anyOf`/`oneOf`/`allOf` branch under it, at any depth:
+ * all the schemas that can describe one value. Schemas are parsed JSON, so the
+ * walk ends, as `findFileUploadablePaths` does on the same schema.
+ */
+const schemasForValue = (schema: JsonSchema): ReadonlyArray<JsonSchema> => [
+  schema,
+  ...getSchemaVariants(schema).flatMap(schemasForValue),
+];
+
+/**
+ * Where `hydrateFileUploads` uploads a value: the same walk, without the
+ * upload. The guard exempts exactly these locations.
+ */
+const uploadedArgumentPaths = (
+  value: unknown,
+  schema: JsonSchema | undefined,
+  argumentPath: ReadonlyArray<string>
+): ReadonlyArray<ReadonlyArray<string>> => {
+  if (schema?.file_uploadable === true) {
+    return Predicate.isString(value) || isFileLike(value) ? [argumentPath] : [];
+  }
+
+  const uploadableVariants = getSchemaVariants(schema).filter(schemaHasFileUploadable);
+  if (uploadableVariants.length > 0) {
+    return uploadableVariants.flatMap(variant =>
+      uploadedArgumentPaths(value, variant, argumentPath)
+    );
+  }
+
+  const properties = schema?.properties;
+  if (isSchemaRecord(properties) && Predicate.isObject(value)) {
+    return Object.entries(value).flatMap(([key, entry]) =>
+      uploadedArgumentPaths(entry, isSchemaRecord(properties[key]) ? properties[key] : undefined, [
+        ...argumentPath,
+        key,
+      ])
+    );
+  }
+
+  if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
+    return value.flatMap((item, index) =>
+      uploadedArgumentPaths(item, itemSchemaAt(schema.items, index), [
+        ...argumentPath,
+        String(index),
+      ])
+    );
+  }
+
+  return [];
+};
+
+const collectLocalPathCandidates = (
+  value: unknown,
+  schemas: ReadonlyArray<JsonSchema>,
+  argumentPath: ReadonlyArray<string>
+): ReadonlyArray<LocalPathArgument> => {
+  const nodes = schemas.flatMap(schemasForValue);
+
+  if (Predicate.isString(value)) {
+    return nodes.some(describesLocalFile) ? [{ argumentPath, value }] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      collectLocalPathCandidates(
+        item,
+        nodes.flatMap(node => {
+          const itemSchema = itemSchemaAt(node.items, index);
+          return itemSchema ? [itemSchema] : [];
+        }),
+        [...argumentPath, String(index)]
+      )
+    );
+  }
+
+  if (Predicate.isObject(value)) {
+    return Object.entries(value).flatMap(([key, entry]) =>
+      collectLocalPathCandidates(
+        entry,
+        nodes.flatMap(node => {
+          const property = isSchemaRecord(node.properties) ? node.properties[key] : undefined;
+          return isSchemaRecord(property) ? [property] : [];
+        }),
+        [...argumentPath, key]
+      )
+    );
+  }
+
+  return [];
+};
+
+/**
+ * The string arguments a schema describes as a local file without marking
+ * them `file_uploadable`. Composio runs the tool remotely and only uploads
+ * `file_uploadable` inputs, so such an argument reaches the tool as the text of
+ * the path, never as the file. Every branch that applies to a value is read
+ * for the description, and a value `hydrateFileUploads` uploads is never
+ * returned.
+ */
+export const findLocalPathArguments = (
+  value: unknown,
+  schema: JsonSchema | undefined
+): ReadonlyArray<LocalPathArgument> => {
+  if (!schema) return [];
+  const uploaded = new Set(
+    uploadedArgumentPaths(value, schema, []).map(parts => JSON.stringify(parts))
+  );
+  return collectLocalPathCandidates(value, [schema], []).filter(
+    candidate => !uploaded.has(JSON.stringify(candidate.argumentPath))
+  );
+};
+
+/**
+ * Fails when an argument the schema describes as a local file names a file
+ * that exists on this machine but the input is not `file_uploadable`: the tool
+ * would get the path text instead of the file and still report success
+ * (issue #4965). A path that does not exist here is left alone, since it may
+ * name a file on the remote side.
+ */
+export const rejectLocalFilesWithoutUpload = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly path: Path.Path;
+  readonly toolSlug: string;
+  readonly arguments_: Record<string, unknown>;
+  readonly inputSchema: JsonSchema;
+}) =>
+  Effect.gen(function* () {
+    const candidates = findLocalPathArguments(params.arguments_, params.inputSchema).filter(
+      candidate => looksLikeFilePath(params.path, candidate.value)
+    );
+    const localFiles = yield* Effect.filter(candidates, candidate =>
+      params.fs.stat(candidate.value).pipe(
+        Effect.map(info => info.type === 'File'),
+        Effect.orElseSucceed(() => false)
+      )
+    );
+    if (localFiles.length === 0) return;
+
+    const named = localFiles
+      .map(({ argumentPath, value }) => `"${argumentPath.join('.')}" (${value})`)
+      .join(', ');
+    return yield* new ToolFileUploadError({
+      reason: 'not-uploadable',
+      message:
+        `${params.toolSlug} cannot upload local files: ${named} names a file on this machine, ` +
+        'but the tool does not mark that input as a file upload, so Composio would receive the ' +
+        'path text instead of the file content. Nothing was executed. Use a URL input if the ' +
+        'tool has one, or report the tool schema to Composio.',
+    });
+  });
 
 const readFileFromUrl = (path: Path.Path, url: string) =>
   Effect.gen(function* () {
@@ -399,10 +575,9 @@ const hydrateFileUploads = (
 
     if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
       return yield* Effect.all(
-        value.map((item, index) => {
-          const itemSchema = Array.isArray(schema.items) ? schema.items[index] : schema.items;
-          return hydrateFileUploads(item, isSchemaRecord(itemSchema) ? itemSchema : undefined, ctx);
-        }),
+        value.map((item, index) =>
+          hydrateFileUploads(item, itemSchemaAt(schema.items, index), ctx)
+        ),
         { concurrency: 'unbounded' }
       );
     }
@@ -420,6 +595,8 @@ export const uploadToolInputFiles = (params: {
   readonly toolkitSlug?: string;
 }): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
   Effect.gen(function* () {
+    yield* rejectLocalFilesWithoutUpload(params);
+
     if (!schemaHasFileUploadable(params.inputSchema)) {
       return params.arguments_;
     }

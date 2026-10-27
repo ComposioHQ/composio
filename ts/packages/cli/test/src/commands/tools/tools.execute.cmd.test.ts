@@ -2330,6 +2330,92 @@ describe('CLI: composio execute', () => {
       toolkitsData: {
         tools: [
           {
+            name: 'Add attachment to card',
+            slug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            description: 'Adds an attachment to a Trello card',
+            tags: ['trello'],
+            available_versions: ['20261007_01'],
+            input_parameters: {
+              type: 'object',
+              required: ['idCard'],
+              properties: {
+                idCard: { type: 'string' },
+                // As the API serves it: a local path that is not file_uploadable.
+                file: {
+                  type: 'string',
+                  title: 'File',
+                  description: 'Path to the local file to attach if not linking a `url`.',
+                },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] a local file for an input that is not file_uploadable [Then] execute fails instead of sending the path (issue #4965)',
+    it => {
+      it.effect('refuses before the tool runs', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+          const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-connection-check',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          expect(failure).toContain(`"file" (${tempFile})`);
+          expect(fetchSpy).not.toHaveBeenCalled();
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('"successful": true');
+        })
+      );
+
+      it.effect('reports the same problem under --dry-run', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-connection-check',
+            '--dry-run',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('Dry run successful');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
             name: 'Send Email',
             slug: 'GMAIL_SEND_EMAIL',
             description: 'Send an email',

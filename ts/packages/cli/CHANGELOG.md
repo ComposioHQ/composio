@@ -12,6 +12,14 @@
 
 ### Patch Changes
 
+- `composio execute` now exits 1 when an argument names a file on your machine
+  but the tool does not accept file uploads for that input, such as `file` in
+  `TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD`. It used to send the path text to
+  the tool and report success, and the tool stored that text instead of the
+  file. The error names the input and the path. Nothing is sent. `--dry-run`
+  reports the same error. Paths that do not exist on your machine are still
+  sent as before.
+
 - Local file uploads now use the filename's MIME type instead of always declaring
   `application/octet-stream`. `execute --file` preserves arrays and injects into
   the single matching upload field in an existing array item; ambiguous targets
