@@ -9,7 +9,7 @@ import type { ComposioClientShape } from '@composio/client/effect';
 import { Data, Deferred, Effect, FiberSet, Result, Option, Predicate } from 'effect';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import {
   resolveArtifactsRoot,
   resolveCliSessionArtifacts,
@@ -449,19 +449,11 @@ const resolveListenSetup = (params: {
   readonly resolvedProject: {
     readonly orgId: string;
     readonly projectId: string;
-    readonly consumerUserId?: string;
   };
+  readonly consumerUserId: string;
 }) =>
   Effect.gen(function* () {
-    const consumerUserId = params.resolvedProject.consumerUserId;
-    if (!consumerUserId) {
-      return yield* new ListenCommandError({
-        reason: 'project_context',
-        message: 'No consumer user is available in the current project context.',
-        slug: params.slug,
-      });
-    }
-
+    const consumerUserId = params.consumerUserId;
     const listeningToProjectEvent = isProjectEventType(params.slug);
     const rawParams = Option.isSome(params.inputParams)
       ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
@@ -511,6 +503,21 @@ const resolveListenSetup = (params: {
     };
   });
 
+/** The consumer user `listen` subscribes as, with the consumer project. */
+const listenActingUser = (slug: string) =>
+  actingUser({
+    // C2: the message fits the tree.
+    missingUserMessage: () => 'No consumer user is available in the current project context.',
+  }).pipe(
+    // C2: fail with MissingActingUserError itself, an expected failure; this keeps the
+    // defect this command failed with and its `cli.command.failed` `error_name`.
+    Effect.catchTag('commands/MissingActingUserError', error =>
+      Effect.fail(
+        new ListenCommandError({ reason: 'project_context', message: error.message, slug })
+      )
+    )
+  );
+
 export const listenCmd = Command.make(
   'listen',
   { slug, params, maxEvents, timeout, stream, account, failFast, debug },
@@ -522,7 +529,7 @@ export const listenCmd = Command.make(
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
+      const { userId: actingUserId, project: resolvedProject } = yield* listenActingUser(slug);
 
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
@@ -545,6 +552,7 @@ export const listenCmd = Command.make(
         account,
         client,
         resolvedProject,
+        consumerUserId: actingUserId,
       });
 
       const artifactsOption = yield* resolveCliSessionArtifacts({

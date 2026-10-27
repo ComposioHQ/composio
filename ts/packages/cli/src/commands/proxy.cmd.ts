@@ -16,7 +16,7 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -304,14 +304,17 @@ export const proxyCmd = Command.make('proxy', {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
-
-      if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
-        return yield* new ProxyCommandError({
-          message: 'No consumer project user is available for proxy execution in this context.',
-        });
-      }
-      const consumerUserId = resolvedProject.consumerUserId;
+      const { userId: consumerUserId, project: resolvedProject } = yield* actingUser({
+        // C2: the message fits the tree.
+        missingUserMessage: () =>
+          'No consumer project user is available for proxy execution in this context.',
+      }).pipe(
+        // C2: fail with MissingActingUserError itself; this keeps the `ProxyCommandError` tag
+        // that `cli.command.failed` reports as `error_name`.
+        Effect.catchTag('commands/MissingActingUserError', error =>
+          Effect.fail(new ProxyCommandError({ message: error.message }))
+        )
+      );
       const normalizedToolkit = toolkit.toLowerCase();
 
       yield* runProxyConnectedToolkitFailFast({
