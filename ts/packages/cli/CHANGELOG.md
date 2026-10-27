@@ -34,6 +34,15 @@
 
 ### Patch Changes
 
+- The update notice, the Composio plugin tip, the backend mismatch warning,
+  and the daily background check for a newer release now run only for a
+  command that runs. `--help`, `--version`, `composio help …`, a bare
+  `composio`, and a mistyped command or flag no longer print them or start the
+  check. `composio upgrade` still skips the notice and the check,
+  `composio version --check` the check, and `composio setup` the plugin tip.
+  The `CLI_PLUGIN_HINT_SHOWN` event now records the full command path
+  (`dev triggers list`) instead of the first word.
+
 - CLI telemetry now records the command `effect/cli` parsed instead of guessing
   it from argv. `composio signup`, `agent …`, `connections …`, `config …`,
   `debug …` and `help …` were recorded as `composio`, `composio dev init` as

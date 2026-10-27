@@ -1,7 +1,11 @@
-import { Array as Arr, Console, Effect } from 'effect';
+import { Array as Arr, Console, Effect, Predicate } from 'effect';
 import { CliError, CliOutput, Command } from 'effect/cli';
 import type { TelemetryFamily } from 'src/analytics/types';
-import { beginAtCommandPath, withCommandMeta } from 'src/invocation/command-identity';
+import {
+  beginAtCommandPath,
+  type CommandMetaShape,
+  withCommandMeta,
+} from 'src/invocation/command-identity';
 import { $defaultCmd, withRootLogLevel } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -39,7 +43,7 @@ import { cliDebugFlagsLayer, CLI_DEBUG_GLOBAL_FLAGS } from 'src/services/runtime
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
-import { withBackgroundUpdateCheck } from './background-update-check';
+import { withRegisteredSubcommands } from './registration';
 import { debugCmd } from './debug/debug.cmd';
 import { normalizeListenStreamFlag, normalizeRunScriptArgs } from './argv-compat';
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
@@ -50,14 +54,36 @@ import { CommandSurface } from './surface';
 // generic `CLI_COMMAND_*` events.
 const family = (telemetryFamily: TelemetryFamily) => withCommandMeta({ telemetryFamily });
 
+// Every invocation hook runs for every selected command (`src/invocation/invocation.ts`) except
+// where a root registration below turns one off; its subcommands inherit that.
+const hooks = (policies: NonNullable<CommandMetaShape['hooks']>) =>
+  withCommandMeta({ hooks: policies });
+
+/** `composio version --check` resolves releases itself, like `composio upgrade`. */
+const isExplicitVersionCheck = (input: unknown): boolean =>
+  Predicate.hasProperty(input, 'check') && input.check === true;
+
+/** `composio help …` only prints help, like `--help`. */
+const NO_HOOKS = {
+  backendMismatch: false,
+  updateNotice: false,
+  pluginHint: false,
+  backgroundUpdateCheck: false,
+} as const;
+
 const ROOT_COMMANDS = [
   tagged(debugCmd),
-  tagged(versionCmd),
-  tagged(upgradeCmd),
+  tagged(
+    versionCmd.pipe(hooks({ backgroundUpdateCheck: input => !isExplicitVersionCheck(input) }))
+  ),
+  // `composio upgrade` resolves the latest release live and records it in the cache, so a cached
+  // notice could only repeat or contradict it.
+  tagged(upgradeCmd.pipe(hooks({ updateNotice: false, backgroundUpdateCheck: false }))),
   tagged(whoamiCmd),
   tagged(loginCmd.pipe(family('login'))),
   tagged(signupCmd),
-  tagged(setupCmd.pipe(family('setup'))),
+  // `composio setup` installs the plugin the hint asks for.
+  tagged(setupCmd.pipe(family('setup'), hooks({ pluginHint: false }))),
   tagged(agentCmd),
   experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
   tagged(logoutCmd.pipe(family('logout'))),
@@ -86,10 +112,9 @@ const getVisibleRootCommands = (visibility: CommandVisibility) => {
 
 export const buildRootCommand = (visibility: CommandVisibility) => {
   const commands = getVisibleRootCommands(visibility);
-  return withBackgroundUpdateCheck($defaultCmd.pipe(Command.withHandler(() => showCommandHelp())), [
-    ...commands,
-    buildHelpCommand(commands),
-  ]).pipe(
+  return $defaultCmd.pipe(
+    Command.withHandler(() => showCommandHelp()),
+    withRegisteredSubcommands([...commands, buildHelpCommand(commands).pipe(hooks(NO_HOOKS))]),
     Command.annotate(RootHelpMarker, true),
     Command.withGlobalFlags(CLI_DEBUG_GLOBAL_FLAGS),
     withRootLogLevel,

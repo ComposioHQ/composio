@@ -46,14 +46,15 @@ const recordedSequence = Effect.map(recordedInvocationCalls, calls =>
 describe('runInvocation', () => {
   layer(TestLive())('lifecycle', it => {
     it.effect.each([
-      { args: [], exitCode: 0, outcome: 'succeeded' },
-      { args: ['help'], exitCode: 0, outcome: 'succeeded' },
-      { args: ['--help'], exitCode: 0, outcome: 'succeeded' },
-      { args: ['--version'], exitCode: 0, outcome: 'succeeded' },
-      { args: ['help', 'orgz'], exitCode: 1, outcome: 'failed' },
+      { args: ['version'], exitCode: 0, outcome: 'succeeded', hooks: true },
+      { args: [], exitCode: 0, outcome: 'succeeded', hooks: false },
+      { args: ['help'], exitCode: 0, outcome: 'succeeded', hooks: false },
+      { args: ['--help'], exitCode: 0, outcome: 'succeeded', hooks: false },
+      { args: ['--version'], exitCode: 0, outcome: 'succeeded', hooks: false },
+      { args: ['help', 'orgz'], exitCode: 1, outcome: 'failed', hooks: false },
     ])(
-      '[Given] `composio $args` [Then] runs the hooks, then records the command as $outcome',
-      ({ args, exitCode, outcome }) =>
+      '[Given] `composio $args` [Then] records the command as $outcome, with hooks: $hooks',
+      ({ args, exitCode, outcome, hooks }) =>
         Effect.gen(function* () {
           // The suite shares one recorder.
           yield* resetInvocationCalls;
@@ -62,10 +63,10 @@ describe('runInvocation', () => {
 
           expect(result.exitCode).toBe(exitCode);
           expect(yield* recordedSequence).toEqual([
-            'BackendMismatchWarning',
-            'UpdateNotice',
-            'PluginHint',
             'CommandLifecycleTelemetry.invoked',
+            ...(hooks
+              ? ['BackendMismatchWarning', 'UpdateNotice', 'PluginHint', 'BackgroundUpdateCheck']
+              : []),
             `CommandLifecycleTelemetry.${outcome}`,
           ]);
         })

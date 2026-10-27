@@ -78,12 +78,15 @@ describe('CLI backend of a stored login', () => {
 
   it('warns on stderr only when an env var sends the stored key to another backend', () => {
     const configDirectory = storedLogin(STAGING_BASE_URL);
+    const run = (args: ReadonlyArray<string>, env: Record<string, string> = {}) =>
+      spawnSync('bun', ['run', 'src/bin.ts', ...args], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: cliEnv(configDirectory, env),
+      });
+    const mismatched = { COMPOSIO_BASE_URL: 'http://127.0.0.1:9' };
 
-    const result = spawnSync('bun', ['run', 'src/bin.ts', '--version'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: cliEnv(configDirectory, { COMPOSIO_BASE_URL: 'http://127.0.0.1:9' }),
-    });
+    const result = run(['version'], mismatched);
 
     expect(result.status).toBe(0);
     const warning =
@@ -91,12 +94,9 @@ describe('CLI backend of a stored login', () => {
     expect(result.stderr.split(warning)).toHaveLength(2);
     expect(result.stdout).not.toContain('COMPOSIO_BASE_URL');
 
-    const unset = spawnSync('bun', ['run', 'src/bin.ts', '--version'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: cliEnv(configDirectory),
-    });
-    expect(unset.stderr).not.toContain('sends your stored API key');
+    expect(run(['version']).stderr).not.toContain('sends your stored API key');
+    // `--version` runs no command, so no invocation hook.
+    expect(run(['--version'], mismatched).stderr).not.toContain('sends your stored API key');
   });
 
   it('sends requests to the stored backend and explains a rejected key', async () => {

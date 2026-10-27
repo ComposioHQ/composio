@@ -1,15 +1,19 @@
 import { type Cause, Context, Effect, Layer, Ref } from 'effect';
 import type { CliCommandTelemetryContext } from 'src/analytics/types';
 import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
-import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
+import {
+  CommandLifecycleTelemetry,
+  type PluginHintShown,
+} from 'src/services/command-lifecycle-telemetry';
 import type { HookInvocation } from 'src/services/invocation-hook';
 import { PluginHint } from 'src/services/plugin-hint';
-import { UpdateNotice } from 'src/services/update-check';
+import { BackgroundUpdateCheck, UpdateNotice } from 'src/services/update-check';
 
 /** One call to an invocation hook or to the lifecycle telemetry sink, in call order. */
 export type RecordedInvocationCall =
   | {
-      readonly service: 'BackendMismatchWarning' | 'UpdateNotice' | 'PluginHint';
+      readonly service:
+        'BackendMismatchWarning' | 'UpdateNotice' | 'PluginHint' | 'BackgroundUpdateCheck';
       readonly invocation: HookInvocation;
     }
   | {
@@ -22,6 +26,11 @@ export type RecordedInvocationCall =
       readonly event: 'failed';
       readonly context: CliCommandTelemetryContext;
       readonly cause: Cause.Cause<unknown>;
+    }
+  | {
+      readonly service: 'CommandLifecycleTelemetry';
+      readonly event: 'pluginHintShown';
+      readonly shown: PluginHintShown;
     };
 
 /** Reads what the recording doubles of `InvocationHooksTest` were called with. */
@@ -77,6 +86,12 @@ export const InvocationHooksTest = Layer.unwrap(
         PluginHint.of({ run: invocation => record({ service: 'PluginHint', invocation }) })
       ),
       Layer.succeed(
+        BackgroundUpdateCheck,
+        BackgroundUpdateCheck.of({
+          run: invocation => record({ service: 'BackgroundUpdateCheck', invocation }),
+        })
+      ),
+      Layer.succeed(
         CommandLifecycleTelemetry,
         CommandLifecycleTelemetry.of({
           invoked: context =>
@@ -85,6 +100,8 @@ export const InvocationHooksTest = Layer.unwrap(
             record({ service: 'CommandLifecycleTelemetry', event: 'succeeded', context }),
           failed: (context, cause) =>
             record({ service: 'CommandLifecycleTelemetry', event: 'failed', context, cause }),
+          pluginHintShown: shown =>
+            record({ service: 'CommandLifecycleTelemetry', event: 'pluginHintShown', shown }),
         })
       )
     );

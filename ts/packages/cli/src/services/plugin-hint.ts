@@ -1,13 +1,15 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { type Config, Context, Effect, Exit, Layer, Option, Schema } from 'effect';
-import { trackCliEventEffect } from 'src/analytics/dispatch';
-import { getPluginHintShownEvent } from 'src/analytics/events';
+import { Context, Effect, Exit, Layer, Option, Schema } from 'effect';
 import { APP_CONFIG } from 'src/config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { APP_VERSION } from 'src/constants';
+import { commandPathOf } from 'src/invocation/command-identity';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
 import { detectPluginHost, hostConfigDirectory, rawHostEnvironment } from './agent-host-env';
+import {
+  CommandLifecycleTelemetry,
+  type CommandLifecycleTelemetryShape,
+} from './command-lifecycle-telemetry';
 import { NodeOs } from './node-os';
 import type { InvocationHookShape } from './invocation-hook';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from './runtime-cli-context';
@@ -17,7 +19,8 @@ import { TerminalUI } from './terminal-ui';
  * One-line acquisition hint for the Composio agent plugin.
  *
  * The primary audience is the agent driving the CLI through a non-TTY shell,
- * so this line is intentionally not gated on stderr being a TTY.
+ * so this line is intentionally not gated on stderr being a TTY. `composio setup`, which
+ * installs the plugin, turns it off in its `CommandMeta`.
  */
 
 const HINT_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -32,7 +35,8 @@ export interface PluginHintConfig {
   readonly stateDirectory: string;
   readonly host: AgentHost | undefined;
   readonly invocationOrigin: string | undefined;
-  readonly commandName: string | undefined;
+  /** The command the hint is shown for, as telemetry records it (`commandPathOf`). */
+  readonly commandPath: string;
   readonly claudeInstalledPluginsFile: string;
   readonly codexConfigFile: string;
   readonly hintIntervalMs: number;
@@ -105,14 +109,13 @@ export function createPluginHint(config: PluginHintConfig) {
     codex: codexPluginAbsent,
   };
 
-  function showPluginHint(terminal: Pick<TerminalUI, 'error'>) {
+  function showPluginHint(
+    terminal: Pick<TerminalUI, 'error'>,
+    telemetry: Pick<CommandLifecycleTelemetryShape, 'pluginHintShown'>
+  ) {
     return Effect.gen(function* () {
       const host = config.host;
-      if (
-        host === undefined ||
-        config.invocationOrigin === 'run' ||
-        config.commandName === 'setup'
-      ) {
+      if (host === undefined || config.invocationOrigin === 'run') {
         return;
       }
       if (!(yield* pluginAbsentByHost[host])) return;
@@ -120,7 +123,7 @@ export function createPluginHint(config: PluginHintConfig) {
       // The stamp must not outlive a failed delivery: if printing the hint
       // does not succeed, release the claim so the next invocation can
       // retry instead of staying muted for the full interval. Tracking
-      // below is best-effort by contract (trackCliEventEffect never
+      // below is best-effort by contract (the telemetry sink never
       // fails), so a delivered hint with a lost event is accepted.
       const printed = yield* Effect.exit(
         terminal.error(
@@ -131,37 +134,18 @@ export function createPluginHint(config: PluginHintConfig) {
         yield* releaseHint(host);
         return;
       }
-      yield* trackCliEventEffect(
-        getPluginHintShownEvent({
-          invocationOrigin: config.invocationOrigin ?? DEFAULT_CLI_INVOCATION_ORIGIN,
-          cliVersion: APP_VERSION,
-          commandPath: config.commandName ?? 'composio',
-          agentHost: host,
-        })
-      );
+      yield* telemetry.pluginHintShown({
+        invocationOrigin: config.invocationOrigin ?? DEFAULT_CLI_INVOCATION_ORIGIN,
+        commandPath: config.commandPath,
+        agentHost: host,
+      });
     }).pipe(Effect.ignore);
   }
 
   return { showPluginHint };
 }
 
-export function findRootCommandName(argv: ReadonlyArray<string>): string | undefined {
-  const args = argv.slice(2);
-  for (let index = 0; index < args.length; index += 1) {
-    const token = args[index];
-    if (token === '--log-level') {
-      index += 1;
-      continue;
-    }
-    if (token?.startsWith('--log-level=') || token?.startsWith('-')) {
-      continue;
-    }
-    return token;
-  }
-  return undefined;
-}
-
-export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
+export const resolvePluginHintConfig = (commandPath: string) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
@@ -173,18 +157,18 @@ export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
       stateDirectory: path.join(cacheDir, 'plugin-hints'),
       host: detectPluginHost(env),
       invocationOrigin,
-      commandName: findRootCommandName(argv),
+      commandPath,
       claudeInstalledPluginsFile: path.join(claudeConfigDir, 'plugins', 'installed_plugins.json'),
       codexConfigFile: path.join(codexConfigDir, 'config.toml'),
       hintIntervalMs: HINT_INTERVAL_MS,
     } satisfies PluginHintConfig;
   });
 
-export type PluginHintShape = InvocationHookShape<Config.ConfigError>;
+export type PluginHintShape = InvocationHookShape;
 
 /**
- * Prints the plugin acquisition hint when eligible, and records that it was shown. Never fails
- * past reading its configuration, never blocks on network.
+ * Prints the plugin acquisition hint when eligible, and reports that it was shown through
+ * `CommandLifecycleTelemetry`. Never fails, never blocks on network.
  */
 export class PluginHint extends Context.Service<PluginHint, PluginHintShape>()(
   'services/PluginHint'
@@ -192,11 +176,12 @@ export class PluginHint extends Context.Service<PluginHint, PluginHintShape>()(
   static readonly Default: Layer.Layer<
     PluginHint,
     never,
-    TerminalUI | FileSystem.FileSystem | Path.Path | NodeOs
+    TerminalUI | CommandLifecycleTelemetry | FileSystem.FileSystem | Path.Path | NodeOs
   > = Layer.effect(
     PluginHint,
     Effect.gen(function* () {
       const terminal = yield* TerminalUI;
+      const telemetry = yield* CommandLifecycleTelemetry;
       const services = Context.pick(
         FileSystem.FileSystem,
         Path.Path,
@@ -204,11 +189,15 @@ export class PluginHint extends Context.Service<PluginHint, PluginHintShape>()(
         TerminalUI
       )(yield* Effect.context<FileSystem.FileSystem | Path.Path | NodeOs | TerminalUI>());
       return PluginHint.of({
-        run: ({ argv }) =>
+        run: ({ identity }) =>
           Effect.gen(function* () {
-            const config = yield* resolvePluginHintConfig(argv);
-            yield* createPluginHint(config).showPluginHint(terminal);
-          }).pipe(Effect.provideContext(services)),
+            const config = yield* resolvePluginHintConfig(commandPathOf(identity));
+            yield* createPluginHint(config).showPluginHint(terminal, telemetry);
+          }).pipe(
+            Effect.provideContext(services),
+            // The hint is advisory: a configuration it cannot read shows no hint.
+            Effect.ignore
+          ),
       });
     })
   );

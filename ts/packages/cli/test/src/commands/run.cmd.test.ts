@@ -162,7 +162,9 @@ describe('CLI: composio run', () => {
             call => call.service === 'CommandLifecycleTelemetry' && call.event === 'invoked'
           );
           const runId =
-            invoked?.service === 'CommandLifecycleTelemetry' ? invoked.context.runId : undefined;
+            invoked?.service === 'CommandLifecycleTelemetry' && invoked.event === 'invoked'
+              ? invoked.context.runId
+              : undefined;
           assertDefined(runId);
           expect(childRunId).toBe(runId);
         })

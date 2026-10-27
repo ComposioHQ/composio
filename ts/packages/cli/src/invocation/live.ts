@@ -33,7 +33,7 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 import { PluginHint } from 'src/services/plugin-hint';
-import { UpdateNotice } from 'src/services/update-check';
+import { BackgroundUpdateCheck, UpdateNotice } from 'src/services/update-check';
 import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
 import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
 import { LogLevelFromConfigLive } from 'src/effects/with-log-level';
@@ -123,6 +123,11 @@ export const BackendMismatchWarningLive = Layer.provide(
   Layer.mergeAll(ComposioUserContextLive, TerminalUILive)
 ) satisfies RequiredLayer;
 
+export const CommandLifecycleTelemetryLive = Layer.provide(
+  CommandLifecycleTelemetry.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, TerminalUILive)
+) satisfies RequiredLayer;
+
 // `Path.layer`, not `BunPath.layer`: the update notice and the plugin hint have always resolved
 // their state files with Effect's own path implementation.
 export const UpdateNoticeLive = Layer.provide(
@@ -132,12 +137,13 @@ export const UpdateNoticeLive = Layer.provide(
 
 export const PluginHintLive = Layer.provide(
   PluginHint.Default,
-  Layer.mergeAll(TerminalUILive, BunFileSystem.layer, Path.layer, NodeOs.Default)
-) satisfies RequiredLayer;
-
-export const CommandLifecycleTelemetryLive = Layer.provide(
-  CommandLifecycleTelemetry.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, TerminalUILive)
+  Layer.mergeAll(
+    TerminalUILive,
+    CommandLifecycleTelemetryLive,
+    BunFileSystem.layer,
+    Path.layer,
+    NodeOs.Default
+  )
 ) satisfies RequiredLayer;
 
 export const InvocationLive = Layer.mergeAll(
@@ -167,6 +173,7 @@ export const InvocationLive = Layer.mergeAll(
   TerminalUILive,
   BackendMismatchWarningLive,
   UpdateNoticeLive,
+  BackgroundUpdateCheck.Default,
   PluginHintLive,
   CommandLifecycleTelemetryLive,
   Layer.merge(
