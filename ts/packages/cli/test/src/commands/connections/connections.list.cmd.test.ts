@@ -328,4 +328,28 @@ describe('CLI: composio connections list account identity', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      accountData: { consumerUserId: '' },
+    })
+  )(it => {
+    it.effect(
+      '[Given] an empty consumer user id [Then] fails with the command defect and its message',
+      () =>
+        Effect.gen(function* () {
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          const failure = yield* cli(['connections', 'list']).pipe(Effect.flip);
+
+          // The command has always failed with this class as a defect, so `actingUser`'s
+          // expected failure is re-tagged; the tag and the message are both load-bearing.
+          expect(failure).toMatchObject({
+            _tag: 'commands/MissingConnectionsConsumerUserIdError',
+            message: 'Missing consumer user id. Run `composio login` and try again.',
+          });
+        })
+    );
+  });
 });
