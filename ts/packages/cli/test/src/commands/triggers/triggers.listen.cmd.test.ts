@@ -310,3 +310,51 @@ describe('CLI: composio dev listen', () => {
     );
   });
 });
+
+const triggerMessage = (id: string, triggerSlug: string) => ({
+  id,
+  type: 'composio.trigger.message',
+  timestamp: '2026-04-06T18:00:00.000Z',
+  metadata: {
+    trigger_slug: triggerSlug,
+    trigger_id: `ti_${id}`,
+    connected_account_id: 'ca_abc',
+    auth_config_id: 'ac_abc',
+    user_id: 'user-1',
+  },
+  data: {},
+});
+
+describe('CLI: composio dev triggers listen', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: {
+        events: [
+          triggerMessage('evt_gmail', 'GMAIL_NEW_GMAIL_MESSAGE'),
+          triggerMessage('evt_one_drive', 'ONE_DRIVE_FILE_CREATED_TRIGGER'),
+        ],
+      },
+    })
+  )('[Given] --toolkits names a toolkit whose slug contains an underscore', it => {
+    // #4947: the first `_` segment of `ONE_DRIVE_FILE_CREATED_TRIGGER` is `ONE`.
+    it.effect('[Then] its events match and the others are dropped', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI();
+        yield* cli([
+          'dev',
+          'triggers',
+          'listen',
+          '--toolkits',
+          'one_drive',
+          '--max-events',
+          '1',
+        ]).pipe(Effect.provide(terminal.layer));
+
+        expect(terminal.stdout()).toContain('"id":"evt_one_drive"');
+        expect(terminal.stdout()).not.toContain('evt_gmail');
+      })
+    );
+  });
+});

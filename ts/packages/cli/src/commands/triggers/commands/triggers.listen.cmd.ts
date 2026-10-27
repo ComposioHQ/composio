@@ -17,6 +17,7 @@ import {
 } from '../format';
 import { parseCsv } from '../parse-csv';
 import { parseTriggerListenEvent } from '../parse';
+import { makeTriggerToolkitResolver } from '../resolve-toolkit';
 import type { TriggerListenFilters } from '../types';
 
 const toolkits = Flag.String('toolkits').pipe(
@@ -227,6 +228,10 @@ export const triggersCmd$Listen = Command.make(
           `${eventCount(count)} failed to append to ${outputFilePath} while listening.`,
       });
       let tableHeaderPrinted = false;
+      const resolveToolkit = yield* makeTriggerToolkitResolver({
+        orgId: project.orgId,
+        projectId: project.projectId,
+      });
 
       yield* ui.intro('composio dev triggers listen');
       if (forwardUrl) {
@@ -257,7 +262,7 @@ export const triggersCmd$Listen = Command.make(
       const onEvent = (runEvent: RunEvent) => (eventData: Record<string, unknown>) => {
         runEvent(
           Effect.gen(function* () {
-            const parsed = parseTriggerListenEvent(eventData);
+            const parsed = yield* resolveToolkit(parseTriggerListenEvent(eventData));
             if (!matchesTriggerListenFilters(filters, parsed)) {
               return;
             }

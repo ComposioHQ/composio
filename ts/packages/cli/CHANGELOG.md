@@ -16,8 +16,12 @@
   contains an underscore, such as `one_drive`, `launch_darkly` and
   `agent_mail`. Events carry no toolkit slug, so the listener took the first
   `_` segment of the trigger slug (`ONE` for `ONE_DRIVE_FILE_CREATED_TRIGGER`)
-  and dropped every event of those toolkits. A `--toolkits` entry now also
-  matches when the trigger slug starts with `<toolkit>_`.
+  and dropped every event of those toolkits. The listener now resolves the
+  toolkit as the longest known toolkit slug the trigger slug starts with, the
+  same way `composio execute` resolves a tool's toolkit, and shows it in the
+  event summary and table. `--toolkits` still compares whole slugs, so
+  `--toolkits google` does not match a `google_calendar` trigger. A trigger
+  slug no known toolkit prefixes keeps the first-segment toolkit.
 
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
