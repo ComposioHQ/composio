@@ -143,16 +143,21 @@ export const schemaHasFileUploadable = (schema: JsonSchema | undefined): boolean
   return false;
 };
 
-// Bind array schemas to the caller's existing items. A schema-only path loses
-// the index and would cause --file to replace the array with an object.
+// Whether a branch can describe the value, judged by its `const` properties.
+// A supplied property with another value rules the branch out, as does a
+// required one the caller left out; an omitted optional one rules nothing out.
 const matchesDiscriminants = (schema: JsonSchema, value: unknown): boolean => {
   if (!isSchemaRecord(schema.properties) || !isSchemaRecord(value)) return true;
+  const required = Array.isArray(schema.required) ? schema.required : [];
   return Object.entries(schema.properties).every(([key, property]) => {
     if (!isSchemaRecord(property) || !Object.hasOwn(property, 'const')) return true;
+    if (!Object.hasOwn(value, key)) return !required.includes(key);
     return value[key] === property.const;
   });
 };
 
+// Bind array schemas to the caller's existing items. A schema-only path loses
+// the index and would cause --file to replace the array with an object.
 export const findFileUploadablePaths = (
   schema: JsonSchema | undefined,
   basePath: ReadonlyArray<string | number> = [],

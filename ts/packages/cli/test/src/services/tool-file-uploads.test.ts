@@ -88,6 +88,25 @@ describe('file argument paths', () => {
       )
     ).toEqual([[1]]);
   });
+
+  const optionalModeSchema = (required: ReadonlyArray<string>) => ({
+    type: 'object',
+    allOf: [
+      {
+        properties: { mode: { const: 'upload' }, file: { file_uploadable: true } },
+        required,
+      },
+    ],
+  });
+
+  it('keeps a branch whose optional const property the caller omitted', () => {
+    expect(findFileUploadablePaths(optionalModeSchema(['file']), [], {})).toEqual([['file']]);
+  });
+
+  it('drops a branch whose const property is required and omitted, or set to another value', () => {
+    expect(findFileUploadablePaths(optionalModeSchema(['mode', 'file']), [], {})).toEqual([]);
+    expect(findFileUploadablePaths(optionalModeSchema(['file']), [], { mode: 'link' })).toEqual([]);
+  });
 });
 
 describe('local file MIME metadata', () => {
