@@ -7,7 +7,7 @@
   "access": "restricted",
   "privatePackages": {
     "version": true,
-    "tag": true
+    "tag": false
   },
   "baseBranch": "next",
   "updateInternalDependencies": "patch",

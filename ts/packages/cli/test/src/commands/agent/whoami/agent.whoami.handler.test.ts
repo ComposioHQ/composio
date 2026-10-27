@@ -126,9 +126,9 @@ describe('runAgentWhoami', () => {
 
         yield* runAgentWhoami();
 
-        const warnings = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
-        expect(warnings).toEqual([message]);
-        expect(yield* decoration).toContain('Next steps:');
+        // Plain lines on stderr: a headless terminal drops `ui.log.*` decoration.
+        const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
+        expect(stderr).toEqual([message, expect.stringMatching(/^Next steps:\n/)]);
         expect(process.exitCode).toBe(1);
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(outputs).toEqual([]);

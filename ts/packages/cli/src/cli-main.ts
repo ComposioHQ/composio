@@ -72,6 +72,7 @@ import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { PendingLoginSession } from 'src/services/pending-login-session';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ShellSetupAbortError } from 'src/commands/install/install.errors';
+import { ReportedProxyCommandError } from 'src/commands/proxy.cmd';
 import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.cmd';
 import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
@@ -297,7 +298,7 @@ const warnOnBackendMismatch = Effect.gen(function* () {
 
 const cliProgram = (argv: ReadonlyArray<string>) =>
   warnOnBackendMismatch.pipe(
-    Effect.andThen(showUpdateNotice),
+    Effect.andThen(showUpdateNotice(argv)),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(
@@ -318,8 +319,8 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
           process.exitCode = 1;
         })
     ),
-    // A usage mistake, a missing login, an unresolved project, or an `--account` that selects
-    // no connected account is not a broken invariant: print the one-line fix and exit non-zero
+    // A usage mistake, a missing setup or login, or a failure a remote service reported clearly
+    // (see `UsageFailure`) is not a broken invariant: print the message and exit non-zero
     // instead of routing it through the defect reporter below.
     Effect.catchIf(
       (error): error is UsageFailure => isUsageFailure(error),
@@ -340,10 +341,12 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
         process.exitCode = 1;
       })
     ),
-    // `composio execute` already printed the failed result as JSON on stdout; the typed
-    // failure only exists so scripts and agents see a non-zero exit code.
+    // `composio execute` and `composio proxy` already printed the failure, and the failed result
+    // as JSON on stdout; the typed failure only exists so scripts and agents see a non-zero exit
+    // code.
     Effect.catchIf(
-      (error): error is ReportedToolExecutionError => error instanceof ReportedToolExecutionError,
+      (error): error is ReportedToolExecutionError | ReportedProxyCommandError =>
+        error instanceof ReportedToolExecutionError || error instanceof ReportedProxyCommandError,
       () =>
         Effect.sync(() => {
           process.exitCode = 1;

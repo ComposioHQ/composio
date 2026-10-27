@@ -423,7 +423,7 @@ class HttpClient(BaseComposio, WithLogger):
         # Lazily-built sibling client with retries disabled; see `without_retries`.
         self._without_retries: t.Optional[te.Self] = None
 
-    def copy(  # type: ignore[override]
+    def with_options(  # type: ignore[override]
         self,
         *,
         _extra_kwargs: t.Mapping[str, t.Any] = {},
@@ -432,13 +432,13 @@ class HttpClient(BaseComposio, WithLogger):
         """
         Clone the client, re-injecting the SDK-only constructor keywords.
 
-        The generated ``copy`` rebuilds the client via ``type(self)(...)`` with
-        the parent's ``auth``, ``scope``, ``identity`` and options, but cannot
-        know ``provider``, which this subclass requires, or the SDK logger.
-        Threading them through ``_extra_kwargs`` makes ``copy`` /
+        The generated ``with_options`` rebuilds the client via ``type(self)(...)``
+        with the parent's ``auth``, ``scope``, ``identity`` and options, but
+        cannot know ``provider``, which this subclass requires, or the SDK
+        logger. Threading them through ``_extra_kwargs`` makes
         ``with_options`` work (e.g. ``with_options(max_retries=0)``).
         """
-        return super().copy(  # type: ignore[misc]
+        return super().with_options(  # type: ignore[misc]
             _extra_kwargs={
                 "provider": self.provider,
                 # Share the parent's logger; otherwise constructing the clone
@@ -449,11 +449,6 @@ class HttpClient(BaseComposio, WithLogger):
             },
             **kwargs,
         )
-
-    # Re-alias `with_options` to this override. The base class binds
-    # `with_options = copy` at class-definition time, so without this it would
-    # still resolve to the base `copy` and miss the `provider` re-injection.
-    with_options = copy
 
     @property
     def without_retries(self) -> te.Self:

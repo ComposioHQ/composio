@@ -4,6 +4,21 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 
 describe('CLI: composio whoami', () => {
+  layer(TestLive())('without a login', it => {
+    it.effect('[Given] no API key [Then] fails with NotLoggedInError and prints nothing', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['whoami']).pipe(Effect.flip);
+
+        // `cli-main.ts` prints the message on stderr and exits 1.
+        expect(failure).toMatchObject({
+          _tag: 'commands/NotLoggedInError',
+          message: 'You are not logged in yet. Please run `composio login`.',
+        });
+        expect(yield* MockConsole.getLines()).toEqual([]);
+      })
+    );
+  });
+
   const testConfigProvider = ConfigProvider.fromEnv({
     env: { COMPOSIO_USER_API_KEY: 'api_key_from_test_config_provider' },
   });

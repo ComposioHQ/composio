@@ -1,5 +1,13 @@
 # @e2e-tests/node-json-schema-to-zod-v3
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [f119f05]
+- Updated dependencies [04fdb41]
+  - @composio/json-schema-to-zod@0.4.0
+
 ## 0.0.4
 
 ### Patch Changes

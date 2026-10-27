@@ -99,15 +99,32 @@ describe('CLI: composio dev triggers info', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] no slug [Then] warns missing argument',
+    '[Given] no slug [Then] fails with a usage error',
     it => {
-      it.effect('shows missing argument warning', () =>
+      it.effect('raises a CommandInputError naming <slug>', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'info']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const failure = yield* cli(['dev', 'triggers', 'info']).pipe(Effect.flip);
 
-          expect(output).toContain('Missing required argument');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev triggers info',
+            option: '<slug>',
+            message:
+              'Missing required argument: <slug>\nTry specifying a trigger slug, e.g.:\n> composio dev triggers info "GMAIL_NEW_GMAIL_MESSAGE"',
+          });
+          expect(yield* MockConsole.getLines()).toEqual([]);
+        })
+      );
+
+      it.effect('names the root command on the root tree', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['triggers', 'info']).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'triggers info',
+            message: expect.stringContaining('> composio triggers info "GMAIL_NEW_GMAIL_MESSAGE"'),
+          });
         })
       );
     }
@@ -124,10 +141,8 @@ describe('CLI: composio dev triggers info', () => {
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev triggers list "<toolkit>"');
-          // Once plainly for a captured stderr, once through the decorated log.
+          // One plain stderr emission: the message, then the hint.
           expect(lines).toEqual([
-            'Trigger "NONEXISTENT_TRIGGER" not found.',
-            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
             'Trigger "NONEXISTENT_TRIGGER" not found.',
             'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
           ]);

@@ -24,7 +24,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.17.0', '25.9.0'], // optional, defaults to mise.toml
+    node: ['22.23.4', '24.22.1', '26.12.1'], // optional, defaults to mise.toml
     cli: ['current'], // optional, defaults to CLI package.json version
   },
   env: { MY_VAR: 'value' }, // optional env vars
@@ -189,9 +189,9 @@ Node.js versions to test are resolved in this order:
 
 The following versions are pre-defined in `const.ts`:
 
-- `22.22.3`
-- `24.17.0`
-- `25.9.0`
+- `22.23.4`
+- `24.22.1`
+- `26.12.1`
 - `current` (resolves to `mise.toml` version)
 
 ### CLI Version Resolution
@@ -263,13 +263,13 @@ Each test suite generates a `DEBUG.log` file with structured output grouped by r
 E2E Test: openai-zod4-compat
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/openai-zod4-compat/e2e.test.ts
-Runtime versions: Node.js 22.22.3, Node.js 24.17.0, Node.js 25.9.0
+Runtime versions: Node.js 22.23.4, Node.js 24.22.1, Node.js 26.12.1
 ================================================================================
 
 ################################################################################
-### Node.js 22.22.3
+### Node.js 22.23.4
 ################################################################################
-Image: composio-e2e-node:22.22.3
+Image: composio-e2e-node:22.23.4
 
 --- Phase 1/2: setup ---
 Container: e2e-openai-zod4-compat-22-22-3-1769775520382-setup
@@ -300,9 +300,9 @@ All packages work together!
 ================================================================================
 Summary
 ================================================================================
-Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.17.0: PASS (2 phases, 3.09s total)
-Node.js 25.9.0: PASS (2 phases, 3.08s total)
+Node.js 22.23.4: PASS (2 phases, 3.11s total)
+Node.js 24.22.1: PASS (2 phases, 3.09s total)
+Node.js 26.12.1: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

@@ -1,30 +1,43 @@
 [project]
 name = "composio"
-version = "0.28.0"
+version = "0.30.0"
 description = "SDK for integrating Composio with your applications."
 readme = "README.md"
 requires-python = ">=3.11,<3.16"
+# Third-party ranges stop before the next major line after the newest release
+# available when the cap was set (before 1.0 for 0.x packages), so a future
+# major never installs until we raise the cap. certifi is the exception.
 dependencies = [
-    "pysher>=1.0.8",
-    "pydantic>=2.11.9",
-    "composio-client==2.0.0rc19",
-    "typing-extensions>=4.16.0",
-    "openai>=2.48.0",
-    "json-schema-to-pydantic>=0.4.11",
-    "jsonschema>=4.23.0",
+    # pysher is unmaintained (last release 2022-10). Pin it exactly so a new
+    # upload under that name cannot reach installs. websocket-client is its
+    # transport, and `triggers.py` depends on its reconnect behavior.
+    "pysher==1.0.8",
+    "websocket-client<2",
+    "pydantic>=2.11.9,<3",
+    "composio-client==2.0.0rc22",
+    "typing-extensions>=4.16.0,<5",
+    "openai>=2.48.0,<4",
+    "json-schema-to-pydantic>=0.4.11,<1",
+    "jsonschema>=4.23.0,<5",
     # The pinning adapter mounts through `get_connection_with_tls_context`,
     # which `HTTPAdapter.send` only calls on requests >= 2.32.2; older
     # versions silently skip it and the pinning never engages.
     # 2.32.4 fixes GHSA-9hjg-9r4m-mvj7 (.netrc credentials leaked to a
     # malicious URL); `url_safety` fetches user- and server-supplied URLs.
-    "requests>=2.32.4",
+    "requests>=2.32.4,<3",
     # `url_safety` imports urllib3 directly: `NameResolutionError` only exists
     # from 2.0, and the pinning adapter reaches into 2.x connection internals.
     # requests alone allows 1.x, which would fail at import time.
     # 2.7.0 fixes GHSA-mf9v-mfxr-j63j (decompression-bomb guard bypass in
     # the streaming API our download size limit relies on) and
     # GHSA-qccp-gfcp-xxvc (sensitive headers forwarded across origins).
-    "urllib3>=2.7.0",
+    "urllib3>=2.7.0,<3",
+    # `requests` verifies TLS against certifi's bundle. 2026.10.19 removes
+    # the emSign ECC Root CA - G3 root after eight eMudhra intermediate keys
+    # were compromised; older bundles still trust certificates they issue.
+    # No upper bound: certifi is a CA bundle on calendar versions, and a cap
+    # would block future root removals.
+    "certifi>=2026.10.19",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -50,4 +63,17 @@ dev = [
     "semver>=3.0.4",
     # CrewAI 1.x currently constrains Tomli to the 2.0 line.
     "tomli>=2.0.2,<2.1",
+]
+# Docs examples use this locked group instead of an unlocked `uv run --with`
+# overlay. Keep the mypy version in sync with noxfile.py.
+docs-snippets = [
+    "mypy==2.3.1",
+]
+# The release build installs only this group, from uv.lock, and builds with
+# `--no-isolation` so no unlocked build backend is fetched at release time.
+# Pinned exactly; only move to releases at least three days old, matching
+# pnpm's `minimumReleaseAge`.
+release = [
+    "build==1.6.1",
+    "setuptools==84.1.0",
 ]

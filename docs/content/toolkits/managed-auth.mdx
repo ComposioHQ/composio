@@ -35,11 +35,33 @@ Some toolkits support more than one authentication method. A toolkit appears und
 
 ## Check with the API
 
-Call the toolkit endpoint and read `composio_managed_auth_schemes`:
+Fetch the toolkit and read its managed auth schemes (`composio_managed_auth_schemes` in the API and Python, `composioManagedAuthSchemes` in TypeScript):
 
-```bash
-curl 'https://backend.composio.dev/api/v3.1/toolkits/gmail' \
-  -H 'x-api-key: YOUR_API_KEY'
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+toolkit = composio.toolkits.get("gmail")
+print(toolkit.composio_managed_auth_schemes)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const toolkit = await composio.toolkits.get('gmail');
+console.log(toolkit.composioManagedAuthSchemes);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/toolkits/gmail \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
 
 If `composio_managed_auth_schemes` contains the toolkit's OAuth method, Composio provides the OAuth app. If the field does not contain that method, register your own OAuth app and supply its client ID and client secret.

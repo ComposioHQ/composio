@@ -14,6 +14,11 @@ const OPENAPI_SPEC_FILES = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  experimental: {
+    // Toolkit pages hold megabytes of tool and trigger data during generation.
+    // GitHub Actions needs fewer workers than Vercel's larger build machine.
+    cpus: process.env.GITHUB_ACTIONS === 'true' ? 2 : 15,
+  },
   turbopack: {
     root: __dirname,
     resolveAlias: {

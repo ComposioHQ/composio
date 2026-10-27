@@ -60,7 +60,7 @@ def _client_with_transport(
 
 
 class TestCopyOverride:
-    """Guards the ``HttpClient.copy()`` override that makes ``with_options`` work."""
+    """Guards the ``HttpClient.with_options()`` override."""
 
     def test_with_options_does_not_raise_and_overrides_max_retries(self) -> None:
         client = HttpClient(
@@ -69,7 +69,7 @@ class TestCopyOverride:
             base_url="https://backend.invalid",
         )
 
-        # Without the copy() override this raises:
+        # Without the with_options() override this raises:
         # TypeError: missing required keyword-only argument 'provider'.
         clone = client.with_options(max_retries=0)
 
@@ -106,26 +106,24 @@ class TestCopyOverride:
         assert client.without_retries._strict_response_validation is True
 
 
-class TestStainlessCopyContract:
-    """Pin the generated-client internals the ``copy()`` override depends on.
+class TestBaseWithOptionsContract:
+    """Pin the generated-client internals the ``with_options()`` override depends on.
 
     These guard the contract so a ``composio_client`` regen that breaks it fails
     as an obvious assertion here rather than a cryptic ``TypeError`` raised deep
     inside ``with_options`` at runtime.
     """
 
-    def test_base_copy_accepts_extra_kwargs(self) -> None:
+    def test_base_with_options_accepts_extra_kwargs(self) -> None:
         # The override threads `provider` (and the SDK logger) through
-        # `_extra_kwargs`; the base `copy` must still accept it.
-        assert "_extra_kwargs" in inspect.signature(BaseComposio.copy).parameters
+        # `_extra_kwargs`; the base `with_options` must still accept it.
+        # Read through `__dict__`: up to rc.19 `with_options` is a class-level
+        # alias of `copy`, which mypy will not let a generic class expose.
+        base_with_options = BaseComposio.__dict__["with_options"]
+        assert "_extra_kwargs" in inspect.signature(base_with_options).parameters
 
-    def test_with_options_is_aliased_to_our_copy_override(self) -> None:
-        # The base binds `with_options = copy` at class-definition time, so the
-        # subclass must re-alias it to the override that re-injects `provider`.
-        # (Accessing these bound methods via the generic class trips mypy's
-        # "generic instance variable via class" check; the identity assert is
-        # intentional.)
-        assert HttpClient.__dict__["with_options"] is HttpClient.__dict__["copy"]  # type: ignore[misc]
+    def test_with_options_is_overridden(self) -> None:
+        assert "with_options" in HttpClient.__dict__
 
 
 class TestWritePathDoesNotRetry:

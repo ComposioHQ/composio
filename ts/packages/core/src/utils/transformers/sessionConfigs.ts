@@ -13,7 +13,7 @@ import {
 import { transform } from '../transform';
 
 export const transformSessionConfigSummary = (
-  response: RawSessionConfigListResponse.Item
+  response: RawSessionConfigListResponse['items'][number]
 ): SessionConfigSummary => {
   return transform(response)
     .with(SessionConfigSummarySchema)
@@ -45,8 +45,8 @@ export const transformSessionConfig = (response: RawSessionConfig): SessionConfi
       name: response.name,
       description: response.description,
       archived: response.archived,
-      // The policy has no snake_case keys: copy it as-is so toolkit slugs
-      // and tag names survive.
+      // The policy keeps the backend's wire shape: copy it as-is so toolkit
+      // slugs and tag names survive.
       config: response.config,
       createdAt: response.created_at,
       updatedAt: response.updated_at,

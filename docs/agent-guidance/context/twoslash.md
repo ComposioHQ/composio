@@ -1,23 +1,28 @@
-# Twoslash - TypeScript Code Block Type Checking
+# TypeScript snippet checking
 
-**ALL TypeScript code blocks are type-checked at build time.** This ensures documentation stays in sync with the SDK.
+Production Twoslash validates TypeScript fences in build-covered MDX collections. `check:typescript-snippets` covers maintained API overviews, authored reference pages, and plain-Markdown FAQ/KB inputs that the build does not type-check. These are complementary checks, not a claim that every rendered code block is compiled.
 
-> **Note**: This only validates TypeScript (`ts`, `typescript`, `tsx`) code blocks. Python code blocks are NOT type-checked.
+Python has a separate syntax/mypy gate; see `code-examples.md`.
 
-## Key Features
+## Commands and coverage
 
-- **Default on**: All TypeScript blocks are validated. No annotation needed.
-- **Build-time validation**: Type errors fail the build.
-- **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to docs/
-- **Disabled in dev**: Twoslash is disabled during `bun dev` to prevent heap memory issues. It only runs during `bun run build` / CI.
+Run from `docs/`:
 
-## Exclusions
+```bash
+bun run check:typescript-snippets
+GITHUB_ACTIONS=true bun run build
+```
 
-- **Reference docs** (`/content/reference/`): Excluded from Twoslash via collection-level `mdxOptions` in `source.config.ts`. These are auto-generated and don't need type checking.
+- Build-time Twoslash is disabled during `bun dev` to avoid its development memory cost.
+- `source.config.ts` configures collection-level MDX behavior. The reference collection has no Twoslash transformer; its maintained examples are checked by the standalone command instead.
+- Plain-Markdown FAQs and canonical/curated KB inputs are checked before their presentation conversion. Generated KB TypeScript stays TypeScript and is also checked when built.
+- Generated SDK symbol-reference signatures/partial fragments and historical changelogs are inventory-only, not certified by the maintained-example gates.
+- `.github/workflows/docs-typescript-check.yml` runs standalone regressions, the standalone gate, lint, type checking, and the production build.
+- Imports resolve to the versions installed from `docs/package.json` and `docs/bun.lock`. This does not type-check against the local TypeScript SDK workspace.
 
-## Common Patterns
+## Complete examples and hidden setup
 
-### Basic snippet with setup code (hidden from output)
+Prefer explicit imports and initialization. Use `// ---cut---` when setup is necessary but should not be displayed; hidden code is still checked.
 
 ````md
 ```typescript
@@ -25,79 +30,47 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'key' });
 const userId = 'user_123';
 // ---cut---
-// Only code below this line is shown in docs
 const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
 ```
 ````
 
-### Using SDK-exported types for callbacks
+The standalone checker can supply the conventional `composio` fragment binding only when the compiler reports that name unresolved. It does not replace a local declaration, imported alias, or nested parameter. New complete examples should not depend on that compatibility prelude.
 
-The SDK exports types for modifiers - use them instead of inline type annotations:
+## Callback types
 
-````md
-```typescript
-import { Composio, TransformToolSchemaModifier } from '@composio/core';
-
-const modifySchema: TransformToolSchemaModifier = ({ toolSlug, toolkitSlug, schema }) => {
-  // TypeScript infers all parameter types!
-  return schema;
-};
-```
-````
-
-Available modifier types from `@composio/core`:
-- `beforeExecuteModifier` - for `beforeExecute` callbacks
-- `afterExecuteModifier` - for `afterExecute` callbacks
-- `TransformToolSchemaModifier` - for `modifySchema` callbacks
-
-### Skip type checking (for partial snippets or external deps)
+Use SDK-exported types instead of recreating callback interfaces:
 
 ````md
 ```typescript
-// @noErrors
-import { SomeExternalThing } from 'not-installed-package';
+import type { TransformToolSchemaModifier } from '@composio/core';
+
+const modifySchema: TransformToolSchemaModifier = ({ schema }) => schema;
 ```
 ````
 
-### Declare external variables in hidden section
+Other exported modifier types include `beforeExecuteModifier` and `afterExecuteModifier`.
 
-When code uses variables that aren't defined in the snippet, declare them before the cut:
+## Diagnostics and annotations
 
-````md
-```typescript
-import { Composio } from '@composio/core';
+| Annotation | Effect |
+|---|---|
+| `// ---cut---` | Hide setup from readers, not the compiler |
+| `// ^?` | Show the inferred type |
+| `// @errors: 2322` | Twoslash presentation metadata; the standalone gate still reports actual errors |
+| `// @ts-expect-error` | Suppress one documented typing mismatch; must explain the verified SDK/type gap |
 
-declare const composio: Composio;
-declare const userId: string;
-// ---cut---
-const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
-```
-````
+Do not add blanket `@noErrors`, `@noErrorsCutted`, `@noCheck`, or `@ts-nocheck` to make a current example pass. The standalone checker rejects these directives and reports the underlying diagnostics. Some older build-only examples retain Twoslash suppression; their presence is a validation limit, not evidence that the code compiles.
 
-## Annotations
-
-| Annotation | Purpose |
-|------------|---------|
-| `// ---cut---` | Hide code above from output (but include for compilation) |
-| `// @noErrors` | Skip all type checking for this block |
-| `// @errors: 2322` | Expect specific error code (won't fail build) |
-| `// ^?` | Show type on hover at that position |
-
-## Configuration
-
-- **Config**: `source.config.ts` - `transformerTwoslash({ explicitTrigger: false })`
-- **SDK packages**: Installed as devDependencies for import resolution
-- **Reference exclusion**: Uses `applyMdxPreset` with custom `rehypeCodeOptions` (no twoslash transformer)
+For an unavailable dependency, add the dependency through the package manager when it belongs in the supported docs toolchain. For a genuine missing SDK operation, keep the language option and explain the gap in a Callout. Do not invent types or broadly suppress errors to make the tabs appear equivalent.
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| Import fails | Ensure the package is in `devDependencies` |
-| External dependency | Use `// @noErrors` for examples with packages not in package.json |
-| Setup code needed | Use `// ---cut---` to add imports/declarations that compile but aren't shown |
-| Error code 2304 | "Cannot find name" - declare the variable in hidden section |
-| Error code 2322 | Type mismatch - fix the types or use SDK-exported types |
-| Callback types | Prefer importing SDK types over inline `{ foo: string }` annotations |
+| Failure | Action |
+|---|---|
+| Import cannot resolve | Check the installed docs dependencies and lockfile |
+| Name cannot resolve | Add explicit initialization or a narrowly scoped hidden declaration |
+| Argument or callback mismatch | Compare with the installed SDK signature; use exported types |
+| Generated KB error | Edit its `kb/articles` source and corresponding canonical `kb/source` article, then regenerate |
+| Reference example error | Edit `api-overviews` for generated overviews, or the authored reference source |
 
-Always run `bun run build` locally to validate all code blocks before pushing.
+Static type checking does not establish that requests have equivalent defaults, filters, identities, permissions, or output. Review those against SDK behavior and the OpenAPI contract, then inspect the built tabs and agent Markdown.

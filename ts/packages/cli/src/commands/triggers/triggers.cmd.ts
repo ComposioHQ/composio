@@ -24,7 +24,7 @@ export const triggersCmd = Command.make('triggers').pipe(
     triggersCmd$List.pipe(rejectsSharedFlags('dev triggers list')),
     triggersCmd$Info.pipe(rejectsSharedFlags('dev triggers info')),
     triggersCmd$Status.pipe(rejectsSharedFlags('dev triggers status')),
-    triggersCmd$Create.pipe(rejectsSharedFlags('dev triggers create')),
+    triggersCmd$Create.pipe(rejectsSharedFlags('dev triggers create', ['--project-name'])),
     triggersCmd$Enable.pipe(rejectsSharedFlags('dev triggers enable')),
     triggersCmd$Disable.pipe(rejectsSharedFlags('dev triggers disable')),
   ]),

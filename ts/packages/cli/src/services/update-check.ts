@@ -5,6 +5,7 @@ import { Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { GITHUB_CONFIG } from 'src/config';
+import { rootCommandIndex } from 'src/utils/cli-args';
 import { APP_VERSION } from '../constants';
 import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
@@ -26,6 +27,12 @@ import { TerminalUI } from './terminal-ui';
  */
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * `composio upgrade` resolves the latest release live, so a cached hint printed before it runs
+ * could only repeat that answer or contradict it with an older version.
+ */
+const UPGRADE_COMMAND_NAME = 'upgrade';
 
 /** Matches `@composio/cli@<semver>` — excludes prereleases. */
 const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
@@ -122,6 +129,26 @@ const defaultConfig = (stateFile: string) =>
     } satisfies UpdateCheckConfig;
   });
 
+const attemptFileFor = (stateFile: string) => `${stateFile}.attempt`;
+
+const writeJsonFile = (file: string, value: unknown) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+    yield* fs.writeFileString(file, JSON.stringify(value, null, 2));
+  });
+
+/** Persist a successful check and clear any failed-attempt marker it supersedes. */
+const writeState = (stateFile: string, state: UpdateCheckState) =>
+  writeJsonFile(stateFile, state).pipe(
+    Effect.andThen(
+      Effect.flatMap(FileSystem.FileSystem, fs =>
+        fs.remove(attemptFileFor(stateFile), { force: true })
+      )
+    )
+  );
+
 // ── Pure helpers ────────────────────────────────────────────────────────
 
 /** Extract the highest stable semver from GitHub releases that include the required binary. */
@@ -160,7 +187,7 @@ export function parseLatestVersionFromReleases(
 // ── Factory ─────────────────────────────────────────────────────────────
 
 export function createUpdateChecker(config: UpdateCheckConfig) {
-  const attemptFile = `${config.stateFile}.attempt`;
+  const attemptFile = attemptFileFor(config.stateFile);
 
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -176,10 +203,15 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
   /**
    * If a cached newer version is known, print a one-line hint to stderr.
-   * Reads a tiny JSON file and does a semver compare.
+   * Reads a tiny JSON file and does a semver compare. Skipped for `composio upgrade`.
    */
-  function showUpdateNotice(terminal: Pick<TerminalUI, 'capabilities' | 'error'>) {
+  function showUpdateNotice(
+    terminal: Pick<TerminalUI, 'capabilities' | 'error'>,
+    commandName?: string
+  ) {
     return Effect.gen(function* () {
+      if (commandName === UPGRADE_COMMAND_NAME) return;
+
       // `terminal.error` writes even when stderr is redirected, so gate this
       // advisory notice explicitly while leaving stdout out of the decision.
       const { canDecorate } = yield* terminal.capabilities;
@@ -209,8 +241,6 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    * propagate back into the fire-and-forget caller.
    */
   const checkForUpdate = Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const checkStartedAt = new Date();
     const checkStartedAtMs = checkStartedAt.getTime();
     const parseTimestamp = (value: string): number | undefined => {
@@ -251,11 +281,6 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       headers.Authorization = `Bearer ${config.accessToken}`;
     }
 
-    const writeJsonFile = (file: string, value: unknown) =>
-      fs
-        .makeDirectory(path.dirname(file), { recursive: true })
-        .pipe(Effect.andThen(fs.writeFileString(file, JSON.stringify(value, null, 2))));
-
     const fetchLatestVersion = Effect.gen(function* () {
       const response = yield* Effect.tryPromise(() =>
         config.fetchFn(config.releasesUrl, { headers, signal: AbortSignal.timeout(10_000) })
@@ -281,10 +306,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       lastChecked: new Date().toISOString(),
       latestVersion: latestVersion.value ?? previousLatestVersion ?? config.currentVersion,
     };
-    yield* writeJsonFile(config.stateFile, state).pipe(
-      Effect.andThen(fs.remove(attemptFile, { force: true })),
-      Effect.ignore
-    );
+    yield* writeState(config.stateFile, state).pipe(Effect.ignore);
     return { state: Option.some(state), refreshFailed: false } as const;
   });
 
@@ -326,13 +348,32 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
 const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
 
-/** Print upgrade hint to stderr if a newer version is cached. */
-export const showUpdateNotice = Effect.gen(function* () {
-  const terminal = yield* TerminalUI;
-  const stateFile = yield* defaultStateFile;
-  const config = yield* defaultConfig(stateFile);
-  yield* createUpdateChecker(config).showUpdateNotice(terminal);
-}).pipe(Effect.provide(DefaultConfigLayers));
+/** Print upgrade hint to stderr if a newer version is cached, unless argv runs `composio upgrade`. */
+export const showUpdateNotice = (argv: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const terminal = yield* TerminalUI;
+    const stateFile = yield* defaultStateFile;
+    const config = yield* defaultConfig(stateFile);
+    const args = argv.slice(2);
+    yield* createUpdateChecker(config).showUpdateNotice(terminal, args[rootCommandIndex(args)]);
+  }).pipe(Effect.provide(DefaultConfigLayers));
+
+/**
+ * Record a live-resolved latest stable release (e.g. `@composio/cli@0.5.0`) as the cached update
+ * check, so later hints agree with what `composio upgrade` just saw. Tags that are not a stable
+ * CLI release are ignored, and a failed write is swallowed: the cache is advisory.
+ */
+export const recordLatestStableRelease = (releaseTag: string) =>
+  Option.fromNullishOr(CLI_RELEASE_TAG_RE.exec(releaseTag)?.[1]).pipe(
+    Option.match({
+      onNone: () => Effect.void,
+      onSome: latestVersion =>
+        Effect.gen(function* () {
+          const stateFile = yield* defaultStateFile;
+          yield* writeState(stateFile, { lastChecked: new Date().toISOString(), latestVersion });
+        }).pipe(Effect.ignore),
+    })
+  );
 
 /**
  * Refresh the release cache if stale and return a machine-readable status.

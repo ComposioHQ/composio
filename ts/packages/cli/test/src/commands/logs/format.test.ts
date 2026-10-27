@@ -1,4 +1,4 @@
-import type { Logs } from '@composio/client/resources/logs/logs';
+import type { ToolListResponse, ToolRetrieveResponse } from '@composio/client/resources/_internal/logs';
 import { describe, expect, it } from 'vitest';
 import {
   formatTriggerLogInfo,
@@ -12,8 +12,8 @@ import {
 } from 'src/commands/logs/trigger-log-record';
 import { green, red } from 'src/ui/colors';
 
-type ToolLog = Logs.ToolListResponse.Data;
-type ToolLogDetailed = Logs.ToolRetrieveResponse;
+type ToolLog = ToolListResponse['data'][number];
+type ToolLogDetailed = ToolRetrieveResponse;
 
 const makeTriggerLog = (createdAt: string | number): TriggerLogRecord =>
   decodeTriggerLogRecord({

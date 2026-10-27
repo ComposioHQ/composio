@@ -8,22 +8,32 @@ import {
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clearApolloIdentityForAnalytics } from 'src/analytics/dispatch';
+import { commandInputError } from 'src/commands/errors';
 
-/**
- * CLI command to log out from the Composio CLI.
- *
- * @example
- * ```bash
- * composio logout <command>
- * ```
- */
-const force = Flag.Boolean('force').pipe(
+// `--force` and `-f` predate `--yes` and keep working.
+const yes = Flag.Boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withAlias('force'),
   Flag.withAlias('f'),
   Flag.withDefault(false),
   Flag.withDescription('Skip confirmation prompts')
 );
 
-export const logoutCmd = Command.make('logout', { force }, ({ force }) =>
+/** Without a terminal to confirm on, an agent logout needs `--yes`. */
+const NEEDS_YES_MESSAGE =
+  '`composio logout` needs --yes when not running interactively: it removes the stored Composio agent key.';
+
+/**
+ * CLI command to log out from the Composio CLI. An agent logout removes the stored agent key, so
+ * it asks first; without a terminal to ask on it needs `--yes` and otherwise fails with a
+ * `CommandInputError`. Declining the prompt logs nothing out and exits 0.
+ *
+ * @example
+ * ```bash
+ * composio logout
+ * ```
+ */
+export const logoutCmd = Command.make('logout', { yes }, ({ yes }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
@@ -34,7 +44,11 @@ export const logoutCmd = Command.make('logout', { force }, ({ force }) =>
     }
 
     const loggedInAgent = yield* getCurrentLoggedInAgent;
-    if (Option.isSome(loggedInAgent) && !force) {
+    if (Option.isSome(loggedInAgent) && !yes) {
+      const { canPrompt } = yield* ui.capabilities;
+      if (!canPrompt) {
+        return yield* commandInputError('logout')(NEEDS_YES_MESSAGE, '--yes');
+      }
       yield* ui.note(
         [
           `You are logged in as a Composio agent (${loggedInAgent.value.email ?? loggedInAgent.value.slug ?? 'unknown'}).`,

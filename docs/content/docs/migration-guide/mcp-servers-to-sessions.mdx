@@ -62,7 +62,7 @@ have today if that's what you want.
 The two-step "create a server, then generate a per-user URL" collapses into a single
 `composio.create(...)`. Pass the **same** toolkit, auth config, and tool list you had on the server.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -115,6 +115,20 @@ const { mcp } = session;
 const mcpUrl = mcp.url;
 ```
 </Tab>
+<Tab value="API">
+```bash
+# After: one session, same toolkit + auth config + tools; read mcp.url from the response
+MCP_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user-123",
+    "toolkits": {"enable": ["gmail"]},
+    "auth_configs": {"gmail": "ac_xyz123"},
+    "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]}}
+  }' | jq -r '.mcp.url')
+```
+</Tab>
 </Tabs>
 
 Same `user_id` + same auth config → existing connected accounts are picked up automatically. No
@@ -132,10 +146,34 @@ the client changes.
 For consumer connections, use `https://connect.composio.dev/mcp`, not this URL.
 </Callout>
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
 ```python
 # Before: https://backend.composio.dev/v3/mcp/<SERVER_ID>?user_id=<USER_ID>
-# After:  session.mcp.url
+# After:
+mcp_url = session.mcp.url
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user-123', { mcp: true });
+// ---cut---
+// Before: https://backend.composio.dev/v3/mcp/<SERVER_ID>?user_id=<USER_ID>
+// After:
+const mcpUrl = session.mcp.url;
+```
+</Tab>
+<Tab value="API">
+```bash
+# Before: https://backend.composio.dev/v3/mcp/<SERVER_ID>?user_id=<USER_ID>
+# After: SESSION_ID is the session_id returned when you created the session
+MCP_URL=$(curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.mcp.url')
+```
+</Tab>
+</Tabs>
 
 </Step>
 
@@ -146,7 +184,7 @@ By default a session gives the agent **dynamic** tool discovery (meta-tools). If
 static behavior* as your old server — a fixed set of tools, no discovery — add the **direct-tools
 preset**. This preloads exactly the tools you enable and turns meta-tools off.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
@@ -174,6 +212,25 @@ const session = await composio.create("user-123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# The direct-tools preset is an SDK shorthand; send the settings it expands to
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user-123",
+    "toolkits": {"enable": ["gmail"]},
+    "auth_configs": {"gmail": "ac_xyz123"},
+    "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]}},
+    "manage_connections": {"enable": false},
+    "workbench": {"enable": false},
+    "preload": {"tools": "all"},
+    "search": {"enable": false},
+    "execute": {"enable_multi_execute": false}
+  }'
+```
+</Tab>
 </Tabs>
 
 Leave the preset off to get the upgrade: the agent discovers and loads tools at runtime, so you can
@@ -193,7 +250,7 @@ code paths.
 AI SDK, and others, so you skip manual schema wiring. With the direct-tools preset it returns your
 exact fixed tool set; by default it returns the meta-tools that drive runtime discovery.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 tools = session.tools()
@@ -208,13 +265,21 @@ const session = await composio.create("user-123");
 const tools = await session.tools();
 ```
 </Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session.
+# The API returns raw tool schemas; the SDK wraps them for your provider.
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 ### Execute a tool without an LLM
 
 For a deterministic, non-agent path, call a tool directly on the session.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = session.execute(
@@ -234,6 +299,18 @@ const result = await session.execute("GITHUB_CREATE_ISSUE", {
   repo: "my-repo",
   title: "Fix login bug",
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GITHUB_CREATE_ISSUE",
+    "arguments": {"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"}
+  }'
 ```
 </Tab>
 </Tabs>

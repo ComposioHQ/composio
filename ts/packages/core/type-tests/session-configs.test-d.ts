@@ -48,7 +48,9 @@ function policyMatchesClient(
 }
 
 // Every client list item field has a camelCased SDK counterpart.
-function summaryMatchesClient(item: SessionConfigsListResponse.Item): SessionConfigSummary {
+function summaryMatchesClient(
+  item: SessionConfigsListResponse['items'][number]
+): SessionConfigSummary {
   return {
     id: item.id,
     name: item.name,

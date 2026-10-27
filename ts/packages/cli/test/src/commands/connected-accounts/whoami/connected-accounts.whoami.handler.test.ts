@@ -3,6 +3,7 @@ import { Console, Effect, Layer, Option } from 'effect';
 import { runConnectedAccountsWhoami } from 'src/commands/connected-accounts/whoami/connected-accounts.whoami.handler';
 import { inactiveStatusMessage } from 'src/commands/connected-accounts/whoami/connected-accounts.whoami.format';
 import { MISSING_ID_MESSAGE, missingIdHint } from 'src/commands/connected-accounts/format';
+import { isUsageFailure } from 'src/commands/errors';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -108,13 +109,21 @@ describe('runConnectedAccountsWhoami', () => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect('[Given] no id [Then] warns with an example and fetches nothing', () => {
+  it.effect('[Given] no id [Then] fails with a usage error before any request', () => {
     const { layer, outputs, exitCodes } = whoamiTest();
     return Effect.gen(function* () {
-      yield* runConnectedAccountsWhoami({ id: Option.none() });
+      const failure = yield* runConnectedAccountsWhoami({ id: Option.none() }).pipe(Effect.flip);
 
-      expect(yield* stderrLines).toEqual([MISSING_ID_MESSAGE]);
-      expect(yield* stdoutLines).toEqual([missingIdHint('whoami')]);
+      expect(failure).toMatchObject({
+        _tag: 'commands/CommandInputError',
+        command: 'dev connected-accounts whoami',
+        option: '<id>',
+        message: `${MISSING_ID_MESSAGE}\n${missingIdHint('whoami')}`,
+      });
+      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      expect(isUsageFailure(failure)).toBe(true);
+      expect(yield* stderrLines).toEqual([]);
+      expect(yield* stdoutLines).toEqual([]);
       expect(outputs).toEqual([]);
       expect(exitCodes).toEqual([]);
     }).pipe(Effect.provide(layer));

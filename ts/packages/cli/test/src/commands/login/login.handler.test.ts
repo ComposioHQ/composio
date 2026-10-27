@@ -1,4 +1,10 @@
-import { Auth, make, type ComposioClientShape, type NotFoundError } from '@composio/client/effect';
+import {
+  APIConnectionError,
+  Auth,
+  make,
+  type ComposioClientShape,
+  type NotFoundError,
+} from '@composio/client/effect';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
@@ -32,6 +38,7 @@ import { NodeProcess } from 'src/services/node-process';
 import { ProjectContext } from 'src/services/project-context';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import { isUsageFailure } from 'src/commands/errors';
 import { MockConsole, ToolkitsTest } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
 import { mockAccountResources, type MockRequestScope } from 'test/__utils__/layers/accounts';
@@ -74,7 +81,6 @@ const HOME_SESSION_INFO = makeSessionInfo({
   orgId: 'org_home',
   orgName: 'Home Org',
   orgMemberId: 'member_home',
-  userId: 'user_123',
   email: 'cli@example.com',
 });
 
@@ -86,7 +92,6 @@ const sessionInfoFor = (scope: MockRequestScope) =>
         orgId: scope.orgId,
         orgName: `${scope.orgId} name`,
         orgMemberId: `member_${scope.orgId}`,
-        userId: 'user_123',
         email: 'cli@example.com',
       });
 
@@ -126,7 +131,7 @@ interface LoginFixture {
   readonly orgId?: Option.Option<string>;
   readonly pending?: Parameters<typeof PendingLoginSessionTest>[0];
   /** What `getSession` answers; a failure stands for an unknown or expired session. */
-  readonly session?: Effect.Effect<RetrievedSession, NotFoundError>;
+  readonly session?: Effect.Effect<RetrievedSession, NotFoundError | APIConnectionError>;
 }
 
 // A resource the account mocks do not shadow reaches this transport and dies with its URL.
@@ -382,7 +387,7 @@ describe('handlePollLogin', () => {
         yield* handlePollLogin({ noSkillInstall: true });
 
         expect(logins).toEqual([
-          { apiKey: 'uak_linked', orgId: 'org_first', testUserId: 'pg-test-user_123' },
+          { apiKey: 'uak_linked', orgId: 'org_first', testUserId: 'pg-test-member_org_first' },
         ]);
         expect(analytics.linked).toEqual(['member_org_first']);
         expect(Option.isNone(pending.current())).toBe(true);
@@ -421,9 +426,37 @@ describe('handleSessionKeyLogin', () => {
         operation: 'load',
         message: SESSION_NOT_FOUND_MESSAGE,
       });
+      expect(isUsageFailure(error)).toBe(true);
       expect(logins).toEqual([]);
     }).pipe(Effect.provide(layer));
   });
+
+  it.effect(
+    '[Given] the session lookup fails to connect [Then] keeps the cause and does not report an expired session',
+    () => {
+      const connectionError = new APIConnectionError({
+        message: 'Connection error.',
+        method: 'GET',
+        url: 'https://mock.invalid',
+        reason: 'TransportError',
+        description: 'fetch failed: connect ECONNREFUSED 127.0.0.1:1',
+      });
+      const { layer, logins } = loginHandlerTest({ session: Effect.fail(connectionError) });
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          handleSessionKeyLogin({ key: 'session-key', noWait: true, noSkillInstall: true })
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginSessionRequestError',
+          cause: connectionError,
+        });
+        expect(error.message).not.toBe(SESSION_NOT_FOUND_MESSAGE);
+        expect(isUsageFailure(error)).toBe(false);
+        expect(logins).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
 
   it.effect(
     '[Given] --no-wait and a session still pending [Then] reports it and stores nothing',
@@ -476,7 +509,7 @@ describe('handleDirectLogin', () => {
       });
 
       expect(logins).toEqual([
-        { apiKey: 'uak_direct', orgId: 'org_second', testUserId: 'pg-test-user_123' },
+        { apiKey: 'uak_direct', orgId: 'org_second', testUserId: 'pg-test-member_home' },
       ]);
       expect(outputs).toEqual([
         JSON.stringify({ email: 'cli@example.com', org_id: 'org_second', org_name: 'Second Org' }),

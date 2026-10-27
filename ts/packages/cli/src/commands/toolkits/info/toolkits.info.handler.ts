@@ -5,10 +5,12 @@ import { idempotent } from 'src/services/composio-request';
 import { failedWith } from 'src/effects/request-error';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import { reportFailure } from 'src/effects/report-failure';
+import { commandInputError } from 'src/commands/errors';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
-import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
+import { BROWSE_TOOLKITS_HINT, formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
 export type ToolkitsInfoParams = {
@@ -16,9 +18,13 @@ export type ToolkitsInfoParams = {
   readonly allDetails: boolean;
 };
 
+const invalidInput = commandInputError('dev toolkits info');
+
 /**
  * Shows a toolkit with its connection status for the surface's user: the `dev`
- * group's `--user-id`, then the project test user id, then the global one.
+ * group's `--user-id`, then the project test user id, then the global one. A missing
+ * `<slug>` fails with a `CommandInputError` before any request; a failed lookup or an
+ * unknown toolkit is reported on stderr and exits 1.
  */
 export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
   Effect.gen(function* () {
@@ -28,13 +34,11 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
     const userContext = yield* ComposioUserContext;
     const clientSingleton = yield* ComposioClientSingleton;
 
-    // Missing slug guard
     if (Option.isNone(slug)) {
-      yield* ui.log.warn('Missing required argument: <slug>');
-      yield* ui.log.step(
-        'Try specifying a toolkit slug, e.g.:\n> composio dev toolkits info "gmail"'
+      return yield* invalidInput(
+        'Missing required argument: <slug>\nTry specifying a toolkit slug, e.g.:\n> composio dev toolkits info "gmail"',
+        '<slug>'
       );
-      return;
     }
 
     const slugValue = slug.value;
@@ -105,9 +109,8 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
         Effect.catch(error =>
           Effect.gen(function* () {
             const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
-            yield* ui.log.error(message);
             yield* Effect.logDebug('Toolkit info error:', error);
-            yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+            yield* reportFailure(ui, message, BROWSE_TOOLKITS_HINT);
             return Option.none();
           })
         )
@@ -122,8 +125,6 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
     const detailedToolkit = Option.getOrUndefined(result.detailedToolkitOpt);
 
     if (!toolkit) {
-      yield* ui.log.warn(`Toolkit "${slugValue}" not found.`);
-
       // "Did you mean?" suggestions via legacy search
       const suggestions = yield* repo.searchToolkits({ search: slugValue, limit: 3 }).pipe(
         Effect.map(r =>
@@ -136,12 +137,10 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
       );
 
       const [first] = suggestions;
-      if (first) {
-        const lines = suggestions.map(s => `  ${s.label}`).join('\n');
-        yield* ui.log.step(`Did you mean?\n${lines}\n\n${first.command}`);
-      } else {
-        yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
-      }
+      const hint = first
+        ? `Did you mean?\n${suggestions.map(s => `  ${s.label}`).join('\n')}\n\n${first.command}`
+        : BROWSE_TOOLKITS_HINT;
+      yield* reportFailure(ui, `Toolkit "${slugValue}" not found.`, hint);
       return;
     }
 
