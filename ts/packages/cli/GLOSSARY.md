@@ -40,7 +40,7 @@ A user id a developer acts as on a developer project: the directory test user (f
 _Avoid_: playground user, default user
 
 **Acting user**:
-The user a command acts as: the consumer user on the root tree; on the dev tree, `--user-id` when given, otherwise the test user.
+The user a command acts as: the consumer user on the root tree; on the dev tree, against the developer project, `--user-id` when given, otherwise the directory test user (only for the directory's own project), otherwise the global test user. A test user standing in is named on stderr; no user at all is a missing acting user, with one message per tree.
 _Avoid_: current user, target user
 
 **User filter**:

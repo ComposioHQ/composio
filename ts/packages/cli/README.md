@@ -59,12 +59,18 @@ For a project with 2FA enabled, pass the user who owns the connected account:
 composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE --connected-account-id ca_123 --user-id user_123
 ```
 
-The shared `--user-id` flag works before or after the subcommand. When omitted,
-the command uses the resolved directory project's test user, then the global test
-user configured by `composio login`. Setting both `COMPOSIO_ORG_ID` and
-`COMPOSIO_PROJECT_ID` in the process environment overrides directory configuration,
-including its test user. If no test user is resolved, the request omits `user_id`
-and the server applies the project's ownership policy.
+Every `composio dev` command that acts as a user (`playground-execute`,
+`connected-accounts link`, `toolkits list` and `info`, `triggers create`) follows
+one rule. It acts on the developer project (this directory's, or the one
+`--project-name` names) as the shared `--user-id`, which works before or after
+the subcommand. When omitted, it uses the directory project's test user (only
+when acting on that same project), then the global test user configured by
+`composio login`, and names the one it used on stderr. Setting both
+`COMPOSIO_ORG_ID` and `COMPOSIO_PROJECT_ID` in the process environment overrides
+directory configuration, including its test user. If no test user is resolved,
+`triggers create` omits `user_id` and the server applies the project's ownership
+policy. Root commands such as `composio execute` and `composio link` always act as
+your own (consumer) user and take no `--user-id`.
 
 ## Configuration
 

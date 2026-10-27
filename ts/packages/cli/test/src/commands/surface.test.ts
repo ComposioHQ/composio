@@ -13,7 +13,7 @@ import { makeOrgProject } from 'test/__utils__/models/account';
 const SHARED_PROJECT_DESCRIPTION =
   'Developer project to use instead of the one configured in this directory';
 const SHARED_USER_DESCRIPTION =
-  'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.';
+  'User id to act as or filter by. Without it, commands that act as a user use the test user id of this directory (for its own project), then the global one, and name it on stderr.';
 // `dev logs tools|triggers` declare a comma-separated `--user-id` filter of their own, which
 // `withSharedFlags` accepts below a group entry and the help page shows in place of the shared row.
 const OWN_USER_ID_PAGES = ['dev logs tools', 'dev logs triggers'];
