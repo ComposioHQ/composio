@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi } from 'vitest';
 import { Cause, Effect } from 'effect';
-import { createCliCommandTelemetryContext } from 'src/analytics/events';
+import { commandTelemetryContext } from 'test/__utils__/telemetry-context';
 import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
 import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
 import { PluginHint } from 'src/services/plugin-hint';
@@ -28,12 +28,7 @@ describe('TestLive invocation hooks and telemetry sink', () => {
     it.effect('[Given] every hook and lifecycle event [Then] records each call, in order', () =>
       Effect.gen(function* () {
         const invocation = { argv: ['/bin/bun', '/cli/bin.ts', 'whoami'] };
-        const context = createCliCommandTelemetryContext(
-          invocation.argv,
-          '1.2.3',
-          { stdoutIsTTY: false, stderrIsTTY: false },
-          { invocationOrigin: 'cli', parentRunId: undefined }
-        );
+        const context = commandTelemetryContext(['whoami'], { path: ['whoami'], input: {} });
         const cause = Cause.fail(new TypeError('boom'));
 
         yield* (yield* BackendMismatchWarning).run(invocation);

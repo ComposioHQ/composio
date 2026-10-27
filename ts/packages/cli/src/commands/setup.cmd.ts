@@ -25,6 +25,7 @@ import { SetupCommandError, type SetupFailureReasonCode } from 'src/services/set
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const target = Flag.Literals('target', SETUP_TARGETS).pipe(
   Flag.withDefault('auto'),
@@ -351,5 +352,5 @@ export const setupCmd = setupBaseCmd.pipe(
       command: 'composio setup --target all',
     },
   ]),
-  Command.withSubcommands([setupSkillCmd])
+  withRegisteredSubcommands([setupSkillCmd])
 );

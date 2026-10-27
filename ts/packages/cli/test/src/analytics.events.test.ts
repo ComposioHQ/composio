@@ -6,14 +6,14 @@ import { it } from '@effect/vitest';
 import { afterEach, describe, expect, vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Option } from 'effect';
+import { CliError } from 'effect/cli';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
   CLI_ANALYTICS_EVENTS,
   CLI_EVENT_JOURNEY_STAGES,
   CLI_JOURNEY_STAGES,
   configureCliAnalyticsReleaseVersion,
-  createCliCommandTelemetryContext,
   getPluginHintShownEvent,
   getPluginLifecycleFailedEvent,
   getPluginLifecycleSucceededEvent,
@@ -40,20 +40,27 @@ import { ChildProcessExited } from 'src/effects/child-process-exited';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
+import type { TelemetryFamily } from 'src/analytics/types';
+import { commandTelemetryContext } from 'test/__utils__/telemetry-context';
 
 const CLI_INVOCATION = {
   invocationOrigin: DEFAULT_CLI_INVOCATION_ORIGIN,
   parentRunId: undefined,
 } as const;
 
+/** The context of `args` with this file's defaults: the package version, `cli` origin. */
+const commandContext = (
+  args: ReadonlyArray<string>,
+  options: Parameters<typeof commandTelemetryContext>[1]
+) => commandTelemetryContext(args, { cliVersion: APP_VERSION, ...options });
+
 describe('CLI analytics execute failure events', () => {
   it('records terminal capabilities supplied by the terminal service', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio'],
-      '0.3.0',
-      { stdoutIsTTY: true, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
+    const context = commandContext([], {
+      path: [],
+      cliVersion: '0.3.0',
+      terminal: { stdoutIsTTY: true, stderrIsTTY: false },
+    });
 
     const event = getPrimaryLifecycleInvokedEvent(context);
 
@@ -64,12 +71,12 @@ describe('CLI analytics execute failure events', () => {
   });
 
   it('keeps CLI product and installed library separate on tool-router command events', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'execute', 'GITHUB_GET_ME'],
-      '0.4.2',
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
+    const context = commandContext(['execute', 'GITHUB_GET_ME'], {
+      path: ['execute'],
+      family: 'execute',
+      input: { slug: 'GITHUB_GET_ME' },
+      cliVersion: '0.4.2',
+    });
     expect(getPrimaryLifecycleSucceededEvent(context)?.properties).toMatchObject({
       client_name: '@composio/cli',
       client_version: '0.4.2',
@@ -205,12 +212,11 @@ describe('CLI analytics execute failure events', () => {
 
 describe('CLI analytics setup and install lifecycle events', () => {
   it('tracks setup as a dedicated lifecycle with safe option properties', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'setup', '--target', 'codex', '--uninstall', '--yes'],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
+    const context = commandContext(['setup', '--target', 'codex', '--uninstall', '--yes'], {
+      path: ['setup'],
+      family: 'setup',
+      input: {},
+    });
 
     const invoked = getPrimaryLifecycleInvokedEvent(context);
     const succeeded = getPrimaryLifecycleSucceededEvent(context);
@@ -230,12 +236,11 @@ describe('CLI analytics setup and install lifecycle events', () => {
   });
 
   it('tracks shell installation separately from plugin setup', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'install', '--completions'],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
+    const context = commandContext(['install', '--completions'], {
+      path: ['install'],
+      family: 'install',
+      input: {},
+    });
 
     expect(getPrimaryLifecycleInvokedEvent(context)).toMatchObject({
       name: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
@@ -248,22 +253,16 @@ describe('CLI analytics setup and install lifecycle events', () => {
   });
 
   it('summarizes user-controlled search and proxy input without recording it', () => {
-    const terminal = { stdoutIsTTY: false, stderrIsTTY: false };
+    const endpoint = 'https://user:password@example.com/private?token=small';
     const search = getPrimaryLifecycleInvokedEvent(
-      createCliCommandTelemetryContext(
-        ['bun', 'composio', 'search', 'customer@example.com secret'],
-        APP_VERSION,
-        terminal,
-        CLI_INVOCATION
-      )
+      commandContext(['search', 'customer@example.com secret'], {
+        path: ['search'],
+        family: 'search',
+        input: { query: ['customer@example.com secret'] },
+      })
     );
     const proxy = getPrimaryLifecycleInvokedEvent(
-      createCliCommandTelemetryContext(
-        ['bun', 'composio', 'proxy', 'https://user:password@example.com/private?token=small'],
-        APP_VERSION,
-        terminal,
-        CLI_INVOCATION
-      )
+      commandContext(['proxy', endpoint], { path: ['proxy'], family: 'proxy', input: { endpoint } })
     );
 
     expect(search?.properties).toMatchObject({
@@ -390,12 +389,7 @@ describe('CLI analytics setup runtime-context events', () => {
   });
 
   it('records the setup failure reason code carried by SetupCommandError', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'setup'],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
+    const context = commandContext(['setup'], { path: ['setup'], family: 'setup', input: {} });
     const error = new SetupCommandError({
       message: 'Non-interactive setup requires `--yes` to approve local changes.',
       operation: 'setup',
@@ -420,12 +414,11 @@ describe('CLI analytics setup runtime-context events', () => {
   });
 
   it('records a run whose child exited non-zero as failed with reason child_exit', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'run', 'process.exit(3)'],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      CLI_INVOCATION
-    );
+    const context = commandContext(['run', 'process.exit(3)'], {
+      path: ['run'],
+      family: 'run',
+      input: {},
+    });
 
     const event = getPrimaryLifecycleFailedEvent(context, new ChildProcessExited({ code: 3 }));
 
@@ -531,16 +524,19 @@ describe('CLI analytics journey taxonomy', () => {
     vi.unstubAllEnvs();
   });
 
+  /** The context of a root command whose name is its family, or the generic `version`. */
   const contextFor = (
     argv: ReadonlyArray<string>,
     invocation: CliInvocationContext = CLI_INVOCATION
-  ) =>
-    createCliCommandTelemetryContext(
-      ['bun', 'composio', ...argv],
-      APP_VERSION,
-      { stdoutIsTTY: false, stderrIsTTY: false },
-      invocation
-    );
+  ) => {
+    const [name = 'version'] = argv;
+    return commandContext(argv, {
+      path: [name],
+      family: name === 'version' ? 'command' : (name as TelemetryFamily),
+      input: {},
+      invocation,
+    });
+  };
 
   const lifecycleCases: ReadonlyArray<[ReadonlyArray<string>, string]> = [
     [['execute', 'GMAIL_SEND_EMAIL'], 'execute'],
@@ -622,12 +618,12 @@ describe('CLI analytics journey taxonomy', () => {
       const resolvedVersion = yield* resolveInstalledCliVersion(execPath, APP_VERSION);
       configureCliAnalyticsReleaseVersion(resolvedVersion);
 
-      const context = createCliCommandTelemetryContext(
-        ['bun', 'composio', 'login'],
-        resolvedVersion,
-        { stdoutIsTTY: false, stderrIsTTY: false },
-        CLI_INVOCATION
-      );
+      const context = commandContext(['login'], {
+        path: ['login'],
+        family: 'login',
+        input: {},
+        cliVersion: resolvedVersion,
+      });
       const properties = getPrimaryLifecycleInvokedEvent(context)?.properties;
       const pluginProperties = getPluginLifecycleSucceededEvent({
         operation: 'setup',
@@ -653,29 +649,65 @@ describe('CLI analytics journey taxonomy', () => {
     });
   });
 
-  it.each([
-    { flags: ['--telemetry-debug'] },
-    { flags: ['--telemetry-debug=false'] },
-    { flags: ['--no-telemetry-debug'] },
-    { flags: ['--tool-debug', '--perf-debug'] },
-    { flags: ['--log-level', 'Debug'] },
-    { flags: ['--log-level=Debug', '--telemetry-debug'] },
-  ])('identifies run and execute after shared options: $flags', ({ flags }) => {
-    const runArgs = [...flags, 'run', 'console.log("hi")'];
-    const run = contextFor(runArgs);
-    expect(run.argv).toEqual(['bun', 'composio', ...runArgs]);
-    expect(run.commandPath).toBe('run');
+  it('mints a run id for run and reads the execute slug from the parsed input', () => {
+    const run = commandContext(['--telemetry-debug', 'run', 'console.log("hi")'], {
+      path: ['run'],
+      family: 'run',
+      input: {},
+    });
     expect(run.runId).toEqual(expect.any(String));
     expect(getPrimaryLifecycleInvokedEvent(run)).toMatchObject({
       name: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
       properties: { run_id: run.runId, command_path: 'run' },
     });
 
-    const execute = contextFor([...flags, 'execute', 'GMAIL_SEND_EMAIL', '--get-schema']);
+    const execute = commandContext(['--log-level', 'Debug', 'execute', 'GMAIL_SEND_EMAIL'], {
+      path: ['execute'],
+      family: 'execute',
+      input: { slug: 'GMAIL_SEND_EMAIL', data: Option.none() },
+    });
     expect(getPrimaryLifecycleInvokedEvent(execute)).toMatchObject({
       name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
-      properties: { command_path: 'execute', tool_slug: 'GMAIL_SEND_EMAIL' },
+      properties: {
+        command_path: 'execute',
+        tool_slug: 'GMAIL_SEND_EMAIL',
+        toolkit_slug: 'gmail',
+      },
     });
+  });
+
+  it('reads the link toolkit from the parsed input, and nothing for help or a parse failure', () => {
+    const link = (input?: unknown) =>
+      getPrimaryLifecycleInvokedEvent(
+        commandContext(['link', '--alias', 'work', 'gmail'], {
+          path: ['link'],
+          family: 'link',
+          input,
+        })
+      )?.properties;
+    expect(link({ toolkit: Option.some('gmail'), alias: Option.some('work') })).toMatchObject({
+      toolkit: 'gmail',
+    });
+    expect(link({ toolkit: Option.none() })?.toolkit).toBeUndefined();
+    expect(link()?.toolkit).toBeUndefined();
+  });
+
+  it('records a parse failure with reason parse_error, and a bare group help without one', () => {
+    const context = commandContext(['dev', 'triggers', 'list'], {
+      path: ['dev', 'triggers', 'list'],
+    });
+    const parseError = new CliError.ShowHelp({
+      commandPath: ['composio', 'dev', 'triggers', 'list'],
+      errors: [new CliError.MissingArgument({ argument: 'toolkit' })],
+    });
+    expect(getPrimaryLifecycleFailedEvent(context, parseError)).toMatchObject({
+      name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_FAILED,
+      properties: { command_path: 'dev triggers list', failure_reason_code: 'parse_error' },
+    });
+    const bareGroup = new CliError.ShowHelp({ commandPath: ['composio', 'dev'], errors: [] });
+    expect(getPrimaryLifecycleFailedEvent(context, bareGroup)?.properties).not.toHaveProperty(
+      'failure_reason_code'
+    );
   });
 
   it('uses the configured parent run id for nested run telemetry', () => {

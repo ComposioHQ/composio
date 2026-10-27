@@ -16,6 +16,7 @@ import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
 import { CommandSurface, rejectSharedFlags, rejectsSharedFlags } from './surface';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
@@ -180,7 +181,7 @@ export const buildDevCommand = (visibility: CommandVisibility) =>
           Effect.andThen(developerModeHandler(input))
         )
       ).pipe(
-        Command.withSubcommands([...devSubcommands]),
+        withRegisteredSubcommands([...devSubcommands]),
         Command.withSharedFlags({ userId, projectName }),
         Command.provide(({ userId, projectName }) => CommandSurface.dev({ userId, projectName }))
       )

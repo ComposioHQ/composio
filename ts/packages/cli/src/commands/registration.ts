@@ -1,0 +1,82 @@
+/**
+ * Command registrations: how a group gives each subcommand its identity (command path and
+ * `CommandMeta`) and how the command the parser selected records it. See
+ * `src/invocation/command-identity.ts` and `docs/adr/0001-command-identity-after-parse.md`.
+ *
+ * `effect/cli` runs a selected command's handler inside every provider of the groups above it,
+ * outermost first, and runs a group's own handler only when no subcommand was selected (pinned by
+ * `test/src/commands/registration.test.ts`). So each registration provides its identity around
+ * its whole dispatch, and `CommandInvocation.begin` wraps only handlers: a leaf's when its group
+ * registers it, a group's own one when the group registers its subcommands.
+ */
+import { Effect, Option } from 'effect';
+import { Command } from 'effect/cli';
+import type { NotLoggedInError } from 'src/commands/errors';
+import { assertLoggedIn } from 'src/effects/require-auth';
+import {
+  childIdentity,
+  CommandInvocation,
+  CommandRegistration,
+} from 'src/invocation/command-identity';
+import type { ComposioUserContext } from 'src/services/user-context';
+
+/**
+ * Records the running registration as the command this invocation runs, then enforces what its
+ * `CommandMeta` requires: a login fails after the identity is recorded, so `NotLoggedInError`
+ * is reported against the command the user ran.
+ */
+const beginSelected = (input: unknown) =>
+  Effect.gen(function* () {
+    const identity = yield* CommandRegistration;
+    const invocation = yield* CommandInvocation;
+    yield* invocation.begin(identity, Option.some(input));
+    if (identity.meta.requiresLogin) {
+      yield* assertLoggedIn;
+    }
+  });
+
+/** A command as a group registers it: its handler may now fail with `NotLoggedInError`. */
+export type Registered<C> =
+  C extends Command.Command<infer Name, infer Input, infer ContextInput, infer E, infer R>
+    ? Command.Command<Name, Input, ContextInput, E | NotLoggedInError, R | ComposioUserContext>
+    : never;
+
+/**
+ * Registers `child` under the registration whose dispatch runs it. A group (a command with
+ * subcommands) begins its own handler in `withRegisteredSubcommands`.
+ */
+const registerSubcommand = <C extends Command.Command.Any>(child: C): Registered<C> => {
+  const command = child as unknown as Command.Command<string, unknown, unknown, unknown, unknown>;
+  const begun =
+    command.subcommands.length === 0
+      ? Command.provideEffectDiscard(command, beginSelected)
+      : command;
+  return Command.provideEffect(
+    begun,
+    CommandRegistration,
+    Effect.gen(function* () {
+      const identity = childIdentity(yield* CommandRegistration, command);
+      const invocation = yield* CommandInvocation;
+      yield* invocation.enter(identity);
+      return identity;
+    })
+  ) as unknown as Registered<C>;
+};
+
+/**
+ * `Command.withSubcommands` for the command tree: registers each subcommand under `self` with
+ * its own identity, and begins `self`'s own handler (a group's default action, or the help
+ * `effect/cli` shows for a bare group) when no subcommand is selected. Every group in the tree
+ * registers its subcommands with it.
+ */
+export const withRegisteredSubcommands =
+  <const Subcommands extends ReadonlyArray<Command.Command.Any>>(subcommands: Subcommands) =>
+  <const Name extends string, Input, ContextInput, E, R>(
+    self: Command.Command<Name, Input, ContextInput, E, R>
+  ) =>
+    Command.withSubcommands(
+      Command.provideEffectDiscard(self, beginSelected),
+      subcommands.map(child =>
+        registerSubcommand<Subcommands[number]>(child)
+      ) satisfies ReadonlyArray<Registered<Subcommands[number]>>
+    );

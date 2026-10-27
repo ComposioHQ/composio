@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Option } from 'effect';
+import { Effect } from 'effect';
 import { APP_CONFIG } from 'src/config';
 
 export const DEFAULT_CLI_INVOCATION_ORIGIN = 'cli';
@@ -25,18 +25,3 @@ export const cliInvocationContext: Effect.Effect<CliInvocationContext> = Effect.
     parentRunId,
   }))
 );
-
-/**
- * Run id the bootstrap resolved for a `composio run` invocation.
- *
- * The invocation (`src/invocation/invocation.ts`) mints it while building the run's telemetry context and hands it to the command,
- * so the `CLI_RUN_*` events and the `COMPOSIO_CLI_PARENT_RUN_ID` the script's child process
- * inherits carry the same id. `None` for every other command, and for callers that drive the root
- * command directly.
- */
-export class CliRunId extends Context.Service<CliRunId, Option.Option<string>>()(
-  'services/CliRunId'
-) {}
-
-export const cliRunIdLayer = (runId: string | undefined): Layer.Layer<CliRunId> =>
-  Layer.succeed(CliRunId, Option.fromNullishOr(runId));

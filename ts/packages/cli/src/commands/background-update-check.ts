@@ -3,6 +3,7 @@ import { Command } from 'effect/cli';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade/upgrade.cmd';
 import { checkForUpdateInBackground } from 'src/services/update-check';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const isExplicitVersionCheck = (commandName: string, input: unknown): boolean =>
   commandName === versionCmd.name && Predicate.hasProperty(input, 'check') && input.check === true;
@@ -17,7 +18,8 @@ const resolvesReleasesItself = (commandName: string, input: unknown): boolean =>
  *
  * `effect/cli` keeps the selected subcommand private to the parent's dispatcher, so the
  * hook is attached per subcommand (each sees its own parsed input) plus the root itself for the
- * no-subcommand path, before the tree is assembled with `Command.withSubcommands`.
+ * no-subcommand path, before the tree is assembled with `withRegisteredSubcommands`, which also
+ * registers each subcommand under the root.
  */
 export const withBackgroundUpdateCheck = <
   const Name extends string,
@@ -42,6 +44,6 @@ export const withBackgroundUpdateCheck = <
 
   return root.pipe(
     Command.provideEffectDiscard(startInBackground),
-    Command.withSubcommands(guarded)
+    withRegisteredSubcommands(guarded)
   );
 };
