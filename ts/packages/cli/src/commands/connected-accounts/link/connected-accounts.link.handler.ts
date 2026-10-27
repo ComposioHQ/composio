@@ -149,8 +149,8 @@ const existingAccountsForHints = (params: Parameters<typeof listActiveConnectedA
   );
 
 /**
- * True when no existing account already carries `alias` (compared case-insensitively); false
- * after explaining the conflict and how to use the existing account.
+ * Succeeds when no existing account already carries `alias` (compared case-insensitively); fails
+ * already reported after explaining the conflict and how to use the existing account.
  */
 const ensureAliasIsAvailable = (params: {
   readonly ui: TerminalUI;
@@ -171,20 +171,21 @@ const ensureAliasIsAvailable = (params: {
       )
     ),
     {
-      onNone: () => Effect.succeed(true),
+      onNone: () => Effect.void,
       onSome: ({ alias, existing }) =>
         showAliasConflict(params.ui, {
           alias,
           existingId: existing.id,
           executeCommand: params.executeCommand,
           listCommand: params.listCommand,
-        }).pipe(Effect.as(false)),
+        }),
     }
   );
 
 /**
- * True when the new link may proceed: an alias was given, no account exists yet in the scope,
- * or the link reuses an existing account. False after listing the accounts that block it.
+ * Succeeds when the new link may proceed: an alias was given, no account exists yet in the
+ * scope, or the link reuses an existing account. Fails already reported after listing the
+ * accounts that block it.
  */
 const ensureAliasForAdditionalAccount = (params: {
   readonly ui: TerminalUI;
@@ -198,17 +199,15 @@ const ensureAliasForAdditionalAccount = (params: {
     params.existingAccounts.length > 0 &&
     !params.existingAccounts.some(item => item.id === params.connectedAccountId);
   return blocked
-    ? showExistingAccounts(params.ui, params.scopeDescription, params.existingAccounts).pipe(
-        Effect.as(false)
-      )
-    : Effect.succeed(true);
+    ? showExistingAccounts(params.ui, params.scopeDescription, params.existingAccounts)
+    : Effect.void;
 };
 
 /** A response field that is present and not blank. */
 const nonEmpty = (value: string | null | undefined) =>
   Option.filter(Option.fromNullishOr(value), text => text.length > 0);
 
-/** The link the API answered with, or none after reporting an incomplete response (exit 1). */
+/** The link the API answered with; an incomplete response is reported and fails (exit 1). */
 const validateLinkResponse = (
   ui: TerminalUI,
   linkResponse: {
@@ -223,12 +222,11 @@ const validateLinkResponse = (
       (connectedAccountId, redirectUrl): LinkTarget => ({ connectedAccountId, redirectUrl })
     ),
     {
-      onSome: target => Effect.succeedSome(target),
+      onSome: target => Effect.succeed(target),
       onNone: () =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Link response:', linkResponse);
-          yield* reportFailure(ui, INCOMPLETE_LINK_RESPONSE_MESSAGE);
-          return Option.none<LinkTarget>();
+          return yield* reportFailure(ui, INCOMPLETE_LINK_RESPONSE_MESSAGE);
         }),
     }
   );
@@ -551,16 +549,15 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
       userId: resolvedUserId,
       authConfigId,
     });
-    const aliasAvailable = yield* ensureAliasIsAvailable({
+    yield* ensureAliasIsAvailable({
       ui,
       alias: normalizedAlias,
       existingAccounts,
       executeCommand: 'composio dev playground-execute',
       listCommand: 'composio dev connected-accounts list',
     });
-    if (!aliasAvailable) return;
 
-    const linkOpt = yield* ui
+    const link = yield* ui
       .withSpinner(
         'Creating link session...',
         client.link.create({
@@ -570,36 +567,29 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
         })
       )
       .pipe(
-        Effect.asSome,
         Effect.catch(error =>
-          Effect.gen(function* () {
-            yield* reportFailure(
-              ui,
-              extractMessage(error) || `Failed to create link for auth config "${authConfigId}".`,
-              BROWSE_AUTH_CONFIGS_HINT
-            );
-            return Option.none();
-          })
+          reportFailure(
+            ui,
+            extractMessage(error) || `Failed to create link for auth config "${authConfigId}".`,
+            BROWSE_AUTH_CONFIGS_HINT
+          )
         )
       );
-    if (Option.isNone(linkOpt)) return;
 
-    const target = yield* validateLinkResponse(ui, linkOpt.value);
-    if (Option.isNone(target)) return;
+    const target = yield* validateLinkResponse(ui, link);
 
-    const canContinue = yield* ensureAliasForAdditionalAccount({
+    yield* ensureAliasForAdditionalAccount({
       ui,
       alias: normalizedAlias,
-      connectedAccountId: target.value.connectedAccountId,
+      connectedAccountId: target.connectedAccountId,
       existingAccounts,
       scopeDescription: `user "${resolvedUserId}" in auth config "${authConfigId}"`,
     });
-    if (!canContinue) return;
 
     yield* finishLink({
       ui,
       client,
-      target: target.value,
+      target,
       toolkit: Option.none(),
       projectType: resolvedProject.projectType,
       noWait: params.noWait,
@@ -649,14 +639,13 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
       userId: resolvedUserId,
       toolkitSlug,
     });
-    const aliasAvailable = yield* ensureAliasIsAvailable({
+    yield* ensureAliasIsAvailable({
       ui,
       alias: normalizedAlias,
       existingAccounts,
       executeCommand: 'composio execute',
       listCommand: `composio connections list --toolkit ${toolkitSlug}`,
     });
-    if (!aliasAvailable) return;
 
     const scope = consumerScope(resolvedProject);
     const linkOpt = yield* ui
@@ -691,34 +680,32 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
               return Option.none();
             }
             yield* Effect.logDebug('Link error:', error);
-            yield* reportFailure(
+            return yield* reportFailure(
               ui,
               extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`,
               BROWSE_TOOLKITS_HINT
             );
-            return Option.none();
           })
         ),
-        Effect.tap(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
+        // On every outcome, a reported failure included.
+        Effect.ensuring(invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
       );
     if (Option.isNone(linkOpt)) return;
 
     const target = yield* validateLinkResponse(ui, linkOpt.value);
-    if (Option.isNone(target)) return;
 
-    const canContinue = yield* ensureAliasForAdditionalAccount({
+    yield* ensureAliasForAdditionalAccount({
       ui,
       alias: normalizedAlias,
-      connectedAccountId: target.value.connectedAccountId,
+      connectedAccountId: target.connectedAccountId,
       existingAccounts,
       scopeDescription: `user "${resolvedUserId}" in toolkit "${toolkitSlug}"`,
     });
-    if (!canContinue) return;
 
     yield* finishLink({
       ui,
       client,
-      target: target.value,
+      target,
       toolkit: Option.some(toolkitSlug),
       projectType: resolvedProject.projectType,
       noWait: params.noWait,
@@ -731,8 +718,8 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
         command: 'link',
         status: params.noWait ? 'pending' : 'active',
         toolkit: toolkitSlug,
-        connectedAccountId: target.value.connectedAccountId,
-        redirectUrl: target.value.redirectUrl,
+        connectedAccountId: target.connectedAccountId,
+        redirectUrl: target.redirectUrl,
       },
     }).pipe(Effect.ignore);
   });

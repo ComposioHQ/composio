@@ -66,6 +66,22 @@ const setupCommandError = (
     ...(cause === undefined ? {} : { cause }),
   });
 
+/** Prints why setup failed and closes the session; the command then fails already reported. */
+const renderSetupFailure = (error: SetupCommandError) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const summary =
+      error.operation === 'uninstall'
+        ? 'Composio plugin uninstall was unsuccessful.'
+        : 'Composio setup was unsuccessful.';
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.error(error.message);
+      yield* ui.outro(summary);
+    } else {
+      yield* ui.error(`${summary} ${error.message}`);
+    }
+  });
+
 // Only a host that is present but unsupported has a reason to report.
 const unsupportedReasonCodeOf = (
   detection: SetupTargetDetection
@@ -314,7 +330,8 @@ const setupBaseCmd = Command.make(
           'unknown',
           error
         );
-      })
+      }),
+      Effect.tapError(renderSetupFailure)
     )
 );
 

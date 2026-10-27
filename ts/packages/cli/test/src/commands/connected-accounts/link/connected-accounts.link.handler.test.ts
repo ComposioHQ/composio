@@ -31,6 +31,7 @@ import type { ProjectKeys } from 'src/models/project-keys';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { NodeOs } from 'src/services/node-os';
+import { NodeProcess } from 'src/services/node-process';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -42,7 +43,7 @@ import {
 } from 'test/__utils__/layers/connected-accounts';
 import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import { makeOrgProject } from 'test/__utils__/models/account';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 import open from 'open';
@@ -164,8 +165,7 @@ const cliUserConfig = ComposioCliUserConfig.of({
 /**
  * What a link handler needs and nothing more: the account and connected-account families of
  * the mock client (`test/__utils__/layers`), a Tool Router session that answers, and doubles
- * for the user, the directory, and the platform. `requests` records every link request, and
- * `exitCode` the exit code a handler sets.
+ * for the user, the directory, and the platform. `requests` records every link request.
  */
 const linkHandlerTest = (fixture: LinkFixture = {}) => {
   const requests: Array<LinkRequest> = [];
@@ -229,7 +229,6 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
     }) as unknown as ComposioClientShape;
 
   const dir = tempy.temporaryDirectory({ prefix: 'link-handler' });
-  const proc = recordingNodeProcess(dir);
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
     fixture.terminal ?? TerminalUITest,
@@ -271,14 +270,24 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
       NodeOs,
       NodeOs.of({ homedir: dir, tmpdir: dir, arch: 'arm64', platform: 'darwin' })
     ),
-    proc.layer,
+    Layer.succeed(
+      NodeProcess,
+      NodeProcess.of({ cwd: dir, execPath: `${dir}/composio`, platform: 'darwin', arch: 'arm64' })
+    ),
     Layer.succeed(ComposioCliUserConfig, cliUserConfig),
     ConfigProvider.layer(hostOnlyEnvConfigProvider)
   );
-  return { layer, requests, exitCode: proc.exitCode };
+  return { layer, requests };
 };
 
 const lines = MockConsole.getLines({ stripAnsi: true });
+
+/** Runs `handler` to its exit, then reads the lines it printed. */
+const exitAndLines = <A, E, R>(handler: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* () {
+    const exit = yield* Effect.exit(handler);
+    return { exit, output: yield* lines };
+  });
 
 /** The command's JSON result: `ui.output` prints it as the last console line. */
 const lastJson = lines.pipe(Effect.map(all => JSON.parse(String(all.at(-1))) as unknown));
@@ -661,17 +670,17 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
     '[Given] the link request fails [Then] reports the message and the auth-config hint, and exits 1',
     () =>
       Effect.gen(function* () {
-        const { layer, requests, exitCode } = linkHandlerTest({
+        const { layer, requests } = linkHandlerTest({
           surface: devSurface({ userId: 'user_1' }),
           directoryProject: directory(Option.none()),
           legacyLinkCreate: () => Effect.fail(new Error('quota exhausted')),
         });
-        const output = yield* handleLegacyAuthConfigLink(
-          params({ authConfig: Option.some('ac_gmail') })
-        ).pipe(Effect.andThen(lines), Effect.provide(layer));
+        const { exit, output } = yield* exitAndLines(
+          handleLegacyAuthConfigLink(params({ authConfig: Option.some('ac_gmail') }))
+        ).pipe(Effect.provide(layer));
 
         expect(output).toEqual(['quota exhausted', BROWSE_AUTH_CONFIGS_HINT]);
-        expect(exitCode()).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(requests).toEqual([
           {
             operation: 'link.create',
@@ -685,20 +694,22 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
     '[Given] an alias already in use [Then] points at the dev commands, sends nothing, and exits 1',
     () =>
       Effect.gen(function* () {
-        const { layer, requests, exitCode } = linkHandlerTest({
+        const { layer, requests } = linkHandlerTest({
           surface: devSurface({ userId: 'user_1' }),
           directoryProject: directory(Option.none()),
           accounts: [account({ user_id: 'user_1', alias: 'Work' })],
         });
-        const output = yield* handleLegacyAuthConfigLink(
-          params({ authConfig: Option.some('ac_gmail'), alias: Option.some(' work ') })
-        ).pipe(Effect.andThen(lines), Effect.provide(layer));
+        const { exit, output } = yield* exitAndLines(
+          handleLegacyAuthConfigLink(
+            params({ authConfig: Option.some('ac_gmail'), alias: Option.some(' work ') })
+          )
+        ).pipe(Effect.provide(layer));
 
         expect(output).toEqual([
           'Alias "work" is already in use by connected account "con_existing".',
           "[Tips] Use the existing alias: composio dev playground-execute <TOOL_SLUG> --account work -d '{ ... }'\nList connected accounts: composio dev connected-accounts list",
         ]);
-        expect(exitCode()).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(requests).toEqual([]);
       })
   );
@@ -709,7 +720,7 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
     '[Given] the consumer project and --alias [Then] links with the alias and prints the pending link',
     () =>
       Effect.gen(function* () {
-        const { layer, requests, exitCode } = linkHandlerTest({ accounts: [account()] });
+        const { layer, requests } = linkHandlerTest({ accounts: [account()] });
         const output = yield* handleToolRouterLink(
           params({ toolkit: Option.some('gmail'), alias: Option.some(' work ') })
         ).pipe(Effect.andThen(lines), Effect.provide(layer));
@@ -721,7 +732,6 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
           },
         ]);
         expect(String(output.at(-1))).toBe(toolRouterPendingJson());
-        expect(exitCode()).toBeUndefined();
       })
   );
 
@@ -785,35 +795,34 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
   it.effect('[Given] the link request fails [Then] reports the cause and the browse hint', () =>
     Effect.gen(function* () {
       const terminal = redirectedTerminalUI();
-      const { layer, exitCode } = linkHandlerTest({
+      const { layer } = linkHandlerTest({
         toolRouterLink: () => Effect.fail(new Error('offline')),
         terminal: terminal.layer,
       });
-      yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
-        Effect.provide(layer)
+      const exit = yield* Effect.exit(
+        handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(Effect.provide(layer))
       );
 
       // `failedWith` keeps the client error in `.cause`, and the message prefers it. Plain
       // lines, so a script, CI or an agent reading a redirected stderr sees them.
       expect(terminal.stderr()).toBe(`offline\n${BROWSE_TOOLKITS_HINT}\n`);
       expect(terminal.stdout()).toBe('');
-      expect(exitCode()).toBe(1);
+      expect(exitCodeOf(exit)).toBe(1);
     })
   );
 
   it.effect('[Given] an incomplete link response [Then] reports it and exits 1', () =>
     Effect.gen(function* () {
-      const { layer, exitCode } = linkHandlerTest({
+      const { layer } = linkHandlerTest({
         toolRouterLink: () =>
           Effect.succeed({ connected_account_id: 'con_new', link_token: 'lt', redirect_url: '' }),
       });
-      const output = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
-        Effect.andThen(lines),
-        Effect.provide(layer)
-      );
+      const { exit, output } = yield* exitAndLines(
+        handleToolRouterLink(params({ toolkit: Option.some('gmail') }))
+      ).pipe(Effect.provide(layer));
 
       expect(output).toEqual(['Linking gmail...', INCOMPLETE_LINK_RESPONSE_MESSAGE]);
-      expect(exitCode()).toBe(1);
+      expect(exitCodeOf(exit)).toBe(1);
     })
   );
 
@@ -938,17 +947,16 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
     '[Given] an active account and no --alias [Then] lists it, prints no link, and exits 1',
     () =>
       Effect.gen(function* () {
-        const { layer, exitCode } = linkHandlerTest({ accounts: [account({ alias: 'default' })] });
-        const output = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
-          Effect.andThen(lines),
-          Effect.provide(layer)
-        );
+        const { layer } = linkHandlerTest({ accounts: [account({ alias: 'default' })] });
+        const { exit, output } = yield* exitAndLines(
+          handleToolRouterLink(params({ toolkit: Option.some('gmail') }))
+        ).pipe(Effect.provide(layer));
 
         expect(output.slice(-2)).toEqual([
           `A connected account already exists for user "${CONSUMER_USER_ID}" in toolkit "gmail". Pass --alias to create another one.`,
           '[Existing accounts] con_existing (default, castle)',
         ]);
-        expect(exitCode()).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
   );
 });

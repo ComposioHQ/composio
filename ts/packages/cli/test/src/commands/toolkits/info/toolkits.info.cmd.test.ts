@@ -2,6 +2,7 @@ import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -225,11 +226,13 @@ describe('CLI: composio dev toolkits info', () => {
       it.effect('prints the error on a redirected stderr and exits 1', () =>
         Effect.gen(function* () {
           const terminal = redirectedTerminalUI();
-          yield* cli(['dev', 'toolkits', 'info', 'gmal']).pipe(Effect.provide(terminal.layer));
+          const exit = yield* Effect.exit(
+            cli(['dev', 'toolkits', 'info', 'gmal']).pipe(Effect.provide(terminal.layer))
+          );
 
           expect(terminal.stderr()).toContain('Toolkit "gmal" not found.\n');
           expect(terminal.stdout()).toBe('');
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }
@@ -240,13 +243,13 @@ describe('CLI: composio dev toolkits info', () => {
     it => {
       it.effect('shows error with hint and exits 1', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'info', 'gma']);
+          const exit = yield* Effect.exit(cli(['dev', 'toolkits', 'info', 'gma']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Toolkit "gma" not found');
           expect(output).toContain('composio dev toolkits info "gmail"');
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }
@@ -294,15 +297,17 @@ describe('CLI: composio dev toolkits info', () => {
           Response.json({ error: { message: 'Tool Router is down' } }, { status: 500 })
         );
         const terminal = redirectedTerminalUI();
-        yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(
-          Effect.provide(Layer.mergeAll(stub.layer, terminal.layer))
+        const exit = yield* Effect.exit(
+          cli(['dev', 'toolkits', 'info', 'gmail']).pipe(
+            Effect.provide(Layer.mergeAll(stub.layer, terminal.layer))
+          )
         );
 
         expect(terminal.stderr()).toBe(
           'Tool Router is down\nBrowse available toolkits:\n> composio dev toolkits list\n'
         );
         expect(terminal.stdout()).toBe('');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });

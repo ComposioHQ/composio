@@ -424,11 +424,6 @@ export const TestLayer = (input?: TestLiveInput) =>
         execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
-        // Command tests read the exit code off the real process.
-        setExitCode: code =>
-          Effect.sync(() => {
-            process.exitCode = code;
-          }),
       })
     );
 

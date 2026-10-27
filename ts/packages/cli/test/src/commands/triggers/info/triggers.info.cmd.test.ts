@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
@@ -135,7 +136,7 @@ describe('CLI: composio dev triggers info', () => {
     it => {
       it.effect('shows not found fallback hint', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'info', 'NONEXISTENT_TRIGGER']);
+          const exit = yield* Effect.exit(cli(['dev', 'triggers', 'info', 'NONEXISTENT_TRIGGER']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -146,7 +147,7 @@ describe('CLI: composio dev triggers info', () => {
             'Trigger "NONEXISTENT_TRIGGER" not found.',
             'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
           ]);
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

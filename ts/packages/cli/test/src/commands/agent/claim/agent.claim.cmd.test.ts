@@ -4,6 +4,7 @@ import { afterEach, vi } from 'vitest';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 describe('CLI: composio agent claim', () => {
   afterEach(() => {
@@ -46,11 +47,11 @@ describe('CLI: composio agent claim', () => {
       Effect.gen(function* () {
         const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-        yield* cli(['agent', 'claim', 'boss@example.com']);
+        const exit = yield* Effect.exit(cli(['agent', 'claim', 'boss@example.com']));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('currently signed in to Composio as a regular user');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(fetchSpy).not.toHaveBeenCalled();
       })
     );

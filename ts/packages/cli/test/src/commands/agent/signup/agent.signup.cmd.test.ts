@@ -8,6 +8,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 describe('CLI: composio agent signup', () => {
   afterEach(() => {
@@ -86,12 +87,12 @@ describe('CLI: composio agent signup', () => {
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
     it.effect('agent signup shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
-        yield* cli(['agent', 'signup']);
+        const exit = yield* Effect.exit(cli(['agent', 'signup']));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('currently signed in to Composio as a regular user');
         expect(output).toContain('composio signup');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });

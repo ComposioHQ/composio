@@ -2,6 +2,7 @@ import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeOrgProject } from 'test/__utils__/models/account';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
@@ -49,13 +50,15 @@ describe('CLI: composio dev init', () => {
         it.effect('[Given] no projects [Then] says so on a redirected stderr and exits 1', () =>
           Effect.gen(function* () {
             const terminal = redirectedTerminalUI();
-            yield* cli(['dev', 'init', '--yes']).pipe(Effect.provide(terminal.layer));
+            const exit = yield* Effect.exit(
+              cli(['dev', 'init', '--yes']).pipe(Effect.provide(terminal.layer))
+            );
 
             expect(terminal.stderr()).toBe(
               'No projects found for your organization.\nCreate a project at https://platform.composio.dev, then run `composio dev init` again.\n'
             );
             expect(terminal.stdout()).toBe('');
-            expect(process.exitCode).toBe(1);
+            expect(exitCodeOf(exit)).toBe(1);
           })
         );
       }

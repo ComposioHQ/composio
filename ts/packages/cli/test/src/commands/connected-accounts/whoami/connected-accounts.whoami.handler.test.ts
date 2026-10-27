@@ -5,9 +5,9 @@ import { inactiveStatusMessage } from 'src/commands/connected-accounts/whoami/co
 import { MISSING_ID_MESSAGE, missingIdHint } from 'src/commands/connected-accounts/format';
 import { isUsageFailure } from 'src/commands/errors';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ConnectedAccountsTest, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const account = (overrides: Partial<ConnectedAccountItem> = {}): ConnectedAccountItem => ({
@@ -35,13 +35,11 @@ const ACTIVE_ACCOUNT = account();
 const EXPIRED_ACCOUNT = account({ id: 'con_gmail_expired', status: 'EXPIRED' });
 
 /**
- * What `runConnectedAccountsWhoami` reads: the connected-account repository, a headless
- * terminal whose stdout data lands in `outputs`, and a process whose exit codes land in
- * `exitCodes`.
+ * What `runConnectedAccountsWhoami` reads: the connected-account repository and a headless
+ * terminal whose stdout data lands in `outputs`.
  */
 const whoamiTest = () => {
   const outputs: Array<string> = [];
-  const exitCodes: Array<number> = [];
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
     Layer.succeed(
@@ -54,22 +52,9 @@ const whoamiTest = () => {
           }),
       })
     ),
-    ConnectedAccountsTest({ connectedAccountsData: { items: [ACTIVE_ACCOUNT, EXPIRED_ACCOUNT] } }),
-    Layer.succeed(
-      NodeProcess,
-      NodeProcess.of({
-        cwd: '/tmp',
-        execPath: '/tmp/composio',
-        platform: 'darwin',
-        arch: 'arm64',
-        setExitCode: code =>
-          Effect.sync(() => {
-            exitCodes.push(code);
-          }),
-      })
-    )
+    ConnectedAccountsTest({ connectedAccountsData: { items: [ACTIVE_ACCOUNT, EXPIRED_ACCOUNT] } })
   );
-  return { layer, outputs, exitCodes };
+  return { layer, outputs };
 };
 
 const stdoutLines = MockConsole.getLines({ stream: 'stdout', stripAnsi: true });
@@ -77,7 +62,7 @@ const stderrLines = MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
 
 describe('runConnectedAccountsWhoami', () => {
   it.effect('[Given] an active account [Then] prints its profile fields as JSON on stdout', () => {
-    const { layer, outputs, exitCodes } = whoamiTest();
+    const { layer, outputs } = whoamiTest();
     return Effect.gen(function* () {
       yield* runConnectedAccountsWhoami({ id: Option.some('con_gmail_active') });
 
@@ -94,7 +79,6 @@ describe('runConnectedAccountsWhoami', () => {
         },
       ]);
       expect(yield* stderrLines).toEqual([]);
-      expect(exitCodes).toEqual([]);
     }).pipe(Effect.provide(layer));
   });
 
@@ -110,7 +94,7 @@ describe('runConnectedAccountsWhoami', () => {
   });
 
   it.effect('[Given] no id [Then] fails with a usage error before any request', () => {
-    const { layer, outputs, exitCodes } = whoamiTest();
+    const { layer, outputs } = whoamiTest();
     return Effect.gen(function* () {
       const failure = yield* runConnectedAccountsWhoami({ id: Option.none() }).pipe(Effect.flip);
 
@@ -125,20 +109,21 @@ describe('runConnectedAccountsWhoami', () => {
       expect(yield* stderrLines).toEqual([]);
       expect(yield* stdoutLines).toEqual([]);
       expect(outputs).toEqual([]);
-      expect(exitCodes).toEqual([]);
     }).pipe(Effect.provide(layer));
   });
 
   it.effect('[Given] an unknown id [Then] reports it, prints no data, and exits 1', () => {
-    const { layer, outputs, exitCodes } = whoamiTest();
+    const { layer, outputs } = whoamiTest();
     return Effect.gen(function* () {
-      yield* runConnectedAccountsWhoami({ id: Option.some('con_missing') });
+      const exit = yield* Effect.exit(
+        runConnectedAccountsWhoami({ id: Option.some('con_missing') })
+      );
 
       expect((yield* stderrLines).join('\n')).toContain(
         'Connected account "con_missing" not found.'
       );
       expect(outputs).toEqual([]);
-      expect(exitCodes).toEqual([1]);
+      expect(exitCodeOf(exit)).toBe(1);
     }).pipe(Effect.provide(layer));
   });
 });

@@ -5,7 +5,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { ProjectContext } from 'src/services/project-context';
-import { reportFailure } from 'src/effects/report-failure';
+import { printFailure, ReportedFailure } from 'src/effects/report-failure';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -202,11 +202,10 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
     Effect.catch(error =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        yield* reportFailure(
-          ui,
-          extractMessage(error) ?? 'An error occurred while fetching toolkits.'
-        );
+        const message = extractMessage(error) ?? 'An error occurred while fetching toolkits.';
+        yield* printFailure(ui, message);
         yield* ui.output('[]');
+        return yield* new ReportedFailure({ message });
       })
     )
   );

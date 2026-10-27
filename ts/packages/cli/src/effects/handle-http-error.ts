@@ -2,7 +2,7 @@ import { isAPIError } from '@composio/client/effect';
 import { Effect } from 'effect';
 import type { ClientApiError } from 'src/services/composio-errors';
 import type { TerminalUI } from 'src/services/terminal-ui';
-import { reportFailure } from 'src/effects/report-failure';
+import { reportFailure, type ReportedFailure } from 'src/effects/report-failure';
 import { describeDecodeError, isClientDecodeError } from 'src/utils/api-error-extraction';
 import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
 
@@ -39,19 +39,20 @@ const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
 
 /**
  * Create a handler for a client API error that logs the structured error
- * details (or a fallback message) and a contextual hint, then returns a
- * fallback value.
+ * details (or a fallback message) and a contextual hint, then fails.
  *
  * The final rendering is `reportFailure`'s (`src/effects/report-failure.ts`):
- * the exit code is set to 1 so callers such as scripts and agents can detect
- * the failure, and the message and hint reach stderr as plain lines when it is
- * not a TTY.
+ * the message and hint reach stderr as plain lines when it is not a TTY, and
+ * the handler fails with a `ReportedFailure`, so the process exits 1 and
+ * callers such as scripts and agents can detect the failure. The effect never
+ * produces `fallbackValue`; it only types the recovery for callers that keep
+ * an `Option` result.
  *
  * Used by info/delete/create commands that share the same error-handling shape.
  *
  * When `searchForSuggestions` is provided, the handler will attempt to find
  * similar items and display "Did you mean?" suggestions instead of the generic hint.
- * Suggestion search failures are silently swallowed — the handler always completes.
+ * Suggestion search failures are silently swallowed.
  *
  * A response that failed client decoding is reported by operation and request
  * id with an upgrade hint, in place of the fallback message and the hint.
@@ -76,7 +77,7 @@ const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
  */
 export const handleClientApiError =
   <A>(ui: TerminalUI, opts: HandleClientApiErrorOptions<A>) =>
-  (e: ClientApiError) =>
+  (e: ClientApiError): Effect.Effect<A, ReportedFailure> =>
     Effect.gen(function* () {
       const report = yield* reportOf(e);
       const message = report.message ?? opts.fallbackMessage;
@@ -94,15 +95,13 @@ export const handleClientApiError =
         const [first] = suggestions;
         if (first) {
           const lines = suggestions.map(s => `  ${s.label}`).join('\n');
-          yield* reportFailure(
+          return yield* reportFailure(
             ui,
             message,
             withHint(`Did you mean?\n${lines}\n\n${first.command}`)
           );
-          return opts.fallbackValue;
         }
       }
 
-      yield* reportFailure(ui, message, withHint(hint));
-      return opts.fallbackValue;
+      return yield* reportFailure(ui, message, withHint(hint));
     });

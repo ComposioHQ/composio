@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const testLayer = TestLive({
@@ -24,13 +25,16 @@ describe('CLI: composio dev toolkits version over the API client', () => {
             { status: 404 }
           )
         );
-        yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.provide(stub.layer));
+        const exit = yield* Effect.exit(
+          cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.provide(stub.layer))
+        );
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
         expect(lines).toEqual([
           'Toolkit unknown not found',
           'Browse available toolkits:\n> composio dev toolkits list',
         ]);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(stub.requests).toEqual([{ method: 'GET', path: '/api/v3.1/toolkits/unknown' }]);
       })
     );

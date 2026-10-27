@@ -11,6 +11,7 @@ import type { Tools } from 'src/models/tools';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -76,7 +77,6 @@ describe('runToolsInfo', () => {
       expect(isUsageFailure(failure)).toBe(true);
       expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);
-      expect(process.exitCode).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
@@ -104,7 +104,6 @@ describe('runToolsInfo', () => {
         inputSchema: TOOLS[0]?.input_parameters,
       });
       expect(printed.schemaPath).toMatch(/\/tool_definitions\/GMAIL_SEND_EMAIL\.json$/);
-      expect(process.exitCode).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
@@ -113,13 +112,13 @@ describe('runToolsInfo', () => {
     () => {
       const { layer, outputs } = toolsInfoTest();
       return Effect.gen(function* () {
-        yield* runToolsInfo({ slug: Option.some('GMAIL_SEND') });
+        const exit = yield* Effect.exit(runToolsInfo({ slug: Option.some('GMAIL_SEND') }));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain(toolNotFoundMessage('GMAIL_SEND'));
         expect(output).toContain('> composio tools info "GMAIL_SEND_EMAIL"');
         expect(outputs).toEqual([]);
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       }).pipe(Effect.provide(layer));
     }
   );

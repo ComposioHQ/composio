@@ -259,7 +259,6 @@ const loginHandlerTest = (fixture: LoginFixture = {}) => {
         execPath: `${dir}/composio`,
         platform: 'darwin',
         arch: 'arm64',
-        setExitCode: () => Effect.void,
       })
     ),
     ConfigProvider.layer(hostOnlyEnvConfigProvider)

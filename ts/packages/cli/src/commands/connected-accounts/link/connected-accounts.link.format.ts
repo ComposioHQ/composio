@@ -1,7 +1,7 @@
 import { Array as Arr, Effect, Option } from 'effect';
 import type { CommandTree } from 'src/commands/surface';
 import { BROWSE_TOOLKITS_HINT } from 'src/commands/toolkits/format';
-import { reportFailure } from 'src/effects/report-failure';
+import { printFailure, ReportedFailure } from 'src/effects/report-failure';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { CliProjectType } from 'src/services/command-project';
 import type { TerminalUI } from 'src/services/terminal-ui';
@@ -100,11 +100,10 @@ export const showExistingAccounts = (
   items: ReadonlyArray<ExistingAccountLabel>
 ) =>
   Effect.gen(function* () {
-    yield* reportFailure(
-      ui,
-      `A connected account already exists for ${scopeDescription}. Pass --alias to create another one.`
-    );
+    const message = `A connected account already exists for ${scopeDescription}. Pass --alias to create another one.`;
+    yield* printFailure(ui, message);
     yield* ui.note(formatExistingAccountLabels(items), 'Existing accounts');
+    return yield* new ReportedFailure({ message });
   });
 
 /**
@@ -121,10 +120,8 @@ export const showAliasConflict = (
   }
 ) =>
   Effect.gen(function* () {
-    yield* reportFailure(
-      ui,
-      `Alias "${params.alias}" is already in use by connected account "${params.existingId}".`
-    );
+    const message = `Alias "${params.alias}" is already in use by connected account "${params.existingId}".`;
+    yield* printFailure(ui, message);
     yield* ui.note(
       [
         `Use the existing alias: ${params.executeCommand} <TOOL_SLUG> --account ${params.alias} -d '{ ... }'`,
@@ -132,6 +129,7 @@ export const showAliasConflict = (
       ].join('\n'),
       'Tips'
     );
+    return yield* new ReportedFailure({ message });
   });
 
 /** The table of a toolkit's active accounts as a note, or a warning when there are none. */

@@ -32,8 +32,8 @@ const invalidInput = commandInputError('tools info');
 const missingSlug = () => invalidInput(`${MISSING_SLUG_MESSAGE}\n${MISSING_SLUG_HINT}`, '<slug>');
 
 /**
- * Fetches the tool, or reports the API failure with "did you mean" suggestions, sets exit
- * code 1, and yields nothing.
+ * Fetches the tool, or reports the API failure with "did you mean" suggestions and fails
+ * already reported (exit 1).
  */
 const fetchTool = (slug: string) =>
   Effect.gen(function* () {

@@ -6,6 +6,7 @@ import { readStoredAgentIdentity, writeStoredAgentIdentity } from 'src/services/
 import { MockConsole } from 'test/__utils__';
 import { AgentHandlerTest } from 'test/__utils__/layers/agents';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 const decoration = Effect.map(MockConsole.getLines({ stripAnsi: true }), lines => lines.join('\n'));
 
@@ -65,7 +66,6 @@ describe('runAgentWhoami', () => {
             force: false,
           },
         ]);
-        expect(process.exitCode).toBeUndefined();
       }).pipe(Effect.provide(layer));
     }
   );
@@ -124,12 +124,12 @@ describe('runAgentWhoami', () => {
         yield* Effect.forEach(Option.toArray(stored), writeStoredAgentIdentity);
         const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-        yield* runAgentWhoami();
+        const exit = yield* Effect.exit(runAgentWhoami());
 
         // Plain lines on stderr: a headless terminal drops `ui.log.*` decoration.
         const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
         expect(stderr).toEqual([message, expect.stringMatching(/^Next steps:\n/)]);
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(outputs).toEqual([]);
       }).pipe(Effect.provide(layer));

@@ -125,8 +125,6 @@ describe('CLI: composio logout', () => {
           expect(output).toContain('Agent Logout Warning');
           expect(output).toContain('composio_agent_key');
           expect(output).toContain('Agent logout cancelled');
-          // Declining is not a failure.
-          expect(process.exitCode).toBeUndefined();
           expect(ctx.isLoggedIn()).toBeTruthy();
           expect(agentConfigExists).toBe(true);
         })
