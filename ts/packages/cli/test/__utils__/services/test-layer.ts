@@ -886,7 +886,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const layers = Layer.mergeAll(
       Layer.succeed(Console.Console, _console),
       CliConfigLive,
-      // Mirror cli-main: no custom `CliOutput.Formatter` is provided here either
+      // Mirror `InvocationLive`: no custom `CliOutput.Formatter` is provided here either
       // — `CliOutput.Formatter` is a `Context.Reference` that falls back to v4's
       // own `CliOutput.defaultFormatter()`, so `Command.runWith` renders help,
       // errors, and `--version` identically to production.
@@ -913,7 +913,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       FetchHttpClient.layer,
       StdinTest,
       TerminalUILayer,
-      // Recording no-op doubles of the hooks and telemetry sink `cli-main.ts` runs around a
+      // Recording no-op doubles of the hooks and telemetry sink the invocation runs around a
       // command; read their calls with `recordedInvocationCalls`.
       InvocationHooksTest,
       // `src/commands/index.ts` provides these for real invocations; direct-effect tests that

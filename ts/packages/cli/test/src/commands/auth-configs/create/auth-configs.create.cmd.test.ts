@@ -1,4 +1,5 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -118,7 +119,9 @@ describe('CLI: composio dev auth-configs create', () => {
             option: '--custom-credentials',
             message: expect.stringContaining('Invalid JSON in --custom-credentials'),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }

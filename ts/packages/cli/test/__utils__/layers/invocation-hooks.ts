@@ -27,13 +27,25 @@ export type RecordedInvocationCall =
 /** Reads what the recording doubles of `InvocationHooksTest` were called with. */
 export class InvocationRecorder extends Context.Service<
   InvocationRecorder,
-  { readonly calls: Effect.Effect<ReadonlyArray<RecordedInvocationCall>> }
+  {
+    readonly calls: Effect.Effect<ReadonlyArray<RecordedInvocationCall>>;
+    readonly reset: Effect.Effect<void>;
+  }
 >()('test/InvocationRecorder') {}
 
 /** Every call the recording doubles received so far, oldest first. */
 export const recordedInvocationCalls = Effect.gen(function* () {
   const recorder = yield* InvocationRecorder;
   return yield* recorder.calls;
+});
+
+/**
+ * Forgets every call recorded so far. Tests that share one `TestLive` (`layer(TestLive())`)
+ * record into one recorder; reset it before the invocation a test asserts on.
+ */
+export const resetInvocationCalls = Effect.gen(function* () {
+  const recorder = yield* InvocationRecorder;
+  yield* recorder.reset;
 });
 
 /**
@@ -46,7 +58,10 @@ export const InvocationHooksTest = Layer.unwrap(
     const calls = yield* Ref.make<ReadonlyArray<RecordedInvocationCall>>([]);
     const record = (call: RecordedInvocationCall) => Ref.update(calls, all => [...all, call]);
     return Layer.mergeAll(
-      Layer.succeed(InvocationRecorder, InvocationRecorder.of({ calls: Ref.get(calls) })),
+      Layer.succeed(
+        InvocationRecorder,
+        InvocationRecorder.of({ calls: Ref.get(calls), reset: Ref.set(calls, []) })
+      ),
       Layer.succeed(
         BackendMismatchWarning,
         BackendMismatchWarning.of({

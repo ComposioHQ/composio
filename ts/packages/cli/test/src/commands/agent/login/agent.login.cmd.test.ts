@@ -33,7 +33,6 @@ const agentConfigPath = Effect.map(setupCacheDir, cacheDir => path.join(cacheDir
 describe('CLI: composio agent login', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {

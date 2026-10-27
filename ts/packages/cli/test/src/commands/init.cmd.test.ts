@@ -1,4 +1,3 @@
-import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -7,10 +6,6 @@ import { makeOrgProject } from 'test/__utils__/models/account';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 describe('CLI: composio dev init', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   describe('dev init --help', () => {
     layer(TestLive({ fixture: 'typescript-project' }))(it => {
       it.effect('[Then] shows --no-browser and --yes, no --org-id or --project-id', () =>
@@ -33,7 +28,6 @@ describe('CLI: composio dev init', () => {
         Effect.gen(function* () {
           const failure = yield* cli(['dev', 'init', '--yes']).pipe(Effect.flip);
 
-          // `cli-main.ts` prints the message on stderr and exits 1.
           expect(failure).toMatchObject({
             _tag: 'commands/CommandInputError',
             command: 'dev init',
@@ -76,7 +70,7 @@ describe('CLI: composio dev init', () => {
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
           expect(result._tag).toBe('Failure');
-          expect(lines).toEqual([
+          expect(lines.slice(0, -1)).toEqual([
             '-- composio dev init --',
             'Could not fetch projects from the server.',
             projectGuidance,
@@ -85,6 +79,9 @@ describe('CLI: composio dev init', () => {
             projectGuidance,
             '--  --',
           ]);
+          // The command fails with the client's error after its guidance, which the invocation
+          // reports as a defect.
+          expect(lines.at(-1)).toContain('@composio/client/APIConnectionError');
         })
       );
     });

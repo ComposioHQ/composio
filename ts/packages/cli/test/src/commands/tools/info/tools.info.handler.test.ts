@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@effect/vitest';
+import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { isUsageFailure } from 'src/commands/errors';
 import { runToolsInfo } from 'src/commands/tools/info/tools.info.handler';
@@ -54,10 +54,6 @@ const toolsInfoTest = () => {
 };
 
 describe('runToolsInfo', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   it.effect('[Given] no slug [Then] fails with a usage error before any request', () => {
     const { layer, outputs } = toolsInfoTest();
     return Effect.gen(function* () {
@@ -73,7 +69,7 @@ describe('runToolsInfo', () => {
         option: '<slug>',
         message: `${MISSING_SLUG_MESSAGE}\n${MISSING_SLUG_HINT}`,
       });
-      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      // The invocation prints a usage failure on stderr and exits 1.
       expect(isUsageFailure(failure)).toBe(true);
       expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);

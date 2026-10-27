@@ -1,4 +1,3 @@
-import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { TestClock } from 'effect/testing';
@@ -39,10 +38,6 @@ const failingRealtime = Layer.succeed(
 );
 
 describe('CLI: composio listen', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] the realtime subscription fails',
     it => {

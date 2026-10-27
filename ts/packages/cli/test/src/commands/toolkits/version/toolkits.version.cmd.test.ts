@@ -1,4 +1,3 @@
-import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -62,10 +61,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio dev toolkits version', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] shows latest and last 20 versions',
     it => {

@@ -13,7 +13,6 @@ const decoration = Effect.map(MockConsole.getLines({ stripAnsi: true }), lines =
 describe('runAgentWhoami', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   it.effect(

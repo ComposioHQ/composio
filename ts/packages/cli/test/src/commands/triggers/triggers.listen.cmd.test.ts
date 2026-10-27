@@ -1,5 +1,4 @@
 import type { ServerResponse } from 'node:http';
-import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -35,10 +34,6 @@ const failingRealtime = Layer.succeed(
 );
 
 describe('CLI: composio dev listen', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] the realtime subscription fails',
     it => {

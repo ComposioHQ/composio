@@ -1,4 +1,5 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -62,7 +63,9 @@ describe('CLI: composio dev auth-configs info', () => {
             option: '<id>',
             message: expect.stringContaining('Missing required argument: <id>'),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }
