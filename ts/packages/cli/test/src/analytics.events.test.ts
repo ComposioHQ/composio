@@ -36,6 +36,7 @@ import {
   DEFAULT_CLI_INVOCATION_ORIGIN,
   type CliInvocationContext,
 } from 'src/services/runtime-cli-context';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { resolveInstalledCliVersion } from 'src/services/run-companion-modules';
@@ -413,6 +414,26 @@ describe('CLI analytics setup runtime-context events', () => {
     expect(getPrimaryLifecycleFailedEvent(context, unknown)?.properties?.failure_reason_code).toBe(
       'unknown'
     );
+    expect(
+      getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties
+    ).not.toHaveProperty('failure_reason_code');
+  });
+
+  it('records a run whose child exited non-zero as failed with reason child_exit', () => {
+    const context = createCliCommandTelemetryContext(
+      ['bun', 'composio', 'run', 'process.exit(3)'],
+      APP_VERSION,
+      { stdoutIsTTY: false, stderrIsTTY: false },
+      CLI_INVOCATION
+    );
+
+    const event = getPrimaryLifecycleFailedEvent(context, new ChildProcessExited({ code: 3 }));
+
+    expect(event?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_RUN_FAILED);
+    expect(event?.properties).toMatchObject({
+      error_name: 'effects/ChildProcessExited',
+      failure_reason_code: 'child_exit',
+    });
     expect(
       getPrimaryLifecycleFailedEvent(context, new Error('boom'))?.properties
     ).not.toHaveProperty('failure_reason_code');
