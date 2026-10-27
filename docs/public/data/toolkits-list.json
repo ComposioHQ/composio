@@ -735,7 +735,7 @@
     "name": "Dynamics 365",
     "logo": "https://logos.composio.dev/api/dynamics365",
     "category": "crm",
-    "toolCount": 29,
+    "toolCount": 30,
     "triggerCount": 0
   },
   {
@@ -9585,7 +9585,10 @@
     "logo": "https://logos.composio.dev/api/openweb_ninja",
     "category": "ai web scraping",
     "toolCount": 164,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "opn_form",
@@ -10600,6 +10603,14 @@
     "logo": "https://logos.composio.dev/api/quickbooks",
     "category": "accounting",
     "toolCount": 114,
+    "triggerCount": 0
+  },
+  {
+    "slug": "quickenrich",
+    "name": "QuickEnrich",
+    "logo": "https://logos.composio.dev/api/quickenrich",
+    "category": "ai sales tools",
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -12720,6 +12731,14 @@
     "logo": "https://logos.composio.dev/api/transloadit",
     "category": "file management & storage",
     "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
+    "slug": "trello_mcp",
+    "name": "Trello MCP",
+    "logo": "https://logos.composio.dev/api/trello_mcp",
+    "category": "model context protocol",
+    "toolCount": 15,
     "triggerCount": 0
   },
   {
