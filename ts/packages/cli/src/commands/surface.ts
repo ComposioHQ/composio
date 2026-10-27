@@ -83,31 +83,19 @@ export class MissingActingUserError extends Data.TaggedError('commands/MissingAc
 }
 
 /**
- * The missing-user message for a command, given its `--project-name`. With the flag the
- * directory's test user does not carry over to another project, so the message points at
- * `--user-id` and `composio login` instead of `composio dev init`.
+ * The missing-user message for the tree. On the dev tree with `--project-name` the directory's
+ * test user does not carry over to another project, so it points at `--user-id` and
+ * `composio login` instead of `composio dev init`.
  */
-export const missingUserIdMessage = (projectName: Option.Option<string>, otherwise: string) =>
-  Option.match(projectName, {
-    onNone: () => otherwise,
-    onSome: () =>
-      'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
-  });
-
-const defaultMissingUserMessage =
-  (tree: CommandTree) =>
-  (projectName: Option.Option<string>): string =>
-    tree === 'root'
-      ? 'Missing consumer user id. Run `composio login` and try again.'
-      : missingUserIdMessage(
-          projectName,
-          'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-        );
-
-export interface ActingUserOptions {
-  /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. */
-  readonly missingUserMessage?: (projectName: Option.Option<string>) => string;
-}
+const missingUserMessage = (tree: CommandTree, projectName: Option.Option<string>): string =>
+  tree === 'root'
+    ? 'Missing consumer user id. Run `composio login` and try again.'
+    : Option.match(projectName, {
+        onNone: () =>
+          'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
+        onSome: () =>
+          'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
+      });
 
 /**
  * The test user the directory configures (`.composio/project.json`), for a command that runs
@@ -202,26 +190,24 @@ const devUser = (namedProjectId: Option.Option<string>) =>
  * `ProjectResolutionError` when the project cannot be resolved and `MissingActingUserError`
  * when no step finds a user.
  */
-export const actingUser = (options: ActingUserOptions = {}) =>
+export const actingUser = () =>
   Effect.gen(function* () {
-    const surface = yield* CommandSurface;
-    const tree = surface.tree;
+    const { tree, projectName } = yield* CommandSurface;
     const project = yield* resolveCommandProject(
       tree === 'root'
         ? { mode: 'consumer' }
-        : { mode: 'developer', projectName: Option.getOrUndefined(surface.projectName) }
+        : { mode: 'developer', projectName: Option.getOrUndefined(projectName) }
     );
     const user =
       tree === 'root'
         ? consumerUser(project)
-        : yield* devUser(Option.as(surface.projectName, project.projectId));
+        : yield* devUser(Option.as(projectName, project.projectId));
     yield* announceFallback(user);
     if (Option.isNone(user)) {
-      const message = options.missingUserMessage ?? defaultMissingUserMessage(tree);
       return yield* new MissingActingUserError({
-        tree: surface.tree,
-        projectName: surface.projectName,
-        message: message(surface.projectName),
+        tree,
+        projectName,
+        message: missingUserMessage(tree, projectName),
       });
     }
     return { ...user.value, project } satisfies ActingUser;

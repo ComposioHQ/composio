@@ -7,7 +7,6 @@ import {
   CommandSurface,
   fallbackNotice,
   MissingActingUserError,
-  type ActingUserOptions,
   type ActingUserSource,
   type CommandTree,
 } from 'src/commands/surface';
@@ -247,21 +246,6 @@ describe('actingUser', () => {
         expect(error).toBeInstanceOf(MissingActingUserError);
         expect(error).toMatchObject({ tree, projectName: PROJECT_NAMES[projectName], message });
       })
-  );
-
-  it.effect('[Given] a command’s own message [Then] fails with it, given --project-name', () =>
-    Effect.gen(function* () {
-      const error = yield* run(
-        Effect.flip(
-          actingUser({
-            missingUserMessage: name => `No user for ${Option.getOrElse(name, () => 'none')}.`,
-          })
-        ),
-        { tree: 'dev', projectName: 'other', candidates: 'none' }
-      );
-
-      expect(error).toMatchObject({ message: 'No user for other.' });
-    })
   );
 });
 
