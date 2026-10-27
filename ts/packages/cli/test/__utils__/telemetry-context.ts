@@ -1,6 +1,7 @@
 import { Option } from 'effect';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import type { TelemetryFamily } from 'src/analytics/types';
+import { resolveCommandMeta } from 'src/invocation/command-identity';
 import {
   DEFAULT_CLI_INVOCATION_ORIGIN,
   type CliInvocationContext,
@@ -32,7 +33,7 @@ export const commandTelemetryContext = (
     },
     identity: {
       path: options.path,
-      meta: { telemetryFamily: options.family ?? 'command', requiresLogin: false },
+      meta: resolveCommandMeta(undefined, { telemetryFamily: options.family ?? 'command' }),
     },
     input: options.input === undefined ? Option.none() : Option.some(options.input),
     startedAt: Date.now(),

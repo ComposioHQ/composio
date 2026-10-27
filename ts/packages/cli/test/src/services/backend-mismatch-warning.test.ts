@@ -4,6 +4,7 @@ import type { BackendMismatch } from 'src/config/backend';
 import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import { commandIdentity } from 'test/__utils__/command-identity';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const MISMATCH: BackendMismatch = {
@@ -80,7 +81,7 @@ describe('BackendMismatchWarning', () => {
       const terminal = recordingTerminal(stderrIsTTY);
       return Effect.gen(function* () {
         const warning = yield* BackendMismatchWarning;
-        yield* warning.run({ argv: ['bun', 'composio', 'whoami'] });
+        yield* warning.run({ identity: commandIdentity(['whoami']) });
         expect(terminal.written).toEqual(expected);
       }).pipe(
         Effect.provide(

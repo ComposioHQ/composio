@@ -126,7 +126,7 @@ const lifecycleOf = (args: ReadonlyArray<string>) =>
     yield* cliExit(args);
     const calls = yield* recordedInvocationCalls;
     return calls.flatMap(call =>
-      call.service === 'CommandLifecycleTelemetry'
+      call.service === 'CommandLifecycleTelemetry' && call.event !== 'pluginHintShown'
         ? [{ event: call.event, path: call.context.commandPath, family: call.context.family, call }]
         : []
     );
