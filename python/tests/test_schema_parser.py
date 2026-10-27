@@ -1343,14 +1343,15 @@ class TestBooleanDefaultCoercion:
 
     @pytest.mark.unit
     @pytest.mark.schema
-    def test_type_list_inside_any_of_with_string_default_coerced(self):
-        """A list-valued `type` inside an anyOf option also drives coercion."""
+    @pytest.mark.parametrize("combiner", ["anyOf", "oneOf", "allOf"])
+    def test_type_list_inside_combiner_with_string_default_coerced(self, combiner):
+        """A list-valued `type` inside a combiner branch also drives coercion."""
         json_schema = {
             "title": "TestRequest",
             "type": "object",
             "properties": {
                 "limit": {
-                    "anyOf": [{"type": ["integer", "null"]}],
+                    combiner: [{"type": ["integer", "null"]}],
                     "default": "5",
                     "description": "Page size.",
                 },
