@@ -12,6 +12,13 @@
 
 ### Patch Changes
 
+- `composio dev triggers listen --toolkits` now matches toolkits whose slug
+  contains an underscore, such as `one_drive`, `launch_darkly` and
+  `agent_mail`. Events carry no toolkit slug, so the listener took the first
+  `_` segment of the trigger slug (`ONE` for `ONE_DRIVE_FILE_CREATED_TRIGGER`)
+  and dropped every event of those toolkits. A `--toolkits` entry now also
+  matches when the trigger slug starts with `<toolkit>_`.
+
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
   it could name an older version than the one `composio upgrade` then
