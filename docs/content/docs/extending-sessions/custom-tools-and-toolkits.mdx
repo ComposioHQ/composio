@@ -247,6 +247,8 @@ def send_promo_email(input: PromoEmailInput, ctx):
         method="POST",
         body={"raw": raw},
     )
+    if res["result_type"] == "blocked":
+        raise RuntimeError(res["message"])
     return {"status": res["status"], "to": input.to}
 ```
 </Tab>
@@ -274,6 +276,9 @@ const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
       method: "POST",
       body: { raw },
     });
+    if (res.resultType === "blocked") {
+      throw new Error(res.message);
+    }
     return { status: res.status, to: input.to };
   },
 });
