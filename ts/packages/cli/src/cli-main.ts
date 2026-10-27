@@ -298,7 +298,7 @@ const warnOnBackendMismatch = Effect.gen(function* () {
 
 const cliProgram = (argv: ReadonlyArray<string>) =>
   warnOnBackendMismatch.pipe(
-    Effect.andThen(showUpdateNotice),
+    Effect.andThen(showUpdateNotice(argv)),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
     Effect.catchIf(
