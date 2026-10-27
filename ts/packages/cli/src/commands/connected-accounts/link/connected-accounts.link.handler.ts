@@ -108,21 +108,20 @@ const consumerScope = (project: ResolvedCommandProject) =>
   );
 
 /**
- * C2: `link` and `link --list` on the dev tree act on the developer project (the directory's,
- * or `--project-name`'s) and honor `--user-id`. Until then, without `--project-name` they act as
- * the consumer user on the consumer project.
+ * On the dev tree without `--project-name`, `link` and `link --list` act as the consumer user on
+ * the consumer project and ignore `--user-id`, matching their behavior before `actingUser`.
  */
 const LINK_LEGACY = {
   legacy: {
     consumerWithoutProjectName: true,
-    // C2: treat an empty consumer user id as missing everywhere
+    // As before `actingUser`, an empty consumer user id still counts as a user.
     acceptEmptyConsumerUserId: true,
   },
 } satisfies ActingUserOptions;
 
 /**
- * C2: fail with `MissingActingUserError` itself. This keeps the tag `cli.command.failed`
- * reports as `error_name`, and the one the handler tests match.
+ * Re-fail with link's own `MissingLinkUserIdError`, so `cli.command.failed` keeps reporting it as
+ * `error_name` and the handler tests keep matching its tag.
  */
 const missingLinkUserId = (flow: LinkFlow) => (error: MissingActingUserError) =>
   Effect.fail(new MissingLinkUserIdError({ message: error.message, flow }));
@@ -426,7 +425,7 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
     const clientSingleton = yield* ComposioClientSingleton;
     const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
       ...LINK_LEGACY,
-      // C2: the message fits the tree.
+      // Keep the command's own missing-user message rather than the tree's default.
       missingUserMessage: projectName =>
         missingUserIdMessage(
           projectName,
@@ -506,7 +505,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
     // missing project; `actingUserOption` resolves only the --project-name project.
     const acting = yield* actingUserOption();
     if (Option.isNone(acting)) {
-      // C2: fail with `actingUser`'s MissingActingUserError and the tree's message.
+      // `actingUserOption` does not fail, so this flow raises link's own error and message.
       return yield* new MissingLinkUserIdError({
         message: missingUserIdMessage(
           projectName,
@@ -521,7 +520,7 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
         invalidOptionValueFor(tree)(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config')
       );
     }
-    // C2: `actingUser` prints the notice for every command.
+    // The acting-user helpers leave the test-user notice to the command, so print it here.
     yield* Effect.transposeOption(
       Option.map(fallbackNotice(acting.value), notice => ui.log.warn(notice))
     );
@@ -612,7 +611,7 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
     const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const clientSingleton = yield* ComposioClientSingleton;
     const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-      // C2: the directory test user applies here too, and the message fits the tree.
+      // Ignores the directory test user and keeps its own message, as before `actingUser`.
       legacy: { ...LINK_LEGACY.legacy, skipDirectoryTestUser: true },
       missingUserMessage: () =>
         'Missing user id. Provide --user-id or run composio login to set global test_user_id.',

@@ -506,11 +506,11 @@ const resolveListenSetup = (params: {
 /** The consumer user `listen` subscribes as, with the consumer project. */
 const listenActingUser = (slug: string) =>
   actingUser({
-    // C2: the message fits the tree.
+    // Keep the command's own missing-user message rather than the tree's default.
     missingUserMessage: () => 'No consumer user is available in the current project context.',
   }).pipe(
-    // C2: fail with MissingActingUserError itself, an expected failure; this keeps the
-    // defect this command failed with and its `cli.command.failed` `error_name`.
+    // Re-fail with the command's own error, not the expected `MissingActingUserError`: it has
+    // always failed with it as a defect, and `cli.command.failed` keeps its `error_name`.
     Effect.catchTag('commands/MissingActingUserError', error =>
       Effect.fail(
         new ListenCommandError({ reason: 'project_context', message: error.message, slug })

@@ -79,8 +79,8 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
     const clientSingleton = yield* ComposioClientSingleton;
     const toolkitSlug = Option.getOrUndefined(toolkit);
     const { userId: consumerUserId, project: resolvedProject } = yield* actingUser().pipe(
-      // C2: fail with MissingActingUserError itself, an expected failure; this keeps the
-      // defect this command failed with and its `cli.command.failed` `error_name`.
+      // Re-fail with the command's own error, not the expected `MissingActingUserError`: it has
+      // always failed with it as a defect, and `cli.command.failed` keeps its `error_name`.
       Effect.catchTag('commands/MissingActingUserError', error =>
         Effect.fail(new MissingConnectionsConsumerUserIdError({ message: error.message }))
       )

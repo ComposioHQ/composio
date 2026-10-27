@@ -77,7 +77,7 @@ export const runTriggersCreate = ({
     const resolvedUserId = Option.map(acting, found => found.userId);
 
     // A defaulted user id must own the connected account on a 2FA project, so name it.
-    // C2: `actingUser` prints the notice for every command.
+    // The acting-user helpers leave the test-user notice to the command, so print it here.
     yield* Effect.transposeOption(
       Option.map(Option.flatMap(acting, fallbackNotice), notice => ui.log.warn(notice))
     );
