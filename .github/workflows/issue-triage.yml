@@ -13,11 +13,6 @@ on:
 
 permissions: {}
 
-# Serialize classification and forwarding for an issue, including manual retries.
-concurrency:
-  group: issue-triage-${{ github.event.issue.number || inputs.issue_number }}
-  cancel-in-progress: false
-
 jobs:
   authorize:
     runs-on: ubuntu-latest
@@ -83,7 +78,9 @@ jobs:
               throw new Error("Cannot triage a pull request as an issue");
             }
             const labels = (issue.labels || []).map(label => typeof label === "string" ? label : label.name);
-            if (labels.includes("support")) {
+            const explicitTriage = context.eventName === "workflow_dispatch" ||
+              (context.payload.action === "labeled" && context.payload.label?.name === "triage");
+            if (labels.includes("support") && !explicitTriage) {
               // A maintainer's explicit routing decision needs no model or API key.
               core.setOutput("structured_output", JSON.stringify({
                 category: "other",
@@ -191,6 +188,11 @@ jobs:
   apply:
     needs: classify
     if: needs.classify.outputs.issue_number != ''
+    # Only authorized writes enter the queue, using the validated numeric issue ID.
+    concurrency:
+      group: issue-triage-${{ needs.classify.outputs.issue_number }}
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -320,6 +322,7 @@ jobs:
                 throw new Error("PLAIN_API_KEY is not configured; support forwarding cannot complete.");
               }
 
+              const operation = query.match(/\b(?:query|mutation)\s+([A-Za-z_][A-Za-z0-9_]*)/)?.[1] || "unknown operation";
               const response = await fetch("https://core-api.uk.plain.com/graphql/v1", {
                 method: "POST",
                 redirect: "error",
@@ -330,9 +333,23 @@ jobs:
                 },
                 body: JSON.stringify({ query, variables }),
               });
-              const json = await response.json();
+              let json;
+              try {
+                json = await response.json();
+              } catch {
+                throw new Error(`Plain API request failed during ${operation} (HTTP ${response.status}; invalid JSON response).`);
+              }
               if (!response.ok || json.errors) {
-                throw new Error(`Plain API request failed (HTTP ${response.status}).`);
+                // Response messages can echo credentials, issue text or customer data.
+                const allowedCodes = new Set([
+                  "FORBIDDEN", "UNAUTHENTICATED", "RATE_LIMITED", "BAD_USER_INPUT",
+                  "GRAPHQL_PARSE_FAILED", "GRAPHQL_VALIDATION_FAILED", "INTERNAL_SERVER_ERROR",
+                ]);
+                const codes = Array.isArray(json.errors)
+                  ? [...new Set(json.errors.map(error => error?.extensions?.code).filter(code => allowedCodes.has(code)))]
+                  : [];
+                const detail = codes.length ? codes.join(", ") : json.errors ? "unrecognized GraphQL error" : "HTTP request rejected";
+                throw new Error(`Plain API request failed during ${operation} (HTTP ${response.status}; ${detail}).`);
               }
               if (!json.data) throw new Error("Plain API returned no data.");
               return json.data;

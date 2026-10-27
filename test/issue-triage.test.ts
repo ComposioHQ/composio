@@ -9,7 +9,9 @@ type Step = {
   env?: Record<string, string>;
   with: { script: string };
 };
+type Concurrency = { group: string; 'cancel-in-progress': boolean; queue?: string };
 type Job = {
+  concurrency?: Concurrency;
   permissions: Record<string, string>;
   steps: Step[];
   needs?: string;
@@ -17,7 +19,7 @@ type Job = {
 };
 type Workflow = {
   permissions: Record<string, string>;
-  concurrency: { group: string; 'cancel-in-progress': boolean };
+  concurrency?: Concurrency;
   jobs: Record<'authorize' | 'classify' | 'apply', Job>;
   on: { issues: { types: string[] }; workflow_dispatch: unknown };
 };
@@ -34,6 +36,7 @@ type ClassifierOptions = {
   issueNumber?: string;
   issue?: { pull_request?: object; labels?: { name: string }[] };
   payload?: { action?: string; label?: { name: string } };
+  eventName?: 'issues' | 'workflow_dispatch';
   anthropicApiKey?: string;
   result?: unknown;
   status?: number;
@@ -57,6 +60,7 @@ async function runClassifier({
   issueNumber = '42',
   issue = {},
   payload = {},
+  eventName = 'issues',
   anthropicApiKey = 'anthropic-secret-sentinel',
   result = {
     stop_reason: 'end_turn',
@@ -76,7 +80,7 @@ async function runClassifier({
         PLAIN_API_KEY: 'plain-secret-sentinel',
       },
     },
-    context: { repo: { owner: 'ComposioHQ', repo: 'composio' }, payload },
+    context: { repo: { owner: 'ComposioHQ', repo: 'composio' }, payload, eventName },
     github: {
       rest: {
         issues: {
@@ -338,11 +342,32 @@ test('authorization controls every issue event and manual dispatch before exposi
   expect(workflow.jobs.classify.needs).toBe('authorize');
   expect(workflow.jobs.classify.if).toBe("needs.authorize.outputs.allowed == 'true'");
   expect(workflow.jobs.apply.if).toBe("needs.classify.outputs.issue_number != ''");
-  expect(workflow.concurrency).toEqual({
-    group: 'issue-triage-${{ github.event.issue.number || inputs.issue_number }}',
+  expect(workflow.concurrency).toBeUndefined();
+  expect(workflow.jobs.authorize.concurrency).toBeUndefined();
+  expect(workflow.jobs.classify.concurrency).toBeUndefined();
+  expect(workflow.jobs.apply.concurrency).toEqual({
+    group: 'issue-triage-${{ needs.classify.outputs.issue_number }}',
     'cancel-in-progress': false,
+    queue: 'max',
   });
 });
+
+for (const issueNumber of ['42', ' 42', '042', '0x2a', '4.2e1']) {
+  test(`dispatch input ${JSON.stringify(issueNumber)} targets the canonical issue queue`, async () => {
+    const { execution, outputs } = await runClassifier({
+      issueNumber,
+      eventName: 'workflow_dispatch',
+    });
+    await execution;
+    expect(outputs.issue_number).toBe('42');
+    expect(
+      workflow.jobs.apply.concurrency?.group.replace(
+        '${{ needs.classify.outputs.issue_number }}',
+        outputs.issue_number
+      )
+    ).toBe('issue-triage-42');
+  });
+}
 
 const applyStep = workflow.jobs.apply.steps[0];
 type ApplyOptions = {
@@ -351,6 +376,7 @@ type ApplyOptions = {
   state?: 'open' | 'closed';
   plainApiKey?: string;
   plainHttpStatus?: number;
+  plainJsonError?: string;
   calls?: [string, Record<string, unknown>][];
   labels?: string[];
   comments?: { user: { login: string }; body: string }[];
@@ -364,6 +390,7 @@ async function runApply({
   state = 'open',
   plainApiKey = 'plain-secret-sentinel',
   plainHttpStatus = 200,
+  plainJsonError,
   calls = [],
   labels = [],
   comments = [],
@@ -444,7 +471,14 @@ async function runApply({
         data = { createThread: { thread: plainState.thread } };
       }
       const response = plainResponse(query, data);
-      return { ok: plainHttpStatus === 200, status: plainHttpStatus, json: async () => response };
+      return {
+        ok: plainHttpStatus === 200,
+        status: plainHttpStatus,
+        json: async () => {
+          if (plainJsonError) throw new Error(plainJsonError);
+          return response;
+        },
+      };
     },
   });
   const named = (name: string) => calls.filter(call => call[0] === name).map(call => call[1]);
@@ -625,6 +659,28 @@ test('an explicitly support-labeled issue forwards without a model call or Anthr
   });
 });
 
+for (const [label, eventName, payload] of [
+  ['triage label', 'issues', { action: 'labeled', label: { name: 'triage' } }],
+  ['manual dispatch', 'workflow_dispatch', {}],
+] as const) {
+  test(`an explicit ${label} reclassifies a support issue and retains its routing`, async () => {
+    const { execution, outputs, requests } = await runClassifier({
+      issue: { labels: [{ name: 'support' }, { name: 'triage' }] },
+      eventName,
+      payload,
+    });
+    await execution;
+    expect(requests).toHaveLength(1);
+    const { named } = await runApply({
+      structuredOutput: outputs.structured_output,
+      labels: ['support', 'triage'],
+    });
+    expect(named('addLabels')).toEqual([{ ...target, labels: ['bug', 'ts', 'support'] }]);
+    expect(named('addAssignees')).toEqual([{ ...target, assignees: ['jkomyno'] }]);
+    expect(named('removeLabel')).toEqual([{ ...target, name: 'triage' }]);
+  });
+}
+
 test('a removed support label does not trigger stale forwarding', async () => {
   const { execution, outputs, requests } = await runClassifier({
     payload: { action: 'labeled', label: { name: 'support' } },
@@ -726,6 +782,66 @@ test('Plain GraphQL failures are retried three times, then fail visibly', async 
     })
   ).rejects.toThrow('Plain API request failed');
   expect(requests).toBe(3);
+});
+
+for (const code of ['FORBIDDEN', 'RATE_LIMITED', 'GRAPHQL_VALIDATION_FAILED']) {
+  test(`Plain HTTP-200 GraphQL ${code} errors report a safe operation and code`, async () => {
+    let failure;
+    try {
+      await runApply({
+        result: support,
+        plainResponse: () => ({
+          errors: [
+            {
+              message: 'plain-secret-sentinel Reported body reporter@example.com',
+              extensions: { code },
+            },
+          ],
+        }),
+      });
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeDefined();
+    const message = String(failure);
+    expect(message).toContain('supportThread');
+    expect(message).toContain(code);
+    expect(message).not.toContain('plain-secret-sentinel');
+    expect(message).not.toContain('Reported body');
+    expect(message).not.toContain('reporter@example.com');
+  });
+}
+
+test('Plain diagnostics omit unknown error codes and raw response values', async () => {
+  await expect(
+    runApply({
+      result: support,
+      plainResponse: () => ({
+        errors: [
+          {
+            message: 'plain-secret-sentinel',
+            extensions: { code: 'plain-secret-sentinel' },
+          },
+        ],
+      }),
+    })
+  ).rejects.toThrow('unrecognized GraphQL error');
+});
+
+test('Plain non-JSON failures retain HTTP context without exposing parser response text', async () => {
+  let failure;
+  try {
+    await runApply({
+      result: support,
+      plainHttpStatus: 503,
+      plainJsonError: 'plain-secret-sentinel',
+    });
+  } catch (error) {
+    failure = error;
+  }
+  expect(failure).toBeDefined();
+  expect(String(failure)).toContain('HTTP 503; invalid JSON response');
+  expect(String(failure)).not.toContain('plain-secret-sentinel');
 });
 
 test('a Plain HTTP failure leaves support and triage labels in place without a success note', async () => {
