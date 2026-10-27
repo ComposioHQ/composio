@@ -57,6 +57,7 @@ import {
   normalizeFileUploadSchema,
   schemaHasFileUploadable,
   rejectLocalFilesWithoutUpload,
+  setArgumentAt,
 } from 'src/services/tool-file-uploads';
 import {
   ComposioNoActiveConnectionError,
@@ -188,28 +189,6 @@ const hasNestedKey = (
   return true;
 };
 
-const setNestedKey = (
-  record: Record<string, unknown>,
-  pathParts: ReadonlyArray<string | number>,
-  value: unknown
-): Record<string, unknown> => {
-  const set = (current: unknown, remaining: ReadonlyArray<string | number>): unknown => {
-    const [key, ...rest] = remaining;
-    if (key === undefined) return value;
-    if (typeof key === 'number') {
-      if (!Array.isArray(current)) return current;
-      const copy = [...current];
-      copy[key] = set(copy[key], rest);
-      return copy;
-    }
-    const copy = isPlainRecord(current) ? { ...current } : {};
-    copy[key] = set(copy[key], rest);
-    return copy;
-  };
-  const updated = set(record, pathParts);
-  return isPlainRecord(updated) ? updated : record;
-};
-
 const injectSingleFileArgument = (params: {
   readonly slug: string;
   readonly args: Record<string, unknown>;
@@ -246,7 +225,7 @@ const injectSingleFileArgument = (params: {
       });
     }
 
-    return setNestedKey(params.args, targetPath, params.filePath);
+    return setArgumentAt(params.args, targetPath, params.filePath);
   });
 
 const connectionTips = (params: {

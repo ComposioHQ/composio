@@ -747,6 +747,33 @@ describe('uploadToolInputFiles — local file for an input that is not file_uplo
     )
   );
 
+  it.effect('uploads an input once when several branches mark it uploadable', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(async () => ({ ok: true, statusText: 'OK' }))
+        );
+        const { result, requests } = yield* run(
+          { file, note: 'keep' },
+          {
+            type: 'object',
+            anyOf: [
+              { properties: { file: { file_uploadable: true } } },
+              { properties: { file: { file_uploadable: true }, note: { type: 'string' } } },
+            ],
+          }
+        );
+
+        expect(yield* Effect.fromResult(result)).toEqual({
+          file: { name: 'photo.jpg', mimetype: 'image/jpeg', s3key: 's3key-123' },
+          note: 'keep',
+        });
+        expect(requests).toHaveLength(1);
+      }).pipe(Effect.ensuring(Effect.sync(() => vi.unstubAllGlobals())))
+    )
+  );
+
   it('flags only the tuple elements the upload code does not upload', () => {
     // `hydrateFileUploads` reads each tuple element against its own `items` schema.
     expect(
@@ -762,7 +789,7 @@ describe('uploadToolInputFiles — local file for an input that is not file_uplo
           },
         }
       )
-    ).toEqual([{ argumentPath: ['files', '0'], value: '/tmp/photo.jpg' }]);
+    ).toEqual([{ argumentPath: ['files', 0], value: '/tmp/photo.jpg' }]);
   });
 
   it('reads descriptions in nested composition branches', () => {
