@@ -24,8 +24,7 @@ import {
   TOOLKIT_AND_AUTH_CONFIG_MESSAGE,
   missingArgumentMessage,
 } from 'src/commands/connected-accounts/link/connected-accounts.link.format';
-import { CommandSurface } from 'src/commands/surface';
-import { MissingLinkUserIdError } from 'src/commands/connected-accounts/link/connected-accounts.link.errors';
+import { CommandSurface, MissingActingUserError } from 'src/commands/surface';
 import { CliUserConfig } from 'src/models/cli-user-config';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { ProjectKeys } from 'src/models/project-keys';
@@ -121,8 +120,6 @@ interface LinkFixture {
   readonly connectedAccountsListFails?: boolean;
   /** Makes the first N `connectedAccounts.retrieve` calls fail, for the polling retries. */
   readonly retrieveFailsFirst?: number;
-  /** The consumer project's user id; the mock client's default otherwise. */
-  readonly consumerUserId?: string;
   /** Replaces the headless test terminal, e.g. with `redirectedTerminalUI`. */
   readonly terminal?: Layer.Layer<TerminalUI>;
 }
@@ -975,43 +972,23 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
     })
   );
 
-  it.effect(
-    '[Given] no consumer user and no test user [Then] fails with the tool-router missing-user error',
-    () =>
-      Effect.gen(function* () {
-        const { layer, requests } = linkHandlerTest({ consumerUserId: null });
-        const failure = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
-          Effect.flip,
-          Effect.provide(layer)
-        );
-
-        // The flow re-fails `actingUser`'s expected failure as its own expected error, so
-        // `cli.command.failed` keeps reporting `commands/MissingLinkUserIdError`.
-        expect(failure).toBeInstanceOf(MissingLinkUserIdError);
-        expect(failure).toMatchObject({
-          flow: 'tool-router',
-          message:
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-        });
-        expect(requests).toEqual([]);
-      })
-  );
-
-  it.effect('[Given] an empty consumer user id [Then] the flow still acts as it and links', () =>
+  it.effect.each([
+    { case: 'no consumer user id at all', consumerUserId: null },
+    { case: 'an empty consumer user id', consumerUserId: '' },
+  ])('[Given] $case and no test user [Then] fails before any link request', c =>
     Effect.gen(function* () {
-      const { layer, requests } = linkHandlerTest({ consumerUserId: '' });
-      yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
-        Effect.andThen(lines),
+      const { layer, requests } = linkHandlerTest({ consumerUserId: c.consumerUserId });
+      const failure = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.flip,
         Effect.provide(layer)
       );
 
-      // As before `actingUser`, the flow's legacy options accept the empty id as the user.
-      expect(requests).toEqual([
-        {
-          operation: 'toolRouter.session.link',
-          params: { sessionId: 'trs_handler_test', toolkit: 'gmail' },
-        },
-      ]);
+      // An empty id counts as no user, so both shapes fail with the shared missing-user error.
+      expect(failure).toBeInstanceOf(MissingActingUserError);
+      expect(failure).toMatchObject({
+        message: 'Missing consumer user id. Run `composio login` and try again.',
+      });
+      expect(requests).toEqual([]);
     })
   );
 

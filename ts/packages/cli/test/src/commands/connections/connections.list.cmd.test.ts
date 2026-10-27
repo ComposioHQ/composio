@@ -336,17 +336,16 @@ describe('CLI: composio connections list account identity', () => {
     })
   )(it => {
     it.effect(
-      '[Given] an empty consumer user id [Then] fails with the command defect and its message',
+      '[Given] an empty consumer user id [Then] fails with the missing-user error and its message',
       () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
           const failure = yield* cli(['connections', 'list']).pipe(Effect.flip);
 
-          // The command has always failed with this class as a defect, so `actingUser`'s
-          // expected failure is re-tagged; the tag and the message are both load-bearing.
+          // An empty id counts as no user; the tag is what `cli.command.failed` reports.
           expect(failure).toMatchObject({
-            _tag: 'commands/MissingConnectionsConsumerUserIdError',
+            _tag: 'commands/MissingActingUserError',
             message: 'Missing consumer user id. Run `composio login` and try again.',
           });
         })

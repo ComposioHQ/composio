@@ -3,6 +3,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ListenCommandError } from 'src/commands/listen.cmd';
+import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
@@ -447,7 +448,7 @@ describe('CLI: composio listen', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, accountData: { consumerUserId: '' } }))(
     '[Given] no consumer user in the project context',
     it => {
-      it.effect('[Then] fails before subscribing with the preserved message', () =>
+      it.effect('[Then] fails before subscribing with the missing-user error', () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
@@ -459,12 +460,10 @@ describe('CLI: composio listen', () => {
             '1',
           ]).pipe(Effect.flip);
 
-          // The command has always failed with this class as a defect, so `actingUser`'s
-          // expected failure is re-tagged; the reason and the message are both load-bearing.
-          expect(failure).toBeInstanceOf(ListenCommandError);
+          // An empty id counts as no user, so listen fails with the shared missing-user error.
+          expect(failure).toBeInstanceOf(MissingActingUserError);
           expect(failure).toMatchObject({
-            reason: 'project_context',
-            message: 'No consumer user is available in the current project context.',
+            message: 'Missing consumer user id. Run `composio login` and try again.',
           });
         })
       );
