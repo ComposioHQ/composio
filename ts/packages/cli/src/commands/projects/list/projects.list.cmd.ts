@@ -1,5 +1,5 @@
 import { Command, Flag } from 'effect/cli';
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { runProjectsList } from './projects.list.handler';
 
 const orgId = Flag.String('org-id').pipe(
@@ -14,5 +14,5 @@ const limit = Flag.Int('limit').pipe(
 
 export const projectsCmd$List = Command.make('list', { orgId, limit }, runProjectsList).pipe(
   Command.withDescription('List developer projects for the current organization.'),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

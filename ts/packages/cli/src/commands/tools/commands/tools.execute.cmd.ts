@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
@@ -2057,7 +2057,7 @@ export const rootToolsCmd$Execute = Command.make(
     'Execute a tool by slug. Validates inputs against cached schemas and checks connections'
   ),
   Command.withExamples(executeExamples),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );
 
 export const devToolsCmd$Execute = Command.make(
@@ -2133,5 +2133,5 @@ export const devToolsCmd$Execute = Command.make(
       command: example.command.replace('composio execute', 'composio dev playground-execute'),
     }))
   ),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

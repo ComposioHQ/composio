@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
 import { toolsCmd$List } from './list/tools.list.cmd';
 import { toolsCmd$Info } from './info/tools.info.cmd';
@@ -15,5 +15,5 @@ export const rootToolsCmd = Command.make('tools').pipe(
     },
   ]),
   withRegisteredSubcommands([toolsCmd$List, toolsCmd$Info]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );
