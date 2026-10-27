@@ -12,6 +12,11 @@
 
 ### Patch Changes
 
+- Local file uploads now use the filename's MIME type instead of always declaring
+  `application/octet-stream`. `execute --file` preserves arrays and injects into
+  the single matching upload field in an existing array item; ambiguous targets
+  require explicit JSON. This fixes Word and PowerPoint image editing through the CLI.
+
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
   it could name an older version than the one `composio upgrade` then
