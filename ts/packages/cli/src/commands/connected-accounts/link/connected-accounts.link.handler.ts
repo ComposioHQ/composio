@@ -112,7 +112,13 @@ const consumerScope = (project: ResolvedCommandProject) =>
  * or `--project-name`'s) and honor `--user-id`. Until then, without `--project-name` they act as
  * the consumer user on the consumer project.
  */
-const LINK_LEGACY = { legacy: { consumerWithoutProjectName: true } } satisfies ActingUserOptions;
+const LINK_LEGACY = {
+  legacy: {
+    consumerWithoutProjectName: true,
+    // C2: treat an empty consumer user id as missing everywhere
+    acceptEmptyConsumerUserId: true,
+  },
+} satisfies ActingUserOptions;
 
 /**
  * C2: fail with `MissingActingUserError` itself. This keeps the tag `cli.command.failed`
