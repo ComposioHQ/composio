@@ -23,7 +23,7 @@ test/src/commands/<group>/<name>/<group>.<name>.handler.test.ts    handler-level
 
 ## Effect Patterns
 
-The CLI is on `effect@4.0.3` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
+The CLI is on `effect@4.0.5` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
 
 Common shape. The command file declares the surface and passes the handler to the three-argument `Command.make`:
 
