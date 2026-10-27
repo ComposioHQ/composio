@@ -644,6 +644,8 @@ def get_issue_info(input: GetIssueInfoInput, ctx) -> dict:
         endpoint=f"/repos/composiohq/composio/issues/{input.issue_number}",
         method="GET",
     )
+    if result["result_type"] == "blocked":
+        raise RuntimeError(result["message"])
     return {"data": result["data"]}
 
 session = composio.create(
@@ -672,6 +674,9 @@ const getIssueInfo = experimental_createTool("GET_ISSUE_INFO", {
       endpoint: `/repos/composiohq/composio/issues/${input.issueNumber}`,
       method: "GET",
     });
+    if (result.resultType === "blocked") {
+      throw new Error(result.message);
+    }
     return { data: result.data };
   },
 });
