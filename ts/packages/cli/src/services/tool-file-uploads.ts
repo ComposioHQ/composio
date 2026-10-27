@@ -6,7 +6,7 @@
 import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
 import type { ComposioClientShape, ComposioError } from '@composio/client/effect';
-import { Data, Effect, Predicate } from 'effect';
+import { Data, Effect, Predicate, Schema } from 'effect';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { idempotent } from 'src/services/composio-request';
 
@@ -49,6 +49,27 @@ const asSourceReadError = (cause: unknown): ToolFileUploadError =>
         message: cause instanceof Error ? cause.message : String(cause),
         reason: 'source-read',
       });
+
+const decodeRunStagedFiles = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(
+    Schema.Record(
+      Schema.String,
+      Schema.Struct({ name: Schema.String, mimetype: Schema.optional(Schema.String) })
+    )
+  )
+);
+
+/** Read the per-execute labels without putting the file batch in the environment. */
+export const readRunStagedFiles = (
+  fs: FileSystem.FileSystem,
+  manifestPath: string | undefined
+): Effect.Effect<StagedFiles, ToolFileUploadError> =>
+  Effect.gen(function* () {
+    if (!manifestPath) return new Map();
+    const content = yield* fs.readFileString(manifestPath).pipe(Effect.mapError(asSourceReadError));
+    const labels = yield* decodeRunStagedFiles(content).pipe(Effect.mapError(asSourceReadError));
+    return new Map(Object.entries(labels));
+  });
 
 // Releases a body this module does not read, ignoring a cancellation failure.
 const discardBody = (response: Response) =>

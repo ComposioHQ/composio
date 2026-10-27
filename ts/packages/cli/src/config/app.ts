@@ -5,27 +5,6 @@ import { flag, optionalLogLevel, optionalString } from './env';
 
 const ENVIRONMENT = optionalString('COMPOSIO_ENVIRONMENT');
 
-const decodeStagedFilesJson = Schema.decodeUnknownOption(
-  Schema.fromJsonString(
-    Schema.Record(
-      Schema.String,
-      Schema.Struct({ name: Schema.String, mimetype: Schema.optional(Schema.String) })
-    )
-  )
-);
-
-// Set by `composio run` for the `composio execute` it spawns, never by users, so a
-// malformed value is ignored rather than failing the command. A Map, so a path
-// such as `constructor` cannot reach an object's prototype.
-const decodeRunStagedFiles = (
-  raw: string | undefined
-): ReadonlyMap<string, { readonly name: string; readonly mimetype?: string }> =>
-  new Map(
-    raw === undefined
-      ? []
-      : Object.entries(Option.getOrElse(decodeStagedFilesJson(raw), () => ({})))
-  );
-
 /** The explicit `name` value, else the `COMPOSIO_ENVIRONMENT`-derived default. */
 const url = (name: string, prodDefault: string, stagingDefault: string) =>
   Config.all({ explicit: optionalString(name), environment: ENVIRONMENT }).pipe(
@@ -112,9 +91,7 @@ export const APP_CONFIG = {
   CLI_PARENT_RUN_ID: optionalString('COMPOSIO_CLI_PARENT_RUN_ID'),
   RUN_OUTPUT_DIR: optionalString('COMPOSIO_RUN_OUTPUT_DIR'),
   // Staged file path -> name and MIME type, for the Files a `composio run` script passed to `execute()`
-  RUN_STAGED_FILES: optionalString('COMPOSIO_RUN_STAGED_FILES').pipe(
-    Config.map(decodeRunStagedFiles)
-  ),
+  RUN_STAGED_FILES_FILE: optionalString('COMPOSIO_RUN_STAGED_FILES_FILE'),
 
   // Disable connected account cache (defaults to true — cache is off by default)
   DISABLE_CONNECTED_ACCOUNT_CACHE: flag('COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', true),

@@ -34,7 +34,7 @@ describe('APP_CONFIG', () => {
         CLI_INVOCATION_ORIGIN: undefined,
         CLI_PARENT_RUN_ID: undefined,
         RUN_OUTPUT_DIR: undefined,
-        RUN_STAGED_FILES: new Map(),
+        RUN_STAGED_FILES_FILE: undefined,
         DISABLE_CONNECTED_ACCOUNT_CACHE: true,
         TOOLKIT_VERSIONS: Option.none(),
       });
@@ -68,8 +68,7 @@ describe('APP_CONFIG', () => {
         COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
         COMPOSIO_CLI_PARENT_RUN_ID: 'run_parent',
         COMPOSIO_RUN_OUTPUT_DIR: '\t/tmp/composio-output\n',
-        COMPOSIO_RUN_STAGED_FILES:
-          '{"/tmp/composio-output/file-a1":{"name":"deck","mimetype":"application/pdf"},"/tmp/composio-output/file-b2.txt":{"name":"notes.txt"}}',
+        COMPOSIO_RUN_STAGED_FILES_FILE: '/tmp/composio-output/metadata.json',
         COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'OFF',
         COMPOSIO_TOOLKIT_VERSION_GMAIL: '20250901_00',
       });
@@ -95,25 +94,11 @@ describe('APP_CONFIG', () => {
         CLI_INVOCATION_ORIGIN: 'run',
         CLI_PARENT_RUN_ID: 'run_parent',
         RUN_OUTPUT_DIR: '/tmp/composio-output',
-        RUN_STAGED_FILES: new Map([
-          ['/tmp/composio-output/file-a1', { name: 'deck', mimetype: 'application/pdf' }],
-          ['/tmp/composio-output/file-b2.txt', { name: 'notes.txt' }],
-        ]),
+        RUN_STAGED_FILES_FILE: '/tmp/composio-output/metadata.json',
         DISABLE_CONNECTED_ACCOUNT_CACHE: false,
         TOOLKIT_VERSIONS: Option.some({ GMAIL: '20250901_00' }),
       });
     })
-  );
-
-  it.effect.each(['not json', '["a"]', '{"/a":1}', '{"/a":{"mimetype":"text/plain"}}'])(
-    '[Given] COMPOSIO_RUN_STAGED_FILES=%s [Then] it reads as no staged files',
-    value =>
-      Effect.gen(function* () {
-        deepStrictEqual(
-          yield* read(APP_CONFIG.RUN_STAGED_FILES, { COMPOSIO_RUN_STAGED_FILES: value }),
-          new Map()
-        );
-      })
   );
 
   it.effect('[Given] COMPOSIO_ENVIRONMENT [Then] it picks the URL defaults', () =>

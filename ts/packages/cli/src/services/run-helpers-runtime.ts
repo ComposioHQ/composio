@@ -230,7 +230,7 @@ const attachPromptMethod = <T>(value: T): T => {
 const isPlainObjectForExecute = Predicate.isObject;
 
 // The extension of the name a nameless Blob is uploaded under. Cosmetic: the Blob's
-// type reaches the upload through `COMPOSIO_RUN_STAGED_FILES`, not through this
+// type reaches the upload through `COMPOSIO_RUN_STAGED_FILES_FILE`, not through this
 // extension. A subtype that is not a plain token (`vnd.openxmlformats-…`) is `bin`.
 const runFileExtensionFromMimeType = (mimeType: string): string => {
   const normalized = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
@@ -400,7 +400,7 @@ type MaterializedExecutePayload = {
   readonly payload: unknown;
   /**
    * Staged path -> the File or Blob's own name and `type`. A path carries
-   * neither, so the child receives these through `COMPOSIO_RUN_STAGED_FILES`
+   * neither, so the child receives these through `COMPOSIO_RUN_STAGED_FILES_FILE`
    * and uploads the file under them.
    */
   readonly stagedFiles: ReadonlyArray<readonly [string, StagedFileLabel]>;
@@ -639,6 +639,8 @@ const createCliRunner = (params: {
 const createSearchAndExecuteHelpers = (params: {
   readonly helperContext: RunHelperContext;
   readonly sharedRunOutputDir: string | null;
+  readonly path: Path.Path;
+  readonly tmpdir: string;
   readonly runCliJson: RunCliJson;
   readonly materializeExecutePayload: (value: unknown) => Promise<MaterializedExecutePayload>;
   readonly helperDebugLog: HelperDebugLog;
@@ -646,6 +648,8 @@ const createSearchAndExecuteHelpers = (params: {
   const {
     helperContext,
     sharedRunOutputDir,
+    path,
+    tmpdir,
     runCliJson,
     materializeExecutePayload,
     helperDebugLog,
@@ -702,19 +706,35 @@ const createSearchAndExecuteHelpers = (params: {
         args.push('--data', serialized);
       }
     }
-    const result = await runCliJson(args, {
-      COMPOSIO_RUN_STAGED_FILES: JSON.stringify(Object.fromEntries(stagedFiles)),
+    const metadataDirectory =
+      stagedFiles.length > 0
+        ? fs.mkdtempSync(path.join(tmpdir, 'composio-run-staged-'))
+        : undefined;
+    const metadataFile = metadataDirectory ? path.join(metadataDirectory, 'files.json') : '';
+    const runWithStagedFiles = async (): Promise<RunCliResult> => {
+      if (metadataFile) {
+        fs.writeFileSync(metadataFile, JSON.stringify(Object.fromEntries(stagedFiles)), {
+          encoding: 'utf8',
+          mode: 0o600,
+        });
+      }
+      const result = await runCliJson(args, {
+        COMPOSIO_RUN_STAGED_FILES_FILE: metadataFile,
+      });
+      if (Predicate.isObject(result) && result.successful === false) {
+        const message =
+          typeof result.error === 'string' && result.error.trim().length > 0
+            ? result.error.trim()
+            : `composio execute ${slug} failed`;
+        const error = new Error(message);
+        Object.assign(error, { result, slug });
+        throw error;
+      }
+      return result;
+    };
+    return runWithStagedFiles().finally(() => {
+      if (metadataDirectory) fs.rmSync(metadataDirectory, { recursive: true, force: true });
     });
-    if (Predicate.isObject(result) && result.successful === false) {
-      const message =
-        typeof result.error === 'string' && result.error.trim().length > 0
-          ? result.error.trim()
-          : `composio execute ${slug} failed`;
-      const error = new Error(message);
-      Object.assign(error, { result, slug });
-      throw error;
-    }
-    return result;
   };
 
   return { search, execute };
@@ -893,6 +913,8 @@ export const installRunHelpers = async ({
   const { search, execute } = createSearchAndExecuteHelpers({
     helperContext,
     sharedRunOutputDir,
+    path,
+    tmpdir: nodeOs.tmpdir,
     runCliJson,
     materializeExecutePayload,
     helperDebugLog,

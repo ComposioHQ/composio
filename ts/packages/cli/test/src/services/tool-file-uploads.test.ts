@@ -15,6 +15,7 @@ import {
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
 import {
+  readRunStagedFiles,
   schemaHasFileUploadable,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -38,6 +39,50 @@ const makeClient = (
     key: 's3key-123',
   }
 ) => stubComposioClient(() => Response.json(presigned));
+
+describe('readRunStagedFiles', () => {
+  it.effect('loads original upload names and MIME types from the manifest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-labels-'));
+    const file = path.join(root, 'files.json');
+    writeFileSync(
+      file,
+      JSON.stringify({
+        '/tmp/file-1': { name: 'deck', mimetype: 'application/pdf' },
+        '/tmp/file-2': { name: 'notes.txt' },
+      })
+    );
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      expect(yield* readRunStagedFiles(fsApi, file)).toEqual(
+        new Map([
+          ['/tmp/file-1', { name: 'deck', mimetype: 'application/pdf' }],
+          ['/tmp/file-2', { name: 'notes.txt' }],
+        ])
+      );
+    }).pipe(
+      Effect.provide(BunFileSystem.layer),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  });
+
+  it.effect.each(['not json', '["a"]', '{"/a":1}', '{"/a":{"mimetype":"text/plain"}}', undefined])(
+    'rejects unreadable or invalid metadata (%s) instead of dropping labels',
+    content => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-labels-'));
+      const file = path.join(root, 'files.json');
+      if (content !== undefined) writeFileSync(file, content);
+      return Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const failure = yield* Effect.flip(readRunStagedFiles(fsApi, file));
+        expect(failure).toBeInstanceOf(ToolFileUploadError);
+        expect(failure.reason).toBe('source-read');
+      }).pipe(
+        Effect.provide(BunFileSystem.layer),
+        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+      );
+    }
+  );
+});
 
 describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
   afterEach(() => {

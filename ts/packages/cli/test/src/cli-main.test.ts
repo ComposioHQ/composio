@@ -760,22 +760,30 @@ describe('local file uploads', () => {
     baseUrl: string,
     file: string,
     stagedFiles?: Record<string, { name: string; mimetype?: string }>
-  ) =>
-    runCliAgainst(
-      baseUrl,
-      [
-        'execute',
-        'CANVA_CREATE_DESIGN_IMPORT_JOB',
-        '--skip-connection-check',
-        '--file',
-        file,
-        '-d',
-        '{"title":"Deck"}',
-      ],
-      {
-        env: stagedFiles ? { COMPOSIO_RUN_STAGED_FILES: JSON.stringify(stagedFiles) } : {},
-      }
-    );
+  ) => {
+    const metadataDirectory = fs.mkdtempSync(path.join(tempy.temporaryDirectory(), 'labels-'));
+    const metadataFile = path.join(metadataDirectory, 'files.json');
+    if (stagedFiles) fs.writeFileSync(metadataFile, JSON.stringify(stagedFiles));
+    try {
+      return await runCliAgainst(
+        baseUrl,
+        [
+          'execute',
+          'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          '--skip-connection-check',
+          '--file',
+          file,
+          '-d',
+          '{"title":"Deck"}',
+        ],
+        {
+          env: { COMPOSIO_RUN_STAGED_FILES_FILE: stagedFiles ? metadataFile : '' },
+        }
+      );
+    } finally {
+      fs.rmSync(metadataDirectory, { recursive: true, force: true });
+    }
+  };
 
   it.each([
     {

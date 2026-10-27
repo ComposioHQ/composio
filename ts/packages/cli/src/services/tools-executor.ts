@@ -28,7 +28,11 @@ import {
 } from 'src/services/composio-error-overrides';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import type { CliDebugFlags } from 'src/services/runtime-flags';
-import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import {
+  readRunStagedFiles,
+  ToolFileUploadError,
+  uploadToolInputFiles,
+} from 'src/services/tool-file-uploads';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { APP_CONFIG } from 'src/config';
@@ -294,7 +298,8 @@ const prepareToolExecution = (
     });
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const stagedFiles = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES);
+    const manifestPath = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES_FILE);
+    const stagedFiles = yield* readRunStagedFiles(fs, manifestPath);
     const preparedArguments = isMetaToolSlug(slug)
       ? params.arguments
       : yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
