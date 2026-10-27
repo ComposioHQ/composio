@@ -82,6 +82,7 @@ import { notFoundError } from '../layers/not-found';
 import { DEFAULT_PAGE_LIMIT } from '../layers/page';
 import { CommandRunnerTest } from '../layers/command-runner';
 import { SetupSkillInstallerTest } from '../layers/setup';
+import { InvocationHooksTest } from '../layers/invocation-hooks';
 import {
   resolveToolkitsTestData,
   toolkitCatalogMethods,
@@ -907,6 +908,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       FetchHttpClient.layer,
       StdinTest,
       TerminalUILayer,
+      // Recording no-op doubles of the hooks and telemetry sink `cli-main.ts` runs around a
+      // command; read their calls with `recordedInvocationCalls`.
+      InvocationHooksTest,
       // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
       // never route through the root command still need the "no CLI flag override" default.
       cliDebugFlagsLayer(),

@@ -6,6 +6,12 @@ export { TestLayer as TestLive } from './services/test-layer';
 export { ToolkitsTest } from './layers/toolkits';
 export { ConnectedAccountsTest } from './layers/connected-accounts';
 export { CommandRunnerTest } from './layers/command-runner';
+export {
+  InvocationHooksTest,
+  InvocationRecorder,
+  recordedInvocationCalls,
+  type RecordedInvocationCall,
+} from './layers/invocation-hooks';
 export { SetupTest } from './layers/setup';
 export {
   DashboardToolExecutionTest,
