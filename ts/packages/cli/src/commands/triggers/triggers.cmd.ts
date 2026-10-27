@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
 import { rejectsSharedFlags } from 'src/commands/surface';
 import { triggersCmd$Info } from './info/triggers.info.cmd';
@@ -29,5 +29,5 @@ export const triggersCmd = Command.make('triggers').pipe(
     triggersCmd$Enable.pipe(rejectsSharedFlags('dev triggers enable')),
     triggersCmd$Disable.pipe(rejectsSharedFlags('dev triggers disable')),
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

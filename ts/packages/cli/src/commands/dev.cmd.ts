@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { CommandInputError } from './errors';
@@ -43,7 +43,7 @@ const projectName = Flag.String('project-name').pipe(
 export const devSubcommands = [
   initCmd.pipe(rejectsSharedFlags('dev init')),
   devToolsCmd$Execute,
-  triggersCmd$Listen.pipe(requireLogin),
+  triggersCmd$Listen.pipe(withCommandMeta({ requiresLogin: true })),
   logsCmd.pipe(rejectsSharedFlags('dev logs', ['--project-name'])),
   toolkitsCmd,
   authConfigsCmd.pipe(rejectsSharedFlags('dev auth-configs')),

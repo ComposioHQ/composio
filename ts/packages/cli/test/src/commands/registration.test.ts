@@ -8,7 +8,6 @@ import { Effect, Exit, Option, Ref } from 'effect';
 import { CliError, Command } from 'effect/cli';
 import { NotLoggedInError } from 'src/commands/errors';
 import { withRegisteredSubcommands } from 'src/commands/registration';
-import { requireLogin } from 'src/effects/require-auth';
 import { CommandInvocation, commandPathOf, withCommandMeta } from 'src/invocation/command-identity';
 import { TestLive } from 'test/__utils__';
 
@@ -45,7 +44,7 @@ const traced = (args: ReadonlyArray<string>) =>
     );
     const gated = Command.make('gated').pipe(
       withRegisteredSubcommands([Command.make('leaf', {}, handler('gated leaf'))]),
-      requireLogin
+      withCommandMeta({ requiresLogin: true })
     );
     const guarded = Command.make('guarded').pipe(
       withRegisteredSubcommands([Command.make('leaf', {}, handler('guarded leaf'))]),
@@ -185,7 +184,7 @@ describe('effect/cli handler composition', () => {
     );
 
     // A guard a group pipes on itself wraps its whole dispatch, so it runs before the selected
-    // command is reached: only the registrations entered so far are known. `requireLogin` is
+    // command is reached: only the registrations entered so far are known. A required login is
     // `CommandMeta` for this reason; the `dev` group's `rejectsSharedFlags` guards are not yet.
     it.effect('a group-level guard runs before the selected command begins', () =>
       Effect.gen(function* () {

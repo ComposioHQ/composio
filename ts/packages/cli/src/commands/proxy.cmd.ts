@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Argument, Command, Flag } from 'effect/cli';
 import { Data, Effect, Result, Option, Runtime } from 'effect';
 import type {
@@ -432,5 +432,5 @@ export const proxyCmd = Command.make('proxy', {
       }
     })
   ),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

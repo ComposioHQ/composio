@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
 import { authConfigsCmd$List } from './list/auth-configs.list.cmd';
 import { authConfigsCmd$Info } from './info/auth-configs.info.cmd';
@@ -16,5 +16,5 @@ import { withRegisteredSubcommands } from 'src/commands/registration';
 export const authConfigsCmd = Command.make('auth-configs').pipe(
   Command.withDescription('View and manage Composio auth configs.'),
   withRegisteredSubcommands([authConfigsCmd$List, authConfigsCmd$Info, authConfigsCmd$Create]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

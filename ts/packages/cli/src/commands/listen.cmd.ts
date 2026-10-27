@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { reportFailure } from 'src/effects/report-failure';
 import { eventCount, finishAcceptedEvents, makeSinkFailures } from './triggers/sink-failures';
 import { commandInputError } from 'src/commands/errors';
@@ -740,5 +740,5 @@ export const listenCmd = Command.make(
       command: "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
     },
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

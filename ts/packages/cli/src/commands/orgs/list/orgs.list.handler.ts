@@ -25,7 +25,7 @@ export const runOrgsList = ({ limit }: OrgsListParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    // `requireLogin` on the `orgs` group has already proven the key is there.
+    // `requiresLogin` on the `orgs` group has already proven the key is there.
     const apiKey = yield* Effect.fromOption(ctx.data.apiKey, notLoggedIn);
     const currentOrgId = ctx.data.orgId;
 

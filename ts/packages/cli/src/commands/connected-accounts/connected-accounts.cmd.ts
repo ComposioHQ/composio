@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
 import { rejectsSharedFlags } from 'src/commands/surface';
 import { connectedAccountsCmd$List } from './list/connected-accounts.list.cmd';
@@ -23,5 +23,5 @@ export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
     connectedAccountsCmd$Info.pipe(rejectsSharedFlags('dev connected-accounts info')),
     connectedAccountsCmd$Whoami.pipe(rejectsSharedFlags('dev connected-accounts whoami')),
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );
