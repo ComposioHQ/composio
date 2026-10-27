@@ -115,8 +115,6 @@ const consumerScope = (project: ResolvedCommandProject) =>
 const LINK_LEGACY = {
   legacy: {
     consumerWithoutProjectName: true,
-    // C2: treat an empty consumer user id as missing everywhere
-    acceptEmptyConsumerUserId: true,
   },
 } satisfies ActingUserOptions;
 

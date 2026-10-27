@@ -672,6 +672,34 @@ describe('expected failures without the crash banner', () => {
       tag: 'ProxyCommandError',
       message: 'No consumer project user is available for proxy execution in this context.',
     },
+    // An empty consumer user id is no user; these commands used to act as the user "".
+    {
+      name: '`execute` without a consumer user',
+      args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'ToolExecutionError',
+      message:
+        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+    },
+    {
+      name: '`search` without a consumer user',
+      args: ['search', 'send an email'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'CommandInputError',
+      message:
+        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+    },
+    {
+      name: '`link` without a consumer user',
+      args: ['link', 'gmail', '--no-wait'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingLinkUserIdError',
+      message:
+        'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+    },
   ])(
     '[Given] $name [Then] prints the message without the banner and exits 1',
     ({ args, setup, server, tag, message }) =>

@@ -126,8 +126,6 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
 
     const runSearchRequest = Effect.gen(function* () {
       const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-        // C2: treat an empty consumer user id as missing everywhere
-        legacy: { acceptEmptyConsumerUserId: true },
         // C2: root `search` stops telling a consumer to provide --user-id.
         missingUserMessage: () =>
           'Missing user id. Provide --user-id or run composio login to set global test_user_id.',

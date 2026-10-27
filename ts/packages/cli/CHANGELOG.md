@@ -12,6 +12,13 @@
 
 ### Patch Changes
 
+- An empty consumer user id now counts as no user on every command.
+  `composio execute`, `composio search`, and `composio link` fail with the
+  missing-user error and exit 1, as `composio connections`, `composio listen`,
+  and `composio proxy` already did; they used to send requests for the user
+  `""`. `composio run` starts the script without the consumer user's context,
+  as it does when there is no consumer user.
+
 - `composio execute` and `composio proxy` now fail with an error listing
   the candidate accounts, instead of silently using the newest one, when a
   toolkit has several connected accounts, none is aliased `default`, and no
