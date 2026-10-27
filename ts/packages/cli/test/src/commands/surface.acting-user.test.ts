@@ -285,18 +285,57 @@ describe('actingUser', () => {
       });
     })
   );
+});
 
-  it.effect('[Given] a consumer project with an empty user id [Then] counts it as none', () =>
-    Effect.gen(function* () {
-      const error = yield* run(Effect.flip(actingUser()), {
-        tree: 'root',
-        candidates: 'flag',
-        projectName: 'absent',
-        consumerUserId: '',
-      });
+// C2: treat an empty consumer user id as missing everywhere
+describe('an empty consumer user id', () => {
+  const ACCEPT_EMPTY = { legacy: { acceptEmptyConsumerUserId: true } } satisfies ActingUserOptions;
+  const sites = [
+    { sites: 'execute, search, link, run', options: ACCEPT_EMPTY, tree: 'root', accepted: true },
+    {
+      sites: 'link on the dev tree without --project-name',
+      options: { legacy: { ...ACCEPT_EMPTY.legacy, consumerWithoutProjectName: true } },
+      tree: 'dev',
+      accepted: true,
+    },
+    { sites: 'connections list/remove, listen, proxy', options: {}, tree: 'root', accepted: false },
+  ] satisfies ReadonlyArray<{
+    sites: string;
+    options: ActingUserOptions;
+    tree: CommandTree;
+    accepted: boolean;
+  }>;
+  const fixture = (tree: CommandTree): Fixture => ({
+    tree,
+    candidates: 'flag',
+    projectName: 'absent',
+    consumerUserId: '',
+  });
 
-      expect(error).toBeInstanceOf(MissingActingUserError);
-    })
+  it.effect.each(sites)(
+    '[Given] $sites [Then] actingUser accepts it: $accepted',
+    ({ options, tree, accepted }) =>
+      Effect.gen(function* () {
+        const result = yield* run(Effect.result(actingUser(options)), fixture(tree));
+
+        expect(result).toMatchObject(
+          accepted
+            ? { success: { userId: '', source: 'consumer' } }
+            : { failure: { _tag: 'commands/MissingActingUserError' } }
+        );
+      })
+  );
+
+  it.effect.each(sites)(
+    '[Given] $sites [Then] actingUserOption finds it: $accepted',
+    ({ options, tree, accepted }) =>
+      Effect.gen(function* () {
+        const user = yield* run(actingUserOption(options), fixture(tree));
+
+        expect(Option.map(user, ({ userId, source }) => ({ userId, source }))).toEqual(
+          accepted ? Option.some({ userId: '', source: 'consumer' }) : Option.none()
+        );
+      })
   );
 });
 

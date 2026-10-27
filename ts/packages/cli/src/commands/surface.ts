@@ -106,8 +106,14 @@ const defaultMissingUserMessage =
 export interface ActingUserOptions {
   /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. */
   readonly missingUserMessage?: (projectName: Option.Option<string>) => string;
-  /** Departures from the rule that `link` still makes. C2: drop them, with a CHANGELOG note. */
+  /** Departures from the rule that commands still make. C2: drop them, with a CHANGELOG note. */
   readonly legacy?: {
+    /**
+     * Accept an empty consumer user id as the consumer user, as `execute`, `search`, `link` and
+     * `run` do; without it an empty id counts as none, as `connections`, `listen` and `proxy` do.
+     */
+    // C2: treat an empty consumer user id as missing everywhere
+    readonly acceptEmptyConsumerUserId?: boolean;
     /** On the dev tree without `--project-name`, act as the consumer user, ignoring `--user-id`. */
     readonly consumerWithoutProjectName?: boolean;
     /** Skip the directory test user on the dev tree. */
@@ -165,11 +171,13 @@ const noticeBySource: Record<ActingUserSource, (userId: string) => Option.Option
 export const fallbackNotice = (user: Omit<ActingUser, 'project'>): Option.Option<string> =>
   noticeBySource[user.source](user.userId);
 
-/** The consumer user of a consumer project; an empty id counts as none. */
-const consumerUser = (project: ResolvedCommandProject) =>
+/** The consumer user of a consumer project; an empty id counts as none unless `legacy` accepts it. */
+const consumerUser = (project: ResolvedCommandProject, options: ActingUserOptions) =>
   pipe(
     Option.fromNullishOr(project.consumerUserId),
-    Option.filter(userId => userId.length > 0),
+    Option.filter(
+      userId => userId.length > 0 || options.legacy?.acceptEmptyConsumerUserId === true
+    ),
     Option.map(userId => ({ userId, source: 'consumer' as const }))
   );
 
@@ -215,7 +223,7 @@ export const actingUser = (options: ActingUserOptions = {}) =>
     );
     const user =
       tree === 'root'
-        ? consumerUser(project)
+        ? consumerUser(project, options)
         : yield* devUser(Option.as(surface.projectName, project.projectId), options);
     if (Option.isNone(user)) {
       const message = options.missingUserMessage ?? defaultMissingUserMessage(tree);
@@ -240,7 +248,7 @@ export const actingUserOption = (options: ActingUserOptions = {}) =>
     if (ruleTree(surface, options) === 'root') {
       const project = yield* resolveCommandProject({ mode: 'consumer' });
       return Option.map(
-        consumerUser(project),
+        consumerUser(project, options),
         (user): ActingUser<Option.Option<ResolvedCommandProject>> => ({
           ...user,
           project: Option.some(project),

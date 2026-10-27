@@ -285,7 +285,10 @@ const resolveRunHelperContext = () =>
     }
 
     // Without a consumer user the script runs with the base context alone.
-    const consumer = yield* actingUser().pipe(Effect.option);
+    const consumer = yield* actingUser({
+      // C2: treat an empty consumer user id as missing everywhere
+      legacy: { acceptEmptyConsumerUserId: true },
+    }).pipe(Effect.option);
     if (Option.isNone(consumer)) {
       return baseContext;
     }
