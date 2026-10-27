@@ -15,7 +15,7 @@ import { TerminalUI } from './terminal-ui';
 /**
  * Background update check for @composio/cli.
  *
- * Two entry points, both called from cli-main BEFORE the root command's
+ * Two entry points, both called from the invocation BEFORE the root command's
  * Effect runtime boots — they must never block or throw:
  *
  *   UpdateNotice                    — reads a tiny cached JSON file (~1 ms)

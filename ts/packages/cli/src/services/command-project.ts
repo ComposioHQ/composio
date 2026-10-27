@@ -29,7 +29,7 @@ export interface ResolvedCommandProject {
 
 /**
  * The command's project could not be determined from the CLI's state and flags. The message
- * names the command that fixes it; `cli-main.ts` prints it as one line and exits 1.
+ * names the command that fixes it; the invocation prints it as one line and exits 1.
  */
 export class ProjectResolutionError extends Data.TaggedError('services/ProjectResolutionError')<{
   readonly reason:

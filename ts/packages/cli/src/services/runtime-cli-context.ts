@@ -29,7 +29,7 @@ export const cliInvocationContext: Effect.Effect<CliInvocationContext> = Effect.
 /**
  * Run id the bootstrap resolved for a `composio run` invocation.
  *
- * `cli-main.ts` mints it while building the run's telemetry context and hands it to the command,
+ * The invocation (`src/invocation/invocation.ts`) mints it while building the run's telemetry context and hands it to the command,
  * so the `CLI_RUN_*` events and the `COMPOSIO_CLI_PARENT_RUN_ID` the script's child process
  * inherits carry the same id. `None` for every other command, and for callers that drive the root
  * command directly.

@@ -5,8 +5,8 @@ import { ExpectedFailure, isExpectedFailure } from 'src/effects/expected-failure
  * A usage mistake the parser cannot see: a flag combination, a value that fails a business
  * rule, a missing input, or an environment the command cannot run in. `effect/cli`'s
  * `CliError.InvalidValue` is a fixed option-and-value struct built only by the parser, so
- * handler-level validation raises this instead. `cli-main.ts` prints `message` as one line
- * and exits 1, with no defect banner.
+ * handler-level validation raises this instead. The invocation (`src/invocation/invocation.ts`)
+ * prints `message` as one line and exits 1, with no defect banner.
  */
 export class CommandInputError extends Data.TaggedError('commands/CommandInputError')<{
   /** The command path without `composio`, e.g. `login` or `dev triggers disable`. */
@@ -35,7 +35,7 @@ export const notLoggedIn = (): NotLoggedInError =>
 /**
  * Failures the user fixes by changing the invocation or their setup, or that a remote service
  * reported clearly, not defects: any error whose class declares `ExpectedFailure` (see
- * `src/effects/expected-failure.ts`). `cli-main.ts` prints the message on stderr and exits 1,
+ * `src/effects/expected-failure.ts`). The invocation prints the message on stderr and exits 1,
  * with no defect banner.
  */
 export type UsageFailure = ExpectedFailure;

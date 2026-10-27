@@ -2,8 +2,8 @@ import { Data, Effect, Runtime } from 'effect';
 import type { TerminalUI } from 'src/services/terminal-ui';
 
 /**
- * A failure already shown to the user. It only makes the command fail: `BunRuntime.runMain` does
- * not log it (`[Runtime.errorReported]` is false) and `Runtime.defaultTeardown` exits 1.
+ * A failure already shown to the user. It only makes the command fail: the runner does not
+ * log it (`[Runtime.errorReported]` is false) and `Runtime.defaultTeardown` exits 1.
  *
  * The markers are getters, like `ExpectedFailure`, so they stay off the instance's own properties.
  */

@@ -81,7 +81,7 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
 
 /**
  * `composio proxy` has no consumer user to send the request as. An expected failure:
- * `cli-main.ts` prints the message and exits 1.
+ * the invocation (`src/invocation/invocation.ts`) prints the message and exits 1.
  */
 export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
   readonly message: string;

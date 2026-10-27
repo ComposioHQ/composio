@@ -138,7 +138,7 @@ const invalidArguments = commandInputError('execute');
 /**
  * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
  * id to run it for, or (with `--parallel`) a toolkit the user has not connected. An expected
- * failure: `cli-main.ts` prints the message and exits 1.
+ * failure: the invocation prints the message and exits 1.
  */
 export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
   readonly reason: 'file_input' | 'missing_user_id' | 'connection_check';
