@@ -104,7 +104,7 @@ const defaultMissingUserMessage =
         );
 
 export interface ActingUserOptions {
-  /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. */
+  /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. Only `actingUser` reads it: `actingUserOption` never fails with a missing user. */
   readonly missingUserMessage?: (projectName: Option.Option<string>) => string;
   /** Departures from the rule that some commands keep, as they behaved before `actingUser`. */
   readonly legacy?: {
@@ -241,7 +241,7 @@ export const actingUser = (options: ActingUserOptions = {}) =>
  * the command runs against the directory's project through the default client; on the root
  * tree it is the consumer project. Fails only when that project cannot be resolved.
  */
-export const actingUserOption = (options: ActingUserOptions = {}) =>
+export const actingUserOption = (options: Omit<ActingUserOptions, 'missingUserMessage'> = {}) =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
     if (ruleTree(surface, options) === 'root') {
