@@ -13,12 +13,14 @@ export type TriggersListParams = {
 
 const invalidToolkit = commandInputError('triggers list');
 
-/** The commands the hints name, on the tree the command runs in. */
-const triggersListHints = Effect.map(CommandSurface, ({ tree }) =>
-  tree === 'dev'
-    ? { noResultsCommand: 'composio dev toolkits list', infoCommand: 'composio dev triggers info' }
-    : { noResultsCommand: 'composio toolkits list', infoCommand: 'composio triggers info' }
-);
+/**
+ * The commands the hints name, on the tree the command runs in. Toolkits are listed only under
+ * `dev`, so both trees point there, as `tools list` does.
+ */
+const triggersListHints = Effect.map(CommandSurface, ({ tree }) => ({
+  noResultsCommand: 'composio dev toolkits list',
+  infoCommand: tree === 'dev' ? 'composio dev triggers info' : 'composio triggers info',
+}));
 
 /**
  * List available trigger types with optional toolkit filters.

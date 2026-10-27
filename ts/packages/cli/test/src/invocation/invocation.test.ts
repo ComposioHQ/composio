@@ -93,7 +93,7 @@ describe('runInvocation', () => {
       name: 'connections list without a current org',
       args: ['connections', 'list'],
       input: loggedInWithoutOrg,
-      message: 'No current org configured. Run `composio login` or `composio dev orgs switch`.',
+      message: 'No current org configured. Run `composio login` or `composio orgs switch`.',
     },
     {
       name: 'dev connected-accounts info without an id',
