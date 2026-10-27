@@ -199,18 +199,23 @@ Effect.gen(function* () {
 
 Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
 
-For table-driven tests over independent finite choices, use Effect Array do notation
-to build a typed Cartesian product instead of enumerating every case or nesting loops:
+For table-driven tests over independent finite choices, build a typed Cartesian product
+with plain `flatMap`/`map` instead of enumerating every case or writing loops (do
+notation is lint-banned, tests included):
 
 ```typescript
 const cases = pipe(
-  Arr.Do,
-  Arr.bind('firstAxis', () => choices),
-  Arr.bind('secondAxis', () => choices)
+  firstChoices,
+  Arr.flatMap(firstAxis =>
+    pipe(
+      secondChoices,
+      Arr.map(secondAxis => ({ firstAxis, secondAxis }))
+    )
+  )
 );
 ```
 
-Each `Arr.bind` adds one independent axis to the generated cases.
+Each nested `Arr.flatMap` adds one independent axis; the innermost `Arr.map` builds the case.
 
 ### Effect safety and migration boundaries
 
