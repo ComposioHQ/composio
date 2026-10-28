@@ -41,7 +41,11 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
 from composio.core.provider import TTool, TToolCollection
-from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
+from composio.core.provider.agentic import (
+    AgenticProvider,
+    AgenticProviderExecuteFn,
+    bind_execution_target,
+)
 from composio.core.provider.base import BaseProvider, ExecuteToolFn
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
@@ -670,7 +674,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         user_id: t.Optional[str] = None,
     ) -> AgenticProviderExecuteFn:
         """Wrap the execute tool function"""
-        return t.cast(
+        execute_tool = t.cast(
             AgenticProviderExecuteFn,
             functools.partial(
                 self.execute,
@@ -681,6 +685,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 dangerously_skip_version_check=True,
             ),
         )
+        if user_id is None:
+            return execute_tool
+        return bind_execution_target(execute_tool, user_id)
 
     def _wrap_execute_tool_for_tool_router(
         self,

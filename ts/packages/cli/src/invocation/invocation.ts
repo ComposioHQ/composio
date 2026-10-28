@@ -100,14 +100,16 @@ const runInvocationHooks = (invocation: HookInvocation) =>
     yield* pluginHint.run(invocation);
   });
 
-/** Whether `reason` is a failure already on screen, which nothing here may print again. */
-const isAlreadyReported = (reason: Cause.Reason<unknown>): boolean =>
-  Cause.isFailReason(reason) && !Runtime.getErrorReported(reason.error);
-
 /**
- * Puts the failure `cause` on screen unless it already is. Succeeds with whether the failure is
- * on screen now; `false` only when there was nothing to show.
+ * Whether `reason` has nothing for this module to print: a failure already on screen, or an
+ * interruption, which must reach the runner untouched: 128 + n after a signal, else 130 from
+ * `Runtime.defaultTeardown`.
  */
+const hasNothingToPrint = (reason: Cause.Reason<unknown>): boolean =>
+  Cause.isInterruptReason(reason) ||
+  (Cause.isFailReason(reason) && !Runtime.getErrorReported(reason.error));
+
+/** Puts the failure `cause` on screen unless it already is, or is an interruption alone. */
 const report = (cause: Cause.Cause<unknown>) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -117,7 +119,7 @@ const report = (cause: Cause.Cause<unknown>) =>
     const expected = Option.filter(error, isExpectedFailure);
     if (Option.isSome(expected)) {
       yield* ui.error(expected.value.message);
-      return true;
+      return;
     }
     // A rejected user API key gets the backend's message and the way to log in again, from
     // whichever command it escaped.
@@ -125,39 +127,41 @@ const report = (cause: Cause.Cause<unknown>) =>
     if (Option.isSome(rejectedKey)) {
       yield* ui.error(extractMessage(rejectedKey.value) ?? 'The user API key was rejected.');
       yield* ui.error(yield* rejectedUserApiKeyHint);
-      return true;
+      return;
     }
     // A failure already on screen — `ShowHelp` (`Command.runWith` printed help and any
     // parse/validation errors before failing with it), or a command's own report — must not be
-    // printed again, or output doubles.
+    // printed again, or output doubles. An interruption is no failure to report.
     const unreported = Cause.fromReasons(
-      cause.reasons.filter(reason => !isAlreadyReported(reason))
+      cause.reasons.filter(reason => !hasNothingToPrint(reason))
     );
     if (unreported.reasons.length === 0) {
-      return true;
+      return;
     }
     const captured = yield* captureErrors(unreported, { stripCwd: true });
-    if (!captured.interrupted && captured.errors.length === 0) {
-      return false;
-    }
     const message = prettyPrintFromCapturedErrors(captured, {
       hideStackTrace: true,
       stripCwd: true,
       enabled: true,
     }).trim();
-    if (message.length === 0) {
-      return false;
+    if (message.length > 0) {
+      yield* ui.error(message);
     }
-    yield* ui.error(message);
-    return true;
   });
+
+/**
+ * Puts the failure `cause` on screen once (see {@link report}), then fails with `cause`
+ * untouched: a caller can still match its typed error, and an interruption alone stays one, so
+ * the runner exits 130 (or 128 + n after a signal) instead of 1.
+ */
+export const reportInvocationFailure = (cause: Cause.Cause<unknown>) =>
+  Effect.andThen(report(cause), Effect.failCause(cause));
 
 /**
  * Runs one invocation of the CLI for the full process `argv` (executable and script included):
  * the invocation hooks (before parsing), then the command under lifecycle telemetry.
  *
- * Fails with the command's own cause once it is on screen. An interruption the defect report
- * printed fails with `ReportedFailure`, since it has no error of its own to keep.
+ * Fails with the command's own cause once it is on screen; an interruption alone is not printed.
  */
 export const runInvocation = (
   argv: ReadonlyArray<string>
@@ -170,18 +174,7 @@ export const runInvocation = (
         filename: 'src/bin.ts',
       },
     }),
-    Effect.catchCause(cause =>
-      report(cause).pipe(
-        Effect.flatMap(onScreen => {
-          if (!onScreen) {
-            return Effect.void;
-          }
-          return Cause.hasInterruptsOnly(cause)
-            ? Effect.fail(new ReportedFailure({ message: 'The command was interrupted.' }))
-            : Effect.failCause(cause);
-        })
-      )
-    )
+    Effect.catchCause(reportInvocationFailure)
   );
 
 /**
@@ -191,7 +184,7 @@ export const runInvocation = (
  * exit code, and an interruption stays one, so a signal still decides the exit.
  */
 export const runnerCause = (cause: Cause.Cause<unknown>): Cause.Cause<unknown> =>
-  Cause.hasInterruptsOnly(cause) || cause.reasons.every(isAlreadyReported)
+  cause.reasons.every(hasNothingToPrint)
     ? cause
     : Cause.fail(new ReportedFailure({ message: Cause.pretty(cause) }));
 

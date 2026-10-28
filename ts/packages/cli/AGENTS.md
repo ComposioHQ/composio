@@ -2,6 +2,8 @@
 
 Instructions for AI agents working on `@composio/cli`. The sibling `CLAUDE.md` is a symlink to this file.
 
+The CLI's vocabulary (command trees, acting user, expected failure, …) is defined in [`GLOSSARY.md`](GLOSSARY.md); use its terms.
+
 ## Required Checks
 
 When you touch CLI code (anything under `ts/packages/cli/src/`), run `pnpm typecheck` from the repo root before pushing. Fix all type errors. Build/lint failures block CI. Also run `pnpm --filter @composio/cli run lint:effect`, which runs the Effect language service over `src/` and `test/` and fails on its error-level diagnostics; the main one is `floatingEffect`, an Effect that is created and never yielded (a dropped `client.…(...)` call compiles and silently sends nothing). CI runs it in the typecheck workflow.
@@ -72,7 +74,7 @@ src/commands/
   index.ts                              root command tree, argv contract with cli-main.ts
   $default.cmd.ts                       root command: shared flags and description
   errors.ts                             CommandInputError, the one usage error every command raises
-  surface.ts                            CommandSurface: the tree a command runs in and the dev group's shared flags
+  surface.ts                            CommandSurface: the tree a command runs in, the dev group's shared flags, the acting user
   <group>/<group>.cmd.ts                group entry: Command.make(name) + withSubcommands, nothing else
   <group>/<name>/<group>.<name>.cmd.ts  flags, arguments, description, examples, Command.make
   <group>/<name>/<group>.<name>.handler.ts   (params) => Effect; imports nothing from effect/cli
@@ -87,6 +89,7 @@ Rules:
 - `<group>.<name>.cmd.ts` declares the surface and nothing else: flag and argument constants, `Command.withDescription`, `Command.withExamples`, and the three-argument `Command.make(name, flags, handler)` with the handler imported from the sibling `.handler.ts`. It yields no service and contains no branching. `Command.withHandler` is reserved for `src/commands/index.ts`, where the root handler is attached at assembly time.
 - `<group>.<name>.handler.ts` exports the handler as a function of a plain params type it declares itself; the command proves it provides those params when it passes the handler to `Command.make`. Do not derive the params type from the `Command` value (no phantom commands, no `GetCmdParams`).
 - A command that exists in both the root tree and the `dev` tree is defined once. The group supplies what differs between the two surfaces through `Command.withSharedFlags` and `Command.provide`, not through a second `Command.make` with a copied description. `--user-id` and `--project-name` are shared flags of the `dev` group (`dev.cmd.ts`), accepted before or after the subcommand name and documented once on every `dev` page; a handler reads them, and the tree it runs in, from `CommandSurface` (`surface.ts`) and never declares either flag itself, since `withSharedFlags` rejects a duplicate on a direct subcommand. A `dev` command that cannot honor one of them yet (it cannot target another project, or it does not act for a user) pipes `rejectsSharedFlags` (`surface.ts`), and the `dev` group's own `--mode` toggle calls `rejectSharedFlags`, so the flag fails with a `CommandInputError` instead of being ignored. `execute` and `playground-execute` keep two registrations because their names differ; they share one handler.
+- A handler that acts as a user gets it, and the project it was resolved against, from `actingUser` (fails with `MissingActingUserError`, an expected failure whose message fits the tree) or `actingUserOption` (for a command that also runs without one) in `surface.ts`; both name a fallback test user on stderr. A handler never reads `--user-id` or a test user id to resolve one itself, never prints that notice, and lets `MissingActingUserError` through instead of wrapping it in its own error (its tag is the `error_name` telemetry reports). An empty consumer user id counts as none. A `--user-id` that only filters results (`dev logs`, `dev triggers listen`, `dev connected-accounts list`) stays a raw flag.
 - Logic shared across groups belongs in `src/effects/` or `src/services/`, never in another command's directory.
 - A command that needs a logged-in user pipes `requireLogin` (`src/effects/require-auth.ts`) on itself or on its group entry, after `Command.withSubcommands`. Handlers never check `apiKey` or print a login hint; a missing login fails with `NotLoggedInError` and exits 1. Project context comes from `resolveCommandProject`, which fails with `ProjectResolutionError`; never flatten it into a plain `Error`.
 - A group entry is recognised by its place in the tree: `<dir>/<dir>.cmd.ts` or `<dir>/root-<dir>.cmd.ts` with other `.cmd.ts` files below `<dir>/`. The same name with nothing below it (`logout/logout.cmd.ts`) is a top-level command. Every command needs a test; a group entry does not, though one with a default action (`generate`) still gets one.
@@ -204,18 +207,23 @@ Effect.gen(function* () {
 
 Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
 
-For table-driven tests over independent finite choices, use Effect Array do notation
-to build a typed Cartesian product instead of enumerating every case or nesting loops:
+For table-driven tests over independent finite choices, build a typed Cartesian product
+with plain `flatMap`/`map` instead of enumerating every case or writing loops (do
+notation is lint-banned, tests included):
 
 ```typescript
 const cases = pipe(
-  Arr.Do,
-  Arr.bind('firstAxis', () => choices),
-  Arr.bind('secondAxis', () => choices)
+  firstChoices,
+  Arr.flatMap(firstAxis =>
+    pipe(
+      secondChoices,
+      Arr.map(secondAxis => ({ firstAxis, secondAxis }))
+    )
+  )
 );
 ```
 
-Each `Arr.bind` adds one independent axis to the generated cases.
+Each nested `Arr.flatMap` adds one independent axis; the innermost `Arr.map` builds the case.
 
 ### Effect safety and migration boundaries
 
