@@ -12,6 +12,8 @@ import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioAccount from 'src/services/composio-account';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
+import { MissingActingUserError } from 'src/commands/surface';
+import { ComposioUserContext } from 'src/services/user-context';
 import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -2405,6 +2407,64 @@ describe('CLI: composio execute', () => {
           expect(lines.join('\n')).not.toContain('Dry run successful');
         })
       );
+
+      // The real call refuses the file whatever the skip flags say, so the
+      // dry run must too.
+      it.effect('reports the same problem under --dry-run --skip-checks', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-checks',
+            '--dry-run',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('Dry run successful');
+        })
+      );
+
+      it.effect('reports the same problem under --parallel --dry-run', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-connection-check',
+            '--dry-run',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(output).toMatchObject({
+            successful: false,
+            results: [
+              {
+                slug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+                successful: false,
+                error: expect.stringContaining('cannot upload local files'),
+              },
+            ],
+          });
+        })
+      );
     }
   );
 
@@ -3385,6 +3445,87 @@ describe('CLI: composio execute', () => {
         expect(output.data.labelIds).toEqual(['SENT']);
         expect(output.logId).toBe('log_<REDACTED>');
         expect(output.successful).toBe(true);
+      })
+    );
+  });
+});
+
+describe('CLI: composio execute without a resolvable acting user', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      accountData: { consumerUserId: null },
+    })
+  )('[Given] the consumer project has no user id at all [Then] the root tree fails', it => {
+    it.effect('[Then] the missing-user error carries the root message', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{}']).pipe(Effect.flip);
+
+        expect(failure).toBeInstanceOf(MissingActingUserError);
+        expect(failure).toMatchObject({
+          message: 'Missing consumer user id. Run `composio login` and try again.',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: {
+          COMPOSIO_USER_API_KEY: 'test_api_key',
+          COMPOSIO_ORG_ID: 'org_test',
+          COMPOSIO_PROJECT_ID: 'proj_test',
+        },
+      }),
+      stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] a directory project and no user candidates [Then] the dev tree fails', it => {
+    it.effect('[Then] the missing-user error carries the dev message', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const failure = yield* cli([
+          'dev',
+          'playground-execute',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{}',
+        ]).pipe(Effect.flip);
+
+        expect(failure).toBeInstanceOf(MissingActingUserError);
+        expect(failure).toMatchObject({
+          message:
+            'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      accountData: { consumerUserId: '' },
+    })
+  )('[Given] an empty consumer user id [Then] the root tree treats it as no user', it => {
+    it.effect('[Then] the execution fails with the missing-user error', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]).pipe(Effect.flip);
+
+        expect(failure).toBeInstanceOf(MissingActingUserError);
+        expect(failure).toMatchObject({
+          message: 'Missing consumer user id. Run `composio login` and try again.',
+        });
       })
     );
   });

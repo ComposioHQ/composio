@@ -90,6 +90,8 @@ export const APP_CONFIG = {
   CLI_INVOCATION_ORIGIN: optionalString('COMPOSIO_CLI_INVOCATION_ORIGIN'),
   CLI_PARENT_RUN_ID: optionalString('COMPOSIO_CLI_PARENT_RUN_ID'),
   RUN_OUTPUT_DIR: optionalString('COMPOSIO_RUN_OUTPUT_DIR'),
+  // Staged file path -> name and MIME type, for the Files a `composio run` script passed to `execute()`
+  RUN_STAGED_FILES_FILE: optionalString('COMPOSIO_RUN_STAGED_FILES_FILE'),
 
   // Disable connected account cache (defaults to true — cache is off by default)
   DISABLE_CONNECTED_ACCOUNT_CACHE: flag('COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', true),
