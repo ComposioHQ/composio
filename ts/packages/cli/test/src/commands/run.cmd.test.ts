@@ -268,7 +268,7 @@ describe('CLI: composio run', () => {
       );
 
       it.effect(
-        '[Given] a child that ignores the signal [Then] it gets SIGTERM, then SIGKILL, and the run mirrors SIGKILL',
+        '[Given] a child that ignores the signal [Then] it gets SIGTERM, then SIGKILL, and the run ends by the first signal',
         () =>
           Effect.gen(function* () {
             childRunning.mockImplementation(() => true);
@@ -290,8 +290,38 @@ describe('CLI: composio run', () => {
               [-STUB_CHILD_PID, 'SIGTERM'],
               [-STUB_CHILD_PID, 'SIGKILL'],
             ]);
+            // The CLI's own SIGKILL ended the script; the user cancelled with SIGINT.
             expect(exitActionFor(exit, Option.some('SIGINT'))).toEqual(
-              ExitAction.Reraise({ signal: 'SIGKILL' })
+              ExitAction.Reraise({ signal: 'SIGINT' })
+            );
+          })
+      );
+
+      it.effect(
+        '[Given] a child that crashes by another signal during the escalation [Then] the run ends by that signal',
+        () =>
+          Effect.gen(function* () {
+            childRunning.mockImplementation(() => true);
+            // The script ignores SIGINT, then aborts while cleaning up after the CLI's SIGTERM.
+            childEndingAfter(
+              'SIGINT',
+              Deferred.await(deliveryOf('SIGTERM')).pipe(Effect.andThen(killedBy('SIGABRT')))
+            );
+
+            const fiber = yield* Effect.forkChild(runWithSignals);
+            yield* Deferred.await(deliveryOf('SIGINT'));
+            yield* TestClock.adjust('2 seconds');
+            const exit = yield* Fiber.join(fiber);
+            const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
+
+            expect(signalled).toEqual([
+              [-STUB_CHILD_PID, 'SIGINT'],
+              [-STUB_CHILD_PID, 'SIGTERM'],
+            ]);
+            // The crash is the script's own, not the user's cancellation.
+            expect(failure).toBeInstanceOf(ChildProcessSignaled);
+            expect(exitActionFor(exit, Option.some('SIGINT'))).toEqual(
+              ExitAction.Reraise({ signal: 'SIGABRT' })
             );
           })
       );
