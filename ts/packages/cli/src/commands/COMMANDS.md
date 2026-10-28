@@ -76,7 +76,7 @@ Every command registration of the CLI and the file that defines it. To find a co
 | `orgs list`                     | root | `ts/packages/cli/src/commands/orgs/list/orgs.list.cmd.ts`                                 |       |                               | yes   | listed       |
 | `orgs switch`                   | root | `ts/packages/cli/src/commands/orgs/switch/orgs.switch.cmd.ts`                             |       |                               | yes   | listed       |
 | `proxy`                         | root | `ts/packages/cli/src/commands/proxy/proxy.cmd.ts`                                         |       |                               | yes   | listed       |
-| `run`                           | root | `ts/packages/cli/src/commands/run.cmd.ts`                                                 |       |                               | no    | listed       |
+| `run`                           | root | `ts/packages/cli/src/commands/run/run.cmd.ts`                                             |       |                               | no    | listed       |
 | `search`                        | root | `ts/packages/cli/src/commands/tools/search/tools.search.cmd.ts`                           |       |                               | yes   | listed       |
 | `setup`                         | root | `ts/packages/cli/src/commands/setup.cmd.ts`                                               |       |                               | no    | listed       |
 | `setup skill`                   | root | `ts/packages/cli/src/commands/setup-skill.cmd.ts`                                         |       |                               | no    | listed       |
