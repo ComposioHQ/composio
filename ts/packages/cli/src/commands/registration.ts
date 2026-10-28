@@ -22,16 +22,17 @@ import {
 import type { ComposioUserContext } from 'src/services/user-context';
 
 /**
- * Records the running registration as the command this invocation runs, then enforces what its
- * `CommandMeta` requires: a shared flag it cannot honor, then a login. Both fail after the
- * identity is recorded, so the failure is reported against the command the user ran, even when
- * a group above it declared the requirement.
+ * Records the running registration as the command this invocation runs, with the input
+ * `effect/cli` parsed for it (none for a group that only shows its help, so, like `--help`, it
+ * runs no invocation hook), then enforces what its `CommandMeta` requires: a shared flag it cannot
+ * honor, then a login. Both fail after the identity is recorded, so the failure is reported
+ * against the command the user ran, even when a group above it declared the requirement.
  */
-const beginSelected = (input: unknown) =>
+const beginSelected = (input: Option.Option<unknown>) =>
   Effect.gen(function* () {
     const identity = yield* CommandRegistration;
     const invocation = yield* CommandInvocation;
-    yield* invocation.begin(identity, Option.some(input));
+    yield* invocation.begin(identity, input);
     yield* rejectUnsupportedSharedFlags(identity);
     if (identity.meta.requiresLogin) {
       yield* assertLoggedIn;
@@ -61,7 +62,7 @@ const registerSubcommand = <C extends Command.Command.Any>(child: C): Registered
   const command = child as unknown as Command.Command<string, unknown, unknown, unknown, unknown>;
   const begun =
     command.subcommands.length === 0
-      ? Command.provideEffectDiscard(command, beginSelected)
+      ? Command.provideEffectDiscard(command, (input: unknown) => beginSelected(Option.some(input)))
       : command;
   return Command.provideEffect(
     begun,
@@ -75,19 +76,36 @@ const registerSubcommand = <C extends Command.Command.Any>(child: C): Registered
   ) as unknown as Registered<C>;
 };
 
+/** What a group declares about its own handler, the one that runs when no subcommand is selected. */
+export interface GroupOptions {
+  /**
+   * Whether that handler is an action of its own (`composio dev --mode on`, `composio setup`)
+   * rather than the group's help. Off by default: a group made without a handler shows the help
+   * `effect/cli` prints for it, and the root shows its overview. Only an action runs the
+   * invocation hooks; help, like `--help`, runs none. `effect/cli` does not expose whether a
+   * command has a handler, so the group says so here.
+   */
+  readonly ownAction?: boolean;
+}
+
 /**
  * `Command.withSubcommands` for the command tree: registers each subcommand under `self` with
- * its own identity, and begins `self`'s own handler (a group's default action, or the help
- * `effect/cli` shows for a bare group) when no subcommand is selected. Every group in the tree
- * registers its subcommands with it.
+ * its own identity, and begins `self`'s own handler when no subcommand is selected: as the
+ * selected command with its input when it is an action (`GroupOptions.ownAction`), else as the
+ * group's help. Every group in the tree registers its subcommands with it.
  */
 export const withRegisteredSubcommands =
-  <const Subcommands extends ReadonlyArray<Command.Command.Any>>(subcommands: Subcommands) =>
+  <const Subcommands extends ReadonlyArray<Command.Command.Any>>(
+    subcommands: Subcommands,
+    options: GroupOptions = {}
+  ) =>
   <const Name extends string, Input, ContextInput, E, R>(
     self: Command.Command<Name, Input, ContextInput, E, R>
   ) =>
     Command.withSubcommands(
-      Command.provideEffectDiscard(self, beginSelected),
+      Command.provideEffectDiscard(self, (input: Input) =>
+        beginSelected(options.ownAction === true ? Option.some(input) : Option.none())
+      ),
       subcommands.map(child =>
         registerSubcommand<Subcommands[number]>(child)
       ) satisfies ReadonlyArray<Registered<Subcommands[number]>>
