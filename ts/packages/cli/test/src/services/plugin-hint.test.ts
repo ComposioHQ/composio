@@ -14,6 +14,7 @@ import { detectPluginHost } from 'src/services/agent-host-env';
 import {
   createPluginHint,
   findRootCommandName,
+  PluginHint,
   resolvePluginHintConfig,
   type PluginHintConfig,
 } from 'src/services/plugin-hint';
@@ -365,4 +366,56 @@ describe('showPluginHint', () => {
       expect(chunks.join('')).toContain('composio setup');
     }).pipe(Effect.provide(hintLayers()))
   );
+});
+
+describe('PluginHint', () => {
+  /** `PluginHint.Default` with every path under `tempDir` and a recording stderr. */
+  const pluginHintLayer = (output: string[]) =>
+    Layer.provide(
+      PluginHint.Default,
+      Layer.mergeAll(
+        BunServices.layer,
+        Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })),
+        Layer.succeed(TerminalUI, TerminalUI.of({ ...terminalUITestImpl, ...makeTerminal(output) }))
+      )
+    );
+
+  /** Runs under Claude Code, which has no Composio plugin installed. */
+  const underClaudeCode = Effect.provideService(
+    ConfigProvider.ConfigProvider,
+    ConfigProvider.fromEnvRecord({ CLAUDECODE: '1' })
+  );
+
+  it.effect(
+    '[Given] Claude Code without the plugin [Then] prints and tracks the hint once per interval',
+    () => {
+      const output: string[] = [];
+      return Effect.gen(function* () {
+        const hint = yield* PluginHint;
+        yield* hint.run({ argv: ['/bin/bun', '/cli/bin.ts', 'whoami'] });
+        yield* hint.run({ argv: ['/bin/bun', '/cli/bin.ts', 'whoami'] });
+
+        expect(output).toEqual([
+          "Tip: running under Claude Code without the Composio plugin — 'composio setup --yes' installs it.",
+        ]);
+        expect(trackedEvents).toEqual([
+          {
+            name: 'CLI_PLUGIN_HINT_SHOWN',
+            properties: expect.objectContaining({ command_path: 'whoami', agent_host: 'claude' }),
+          },
+        ]);
+      }).pipe(underClaudeCode, Effect.provide(pluginHintLayer(output)));
+    }
+  );
+
+  it.effect('[Given] `composio setup` [Then] prints and tracks nothing', () => {
+    const output: string[] = [];
+    return Effect.gen(function* () {
+      const hint = yield* PluginHint;
+      yield* hint.run({ argv: ['/bin/bun', '/cli/bin.ts', 'setup'] });
+
+      expect(output).toEqual([]);
+      expect(trackedEvents).toEqual([]);
+    }).pipe(underClaudeCode, Effect.provide(pluginHintLayer(output)));
+  });
 });

@@ -1,15 +1,16 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Effect, Exit, Layer, Option, Schema } from 'effect';
+import { type Config, Context, Effect, Exit, Layer, Option, Schema } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getPluginHintShownEvent } from 'src/analytics/events';
 import { APP_CONFIG } from 'src/config';
+import { captureServices } from 'src/effects/capture-services';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
 import { detectPluginHost, hostConfigDirectory, rawHostEnvironment } from './agent-host-env';
 import { NodeOs } from './node-os';
+import type { InvocationHookShape } from './invocation-hook';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from './runtime-cli-context';
 import { TerminalUI } from './terminal-ui';
 
@@ -145,8 +146,6 @@ export function createPluginHint(config: PluginHintConfig) {
   return { showPluginHint };
 }
 
-const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
-
 export function findRootCommandName(argv: ReadonlyArray<string>): string | undefined {
   const args = argv.slice(2);
   for (let index = 0; index < args.length; index += 1) {
@@ -182,10 +181,31 @@ export const resolvePluginHintConfig = (argv: ReadonlyArray<string>) =>
     } satisfies PluginHintConfig;
   });
 
-/** Print the plugin acquisition hint when eligible. Never fails, never blocks on network. */
-export const showPluginAcquisitionHint = (argv: ReadonlyArray<string>) =>
-  Effect.gen(function* () {
-    const terminal = yield* TerminalUI;
-    const config = yield* resolvePluginHintConfig(argv);
-    yield* createPluginHint(config).showPluginHint(terminal);
-  }).pipe(Effect.provide(DefaultConfigLayers));
+export type PluginHintShape = InvocationHookShape<Config.ConfigError>;
+
+/**
+ * Prints the plugin acquisition hint when eligible, and records that it was shown. Never fails
+ * past reading its configuration, never blocks on network.
+ */
+export class PluginHint extends Context.Service<PluginHint, PluginHintShape>()(
+  'services/PluginHint'
+) {
+  static readonly Default: Layer.Layer<
+    PluginHint,
+    never,
+    TerminalUI | FileSystem.FileSystem | Path.Path | NodeOs
+  > = Layer.effect(
+    PluginHint,
+    Effect.gen(function* () {
+      const terminal = yield* TerminalUI;
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs, TerminalUI);
+      return PluginHint.of({
+        run: ({ argv }) =>
+          Effect.gen(function* () {
+            const config = yield* resolvePluginHintConfig(argv);
+            yield* createPluginHint(config).showPluginHint(terminal);
+          }).pipe(Effect.provideContext(services)),
+      });
+    })
+  );
+}

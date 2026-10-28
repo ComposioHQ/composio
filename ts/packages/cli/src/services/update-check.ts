@@ -1,12 +1,14 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
+import { Context, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { GITHUB_CONFIG } from 'src/config';
+import { captureServices } from 'src/effects/capture-services';
 import { rootCommandIndex } from 'src/utils/cli-args';
 import { APP_VERSION } from '../constants';
+import type { InvocationHookShape } from './invocation-hook';
 import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
@@ -17,7 +19,7 @@ import { TerminalUI } from './terminal-ui';
  * Two entry points, both called from cli-main BEFORE the root command's
  * Effect runtime boots — they must never block or throw:
  *
- *   showUpdateNotice                — reads a tiny cached JSON file (~1 ms)
+ *   UpdateNotice                    — reads a tiny cached JSON file (~1 ms)
  *   checkForUpdateInBackground()    — fire-and-forget fetch, no await
  *
  * Strategy:
@@ -348,15 +350,39 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
 const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
 
-/** Print upgrade hint to stderr if a newer version is cached, unless argv runs `composio upgrade`. */
-export const showUpdateNotice = (argv: ReadonlyArray<string>) =>
-  Effect.gen(function* () {
-    const terminal = yield* TerminalUI;
-    const stateFile = yield* defaultStateFile;
-    const config = yield* defaultConfig(stateFile);
-    const args = argv.slice(2);
-    yield* createUpdateChecker(config).showUpdateNotice(terminal, args[rootCommandIndex(args)]);
-  }).pipe(Effect.provide(DefaultConfigLayers));
+export type UpdateNoticeShape = InvocationHookShape;
+
+/**
+ * Prints the upgrade hint to stderr if a newer version is cached, unless the invocation runs
+ * `composio upgrade`. Reads the cache under the home directory `NodeOs` reports; never fetches.
+ */
+export class UpdateNotice extends Context.Service<UpdateNotice, UpdateNoticeShape>()(
+  'services/UpdateNotice'
+) {
+  static readonly Default: Layer.Layer<
+    UpdateNotice,
+    never,
+    TerminalUI | FileSystem.FileSystem | Path.Path | NodeOs
+  > = Layer.effect(
+    UpdateNotice,
+    Effect.gen(function* () {
+      const terminal = yield* TerminalUI;
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs);
+      return UpdateNotice.of({
+        run: ({ argv }) =>
+          Effect.gen(function* () {
+            const stateFile = yield* defaultStateFile;
+            const config = yield* defaultConfig(stateFile);
+            const args = argv.slice(2);
+            yield* createUpdateChecker(config).showUpdateNotice(
+              terminal,
+              args[rootCommandIndex(args)]
+            );
+          }).pipe(Effect.provideContext(services)),
+      });
+    })
+  );
+}
 
 /**
  * Record a live-resolved latest stable release (e.g. `@composio/cli@0.5.0`) as the cached update
