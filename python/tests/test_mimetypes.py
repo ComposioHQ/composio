@@ -1,11 +1,13 @@
 """Tests for the mimetypes utility module."""
 
+import re
 from pathlib import Path
 
 import pytest
 
 from composio.utils.mimetypes import (
     _default,
+    _types,
     get_extension_from_mime_type,
     guess,
 )
@@ -22,7 +24,15 @@ class TestGuess:
             ("a.txt", "text/plain"),
             ("a.pdf", "application/pdf"),
             ("a.css", "text/css"),
-            ("a.js", "application/javascript"),
+            ("a.js", "text/javascript"),
+            (
+                "a.pptx",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
+            ("a.psd", "image/vnd.adobe.photoshop"),
+            ("a.py", "text/x-python"),
+            ("a.h5", "application/x-hdf5"),
+            ("a.pyc", "application/x-python-code"),
             ("a.png", "image/png"),
             ("a.jpg", "image/jpeg"),
             ("a.jpeg", "image/jpeg"),
@@ -64,6 +74,25 @@ class TestGuess:
 
     def test_accepts_path_objects(self) -> None:
         assert guess(Path("dir/sub/a.png")) == "image/png"
+
+
+TS_MIME_TABLE = (
+    Path(__file__).resolve().parents[2] / "ts/packages/core/src/utils/mime.ts"
+)
+
+
+def test_types_match_the_typescript_sdk() -> None:
+    """A local file uploads with the same MIME type from either SDK."""
+    source = TS_MIME_TABLE.read_text()
+    table = source[source.index("MIME_TYPES_BY_EXTENSION") :]
+    table = table[: table.index("};")]
+    ts_types = {
+        f".{extension}": mime_type
+        for extension, mime_type in re.findall(
+            r"^\s+'?([a-z0-9]+)'?: '([^']+)',$", table, re.M
+        )
+    }
+    assert _types == ts_types
 
 
 class TestGetExtensionFromMimeType:

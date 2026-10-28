@@ -39,6 +39,12 @@
   lookup, now fails with the message those commands print, as a plain message
   on stderr with exit 1.
 
+- In `composio run`, a `File` or `Blob` passed to `execute()` now uploads with
+  its own `type`, even when its name has no extension, and a `File` keeps its
+  name. It used to upload as `application/octet-stream` under a name with a
+  random prefix, such as `1bfa14f5-deck.pptx`. A nameless `Blob` whose type has
+  no short extension, such as PPTX, is named `file-<id>.bin`.
+
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
   it could name an older version than the one `composio upgrade` then
