@@ -5,6 +5,8 @@ import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
 import { Data, Effect, Context, Option, Result } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -50,7 +52,14 @@ import {
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
-import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
+import {
+  findFileUploadablePaths,
+  normalizeFileUploadSchema,
+  schemaHasFileUploadable,
+  rejectLocalFilesWithoutUpload,
+  setArgumentAt,
+} from 'src/services/tool-file-uploads';
+import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -168,44 +177,17 @@ const parseArguments = (raw: string) =>
 
 const hasNestedKey = (
   record: Record<string, unknown>,
-  pathParts: ReadonlyArray<string>
+  pathParts: ReadonlyArray<string | number>
 ): boolean => {
   let current: unknown = record;
   for (const key of pathParts) {
-    if (!isPlainRecord(current)) {
-      return false;
-    }
-    if (!(key in current)) {
-      return false;
-    }
-    current = current[key];
+    if (Array.isArray(current) && typeof key === 'number' && key < current.length) {
+      current = current[key];
+    } else if (isPlainRecord(current) && typeof key === 'string' && Object.hasOwn(current, key)) {
+      current = current[key];
+    } else return false;
   }
   return true;
-};
-
-const setNestedKey = (
-  record: Record<string, unknown>,
-  pathParts: ReadonlyArray<string>,
-  value: unknown
-): Record<string, unknown> => {
-  if (pathParts.length === 0) return record;
-
-  const clone: Record<string, unknown> = { ...record };
-  let current = clone;
-
-  for (const [index, key] of pathParts.entries()) {
-    if (index === pathParts.length - 1) {
-      current[key] = value;
-      break;
-    }
-
-    const next = current[key];
-    const nextObject = isPlainRecord(next) ? { ...next } : {};
-    current[key] = nextObject;
-    current = nextObject;
-  }
-
-  return clone;
 };
 
 const injectSingleFileArgument = (params: {
@@ -215,13 +197,15 @@ const injectSingleFileArgument = (params: {
   readonly schema: Record<string, unknown>;
 }) =>
   Effect.gen(function* () {
-    const uploadablePaths = findFileUploadablePaths(params.schema);
+    const uploadablePaths = findFileUploadablePaths(params.schema, [], params.args);
 
     if (uploadablePaths.length === 0) {
       return yield* new ToolExecutionError({
         reason: 'file_input',
         toolSlug: params.slug,
-        message: `Tool "${params.slug}" has no file_uploadable input. Remove --file or pass JSON via -d.`,
+        message: schemaHasFileUploadable(params.schema)
+          ? `Tool "${params.slug}" has no matching file_uploadable input in the supplied arguments. Supply the target array item with -d, or remove --file.`
+          : `Tool "${params.slug}" has no file_uploadable input. Remove --file or pass JSON via -d.`,
       });
     }
 
@@ -242,7 +226,7 @@ const injectSingleFileArgument = (params: {
       });
     }
 
-    return setNestedKey(params.args, targetPath, params.filePath);
+    return setArgumentAt(params.args, targetPath, params.filePath);
   });
 
 const connectionTips = (params: {
@@ -706,6 +690,43 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
+// What a dry run checks, matching the real call: the arguments against the
+// schema unless checks are skipped, then any local file the tool cannot upload.
+// The real call refuses that file whatever the skip flags say, loading the
+// schema for it and going on without one, and never for a meta tool, which
+// uploads nothing. Returns the schema only when the arguments were checked.
+const checkDryRunArguments = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly projectScope: { readonly orgId?: string; readonly projectId?: string };
+  readonly verificationDisabled: boolean;
+}) =>
+  Effect.gen(function* () {
+    const { slug, args, verificationDisabled } = params;
+    if (verificationDisabled && isMetaToolSlug(slug)) return null;
+
+    const definition = verificationDisabled
+      ? yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
+          Effect.catch(() => Effect.succeed(null))
+        )
+      : yield* getOrFetchToolInputDefinition(slug, params.projectScope);
+    if (!definition) return null;
+
+    if (!verificationDisabled) {
+      yield* validateToolInputArgumentsWithDefinition(slug, args, definition);
+    }
+    if (!isMetaToolSlug(slug)) {
+      yield* rejectLocalFilesWithoutUpload({
+        fs: yield* FileSystem.FileSystem,
+        path: yield* Path.Path,
+        toolSlug: slug,
+        arguments_: args,
+        inputSchema: definition.schema,
+      });
+    }
+    return verificationDisabled ? null : definition;
+  });
+
 // Gates the tool call: the request is only sent once the arguments pass. A
 // schema that cannot be loaded does not block the call, the server validates too.
 const validateToolInputBeforeExecute = (params: {
@@ -1121,43 +1142,27 @@ const runExecuteWithSpinner = (params: {
     yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         if (params.dryRun) {
-          const definition = verificationDisabled
-            ? null
-            : yield* getOrFetchToolInputDefinition(params.slug, {
-                orgId: params.resolvedProject.orgId,
-                projectId: params.resolvedProject.projectId,
-              }).pipe(
-                Effect.tapError(error =>
-                  emitExecuteFailureTelemetry({
-                    toolSlug: params.slug,
-                    args: params.args,
-                    error,
-                    surface: params.surface,
-                    projectMode: params.projectMode,
-                    stage: 'dry_run',
-                    projectScope: toolkitProjectScope(params.resolvedProject),
-                  })
-                )
-              );
-          if (definition) {
-            yield* validateToolInputArgumentsWithDefinition(
-              params.slug,
-              params.args,
-              definition
-            ).pipe(
-              Effect.tapError(error =>
-                emitExecuteFailureTelemetry({
-                  toolSlug: params.slug,
-                  args: params.args,
-                  error,
-                  surface: params.surface,
-                  projectMode: params.projectMode,
-                  stage: 'dry_run',
-                  projectScope: toolkitProjectScope(params.resolvedProject),
-                })
-              )
-            );
-          }
+          const definition = yield* checkDryRunArguments({
+            slug: params.slug,
+            args: params.args,
+            projectScope: {
+              orgId: params.resolvedProject.orgId,
+              projectId: params.resolvedProject.projectId,
+            },
+            verificationDisabled,
+          }).pipe(
+            Effect.tapError(error =>
+              emitExecuteFailureTelemetry({
+                toolSlug: params.slug,
+                args: params.args,
+                error,
+                surface: params.surface,
+                projectMode: params.projectMode,
+                stage: 'dry_run',
+                projectScope: toolkitProjectScope(params.resolvedProject),
+              })
+            )
+          );
           const summary: DryRunSummary = {
             successful: true,
             dryRun: true,
@@ -1755,16 +1760,15 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           });
 
           if (params.dryRun) {
-            const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
-            const definition = verificationDisabled
-              ? null
-              : yield* getOrFetchToolInputDefinition(toolSlug, {
-                  orgId: context.resolvedProject.orgId,
-                  projectId: context.resolvedProject.projectId,
-                });
-            if (definition) {
-              yield* validateToolInputArgumentsWithDefinition(toolSlug, context.args, definition);
-            }
+            const definition = yield* checkDryRunArguments({
+              slug: toolSlug,
+              args: context.args,
+              projectScope: {
+                orgId: context.resolvedProject.orgId,
+                projectId: context.resolvedProject.projectId,
+              },
+              verificationDisabled: params.skipChecks || params.skipToolParamsCheck,
+            });
             return {
               successful: true,
               dryRun: true,
