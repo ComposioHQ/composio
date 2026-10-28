@@ -11,7 +11,6 @@ import { exitCodeOf } from 'test/__utils__/exit-code';
 describe('runAgentClaim', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   it.effect(

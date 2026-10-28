@@ -57,7 +57,6 @@ const summaryJson = (identity: ReturnType<typeof makeAgentIdentity>, loggedIn: b
 describe('runAgentSignup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   it.effect(

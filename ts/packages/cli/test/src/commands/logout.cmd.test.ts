@@ -1,5 +1,5 @@
-import { afterEach } from 'vitest';
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import * as FileSystem from 'effect/FileSystem';
 import { ConfigProvider, Effect, Option } from 'effect';
 import path from 'node:path';
@@ -39,10 +39,6 @@ const setupLoggedInAgent = Effect.gen(function* () {
 });
 
 describe('CLI: composio logout', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   describe('[When] logged out', () => {
     layer(TestLive())(it => {
       it.effect('[Then] it is idempotent', () =>
@@ -138,7 +134,6 @@ describe('CLI: composio logout', () => {
 
           const failure = yield* cli(['logout']).pipe(Effect.flip);
 
-          // `cli-main.ts` prints the message on stderr and exits 1.
           expect(failure).toMatchObject({
             _tag: 'commands/CommandInputError',
             command: 'logout',
@@ -146,7 +141,9 @@ describe('CLI: composio logout', () => {
             message:
               '`composio logout` needs --yes when not running interactively: it removes the stored Composio agent key.',
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
           expect(ctx.isLoggedIn()).toBeTruthy();
           expect(yield* agentConfigExists).toBe(true);
         })

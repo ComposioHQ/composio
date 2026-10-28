@@ -282,7 +282,7 @@ export class ComposioClientSingleton extends Context.Service<
   // The singleton and its transport share one metrics collector, created
   // when the layer is built. The transport is a fresh `FetchHttpClient.layer`
   // rather than the memoized one an application may already have built
-  // (`cli-main.ts` provides its own), because that one calls
+  // (`InvocationLive` provides its own), because that one calls
   // `globalThis.fetch` directly and counts nothing; this one is built over
   // the counting `fetch`.
   static readonly Default = Layer.unwrap(

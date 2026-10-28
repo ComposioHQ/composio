@@ -1,5 +1,5 @@
-import { afterEach } from 'vitest';
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -82,10 +82,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio connections remove', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   const confirmedDeleteCalls: string[] = [];
   layer(
     TestLive({
@@ -261,7 +257,6 @@ describe('CLI: composio connections remove', () => {
           yield* userContext.login('test_api_key', 'org_test');
           const failure = yield* cli(['connections', 'remove', 'gmail']).pipe(Effect.flip);
 
-          // `cli-main.ts` prints the message on stderr and exits 1.
           expect(failure).toMatchObject({
             _tag: 'commands/CommandInputError',
             command: 'connections remove',
@@ -270,7 +265,9 @@ describe('CLI: composio connections remove', () => {
           });
           expect(headlessDeleteCalls).toEqual([]);
           // Not even the connection list is fetched.
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
     );
 
@@ -300,7 +297,7 @@ describe('CLI: composio connections remove', () => {
             Effect.flip
           );
 
-          // `cli-main.ts` prints the message on stderr and exits 1.
+          // The invocation prints the message on stderr and exits 1.
           expect(failure).toMatchObject({
             _tag: 'commands/CommandInputError',
             command: 'connections remove',

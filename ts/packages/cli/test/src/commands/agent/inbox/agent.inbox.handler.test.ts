@@ -25,7 +25,6 @@ const inbox = {
 describe('runAgentInbox', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   it.effect(

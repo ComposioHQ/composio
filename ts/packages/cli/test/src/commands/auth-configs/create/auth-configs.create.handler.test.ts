@@ -146,7 +146,7 @@ describe('runAuthConfigsCreate', () => {
             /^Invalid JSON in --custom-credentials\. Please provide valid JSON\.\nExample:\n> composio dev auth-configs create /
           ),
         });
-        // `cli-main.ts` prints a usage failure on stderr and exits 1.
+        // The invocation prints a usage failure on stderr and exits 1.
         expect(isUsageFailure(failure)).toBe(true);
         expect(yield* MockConsole.getLines()).toEqual([]);
         expect(outputs).toEqual([]);

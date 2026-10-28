@@ -6,7 +6,12 @@ import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
 import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
 import { PluginHint } from 'src/services/plugin-hint';
 import { UpdateNotice } from 'src/services/update-check';
-import { MockConsole, recordedInvocationCalls, TestLive } from 'test/__utils__';
+import {
+  MockConsole,
+  recordedInvocationCalls,
+  resetInvocationCalls,
+  TestLive,
+} from 'test/__utils__';
 import { trackedEvents } from 'test/__utils__/tracked-events';
 
 // Records instead of dispatching, so a double that reached the real sink would show up below.
@@ -50,6 +55,9 @@ describe('TestLive invocation hooks and telemetry sink', () => {
         // The doubles are no-ops: nothing reaches the console or the analytics dispatcher.
         expect(yield* MockConsole.getLines()).toEqual([]);
         expect(trackedEvents).toEqual([]);
+
+        yield* resetInvocationCalls;
+        expect(yield* recordedInvocationCalls).toEqual([]);
       })
     );
   });

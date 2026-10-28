@@ -1,4 +1,5 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -44,7 +45,9 @@ describe('CLI: composio dev triggers disable', () => {
               /^Missing required argument: <id>\nTry specifying a trigger ID, e\.g\.:\n> composio dev triggers disable "trg_123"/
             ),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }

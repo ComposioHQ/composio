@@ -42,7 +42,6 @@ const stubAgentsApi = (body: AgentIdentity) =>
 describe('CLI: composio signup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())('[Given] no login', it => {

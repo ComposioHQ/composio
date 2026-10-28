@@ -131,7 +131,6 @@ describe('CLI: composio dev connected-accounts link', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(
