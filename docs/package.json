@@ -40,6 +40,7 @@
     "check:api-snippets": "bun scripts/check-api-snippets.ts",
     "check:python-snippets": "bun scripts/check-python-snippets.ts",
     "test:python-snippets": "bun scripts/python-snippets/test-helper.ts",
+    "test:migration-helper": "python3 -I tests/migrations/test_migrate_no_auth_to_instant.py",
     "check:typescript-snippets": "bun scripts/check-typescript-snippets.ts",
     "pretest": "bun run generate:kb",
     "test": "bun test tests/static/",

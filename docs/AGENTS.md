@@ -35,6 +35,7 @@ bun run check:code-examples
 bun run check:api-snippets
 bun run check:python-snippets
 bun run test:python-snippets
+bun run test:migration-helper
 bun run check:typescript-snippets
 bun run inventory:code-examples
 ```
