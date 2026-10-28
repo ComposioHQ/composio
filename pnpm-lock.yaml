@@ -1395,6 +1395,9 @@ importers:
       hono:
         specifier: 'catalog:'
         version: 4.13.13
+      mime:
+        specifier: ^4.1.1
+        version: 4.1.1
       tsdown:
         specifier: 'catalog:'
         version: 0.23.1(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.25)(tsx@4.23.15)(unrun@0.2.27(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3))

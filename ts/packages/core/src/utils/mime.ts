@@ -81,8 +81,9 @@ export function getExtensionFromMimeType(mimeType: string): string {
 // `application/octet-stream`, issue #4984), so the generic type is a last resort.
 export const DEFAULT_MIME_TYPE = 'application/octet-stream';
 
-// Extension (lowercase, no leading dot) -> MIME type.
-const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
+// Extension (lowercase, no leading dot) -> MIME type. Each value matches the
+// `mime` package, which the CLI's `composio execute` uses for the same files.
+export const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
   // Documents
   pdf: 'application/pdf',
   doc: 'application/msword',
@@ -115,8 +116,8 @@ const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
   mjs: 'text/javascript',
   json: 'application/json',
   xml: 'application/xml',
-  yaml: 'application/yaml',
-  yml: 'application/yaml',
+  yaml: 'text/yaml',
+  yml: 'text/yaml',
   ics: 'text/calendar',
   eml: 'message/rfc822',
   // Images
@@ -138,7 +139,7 @@ const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
   wav: 'audio/wav',
   m4a: 'audio/mp4',
   ogg: 'audio/ogg',
-  flac: 'audio/flac',
+  flac: 'audio/x-flac',
   mp4: 'video/mp4',
   mpeg: 'video/mpeg',
   mov: 'video/quicktime',
