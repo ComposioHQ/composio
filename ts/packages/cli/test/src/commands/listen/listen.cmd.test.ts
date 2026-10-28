@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { TestClock } from 'effect/testing';
-import { ListenCommandError } from 'src/commands/listen.cmd';
+import { ListenCommandError } from 'src/commands/listen/listen.errors';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ConnectedAccountResolutionError } from 'src/services/connected-account-selection';
 import { MissingActingUserError } from 'src/commands/surface';

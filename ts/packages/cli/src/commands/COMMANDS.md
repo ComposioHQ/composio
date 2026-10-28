@@ -69,7 +69,7 @@ Every command registration of the CLI and the file that defines it. To find a co
 | `help`                          | root | `ts/packages/cli/src/commands/root-help.ts`                                               |       |                               | no    | listed       |
 | `install`                       | root | `ts/packages/cli/src/commands/install/install.cmd.ts`                                     |       |                               | no    | listed       |
 | `link`                          | root | `ts/packages/cli/src/commands/connected-accounts/link/connected-accounts.link.cmd.ts`     |       | `dev connected-accounts link` | yes   | listed       |
-| `listen`                        | root | `ts/packages/cli/src/commands/listen.cmd.ts`                                              |       |                               | yes   | experimental |
+| `listen`                        | root | `ts/packages/cli/src/commands/listen/listen.cmd.ts`                                       |       |                               | yes   | experimental |
 | `login`                         | root | `ts/packages/cli/src/commands/login/login.cmd.ts`                                         |       |                               | no    | listed       |
 | `logout`                        | root | `ts/packages/cli/src/commands/logout.cmd.ts`                                              |       |                               | no    | listed       |
 | `orgs`                          | root | `ts/packages/cli/src/commands/orgs/orgs.cmd.ts`                                           |       |                               | yes   | listed       |

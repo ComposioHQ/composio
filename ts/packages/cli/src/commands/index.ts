@@ -14,7 +14,7 @@ import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login/login.cmd';
 import { signupCmd } from './signup/signup.cmd';
 import { setupCmd } from './setup.cmd';
-import { listenCmd } from './listen.cmd';
+import { listenCmd } from './listen/listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run/run.cmd';
 import { proxyCmd } from './proxy/proxy.cmd';
