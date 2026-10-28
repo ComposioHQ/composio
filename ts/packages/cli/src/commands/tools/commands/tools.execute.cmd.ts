@@ -1,5 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
-import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
+import { actingUser, CommandSurface } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Argument, Command, Flag } from 'effect/cli';
@@ -28,8 +28,6 @@ import type {
   ToolExecuteResponse,
 } from 'src/services/tools-executor';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
-import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import {
@@ -763,7 +761,6 @@ type RunToolsExecuteParams = {
   data: Option.Option<string>;
   file: Option.Option<string>;
   account: Option.Option<string>;
-  userId: Option.Option<string>;
   projectName: Option.Option<string>;
   surface: 'root' | 'dev';
   projectMode: 'consumer' | 'developer';
@@ -783,6 +780,7 @@ type ParallelExecuteSpec = {
 };
 
 type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
+  readonly userId: Option.Option<string>;
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
 
@@ -872,44 +870,30 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
-    // The root tree has no --project-name.
-    const projectName = Option.filter(params.projectName, () => params.surface !== 'root');
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName: Option.getOrUndefined(projectName),
-    });
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser(
+      params.surface === 'root'
+        ? {
+            // As before `actingUser`, an empty consumer user id still counts as a user.
+            legacy: { acceptEmptyConsumerUserId: true },
+            // Keep the earlier message, which mentions --user-id, over the root tree's default.
+            missingUserMessage: () =>
+              'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+          }
+        : {}
+    ).pipe(
+      // Re-fail with the `ToolExecutionError` the command has always failed with, so
+      // `cli.command.failed` keeps reporting it as `error_name`.
+      Effect.catchTag('commands/MissingActingUserError', error =>
+        Effect.fail(
+          new ToolExecutionError({
+            reason: 'missing_user_id',
+            toolSlug: params.slug,
+            message: error.message,
+          })
+        )
+      )
+    );
     const clientSingleton = yield* ComposioClientSingleton;
-    const userContext = yield* ComposioUserContext;
-    const projectContext = yield* ProjectContext;
-
-    const localProjectContext = yield* projectContext.resolve.pipe(
-      Effect.catch(() => Effect.succeed(Option.none()))
-    );
-    const localTestUserId = directoryTestUserId(
-      localProjectContext,
-      Option.as(projectName, resolvedProject.projectId)
-    );
-    const resolvedUserId =
-      resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullishOr(resolvedProject.consumerUserId)
-        : Option.match(params.userId, {
-            onSome: value => Option.some(value),
-            onNone: () => Option.orElse(localTestUserId, () => userContext.data.testUserId),
-          });
-
-    if (Option.isNone(resolvedUserId)) {
-      return yield* new ToolExecutionError({
-        reason: 'missing_user_id',
-        toolSlug: params.slug,
-        message: missingUserIdMessage(
-          projectName,
-          params.projectMode === 'developer'
-            ? 'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-        ),
-      });
-    }
-
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
@@ -921,7 +905,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
-      userId: resolvedUserId.value,
+      userId: resolvedUserId,
       selector: params.account,
     });
     const args = Option.isSome(params.file)
@@ -962,11 +946,11 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       executor,
       resolvedProject,
       args,
-      resolvedUserId: resolvedUserId.value,
+      resolvedUserId,
       selectedConnectedAccountId,
       executeOutputDir,
       executeParams: {
-        userId: resolvedUserId.value,
+        userId: resolvedUserId,
         target: executesViaDashboard
           ? { kind: 'dashboard', orgId: resolvedProject.orgId }
           : { kind: 'backend' },
@@ -1625,7 +1609,6 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       () =>
         resolveSchemaContext({
           account: params.account,
-          userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
           projectMode: params.projectMode,
@@ -1727,7 +1710,6 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           data: spec.data,
           file: Option.none(),
           account: spec.account,
-          userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
           projectMode: params.projectMode,
@@ -1927,14 +1909,18 @@ const runParallelFromCommand = (config: {
       allowProjectName: config.surface === 'dev',
     });
     // The tail starts after the command name, so the `dev` group's shared flags given before
-    // it reach the command only through the surface.
+    // it reach the command only through the surface; the tail's own win.
     const surface = yield* CommandSurface;
+    const userId = Option.orElse(parsed.userId, () => surface.userId);
+    const projectName = Option.orElse(parsed.projectName, () => surface.projectName);
     return yield* runParallelToolsExecuteFromParsed({
       ...parsed,
       ...config,
-      userId: Option.orElse(parsed.userId, () => surface.userId),
-      projectName: Option.orElse(parsed.projectName, () => surface.projectName),
-    });
+      userId,
+      projectName,
+    }).pipe(
+      Effect.provideService(CommandSurface, CommandSurface.of({ ...surface, userId, projectName }))
+    );
   });
 
 const executeExamples = [
@@ -2016,7 +2002,6 @@ export const rootToolsCmd$Execute = Command.make(
         data,
         file,
         account,
-        userId: Option.none(),
         projectName: Option.none(),
         surface: 'root',
         projectMode: 'consumer',
@@ -2067,7 +2052,7 @@ export const devToolsCmd$Execute = Command.make(
     skipChecks,
   }) =>
     Effect.gen(function* () {
-      const { userId, projectName } = yield* CommandSurface;
+      const { projectName } = yield* CommandSurface;
       if (parallel) {
         return yield* runParallelFromCommand({
           surface: 'dev',
@@ -2087,7 +2072,6 @@ export const devToolsCmd$Execute = Command.make(
         data,
         file,
         account,
-        userId,
         projectName,
         surface: 'dev',
         projectMode: 'developer',

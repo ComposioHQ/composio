@@ -833,4 +833,43 @@ describe('CLI: composio search', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      ...testLiveOptions,
+      // The empty id is accepted (legacy); a response without the field at all is the only
+      // way no consumer user resolves.
+      accountData: { consumerUserId: null },
+    })
+  )('[Given] no consumer user id [Then] the search fails as a usage error', it => {
+    it.effect('[Then] the preserved message names --user-id', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['search', 'send']).pipe(Effect.flip);
+
+        expect(failure).toBeInstanceOf(CommandInputError);
+        expect(failure).toMatchObject({
+          option: '--user-id',
+          message:
+            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      ...testLiveOptions,
+      // As before `actingUser`, the search accepts the empty id as the user.
+      accountData: { consumerUserId: '' },
+    })
+  )('[Given] an empty consumer user id [Then] the search still runs', it => {
+    it.effect('[Then] results come back for the accepted user', () =>
+      Effect.gen(function* () {
+        yield* cli(['search', 'send']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('GMAIL_SEND_EMAIL');
+      })
+    );
+  });
 });

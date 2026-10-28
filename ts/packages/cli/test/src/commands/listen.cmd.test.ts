@@ -6,6 +6,7 @@ import { ListenCommandError } from 'src/commands/listen.cmd';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ConnectedAccountResolutionError } from 'src/services/connected-account-selection';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { ComposioUserContext } from 'src/services/user-context';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
@@ -573,4 +574,31 @@ describe('CLI: composio listen', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, accountData: { consumerUserId: '' } }))(
+    '[Given] no consumer user in the project context',
+    it => {
+      it.effect('[Then] fails before subscribing with the preserved message', () =>
+        Effect.gen(function* () {
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          yield* enableListen;
+          const failure = yield* cli([
+            'listen',
+            'composio.connected_account.expired',
+            '--max-events',
+            '1',
+          ]).pipe(Effect.flip);
+
+          // The command has always failed with this class as a defect, so `actingUser`'s
+          // expected failure is re-tagged; the reason and the message are both load-bearing.
+          expect(failure).toBeInstanceOf(ListenCommandError);
+          expect(failure).toMatchObject({
+            reason: 'project_context',
+            message: 'No consumer user is available in the current project context.',
+          });
+        })
+      );
+    }
+  );
 });

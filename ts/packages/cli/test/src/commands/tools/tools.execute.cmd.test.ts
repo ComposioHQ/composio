@@ -12,6 +12,7 @@ import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioAccount from 'src/services/composio-account';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
+import { ComposioUserContext } from 'src/services/user-context';
 import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -3442,6 +3443,88 @@ describe('CLI: composio execute', () => {
         expect(output.data.threadId).toBe('<REDACTED>');
         expect(output.data.labelIds).toEqual(['SENT']);
         expect(output.logId).toBe('log_<REDACTED>');
+        expect(output.successful).toBe(true);
+      })
+    );
+  });
+});
+
+describe('CLI: composio execute without a resolvable acting user', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      accountData: { consumerUserId: null },
+    })
+  )('[Given] the consumer project has no user id at all [Then] the root tree fails', it => {
+    it.effect('[Then] the missing_user_id failure carries the root message', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{}']).pipe(Effect.flip);
+
+        expect(failure).toMatchObject({
+          _tag: 'ToolExecutionError',
+          reason: 'missing_user_id',
+          message:
+            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: ConfigProvider.fromEnv({
+        env: {
+          COMPOSIO_USER_API_KEY: 'test_api_key',
+          COMPOSIO_ORG_ID: 'org_test',
+          COMPOSIO_PROJECT_ID: 'proj_test',
+        },
+      }),
+      stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] a directory project and no user candidates [Then] the dev tree fails', it => {
+    it.effect('[Then] the missing_user_id failure carries the dev message', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        const failure = yield* cli([
+          'dev',
+          'playground-execute',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{}',
+        ]).pipe(Effect.flip);
+
+        expect(failure).toMatchObject({
+          _tag: 'ToolExecutionError',
+          reason: 'missing_user_id',
+          message:
+            'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      accountData: { consumerUserId: '' },
+    })
+  )('[Given] an empty consumer user id [Then] the root tree accepts it as the user', it => {
+    it.effect('[Then] the execution runs and reports success', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+        const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
+
         expect(output.successful).toBe(true);
       })
     );

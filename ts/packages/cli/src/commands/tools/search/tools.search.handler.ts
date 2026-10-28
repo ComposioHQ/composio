@@ -1,16 +1,14 @@
 import { Effect, Option } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { CommandSurface } from 'src/commands/surface';
+import { actingUser, CommandSurface } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { failedWith } from 'src/effects/request-error';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
-import { ComposioUserContext } from 'src/services/user-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
-import { resolveCommandProject } from 'src/services/command-project';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import {
@@ -108,8 +106,7 @@ const buildSearchJsonPayload = (params: {
 export const runToolsSearch = (params: ToolsSearchParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { tree, userId, projectName } = yield* CommandSurface;
-    const userContext = yield* ComposioUserContext;
+    const { tree } = yield* CommandSurface;
 
     const clampedLimit = clampLimit(params.limit);
     const emitHuman = params.human;
@@ -128,23 +125,19 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         : undefined;
 
     const runSearchRequest = Effect.gen(function* () {
-      const resolvedProject = yield* resolveCommandProject({
-        mode: 'consumer',
-        projectName: Option.getOrUndefined(projectName),
-      });
-      const resolvedUserId =
-        resolvedProject.projectType === 'CONSUMER'
-          ? Option.fromNullishOr(resolvedProject.consumerUserId)
-          : Option.match(userId, {
-              onSome: value => Option.some(value),
-              onNone: () => userContext.data.testUserId,
-            });
-      if (Option.isNone(resolvedUserId)) {
-        return yield* invalidSearchInput(
+      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
+        // As before `actingUser`, an empty consumer user id still counts as a user.
+        legacy: { acceptEmptyConsumerUserId: true },
+        // Keep the earlier message, which mentions --user-id, over the root tree's default.
+        missingUserMessage: () =>
           'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-          '--user-id'
-        );
-      }
+      }).pipe(
+        // Re-fail with the `CommandInputError` the command has always failed with, so
+        // `cli.command.failed` keeps reporting it as `error_name`.
+        Effect.catchTag('commands/MissingActingUserError', error =>
+          Effect.fail(invalidSearchInput(error.message, '--user-id'))
+        )
+      );
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,
@@ -153,10 +146,10 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
       if (resolvedProject.projectType === 'CONSUMER') {
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: resolvedProject.orgId,
-          consumerUserId: resolvedUserId.value,
+          consumerUserId: resolvedUserId,
         });
       }
-      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
+      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId, {
         toolkits: toolkitList,
         cacheScope:
           resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
@@ -233,7 +226,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
           resolvedProject.projectType === 'CONSUMER'
             ? {
                 orgId: resolvedProject.orgId,
-                consumerUserId: resolvedUserId.value,
+                consumerUserId: resolvedUserId,
                 toolRouterSessionId: sessionId,
               }
             : undefined,

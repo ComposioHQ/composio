@@ -7,7 +7,7 @@ import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -284,23 +284,28 @@ const resolveRunHelperContext = () =>
       return baseContext;
     }
 
-    const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(Effect.option);
-    if (Option.isNone(consumerProject) || consumerProject.value.projectType !== 'CONSUMER') {
+    // Without a consumer user the script runs with the base context alone.
+    const consumer = yield* actingUser({
+      // As before `actingUser`, an empty consumer user id still counts as a user.
+      legacy: { acceptEmptyConsumerUserId: true },
+    }).pipe(Effect.option);
+    if (Option.isNone(consumer)) {
       return baseContext;
     }
+    const { userId: consumerUserId, project: consumerProject } = consumer.value;
 
     const sessionArtifactsDir = Option.getOrUndefined(
       yield* resolveCliSessionArtifacts({
         orgId,
-        consumerUserId: consumerProject.value.consumerUserId,
+        consumerUserId,
       }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
     );
 
     return {
       ...baseContext,
-      consumerUserId: consumerProject.value.consumerUserId,
-      consumerProjectId: consumerProject.value.projectId,
-      consumerProjectName: consumerProject.value.projectName,
+      consumerUserId,
+      consumerProjectId: consumerProject.projectId,
+      consumerProjectName: consumerProject.projectName,
       runOutputDir: sessionArtifactsDir,
     } satisfies RunHelperContext;
   });
