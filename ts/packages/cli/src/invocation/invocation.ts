@@ -115,8 +115,8 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
     const invocation: CommandInvocationShape = {
       // Only the first command to begin counts: the bare group whose help ended in `ShowHelp`.
       // A selected command (one with parsed input) runs its hooks first, so the backend mismatch
-      // warning precedes the toolkit lookup an `execute` invoked event makes; help, version, and
-      // parse failures run none.
+      // warning precedes the toolkit lookup an `execute` invoked event makes; help (`--help`, a
+      // bare group), version, and parse failures run none.
       begin: (identity, input) =>
         Effect.flatMap(Ref.get(started), current =>
           Option.match(current, {
@@ -158,8 +158,8 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
 
 /**
  * Runs, in order and on stderr, the invocation hooks the selected command's `CommandMeta` keeps,
- * for the input `effect/cli` parsed for it. The bare root command only prints the overview, so,
- * like `--help`, it runs none.
+ * for the input `effect/cli` parsed for it. A group that only shows its help (the bare root
+ * included) begins with no input, like `--help`, so it never gets here.
  */
 const invocationHooks = Effect.gen(function* () {
   const hooks: Readonly<Record<InvocationHookName, InvocationHookShape>> = {
@@ -169,13 +169,11 @@ const invocationHooks = Effect.gen(function* () {
     backgroundUpdateCheck: yield* BackgroundUpdateCheck,
   };
   return (identity: CommandIdentity, input: unknown): Effect.Effect<void> =>
-    identity.path.length === 0
-      ? Effect.void
-      : Effect.forEach(
-          INVOCATION_HOOKS.filter(hook => runsHook(identity.meta, hook, input)),
-          hook => hooks[hook].run({ identity }),
-          { discard: true }
-        );
+    Effect.forEach(
+      INVOCATION_HOOKS.filter(hook => runsHook(identity.meta, hook, input)),
+      hook => hooks[hook].run({ identity }),
+      { discard: true }
+    );
 });
 
 /**

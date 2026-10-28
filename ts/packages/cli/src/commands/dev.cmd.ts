@@ -179,7 +179,7 @@ export const buildDevCommand = (visibility: CommandVisibility) =>
     ? makeDevCommand(visibility, input =>
         rejectSharedFlags('dev', toggleRejections).pipe(Effect.andThen(developerModeHandler(input)))
       ).pipe(
-        withRegisteredSubcommands([...devSubcommands]),
+        withRegisteredSubcommands([...devSubcommands], { ownAction: true }),
         Command.withSharedFlags({ userId, projectName }),
         Command.provide(({ userId, projectName }) => CommandSurface.dev({ userId, projectName }))
       )
