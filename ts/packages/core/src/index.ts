@@ -22,7 +22,7 @@ export type {
   StrictSchemaIncompatibility,
   StrictJsonSchemaResult,
 } from './utils/jsonSchema';
-export { getExtensionFromMimeType, getMimeTypeFromFileName } from './utils/mime';
+export { getExtensionFromMimeType } from './utils/mime';
 export { normalizeToolArguments } from './utils/toolArguments';
 // Sensitive-file-upload denylist guard. This is the single canonical
 // implementation; downstream packages (e.g. `@composio/cli`) import it here so
