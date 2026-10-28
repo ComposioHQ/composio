@@ -15,7 +15,7 @@ import type { TelemetryFamily } from 'src/analytics/types';
 
 /**
  * The hooks the invocation runs for the selected command (`src/invocation/invocation.ts`), in
- * this order, right after the command began and before it checks a login.
+ * this order, when the command begins: before its invoked event and its login check.
  */
 export const INVOCATION_HOOKS = [
   'backendMismatch',
@@ -212,7 +212,7 @@ export interface CommandInvocationShape {
   /**
    * Records `identity` as the command this invocation runs, with the input `effect/cli` parsed
    * for it (none for help, version, and parse failures), and reports that it started; with
-   * parsed input, then runs the invocation hooks its `CommandMeta` keeps. Only the first call
+   * parsed input, first runs the invocation hooks its `CommandMeta` keeps. Only the first call
    * counts. Never fails.
    */
   readonly begin: (identity: CommandIdentity, input: Option.Option<unknown>) => Effect.Effect<void>;

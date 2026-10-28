@@ -2,6 +2,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Context, Effect, Exit, Layer, Option, Schema } from 'effect';
 import { APP_CONFIG } from 'src/config';
+import { captureServices } from 'src/effects/capture-services';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { commandPathOf } from 'src/invocation/command-identity';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
@@ -182,12 +183,7 @@ export class PluginHint extends Context.Service<PluginHint, PluginHintShape>()(
     Effect.gen(function* () {
       const terminal = yield* TerminalUI;
       const telemetry = yield* CommandLifecycleTelemetry;
-      const services = Context.pick(
-        FileSystem.FileSystem,
-        Path.Path,
-        NodeOs,
-        TerminalUI
-      )(yield* Effect.context<FileSystem.FileSystem | Path.Path | NodeOs | TerminalUI>());
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs, TerminalUI);
       return PluginHint.of({
         run: ({ identity }) =>
           Effect.gen(function* () {

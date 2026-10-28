@@ -1,7 +1,7 @@
 import { Array as Arr, Context, Data, Effect, Layer, Option, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import type { CommandIdentity, SharedFlagName } from 'src/invocation/command-identity';
 import { ExpectedFailure } from 'src/effects/expected-failure';
+import type { CommandIdentity, SharedFlagName } from 'src/invocation/command-identity';
 import {
   resolveCommandProject,
   type ProjectMode,

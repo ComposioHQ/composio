@@ -68,10 +68,10 @@ const runWithArgs = (argv: ReadonlyArray<string>) =>
  * Runs the command `effect/cli` selects for `argv` under its lifecycle telemetry. The command's
  * identity is known only once the parser selected it: the selected registration calls
  * `CommandInvocation.begin` (`src/commands/registration.ts`), and so do `--help`, `--version`,
- * and a parse failure, for the command path `effect/cli` gives them. `begin` reports the invoked
- * event, then runs the selected command's invocation hooks; the outcome is reported for the same
- * command. A failure before any `begin` (a group-level
- * check) is reported against the deepest registration whose dispatch started.
+ * and a parse failure, for the command path `effect/cli` gives them. `begin` runs the selected
+ * command's invocation hooks, then reports the invoked event; the outcome is reported for the
+ * same command. A failure before any `begin` (a group-level check) is reported against the
+ * deepest registration whose dispatch started.
  */
 const runWithTelemetry = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
@@ -114,21 +114,18 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
       );
     const invocation: CommandInvocationShape = {
       // Only the first command to begin counts: the bare group whose help ended in `ShowHelp`.
-      // A selected command (one with parsed input) then runs its hooks; help, version, and parse
-      // failures run none.
+      // A selected command (one with parsed input) runs its hooks first, so the backend mismatch
+      // warning precedes the toolkit lookup an `execute` invoked event makes; help, version, and
+      // parse failures run none.
       begin: (identity, input) =>
         Effect.flatMap(Ref.get(started), current =>
           Option.match(current, {
             onSome: () => Effect.void,
             onNone: () =>
-              start(identity, input).pipe(
-                Effect.andThen(
-                  Option.match(input, {
-                    onNone: () => Effect.void,
-                    onSome: parsed => runHooks(identity, parsed),
-                  })
-                )
-              ),
+              Option.match(input, {
+                onNone: () => Effect.void,
+                onSome: parsed => runHooks(identity, parsed),
+              }).pipe(Effect.andThen(start(identity, input))),
           })
         ),
       enter: identity => Ref.set(entered, identity),
@@ -240,7 +237,7 @@ export const reportInvocationFailure = (cause: Cause.Cause<unknown>) =>
 
 /**
  * Runs one invocation of the CLI for the full process `argv` (executable and script included):
- * the command under lifecycle telemetry, with the invocation hooks once it began.
+ * the command under lifecycle telemetry, with the invocation hooks when it begins.
  *
  * Fails with the command's own cause once it is on screen; an interruption alone is not printed.
  */
