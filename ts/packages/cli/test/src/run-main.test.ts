@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Array as Arr, Cause, Deferred, Effect, Exit, Option } from 'effect';
+import { Cause, Deferred, Effect, Exit, Option } from 'effect';
 import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
 import { ReportedFailure } from 'src/effects/report-failure';
 import { ExitAction, exitActionFor, makeCliRunMain, type RunnerPlatform } from 'src/run-main';
@@ -9,13 +9,41 @@ import {
   type StopSignal,
 } from 'src/services/shutdown-signal';
 
+const exitWith = (code: number): ExitAction => ExitAction.ExitWith({ code });
+const reraiseKill: ExitAction = ExitAction.Reraise({ signal: 'SIGKILL' });
+
+// Each exit, then the action expected with no signal, SIGINT, SIGTERM and SIGHUP received.
 const exits = [
-  { kind: 'success', exit: Exit.succeed(undefined) },
-  { kind: 'interrupted', exit: Exit.failCause(Cause.interrupt()) },
-  { kind: 'child exited 7', exit: Exit.fail(new ChildProcessExited({ code: 7 })) },
-  { kind: 'child killed', exit: Exit.fail(new ChildProcessSignaled({ signal: 'SIGKILL' })) },
-  { kind: 'reported failure', exit: Exit.fail(new ReportedFailure({ message: 'printed' })) },
-  { kind: 'defect', exit: Exit.die(new Error('boom')) },
+  {
+    kind: 'success',
+    exit: Exit.succeed(undefined),
+    expected: [exitWith(0), exitWith(0), exitWith(0), exitWith(0)],
+  },
+  {
+    kind: 'interrupted',
+    exit: Exit.failCause(Cause.interrupt()),
+    expected: [exitWith(130), exitWith(130), exitWith(143), exitWith(129)],
+  },
+  {
+    kind: 'child exited 7',
+    exit: Exit.fail(new ChildProcessExited({ code: 7 })),
+    expected: [exitWith(7), exitWith(7), exitWith(7), exitWith(7)],
+  },
+  {
+    kind: 'child killed',
+    exit: Exit.fail(new ChildProcessSignaled({ signal: 'SIGKILL' })),
+    expected: [reraiseKill, reraiseKill, reraiseKill, reraiseKill],
+  },
+  {
+    kind: 'reported failure',
+    exit: Exit.fail(new ReportedFailure({ message: 'printed' })),
+    expected: [exitWith(1), exitWith(1), exitWith(1), exitWith(1)],
+  },
+  {
+    kind: 'defect',
+    exit: Exit.die(new Error('boom')),
+    expected: [exitWith(1), exitWith(1), exitWith(1), exitWith(1)],
+  },
 ] as const;
 
 const received = [
@@ -25,38 +53,23 @@ const received = [
   { name: 'SIGHUP', signal: Option.some<StopSignal>('SIGHUP') },
 ] as const;
 
-// Spelled out rather than derived, so the table checks the numbers too.
-const cancelledCode = { SIGINT: 130, SIGTERM: 143, SIGHUP: 129 } as const;
-
-const expectedAction = (
-  kind: (typeof exits)[number]['kind'],
-  signal: Option.Option<StopSignal>
-): ExitAction => {
-  switch (kind) {
-    case 'success':
-      return ExitAction.ExitWith({ code: 0 });
-    case 'interrupted':
-      return ExitAction.ExitWith({
-        code: Option.match(signal, { onNone: () => 130, onSome: s => cancelledCode[s] }),
-      });
-    case 'child exited 7':
-      return ExitAction.ExitWith({ code: 7 });
-    case 'child killed':
-      return ExitAction.Reraise({ signal: 'SIGKILL' });
-    case 'reported failure':
-    case 'defect':
-      return ExitAction.ExitWith({ code: 1 });
-  }
-};
-
-const cases = Arr.flatMap(exits, ({ kind, exit }) =>
-  Arr.map(received, ({ name, signal }) => ({ kind, exit, name, signal }))
+const cases = exits.flatMap(({ kind, exit, expected }) =>
+  received.map(({ name, signal }, index) => ({
+    kind,
+    name,
+    exit: exit as Exit.Exit<unknown, unknown>,
+    signal: signal as Option.Option<StopSignal>,
+    action: expected[index],
+  }))
 );
 
 describe('exitActionFor', () => {
-  it.each(cases)('[Given] $kind after $name [Then] ends as expected', ({ kind, exit, signal }) => {
-    expect(exitActionFor(exit, signal)).toEqual(expectedAction(kind, signal));
-  });
+  it.each(cases)(
+    '[Given] $kind after $name [Then] ends as expected',
+    ({ exit, signal, action }) => {
+      expect(exitActionFor(exit, signal)).toEqual(action);
+    }
+  );
 });
 
 /** A process stand-in: signals are delivered by hand, timers fire by hand. */
