@@ -4,15 +4,18 @@
  * `CommandMeta` turns off.
  */
 import { describe, expect, it, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, Option } from 'effect';
+import { Cause, Effect, Exit, Option, Schema } from 'effect';
+import { Command } from 'effect/cli';
 import { buildRootCommand } from 'src/commands';
 import { NotLoggedInError } from 'src/commands/errors';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 import {
   commandPathOf,
   identityAt,
   INVOCATION_HOOKS,
   type InvocationHookName,
   runsHook,
+  withCommandMeta,
 } from 'src/invocation/command-identity';
 import { cliExit, recordedInvocationCalls, resetInvocationCalls, TestLive } from 'test/__utils__';
 
@@ -98,12 +101,26 @@ describe('invocation hooks', () => {
       { name: 'a typo', args: ['whoamii'] },
       { name: 'a missing argument', args: ['dev', 'triggers', 'list'] },
       { name: 'the bare root', args: [] },
+      { name: 'a bare group (`tools`)', args: ['tools'] },
+      { name: 'a bare group (`orgs`)', args: ['orgs'] },
+      { name: 'a bare nested group (`dev triggers`)', args: ['dev', 'triggers'] },
       { name: '`help`', args: ['help'] },
       { name: '`help <command>`', args: ['help', 'tools'] },
     ])('[Given] $name [Then] no hook runs', ({ args }) =>
       Effect.gen(function* () {
         const { hooked } = yield* sequenceOf(args);
         expect(hooked).toEqual([]);
+      })
+    );
+
+    // `dev`'s own handler is the developer-mode toggle, an action of its own, not its help.
+    it.effect.each([
+      { name: 'dev --mode off', args: ['dev', '--mode', 'off'] },
+      { name: 'dev', args: ['dev'] },
+    ])("[Given] a group's own action (`$name`) [Then] its hooks run, for the group", ({ args }) =>
+      Effect.gen(function* () {
+        const { hooked } = yield* sequenceOf(args);
+        expect(hooked).toEqual(INVOCATION_HOOKS.map(() => 'dev'));
       })
     );
   });
@@ -151,5 +168,30 @@ describe('hook opt-outs from CommandMeta', () => {
     const identity = identityAt(root, ['composio', ...path]);
     expect(identity.path).toEqual(path);
     expect(runsHook(identity.meta, hook, input)).toBe(runs);
+  });
+
+  it('a subcommand inherits a boolean policy, never a predicate over its group input', () => {
+    const groupInput = Schema.is(Schema.Struct({ quiet: Schema.Literal(true) }));
+    const seen: Array<unknown> = [];
+    const group = Command.make('group').pipe(
+      withRegisteredSubcommands([Command.make('leaf', {}, () => Effect.void)]),
+      withCommandMeta({
+        hooks: {
+          updateNotice: false,
+          pluginHint: input => {
+            seen.push(input);
+            return !groupInput(input);
+          },
+        },
+      })
+    );
+    const tree = Command.make('app').pipe(withRegisteredSubcommands([group]));
+    const groupMeta = identityAt(tree, ['app', 'group']).meta;
+    const leafMeta = identityAt(tree, ['app', 'group', 'leaf']).meta;
+
+    expect(runsHook(groupMeta, 'pluginHint', { quiet: true })).toBe(false);
+    expect(runsHook(leafMeta, 'pluginHint', { quiet: true })).toBe(true);
+    expect(runsHook(leafMeta, 'updateNotice', {})).toBe(false);
+    expect(seen).toEqual([{ quiet: true }]);
   });
 });

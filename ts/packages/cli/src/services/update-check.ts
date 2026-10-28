@@ -369,6 +369,18 @@ export class UpdateNotice extends Context.Service<UpdateNotice, UpdateNoticeShap
   );
 }
 
+/**
+ * Refreshes the release cache from GitHub if it is stale; `checkForUpdate` swallows its own
+ * failures. `BackgroundUpdateCheck` forks it detached, so the command that started it neither
+ * waits for it nor interrupts it when it ends. A successful run still ends when the event loop
+ * drains (`src/run-main.ts`), so the request can finish; any other exit ends the process at once.
+ */
+const refreshReleaseCache = Effect.gen(function* () {
+  const stateFile = yield* defaultStateFile;
+  const config = yield* defaultConfig(stateFile);
+  yield* createUpdateChecker(config).checkForUpdate;
+}).pipe(Effect.provide(DefaultConfigLayers));
+
 export type BackgroundUpdateCheckShape = InvocationHookShape;
 
 /**
@@ -382,7 +394,7 @@ export class BackgroundUpdateCheck extends Context.Service<
 >()('services/BackgroundUpdateCheck') {
   static readonly Default: Layer.Layer<BackgroundUpdateCheck> = Layer.succeed(
     BackgroundUpdateCheck,
-    BackgroundUpdateCheck.of({ run: () => Effect.sync(checkForUpdateInBackground) })
+    BackgroundUpdateCheck.of({ run: () => Effect.asVoid(Effect.forkDetach(refreshReleaseCache)) })
   );
 }
 
@@ -412,16 +424,3 @@ export const getUpdateStatus: Effect.Effect<UpdateStatus> = Effect.gen(function*
   const config = yield* defaultConfig(stateFile);
   return yield* createUpdateChecker(config).getUpdateStatus;
 }).pipe(Effect.provide(DefaultConfigLayers));
-
-/** Fire-and-forget background fetch to GitHub. */
-function checkForUpdateInBackground(): void {
-  // Uses a detached runtime so short-lived command handlers do not interrupt the refresh.
-  // runPromiseExit never throws into the caller, and checkForUpdate swallows its own failures.
-  void Effect.runPromiseExit(
-    Effect.gen(function* () {
-      const stateFile = yield* defaultStateFile;
-      const config = yield* defaultConfig(stateFile);
-      yield* createUpdateChecker(config).checkForUpdate;
-    }).pipe(Effect.provide(DefaultConfigLayers))
-  );
-}
