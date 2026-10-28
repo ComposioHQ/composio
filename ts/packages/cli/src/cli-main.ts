@@ -4,16 +4,15 @@
  *
  * Exit codes come from Effect's runtime markers, never `process.exitCode`: a failure that is
  * already on screen (ShowHelp, a command's own report, or a message printed here) carries
- * `[Runtime.errorReported] = false`, so `BunRuntime.runMain` logs nothing, and
- * `Runtime.defaultTeardown` exits with its `[Runtime.errorExitCode]` (1 when unset), 0 on
- * success, and 130 on interruption.
+ * `[Runtime.errorReported] = false`, so the runner logs nothing, and `Runtime.defaultTeardown`
+ * exits with its `[Runtime.errorExitCode]` (1 when unset), or 0 on success. Signals are the
+ * runner's (`src/run-main.ts`): a command a signal cancelled exits 128 + its number.
  */
 import { Cause, ConfigProvider, Effect, Layer, Logger, Option, Runtime } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
@@ -69,6 +68,8 @@ import { ReportedFailure } from 'src/effects/report-failure';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
+import { makeShutdownController, ShutdownSignal } from 'src/services/shutdown-signal';
+import { makeCliRunMain } from 'src/run-main';
 
 // Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
 // produced context and error type while still pinning the requirements (RIn) to `never`.
@@ -181,7 +182,8 @@ const layers = Layer.mergeAll(
 
 /**
  * Whether `reason` has nothing for the catch-all to print: a failure already on screen, or an
- * interruption, which must reach `Runtime.defaultTeardown` untouched to exit 130.
+ * interruption, which must reach the runner untouched: 128 + n after a signal, else 130 from
+ * `Runtime.defaultTeardown`.
  */
 const hasNothingToPrint = (reason: Cause.Reason<unknown>): boolean =>
   Cause.isInterruptReason(reason) ||
@@ -192,9 +194,9 @@ const hasNothingToPrint = (reason: Cause.Reason<unknown>): boolean =>
  * nothing to print (a failure already on screen — `ShowHelp`, which `Command.runWith` printed
  * with any parse/validation errors, a command's own report, or a message printed in
  * `cliProgram` — or an interruption) is re-failed untouched: its `[Runtime.errorReported]` is
- * false, so `BunRuntime.runMain` logs nothing, and `Runtime.defaultTeardown` exits with its
- * `[Runtime.errorExitCode]`, or 130 for interruptions alone. Nothing here may print it, or
- * output doubles.
+ * false, so the runner logs nothing, and `Runtime.defaultTeardown` exits with its
+ * `[Runtime.errorExitCode]`; interruptions alone exit 128 + n after a signal, else 130. Nothing
+ * here may print it, or output doubles.
  */
 export const reportUnreportedCause = Effect.fn(function* (cause: Cause.Cause<unknown>) {
   const unreported = Cause.fromReasons(cause.reasons.filter(reason => !hasNothingToPrint(reason)));
@@ -214,7 +216,7 @@ export const reportUnreportedCause = Effect.fn(function* (cause: Cause.Cause<unk
       return yield* new ReportedFailure({ message });
     }
   }
-  // Nothing printable: keep the original cause so its exit code survives and `runMain` logs
+  // Nothing printable: keep the original cause so its exit code survives and the runner logs
   // whatever is still unreported, instead of exiting 0.
   return yield* Effect.failCause(cause);
 });
@@ -230,7 +232,7 @@ const runWithArgs = (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstra
   Effect.flatMap(runWithConfig, run => run(argv, bootstrap)) as Effect.Effect<
     void,
     unknown,
-    Layer.Success<typeof layers>
+    Layer.Success<typeof layers> | ShutdownSignal
   >;
 
 const runWithTelemetry = (argv: ReadonlyArray<string>) =>
@@ -351,9 +353,12 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
 
 export const runCli = (options: CliBootstrapOptions): void => {
   const debug = readTelemetryDebugOverride(normalizeRunScriptArgs(options.argv));
+  // One per invocation: the runner reports the process's signals to the command through it.
+  const shutdown = makeShutdownController();
   cliProgram(options.argv).pipe(
+    Effect.provideService(ShutdownSignal, shutdown.service),
     effect =>
       debug === undefined ? effect : Effect.provide(effect, telemetryDebugModeLayer(debug)),
-    BunRuntime.runMain({ teardown: Runtime.defaultTeardown })
+    makeCliRunMain(shutdown)()
   );
 };

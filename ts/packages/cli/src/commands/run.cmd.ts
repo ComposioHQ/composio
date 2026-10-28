@@ -4,9 +4,17 @@ import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
-import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
+import { Data, Duration, Effect, Option, Ref, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
-import { ChildProcessExited } from 'src/effects/child-process-exited';
+import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
+import { childExitStatus, type ChildExitStatus } from 'src/effects/child-exit-status';
+import {
+  STOP_SIGNALS,
+  ShutdownSignal,
+  type ShutdownSignalShape,
+  type StopSignal,
+  type TerminationSignal,
+} from 'src/services/shutdown-signal';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { actingUser } from 'src/commands/surface';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
@@ -309,102 +317,112 @@ const resolveRunHelperContext = () =>
   });
 
 /**
- * Signals the CLI forwards to the script it runs. Anything else (SIGHUP, SIGQUIT, …) keeps the
- * platform default: the executor's finalizer still tears the child's process group down.
- */
-const FORWARDED_SIGNALS = ['SIGINT', 'SIGTERM'] as const;
-
-type ForwardedSignal = (typeof FORWARDED_SIGNALS)[number];
-
-/**
- * How long the CLI waits for the script to finish its own signal handling before the platform
- * executor's finalizer sends SIGTERM to the process group.
+ * How long the script gets to handle a forwarded signal before the CLI sends it SIGTERM, and
+ * again before SIGKILL.
  */
 const CHILD_SIGNAL_GRACE_PERIOD = Duration.seconds(2);
 
+/** The first signal the CLI received, and the signals it then sent the script itself. */
+interface Escalation {
+  readonly first: StopSignal;
+  readonly sent: ReadonlyArray<TerminationSignal>;
+}
+
 class ChildSignalError extends Data.TaggedError('ChildSignalError')<{
   readonly pid: number;
-  readonly signal: ForwardedSignal;
+  readonly signal: TerminationSignal;
   readonly cause: unknown;
 }> {}
 
 /**
- * Sends `signal` to the child's process group and reports whether it was delivered.
+ * Sends `signal` to the child's process group.
  *
  * The `effect/process` spawner spawns with `detached: true` on POSIX, so the script leads its
  * own process group and a negative pid is what reaches it (and anything it spawned). Delivery
  * fails with ESRCH when the group is already gone, which is a normal race, not a run failure.
  */
-const signalChildProcessGroup = (pid: number, signal: ForwardedSignal): boolean =>
+const signalChildProcessGroup = (pid: number, signal: TerminationSignal): void => {
   Result.try({
     try: () => process.kill(-pid, signal),
     catch: cause => new ChildSignalError({ pid, signal, cause }),
-  }).pipe(Result.getOrElse(() => false));
+  });
+};
 
 /**
- * Waits for the script to exit, giving up after `duration`.
+ * Hands the CLI's first signal to the script, then makes sure the script ends: SIGTERM after a
+ * grace period, SIGKILL after another. The script decides how the run ends, as it would under a
+ * shell: one that handles SIGINT and exits 0 makes the run succeed.
  *
- * `Effect.timeout` cannot express this here: the wait runs in a release, while the fiber is
- * already interrupted, and the timer `Effect.timeout` forks as a child of that fiber is
- * interrupted along with it — leaving the wait hanging until the script exits on its own.
- * Daemon fibers are detached from the interrupted fiber, so their deadline still fires.
+ * `escalation` records the first signal and each signal the CLI sends of its own, so a script
+ * that one of them killed is reported as cancelled by the first signal rather than by SIGTERM or
+ * SIGKILL.
  */
-const awaitChildExitWithin = (
+const relayStopToChild = (
   child: ChildProcessSpawner.ChildProcessHandle,
-  duration: Duration.Duration
+  pid: number,
+  shutdown: ShutdownSignalShape,
+  escalation: Ref.Ref<Option.Option<Escalation>>
 ) =>
   Effect.gen(function* () {
-    const settled = yield* Deferred.make<void>();
-    const complete = Deferred.succeed(settled, undefined);
-    yield* Effect.forkDetach(Effect.andThen(Effect.ignore(child.exitCode), complete));
-    yield* Effect.forkDetach(Effect.andThen(Effect.sleep(duration), complete));
-    yield* Deferred.await(settled);
+    const signal = yield* shutdown.requested;
+    signalChildProcessGroup(pid, signal);
+    const followUps: ReadonlyArray<TerminationSignal> =
+      signal === 'SIGTERM' ? ['SIGKILL'] : ['SIGTERM', 'SIGKILL'];
+    yield* Effect.forEach(
+      followUps,
+      (next, index) =>
+        Effect.sleep(CHILD_SIGNAL_GRACE_PERIOD).pipe(
+          Effect.andThen(child.isRunning),
+          Effect.flatMap(running =>
+            running
+              ? Ref.set(
+                  escalation,
+                  Option.some({ first: signal, sent: followUps.slice(0, index + 1) })
+                ).pipe(Effect.andThen(Effect.sync(() => signalChildProcessGroup(pid, next))))
+              : Effect.void
+          )
+        ),
+      { discard: true }
+    );
   });
 
 /**
- * Forwards terminal signals to the running script for as long as it is alive.
+ * Waits for the script and reports how it ended, relaying the CLI's signals to it meanwhile.
  *
  * A terminal Ctrl-C only reaches the CLI's process group, so without this the script never
- * observes SIGINT and its `process.on('SIGINT')` cleanup never runs — it is reached later and
- * only as the executor's SIGTERM. Handlers are registered and removed with the scope so they
- * never leak into a later run.
+ * observes SIGINT and its `process.on('SIGINT')` cleanup never runs. The run cooperates on every
+ * signal the runner handles (`ShutdownSignal`): the CLI is not interrupted, it forwards the
+ * signal and mirrors the script's exit. When the CLI's own SIGTERM or SIGKILL ended the script,
+ * the run ends by the first signal instead; a script that dies by any other signal (a SIGABRT in
+ * its cleanup, say) keeps that signal, so its crash stays visible. A second signal kills the
+ * script's process group and re-raises that signal.
  */
-const forwardSignalsToChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
+const superviseChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
-    // Windows has no process groups and the executor does not detach there.
+    // Windows has no process groups and the executor does not detach there: a signal interrupts
+    // the run, and the spawner's finalizer ends the script.
     if (os.platform === 'win32') {
-      return;
+      return yield* childExitStatus(child);
     }
 
+    const shutdown = yield* ShutdownSignal;
     const pid = Number(child.pid);
-    const forwarded = MutableRef.make(false);
-
-    yield* Effect.acquireRelease(
-      Effect.sync(() =>
-        FORWARDED_SIGNALS.map(signal => {
-          const listener = () => {
-            if (signalChildProcessGroup(pid, signal)) {
-              MutableRef.set(forwarded, true);
-            }
-          };
-          process.on(signal, listener);
-          return { signal, listener } as const;
-        })
-      ),
-      listeners =>
-        Effect.sync(() => {
-          for (const { signal, listener } of listeners) {
-            process.removeListener(signal, listener);
-          }
-        }).pipe(
-          Effect.andThen(
-            MutableRef.get(forwarded)
-              ? awaitChildExitWithin(child, CHILD_SIGNAL_GRACE_PERIOD)
-              : Effect.void
-          )
-        )
-    );
+    yield* shutdown.cooperate({
+      signals: STOP_SIGNALS,
+      onForce: () => signalChildProcessGroup(pid, 'SIGKILL'),
+      reraiseOnForce: true,
+    });
+    const escalation = yield* Ref.make(Option.none<Escalation>());
+    yield* Effect.forkScoped(relayStopToChild(child, pid, shutdown, escalation));
+    const status = yield* childExitStatus(child);
+    return Option.match(yield* Ref.get(escalation), {
+      onNone: (): ChildExitStatus => status,
+      onSome: ({ first, sent }): ChildExitStatus =>
+        status.signal !== null && sent.includes(status.signal)
+          ? { code: null, signal: first }
+          : status,
+    });
   });
 
 export const runCmd = Command.make('run', {
@@ -529,7 +547,7 @@ export const runCmd = Command.make('run', {
           preloadPath: preload.preloadPath,
           preloadDirectory: preload.directory,
         });
-        const exitCode = yield* Effect.gen(function* () {
+        const status = yield* Effect.gen(function* () {
           const [executable, ...commandArgs] = runCommand.cmd;
           // Spawning the command (instead of running it to completion) yields the handle whose
           // pid the signal forwarding below needs. `extendEnv` keeps the caller's environment.
@@ -544,8 +562,7 @@ export const runCmd = Command.make('run', {
             stdout: 'inherit',
             stderr: 'inherit',
           });
-          yield* forwardSignalsToChild(child);
-          return Number(yield* child.exitCode);
+          return yield* superviseChild(child);
         }).pipe(
           Effect.scoped,
           Effect.ensuring(
@@ -561,11 +578,14 @@ export const runCmd = Command.make('run', {
             )
           )
         );
-        // The process exits with the child's code. An interrupted run (Ctrl-C) never gets here:
-        // `Runtime.defaultTeardown` exits 130 for it, so wrappers and `set -e` scripts do not
-        // read a cancelled run as a passing one.
-        if (exitCode !== 0) {
-          return yield* new ChildProcessExited({ code: exitCode });
+        // The process ends the way the script did: with its code, or, when a signal ended it,
+        // by the same signal (the runner re-raises it), so wrappers and `set -e` scripts read a
+        // cancelled run as cancelled.
+        if (status.signal !== null) {
+          return yield* new ChildProcessSignaled({ signal: status.signal });
+        }
+        if (status.code !== 0) {
+          return yield* new ChildProcessExited({ code: status.code });
         }
       }).pipe(Effect.scoped)
   )

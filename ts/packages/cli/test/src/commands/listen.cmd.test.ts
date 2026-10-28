@@ -9,6 +9,11 @@ import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
+import {
+  makeShutdownController,
+  ShutdownSignal,
+  type ShutdownController,
+} from 'src/services/shutdown-signal';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
@@ -60,6 +65,35 @@ describe('CLI: composio listen', () => {
           );
           expect(exitCodeOf(exit)).toBe(1);
         })
+      );
+
+      // Still connecting: a signal now interrupts the listener, so the CLI exits 130/143.
+      it.effect(
+        '[When] a signal arrives before the subscription exists [Then] it is not taken',
+        () =>
+          Effect.gen(function* () {
+            yield* enableListen;
+            const shutdown = makeShutdownController();
+            const connecting = Latch.makeUnsafe(false);
+            const neverSubscribes = Layer.succeed(
+              TriggersRealtime,
+              TriggersRealtime.of({
+                listen: () => Effect.never,
+                listenInProject: () => Effect.andThen(connecting.open, Effect.never),
+              })
+            );
+            const fiber = yield* Effect.forkChild(
+              cli(['listen', 'composio.connected_account.expired']).pipe(
+                Effect.provide(Layer.merge(neverSubscribes, redirectedTerminalUI().layer)),
+                Effect.provideService(ShutdownSignal, shutdown.service)
+              )
+            );
+            yield* connecting.await;
+
+            expect(shutdown.offer('SIGINT')).toBe(false);
+            yield* Fiber.interrupt(fiber);
+            expect(exitCodeOf(yield* Fiber.await(fiber))).toBe(130);
+          })
       );
     }
   );
@@ -169,7 +203,10 @@ describe('CLI: composio listen', () => {
 
     // The write failure logs its warn only after it was counted, so the latch is an ordered
     // count-is-set signal — no polling, no sleeps.
-    const listenUntilWriteFails = (args: ReadonlyArray<string>) =>
+    const listenUntilWriteFails = (
+      args: ReadonlyArray<string>,
+      shutdown: ShutdownController = makeShutdownController()
+    ) =>
       Effect.gen(function* () {
         const writeFailed = Latch.makeUnsafe(false);
         const terminal = redirectedTerminalUI({
@@ -179,7 +216,8 @@ describe('CLI: composio listen', () => {
         });
         const fiber = yield* Effect.forkChild(
           cli(['listen', 'composio.connected_account.expired', ...args]).pipe(
-            Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+            Effect.provide(Layer.merge(payloadWritesFail, terminal.layer)),
+            Effect.provideService(ShutdownSignal, shutdown.service)
           )
         );
         yield* writeFailed.await;
@@ -227,8 +265,37 @@ describe('CLI: composio listen', () => {
       })
     );
 
-    // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the release hook must run the
-    // summary anyway.
+    // Ctrl+C or SIGTERM once subscribed: the listener stops itself, runs its release, succeeds.
+    it.effect.each(['SIGINT', 'SIGTERM'] as const)(
+      '[When] %s arrives after the subscription [Then] it stops cleanly, sums up, and exits 0',
+      signal =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const shutdown = makeShutdownController();
+          const { fiber, terminal } = yield* listenUntilWriteFails([], shutdown);
+
+          expect(shutdown.offer(signal)).toBe(true);
+          const exit = yield* Fiber.await(fiber);
+
+          expect(terminal.stderr()).toContain('1 event failed to write while listening.');
+          expect(exitCodeOf(exit)).toBe(0);
+        })
+    );
+
+    // A closed terminal is not a stop the listener handles: the runner interrupts it (129).
+    it.effect('[When] SIGHUP arrives [Then] the listener does not take it', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const shutdown = makeShutdownController();
+        const { fiber } = yield* listenUntilWriteFails([], shutdown);
+
+        expect(shutdown.offer('SIGHUP')).toBe(false);
+        yield* Fiber.interrupt(fiber);
+      })
+    );
+
+    // A signal the listener does not take (before the subscription, or SIGHUP): the runner
+    // interrupts the listener fiber; the release hook must run the summary anyway.
     it.effect('[Then] sums the write failures up even when the listener is interrupted', () =>
       Effect.gen(function* () {
         yield* enableListen;

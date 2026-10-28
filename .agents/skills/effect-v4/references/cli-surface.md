@@ -99,14 +99,15 @@ The CLI's own errors use the same contract. A failure a command already printed
 (`ReportedFailure` from `src/effects/report-failure.ts`, `ReportedToolExecutionError`,
 `ShellSetupAbortError`, `SetupCommandError`, …) or that carries a custom code
 (`ChildProcessExited` from `composio run`) declares the markers as getters, and
-`ts/packages/cli/src/cli-main.ts` runs with `Runtime.defaultTeardown`, which exits 0 on
-success, 130 on interruption alone, and otherwise with the squashed failure's
-`errorExitCode` (1 when unset). Nothing in `src/` assigns `process.exitCode`.
+the CLI's runner (`ts/packages/cli/src/run-main.ts`, built on `Runtime.makeRunMain`) exits
+through `Runtime.defaultTeardown`: 0 on success, and otherwise with the squashed failure's
+`errorExitCode` (1 when unset). An exit made of interruptions alone after a signal is 128 + the
+signal's number instead (130, 143, 129). Nothing in `src/` assigns `process.exitCode`.
 
 `cli-main.ts`'s sandboxed catch-all handler drops every failure whose `errorReported` is
 false (`ShowHelp` included) from the cause; when nothing is left it re-fails with the
 original `Cause` via `Effect.failCause(cause)`, so the failure reaches
-`BunRuntime.runMain` untouched and the markers take over. If you add rendering anywhere in
+the runner untouched and the markers take over. If you add rendering anywhere in
 this path, you will double-print — this is the single most important rule when touching
 the runner. Whatever is left is a genuine defect, captured via `effect-errors`, printed,
 and re-failed as a `ReportedFailure`; `Command.runWith` never renders that path, so

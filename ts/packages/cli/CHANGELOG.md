@@ -4,6 +4,22 @@
 
 ### Minor Changes
 
+- A signal now ends each command the way its work ends. A one-shot command,
+  `composio login` and `composio upgrade` stopped with Ctrl-C (SIGINT), SIGTERM
+  or a closed terminal (SIGHUP) exit 130, 143 or 129. They used to exit 0, so a
+  wrapper or `set -e` script read a cancelled command as a successful one.
+  `composio listen` and `composio dev triggers listen` (`composio dev listen`)
+  treat Ctrl-C and SIGTERM as the way to stop them once subscribed: they
+  disable the temporary trigger, print their summary, and exit 0. A signal
+  before the subscription is confirmed, or SIGHUP, exits 130, 143 or 129 instead.
+  `composio run` forwards SIGINT, SIGTERM and SIGHUP to its script and ends the
+  way the script did: with its exit code, or killed by the same signal. A
+  script still running 2 seconds later gets SIGTERM, then SIGKILL; a script the
+  CLI had to kill this way ends the CLI by the signal it received. A second
+  signal, or a stop that takes longer than 10 seconds, ends the CLI at once:
+  128 plus the signal's number, or, for `composio run`, the script's process
+  group is killed and the CLI is killed by that signal.
+
 - `composio dev connected-accounts link <toolkit>` (with or without `--list`)
   now acts on your developer project, like the other `composio dev` commands:
   the directory's project, or the one `--project-name` names. It links or lists
@@ -68,10 +84,7 @@
   `""`. `composio run` starts the script without the consumer user's context,
   as it does when there is no consumer user.
 
-- Stopping any command with Ctrl-C (SIGINT) or SIGTERM now exits 130, as
-  `composio run` already did. Other commands, `composio listen` among them,
-  used to exit 0, so a wrapper or `set -e` script read a cancelled command as a
-  successful one. CLI telemetry now records a command that prints its own
+- CLI telemetry now records a command that prints its own
   failure and exits 1 (a failed API request, an alias conflict on
   `composio link`, a `--fail-fast` listener stop) as failed instead of
   succeeded, and a `composio run` whose script exits non-zero as

@@ -4,6 +4,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
+import { makeShutdownController, ShutdownSignal } from 'src/services/shutdown-signal';
 import { cli, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
@@ -139,9 +140,41 @@ describe('CLI: composio dev listen', () => {
       })
     );
 
-    // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the onExit finalizer must run the
-    // summary anyway. The forwarding failure logs its warn only after the failure was counted,
-    // so awaiting the latch is an ordered count-is-set signal — no polling, no sleeps.
+    // Ctrl+C or SIGTERM once subscribed: the listener stops itself, sums up, and succeeds. The
+    // forwarding failure logs its warn only after the failure was counted, so awaiting the latch
+    // is an ordered count-is-set signal — no polling, no sleeps.
+    it.effect.each(['SIGINT', 'SIGTERM'] as const)(
+      '[When] %s arrives after the subscription [Then] it stops cleanly, sums up, and exits 0',
+      signal =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const shutdown = makeShutdownController();
+          const forwardFailed = Latch.makeUnsafe(false);
+          const terminal = redirectedTerminalUI({
+            onWarn: message => {
+              if (message.includes('Failed forwarding event to')) forwardFailed.openUnsafe();
+            },
+          });
+          const fiber = yield* Effect.forkChild(
+            cli(['dev', 'listen', '--forward', 'http://']).pipe(
+              Effect.provide(terminal.layer),
+              Effect.provideService(ShutdownSignal, shutdown.service)
+            )
+          );
+
+          yield* forwardFailed.await;
+          expect(shutdown.offer(signal)).toBe(true);
+          const exit = yield* Fiber.await(fiber);
+
+          expect(terminal.stderr()).toContain(
+            '1 event failed to forward to http:// while listening.'
+          );
+          expect(exitCodeOf(exit)).toBe(0);
+        })
+    );
+
+    // A signal the listener does not take (before the subscription, or SIGHUP): the runner
+    // interrupts the listener fiber; the onExit finalizer must run the summary anyway.
     it.effect('[Then] sums the failures up even when the listener is interrupted mid-run', () =>
       Effect.gen(function* () {
         yield* enableListen;
