@@ -113,11 +113,11 @@ class TestGeminiProviderInitialization:
         assert provider.name == "gemini"
         assert isinstance(provider, AgenticProvider)
 
-    def test_has_empty_executors_on_init(self):
+    def test_has_no_wrapped_tools_on_init(self):
         from composio_gemini import GeminiProvider
 
         provider = GeminiProvider()
-        assert provider._executors == {}
+        assert provider._wrapped_tools == {}
 
 
 # ---------------------------------------------------------------------------
@@ -226,8 +226,9 @@ class TestWrapTool:
         execute_tool = create_mock_execute_tool()
         provider.wrap_tool(tool, execute_tool)
 
-        assert provider._executors == {execute_tool: {"GITHUB_STAR_REPO": execute_tool}}
-        assert "GITHUB_STAR_REPO" in provider._schemas
+        assert list(provider._wrapped_tools) == [execute_tool]
+        wrapped = provider._wrapped_tools[execute_tool]["GITHUB_STAR_REPO"]
+        assert wrapped.execute_tool is execute_tool
 
     def test_callable_executes_correctly(self):
         from composio_gemini import GeminiProvider
@@ -523,7 +524,7 @@ class TestWrapTools:
         execute_tool = create_mock_execute_tool()
         provider.wrap_tools(tools, execute_tool)
 
-        assert set(provider._executors[execute_tool]) == {
+        assert set(provider._wrapped_tools[execute_tool]) == {
             "GITHUB_STAR_REPO",
             "GMAIL_SEND_EMAIL",
         }
@@ -1067,6 +1068,22 @@ class TestHandleResponseUser:
         ]
         with pytest.raises(ValueError, match="user_id="):
             composio.provider.handle_response(self._response(self.GMAIL))
+
+    def test_call_is_validated_with_its_own_users_schema(self, composio):
+        """Each user's schema modifiers check that user's calls (review of #5120)."""
+        from composio import schema_modifier
+
+        @schema_modifier(tools=[self.GMAIL])
+        def starred_only(tool: str, toolkit: str, schema: Tool) -> Tool:
+            schema.input_parameters["properties"]["query"]["enum"] = ["is:starred"]
+            return schema
+
+        composio.tools.get(user_id="alice", tools=[self.GMAIL])
+        composio.tools.get(user_id="bob", tools=[self.GMAIL], modifiers=[starred_only])
+
+        assert self._executed_for(composio, self.GMAIL, user_id="alice") == ["alice"]
+        with pytest.raises(ValueError, match="is:starred"):
+            composio.provider.handle_response(self._response(self.GMAIL), user_id="bob")
 
     def test_session_runs_through_its_own_executor(self, composio):
         """``session=`` keeps the routing ``session.tools()`` installed, which

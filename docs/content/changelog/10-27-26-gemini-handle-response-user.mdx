@@ -8,7 +8,7 @@ With Automatic Function Calling turned off, `GeminiProvider.handle_response(resp
 
 ### Bug Fixes
 
-- **Gemini** (`composio-gemini`): `handle_response` accepts `user_id=` or `session=`, with the same names as `GoogleProvider.handle_response` in `composio-google`. Each call runs exactly as the tool fetched for that user or Tool Router session would: with the modifiers given to `tools.get()`, and through the session's routing, so local custom tools in a `COMPOSIO_MULTI_EXECUTE_TOOL` batch run in process.
+- **Gemini** (`composio-gemini`): `handle_response` accepts `user_id=` or `session=`, with the same names as `GoogleProvider.handle_response` in `composio-google`. Each call runs exactly as the tool fetched for that user or Tool Router session would: validated against the schema from that fetch (including its schema modifiers), with the modifiers given to `tools.get()`, and through the session's routing, so local custom tools in a `COMPOSIO_MULTI_EXECUTE_TOOL` batch run in process.
 - Without a user or session, `handle_response` keeps working for a process that has fetched tools for a single user or session. Once the provider has wrapped tools for more than one, it raises a `ValueError` instead of picking one, and executes nothing.
 
 **Before:**

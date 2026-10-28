@@ -124,6 +124,19 @@ def _execution_context(execute_tool: AgenticProviderExecuteFn) -> object:
     return execute_tool if target is None else target
 
 
+class _WrappedTool(t.NamedTuple):
+    """How one fetch wrapped a tool: the argument schema it built and the
+    execute function of the user or session it was fetched for.
+
+    They are stored together because schema modifiers can differ per fetch, so
+    a call must be validated with the schema of the fetch whose executor runs it.
+    """
+
+    execute_tool: AgenticProviderExecuteFn
+    aliases: ToolSchemaAliases
+    args_schema: t.Type[BaseModel]
+
+
 def _process_execution_result(result: t.Any) -> t.Dict:
     """Process a tool execution result into a dict suitable for Gemini function responses."""
     if not isinstance(result, dict):
@@ -158,12 +171,10 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # Guards the registries below: tools can be fetched on one thread while
         # ``handle_response`` reads them on another.
         self._lock = threading.Lock()
-        # Argument schema per slug, shared by every user.
-        self._schemas: t.Dict[str, t.Tuple[ToolSchemaAliases, t.Type[BaseModel]]] = {}
-        # Execute function per slug, for each user ID or session the tools
-        # were fetched for, so ``handle_response`` runs a call as the caller's
-        # user rather than whoever fetched the tool last.
-        self._executors: t.Dict[object, t.Dict[str, AgenticProviderExecuteFn]] = {}
+        # Wrapped tool per slug, for each user ID or session the tools were
+        # fetched for, so ``handle_response`` runs a call as the caller's user,
+        # with the caller's schema, rather than whoever fetched the tool last.
+        self._wrapped_tools: t.Dict[object, t.Dict[str, _WrappedTool]] = {}
 
     def wrap_tool(
         self,
@@ -185,8 +196,9 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         args_schema = json_schema_to_model(aliases.schema, skip_default=False)
         context = _execution_context(execute_tool)
         with self._lock:
-            self._schemas[tool.slug] = (aliases, args_schema)
-            self._executors.setdefault(context, {})[tool.slug] = execute_tool
+            self._wrapped_tools.setdefault(context, {})[tool.slug] = _WrappedTool(
+                execute_tool, aliases, args_schema
+            )
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
@@ -297,18 +309,21 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             if hasattr(part, "function_call") and part.function_call
         ]
 
-        # Pick every executor and schema before running any call, so a
-        # concurrent fetch cannot change who a later call in this response
-        # runs as.
+        # Pick every wrapped tool before running any call, so a concurrent
+        # fetch cannot change who a later call in this response runs as, or
+        # which schema checks it.
         with self._lock:
-            known_calls = [fc for fc in function_calls if fc.name in self._schemas]
-            if not known_calls:
+            if not any(
+                fc.name in wrapped
+                for fc in function_calls
+                for wrapped in self._wrapped_tools.values()
+            ):
                 return [], False
-            executors = self._executors_for(target)
+            wrapped_tools = self._wrapped_tools_for(target)
             calls = [
-                (fc, executors[fc.name], *self._schemas[fc.name])
-                for fc in known_calls
-                if fc.name in executors
+                (fc, *wrapped_tools[fc.name])
+                for fc in function_calls
+                if fc.name in wrapped_tools
             ]
 
         function_responses: list = []
@@ -332,13 +347,13 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
 
         return function_responses, bool(function_responses)
 
-    def _executors_for(
+    def _wrapped_tools_for(
         self,
         target: t.Optional[ToolCallExecutionTarget],
-    ) -> t.Dict[str, AgenticProviderExecuteFn]:
-        """Return the execute functions for *target*. Call with the lock held."""
+    ) -> t.Dict[str, _WrappedTool]:
+        """Return the tools wrapped for *target*. Call with the lock held."""
         if target is None:
-            if len(self._executors) > 1:
+            if len(self._wrapped_tools) > 1:
                 raise ValueError(
                     "This provider has wrapped tools for more than one user or "
                     "session, so the user to execute the response as is "
@@ -346,14 +361,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                     "handle_response(response, user_id=...) or "
                     "handle_response(response, session=...)."
                 )
-            return next(iter(self._executors.values()), {})
+            return next(iter(self._wrapped_tools.values()), {})
 
-        executors = self._executors.get(target)
-        if executors is None:
+        wrapped_tools = self._wrapped_tools.get(target)
+        if wrapped_tools is None:
             source = (
                 "composio.tools.get() for this user_id"
                 if isinstance(target, str)
                 else "this session's tools()"
             )
             raise ValueError(f"This provider has not wrapped any tools from {source}.")
-        return executors
+        return wrapped_tools
