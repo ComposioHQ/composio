@@ -638,6 +638,9 @@ describe('expected failures without the crash banner', () => {
         })
       : fakeComposio(req, res);
 
+  /** Every root-tree command without a consumer user says this. */
+  const ROOT_MISSING_USER = 'Missing consumer user id. Run `composio login` and try again.';
+
   const notConnected = (toolkit: string) =>
     `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
 
@@ -669,8 +672,59 @@ describe('expected failures without the crash banner', () => {
       ],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'ProxyCommandError',
-      message: 'No consumer project user is available for proxy execution in this context.',
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // An empty consumer user id is no user; these commands used to act as the user "", and
+    // told a consumer to pass --user-id, which the root tree does not take.
+    {
+      name: '`execute` without a consumer user',
+      args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`search` without a consumer user',
+      args: ['search', 'send an email'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`link` without a consumer user',
+      args: ['link', 'gmail', '--no-wait'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // These printed the defect banner for a missing consumer user.
+    {
+      name: '`connections list` without a consumer user',
+      args: ['connections', 'list'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`connections remove` without a consumer user',
+      args: ['connections', 'remove', 'gmail', '--yes'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`listen` without a consumer user',
+      args: ['listen', 'GMAIL_NEW_GMAIL_MESSAGE'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
     },
   ])(
     '[Given] $name [Then] prints the message without the banner and exits 1',

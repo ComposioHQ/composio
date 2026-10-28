@@ -7,7 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { reportFailure } from 'src/effects/report-failure';
 import { commandInputError } from 'src/commands/errors';
-import { actingUserOption, fallbackNotice } from 'src/commands/surface';
+import { actingUserOption } from 'src/commands/surface';
 import { BROWSE_TOOLKITS_HINT, formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
@@ -49,13 +49,11 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
     );
     const resolvedUserId = Option.map(acting, found => found.userId);
 
-    // The acting-user helpers leave the test-user notice to the command, so print it here.
-    yield* Option.match(acting, {
-      onSome: found =>
-        Effect.transposeOption(Option.map(fallbackNotice(found), notice => ui.log.warn(notice))),
-      onNone: () =>
-        ui.log.info('No test user id found; showing toolkit details without connection status.'),
-    });
+    if (Option.isNone(acting)) {
+      yield* ui.log.info(
+        'No test user id found; showing toolkit details without connection status.'
+      );
+    }
 
     const resultOpt = yield* ui
       .withSpinner(

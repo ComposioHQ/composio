@@ -29,7 +29,6 @@ type TriggerCreateParams = NonNullable<
 
 export class ListenCommandError extends Data.TaggedError('commands/ListenCommandError')<{
   readonly reason:
-    | 'project_context'
     | 'connected_account_not_found'
     | 'unknown_trigger'
     | 'create_trigger'
@@ -461,21 +460,6 @@ const resolveListenSetup = (params: {
     };
   });
 
-/** The consumer user `listen` subscribes as, with the consumer project. */
-const listenActingUser = (slug: string) =>
-  actingUser({
-    // Keep the command's own missing-user message rather than the tree's default.
-    missingUserMessage: () => 'No consumer user is available in the current project context.',
-  }).pipe(
-    // Re-fail with the command's own error, not the expected `MissingActingUserError`: it has
-    // always failed with it as a defect, and `cli.command.failed` keeps its `error_name`.
-    Effect.catchTag('commands/MissingActingUserError', error =>
-      Effect.fail(
-        new ListenCommandError({ reason: 'project_context', message: error.message, slug })
-      )
-    )
-  );
-
 export const listenCmd = Command.make(
   'listen',
   { slug, params, maxEvents, timeout, stream, account, failFast, debug },
@@ -487,7 +471,7 @@ export const listenCmd = Command.make(
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
-      const { userId: actingUserId, project: resolvedProject } = yield* listenActingUser(slug);
+      const { userId: actingUserId, project: resolvedProject } = yield* actingUser();
 
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,

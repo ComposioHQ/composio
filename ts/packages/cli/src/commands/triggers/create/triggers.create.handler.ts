@@ -1,6 +1,6 @@
 import { Effect, Match, Option, Result } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { actingUserOption, fallbackNotice } from 'src/commands/surface';
+import { actingUserOption } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -72,15 +72,10 @@ export const runTriggersCreate = ({
       return yield* invalidTriggerConfig(parsedTriggerConfig.failure);
     }
 
-    // The group rejects --project-name, so this is the directory's project.
+    // The group rejects --project-name, so this is the directory's project. A defaulted user id
+    // must own the connected account on a 2FA project; `actingUserOption` names it on stderr.
     const acting = yield* actingUserOption();
     const resolvedUserId = Option.map(acting, found => found.userId);
-
-    // A defaulted user id must own the connected account on a 2FA project, so name it.
-    // The acting-user helpers leave the test-user notice to the command, so print it here.
-    yield* Effect.transposeOption(
-      Option.map(Option.flatMap(acting, fallbackNotice), notice => ui.log.warn(notice))
-    );
 
     const createdOpt = yield* ui
       .withSpinner(

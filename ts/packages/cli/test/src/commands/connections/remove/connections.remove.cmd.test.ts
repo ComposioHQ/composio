@@ -3,7 +3,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { MissingConnectionRemovalConsumerUserIdError } from 'src/commands/connections/remove/connections.remove.errors';
+import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
@@ -370,16 +370,15 @@ describe('CLI: composio connections remove', () => {
     })
   )(it => {
     it.effect(
-      '[Given] an empty consumer user id [Then] fails with the command defect and its message',
+      '[Given] an empty consumer user id [Then] fails with the missing-user error and its message',
       () =>
         Effect.gen(function* () {
           const userContext = yield* ComposioUserContext;
           yield* userContext.login('test_api_key', 'org_test');
           const failure = yield* cli(['connections', 'remove', 'gmail', '--yes']).pipe(Effect.flip);
 
-          // The removal has always failed with this class as a defect, so `actingUser`'s
-          // expected failure is re-tagged; the tag and the message are both load-bearing.
-          expect(failure).toBeInstanceOf(MissingConnectionRemovalConsumerUserIdError);
+          // An empty id counts as no user, so the removal fails before resolving any account.
+          expect(failure).toBeInstanceOf(MissingActingUserError);
           expect(failure).toMatchObject({
             message: 'Missing consumer user id. Run `composio login` and try again.',
           });

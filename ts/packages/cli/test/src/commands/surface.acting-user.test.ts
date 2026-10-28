@@ -7,16 +7,17 @@ import {
   CommandSurface,
   fallbackNotice,
   MissingActingUserError,
-  type ActingUserOptions,
   type ActingUserSource,
   type CommandTree,
 } from 'src/commands/surface';
 import type { ProjectKeys } from 'src/models/project-keys';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { mockAccountResources } from 'test/__utils__/layers/accounts';
 import { makeOrgProject } from 'test/__utils__/models/account';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const ORG_ID = 'org_test';
 const CONSUMER_USER_ID = `consumer-user-${ORG_ID}`;
@@ -50,7 +51,8 @@ const PROJECT_NAMES: Record<ProjectName, Option.Option<string>> = {
   other: Option.some('other'),
 };
 
-const actingUserLayer = (fixture: Fixture) => {
+/** `warnings` collects what the code under test warns on stderr. */
+const actingUserLayer = (fixture: Fixture, warnings: Array<string>) => {
   const has = (candidate: Exclude<Candidates, 'none'>) =>
     CANDIDATE_ORDER.indexOf(candidate) >= CANDIDATE_ORDER.indexOf(fixture.candidates);
   const directory: ProjectKeys = {
@@ -86,6 +88,16 @@ const actingUserLayer = (fixture: Fixture) => {
   } as unknown as ComposioClientShape;
 
   return Layer.mergeAll(
+    Layer.succeed(
+      TerminalUI,
+      TerminalUI.of({
+        ...terminalUITestImpl,
+        log: {
+          ...terminalUITestImpl.log,
+          warn: message => Effect.sync(() => warnings.push(message)),
+        },
+      })
+    ),
     Layer.succeed(
       CommandSurface,
       CommandSurface.of({
@@ -171,17 +183,26 @@ const cases = TREES.flatMap(tree =>
 const run = <
   A,
   E,
-  R extends CommandSurface | ComposioUserContext | ProjectContext | ComposioClientSingleton,
+  R extends
+    CommandSurface | ComposioUserContext | ProjectContext | ComposioClientSingleton | TerminalUI,
 >(
   effect: Effect.Effect<A, E, R>,
-  fixture: Fixture
-) => effect.pipe(Effect.provide(actingUserLayer(fixture)));
+  fixture: Fixture,
+  warnings: Array<string> = []
+) => effect.pipe(Effect.provide(actingUserLayer(fixture, warnings)));
+
+/** The notice printed for the rule's user: one line for a test user standing in, else none. */
+const expectedNotices = (fixture: Fixture) =>
+  Option.toArray(Option.flatMap(expectedUser(fixture), fallbackNotice));
 
 describe('actingUser', () => {
   it.effect.each(cases)('[Given] $name [Then] acts as the rule’s user', fixture =>
     Effect.gen(function* () {
-      const result = yield* run(Effect.result(actingUser()), fixture);
+      const warnings: Array<string> = [];
+      const result = yield* run(Effect.result(actingUser()), fixture, warnings);
       const expected = expectedUser(fixture);
+
+      expect(warnings).toEqual(expectedNotices(fixture));
 
       if (Option.isNone(expected)) {
         expect(result).toMatchObject({ failure: { _tag: 'commands/MissingActingUserError' } });
@@ -226,124 +247,42 @@ describe('actingUser', () => {
         expect(error).toMatchObject({ tree, projectName: PROJECT_NAMES[projectName], message });
       })
   );
-
-  it.effect('[Given] a command’s own message [Then] fails with it, given --project-name', () =>
-    Effect.gen(function* () {
-      const error = yield* run(
-        Effect.flip(
-          actingUser({
-            missingUserMessage: name => `No user for ${Option.getOrElse(name, () => 'none')}.`,
-          })
-        ),
-        { tree: 'dev', projectName: 'other', candidates: 'none' }
-      );
-
-      expect(error).toMatchObject({ message: 'No user for other.' });
-    })
-  );
-
-  it.effect.each([
-    {
-      name: 'the consumer project without --project-name ignores --user-id',
-      options: { legacy: { consumerWithoutProjectName: true } },
-      fixture: { tree: 'dev', candidates: 'flag', projectName: 'absent' },
-      expected: { userId: CONSUMER_USER_ID, source: 'consumer', projectId: CONSUMER_PROJECT_ID },
-    },
-    {
-      name: 'the consumer project still yields to --project-name',
-      options: { legacy: { consumerWithoutProjectName: true } },
-      fixture: { tree: 'dev', candidates: 'directory', projectName: 'same' },
-      expected: {
-        userId: 'directory-user',
-        source: 'directory-test-user',
-        projectId: DIRECTORY_PROJECT_ID,
-      },
-    },
-    {
-      name: 'skipping the directory test user falls back to the global one',
-      options: { legacy: { skipDirectoryTestUser: true } },
-      fixture: { tree: 'dev', candidates: 'directory', projectName: 'same' },
-      expected: {
-        userId: 'global-user',
-        source: 'global-test-user',
-        projectId: DIRECTORY_PROJECT_ID,
-      },
-    },
-  ] satisfies ReadonlyArray<{
-    name: string;
-    options: ActingUserOptions;
-    fixture: Fixture;
-    expected: { userId: string; source: ActingUserSource; projectId: string };
-  }>)('[Given] legacy: $name', ({ options, fixture, expected }) =>
-    Effect.gen(function* () {
-      const user = yield* run(actingUser(options), fixture);
-
-      expect(user).toMatchObject({
-        userId: expected.userId,
-        source: expected.source,
-        project: { projectId: expected.projectId },
-      });
-    })
-  );
 });
 
-// Commands passing `acceptEmptyConsumerUserId` count an empty consumer user id as a user.
+// `execute`, `search`, `link` and `run` used to accept an empty consumer user id as the user.
 describe('an empty consumer user id', () => {
-  const ACCEPT_EMPTY = { legacy: { acceptEmptyConsumerUserId: true } } satisfies ActingUserOptions;
-  const sites = [
-    { sites: 'execute, search, link, run', options: ACCEPT_EMPTY, tree: 'root', accepted: true },
-    {
-      sites: 'link on the dev tree without --project-name',
-      options: { legacy: { ...ACCEPT_EMPTY.legacy, consumerWithoutProjectName: true } },
-      tree: 'dev',
-      accepted: true,
-    },
-    { sites: 'connections list/remove, listen, proxy', options: {}, tree: 'root', accepted: false },
-  ] satisfies ReadonlyArray<{
-    sites: string;
-    options: ActingUserOptions;
-    tree: CommandTree;
-    accepted: boolean;
-  }>;
-  const fixture = (tree: CommandTree): Fixture => ({
-    tree,
+  const fixture: Fixture = {
+    tree: 'root',
     candidates: 'flag',
     projectName: 'absent',
     consumerUserId: '',
-  });
+  };
 
-  it.effect.each(sites)(
-    '[Given] $sites [Then] actingUser accepts it: $accepted',
-    ({ options, tree, accepted }) =>
-      Effect.gen(function* () {
-        const result = yield* run(Effect.result(actingUser(options)), fixture(tree));
+  it.effect('[Given] an empty consumer user id [Then] actingUser fails as missing', () =>
+    Effect.gen(function* () {
+      const error = yield* run(Effect.flip(actingUser()), fixture);
 
-        expect(result).toMatchObject(
-          accepted
-            ? { success: { userId: '', source: 'consumer' } }
-            : { failure: { _tag: 'commands/MissingActingUserError' } }
-        );
-      })
+      expect(error).toBeInstanceOf(MissingActingUserError);
+    })
   );
 
-  it.effect.each(sites)(
-    '[Given] $sites [Then] actingUserOption finds it: $accepted',
-    ({ options, tree, accepted }) =>
-      Effect.gen(function* () {
-        const user = yield* run(actingUserOption(options), fixture(tree));
+  it.effect('[Given] an empty consumer user id [Then] actingUserOption finds none', () =>
+    Effect.gen(function* () {
+      const user = yield* run(actingUserOption(), fixture);
 
-        expect(Option.map(user, ({ userId, source }) => ({ userId, source }))).toEqual(
-          accepted ? Option.some({ userId: '', source: 'consumer' }) : Option.none()
-        );
-      })
+      expect(user).toEqual(Option.none());
+    })
   );
 });
 
 describe('actingUserOption', () => {
   it.effect.each(cases)('[Given] $name [Then] finds the rule’s user, or none', fixture =>
     Effect.gen(function* () {
-      const user = yield* run(actingUserOption(), fixture);
+      const warnings: Array<string> = [];
+      const user = yield* run(actingUserOption(), fixture, warnings);
       const expected = expectedUser(fixture);
+
+      expect(warnings).toEqual(expectedNotices(fixture));
       // Only the project --project-name names is resolved on the dev tree.
       const project =
         fixture.tree === 'dev' && fixture.projectName === 'absent'

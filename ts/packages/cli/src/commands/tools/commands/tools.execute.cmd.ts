@@ -136,12 +136,12 @@ const invalidArguments = commandInputError('execute');
 // union from scattered constructor calls, so a new reason is added here next to its first use.
 
 /**
- * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
- * id to run it for, or (with `--parallel`) a toolkit the user has not connected. An expected
+ * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, or (with
+ * `--parallel`) a toolkit the user has not connected. An expected
  * failure: `cli-main.ts` prints the message and exits 1.
  */
 export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
-  readonly reason: 'file_input' | 'missing_user_id' | 'connection_check';
+  readonly reason: 'file_input' | 'connection_check';
   readonly message: string;
   readonly toolSlug?: string;
 }> {
@@ -862,7 +862,11 @@ const emitCachedSchema = (
     );
   });
 
-const resolveExecuteContext = (params: RunToolsExecuteParams) =>
+const resolveExecuteContext = (
+  params: RunToolsExecuteParams,
+  /** The acting user; `--parallel` resolves it once for all its tools. */
+  user: ReturnType<typeof actingUser> = actingUser()
+) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const executor = yield* ToolsExecutor;
@@ -870,29 +874,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
-    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser(
-      params.surface === 'root'
-        ? {
-            // As before `actingUser`, an empty consumer user id still counts as a user.
-            legacy: { acceptEmptyConsumerUserId: true },
-            // Keep the earlier message, which mentions --user-id, over the root tree's default.
-            missingUserMessage: () =>
-              'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-          }
-        : {}
-    ).pipe(
-      // Re-fail with the `ToolExecutionError` the command has always failed with, so
-      // `cli.command.failed` keeps reporting it as `error_name`.
-      Effect.catchTag('commands/MissingActingUserError', error =>
-        Effect.fail(
-          new ToolExecutionError({
-            reason: 'missing_user_id',
-            toolSlug: params.slug,
-            message: error.message,
-          })
-        )
-      )
-    );
+    const { userId: resolvedUserId, project: resolvedProject } = yield* user;
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
@@ -1702,23 +1684,29 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       return yield* runParallelSchemaFetchFromParsed(params);
     }
 
+    // Resolved once, so a test user's notice prints once; each tool still fails on its own
+    // input before it fails on a missing user.
+    const user = Effect.fromResult(yield* Effect.result(actingUser()));
     const contexts = yield* Effect.forEach(
       params.specs,
       spec =>
-        resolveExecuteContext({
-          slug: spec.slug,
-          data: spec.data,
-          file: Option.none(),
-          account: spec.account,
-          projectName: params.projectName,
-          surface: params.surface,
-          projectMode: params.projectMode,
-          getSchema: params.getSchema,
-          dryRun: params.dryRun,
-          skipConnectionCheck: params.skipConnectionCheck,
-          skipToolParamsCheck: params.skipToolParamsCheck,
-          skipChecks: params.skipChecks,
-        }),
+        resolveExecuteContext(
+          {
+            slug: spec.slug,
+            data: spec.data,
+            file: Option.none(),
+            account: spec.account,
+            projectName: params.projectName,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            getSchema: params.getSchema,
+            dryRun: params.dryRun,
+            skipConnectionCheck: params.skipConnectionCheck,
+            skipToolParamsCheck: params.skipToolParamsCheck,
+            skipChecks: params.skipChecks,
+          },
+          user
+        ),
       { concurrency: 'unbounded' }
     );
     const entries = contexts.map((context, index) => ({

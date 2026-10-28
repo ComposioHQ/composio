@@ -12,6 +12,7 @@ import { clearInProcessMemos } from 'src/utils/memoize-in-process';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as composioAccount from 'src/services/composio-account';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
+import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
@@ -3458,15 +3459,13 @@ describe('CLI: composio execute without a resolvable acting user', () => {
       accountData: { consumerUserId: null },
     })
   )('[Given] the consumer project has no user id at all [Then] the root tree fails', it => {
-    it.effect('[Then] the missing_user_id failure carries the root message', () =>
+    it.effect('[Then] the missing-user error carries the root message', () =>
       Effect.gen(function* () {
         const failure = yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{}']).pipe(Effect.flip);
 
+        expect(failure).toBeInstanceOf(MissingActingUserError);
         expect(failure).toMatchObject({
-          _tag: 'ToolExecutionError',
-          reason: 'missing_user_id',
-          message:
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+          message: 'Missing consumer user id. Run `composio login` and try again.',
         });
       })
     );
@@ -3484,7 +3483,7 @@ describe('CLI: composio execute without a resolvable acting user', () => {
       stdin: { isTTY: true, data: '' },
     })
   )('[Given] a directory project and no user candidates [Then] the dev tree fails', it => {
-    it.effect('[Then] the missing_user_id failure carries the dev message', () =>
+    it.effect('[Then] the missing-user error carries the dev message', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
@@ -3496,9 +3495,8 @@ describe('CLI: composio execute without a resolvable acting user', () => {
           '{}',
         ]).pipe(Effect.flip);
 
+        expect(failure).toBeInstanceOf(MissingActingUserError);
         expect(failure).toMatchObject({
-          _tag: 'ToolExecutionError',
-          reason: 'missing_user_id',
           message:
             'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
         });
@@ -3513,19 +3511,21 @@ describe('CLI: composio execute without a resolvable acting user', () => {
       stdin: { isTTY: true, data: '' },
       accountData: { consumerUserId: '' },
     })
-  )('[Given] an empty consumer user id [Then] the root tree accepts it as the user', it => {
-    it.effect('[Then] the execution runs and reports success', () =>
+  )('[Given] an empty consumer user id [Then] the root tree treats it as no user', it => {
+    it.effect('[Then] the execution fails with the missing-user error', () =>
       Effect.gen(function* () {
-        yield* cli([
+        const failure = yield* cli([
           'execute',
           'GMAIL_SEND_EMAIL',
           '--skip-connection-check',
           '-d',
           '{"recipient":"a"}',
-        ]);
-        const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
+        ]).pipe(Effect.flip);
 
-        expect(output.successful).toBe(true);
+        expect(failure).toBeInstanceOf(MissingActingUserError);
+        expect(failure).toMatchObject({
+          message: 'Missing consumer user id. Run `composio login` and try again.',
+        });
       })
     );
   });

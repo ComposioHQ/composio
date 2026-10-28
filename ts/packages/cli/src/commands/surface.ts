@@ -8,6 +8,7 @@ import {
   type ResolvedCommandProject,
 } from 'src/services/command-project';
 import { ProjectContext } from 'src/services/project-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 
 /** The command tree a command was invoked from. */
@@ -82,43 +83,19 @@ export class MissingActingUserError extends Data.TaggedError('commands/MissingAc
 }
 
 /**
- * The missing-user message for a command, given its `--project-name`. With the flag the
- * directory's test user does not carry over to another project, so the message points at
- * `--user-id` and `composio login` instead of `composio dev init`.
+ * The missing-user message for the tree. On the dev tree with `--project-name` the directory's
+ * test user does not carry over to another project, so it points at `--user-id` and
+ * `composio login` instead of `composio dev init`.
  */
-export const missingUserIdMessage = (projectName: Option.Option<string>, otherwise: string) =>
-  Option.match(projectName, {
-    onNone: () => otherwise,
-    onSome: () =>
-      'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
-  });
-
-const defaultMissingUserMessage =
-  (tree: CommandTree) =>
-  (projectName: Option.Option<string>): string =>
-    tree === 'root'
-      ? 'Missing consumer user id. Run `composio login` and try again.'
-      : missingUserIdMessage(
-          projectName,
-          'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-        );
-
-export interface ActingUserOptions {
-  /** The `MissingActingUserError` message, given `--project-name`; defaults to the tree's. Only `actingUser` reads it: `actingUserOption` never fails with a missing user. */
-  readonly missingUserMessage?: (projectName: Option.Option<string>) => string;
-  /** Departures from the rule that some commands keep, as they behaved before `actingUser`. */
-  readonly legacy?: {
-    /**
-     * Accept an empty consumer user id as the consumer user, as `execute`, `search`, `link` and
-     * `run` do; without it an empty id counts as none, as `connections`, `listen` and `proxy` do.
-     */
-    readonly acceptEmptyConsumerUserId?: boolean;
-    /** On the dev tree without `--project-name`, act as the consumer user, ignoring `--user-id`. */
-    readonly consumerWithoutProjectName?: boolean;
-    /** Skip the directory test user on the dev tree. */
-    readonly skipDirectoryTestUser?: boolean;
-  };
-}
+const missingUserMessage = (tree: CommandTree, projectName: Option.Option<string>): string =>
+  tree === 'root'
+    ? 'Missing consumer user id. Run `composio login` and try again.'
+    : Option.match(projectName, {
+        onNone: () =>
+          'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
+        onSome: () =>
+          'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
+      });
 
 /**
  * The test user the directory configures (`.composio/project.json`), for a command that runs
@@ -142,7 +119,7 @@ const directoryTestUserId = (
   );
 
 /** The dev tree's rule over its candidates: `--user-id`, the directory test user, the global one. */
-export const devActingUser = (candidates: {
+const devActingUser = (candidates: {
   readonly flag: Option.Option<string>;
   readonly directoryTestUserId: Option.Option<string>;
   readonly globalTestUserId: Option.Option<string>;
@@ -170,25 +147,33 @@ const noticeBySource: Record<ActingUserSource, (userId: string) => Option.Option
 export const fallbackNotice = (user: Omit<ActingUser, 'project'>): Option.Option<string> =>
   noticeBySource[user.source](user.userId);
 
-/** The consumer user of a consumer project; an empty id counts as none unless `legacy` accepts it. */
-const consumerUser = (project: ResolvedCommandProject, options: ActingUserOptions) =>
+/** Prints `fallbackNotice` on stderr when a test user stands in. */
+const announceFallback = (user: Option.Option<Omit<ActingUser, 'project'>>) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* Effect.transposeOption(
+      Option.map(Option.flatMap(user, fallbackNotice), notice => ui.log.warn(notice))
+    );
+  });
+
+/** The consumer user of a consumer project; an empty id counts as none. */
+const consumerUser = (project: ResolvedCommandProject) =>
   pipe(
     Option.fromNullishOr(project.consumerUserId),
-    Option.filter(
-      userId => userId.length > 0 || options.legacy?.acceptEmptyConsumerUserId === true
-    ),
+    Option.filter(userId => userId.length > 0),
     Option.map(userId => ({ userId, source: 'consumer' as const }))
   );
 
 /** The dev tree's user for a project, `namedProjectId` being the `--project-name` project's id. */
-const devUser = (namedProjectId: Option.Option<string>, options: ActingUserOptions) =>
+const devUser = (namedProjectId: Option.Option<string>) =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
     const userContext = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
-    const directoryProject = options.legacy?.skipDirectoryTestUser
-      ? Option.none()
-      : yield* projectContext.resolve.pipe(Effect.option, Effect.map(Option.flatten));
+    const directoryProject = yield* projectContext.resolve.pipe(
+      Effect.option,
+      Effect.map(Option.flatten)
+    );
     return devActingUser({
       flag: surface.userId,
       directoryTestUserId: directoryTestUserId(directoryProject, namedProjectId),
@@ -196,40 +181,33 @@ const devUser = (namedProjectId: Option.Option<string>, options: ActingUserOptio
     });
   });
 
-/** The tree whose rule applies: the surface's, unless a legacy option says otherwise. */
-const ruleTree = (surface: CommandSurfaceShape, options: ActingUserOptions): CommandTree =>
-  surface.tree === 'dev' &&
-  !(options.legacy?.consumerWithoutProjectName && Option.isNone(surface.projectName))
-    ? 'dev'
-    : 'root';
-
 /**
  * The acting user, resolved against the project the command runs in. On the root tree, the
  * consumer user of the consumer project. On the dev tree, against the developer project
  * (`--project-name`, else the directory's): `--user-id`, then the directory test user (only
- * for the directory's own project), then the global test user. Fails with
+ * for the directory's own project), then the global test user; a test user standing in is
+ * named on stderr (`fallbackNotice`). Fails with
  * `ProjectResolutionError` when the project cannot be resolved and `MissingActingUserError`
  * when no step finds a user.
  */
-export const actingUser = (options: ActingUserOptions = {}) =>
+export const actingUser = () =>
   Effect.gen(function* () {
-    const surface = yield* CommandSurface;
-    const tree = ruleTree(surface, options);
+    const { tree, projectName } = yield* CommandSurface;
     const project = yield* resolveCommandProject(
       tree === 'root'
         ? { mode: 'consumer' }
-        : { mode: 'developer', projectName: Option.getOrUndefined(surface.projectName) }
+        : { mode: 'developer', projectName: Option.getOrUndefined(projectName) }
     );
     const user =
       tree === 'root'
-        ? consumerUser(project, options)
-        : yield* devUser(Option.as(surface.projectName, project.projectId), options);
+        ? consumerUser(project)
+        : yield* devUser(Option.as(projectName, project.projectId));
+    yield* announceFallback(user);
     if (Option.isNone(user)) {
-      const message = options.missingUserMessage ?? defaultMissingUserMessage(tree);
       return yield* new MissingActingUserError({
-        tree: surface.tree,
-        projectName: surface.projectName,
-        message: message(surface.projectName),
+        tree,
+        projectName,
+        message: missingUserMessage(tree, projectName),
       });
     }
     return { ...user.value, project } satisfies ActingUser;
@@ -239,15 +217,16 @@ export const actingUser = (options: ActingUserOptions = {}) =>
  * The acting user for a command that also runs without one, by the same rule as `actingUser`.
  * On the dev tree it resolves only the project `--project-name` names, so `project` is none when
  * the command runs against the directory's project through the default client; on the root
- * tree it is the consumer project. Fails only when that project cannot be resolved.
+ * tree it is the consumer project. Names a test user standing in on stderr, as `actingUser`
+ * does. Fails only when that project cannot be resolved.
  */
-export const actingUserOption = (options: Omit<ActingUserOptions, 'missingUserMessage'> = {}) =>
+export const actingUserOption = () =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
-    if (ruleTree(surface, options) === 'root') {
+    if (surface.tree === 'root') {
       const project = yield* resolveCommandProject({ mode: 'consumer' });
       return Option.map(
-        consumerUser(project, options),
+        consumerUser(project),
         (user): ActingUser<Option.Option<ResolvedCommandProject>> => ({
           ...user,
           project: Option.some(project),
@@ -259,10 +238,8 @@ export const actingUserOption = (options: Omit<ActingUserOptions, 'missingUserMe
         resolveCommandProject({ mode: 'developer', projectName })
       )
     );
-    const user = yield* devUser(
-      Option.map(namedProject, project => project.projectId),
-      options
-    );
+    const user = yield* devUser(Option.map(namedProject, project => project.projectId));
+    yield* announceFallback(user);
     return Option.map(user, (found): ActingUser<Option.Option<ResolvedCommandProject>> => ({
       ...found,
       project: namedProject,

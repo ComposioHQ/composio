@@ -30,7 +30,7 @@ const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
 const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription(
-    'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.'
+    'User id to act as or filter by. Without it, commands that act as a user use the test user id of this directory (for its own project), then the global one, and name it on stderr.'
   )
 );
 

@@ -5,7 +5,6 @@ import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { ExpectedFailure } from 'src/effects/expected-failure';
 import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -78,18 +77,6 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'DELETE',
   'PATCH',
 ];
-
-/**
- * `composio proxy` has no consumer user to send the request as. An expected failure:
- * `cli-main.ts` prints the message and exits 1.
- */
-export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
-  readonly message: string;
-}> {
-  get [ExpectedFailure]() {
-    return true;
-  }
-}
 
 /**
  * A proxy call refused before sending it because the toolkit is not connected, already reported
@@ -304,17 +291,7 @@ export const proxyCmd = Command.make('proxy', {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const { userId: consumerUserId, project: resolvedProject } = yield* actingUser({
-        // Keep the command's own missing-user message rather than the tree's default.
-        missingUserMessage: () =>
-          'No consumer project user is available for proxy execution in this context.',
-      }).pipe(
-        // Re-fail with the `ProxyCommandError` the command has always failed with, so
-        // `cli.command.failed` keeps reporting it as `error_name`.
-        Effect.catchTag('commands/MissingActingUserError', error =>
-          Effect.fail(new ProxyCommandError({ message: error.message }))
-        )
-      );
+      const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
       const normalizedToolkit = toolkit.toLowerCase();
 
       yield* runProxyConnectedToolkitFailFast({

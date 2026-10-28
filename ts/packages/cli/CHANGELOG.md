@@ -4,6 +4,20 @@
 
 ### Minor Changes
 
+- `composio dev connected-accounts link <toolkit>` (with or without `--list`)
+  now acts on your developer project, like the other `composio dev` commands:
+  the directory's project, or the one `--project-name` names. It links or lists
+  accounts for `--user-id` when given, else the directory's test user id (for
+  the directory's own project), else the global test user id. Without
+  `--project-name` it used to act as your consumer user on your consumer
+  project and silently ignore `--user-id`; outside a directory set up with
+  `composio dev init` it now fails asking for one. With `--project-name`,
+  linking a toolkit now also uses the directory's test user when the name is
+  the directory's own project. `composio link` is unchanged. With
+  `--auth-config`, a missing developer project is now reported before a
+  missing user id. On the dev tree, the alias hints point at
+  `composio dev playground-execute` and `composio dev connected-accounts list`.
+
 - `composio listen`, `composio dev listen` and `composio dev triggers listen`
   gain `--fail-fast`: the listener stops at the first event it fails to save,
   forward, or append to `--out`, prints how many events failed on stderr, and
@@ -18,6 +32,41 @@
   `--account <id|alias>`, or alias one account `default`.
 
 ### Patch Changes
+
+- `composio connections list`, `composio connections remove`, and
+  `composio listen` without a consumer user now print the message on stderr
+  and exit 1, like other expected errors. They used to print it under a `💥`
+  banner with the error tag and a stack location. Telemetry: every missing-user
+  failure now reports `error_name` `commands/MissingActingUserError` in
+  `cli.command.failed` and the command-family failure events, replacing
+  `ToolExecutionError` (execute), `commands/CommandInputError` (search),
+  `commands/MissingLinkUserIdError` (link),
+  `commands/MissingConnectionsConsumerUserIdError` (connections list),
+  `commands/MissingConnectionRemovalConsumerUserIdError` (connections remove),
+  `commands/ListenCommandError` (listen), and `commands/ProxyCommandError`
+  (proxy). Other failures of those commands keep their names.
+
+- Every `composio dev` command that acts as a user now names the test user it
+  falls back to on stderr (`Using test user id "…"` for the directory's,
+  `Using global test user id "…"` for the global one) when you pass no
+  `--user-id`. `composio dev playground-execute` printed nothing before; with
+  `--parallel` it names the user once.
+
+- A missing user id now gets the same message on every command of a tree.
+  Root commands (`composio execute`, `search`, `link`, `listen`, `proxy`,
+  `connections`) report a missing consumer user id and point at
+  `composio login`; root `execute`, `search`, and `link` no longer tell you to
+  pass `--user-id`, which the root tree does not take, and `listen` and `proxy`
+  no longer describe a missing "project context". `composio dev` commands point
+  at `--user-id` or `composio dev init`, or at `--user-id` or `composio login`
+  with `--project-name`.
+
+- An empty consumer user id now counts as no user on every command.
+  `composio execute`, `composio search`, and `composio link` fail with the
+  missing-user error and exit 1, as `composio connections`, `composio listen`,
+  and `composio proxy` already did; they used to send requests for the user
+  `""`. `composio run` starts the script without the consumer user's context,
+  as it does when there is no consumer user.
 
 - `composio execute` now exits 1 when an argument names a file on your machine
   but the tool does not accept file uploads for that input, such as `file` in

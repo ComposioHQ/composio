@@ -125,19 +125,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         : undefined;
 
     const runSearchRequest = Effect.gen(function* () {
-      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser({
-        // As before `actingUser`, an empty consumer user id still counts as a user.
-        legacy: { acceptEmptyConsumerUserId: true },
-        // Keep the earlier message, which mentions --user-id, over the root tree's default.
-        missingUserMessage: () =>
-          'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-      }).pipe(
-        // Re-fail with the `CommandInputError` the command has always failed with, so
-        // `cli.command.failed` keeps reporting it as `error_name`.
-        Effect.catchTag('commands/MissingActingUserError', error =>
-          Effect.fail(invalidSearchInput(error.message, '--user-id'))
-        )
-      );
+      const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser();
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getFor({
         orgId: resolvedProject.orgId,

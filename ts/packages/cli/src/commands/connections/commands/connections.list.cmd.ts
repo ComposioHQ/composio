@@ -1,4 +1,4 @@
-import { Data, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { Command, Flag } from 'effect/cli';
 import {
   CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
@@ -14,12 +14,6 @@ import {
   getConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
 import { idempotent } from 'src/services/composio-request';
-
-class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
-  'commands/MissingConnectionsConsumerUserIdError'
-)<{
-  readonly message: string;
-}> {}
 
 class ConnectionsListRequestError extends requestError('commands/ConnectionsListRequestError') {}
 
@@ -78,13 +72,7 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const toolkitSlug = Option.getOrUndefined(toolkit);
-    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser().pipe(
-      // Re-fail with the command's own error, not the expected `MissingActingUserError`: it has
-      // always failed with it as a defect, and `cli.command.failed` keeps its `error_name`.
-      Effect.catchTag('commands/MissingActingUserError', error =>
-        Effect.fail(new MissingConnectionsConsumerUserIdError({ message: error.message }))
-      )
-    );
+    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
 
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
