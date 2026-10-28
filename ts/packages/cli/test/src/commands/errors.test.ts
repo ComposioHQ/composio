@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ConnectionPollingError } from 'src/commands/connected-accounts/link/connected-accounts.link.errors';
 import { commandInputError, isUsageFailure, notLoggedIn } from 'src/commands/errors';
 import { InvalidOrganizationError } from 'src/commands/login/login.errors';
-import { ReportedProxyCommandError } from 'src/commands/proxy.cmd';
+import { ReportedProxyCommandError } from 'src/commands/proxy/proxy.errors';
 import { MissingActingUserError } from 'src/commands/surface';
 import {
   ReportedToolExecutionError,
