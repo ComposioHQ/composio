@@ -53,7 +53,7 @@ const rejectedRequests: ReadonlyArray<{
   {
     command: 'dev logs tools <id>',
     args: ['dev', 'logs', 'tools', 'log_1'],
-    resources: ['_internal'],
+    resources: ['logs'],
     tag: 'commands/ToolLogsRequestError',
     message: 'Failed to fetch tool log "log_1".',
   },

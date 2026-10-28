@@ -20,6 +20,12 @@
   128 plus the signal's number, or, for `composio run`, the script's process
   group is killed and the CLI is killed by that signal.
 
+- `composio dev logs tools` now searches and retrieves logs through the public
+  tool execution logs API. Pages are capped at 100. Piped JSON uses the public
+  `logs` / `next_cursor` envelope and unified log detail fields. The public API
+  does not support `--case-sensitive` or the legacy `--session-id` filter;
+  these now fail with an explanation. `--tool-router-session-id` remains supported.
+
 - `composio dev connected-accounts link <toolkit>` (with or without `--list`)
   now acts on your developer project, like the other `composio dev` commands:
   the directory's project, or the one `--project-name` names. It links or lists
