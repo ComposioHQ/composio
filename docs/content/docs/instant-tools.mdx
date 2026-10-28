@@ -433,6 +433,54 @@ To select Instant explicitly, pass `account="instant_account"` to Python `sessio
 
 Composio-managed auth is different: Composio supplies the OAuth app credentials, but your user still connects their own account. It does not establish Instant support.
 
+### Use Instant with direct tool execution
+
+Direct calls with `composio.tools.execute()` don't use Session policies. With Instant on for the project, a direct call for a user with no active connection can use an eligible Instant account. To choose Instant explicitly, pass `connected_account_id="instant_account"` in Python or `connectedAccountId: "instant_account"` in TypeScript:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+result = composio.tools.execute(
+    "FIRECRAWL_SCRAPE",
+    user_id="user_123",
+    arguments={"url": "https://composio.dev"},
+    connected_account_id="instant_account",
+    dangerously_skip_version_check=True,
+)
+print(result)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+const result = await composio.tools.execute("FIRECRAWL_SCRAPE", {
+  userId: "user_123",
+  arguments: { url: "https://composio.dev" },
+  connectedAccountId: "instant_account",
+  dangerouslySkipVersionCheck: true,
+});
+console.log(result);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/FIRECRAWL_SCRAPE \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "version": "latest", "connected_account_id": "instant_account", "arguments": {"url": "https://composio.dev"}}'
+```
+</Tab>
+</Tabs>
+
+Instant accounts run the latest toolkit version. A call pinned to an older version fails with HTTP 403, so a pinned version works only while it is the latest. The example uses `latest` with the [direct-execution version opt-in](/docs/tools-direct/executing-tools#use-the-latest-version).
+
+An explicit `instant_account` call fails rather than falling back to another account. Check the project setting and the tool's eligibility if it fails.
+
 ## Balance, usage, and troubleshooting
 
 Instant calls use your organization's prepaid balance, including on Enterprise. Check or add funds in [Billing](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=instant-tools). If your plan doesn't allow adding funds, upgrade or contact support.
