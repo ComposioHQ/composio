@@ -131,13 +131,13 @@ Every Composio API request goes through an Effect client from `@composio/client/
 
 Services are `Context.Service` classes that export a `<Name>Shape` type and an explicit `static readonly Default` layer (`Layer.effect` / `Layer.sync`, dependencies provided with `Layer.provide`). Build a test double with `Service.of({ ... })`; there are no generated accessors or constructors.
 
-`cli-main.ts` runs `BackendMismatchWarning`, `UpdateNotice`, and `PluginHint` (each an `InvocationHookShape` from `src/services/invocation-hook.ts`, taking a `HookInvocation`) in that order before parsing, and reports the command's lifecycle through `CommandLifecycleTelemetry`. `TestLive` replaces all four with recording no-op doubles (`test/__utils__/layers/invocation-hooks.ts`), so a test's output is its command's own; `recordedInvocationCalls` returns what they were called with.
+`cli-main.ts` runs `BackendMismatchWarning`, `UpdateNotice`, and `PluginHint` (each an `InvocationHookShape` from `src/services/invocation-hook.ts`, taking a `HookInvocation`) in that order before parsing, and reports the command's lifecycle through `CommandLifecycleTelemetry`. `TestLive` provides recording no-op doubles of all four (`test/__utils__/layers/invocation-hooks.ts`); `recordedInvocationCalls` returns what they were called with.
 
 OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Keychain / Linux Secret Service).
 
 ### Effects — `src/effects/`
 
-Reusable Effect computations: `require-auth` (`requireLogin`, the login gate for commands and groups), `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
+Reusable Effect computations: `require-auth` (`requireLogin`, the login gate for commands and groups), `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`, `capture-services` (`captureServices`, for a layer whose methods provide services it captured).
 
 ### Models — `src/models/`
 

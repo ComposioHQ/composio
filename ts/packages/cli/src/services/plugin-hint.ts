@@ -4,6 +4,7 @@ import { type Config, Context, Effect, Exit, Layer, Option, Schema } from 'effec
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { getPluginHintShownEvent } from 'src/analytics/events';
 import { APP_CONFIG } from 'src/config';
+import { captureServices } from 'src/effects/capture-services';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { APP_VERSION } from 'src/constants';
 import { AGENT_HOST_LABELS, COMPOSIO_AGENT_PLUGIN_ID, type AgentHost } from './agent-host';
@@ -197,12 +198,7 @@ export class PluginHint extends Context.Service<PluginHint, PluginHintShape>()(
     PluginHint,
     Effect.gen(function* () {
       const terminal = yield* TerminalUI;
-      const services = Context.pick(
-        FileSystem.FileSystem,
-        Path.Path,
-        NodeOs,
-        TerminalUI
-      )(yield* Effect.context<FileSystem.FileSystem | Path.Path | NodeOs | TerminalUI>());
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs, TerminalUI);
       return PluginHint.of({
         run: ({ argv }) =>
           Effect.gen(function* () {
