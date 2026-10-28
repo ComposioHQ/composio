@@ -119,7 +119,10 @@
   the exact subcommand you ran instead of the group that declared the
   restriction: `composio dev logs tools --project-name x` now names
   `composio dev logs tools`, where it named `composio dev logs`. Telemetry
-  records the failure against that subcommand too.
+  records the failure against that subcommand too. A group run on its own
+  rejects the flag the same way instead of printing its help:
+  `composio dev projects --user-id x` fails with that error, while
+  `composio dev projects --help` still prints the help.
 
 - CLI telemetry now records a command that prints its own
   failure and exits 1 (a failed API request, an alias conflict on

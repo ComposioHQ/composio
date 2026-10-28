@@ -1781,10 +1781,42 @@ class TestUrlHelperFunctions:
         assert _get_extension_from_mimetype("text/plain") == ".txt"
         assert _get_extension_from_mimetype("application/json") == ".json"
 
+    @pytest.mark.parametrize(
+        ("mimetype", "expected"),
+        [
+            (
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".xlsx",
+            ),
+            (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".docx",
+            ),
+            (
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                ".pptx",
+            ),
+            ("application/vnd.ms-excel", ".xls"),
+            ("application/msword", ".doc"),
+            ("application/vnd.ms-powerpoint", ".ppt"),
+            ("text/csv", ".csv"),
+            ("application/x-tar", ".tar"),
+            ("video/quicktime", ".mov"),
+            ("audio/ogg", ".ogg"),
+        ],
+    )
+    def test_get_extension_from_mimetype_uses_shared_table(self, mimetype, expected):
+        """Types the shared MIME table knows keep their extension (issue #5105)."""
+        assert _get_extension_from_mimetype(mimetype) == expected
+
     def test_get_extension_from_mimetype_unknown_type(self):
         """Test _get_extension_from_mimetype returns empty for unknown types."""
         assert _get_extension_from_mimetype("application/unknown") == ""
         assert _get_extension_from_mimetype("custom/type") == ""
+
+    def test_get_extension_from_mimetype_generic_binary_type(self):
+        """A generic binary type does not name a format, so no extension is added."""
+        assert _get_extension_from_mimetype("application/octet-stream") == ""
 
     def test_get_extension_from_mimetype_case_insensitive(self):
         """Test _get_extension_from_mimetype handles case-insensitive mimetypes (RFC 2045)."""
@@ -1890,6 +1922,44 @@ class TestFetchFileFromUrl:
 
         assert filename.startswith("file_")
         assert filename.endswith(".pdf")
+
+    @patch("composio.core.models._files.safe_get")
+    def test_fetch_file_from_url_keeps_office_extension_when_url_has_none(
+        self, mock_get
+    ):
+        """An export URL without an extension keeps the xlsx extension (issue #5105)."""
+        xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": xlsx}
+        mock_response.iter_content.return_value = [b"xlsx data"]
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        filename, content, mimetype = _fetch_file_from_url(
+            "https://docs.google.com/spreadsheets/d/abc123/export?format=xlsx"
+        )
+
+        assert filename.startswith("file_")
+        assert filename.endswith(".xlsx")
+        assert mimetype == xlsx
+
+    @patch("composio.core.models._files.safe_get")
+    def test_fetch_file_from_url_octet_stream_without_extension(self, mock_get):
+        """A generic binary response from an extensionless URL stays extensionless."""
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.headers = {"content-type": "application/octet-stream"}
+        mock_response.iter_content.return_value = [b"binary data"]
+        mock_response.close = MagicMock()
+        mock_get.return_value = mock_response
+
+        filename, _, _ = _fetch_file_from_url("https://example.com/download")
+
+        assert filename.startswith("file_")
+        assert "." not in filename
 
     @patch("composio.core.models._files.safe_get")
     def test_fetch_file_from_url_failure(self, mock_get):
