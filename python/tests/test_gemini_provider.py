@@ -1075,7 +1075,10 @@ class TestHandleResponseUser:
 
         @schema_modifier(tools=[self.GMAIL])
         def starred_only(tool: str, toolkit: str, schema: Tool) -> Tool:
-            schema.input_parameters["properties"]["query"]["enum"] = ["is:starred"]
+            schema.input_parameters = {
+                **self.SCHEMA,
+                "properties": {"query": {"type": "string", "enum": ["is:starred"]}},
+            }
             return schema
 
         composio.tools.get(user_id="alice", tools=[self.GMAIL])
