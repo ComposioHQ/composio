@@ -4,10 +4,10 @@ import { runConnectedAccountsInfo } from 'src/commands/connected-accounts/info/c
 import { MISSING_ID_MESSAGE, missingIdHint } from 'src/commands/connected-accounts/format';
 import { isUsageFailure } from 'src/commands/errors';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { redact } from 'src/ui/redact';
 import { ConnectedAccountsTest, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const EXPIRED_ACCOUNT: ConnectedAccountItem = {
@@ -31,12 +31,11 @@ const EXPIRED_ACCOUNT: ConnectedAccountItem = {
 };
 
 /**
- * What `runConnectedAccountsInfo` reads: the connected-account repository, a headless terminal
- * whose stdout data lands in `outputs`, and a process whose exit codes land in `exitCodes`.
+ * What `runConnectedAccountsInfo` reads: the connected-account repository and a headless
+ * terminal whose stdout data lands in `outputs`.
  */
 const infoTest = (items: ReadonlyArray<ConnectedAccountItem> = [EXPIRED_ACCOUNT]) => {
   const outputs: Array<string> = [];
-  const exitCodes: Array<number> = [];
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
     Layer.succeed(
@@ -49,22 +48,9 @@ const infoTest = (items: ReadonlyArray<ConnectedAccountItem> = [EXPIRED_ACCOUNT]
           }),
       })
     ),
-    ConnectedAccountsTest({ connectedAccountsData: { items: [...items] } }),
-    Layer.succeed(
-      NodeProcess,
-      NodeProcess.of({
-        cwd: '/tmp',
-        execPath: '/tmp/composio',
-        platform: 'darwin',
-        arch: 'arm64',
-        setExitCode: code =>
-          Effect.sync(() => {
-            exitCodes.push(code);
-          }),
-      })
-    )
+    ConnectedAccountsTest({ connectedAccountsData: { items: [...items] } })
   );
-  return { layer, outputs, exitCodes };
+  return { layer, outputs };
 };
 
 const stdoutLines = MockConsole.getLines({ stream: 'stdout', stripAnsi: true });
@@ -72,12 +58,11 @@ const stderrLines = MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
 
 describe('runConnectedAccountsInfo', () => {
   it.effect('[Given] an existing id [Then] prints the whole account as JSON on stdout', () => {
-    const { layer, outputs, exitCodes } = infoTest();
+    const { layer, outputs } = infoTest();
     return Effect.gen(function* () {
       yield* runConnectedAccountsInfo({ id: Option.some('con_github_expired') });
 
       expect(outputs.map(output => JSON.parse(output))).toEqual([EXPIRED_ACCOUNT]);
-      expect(exitCodes).toEqual([]);
     }).pipe(Effect.provide(layer));
   });
 
@@ -106,7 +91,7 @@ describe('runConnectedAccountsInfo', () => {
   );
 
   it.effect('[Given] no id [Then] fails with a usage error before any request', () => {
-    const { layer, outputs, exitCodes } = infoTest();
+    const { layer, outputs } = infoTest();
     return Effect.gen(function* () {
       const failure = yield* runConnectedAccountsInfo({ id: Option.none() }).pipe(Effect.flip);
 
@@ -121,20 +106,19 @@ describe('runConnectedAccountsInfo', () => {
       expect(yield* stderrLines).toEqual([]);
       expect(yield* stdoutLines).toEqual([]);
       expect(outputs).toEqual([]);
-      expect(exitCodes).toEqual([]);
     }).pipe(Effect.provide(layer));
   });
 
   it.effect('[Given] an unknown id [Then] reports it, prints no data, and exits 1', () => {
-    const { layer, outputs, exitCodes } = infoTest();
+    const { layer, outputs } = infoTest();
     return Effect.gen(function* () {
-      yield* runConnectedAccountsInfo({ id: Option.some('con_missing') });
+      const exit = yield* Effect.exit(runConnectedAccountsInfo({ id: Option.some('con_missing') }));
       const stderr = (yield* stderrLines).join('\n');
 
       expect(stderr).toContain('Connected account "con_missing" not found.');
       expect(stderr).toContain('composio dev connected-accounts list');
       expect(outputs).toEqual([]);
-      expect(exitCodes).toEqual([1]);
+      expect(exitCodeOf(exit)).toBe(1);
     }).pipe(Effect.provide(layer));
   });
 });

@@ -1,20 +1,14 @@
 /**
  * Composes the CLI layers and runs Effect's command parser. Command.runWith renders
- * help and parse errors once; preserve ShowHelp so its runtime markers control logging
- * and the exit code. runWithConfig accepts full argv and removes the executable prefix.
+ * help and parse errors once. runWithConfig accepts full argv and removes the executable prefix.
+ *
+ * Exit codes come from Effect's runtime markers, never `process.exitCode`: a failure that is
+ * already on screen (ShowHelp, a command's own report, or a message printed here) carries
+ * `[Runtime.errorReported] = false`, so `BunRuntime.runMain` logs nothing, and
+ * `Runtime.defaultTeardown` exits with its `[Runtime.errorExitCode]` (1 when unset), 0 on
+ * success, and 130 on interruption.
  */
-import process from 'node:process';
-import {
-  Cause,
-  ConfigProvider,
-  Effect,
-  Exit,
-  Layer,
-  Logger,
-  Option,
-  Predicate,
-  Runtime,
-} from 'effect';
+import { Cause, ConfigProvider, Effect, Layer, Logger, Option, Runtime } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CliError } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
@@ -70,11 +64,8 @@ import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { PendingLoginSession } from 'src/services/pending-login-session';
-import { SetupCommandError } from 'src/services/setup-command-error';
-import { ShellSetupAbortError } from 'src/commands/install/install.errors';
-import { ReportedProxyCommandError } from 'src/commands/proxy.cmd';
-import { ReportedToolExecutionError } from 'src/commands/tools/commands/tools.execute.cmd';
-import { isUsageFailure, type UsageFailure } from 'src/commands/errors';
+import { isExpectedFailure, type ExpectedFailure } from 'src/effects/expected-failure';
+import { ReportedFailure } from 'src/effects/report-failure';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { readTelemetryDebugOverride, telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { normalizeRunScriptArgs } from 'src/commands/argv-compat';
@@ -188,28 +179,45 @@ const layers = Layer.mergeAll(
   )
 ) satisfies RequiredLayer;
 
-export const teardown: Runtime.Teardown = <E, A>(
-  exit: Exit.Exit<E, A>,
-  onExit: (code: number) => void
-) => {
-  if (Exit.isFailure(exit) && !Cause.hasInterruptsOnly(exit.cause)) {
-    const squashed = Cause.squash(exit.cause);
-    // `ShowHelp` carries its own `[Runtime.errorExitCode]` (0 for bare
-    // help/version, 1 alongside parse/validation errors, see the module docs
-    // above); prefer that over the generic fallback whenever it applies.
-    const exitCode =
-      CliError.isCliError(squashed) && Predicate.isTagged(squashed, 'ShowHelp')
-        ? Runtime.getErrorExitCode(squashed)
-        : Number(process.exitCode ?? 1);
-    onExit(exitCode);
-    return;
+/**
+ * Whether `reason` has nothing for the catch-all to print: a failure already on screen, or an
+ * interruption, which must reach `Runtime.defaultTeardown` untouched to exit 130.
+ */
+const hasNothingToPrint = (reason: Cause.Reason<unknown>): boolean =>
+  Cause.isInterruptReason(reason) ||
+  (Cause.isFailReason(reason) && !Runtime.getErrorReported(reason.error));
+
+/**
+ * Prints the parts of `cause` nobody reported yet and fails with `ReportedFailure`. A cause with
+ * nothing to print (a failure already on screen — `ShowHelp`, which `Command.runWith` printed
+ * with any parse/validation errors, a command's own report, or a message printed in
+ * `cliProgram` — or an interruption) is re-failed untouched: its `[Runtime.errorReported]` is
+ * false, so `BunRuntime.runMain` logs nothing, and `Runtime.defaultTeardown` exits with its
+ * `[Runtime.errorExitCode]`, or 130 for interruptions alone. Nothing here may print it, or
+ * output doubles.
+ */
+export const reportUnreportedCause = Effect.fn(function* (cause: Cause.Cause<unknown>) {
+  const unreported = Cause.fromReasons(cause.reasons.filter(reason => !hasNothingToPrint(reason)));
+  if (unreported.reasons.length > 0) {
+    const captured = yield* captureErrors(unreported, { stripCwd: true });
+    const message =
+      captured.errors.length > 0
+        ? prettyPrintFromCapturedErrors(captured, {
+            hideStackTrace: true,
+            stripCwd: true,
+            enabled: true,
+          }).trim()
+        : '';
+    if (message.length > 0) {
+      const ui = yield* TerminalUI;
+      yield* ui.error(message);
+      return yield* new ReportedFailure({ message });
+    }
   }
-  // A command that proxies another process (`composio run`) reports its status by assigning
-  // `process.exitCode`, so honor that on every path. It matters most on interrupt: the runtime
-  // force-exits with whatever code teardown yields once a signal has been received, which would
-  // otherwise turn a cancelled run into a success.
-  onExit(Number(process.exitCode ?? 0));
-};
+  // Nothing printable: keep the original cause so its exit code survives and `runMain` logs
+  // whatever is still unreported, instead of exiting 0.
+  return yield* Effect.failCause(cause);
+});
 
 // `runWithConfig`'s root command tree (built from every `.cmd.ts` subcommand in
 // `src/commands`) is deep and wide enough that TypeScript's inference collapses its
@@ -301,34 +309,16 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
     Effect.andThen(showUpdateNotice(argv)),
     Effect.andThen(showPluginAcquisitionHint(argv)),
     Effect.andThen(runWithTelemetry(argv)),
-    Effect.catchIf(
-      (error): error is SetupCommandError => error instanceof SetupCommandError,
-      error =>
-        Effect.gen(function* () {
-          const ui = yield* TerminalUI;
-          const summary =
-            error.operation === 'uninstall'
-              ? 'Composio plugin uninstall was unsuccessful.'
-              : 'Composio setup was unsuccessful.';
-          if ((yield* ui.capabilities).canDecorate) {
-            yield* ui.log.error(error.message);
-            yield* ui.outro(summary);
-          } else {
-            yield* ui.error(`${summary} ${error.message}`);
-          }
-          process.exitCode = 1;
-        })
-    ),
     // A usage mistake, a missing setup or login, or a failure a remote service reported clearly
-    // (see `UsageFailure`) is not a broken invariant: print the message and exit non-zero
-    // instead of routing it through the defect reporter below.
+    // (see `ExpectedFailure`) is not a broken invariant: print the message and exit 1 instead of
+    // routing it through the defect reporter below.
     Effect.catchIf(
-      (error): error is UsageFailure => isUsageFailure(error),
+      (error): error is ExpectedFailure => isExpectedFailure(error),
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
           yield* ui.error(error.message);
-          process.exitCode = 1;
+          return yield* new ReportedFailure({ message: error.message });
         })
     ),
     // A rejected user API key gets the backend's message and the way to log in again, from
@@ -336,31 +326,11 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
     Effect.catchIf(isRejectedUserApiKey, error =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        yield* ui.error(extractMessage(error) ?? 'The user API key was rejected.');
+        const message = extractMessage(error) ?? 'The user API key was rejected.';
+        yield* ui.error(message);
         yield* ui.error(yield* rejectedUserApiKeyHint);
-        process.exitCode = 1;
+        return yield* new ReportedFailure({ message });
       })
-    ),
-    // `composio execute` and `composio proxy` already printed the failure, and the failed result
-    // as JSON on stdout; the typed failure only exists so scripts and agents see a non-zero exit
-    // code.
-    Effect.catchIf(
-      (error): error is ReportedToolExecutionError | ReportedProxyCommandError =>
-        error instanceof ReportedToolExecutionError || error instanceof ReportedProxyCommandError,
-      () =>
-        Effect.sync(() => {
-          process.exitCode = 1;
-        })
-    ),
-    Effect.catchIf(
-      (error): error is ShellSetupAbortError => error instanceof ShellSetupAbortError,
-      // `composio install` already printed the abort reason; the typed failure
-      // only exists so the process exits non-zero and install.sh runs its
-      // guarded inline PATH fallback instead of reporting a green install.
-      () =>
-        Effect.sync(() => {
-          process.exitCode = 1;
-        })
     ),
     Effect.withSpan('composio-cli', {
       attributes: {
@@ -369,45 +339,7 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
       },
     }),
     Effect.sandbox,
-    Effect.catch(
-      Effect.fn(function* (cause) {
-        const squashed = Cause.squash(cause);
-        if (CliError.isCliError(squashed) && Predicate.isTagged(squashed, 'ShowHelp')) {
-          // `Command.runWith` already printed help and any parse/validation
-          // errors to the correct stream (see the module docs above) before
-          // re-failing with `ShowHelp`. Re-failing with the original `cause`
-          // here — instead of swallowing it like every other error below —
-          // lets it reach `BunRuntime.runMain` untouched: `ShowHelp`'s
-          // `[Runtime.errorReported] = false` suppresses `runMain`'s automatic
-          // error log, and `teardown` reads its `[Runtime.errorExitCode]` to
-          // pick the process exit code. Nothing here may print, or output
-          // doubles.
-          return yield* Effect.failCause(cause);
-        }
-
-        const captured = yield* captureErrors(cause, {
-          stripCwd: true,
-        });
-        const filteredErrors = captured.errors.filter(
-          error => error.errorType !== 'ReportedToolExecutionError'
-        );
-        if (captured.interrupted || filteredErrors.length > 0) {
-          const message = prettyPrintFromCapturedErrors(
-            { ...captured, errors: filteredErrors },
-            {
-              hideStackTrace: true,
-              stripCwd: true,
-              enabled: true,
-            }
-          ).trim();
-          if (message.length > 0) {
-            const ui = yield* TerminalUI;
-            yield* ui.error(message);
-            process.exitCode = 1;
-          }
-        }
-      })
-    ),
+    Effect.catch(reportUnreportedCause),
     Effect.provide(layers),
     // Built per invocation, never at module scope: `ConfigProvider.fromEnv()` snapshots
     // `process.env` when constructed, and the ambient `ConfigProvider` reference caches its
@@ -422,6 +354,6 @@ export const runCli = (options: CliBootstrapOptions): void => {
   cliProgram(options.argv).pipe(
     effect =>
       debug === undefined ? effect : Effect.provide(effect, telemetryDebugModeLayer(debug)),
-    BunRuntime.runMain({ teardown })
+    BunRuntime.runMain({ teardown: Runtime.defaultTeardown })
   );
 };

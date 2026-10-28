@@ -3,6 +3,7 @@ import { Effect, Option } from 'effect';
 import { runAuthConfigsInfo } from 'src/commands/auth-configs/info/auth-configs.info.handler';
 import { isUsageFailure } from 'src/commands/errors';
 import { MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { AuthConfigsHandlerTest } from 'test/__utils__/layers/auth-configs';
 import { makeAuthConfigItem } from 'test/__utils__/models/auth-configs';
 
@@ -10,7 +11,7 @@ const gmail = makeAuthConfigItem();
 
 describe('runAuthConfigsInfo', () => {
   it.effect('[Given] a known ID [Then] prints the auth config JSON to stdout', () => {
-    const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+    const { layer, outputs } = AuthConfigsHandlerTest({
       authConfigsData: { items: [gmail] },
     });
     return Effect.gen(function* () {
@@ -20,13 +21,12 @@ describe('runAuthConfigsInfo', () => {
       const decoration = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
       expect(decoration).toContain('[Auth Config: Gmail Default]');
       expect(decoration).toContain('Tool Router: Enabled');
-      expect(exitCode()).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
   it.effect('[Given] no ID [Then] fails with a usage error before any request', () => {
     // The stub repository dies on any call, so reaching the API fails the test.
-    const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+    const { layer, outputs } = AuthConfigsHandlerTest({
       repository: { getAuthConfig: () => Effect.die('getAuthConfig must not be called') },
     });
     return Effect.gen(function* () {
@@ -44,18 +44,17 @@ describe('runAuthConfigsInfo', () => {
       expect(isUsageFailure(failure)).toBe(true);
       expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);
-      expect(exitCode()).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
   it.effect(
     '[Given] an unknown ID [Then] reports the API error with the list hint and exits 1',
     () => {
-      const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+      const { layer, outputs } = AuthConfigsHandlerTest({
         authConfigsData: { items: [gmail] },
       });
       return Effect.gen(function* () {
-        yield* runAuthConfigsInfo({ id: Option.some('ac_missing') });
+        const exit = yield* Effect.exit(runAuthConfigsInfo({ id: Option.some('ac_missing') }));
 
         const stderr = (yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).join(
           '\n'
@@ -65,7 +64,7 @@ describe('runAuthConfigsInfo', () => {
           'Browse available auth configs:\n> composio dev auth-configs list'
         );
         expect(outputs).toEqual([]);
-        expect(exitCode()).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       }).pipe(Effect.provide(layer));
     }
   );

@@ -68,6 +68,15 @@
   `""`. `composio run` starts the script without the consumer user's context,
   as it does when there is no consumer user.
 
+- Stopping any command with Ctrl-C (SIGINT) or SIGTERM now exits 130, as
+  `composio run` already did. Other commands, `composio listen` among them,
+  used to exit 0, so a wrapper or `set -e` script read a cancelled command as a
+  successful one. CLI telemetry now records a command that prints its own
+  failure and exits 1 (a failed API request, an alias conflict on
+  `composio link`, a `--fail-fast` listener stop) as failed instead of
+  succeeded, and a `composio run` whose script exits non-zero as
+  `CLI_RUN_FAILED` with `failure_reason_code: "child_exit"`.
+
 - `composio execute` now exits 1 when an argument names a file on your machine
   but the tool does not accept file uploads for that input, such as `file` in
   `TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD`. It used to send the path text to

@@ -579,6 +579,28 @@ describe('reported tool execution failures', () => {
   );
 });
 
+describe('failures a command reports itself', () => {
+  it(
+    '[Given] a request failure the command reports [Then] prints it once, exits 1, and records the command as failed',
+    () =>
+      withHttpServer(
+        (_req, res) => sendJson(res, 503, { error: { message: 'Service unavailable' } }),
+        async baseUrl => {
+          const result = await runCliAgainst(baseUrl, ['dev', 'toolkits', 'list'], {
+            env: { COMPOSIO_CLI_TELEMETRY_DEBUG: '1' },
+          });
+
+          expect(result.status).toBe(1);
+          expect(result.stdout).toBe('[]\n');
+          expect(result.stderr).toContain('CLI_COMMAND_FAILED');
+          expect(result.stderr).not.toContain('CLI_COMMAND_SUCCEEDED');
+          expect(result.stderr).not.toContain('ReportedFailure');
+        }
+      ),
+    30_000
+  );
+});
+
 describe('account selection errors', () => {
   it(
     '[Given] an `--account` that matches no connected account [Then] prints the message as one line and exits 1',

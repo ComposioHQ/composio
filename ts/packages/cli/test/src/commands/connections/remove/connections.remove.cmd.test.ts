@@ -183,10 +183,9 @@ describe('CLI: composio connections remove', () => {
 
         expect(deniedDeleteCalls).toEqual([]);
 
-        // Declining is not a failure: the line says nothing changed, and the exit code stays 0.
+        // Declining is not a failure: the command succeeds and the line says nothing changed.
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         expect(lines.at(-1)).toBe('No connection removed.');
-        expect(process.exitCode).toBeUndefined();
       })
     );
   });
@@ -286,7 +285,6 @@ describe('CLI: composio connections remove', () => {
         yield* cli(['connections', 'remove', 'gmail', '--yes']);
 
         expect(headlessDeleteCalls).toEqual(['con_gmail_active']);
-        expect(process.exitCode).toBeUndefined();
       })
     );
 

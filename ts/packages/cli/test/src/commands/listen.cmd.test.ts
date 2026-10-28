@@ -10,6 +10,7 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
@@ -48,14 +49,16 @@ describe('CLI: composio listen', () => {
         Effect.gen(function* () {
           yield* enableListen;
           const terminal = redirectedTerminalUI();
-          yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']).pipe(
-            Effect.provide(Layer.merge(failingRealtime, terminal.layer))
+          const exit = yield* Effect.exit(
+            cli(['listen', 'composio.connected_account.expired', '--max-events', '1']).pipe(
+              Effect.provide(Layer.merge(failingRealtime, terminal.layer))
+            )
           );
 
           expect(terminal.stderr()).toContain(
             'Could not subscribe to realtime trigger events: socket closed. Check your network connection or run `composio login`.\n'
           );
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }
@@ -193,7 +196,6 @@ describe('CLI: composio listen', () => {
         );
 
         expect(terminal.stderr()).toContain('1 event failed to write while listening.');
-        expect(process.exitCode).toBeUndefined();
       })
     );
 
@@ -202,12 +204,14 @@ describe('CLI: composio listen', () => {
       Effect.gen(function* () {
         yield* enableListen;
         const terminal = redirectedTerminalUI();
-        yield* cli(['listen', 'composio.connected_account.expired', '--fail-fast']).pipe(
-          Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+        const exit = yield* Effect.exit(
+          cli(['listen', 'composio.connected_account.expired', '--fail-fast']).pipe(
+            Effect.provide(Layer.merge(payloadWritesFail, terminal.layer))
+          )
         );
 
         expect(terminal.stderr()).toContain('1 event failed to write while listening.');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
 
@@ -220,8 +224,6 @@ describe('CLI: composio listen', () => {
         yield* Fiber.join(fiber);
 
         expect(terminal.stderr()).toContain('1 event failed to write while listening.');
-        // Recovered per-event failures, not a failed command.
-        expect(process.exitCode).toBeUndefined();
       })
     );
 
@@ -233,9 +235,11 @@ describe('CLI: composio listen', () => {
         const { fiber, terminal } = yield* listenUntilWriteFails([]);
 
         yield* Fiber.interrupt(fiber);
+        const exit = yield* Fiber.await(fiber);
 
         expect(terminal.stderr()).toContain('1 event failed to write while listening.');
-        expect(process.exitCode).toBeUndefined();
+        // Interrupted, not failed: the summary alone does not fail the command.
+        expect(exitCodeOf(exit)).toBe(130);
       })
     );
   });

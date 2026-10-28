@@ -7,7 +7,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { assertDefined } from '@effect/vitest/utils';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as Path from 'effect/Path';
-import { ConfigProvider, Effect, Layer, Sink, Stream } from 'effect';
+import { ConfigProvider, Deferred, Effect, Fiber, Layer, Runtime, Sink, Stream } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, it, vi } from 'vitest';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
@@ -26,7 +26,9 @@ import {
 import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { DEFAULT_CLI_INVOCATION_ORIGIN } from 'src/services/runtime-cli-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { CommandRunner } from 'src/services/command-runner';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
 
 const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_RUN_ACP_ONLY: '1',
@@ -191,9 +193,11 @@ describe('CLI: composio run', () => {
         Effect.gen(function* () {
           commandRuns.mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(7)));
 
-          yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
+          const exit = yield* Effect.exit(cli(['run', 'console.log("hi")', '--flag', 'value']));
           const output = yield* MockConsole.getLines();
 
+          // The process exits with the child's code.
+          expect(exitCodeOf(exit)).toBe(7);
           expect(commandRuns).toHaveBeenCalledTimes(1);
           const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd[0]).toBe(process.execPath);
@@ -217,8 +221,49 @@ describe('CLI: composio run', () => {
           );
           expect(fs.existsSync(runLogPath)).toBe(true);
           fs.rmSync(path.dirname(runLogPath), { recursive: true, force: true });
-          expect(process.exitCode).toBe(7);
         })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.effect(
+      '[Given] a child that exits non-zero [Then] it fails with ChildProcessExited, which the runtime does not log',
+      () =>
+        Effect.gen(function* () {
+          commandRuns.mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(3)));
+
+          const failure = yield* cli(['run', 'console.log("hi")']).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(ChildProcessExited);
+          expect(failure).toMatchObject({ code: 3 });
+          // The child already wrote its own output; `BunRuntime.runMain` must not add a log.
+          expect(Runtime.getErrorReported(failure)).toBe(false);
+        })
+    );
+
+    it.effect('[Given] a child that exits 0 [Then] the run succeeds', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(cli(['run', 'console.log("hi")']));
+
+        expect(exitCodeOf(exit)).toBe(0);
+      })
+    );
+
+    // Ctrl-C interrupts the run while the child is still running: the process exits 130, not 0,
+    // so wrappers and `set -e` scripts do not read a cancelled run as a passing one.
+    it.effect('[Given] the run is interrupted [Then] the process exits 130', () =>
+      Effect.gen(function* () {
+        const started = yield* Deferred.make<void>();
+        commandRuns.mockImplementation(() =>
+          Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never))
+        );
+
+        const fiber = yield* Effect.forkChild(cli(['run', 'console.log("hi")']));
+        yield* Deferred.await(started);
+        yield* Fiber.interrupt(fiber);
+
+        expect(exitCodeOf(yield* Fiber.await(fiber))).toBe(130);
+      })
     );
   });
 
@@ -430,7 +475,6 @@ describe('CLI: composio run', () => {
           expect(spawnConfig.cmd[4]).toContain('console.log(JSON.stringify(issue));');
           expect(spawnConfig.cmd[4]).toContain('return (console.log(JSON.stringify(issue.data)));');
           expect(spawnConfig.cmd[4]).not.toContain('"Do not run terminal\n');
-          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -454,7 +498,6 @@ describe('CLI: composio run', () => {
         expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
         expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
         expect(fs.existsSync(spawnConfig.cmd[3]!)).toBe(false);
-        expect(process.exitCode).toBe(0);
       })
     );
   });
@@ -493,7 +536,6 @@ describe('CLI: composio run', () => {
           // leak into the forwarded script arguments.
           expect(spawnConfig.cmd[3]).toMatch(/\.composio-run-.*\.ts$/);
           expect(spawnConfig.cmd).not.toContain('--dry-run');
-          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -531,7 +573,6 @@ describe('CLI: composio run', () => {
           // First `--` is the run/script boundary; the second is a script
           // argument and must reach the script verbatim (v3 behavior).
           expect(spawnConfig.cmd.slice(5)).toEqual(['--', 'alpha', '--', 'beta']);
-          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -546,7 +587,6 @@ describe('CLI: composio run', () => {
           expect(commandRuns).toHaveBeenCalledTimes(1);
           const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
           expect(spawnConfig.cmd.slice(5)).toEqual(['--', '@@composio-run-raw@@literal']);
-          expect(process.exitCode).toBe(0);
         })
     );
   });

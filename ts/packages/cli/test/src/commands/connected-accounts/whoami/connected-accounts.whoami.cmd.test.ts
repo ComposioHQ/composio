@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 
@@ -90,12 +91,15 @@ describe('CLI: composio dev connected-accounts whoami', () => {
     it => {
       it.effect('shows error for nonexistent account', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'connected-accounts', 'whoami', 'con_nonexistent']);
+          const exit = yield* Effect.exit(
+            cli(['dev', 'connected-accounts', 'whoami', 'con_nonexistent'])
+          );
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev connected-accounts list');
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

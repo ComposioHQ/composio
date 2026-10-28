@@ -10,7 +10,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { MockConsole } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -56,11 +56,9 @@ const triggersStatusTest = (fixture: TriggersStatusFixture = {}) => {
   const outputs: Array<string> = [];
   const requests: Array<TriggerInstanceListActiveParams> = [];
   const items = [...(fixture.items ?? [GMAIL, SLACK])];
-  const proc = recordingNodeProcess();
 
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
-    proc.layer,
     Layer.succeed(
       TerminalUI,
       TerminalUI.of({
@@ -90,7 +88,7 @@ const triggersStatusTest = (fixture: TriggersStatusFixture = {}) => {
       })
     )
   );
-  return { layer, outputs, requests, exitCode: proc.exitCode };
+  return { layer, outputs, requests };
 };
 
 const stderr = MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
@@ -218,13 +216,12 @@ describe('runTriggersStatus', () => {
   ])(
     '[Given] nothing matches and showDisabled $showDisabled [Then] warns and outputs nothing',
     ({ showDisabled, message }) => {
-      const { layer, outputs, exitCode } = triggersStatusTest({ items: [] });
+      const { layer, outputs } = triggersStatusTest({ items: [] });
       return Effect.gen(function* () {
         yield* runTriggersStatus({ ...noFilters, showDisabled });
 
         expect(outputs).toEqual([]);
         expect(yield* stderr).toEqual([message]);
-        expect(exitCode()).toBeUndefined();
       }).pipe(Effect.provide(layer));
     }
   );
@@ -242,12 +239,12 @@ describe('runTriggersStatus', () => {
   it.effect(
     '[Given] the API fails [Then] reports the fallback message, outputs nothing and exits 1',
     () => {
-      const { layer, outputs, exitCode } = triggersStatusTest({ fails: true });
+      const { layer, outputs } = triggersStatusTest({ fails: true });
       return Effect.gen(function* () {
-        yield* runTriggersStatus(noFilters);
+        const exit = yield* Effect.exit(runTriggersStatus(noFilters));
 
         expect(outputs).toEqual([]);
-        expect(exitCode()).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(yield* stderr).toContain('Failed to fetch trigger status.');
         expect((yield* allLines).join('\n')).toContain(
           'Retry with:\n> composio dev triggers status --show-disabled'

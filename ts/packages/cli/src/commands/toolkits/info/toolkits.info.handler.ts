@@ -55,7 +55,7 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
       );
     }
 
-    const resultOpt = yield* ui
+    const result = yield* ui
       .withSpinner(
         `Fetching toolkit "${slugValue}"...`,
         Effect.gen(function* () {
@@ -94,22 +94,15 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
         })
       )
       .pipe(
-        Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
             const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
             yield* Effect.logDebug('Toolkit info error:', error);
-            yield* reportFailure(ui, message, BROWSE_TOOLKITS_HINT);
-            return Option.none();
+            return yield* reportFailure(ui, message, BROWSE_TOOLKITS_HINT);
           })
         )
       );
 
-    if (Option.isNone(resultOpt)) {
-      return;
-    }
-
-    const result = resultOpt.value;
     const toolkit = result.toolkit;
     const detailedToolkit = Option.getOrUndefined(result.detailedToolkitOpt);
 
@@ -129,8 +122,7 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
       const hint = first
         ? `Did you mean?\n${suggestions.map(s => `  ${s.label}`).join('\n')}\n\n${first.command}`
         : BROWSE_TOOLKITS_HINT;
-      yield* reportFailure(ui, `Toolkit "${slugValue}" not found.`, hint);
-      return;
+      return yield* reportFailure(ui, `Toolkit "${slugValue}" not found.`, hint);
     }
 
     yield* ui.log.message(

@@ -6,6 +6,7 @@ import { afterEach, vi } from 'vitest';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 const existingAgent = {
   status: 'READY',
@@ -112,12 +113,12 @@ describe('CLI: composio agent login', () => {
             jsonResponse({ ...existingAgent, status: 'PENDING', composio: undefined })
           );
 
-          yield* cli(['agent', 'login', 'cak_existing']);
+          const exit = yield* Effect.exit(cli(['agent', 'login', 'cak_existing']));
 
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
           expect(output).toContain('Agent identity is not ready yet.');
           expect(output).not.toContain('"logged_in":true');
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
           const ctx = yield* ComposioUserContext;
           expect(Option.getOrUndefined(ctx.data.apiKey)).toBeUndefined();
         })
@@ -129,12 +130,12 @@ describe('CLI: composio agent login', () => {
       Effect.gen(function* () {
         const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-        yield* cli(['agent', 'login', 'cak_existing']);
+        const exit = yield* Effect.exit(cli(['agent', 'login', 'cak_existing']));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('currently signed in to Composio as a regular user');
         expect(output).toContain('composio logout');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(fetchSpy).not.toHaveBeenCalled();
       })
     );

@@ -22,7 +22,7 @@ import { browserLogin } from 'src/effects/browser-login';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { commandInputError } from 'src/commands/errors';
-import { reportFailure } from 'src/effects/report-failure';
+import { printFailure, ReportedFailure } from 'src/effects/report-failure';
 import {
   describeDecodeError,
   isClientConnectionError,
@@ -327,13 +327,14 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     );
 
     if (orgProjects.data.length === 0) {
-      yield* reportFailure(
+      const message = 'No projects found for your organization.';
+      yield* printFailure(
         ui,
-        'No projects found for your organization.',
+        message,
         'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
       );
       yield* ui.outro('');
-      return;
+      return yield* new ReportedFailure({ message });
     }
 
     // 3. Select a developer project

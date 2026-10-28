@@ -6,6 +6,7 @@ import { writeStoredAgentIdentity } from 'src/services/agents';
 import { MockConsole } from 'test/__utils__';
 import { AgentHandlerTest } from 'test/__utils__/layers/agents';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 describe('runAgentClaim', () => {
   afterEach(() => {
@@ -83,13 +84,13 @@ describe('runAgentClaim', () => {
     return Effect.gen(function* () {
       const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-      yield* runAgentClaim({ email: 'boss@example.com' });
+      const exit = yield* Effect.exit(runAgentClaim({ email: 'boss@example.com' }));
 
       expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
         'No Composio agent identity is saved on this machine.',
         expect.stringMatching(/^Next steps:\n/),
       ]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCodeOf(exit)).toBe(1);
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(outputs).toEqual([]);
     }).pipe(Effect.provide(layer));

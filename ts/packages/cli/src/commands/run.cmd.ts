@@ -6,6 +6,7 @@ import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { Data, Deferred, Duration, Effect, MutableRef, Option, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { actingUser } from 'src/commands/surface';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
@@ -558,17 +559,14 @@ export const runCmd = Command.make('run', {
               // into a failure, which is what the previous `Effect.orDie` did.
               Effect.ignore
             )
-          ),
-          // Interruption (Ctrl-C) skips the assignment below, and the default teardown reports
-          // an interrupt-only exit as success. Report the conventional 128+SIGINT instead so
-          // wrappers and `set -e` scripts do not read a cancelled run as a passing one.
-          Effect.onInterrupt(() =>
-            Effect.sync(() => {
-              process.exitCode = 130;
-            })
           )
         );
-        process.exitCode = exitCode;
+        // The process exits with the child's code. An interrupted run (Ctrl-C) never gets here:
+        // `Runtime.defaultTeardown` exits 130 for it, so wrappers and `set -e` scripts do not
+        // read a cancelled run as a passing one.
+        if (exitCode !== 0) {
+          return yield* new ChildProcessExited({ code: exitCode });
+        }
       }).pipe(Effect.scoped)
   )
 );

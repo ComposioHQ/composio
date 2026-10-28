@@ -8,7 +8,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testConfigProvider = ConfigProvider.fromEnv({
@@ -253,22 +253,21 @@ describe('CLI: composio dev triggers create', () => {
     it => {
       it.effect('prints the fallback message and the list hint', () =>
         Effect.gen(function* () {
-          const proc = recordingNodeProcess();
           const repository = Layer.succeed(
             ComposioToolkitsRepository,
             makeToolkitsRepositoryStub({
               createTrigger: () => Effect.fail(notFoundError('Trigger type not found')),
             })
           );
-          yield* cli(['dev', 'triggers', 'create', 'UNKNOWN_TRIGGER']).pipe(
-            Effect.provide(Layer.merge(repository, proc.layer))
+          const exit = yield* Effect.exit(
+            cli(['dev', 'triggers', 'create', 'UNKNOWN_TRIGGER']).pipe(Effect.provide(repository))
           );
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
           expect(output).toContain('Failed to create trigger "UNKNOWN_TRIGGER".');
           expect(output).toContain('composio dev triggers list');
           expect(output).not.toContain('Trigger created');
-          expect(proc.exitCode()).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

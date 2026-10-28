@@ -95,19 +95,22 @@ Those markers _are_ the contract: "I already printed my own output; don't log me
 `Runtime.defaultTeardown` reads `errorExitCode` the same way — see
 `ts/vendor/effect/packages/effect/src/Runtime.ts`'s `getErrorReported`/`getErrorExitCode`.
 
-Consequently `ts/packages/cli/src/cli-main.ts` does **not** intercept `ShowHelp` to
-derive an exit code by hand anymore. Its sandboxed catch-all handler special-cases
-`ShowHelp` (via `CliError.isCliError(squashed) && Predicate.isTagged(squashed,
-'ShowHelp')`, never a direct `._tag ===` check) and re-fails with the original `Cause`
-via `Effect.failCause(cause)` instead of swallowing it like every other error — that lets
-the failure reach `BunRuntime.runMain` untouched, where `errorReported`/`errorExitCode`
-take over. The custom `teardown` in the same file reads `Runtime.getErrorExitCode` off
-the squashed failure for exactly this case, falling back to `Number(process.exitCode ??
-1)` otherwise. If you add rendering anywhere in this path, you will double-print — this
-is the single most important rule when touching the runner. The separate catch-all
-defect handler further down (genuine command-handler failures captured via
-`effect-errors`) is a different path that `Command.runWith` never renders, so appending
-help text there is not a double-print.
+The CLI's own errors use the same contract. A failure a command already printed
+(`ReportedFailure` from `src/effects/report-failure.ts`, `ReportedToolExecutionError`,
+`ShellSetupAbortError`, `SetupCommandError`, …) or that carries a custom code
+(`ChildProcessExited` from `composio run`) declares the markers as getters, and
+`ts/packages/cli/src/cli-main.ts` runs with `Runtime.defaultTeardown`, which exits 0 on
+success, 130 on interruption alone, and otherwise with the squashed failure's
+`errorExitCode` (1 when unset). Nothing in `src/` assigns `process.exitCode`.
+
+`cli-main.ts`'s sandboxed catch-all handler drops every failure whose `errorReported` is
+false (`ShowHelp` included) from the cause; when nothing is left it re-fails with the
+original `Cause` via `Effect.failCause(cause)`, so the failure reaches
+`BunRuntime.runMain` untouched and the markers take over. If you add rendering anywhere in
+this path, you will double-print — this is the single most important rule when touching
+the runner. Whatever is left is a genuine defect, captured via `effect-errors`, printed,
+and re-failed as a `ReportedFailure`; `Command.runWith` never renders that path, so
+appending help text there is not a double-print.
 
 ## argv preprocessing and the executable-prefix contract
 

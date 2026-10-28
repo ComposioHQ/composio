@@ -5,7 +5,7 @@ import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { notFoundError } from 'test/__utils__/layers/not-found';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
@@ -356,7 +356,6 @@ describe('CLI: composio dev toolkits list', () => {
     it => {
       it.effect('[Then] prints the error, writes `[]` to stdout and exits 1', () =>
         Effect.gen(function* () {
-          const proc = recordingNodeProcess();
           const repository = Layer.succeed(
             ComposioToolkitsRepository,
             makeToolkitsRepositoryStub({
@@ -365,13 +364,15 @@ describe('CLI: composio dev toolkits list', () => {
           );
           // Redirected streams, as under a script: only plain stderr lines and stdout data show.
           const terminal = redirectedTerminalUI();
-          yield* cli(['dev', 'toolkits', 'list']).pipe(
-            Effect.provide(Layer.mergeAll(repository, proc.layer, terminal.layer))
+          const exit = yield* Effect.exit(
+            cli(['dev', 'toolkits', 'list']).pipe(
+              Effect.provide(Layer.mergeAll(repository, terminal.layer))
+            )
           );
 
           expect(terminal.stderr()).toBe('Catalog unavailable\n');
           expect(terminal.stdout()).toBe('[]\n');
-          expect(proc.exitCode()).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

@@ -4,7 +4,7 @@ import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Argument, Command, Flag } from 'effect/cli';
 import util from 'node:util';
-import { Data, Effect, Context, Option, Result } from 'effect';
+import { Data, Effect, Context, Option, Result, Runtime } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { redact } from 'src/ui/redact';
@@ -152,13 +152,21 @@ export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
 
 /**
  * A failed execution whose result is already on stdout as `{ "successful": false, ... }`.
- * `cli-main.ts` prints nothing more for it and exits 1.
+ * The runtime prints nothing more for it (`[Runtime.errorReported]` is false) and exits 1.
  */
 export class ReportedToolExecutionError extends Data.TaggedError('ReportedToolExecutionError')<{
   readonly reason: 'connection_check' | 'execution_failed' | 'parallel_failed';
   readonly message: string;
   readonly toolSlug?: string;
-}> {}
+}> {
+  get [Runtime.errorReported]() {
+    return false;
+  }
+
+  get [Runtime.errorExitCode]() {
+    return 1;
+  }
+}
 
 const parseArguments = (raw: string) =>
   Effect.fromResult(

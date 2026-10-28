@@ -1,6 +1,6 @@
 import { requireLogin } from 'src/effects/require-auth';
 import { Argument, Command, Flag } from 'effect/cli';
-import { Data, Effect, Result, Option } from 'effect';
+import { Data, Effect, Result, Option, Runtime } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -80,8 +80,8 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
 
 /**
  * A proxy call refused before sending it because the toolkit is not connected, already reported
- * on stderr and as `{ "successful": false, ... }` on stdout. `cli-main.ts` prints nothing more
- * and exits 1.
+ * on stderr and as `{ "successful": false, ... }` on stdout. The runtime prints nothing more
+ * (`[Runtime.errorReported]` is false) and exits 1.
  */
 export class ReportedProxyCommandError extends Data.TaggedError(
   'commands/ReportedProxyCommandError'
@@ -89,7 +89,15 @@ export class ReportedProxyCommandError extends Data.TaggedError(
   readonly message: string;
   readonly toolkit: string;
   readonly endpoint: string;
-}> {}
+}> {
+  get [Runtime.errorReported]() {
+    return false;
+  }
+
+  get [Runtime.errorExitCode]() {
+    return 1;
+  }
+}
 
 class ProxyRequestError extends requestError('commands/ProxyRequestError') {}
 

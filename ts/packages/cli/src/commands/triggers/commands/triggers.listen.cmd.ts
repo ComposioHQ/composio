@@ -376,8 +376,15 @@ export const triggersCmd$Listen = Command.make(
       }).pipe(
         Effect.scoped,
         // An onExit finalizer, so the summaries print on every stop — including the
-        // interruption by Ctrl+C or SIGTERM, where the code after this block would not run.
-        Effect.onExit(() => Effect.andThen(forwardFailures.report, outputWriteFailures.report)),
+        // interruption by Ctrl+C or SIGTERM, where the code after this block would not run. With
+        // --fail-fast a summary fails the command, so the second one still prints after it.
+        Effect.onExit(() =>
+          Effect.gen(function* () {
+            const forwarded = yield* Effect.exit(forwardFailures.report);
+            yield* outputWriteFailures.report;
+            yield* forwarded;
+          })
+        ),
         Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
           reportFailure(
             ui,

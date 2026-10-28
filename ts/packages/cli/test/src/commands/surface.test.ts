@@ -8,6 +8,7 @@ import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { NodeProcess } from 'src/services/node-process';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeOrgProject } from 'test/__utils__/models/account';
 
 const SHARED_PROJECT_DESCRIPTION =
@@ -188,16 +189,17 @@ describe('CommandSurface: toolkits list reports the named project it cannot find
       accountData: { projects: [] },
     })
   )(it => {
-    // `toolkits list` reports every failure on stderr and exits 1 rather than failing.
+    // `toolkits list` prints every failure on stderr itself, then fails already reported.
     it.effect('looks the named project up', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        yield* cli(['dev', 'toolkits', 'list', '--project-name', 'nope']);
+        const exit = yield* Effect.exit(cli(['dev', 'toolkits', 'list', '--project-name', 'nope']));
         const stderr = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' })).join(
           '\n'
         );
         expect(stderr).toContain('Developer project "nope" was not found in org "org_test"');
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });
