@@ -1,6 +1,7 @@
 /**
  * Which invocation hooks a command runs, and when: only for a command `effect/cli` selected,
- * right after it began and before it checks a login, minus what its `CommandMeta` turns off.
+ * when it begins (before its invoked event) and before it checks a login, minus what its
+ * `CommandMeta` turns off.
  */
 import { describe, expect, it, layer } from '@effect/vitest';
 import { Cause, Effect, Exit, Option } from 'effect';
@@ -45,15 +46,15 @@ const sequenceOf = (args: ReadonlyArray<string>) =>
 describe('invocation hooks', () => {
   layer(TestLive())('when they run', it => {
     it.effect(
-      '[Given] a selected command [Then] its hooks run after it began, for its identity',
+      '[Given] a selected command [Then] its hooks run before its invoked event, for its identity',
       () =>
         Effect.gen(function* () {
           const { exitCode, sequence, hooked } = yield* sequenceOf(['version']);
 
           expect(exitCode).toBe(0);
           expect(sequence).toEqual([
-            'invoked',
             ...INVOCATION_HOOKS.map(hook => HOOK_SERVICES[hook]),
+            'invoked',
             'succeeded',
           ]);
           expect(hooked).toEqual(INVOCATION_HOOKS.map(() => 'version'));
@@ -75,8 +76,8 @@ describe('invocation hooks', () => {
               )
           ).toBe(true);
           expect(sequence).toEqual([
-            'invoked',
             ...INVOCATION_HOOKS.map(hook => HOOK_SERVICES[hook]),
+            'invoked',
             'failed',
           ]);
           expect(hooked).toEqual(INVOCATION_HOOKS.map(() => 'tools list'));
