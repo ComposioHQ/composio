@@ -10,7 +10,27 @@
   exits 1. Without it, a failed event is still reported and skipped, and the
   exit code stays 0.
 
+- `composio execute` and `composio proxy` now fail with an error listing
+  the candidate accounts, instead of silently using the newest one, when a
+  toolkit has several connected accounts, none is aliased `default`, and no
+  `--account` is passed. Scripts that relied on the implicit newest-account
+  pick now fail. To migrate, pass `--account <id|alias>`, or alias one account
+  `default`.
+
 ### Patch Changes
+
+- `composio execute` now exits 1 when an argument names a file on your machine
+  but the tool does not accept file uploads for that input, such as `file` in
+  `TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD`. It used to send the path text to
+  the tool and report success, and the tool stored that text instead of the
+  file. The error names the input and the path. Nothing is sent. `--dry-run`
+  reports the same error. Paths that do not exist on your machine are still
+  sent as before.
+
+- Local file uploads now use the filename's MIME type instead of always declaring
+  `application/octet-stream`. `execute --file` preserves arrays and injects into
+  the single matching upload field in an existing array item; ambiguous targets
+  require explicit JSON. This fixes Word and PowerPoint image editing through the CLI.
 
 - `composio listen` now picks the connected account for a trigger slug the way
   `composio execute` and `composio proxy` do, through the same resolver, so the
