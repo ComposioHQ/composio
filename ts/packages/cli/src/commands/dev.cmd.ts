@@ -5,7 +5,7 @@ import { CommandInputError } from './errors';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
 import { logsCmd } from './logs/logs.cmd';
-import { devToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { devToolsCmd$Execute } from './tools/execute/tools.execute.cmd';
 import { toolkitsCmd } from './toolkits/toolkits.cmd';
 import { authConfigsCmd } from './auth-configs/auth-configs.cmd';
 import { connectedAccountsCmd } from './connected-accounts/connected-accounts.cmd';

@@ -22,7 +22,7 @@ import { artifactsCmd } from './artifacts/artifacts.cmd';
 import { installCmd } from './install/install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { buildDevCommand } from './dev.cmd';
-import { ExecuteInvocationArgs } from './tools/commands/tools.execute.cmd';
+import { ExecuteInvocationArgs } from './tools/execute/tools.execute.parallel';
 import {
   buildHelpCommand,
   RootHelpMarker,
@@ -31,7 +31,7 @@ import {
   showCommandHelp,
 } from './root-help';
 import { toolsCmd$Search } from './tools/search/tools.search.cmd';
-import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { rootToolsCmd$Execute } from './tools/execute/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
 import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { connectedAccountsCmd$Link } from './connected-accounts/link/connected-accounts.link.cmd';
