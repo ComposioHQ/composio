@@ -1,10 +1,24 @@
-import type { ToolListResponse, ToolRetrieveResponse } from '@composio/client/resources/_internal/logs';
+import type {
+  LogCreateToolExecutionResponse,
+  LogRetrieveToolExecutionResponse,
+} from '@composio/client/resources/logs';
+import { Option, Schema } from 'effect';
 import type { TriggerLogRecord } from 'src/commands/logs/trigger-log-record';
 import { bold, gray, green, red } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-type ToolLog = ToolListResponse['data'][number];
-type ToolLogDetailed = ToolRetrieveResponse;
+type ToolLog = LogCreateToolExecutionResponse['logs'][number];
+type ToolLogDetailed = LogRetrieveToolExecutionResponse;
+
+const readRecord = (value: unknown): Record<string, unknown> =>
+  Option.getOrElse(
+    Schema.decodeUnknownOption(Schema.Record(Schema.String, Schema.Unknown))(value),
+    () => ({})
+  );
+const readString = (value: unknown): string | undefined =>
+  Option.getOrUndefined(Schema.decodeUnknownOption(Schema.String)(value));
+const readNumber = (value: unknown): number | undefined =>
+  Option.getOrUndefined(Schema.decodeUnknownOption(Schema.Number)(value));
 
 const TRIGGER_LOG_TABLE = {
   createdAt: 24,
@@ -81,21 +95,29 @@ export const formatToolLogsTable = (logs: ReadonlyArray<ToolLog>): string => {
   ].join(' ');
 
   const rows = logs.map(log => {
+    const metadata = readRecord(log.metadata);
+    const metrics = readRecord(log.metrics);
     const createdAt = gray(
-      truncate(formatCreatedAt(log.createdAt), TOOL_LOG_TABLE.createdAt).padEnd(
+      truncate(formatCreatedAt(log.timestamp), TOOL_LOG_TABLE.createdAt).padEnd(
         TOOL_LOG_TABLE.createdAt
       )
     );
     // Keep log ids untruncated for copy/paste workflows.
     const id = (log.id ?? '-').padEnd(TOOL_LOG_TABLE.id);
     const status = formatLogStatus(log.status, TOOL_LOG_TABLE.status);
-    const app = truncate(log.app?.name ?? '-', TOOL_LOG_TABLE.app).padEnd(TOOL_LOG_TABLE.app);
-    const actionKey = truncate(log.actionKey ?? '-', TOOL_LOG_TABLE.actionKey).padEnd(
+    const app = truncate(
+      readString(readRecord(metadata.toolkit).slug) ?? '-',
+      TOOL_LOG_TABLE.app
+    ).padEnd(TOOL_LOG_TABLE.app);
+    const actionKey = truncate(
+      readString(readRecord(metadata.tool).slug) ?? '-',
       TOOL_LOG_TABLE.actionKey
+    ).padEnd(TOOL_LOG_TABLE.actionKey);
+    const executionMs = `${readNumber(metrics.duration_ms) ?? 0}ms`.padEnd(
+      TOOL_LOG_TABLE.executionMs
     );
-    const executionMs = `${log.executionTime ?? 0}ms`.padEnd(TOOL_LOG_TABLE.executionMs);
     const connectedAccountId = truncate(
-      valueOrDash(log.connectedAccountId),
+      valueOrDash(readString(metadata.connected_account_id)),
       TOOL_LOG_TABLE.connectedAccountId
     );
 
@@ -133,19 +155,23 @@ const formatCreatedAt = (value: number | string | null | undefined): string => {
 };
 
 export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
-  const lines: string[] = [];
-  lines.push(`${bold('logId:')} ${toolLog.actionLogId}`);
-  lines.push(`${bold('toolSlug:')} ${toolLog.actionId}`);
-  lines.push(`${bold('Status:')} ${toolLog.status}`);
-  lines.push(`${bold('toolkit:')} ${toolLog.app?.name ?? '-'}`);
-  lines.push(`${bold('Connection ID:')} ${toolLog.connection?.id ?? '-'}`);
-  lines.push(`${bold('Entity:')} ${toolLog.connection?.entity ?? '-'}`);
-  lines.push(`${bold('Start Time:')} ${formatCreatedAt(toolLog.startTime)}`);
-  lines.push(`${bold('End Time:')} ${formatCreatedAt(toolLog.endTime)}`);
-  lines.push(`${bold('Total Duration:')} ${toolLog.totalDuration}`);
-  lines.push(`${bold('Version:')} ${toolLog.version}`);
-  lines.push(`${bold('Steps:')} ${toolLog.steps?.length ?? 0}`);
-  return lines.join('\n');
+  const metadata = readRecord(toolLog.metadata);
+  const tool = readRecord(metadata.tool);
+  const data = readRecord(toolLog.data);
+  return [
+    `${bold('logId:')} ${toolLog.id}`,
+    `${bold('toolSlug:')} ${valueOrDash(readString(tool.slug))}`,
+    `${bold('Status:')} ${valueOrDash(toolLog.status)}`,
+    `${bold('toolkit:')} ${valueOrDash(readString(readRecord(metadata.toolkit).slug))}`,
+    `${bold('Connection ID:')} ${valueOrDash(readString(metadata.connected_account_id))}`,
+    `${bold('Entity:')} ${valueOrDash(readString(metadata.user_id))}`,
+    `${bold('Start Time:')} ${formatCreatedAt(toolLog.timings?.start_time ?? toolLog.timestamp)}`,
+    `${bold('End Time:')} ${formatCreatedAt(toolLog.timings?.end_time)}`,
+    `${bold('Total Duration:')} ${readNumber(readRecord(toolLog.metrics).duration_ms) ?? 0}ms`,
+    `${bold('Version:')} ${valueOrDash(readString(tool.version))}`,
+    `\nPayload:\n${JSON.stringify(readRecord(data.request).payload ?? {}, null, 2)}`,
+    `\nResponse:\n${JSON.stringify(readRecord(data.response).body ?? {}, null, 2)}`,
+  ].join('\n');
 };
 
 export const formatTriggerLogInfo = (triggerLog: TriggerLogRecord): string => {

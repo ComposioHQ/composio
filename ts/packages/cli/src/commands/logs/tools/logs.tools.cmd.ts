@@ -1,7 +1,7 @@
 import { Argument, Command, Flag } from 'effect/cli';
 import { runLogsTools } from './logs.tools.handler';
 
-const cursor = Flag.Int('cursor').pipe(
+const cursor = Flag.String('cursor').pipe(
   Flag.optional,
   Flag.withDescription('Cursor for pagination')
 );
@@ -18,12 +18,12 @@ const to = Flag.Int('to').pipe(
 
 const limit = Flag.Int('limit').pipe(
   Flag.withDefault(30),
-  Flag.withDescription('Number of logs to fetch (1-1000)')
+  Flag.withDescription('Number of logs to fetch (1-100)')
 );
 
 const caseSensitive = Flag.Boolean('case-sensitive').pipe(
   Flag.withDefault(false),
-  Flag.withDescription('Whether search params are case-sensitive')
+  Flag.withDescription('Unsupported by the public API; use case-insensitive search')
 );
 
 const toolkit = Flag.String('toolkit').pipe(
@@ -47,7 +47,7 @@ const authConfigId = Flag.String('auth-config-id').pipe(
 );
 
 const status = Flag.String('status').pipe(
-  Flag.withDescription('Filter by execution status value(s), comma-separated'),
+  Flag.withDescription('Filter by success or failed, comma-separated'),
   Flag.optional
 );
 
@@ -70,7 +70,7 @@ const toolRouterSessionId = Flag.String('tool-router-session-id').pipe(
 );
 
 const sessionId = Flag.String('session-id').pipe(
-  Flag.withDescription('Filter by session id(s), comma-separated'),
+  Flag.withDescription('Legacy session filter (unsupported by the public API)'),
   Flag.optional
 );
 
