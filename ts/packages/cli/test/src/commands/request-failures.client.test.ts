@@ -4,6 +4,7 @@ import { TestClock } from 'effect/testing';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import {
   routeRequests,
   stubClientResources,
@@ -52,21 +53,21 @@ const rejectedRequests: ReadonlyArray<{
   {
     command: 'dev logs tools <id>',
     args: ['dev', 'logs', 'tools', 'log_1'],
-    resources: ['logs'],
+    resources: ['_internal'],
     tag: 'commands/ToolLogsRequestError',
     message: 'Failed to fetch tool log "log_1".',
   },
   {
     command: 'dev logs triggers',
     args: ['dev', 'logs', 'triggers'],
-    resources: ['logs'],
+    resources: ['_internal'],
     tag: 'commands/TriggerLogsRequestError',
     message: 'Failed to fetch trigger logs.',
   },
   {
     command: 'dev logs triggers <id>',
     args: ['dev', 'logs', 'triggers', 'log_1'],
-    resources: ['logs'],
+    resources: ['_internal'],
     tag: 'commands/TriggerLogsRequestError',
     message: 'Failed to fetch trigger log "log_1".',
   },
@@ -167,15 +168,17 @@ describe('CLI: a rejected request the command recovers from', () => {
         ['toolRouter'],
         routeRequests([{ method: 'GET', path: SESSION_TOOLKITS, respond: toolkits }], session)
       );
-      yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(Effect.provide(stub.layer));
+      const exit = yield* Effect.exit(
+        cli(['dev', 'toolkits', 'info', 'gmail']).pipe(Effect.provide(stub.layer))
+      );
       const lines = yield* MockConsole.getLines({ stripAnsi: true });
-      return { lines, lastPath: stub.requests.at(-1)?.path };
+      return { lines, lastPath: stub.requests.at(-1)?.path, exitCode: exitCodeOf(exit) };
     });
 
   layer(testLayer())('[Given] composio dev toolkits info and rejected session toolkits', it => {
     it.effect('[Then] the API message and the browse hint are printed', () =>
       Effect.gen(function* () {
-        const { lines, lastPath } = yield* toolkitsInfo(forbidden);
+        const { lines, lastPath, exitCode } = yield* toolkitsInfo(forbidden);
 
         expect(lines).toEqual([
           'Using global test user id "global-default"',
@@ -183,6 +186,7 @@ describe('CLI: a rejected request the command recovers from', () => {
           'Browse available toolkits:\n> composio dev toolkits list',
         ]);
         expect(lastPath).toBe(SESSION_TOOLKITS);
+        expect(exitCode).toBe(1);
       })
     );
   });

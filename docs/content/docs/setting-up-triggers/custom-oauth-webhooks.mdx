@@ -35,48 +35,53 @@ You can also manage ingress endpoints through `composio.webhooks.endpoints` in e
 
 The walkthrough below uses Slack as the example and the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack) or [Notion](/toolkits/notion).
 
-## Step 1: Discover what credentials the endpoint needs
+## Step 1: Collect the provider credentials
 
-Call the schema endpoint for the toolkit. The `setup_fields` in the response tell you exactly what to collect from the provider's app dashboard.
+For Slack, collect the **Signing Secret** from your app's Basic Information page and an **App-Level Token** (`xapp-...`) with the `authorizations:read` scope. Keep both secret. The endpoint verification step below uses `webhook_signing_secret` and `app_token`; it does not require a separate Composio schema-discovery request.
 
-```bash
-curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/schema?toolkit_slug=slack" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
-```
-
-Sample response:
-
-```json
-{
-  "toolkit_slug": "slack",
-  "setup_fields": {
-    "webhook_signing_secret": {
-      "display_name": "Signing Secret",
-      "description": "Webhook request signing secret from your Slack app dashboard",
-      "is_required": true,
-      "is_secret": true
-    },
-    "app_token": {
-      "display_name": "App-Level Token",
-      "description": "Slack xapp- token with authorizations:read scope for event authorization",
-      "is_required": true,
-      "is_secret": true
-    }
-  }
-}
-```
+Use the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints) for the supported create, retrieve, replace, and update operations. The committed API contract does not declare `/webhook_endpoints/schema`.
 
 ## Step 2: Create the endpoint
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+endpoint = composio.webhooks.endpoints.create(
+    toolkit_slug="slack",
+    client_id="<YOUR_OAUTH_CLIENT_ID>",
+)
+print(endpoint.root.id, endpoint.root.webhook_url)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const endpoint = await composio.webhooks.endpoints.create({
+  toolkitSlug: 'slack',
+  clientId: '<YOUR_OAUTH_CLIENT_ID>',
+});
+console.log(endpoint.id, endpoint.webhookUrl);
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_endpoints \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "toolkit_slug": "slack",
     "client_id": "<YOUR_OAUTH_CLIENT_ID>"
   }'
 ```
+</Tab>
+</Tabs>
 
 Sample response:
 
@@ -91,15 +96,41 @@ Sample response:
 }
 ```
 
-Hold on to two values from the response: `id` (used as `<ENDPOINT_ID>` below) and `webhook_url` (you'll paste this into the provider's app dashboard in step 4). The call is **idempotent per `(toolkit_slug, client_id)` within a project**. Calling it again with the same pair returns the existing endpoint without rotating the URL or wiping the secret.
+Hold on to two values from the response: `id` (`we_abc123` in the examples below) and `webhook_url` (you'll paste this into the provider's app dashboard in step 4). The call is **idempotent per `(toolkit_slug, client_id)` within a project**. Calling it again with the same pair returns the existing endpoint without rotating the URL or wiping the secret.
 
 ## Step 3: Store the credentials returned by the schema
 
 `PATCH` all the fields the schema returned in a single request. For Slack, that's the signing secret and (when needed) the app-level token together:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+composio.webhooks.endpoints.update(
+    "we_abc123",
+    data={
+        "webhook_signing_secret": "<SIGNING_SECRET>",
+        "app_token": "xapp-...",
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+await composio.webhooks.endpoints.update('we_abc123', {
+  data: {
+    webhook_signing_secret: '<SIGNING_SECRET>',
+    app_token: 'xapp-...',
+  },
+});
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
+curl -X PATCH https://backend.composio.dev/api/v3.1/webhook_endpoints/we_abc123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
@@ -108,6 +139,8 @@ curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT
     }
   }'
 ```
+</Tab>
+</Tabs>
 
 For Slack, the credentials come from:
 
@@ -131,37 +164,125 @@ For providers that issue a verification challenge on save (Slack `url_verificati
 
 To rotate the signing secret or update any single field, `PATCH` it (other fields are preserved):
 
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{ "data": { "webhook_signing_secret": "<NEW_SECRET>" } }'
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+composio.webhooks.endpoints.update(
+    "we_abc123",
+    data={"webhook_signing_secret": "<NEW_SECRET>"},
+)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+await composio.webhooks.endpoints.update('we_abc123', {
+  data: { webhook_signing_secret: '<NEW_SECRET>' },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/webhook_endpoints/we_abc123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"webhook_signing_secret": "<NEW_SECRET>"}}'
+```
+</Tab>
+</Tabs>
 
 To **replace** `data` wholesale (any field you don't include is cleared), `POST` to the same URL:
 
-```bash
-curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{ "data": { "webhook_signing_secret": "<NEW_SECRET>", "app_token": "<NEW_APP_TOKEN>" } }'
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+composio.webhooks.endpoints.replace(
+    "we_abc123",
+    data={
+        "webhook_signing_secret": "<NEW_SECRET>",
+        "app_token": "<NEW_APP_TOKEN>",
+    },
+)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+await composio.webhooks.endpoints.replace('we_abc123', {
+  data: {
+    webhook_signing_secret: '<NEW_SECRET>',
+    app_token: '<NEW_APP_TOKEN>',
+  },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_endpoints/we_abc123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"webhook_signing_secret": "<NEW_SECRET>", "app_token": "<NEW_APP_TOKEN>"}}'
+```
+</Tab>
+</Tabs>
 
 The `webhook_url` is immutable for the lifetime of the endpoint. Rotating the signing secret on the provider side is a `PATCH` on the existing endpoint, not a new one.
 
 To inspect a single endpoint:
 
-```bash
-curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+endpoint = composio.webhooks.endpoints.get("we_abc123")
+print(endpoint)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+const endpoint = await composio.webhooks.endpoints.get('we_abc123');
+console.log(endpoint);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/webhook_endpoints/we_abc123 \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
 
 To list every endpoint in the current project:
 
-```bash
-curl "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+endpoints = composio.webhooks.endpoints.list()
+print(endpoints)
 ```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+const { items } = await composio.webhooks.endpoints.list();
+console.log(items);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/webhook_endpoints \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
 
 ## Next
 

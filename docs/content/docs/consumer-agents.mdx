@@ -8,7 +8,7 @@ A consumer agent serves individual end users. Each person signs in to your produ
 
 Start with one Composio project per application environment. Map every signed-in user to a stable ID from your database, then create and reuse sessions for that ID.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -36,6 +36,18 @@ const session = await composio.create(appUserId, {
   toolkits: ["gmail", "googlecalendar"],
 });
 const tools = await session.tools();
+```
+</Tab>
+<Tab value="API">
+```bash
+# Use the immutable primary key from your application database.
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "usr_01J9F4M2K8", "toolkits": {"enable": ["gmail", "googlecalendar"]}}' | jq -r '.session_id')
+
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>
@@ -79,7 +91,7 @@ Every Composio organization also has one consumer project: the project behind Co
 
 Resolve the consumer project once to learn its nano IDs, then build the SDK instance with the user API key and that scope. The SDK sends `x-user-api-key`, `x-org-id`, and `x-project-id` on every request, carries the scope into session clones, and exports it with the session's MCP config:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 import os
@@ -99,7 +111,6 @@ session = composio.sessions.create(user_id="user_123", toolkits=["gmail"], mcp=T
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({
@@ -113,6 +124,18 @@ const session = await composio.create("user_123", { toolkits: ["gmail"], mcp: tr
 // session.mcp.headers carries x-user-api-key, x-org-id, and x-project-id
 ```
 </Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-key-header" operation="POST /api/v3.1/tool_router/session" field="x-api-key" reason="session routes also accept a user API key with organization and project scope headers; OpenAPI omits that alternative" */}
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
+  -H "x-org-id: org_9f2k1x" \
+  -H "x-project-id: proj_4b8m2q" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["gmail"]}}'
+# The response's mcp block holds the session's MCP URL
+```
+</Tab>
 </Tabs>
 
 `orgId` and `projectId` (`org_id` and `project_id` in Python) must be set together, and the SDK rejects a scope that disagrees with `x-org-id` or `x-project-id` entries in `defaultHeaders`. Without a scope, a user API key addresses the API default (the developer project).
@@ -123,6 +146,55 @@ Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (
 
 The nano IDs come from the consumer project resolve endpoint, which also provisions the project when it is absent. The same credential lists the toolkits a consumer user has already connected:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+from composio import Composio
+
+user_key = os.environ["COMPOSIO_USER_API_KEY"]
+org_id = os.environ["COMPOSIO_ORG_ID"]
+composio = Composio(disable_api_key=True, user_api_key=user_key)
+
+# These consumer routes have no typed client method; the user key is sent automatically.
+project = composio.client.post(
+    "/api/v3.1/org/consumer/project/resolve",
+    cast_to=object,
+    headers={"x-org-id": org_id},
+)
+toolkits = composio.client.get(
+    "/api/v3.1/org/consumer/connected_toolkits",
+    cast_to=object,
+    query={"user_id": "user_123"},
+    headers={"x-org-id": org_id},
+)
+print(project, toolkits)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const orgId = process.env.COMPOSIO_ORG_ID;
+if (!orgId) throw new Error('Set COMPOSIO_ORG_ID to the organization nano ID');
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: process.env.COMPOSIO_USER_API_KEY,
+});
+const client = composio.getClient();
+const project = await client.post<unknown>('/api/v3.1/org/consumer/project/resolve', {
+  headers: { 'x-org-id': orgId },
+});
+const toolkits = await client.get<unknown>('/api/v3.1/org/consumer/connected_toolkits', {
+  headers: { 'x-org-id': orgId },
+  query: { user_id: 'user_123' },
+});
+console.log(project, toolkits);
+```
+</Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-unknown-operation" operation="POST /api/v3.1/org/consumer/project/resolve" reason="internal consumer route: the public OpenAPI spec omits it and the API client lists it only as an x-internal operation" */}
+{/* code-example: unchecked-api rule="api-unknown-operation" operation="GET /api/v3.1/org/consumer/connected_toolkits" reason="internal consumer route: the public OpenAPI spec omits it and the API client lists it only as an x-internal operation" */}
 ```bash
 # Resolve the organization's consumer project
 curl -X POST https://backend.composio.dev/api/v3.1/org/consumer/project/resolve \
@@ -132,11 +204,13 @@ curl -X POST https://backend.composio.dev/api/v3.1/org/consumer/project/resolve 
 #  "project_type": "CONSUMER", "config": {"consumer_experience_enabled": true, ...}}
 
 # List the toolkits this consumer user has already connected
-curl "https://backend.composio.dev/api/v3.1/org/consumer/connected_toolkits?user_id=user_123" \
+curl -X GET "https://backend.composio.dev/api/v3.1/org/consumer/connected_toolkits?user_id=user_123" \
   -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
   -H "x-org-id: $COMPOSIO_ORG_ID"
 # {"toolkits": ["gmail"], "project_id": "<uuid>", "project_nano_id": "proj_4b8m2q", "user_id": "user_123"}
 ```
+</Tab>
+</Tabs>
 
 Use the nano IDs from the resolve response (`org_id` and `project_nano_id`), always together. A UUID in either header is a `400`. A user with no connections yet gets an empty `toolkits` list with the project scope still filled in, so you can create their session before they connect anything. An organization without a consumer project gets `null` project identifiers from the listing, which never provisions one. Raw HTTP callers create the session with the same three headers on `POST /api/v3.1/tool_router/session`.
 

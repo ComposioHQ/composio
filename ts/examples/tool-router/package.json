@@ -23,7 +23,7 @@
   "dependencies": {
     "@ai-sdk/mcp": "catalog:",
     "@ai-sdk/openai": "catalog:",
-    "@anthropic-ai/claude-agent-sdk": "^0.3.295",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.304",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai-agents": "workspace:*",
@@ -34,7 +34,7 @@
     "@openai/agents": "^0.20.0",
     "ai": "catalog:",
     "dotenv": "catalog:",
-    "langchain": "^1.5.16",
+    "langchain": "^1.5.18",
     "openai": "catalog:",
     "ora": "^9.4.1",
     "zod": "catalog:"

@@ -60,7 +60,7 @@ ZDR does not cover the following, even in a ZDR project. For how long Composio k
 
 Turn off the sandbox when you create a session:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -82,6 +82,14 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123", {
   sandbox: { enable: false },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "workbench": {"enable": false}}'
 ```
 </Tab>
 </Tabs>

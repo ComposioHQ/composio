@@ -9,6 +9,8 @@ gallery:
   order: 7
 ---
 
+{/* code-example: single-language-page reason="Python-only example project using CrewAI and LangChain Python MCP clients" */}
+
 Build an agent that reads a Hacker News profile and reports its current karma and bio. Choose CrewAI or LangChain below. Both agents use a Composio session that exposes one public, read-only tool over MCP, so you don't need to connect a Hacker News account.
 
 The session supplies the MCP URL and authentication headers. Your framework handles tool discovery and execution through that endpoint.
@@ -38,6 +40,7 @@ export COMPOSIO_EXAMPLES_USER_ID="mcp-research-demo"
 
 Choose one framework and install its dependencies. Each script creates the session, runs the lookup, and deletes the session when the run finishes or raises an error.
 
+{/* code-example: single-language reason="CrewAI vs LangChain framework picker; both are Python-only MCP agent scripts" */}
 <Tabs items={['CrewAI', 'LangChain']}>
 <Tab value="CrewAI">
 

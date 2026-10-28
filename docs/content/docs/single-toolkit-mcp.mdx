@@ -26,6 +26,7 @@ For most use cases, use a regular [session](/docs/configuring-sessions) instead.
   <Step>
     ### Initialize Composio
 
+    {/* code-example: no-api reason="SDK client construction; the REST API takes the key as an x-api-key header on each request" */}
     <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
       <Tab value="Python">
 ```python
@@ -53,7 +54,7 @@ const composio = new Composio({
     **Before you begin:** [Create an auth configuration](/docs/auth-configuration/custom-auth-configs) for your toolkit.
     </Callout>
 
-    <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+    <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
       <Tab value="Python">
 ```python
 server = composio.mcp.create(
@@ -86,6 +87,22 @@ const server = await composio.mcp.create("my-gmail-server", {
 console.log(`Server created: ${server.id}`);
 ```
       </Tab>
+      <Tab value="API">
+```bash
+SERVER_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/mcp/servers/custom \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-gmail-server",
+    "toolkits": ["gmail"],
+    "auth_config_ids": ["ac_xyz123"],
+    "allowed_tools": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+    "managed_auth_via_composio": true
+  }' | jq -r '.id')
+
+echo "Server created: $SERVER_ID"
+```
+      </Tab>
     </Tabs>
 
     <Callout type="info">
@@ -100,7 +117,7 @@ console.log(`Server created: ${server.id}`);
     Users must authenticate with the toolkits configured in your MCP server first. See [authentication](/docs/authentication) for details.
     </Callout>
 
-    <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+    <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
       <Tab value="Python">
 ```python
 instance = composio.mcp.generate(user_id="user-123", mcp_config_id=server.id)
@@ -119,6 +136,15 @@ const instance = await composio.mcp.generate("user-123", server.id);
 console.log("MCP Server URL:", instance.url);
 ```
       </Tab>
+      <Tab value="API">
+```bash
+curl -s -X POST https://backend.composio.dev/api/v3.1/mcp/servers/generate \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mcp_server_id": "'"$SERVER_ID"'", "user_ids": ["user-123"], "managed_auth_by_composio": true}' \
+  | jq -r '.user_ids_url[0]'
+```
+      </Tab>
     </Tabs>
   </Step>
 
@@ -133,83 +159,102 @@ console.log("MCP Server URL:", instance.url);
     For consumer connections, use `https://connect.composio.dev/mcp`, not this URL.
     </Callout>
 
-    <Tabs items={['OpenAI (Python)', 'Anthropic (Python)', 'Mastra (TypeScript)']}>
-      <Tab value="OpenAI (Python)">
+    Set `COMPOSIO_MCP_URL` to the URL returned by the generate step, and keep `COMPOSIO_API_KEY` on the server. Don't construct the MCP URL from a server ID.
+
+    <Tabs items={['OpenAI', 'Anthropic', 'Mastra']}>
+      <Tab value="OpenAI">
+{/* code-example: no-api reason="OpenAI Responses configures a remote MCP tool in an external model client, not through a Composio REST operation" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
 ```python
+import os
 from openai import OpenAI
 
-client = OpenAI(api_key="your-openai-api-key")
-
-mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOUR_USER_ID"
-mcp_headers = {"x-api-key": "YOUR_COMPOSIO_API_KEY"}
-
+client = OpenAI()
 response = client.responses.create(
-    model="gpt-5",
+    model="gpt-5.4",
     tools=[{
         "type": "mcp",
         "server_label": "composio-server",
-        "server_url": mcp_server_url,
-        "headers": mcp_headers,
+        "server_url": os.environ["COMPOSIO_MCP_URL"],
+        "headers": {"x-api-key": os.environ["COMPOSIO_API_KEY"]},
         "require_approval": "never",
     }],
     input="What are my latest emails?",
 )
-
 print(response.output_text)
 ```
-      </Tab>
-      <Tab value="Anthropic (Python)">
-```python
-from anthropic import Anthropic
-
-client = Anthropic(api_key="your-anthropic-api-key")
-
-mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOUR_USER_ID"
-mcp_headers = {"x-api-key": "YOUR_COMPOSIO_API_KEY"}
-
-response = client.beta.messages.create(
-    model="claude-sonnet-4-6",
-    max_tokens=1000,
-    messages=[{"role": "user", "content": "What are my latest emails?"}],
-    mcp_servers=[{
-        "type": "url",
-        "url": mcp_server_url,
-        "name": "composio-mcp-server",
-        "headers": mcp_headers,
-    }],
-    betas=["mcp-client-2025-04-04"]
-)
-
-print(response.content)
-```
-      </Tab>
-      <Tab value="Mastra (TypeScript)">
+</Tab>
+<Tab value="TypeScript">
 ```typescript
-// @noErrors
-import { MCPClient } from "@mastra/mcp";
-import { openai } from "@ai-sdk/openai";
-import { Agent } from "@mastra/core/agent";
+import OpenAI from 'openai';
 
-const MCP_URL = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOUR_USER_ID";
-const MCP_HEADERS = { "x-api-key": "YOUR_COMPOSIO_API_KEY" };
+const mcpServerUrl = process.env.COMPOSIO_MCP_URL;
+const apiKey = process.env.COMPOSIO_API_KEY;
+if (!mcpServerUrl || !apiKey) throw new Error('Set COMPOSIO_MCP_URL and COMPOSIO_API_KEY');
+const client = new OpenAI();
+const response = await client.responses.create({
+  model: 'gpt-5.4',
+  tools: [{
+    type: 'mcp',
+    server_label: 'composio-server',
+    server_url: mcpServerUrl,
+    headers: { 'x-api-key': apiKey },
+    require_approval: 'never',
+  }],
+  input: 'What are my latest emails?',
+});
+console.log(response.output_text);
+```
+</Tab>
+</Tabs>
+      </Tab>
+      <Tab value="Anthropic">
+{/* code-example: no-api reason="Anthropic's hosted MCP connector is an external model API integration and cannot forward the required Composio header" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+<Callout type="info">
+Anthropic's hosted MCP connector accepts a Bearer `authorization_token`, not arbitrary headers. Its Python `mcp_servers` options cannot send the `x-api-key` required by [Composio MCP servers](/reference/api-reference/mcp). Use the [Claude Agent SDK HTTP transport](/docs/sessions-via-mcp#wire-it-into-your-framework), which forwards `headers`, instead.
+</Callout>
+</Tab>
+<Tab value="TypeScript">
+<Callout type="info">
+The TypeScript Anthropic SDK has the same hosted-connector limitation: `mcp_servers` accepts `authorization_token`, not `headers`. It cannot send the `x-api-key` required by [Composio MCP servers](/reference/api-reference/mcp). Use the [Claude Agent SDK HTTP transport](/docs/sessions-via-mcp#wire-it-into-your-framework) with the generated URL and headers instead.
+</Callout>
+</Tab>
+</Tabs>
+      </Tab>
+      <Tab value="Mastra">
+{/* code-example: single-language reason="Mastra is a TypeScript agent framework and has no Python SDK" */}
+```typescript
+import { MCPClient } from '@mastra/mcp';
+import { Agent } from '@mastra/core/agent';
 
+const mcpServerUrl = process.env.COMPOSIO_MCP_URL;
+const apiKey = process.env.COMPOSIO_API_KEY;
+if (!mcpServerUrl || !apiKey) throw new Error('Set COMPOSIO_MCP_URL and COMPOSIO_API_KEY');
 const client = new MCPClient({
-  id: "mcp-client",
+  id: 'mcp-client',
   servers: {
-    composio: { url: new URL(MCP_URL), headers: MCP_HEADERS },
-  }
+    composio: {
+      url: new URL(mcpServerUrl),
+      requestInit: { headers: { 'x-api-key': apiKey } },
+    },
+  },
 });
-
-const agent = new Agent({
-  id: "assistant",
-  name: "Assistant",
-  instructions: "You are a helpful assistant that can read and manage emails.",
-  model: openai("gpt-5.4"),
-  tools: await client.getTools()
-});
-
-const res = await agent.generate("What are my latest emails?");
-console.log(res.text);
+try {
+  const agent = new Agent({
+    id: 'assistant',
+    name: 'Assistant',
+    instructions: 'You are a helpful assistant that can read and manage emails.',
+    model: 'openai/gpt-5.4',
+    tools: await client.listTools(),
+  });
+  const response = await agent.generate('What are my latest emails?');
+  console.log(response.text);
+} finally {
+  await client.disconnect();
+}
 ```
       </Tab>
     </Tabs>
@@ -220,14 +265,14 @@ console.log(res.text);
 
 ### List servers
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
-servers = composio.mcp.list()
+servers = composio.mcp.list(limit=10, page_no=1)
 print(f"Found {len(servers['items'])} servers")
 
 # Filter by toolkit
-gmail_servers = composio.mcp.list(toolkits="gmail", limit=20)
+gmail_servers = composio.mcp.list(toolkits="gmail", limit=20, page_no=1)
 ```
   </Tab>
   <Tab value="TypeScript">
@@ -252,11 +297,21 @@ const gmailServers = await composio.mcp.list({
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/mcp/servers?limit=10&page_no=1" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Filter by toolkit
+curl -X GET "https://backend.composio.dev/api/v3.1/mcp/servers?toolkits=gmail&limit=20&page_no=1" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 ### Get server details
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 server = composio.mcp.get("mcp_server_id")
@@ -272,11 +327,17 @@ const server = await composio.mcp.get("mcp_server_id");
 console.log(`Server: ${server.name}`);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/mcp/mcp_server_id \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 ### Update a server
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 updated = composio.mcp.update(
@@ -297,11 +358,19 @@ const updated = await composio.mcp.update("mcp_server_id", {
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/mcp/mcp_server_id \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "updated-name", "allowed_tools": ["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"]}'
+```
+  </Tab>
 </Tabs>
 
 ### Delete a server
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 result = composio.mcp.delete("mcp_server_id")
@@ -318,6 +387,12 @@ const result = await composio.mcp.delete("mcp_server_id");
 if (result.deleted) {
   console.log("Server deleted");
 }
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X DELETE https://backend.composio.dev/api/v3.1/mcp/mcp_server_id \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>

@@ -14,7 +14,7 @@ dependencies = [
     "pysher==1.0.8",
     "websocket-client<2",
     "pydantic>=2.11.9,<3",
-    "composio-client==2.0.0rc21",
+    "composio-client==2.0.0rc22",
     "typing-extensions>=4.16.0,<5",
     "openai>=2.48.0,<4",
     "json-schema-to-pydantic>=0.4.11,<1",
@@ -64,11 +64,16 @@ dev = [
     # CrewAI 1.x currently constrains Tomli to the 2.0 line.
     "tomli>=2.0.2,<2.1",
 ]
+# Docs examples use this locked group instead of an unlocked `uv run --with`
+# overlay. Keep the mypy version in sync with noxfile.py.
+docs-snippets = [
+    "mypy==2.3.1",
+]
 # The release build installs only this group, from uv.lock, and builds with
 # `--no-isolation` so no unlocked build backend is fetched at release time.
 # Pinned exactly; only move to releases at least three days old, matching
 # pnpm's `minimumReleaseAge`.
 release = [
     "build==1.6.1",
-    "setuptools==84.0.0",
+    "setuptools==84.1.0",
 ]

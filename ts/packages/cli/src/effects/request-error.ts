@@ -28,7 +28,7 @@ export const requestError = <Tag extends string>(
  *
  * @example
  * ```ts
- * client.logs.tools.list(query, idempotent).pipe(failedWith(ToolLogsRequestError, 'Failed to fetch tool logs.'))
+ * client._internal.logs.tools.list(query, idempotent).pipe(failedWith(ToolLogsRequestError, 'Failed to fetch tool logs.'))
  * ```
  */
 export const failedWith =

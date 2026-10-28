@@ -29,9 +29,39 @@ The org endpoints accept a `project_id` filter so you can slice by project witho
 
 Totals across entity types for a time window.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+summary = composio.experimental.usage.summary(
+    from_=1744848000000,
+    to=1744934400000,
+    entity_types=["tool_calls", "sessions"],
+)
+print(summary.entities)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const summary = await composio.experimental.usage.summary({
+  from: 1744848000000,
+  to: 1744934400000,
+  entityTypes: ['tool_calls', 'sessions'],
+});
+console.log(summary.entities);
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/project/usage/summary \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "from": 1744848000000,
@@ -39,6 +69,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/project/usage/summary \
     "entity_types": ["tool_calls", "sessions"]
   }'
 ```
+</Tab>
+</Tabs>
 
 Response:
 
@@ -58,17 +90,54 @@ Response:
 | `from` | number | 30 days ago | Epoch milliseconds |
 | `to` | number | now | Epoch milliseconds |
 | `entity_types` | string[] | all | Subset of `tool_calls`, `sessions` |
-| `filters.user_id` | string \| string[] | — | Filter events by initiating user |
-| `filters.session_id` | string \| string[] | — | Filter events by session |
-| `filters.project_id` | string \| string[] | — | Only meaningful on org endpoints; ignored on project endpoints |
+| `filters.user_id` | string[] | — | Filter events by initiating user |
+| `filters.session_id` | string[] | — | Filter events by session |
+| `filters.project_id` | string[] | — | Only meaningful on org endpoints; ignored on project endpoints |
 
 ## Breakdown
 
 One entity type, grouped by a dimension. Useful for answering "top N" questions.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+breakdown = composio.experimental.usage.breakdown(
+    "tool_calls",
+    from_=1744848000000,
+    to=1744934400000,
+    group_by="toolkit_slug",
+    order_by="total_quantity",
+    order_direction="desc",
+    limit=10,
+)
+print(breakdown.groups)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const breakdown = await composio.experimental.usage.breakdown('tool_calls', {
+  from: 1744848000000,
+  to: 1744934400000,
+  groupBy: 'toolkit_slug',
+  orderBy: 'total_quantity',
+  orderDirection: 'desc',
+  limit: 10,
+});
+console.log(breakdown.groups);
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "from": 1744848000000,
@@ -79,6 +148,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
     "limit": 10
   }'
 ```
+</Tab>
+</Tabs>
 
 Response:
 
@@ -116,7 +187,7 @@ Response:
 
 ## Filters
 
-Filters live in a `filters` object on the request body. Each filter value can be a **single string** or an **array of strings**:
+Filters live in a `filters` object on the request body. Each filter value is an **array of strings**, even for a single value:
 
 - Within a single field, values are OR-combined (`user_id: ["a", "b"]` matches events for user *a or b*).
 - Across fields, filters are AND-combined.
@@ -125,7 +196,7 @@ Filters live in a `filters` object on the request body. Each filter value can be
 {
   "filters": {
     "user_id": ["user_123", "user_456"],
-    "session_id": "sess_abc"
+    "session_id": ["sess_abc"]
   }
 }
 ```
@@ -143,44 +214,150 @@ The `project_id` filter is only meaningful on the org-scoped endpoints. Project 
 
 ### Top 10 tools my org called last week
 
+The Python SDK requires `COMPOSIO_API_KEY` to initialize as well as `COMPOSIO_ORG_API_KEY` for the organization-scoped request.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+import time
+from composio import Composio
+
+composio = Composio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"])
+now = int(time.time()) * 1000
+breakdown = composio.client.org.usage.retrieve(
+    "tool_calls",
+    from_=now - 604_800_000,
+    to=now,
+    group_by="tool_slug",
+    limit=10,
+)
+print(breakdown)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: null,
+  orgApiKey: process.env.COMPOSIO_ORG_API_KEY,
+});
+const now = Math.floor(Date.now() / 1000) * 1000;
+const breakdown = await composio.getClient().post<unknown>('/api/v3.1/org/usage/tool_calls', {
+  body: { from: now - 604_800_000, to: now, group_by: 'tool_slug', limit: 10 },
+});
+console.log(breakdown);
+```
+</Tab>
+<Tab value="API">
 ```bash
 WEEK_AGO=$(( $(date +%s) - 604800 ))000
 NOW=$(date +%s)000
 curl -X POST https://backend.composio.dev/api/v3.1/org/usage/tool_calls \
-  -H "x-org-api-key: YOUR_ORG_API_KEY" \
+  -H "x-org-api-key: $COMPOSIO_ORG_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"from\": ${WEEK_AGO},
-    \"to\": ${NOW},
-    \"group_by\": \"tool_slug\",
-    \"limit\": 10
-  }"
+  -d '{
+    "from": '"$WEEK_AGO"',
+    "to": '"$NOW"',
+    "group_by": "tool_slug",
+    "limit": 10
+  }'
 ```
+</Tab>
+</Tabs>
 
 ### Tool call count per user for my project this month
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import time
+
+from composio import Composio
+
+composio = Composio()
+
+now = int(time.time() * 1000)
+breakdown = composio.experimental.usage.breakdown(
+    "tool_calls",
+    from_=now - 2_592_000_000,
+    to=now,
+    group_by="user_id",
+    limit=50,
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const now = Date.now();
+const breakdown = await composio.experimental.usage.breakdown('tool_calls', {
+  from: now - 2_592_000_000,
+  to: now,
+  groupBy: 'user_id',
+  limit: 50,
+});
+```
+</Tab>
+<Tab value="API">
 ```bash
 MONTH_AGO=$(( $(date +%s) - 2592000 ))000
 NOW=$(date +%s)000
 curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"from\": ${MONTH_AGO},
-    \"to\": ${NOW},
-    \"group_by\": \"user_id\",
-    \"limit\": 50
-  }"
+  -d '{
+    "from": '"$MONTH_AGO"',
+    "to": '"$NOW"',
+    "group_by": "user_id",
+    "limit": 50
+  }'
 ```
+</Tab>
+</Tabs>
 
 ### Which toolkits is a specific user using?
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+breakdown = composio.experimental.usage.breakdown(
+    "tool_calls",
+    group_by="toolkit_slug",
+    filters={"user_id": ["user_abc123"]},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const breakdown = await composio.experimental.usage.breakdown('tool_calls', {
+  groupBy: 'toolkit_slug',
+  filters: { userId: ['user_abc123'] },
+});
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
-  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "group_by": "toolkit_slug",
-    "filters": { "user_id": "user_abc123" }
+    "filters": { "user_id": ["user_abc123"] }
   }'
 ```
+</Tab>
+</Tabs>

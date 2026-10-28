@@ -1,8 +1,9 @@
-import { afterEach } from 'vitest';
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
@@ -81,10 +82,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio connections remove', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   const confirmedDeleteCalls: string[] = [];
   layer(
     TestLive({
@@ -182,10 +179,9 @@ describe('CLI: composio connections remove', () => {
 
         expect(deniedDeleteCalls).toEqual([]);
 
-        // Declining is not a failure: the line says nothing changed, and the exit code stays 0.
+        // Declining is not a failure: the command succeeds and the line says nothing changed.
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         expect(lines.at(-1)).toBe('No connection removed.');
-        expect(process.exitCode).toBeUndefined();
       })
     );
   });
@@ -261,7 +257,6 @@ describe('CLI: composio connections remove', () => {
           yield* userContext.login('test_api_key', 'org_test');
           const failure = yield* cli(['connections', 'remove', 'gmail']).pipe(Effect.flip);
 
-          // `cli-main.ts` prints the message on stderr and exits 1.
           expect(failure).toMatchObject({
             _tag: 'commands/CommandInputError',
             command: 'connections remove',
@@ -270,7 +265,9 @@ describe('CLI: composio connections remove', () => {
           });
           expect(headlessDeleteCalls).toEqual([]);
           // Not even the connection list is fetched.
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
     );
 
@@ -285,8 +282,53 @@ describe('CLI: composio connections remove', () => {
         yield* cli(['connections', 'remove', 'gmail', '--yes']);
 
         expect(headlessDeleteCalls).toEqual(['con_gmail_active']);
-        expect(process.exitCode).toBeUndefined();
       })
+    );
+
+    it.effect(
+      '[Given] --yes and a selector that matches several connections [Then] removes nothing and fails with a usage error',
+      () =>
+        Effect.gen(function* () {
+          headlessDeleteCalls.length = 0;
+
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          const failure = yield* cli(['connections', 'remove', 'github', '--yes']).pipe(
+            Effect.flip
+          );
+
+          // The invocation prints the message on stderr and exits 1.
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'connections remove',
+            option: '<account>',
+            message: expect.stringContaining('Multiple connections matched "github"'),
+          });
+          expect(headlessDeleteCalls).toEqual([]);
+        })
+    );
+
+    it.effect(
+      '[Given] --yes and a selector that matches no connection [Then] removes nothing and fails with a usage error',
+      () =>
+        Effect.gen(function* () {
+          headlessDeleteCalls.length = 0;
+
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          const failure = yield* cli(['connections', 'remove', 'nothing-matches', '-y']).pipe(
+            Effect.flip
+          );
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'connections remove',
+            option: '<account>',
+            message:
+              'No connection matched "nothing-matches". Run `composio connections list` to inspect available connections.',
+          });
+          expect(headlessDeleteCalls).toEqual([]);
+        })
     );
   });
 
@@ -313,6 +355,29 @@ describe('CLI: composio connections remove', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         expect(lines.at(-1)).toBe('Removed gmail connection.');
       })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      accountData: { consumerUserId: '' },
+    })
+  )(it => {
+    it.effect(
+      '[Given] an empty consumer user id [Then] fails with the missing-user error and its message',
+      () =>
+        Effect.gen(function* () {
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          const failure = yield* cli(['connections', 'remove', 'gmail', '--yes']).pipe(Effect.flip);
+
+          // An empty id counts as no user, so the removal fails before resolving any account.
+          expect(failure).toBeInstanceOf(MissingActingUserError);
+          expect(failure).toMatchObject({
+            message: 'Missing consumer user id. Run `composio login` and try again.',
+          });
+        })
     );
   });
 });

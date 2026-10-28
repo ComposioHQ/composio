@@ -26,7 +26,7 @@
 - Runtime config is read from environment variables via `effect/Config`. Every variable the CLI reads is declared, under its full name, in one of the catalogs in `src/config` (`APP_CONFIG` for user-facing `COMPOSIO_*` settings, `DEBUG_CONFIG`, `TELEMETRY_CONFIG`, `HOST_CONFIG`, `GITHUB_CONFIG`); add new variables there, never inline. Tests inject `ConfigProvider.fromEnvRecord({...})`.
 - Persistent user/auth state lives in `~/.composio/user-config.json`; `ComposioUserContext` merges environment variables over the stored file, so an env var overrides the stored value.
 - Project-scoped data uses a project-local `.composio/` directory.
-- Exit `0` on success and non-zero (`1`) on failure; interrupts are not treated as failures (`src/cli-main.ts` teardown via `BunRuntime.runMain`). There is no distinct "invalid usage" exit code — do not invent one.
+- Exit `0` on success and `1` on failure. A command a signal cancels exits 128 + the signal's number: `130` (Ctrl-C), `143` (SIGTERM), `129` (SIGHUP). A listener stopped with Ctrl-C or SIGTERM once subscribed exits `0`; `composio run` ends the way its script did (its code, or the same signal). Never assign `process.exitCode`: an error declares `[Runtime.errorExitCode]` / `[Runtime.errorReported]` (effect `Runtime`), and `Runtime.defaultTeardown`, run by the CLI's runner (`src/run-main.ts`), picks the code. Never install signal handlers in a command; cooperate through `ShutdownSignal` instead (see `ts/packages/cli/AGENTS.md`). There is no distinct "invalid usage" exit code — do not invent one.
 
 ## References
 

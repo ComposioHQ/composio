@@ -26,17 +26,17 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.73
+  '@ai-sdk/mcp': ^2.0.80
   '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.5.1'
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
-  '@cloudflare/workers-types': ^5.20261012.1
-  '@composio/client': 2.0.0-rc.21
-  '@effect/language-service': ^0.87.4
-  '@effect/platform-bun': 4.0.3
-  '@effect/vitest': 4.0.3
+  '@cloudflare/workers-types': ^5.20261019.1
+  '@composio/client': 2.0.0-rc.22
+  '@effect/language-service': ^0.87.5
+  '@effect/platform-bun': 4.0.5
+  '@effect/vitest': 4.0.5
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
@@ -44,19 +44,19 @@ catalog:
   '@mastra/core': 1.53.0
   '@modelcontextprotocol/sdk': ^1.32.1
   '@types/bun': ^1.4.3
-  ai: ^7.0.137
-  dotenv: ^18.0.6
-  effect: 4.0.3
+  ai: ^7.0.146
+  dotenv: ^18.0.8
+  effect: 4.0.5
   hono: ^4.13.13
-  openai: ^7.32.0
+  openai: ^7.39.0
   picocolors: ^1.1.1
   publint: ^0.3.25
   tsdown: ^0.23.1
   tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^5.0.4
-  vitest: ^5.0.3
-  wrangler: ^4.149.0
+  '@vitest/ui': ^5.0.5
+  vitest: ^5.0.5
+  wrangler: ^4.151.2
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 
@@ -153,16 +153,22 @@ overrides:
   # temporary: @mastra/mcp@1.17.2 (held back above) exact-pins the whole 2.x
   # family at 2.0.0. GHSA-6qxp-vccf-f47h is patched in @modelcontextprotocol/client
   # 2.2.0; GHSA-jm63-cq47-j5jp and GHSA-46jr-4wx8-v453 in
-  # @modelcontextprotocol/server 2.3.0. Each package exact-pins its matching
-  # core, so the siblings move together to keep a single core instance. Drop
-  # with the @mastra/mcp override.
-  '@modelcontextprotocol/client@>=2.0.0 <2.3.1': 2.3.1
-  '@modelcontextprotocol/core@>=2.0.0 <2.3.1': 2.3.1
-  '@modelcontextprotocol/server@>=2.0.0 <2.3.1': 2.3.1
-  '@modelcontextprotocol/server-legacy@>=2.0.0 <2.3.1': 2.3.1
-  # temporary: GHSA-4cwx-7wf7-3272; @ai-sdk/provider-utils accepts the patched
-  # 7.x line. Drop when its lockfile resolution is >=7.29.0 without an override.
-  'undici@>=7.0.0 <7.29.0': '>=7.29.0 <8'
+  # @modelcontextprotocol/server 2.3.0; GHSA-f897-62hf-6gxq in
+  # @modelcontextprotocol/node 2.1.0, whose 2.1.2 needs server ^2.4.0. Each
+  # package exact-pins its matching core, so the siblings move together to keep
+  # a single core instance. Drop with the @mastra/mcp override.
+  '@modelcontextprotocol/client@>=2.0.0 <2.4.0': 2.4.0
+  '@modelcontextprotocol/core@>=2.0.0 <2.4.0': 2.4.0
+  '@modelcontextprotocol/node@>=2.0.0 <2.1.2': 2.1.2
+  '@modelcontextprotocol/server@>=2.0.0 <2.4.0': 2.4.0
+  '@modelcontextprotocol/server-legacy@>=2.0.0 <2.4.0': 2.4.0
+  # temporary: GHSA-4cwx-7wf7-3272, then GHSA-xjj6-f33q-929c raised the patched
+  # floor to 7.30.1. @ai-sdk/provider-utils accepts the patched 7.x line. Drop
+  # when its lockfile resolution is >=7.30.1 without an override.
+  'undici@>=7.0.0 <7.30.1': '>=7.30.1 <8'
+  # temporary: GHSA-27r3-jxmh-p828; express accepts the patched 2.x line. Drop
+  # when its lockfile resolution is >=2.4.0 without an override.
+  'body-parser@>=2.0.0 <2.4.0': '>=2.4.0 <3'
   # temporary: GHSA-mh99-v99m-4gvg requires the 5.x line for older majors, and
   # GHSA-rgw5-rvv9-x895, GHSA-6j4f-fj2g-mc7p, and GHSA-qhr7-859c-m2p7 raise
   # its patched floor to 5.0.11. This selector spans majors deliberately --
@@ -206,3 +212,15 @@ auditConfig:
     # private examples and e2e fixtures. Drop once @mastra/core can move past
     # the 3.x provider-utils line.
     - GHSA-866g-f22w-33x8
+    # zod unbounded issue accumulation on large arrays (high). The advisory
+    # covers every release below 4.6.6, but the 3.x line has no patched release
+    # (3.25.76 is the newest 3.x), so no bump reaches it. Every production 4.x
+    # resolution in the lockfile is >=4.6.6; what this ignore covers is zod
+    # 3.25.76, which reaches the audit only through private e2e fixtures and
+    # examples: the zod-v3 compatibility runtimes pin it on purpose, and
+    # @mastra/core (capped at 1.53.0 above) pulls it through
+    # @mastra/schema-compat's zod-from-json-schema-v3 alias. A range override
+    # for 4.x is not used because pnpm also rewrites matching peer ranges such
+    # as `^3.25 || ^4`, which breaks the zod 3 fixtures' peers. Drop once zod
+    # ships a patched 3.x or those paths leave the graph.
+    - GHSA-mrhx-c7xc-m3w5

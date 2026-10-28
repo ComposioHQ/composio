@@ -24,6 +24,8 @@ export const DIRECT_EXECUTION_GUARDRAILS = `
 
 Create an **Auth Config** on [dashboard.composio.dev](https://dashboard.composio.dev?utm_source=docs&utm_medium=llm-guardrails&utm_campaign=direct-execution), then use the auth config ID to generate a hosted auth URL:
 
+#### Python
+
 \`\`\`python
 from composio import Composio
 
@@ -31,9 +33,12 @@ composio = Composio()
 connection = composio.connected_accounts.link(
     user_id="user_123",
     auth_config_id="ac_...",  # from platform dashboard
+    callback_url="https://your-app.com/callback",
 )
 print(connection.redirect_url)  # send user here to authenticate
 \`\`\`
+
+#### TypeScript
 
 \`\`\`typescript
 import { Composio } from "@composio/core";
@@ -45,11 +50,25 @@ const connection = await composio.connectedAccounts.link("user_123", "ac_...", {
 console.log(connection.redirectUrl); // send user here to authenticate
 \`\`\`
 
+#### API
+
+\`\`\`bash
+set -euo pipefail
+curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \\
+  -H "x-api-key: $COMPOSIO_API_KEY" -H "Content-Type: application/json" \\
+  -d '{"user_id":"user_123","auth_config_id":"ac_...","callback_url":"https://your-app.com/callback"}' \\
+  | jq -r '.redirect_url'
+\`\`\`
+
 ### Executing Tools
 
 A toolkit version is **required** for direct execution — \`tools.execute()\` without one raises \`ToolVersionRequiredError\`, and \`"latest"\` alone is NOT accepted for manual execution. Either pass \`dangerously_skip_version_check=True\` (TS: \`dangerouslySkipVersionCheck: true\`) on the execute call to run the newest version, or pin a dated version from \`composio.toolkits.get(slug).meta.version\` when outputs are parsed programmatically.
 
+#### Python
+
 \`\`\`python
+from composio import Composio
+
 composio = Composio(toolkit_versions={"github": "latest"})
 tools = composio.tools.get("user_123", tools=["GITHUB_CREATE_ISSUE"])
 
@@ -61,7 +80,11 @@ result = composio.tools.execute(
 )
 \`\`\`
 
+#### TypeScript
+
 \`\`\`typescript
+import { Composio } from "@composio/core";
+
 const composio = new Composio({ toolkitVersions: { github: "latest" } });
 const tools = await composio.tools.get("user_123", { tools: ["GITHUB_CREATE_ISSUE"] });
 
@@ -70,6 +93,20 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
     arguments: { owner: "org", repo: "repo", title: "Bug report" },
     dangerouslySkipVersionCheck: true, // required when running "latest"
 });
+\`\`\`
+
+#### API
+
+The deliberate \`latest\` choice matches the SDK examples' explicit version-check bypass. Pin a dated version instead when parsing tool output.
+
+\`\`\`bash
+set -euo pipefail
+curl --fail-with-body -s --get https://backend.composio.dev/api/v3.1/tools \\
+  -H "x-api-key: $COMPOSIO_API_KEY" \\
+  --data-urlencode 'tool_slugs=GITHUB_CREATE_ISSUE' --data-urlencode 'toolkit_versions=latest'
+curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_ISSUE \\
+  -H "x-api-key: $COMPOSIO_API_KEY" -H "Content-Type: application/json" \\
+  -d '{"user_id":"user_123","version":"latest","arguments":{"owner":"org","repo":"repo","title":"Bug report"}}'
 \`\`\`
 
 ---

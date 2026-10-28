@@ -7,230 +7,9 @@ import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
 import { withHttpServer } from 'test/__utils__/http-server';
 
-describe('CLI process error handling', () => {
-  it.each([
-    { args: [], status: 0, recorded: 'CLI_COMMAND_SUCCEEDED', absent: 'CLI_COMMAND_FAILED' },
-    { args: ['help'], status: 0, recorded: 'CLI_COMMAND_SUCCEEDED', absent: 'CLI_COMMAND_FAILED' },
-    {
-      args: ['--help'],
-      status: 0,
-      recorded: 'CLI_COMMAND_SUCCEEDED',
-      absent: 'CLI_COMMAND_FAILED',
-    },
-    {
-      args: ['--version'],
-      status: 0,
-      recorded: 'CLI_COMMAND_SUCCEEDED',
-      absent: 'CLI_COMMAND_FAILED',
-    },
-    {
-      args: ['help', 'orgz'],
-      status: 1,
-      recorded: 'CLI_COMMAND_FAILED',
-      absent: 'CLI_COMMAND_SUCCEEDED',
-    },
-  ])(
-    'records help and version as successes and invalid help as a failure: `composio $args` is $recorded',
-    ({ args, status, recorded, absent }) => {
-      const configDirectory = tempy.temporaryDirectory();
-      const result = spawnSync('bun', ['run', 'src/bin.ts', ...args], {
-        cwd: process.cwd(),
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          CI: '1',
-          NO_COLOR: '1',
-          COMPOSIO_CACHE_DIR: configDirectory,
-          COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
-          COMPOSIO_CLI_TELEMETRY_DEBUG: '1',
-        },
-      });
-      expect(result.status).toBe(status);
-      expect(result.stderr).toContain(recorded);
-      expect(result.stderr).not.toContain(absent);
-    }
-  );
-
-  it('prints unreported typed execute failures and exits non-zero', () => {
-    const configDirectory = tempy.temporaryDirectory();
-    fs.writeFileSync(
-      path.join(configDirectory, 'user_data.json'),
-      JSON.stringify({
-        api_key: 'test-api-key',
-        base_url: 'https://backend.composio.dev',
-        web_url: 'https://platform.composio.dev',
-        org_id: null,
-        test_user_id: null,
-      })
-    );
-
-    const result = spawnSync(
-      'bun',
-      ['run', 'src/bin.ts', 'execute', 'GITHUB_GET_THE_AUTHENTICATED_USER', '-d', '[]'],
-      {
-        cwd: process.cwd(),
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          CI: '1',
-          NO_COLOR: '1',
-          COMPOSIO_CACHE_DIR: configDirectory,
-        },
-      }
-    );
-
-    expect(result.status).toBe(1);
-    expect(`${result.stdout}\n${result.stderr}`).toContain(
-      'Expected a JSON object for tool arguments'
-    );
-  });
-
-  it('reports a missing login as one line and exits non-zero without a defect dump', () => {
-    const configDirectory = tempy.temporaryDirectory();
-
-    const result = spawnSync('bun', ['run', 'src/bin.ts', 'tools', 'list', 'gmail'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        CI: '1',
-        NO_COLOR: '1',
-        COMPOSIO_CACHE_DIR: configDirectory,
-      },
-    });
-
-    expect(result.status).toBe(1);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toContain('You are not logged in yet. Please run `composio login`.');
-    expect(result.stderr).not.toContain('NotLoggedInError');
-    expect(result.stderr).not.toContain('Sources');
-  });
-
-  it('reports an unresolved project as one line and exits non-zero without a defect dump', () => {
-    const configDirectory = tempy.temporaryDirectory();
-    fs.writeFileSync(
-      path.join(configDirectory, 'user_data.json'),
-      JSON.stringify({
-        api_key: 'test-api-key',
-        base_url: 'https://backend.composio.dev',
-        web_url: 'https://platform.composio.dev',
-        org_id: null,
-        test_user_id: null,
-      })
-    );
-
-    const result = spawnSync('bun', ['run', 'src/bin.ts', 'connections', 'list'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        CI: '1',
-        NO_COLOR: '1',
-        COMPOSIO_CACHE_DIR: configDirectory,
-      },
-    });
-
-    expect(result.status).toBe(1);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toContain(
-      'No current org configured. Run `composio login` or `composio dev orgs switch`.'
-    );
-    expect(result.stderr).not.toContain('ProjectResolutionError');
-    expect(result.stderr).not.toContain('Sources');
-  });
-
-  // Each of these used to print its message only to a terminal and exit 0, so a script, CI or
-  // an agent saw nothing and a successful exit; `connections remove` used to answer its own
-  // confirmation prompt with "no".
-  it.each([
-    {
-      command: 'whoami',
-      args: ['whoami'],
-      loggedIn: false,
-      message: 'You are not logged in yet. Please run `composio login`.',
-    },
-    {
-      command: 'dev connected-accounts info',
-      args: ['dev', 'connected-accounts', 'info'],
-      loggedIn: true,
-      message: 'Missing required argument: <id>',
-    },
-    {
-      command: 'triggers info',
-      args: ['triggers', 'info'],
-      loggedIn: true,
-      message: 'Missing required argument: <slug>',
-    },
-    {
-      command: 'connections remove gmail',
-      args: ['connections', 'remove', 'gmail'],
-      loggedIn: true,
-      message: '`composio connections remove` needs --yes when not running interactively.',
-    },
-    {
-      command: 'dev projects list',
-      args: ['dev', 'projects', 'list'],
-      loggedIn: true,
-      message: 'No current org is configured.',
-    },
-  ])(
-    'reports `composio $command` on a redirected stderr and exits 1',
-    ({ args, loggedIn, message }) => {
-      const configDirectory = tempy.temporaryDirectory();
-      if (loggedIn) {
-        fs.writeFileSync(
-          path.join(configDirectory, 'user_data.json'),
-          JSON.stringify({
-            api_key: 'test-api-key',
-            base_url: 'https://backend.composio.dev',
-            web_url: 'https://platform.composio.dev',
-            org_id: null,
-            test_user_id: null,
-          })
-        );
-      }
-
-      const result = spawnSync('bun', ['run', 'src/bin.ts', ...args], {
-        cwd: process.cwd(),
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          CI: '1',
-          NO_COLOR: '1',
-          COMPOSIO_CACHE_DIR: configDirectory,
-        },
-      });
-
-      expect(result.status).toBe(1);
-      expect(result.stdout).toBe('');
-      expect(result.stderr).toContain(message);
-      expect(result.stderr).not.toContain('CommandInputError');
-    }
-  );
-
-  it('reports a bare `composio run` as a usage error without a defect dump', () => {
-    const configDirectory = tempy.temporaryDirectory();
-
-    const result = spawnSync('bun', ['run', 'src/bin.ts', 'run'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        CI: '1',
-        NO_COLOR: '1',
-        COMPOSIO_CACHE_DIR: configDirectory,
-      },
-    });
-
-    const output = `${result.stdout}\n${result.stderr}`;
-    expect(result.status).toBe(1);
-    expect(output).toContain('Provide inline code or use --file to run a script file.');
-    // No defect banner, no source-mapped stack, and no run artifacts for a script that never ran.
-    expect(output).not.toContain('MissingRunSourceError');
-    expect(output).not.toContain('Sources');
-    expect(output).not.toContain('RUN_LOG_FILE=');
-  });
-
+// Cases that run in-process go through `cli()` (test/src/invocation/invocation.test.ts); these need
+// the real process: the bootstrap, the stored login a spawned CLI reads, real HTTP, and signals.
+describe('CLI bootstrap', () => {
   it('normalizes telemetry debug before dispatching a background worker', () => {
     const configDirectory = tempy.temporaryDirectory();
     const encodedPayload = Buffer.from(
@@ -299,12 +78,15 @@ describe('CLI backend of a stored login', () => {
 
   it('warns on stderr only when an env var sends the stored key to another backend', () => {
     const configDirectory = storedLogin(STAGING_BASE_URL);
+    const run = (args: ReadonlyArray<string>, env: Record<string, string> = {}) =>
+      spawnSync('bun', ['run', 'src/bin.ts', ...args], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: cliEnv(configDirectory, env),
+      });
+    const mismatched = { COMPOSIO_BASE_URL: 'http://127.0.0.1:9' };
 
-    const result = spawnSync('bun', ['run', 'src/bin.ts', '--version'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: cliEnv(configDirectory, { COMPOSIO_BASE_URL: 'http://127.0.0.1:9' }),
-    });
+    const result = run(['version'], mismatched);
 
     expect(result.status).toBe(0);
     const warning =
@@ -312,12 +94,9 @@ describe('CLI backend of a stored login', () => {
     expect(result.stderr.split(warning)).toHaveLength(2);
     expect(result.stdout).not.toContain('COMPOSIO_BASE_URL');
 
-    const unset = spawnSync('bun', ['run', 'src/bin.ts', '--version'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      env: cliEnv(configDirectory),
-    });
-    expect(unset.stderr).not.toContain('sends your stored API key');
+    expect(run(['version']).stderr).not.toContain('sends your stored API key');
+    // `--version` runs no command, so no invocation hook.
+    expect(run(['--version'], mismatched).stderr).not.toContain('sends your stored API key');
   });
 
   it('sends requests to the stored backend and explains a rejected key', async () => {
@@ -579,6 +358,28 @@ describe('reported tool execution failures', () => {
   );
 });
 
+describe('failures a command reports itself', () => {
+  it(
+    '[Given] a request failure the command reports [Then] prints it once, exits 1, and records the command as failed',
+    () =>
+      withHttpServer(
+        (_req, res) => sendJson(res, 503, { error: { message: 'Service unavailable' } }),
+        async baseUrl => {
+          const result = await runCliAgainst(baseUrl, ['dev', 'toolkits', 'list'], {
+            env: { COMPOSIO_CLI_TELEMETRY_DEBUG: '1' },
+          });
+
+          expect(result.status).toBe(1);
+          expect(result.stdout).toBe('[]\n');
+          expect(result.stderr).toContain('CLI_COMMAND_FAILED');
+          expect(result.stderr).not.toContain('CLI_COMMAND_SUCCEEDED');
+          expect(result.stderr).not.toContain('ReportedFailure');
+        }
+      ),
+    30_000
+  );
+});
+
 describe('account selection errors', () => {
   it(
     '[Given] an `--account` that matches no connected account [Then] prints the message as one line and exits 1',
@@ -638,6 +439,9 @@ describe('expected failures without the crash banner', () => {
         })
       : fakeComposio(req, res);
 
+  /** Every root-tree command without a consumer user says this. */
+  const ROOT_MISSING_USER = 'Missing consumer user id. Run `composio login` and try again.';
+
   const notConnected = (toolkit: string) =>
     `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
 
@@ -669,8 +473,59 @@ describe('expected failures without the crash banner', () => {
       ],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'ProxyCommandError',
-      message: 'No consumer project user is available for proxy execution in this context.',
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // An empty consumer user id is no user; these commands used to act as the user "", and
+    // told a consumer to pass --user-id, which the root tree does not take.
+    {
+      name: '`execute` without a consumer user',
+      args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`search` without a consumer user',
+      args: ['search', 'send an email'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`link` without a consumer user',
+      args: ['link', 'gmail', '--no-wait'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // These printed the defect banner for a missing consumer user.
+    {
+      name: '`connections list` without a consumer user',
+      args: ['connections', 'list'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`connections remove` without a consumer user',
+      args: ['connections', 'remove', 'gmail', '--yes'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`listen` without a consumer user',
+      args: ['listen', 'GMAIL_NEW_GMAIL_MESSAGE'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
     },
   ])(
     '[Given] $name [Then] prints the message without the banner and exits 1',
@@ -715,6 +570,197 @@ describe('expected failures without the crash banner', () => {
         });
         expect(result.stderr).toBe('');
       }),
+    30_000
+  );
+});
+
+describe('local file uploads', () => {
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+  // Records the presigned-URL request, then refuses it so no upload is attempted.
+  const fakeUploadBackend =
+    (presignRequests: Array<unknown>) => (req: IncomingMessage, res: ServerResponse) => {
+      const { pathname } = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (/^\/api\/v3(\.1)?\/tools\/CANVA_CREATE_DESIGN_IMPORT_JOB$/u.test(pathname)) {
+        return sendJson(res, 200, {
+          slug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          name: 'Create Design Import Job',
+          description: '',
+          version: '20260101_00',
+          available_versions: ['20260101_00'],
+          input_parameters: {
+            type: 'object',
+            properties: {
+              file: { type: 'object', file_uploadable: true },
+              title: { type: 'string' },
+            },
+          },
+          output_parameters: {},
+          tags: [],
+        });
+      }
+      if (pathname.endsWith('/files/upload/request')) {
+        const chunks: Array<Buffer> = [];
+        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        req.on('end', () => {
+          presignRequests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          sendJson(res, 400, { error: { message: 'stop here', status: 400 } });
+        });
+        return;
+      }
+      fakeComposio(req, res);
+    };
+
+  const uploadWith = async (
+    baseUrl: string,
+    file: string,
+    stagedFiles?: Record<string, { name: string; mimetype?: string }>
+  ) => {
+    const metadataDirectory = fs.mkdtempSync(path.join(tempy.temporaryDirectory(), 'labels-'));
+    const metadataFile = path.join(metadataDirectory, 'files.json');
+    if (stagedFiles) fs.writeFileSync(metadataFile, JSON.stringify(stagedFiles));
+    try {
+      return await runCliAgainst(
+        baseUrl,
+        [
+          'execute',
+          'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          '--skip-connection-check',
+          '--file',
+          file,
+          '-d',
+          '{"title":"Deck"}',
+        ],
+        {
+          env: { COMPOSIO_RUN_STAGED_FILES_FILE: stagedFiles ? metadataFile : '' },
+        }
+      );
+    } finally {
+      fs.rmSync(metadataDirectory, { recursive: true, force: true });
+    }
+  };
+
+  it.each([
+    {
+      name: 'a .pptx path',
+      onDisk: 'deck.pptx',
+      staged: undefined,
+      filename: 'deck.pptx',
+      mimetype: PPTX,
+    },
+    {
+      name: 'an extensionless path with no staged name or type',
+      onDisk: 'deck',
+      staged: undefined,
+      filename: 'deck',
+      mimetype: 'application/octet-stream',
+    },
+    {
+      name: 'a path `composio run` staged an extensionless PPTX File at',
+      onDisk: 'file-a1b2c3d4',
+      staged: { name: 'deck', mimetype: PPTX },
+      filename: 'deck',
+      mimetype: PPTX,
+    },
+    {
+      name: 'a path `composio run` staged a `.env.example` File at',
+      onDisk: 'file-a1b2c3d4.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      filename: '.env.example',
+      mimetype: 'text/plain',
+    },
+  ])(
+    '[Given] $name [Then] `composio execute --file` requests the upload as $filename, $mimetype',
+    ({ onDisk, staged, filename, mimetype }) => {
+      const file = path.join(tempy.temporaryDirectory(), onDisk);
+      fs.writeFileSync(file, 'PK fake pptx');
+      const presignRequests: Array<unknown> = [];
+      return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+        await uploadWith(baseUrl, file, staged && { [file]: staged });
+
+        expect(presignRequests).toEqual([
+          expect.objectContaining({ filename, mimetype, toolkit_slug: 'canva' }),
+        ]);
+      });
+    },
+    30_000
+  );
+
+  it('[Given] a `.env` path staged under a harmless name [Then] the denylist still refuses it', () => {
+    const file = path.join(tempy.temporaryDirectory(), '.env');
+    fs.writeFileSync(file, 'SECRET=value');
+    const presignRequests: Array<unknown> = [];
+    return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+      const result = await uploadWith(baseUrl, file, {
+        [file]: { name: 'deck.pptx', mimetype: PPTX },
+      });
+
+      expect(result.status).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).toContain('looks like a credential');
+      expect(presignRequests).toEqual([]);
+    });
+  }, 30_000);
+});
+
+describe('signals', () => {
+  /**
+   * Runs `composio orgs list` against a backend that never answers, sends `signal` once the
+   * request arrives, and reports how the process ended.
+   */
+  const signalBlockedCommand = async (signal: NodeJS.Signals) => {
+    let child: ReturnType<typeof spawn> | undefined;
+    let ended: { code: number | null; signal: NodeJS.Signals | null } | undefined;
+    // Holds every request open: the command blocks until the signal ends it.
+    await withHttpServer(
+      () => child?.kill(signal),
+      async baseUrl => {
+        const configDirectory = tempy.temporaryDirectory();
+        fs.writeFileSync(
+          path.join(configDirectory, 'user_data.json'),
+          JSON.stringify({ api_key: 'uak_test', base_url: baseUrl, web_url: baseUrl, org_id: null })
+        );
+        const {
+          COMPOSIO_USER_API_KEY: _apiKey,
+          COMPOSIO_ENVIRONMENT: _environment,
+          ...host
+        } = process.env;
+        const spawned = spawn('bun', ['run', 'src/bin.ts', 'orgs', 'list'], {
+          cwd: process.cwd(),
+          env: {
+            ...host,
+            CI: '1',
+            NO_COLOR: '1',
+            COMPOSIO_CACHE_DIR: configDirectory,
+            COMPOSIO_BASE_URL: baseUrl,
+            COMPOSIO_CLI_TELEMETRY_DISABLED: '1',
+          },
+          stdio: 'ignore',
+        });
+        child = spawned;
+        ended = await new Promise((resolve, reject) => {
+          const deadline = setTimeout(() => {
+            spawned.kill('SIGKILL');
+            reject(new Error(`CLI did not exit within ${CLI_DEADLINE_MS}ms after ${signal}`));
+          }, CLI_DEADLINE_MS);
+          spawned.once('close', (code, endSignal) => {
+            clearTimeout(deadline);
+            resolve({ code, signal: endSignal });
+          });
+        });
+      }
+    );
+    return ended;
+  };
+
+  it.each([
+    { signal: 'SIGINT', code: 130 },
+    { signal: 'SIGTERM', code: 143 },
+    { signal: 'SIGHUP', code: 129 },
+  ] as const)(
+    '[Given] a one-shot command waiting on the backend [When] it receives $signal [Then] it exits $code',
+    async ({ signal, code }) => {
+      expect(await signalBlockedCommand(signal)).toEqual({ code, signal: null });
+    },
     30_000
   );
 });

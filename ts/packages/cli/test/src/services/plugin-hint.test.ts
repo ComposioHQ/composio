@@ -8,16 +8,21 @@ import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
 import { HOST_CONFIG } from 'src/config';
 import { APP_VERSION } from 'src/constants';
+import {
+  CommandLifecycleTelemetry,
+  type PluginHintShown,
+} from 'src/services/command-lifecycle-telemetry';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { detectPluginHost } from 'src/services/agent-host-env';
 import {
   createPluginHint,
-  findRootCommandName,
+  PluginHint,
   resolvePluginHintConfig,
   type PluginHintConfig,
 } from 'src/services/plugin-hint';
 import { makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
+import { commandIdentity } from 'test/__utils__/command-identity';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import { trackedEvents } from 'test/__utils__/tracked-events';
 
@@ -32,8 +37,14 @@ vi.mock('src/analytics/dispatch', async importOriginal => {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 let tempDir: string;
+/** What the hint reported through `telemetry` in the current test. */
+let shownEvents: PluginHintShown[];
+const telemetry = {
+  pluginHintShown: (shown: PluginHintShown) => Effect.sync(() => shownEvents.push(shown)),
+};
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), 'plugin-hint-test-'));
+  shownEvents = [];
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -55,7 +66,7 @@ function makeConfig(overrides?: Partial<PluginHintConfig>): PluginHintConfig {
     stateDirectory: join(tempDir, '.composio', 'plugin-hints'),
     host: 'claude',
     invocationOrigin: undefined,
-    commandName: 'version',
+    commandPath: 'version',
     claudeInstalledPluginsFile: join(tempDir, '.claude', 'plugins', 'installed_plugins.json'),
     codexConfigFile: join(tempDir, '.codex', 'config.toml'),
     hintIntervalMs: DAY_MS,
@@ -116,11 +127,11 @@ describe('resolvePluginHintConfig', () => {
     vi.stubEnv('CLAUDECODE', '1');
 
     return Effect.gen(function* () {
-      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+      const config = yield* resolvePluginHintConfig('version');
 
       expect(config.stateDirectory).toBe(join(cacheDir, 'plugin-hints'));
       expect(config.host).toBe('claude');
-      expect(config.commandName).toBe('version');
+      expect(config.commandPath).toBe('version');
     }).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.provide(hintLayers())
@@ -132,7 +143,7 @@ describe('resolvePluginHintConfig', () => {
     vi.stubEnv('CODEX_HOME', '   ');
 
     return Effect.gen(function* () {
-      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+      const config = yield* resolvePluginHintConfig('version');
 
       expect(config.claudeInstalledPluginsFile).toBe(
         join(tempDir, '.claude', 'plugins', 'installed_plugins.json')
@@ -151,7 +162,7 @@ describe('resolvePluginHintConfig', () => {
     vi.stubEnv('CODEX_HOME', codexHome);
 
     return Effect.gen(function* () {
-      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+      const config = yield* resolvePluginHintConfig('version');
 
       expect(config.claudeInstalledPluginsFile).toBe(
         join(claudeConfigDir, 'plugins', 'installed_plugins.json')
@@ -168,7 +179,7 @@ describe('resolvePluginHintConfig', () => {
     vi.stubEnv('CODEX_HOME', 'codex-relative');
 
     return Effect.gen(function* () {
-      const config = yield* resolvePluginHintConfig(['/bin/bun', '/cli/bin.ts', 'version']);
+      const config = yield* resolvePluginHintConfig('version');
 
       expect(config.claudeInstalledPluginsFile).toBe(
         join(tempDir, 'claude-relative', 'plugins', 'installed_plugins.json')
@@ -177,18 +188,6 @@ describe('resolvePluginHintConfig', () => {
     }).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.provide(hintLayers())
-    );
-  });
-});
-
-describe('findRootCommandName', () => {
-  it('skips root log-level flags before the subcommand', () => {
-    expect(findRootCommandName(['/bin/bun', '/cli/bin.ts', 'setup'])).toBe('setup');
-    expect(findRootCommandName(['/bin/bun', '/cli/bin.ts', '--log-level', 'debug', 'setup'])).toBe(
-      'setup'
-    );
-    expect(findRootCommandName(['/bin/bun', '/cli/bin.ts', '--log-level=debug', 'setup'])).toBe(
-      'setup'
     );
   });
 });
@@ -204,11 +203,11 @@ describe('showPluginHint', () => {
     Effect.gen(function* () {
       const claudeConfig = makeConfig();
       writeClaudePlugins(claudeConfig, { 'other@marketplace': [{ scope: 'user' }] });
-      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output), telemetry);
 
       const codexConfig = makeConfig({ host: 'codex' });
       writeFileAt(codexConfig.codexConfigFile, '[plugins."glen@glen"]\nenabled = true\n');
-      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output), telemetry);
 
       expect(output).toEqual([
         "Tip: running under Claude Code without the Composio plugin — 'composio setup --yes' installs it.",
@@ -221,36 +220,30 @@ describe('showPluginHint', () => {
     Effect.gen(function* () {
       const config = makeConfig();
 
-      yield* createPluginHint(config).showPluginHint({
-        error: () => Effect.die(new Error('EPIPE')),
-      });
+      yield* createPluginHint(config).showPluginHint(
+        { error: () => Effect.die(new Error('EPIPE')) },
+        telemetry
+      );
       expect(existsSync(join(config.stateDirectory, 'claude.stamp'))).toBe(false);
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output), telemetry);
       expect(output).toHaveLength(1);
     }).pipe(Effect.provide(hintLayers()))
   );
 
-  it.effect('tracks CLI_PLUGIN_HINT_SHOWN once per printed hint', () =>
+  it.effect('reports the hint to the telemetry service once per printed hint', () =>
     Effect.gen(function* () {
-      const config = makeConfig({ invocationOrigin: 'installer', commandName: 'whoami' });
+      const config = makeConfig({ invocationOrigin: 'installer', commandPath: 'whoami' });
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output), telemetry);
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output), telemetry);
 
       expect(output).toHaveLength(1);
-      expect(trackedEvents).toEqual([
-        {
-          name: 'CLI_PLUGIN_HINT_SHOWN',
-          properties: expect.objectContaining({
-            source: 'cli',
-            invocation_origin: 'installer',
-            cli_version: APP_VERSION,
-            command_path: 'whoami',
-            agent_host: 'claude',
-          }),
-        },
+      expect(shownEvents).toEqual([
+        { invocationOrigin: 'installer', commandPath: 'whoami', agentHost: 'claude' },
       ]);
+      // The hint tracks nothing itself.
+      expect(trackedEvents).toEqual([]);
     }).pipe(Effect.provide(hintLayers()))
   );
 
@@ -258,11 +251,11 @@ describe('showPluginHint', () => {
     Effect.gen(function* () {
       const claudeConfig = makeConfig();
       writeClaudePlugins(claudeConfig, { 'composio@composio': [{ scope: 'user' }] });
-      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output), telemetry);
 
       const codexConfig = makeConfig({ host: 'codex' });
       writeFileAt(codexConfig.codexConfigFile, '[plugins."composio@composio"]\nenabled = true\n');
-      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output), telemetry);
 
       expect(output).toEqual([]);
       expect(existsSync(claudeConfig.stateDirectory)).toBe(false);
@@ -274,27 +267,25 @@ describe('showPluginHint', () => {
       const config = makeConfig();
       writeFileAt(config.claudeInstalledPluginsFile, 'not json{');
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output), telemetry);
 
       expect(output).toEqual([]);
     }).pipe(Effect.provide(hintLayers()))
   );
 
-  it.effect('stays silent outside a host, in run children, and for setup', () =>
+  // `composio setup` turns the hint off in its `CommandMeta`; see
+  // `test/src/invocation/invocation-hooks.test.ts`.
+  it.effect('stays silent outside a host and in run children', () =>
     Effect.gen(function* () {
-      const configs = [
-        makeConfig({ host: undefined }),
-        makeConfig({ invocationOrigin: 'run' }),
-        makeConfig({ commandName: 'setup' }),
-      ];
+      const configs = [makeConfig({ host: undefined }), makeConfig({ invocationOrigin: 'run' })];
 
       yield* Effect.forEach(configs, config =>
-        createPluginHint(config).showPluginHint(makeTerminal(output))
+        createPluginHint(config).showPluginHint(makeTerminal(output), telemetry)
       );
 
       expect(output).toEqual([]);
-      expect(trackedEvents).toEqual([]);
-      expect(existsSync(configs[2]!.stateDirectory)).toBe(false);
+      expect(shownEvents).toEqual([]);
+      expect(existsSync(configs[1]!.stateDirectory)).toBe(false);
     }).pipe(Effect.provide(hintLayers()))
   );
 
@@ -304,7 +295,7 @@ describe('showPluginHint', () => {
 
       yield* Effect.all(
         Array.from({ length: 20 }, () =>
-          createPluginHint(config).showPluginHint(makeTerminal(output))
+          createPluginHint(config).showPluginHint(makeTerminal(output), telemetry)
         ),
         { concurrency: 'unbounded' }
       );
@@ -319,10 +310,10 @@ describe('showPluginHint', () => {
       const claudeConfig = makeConfig({ host: 'claude' });
       const codexConfig = makeConfig({ host: 'codex' });
 
-      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
-      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
-      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output));
-      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output), telemetry);
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output), telemetry);
+      yield* createPluginHint(claudeConfig).showPluginHint(makeTerminal(output), telemetry);
+      yield* createPluginHint(codexConfig).showPluginHint(makeTerminal(output), telemetry);
 
       expect(output).toHaveLength(2);
     }).pipe(Effect.provide(hintLayers()))
@@ -338,7 +329,7 @@ describe('showPluginHint', () => {
       const stale = new Date('2026-07-27T00:00:00.000Z');
       utimesSync(stamp, stale, stale);
 
-      yield* createPluginHint(config).showPluginHint(makeTerminal(output));
+      yield* createPluginHint(config).showPluginHint(makeTerminal(output), telemetry);
 
       expect(output).toHaveLength(1);
     }).pipe(Effect.provide(hintLayers()))
@@ -360,9 +351,62 @@ describe('showPluginHint', () => {
         stderr: Object.assign(capture, { isTTY: false }),
       });
 
-      yield* createPluginHint(config).showPluginHint(terminal);
+      yield* createPluginHint(config).showPluginHint(terminal, telemetry);
 
       expect(chunks.join('')).toContain('composio setup');
     }).pipe(Effect.provide(hintLayers()))
+  );
+});
+
+describe('PluginHint', () => {
+  /**
+   * `PluginHint.Default` over the real `CommandLifecycleTelemetry` (its dispatcher mocked above),
+   * with every path under `tempDir` and a recording stderr.
+   */
+  const pluginHintLayer = (output: string[]) => {
+    const services = Layer.mergeAll(
+      BunServices.layer,
+      Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })),
+      Layer.succeed(TerminalUI, TerminalUI.of({ ...terminalUITestImpl, ...makeTerminal(output) }))
+    );
+    return Layer.provide(
+      PluginHint.Default,
+      Layer.merge(services, Layer.provide(CommandLifecycleTelemetry.Default, services))
+    );
+  };
+
+  /** Runs under Claude Code, which has no Composio plugin installed. */
+  const underClaudeCode = Effect.provideService(
+    ConfigProvider.ConfigProvider,
+    ConfigProvider.fromEnvRecord({ CLAUDECODE: '1' })
+  );
+
+  it.effect(
+    '[Given] Claude Code without the plugin [Then] prints the hint once per interval and tracks it through the telemetry service',
+    () => {
+      const output: string[] = [];
+      const identity = commandIdentity(['dev', 'triggers', 'list']);
+      return Effect.gen(function* () {
+        const hint = yield* PluginHint;
+        yield* hint.run({ identity });
+        yield* hint.run({ identity });
+
+        expect(output).toEqual([
+          "Tip: running under Claude Code without the Composio plugin — 'composio setup --yes' installs it.",
+        ]);
+        expect(trackedEvents).toEqual([
+          {
+            name: 'CLI_PLUGIN_HINT_SHOWN',
+            properties: expect.objectContaining({
+              source: 'cli',
+              invocation_origin: 'cli',
+              cli_version: APP_VERSION,
+              command_path: 'dev triggers list',
+              agent_host: 'claude',
+            }),
+          },
+        ]);
+      }).pipe(underClaudeCode, Effect.provide(pluginHintLayer(output)));
+    }
   );
 });

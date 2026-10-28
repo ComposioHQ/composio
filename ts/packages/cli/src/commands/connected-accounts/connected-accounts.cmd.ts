@@ -1,10 +1,11 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
-import { rejectsSharedFlags } from 'src/commands/surface';
+import { NO_SHARED_FLAGS } from 'src/commands/surface';
 import { connectedAccountsCmd$List } from './list/connected-accounts.list.cmd';
 import { connectedAccountsCmd$Info } from './info/connected-accounts.info.cmd';
 import { connectedAccountsCmd$Whoami } from './whoami/connected-accounts.whoami.cmd';
 import { connectedAccountsCmd$Link } from './link/connected-accounts.link.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 /**
  * CLI entry point for connected account management commands.
@@ -16,11 +17,11 @@ import { connectedAccountsCmd$Link } from './link/connected-accounts.link.cmd';
  */
 export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
   Command.withDescription('View and manage Composio connected accounts.'),
-  Command.withSubcommands([
+  withRegisteredSubcommands([
     connectedAccountsCmd$Link,
     connectedAccountsCmd$List,
-    connectedAccountsCmd$Info.pipe(rejectsSharedFlags('dev connected-accounts info')),
-    connectedAccountsCmd$Whoami.pipe(rejectsSharedFlags('dev connected-accounts whoami')),
+    connectedAccountsCmd$Info.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    connectedAccountsCmd$Whoami.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

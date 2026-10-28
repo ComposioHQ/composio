@@ -27,9 +27,6 @@ from composio_client.types.tool_router import (
     session_patch_params,
     session_search_response,
 )
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
-)
 
 from composio import exceptions
 from composio.client import HttpClient
@@ -74,6 +71,7 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
+    ToolRouterSessionExecuteResponse,
     require_execute_meta_result,
     require_execute_result,
 )
@@ -237,11 +235,6 @@ class ToolRouterAfterExecuteHook(te.TypedDict):
 ToolRouterHook = t.Union[ToolRouterBeforeExecuteHook, ToolRouterAfterExecuteHook]
 """A hook on a session's tool calls."""
 
-
-ToolRouterSessionExecuteResponse = SessionExecuteResponse
-"""Result of :meth:`ToolRouterSession.execute`. ``instant_charge`` is present
-only when the Session sets ``instant.return_instant_charge`` and a charge is
-available."""
 
 ToolRouterInputResponse = session_execute_params.CurrentInputResponsesValue
 """Experimental. The user's answer to one question of a
@@ -446,7 +439,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         in-process, remote tools are sent to the backend.
         """
         from composio.core.models.tools import Tools as ToolsModel
-        from composio.core.provider import AgenticProvider, NonAgenticProvider
+        from composio.core.provider import (
+            AgenticProvider,
+            NonAgenticProvider,
+            bind_execution_target,
+        )
 
         if self._provider is None:
             raise ValueError(
@@ -497,7 +494,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             TToolCollection,
             t.cast(AgenticProvider[TTool, TToolCollection], self._provider).wrap_tools(
                 tools=router_tools,
-                execute_tool=execute_fn,
+                execute_tool=bind_execution_target(execute_fn, self),
             ),
         )
 
@@ -1362,19 +1359,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         workbench_payload = sandbox if sandbox is not omit else workbench
 
-        # The generated client has no typed parameter for the precondition or
-        # for ``hooks``, so they travel as extra root body fields.
-        extra_fields: t.Dict[str, t.Any] = {}
-        if not isinstance(precondition, Omit):
-            extra_fields["expected_config_version"] = precondition
-        if not isinstance(hooks, Omit):
-            extra_fields["hooks"] = hooks
-        extra_body: t.Optional[t.Dict[str, t.Any]] = extra_fields or None
+        # The spec does not declare the ``expected_config_version`` precondition
+        # until ComposioHQ/platform#13157 lands, so it travels as an extra root
+        # body field.
+        extra_body: t.Optional[t.Dict[str, t.Any]] = (
+            None
+            if isinstance(precondition, Omit)
+            else {"expected_config_version": precondition}
+        )
 
-        # The generated client does not type ``None`` for every policy block
-        # although the API accepts it (it removes the stored override), nor the
-        # subfield removals inside ``manage_connections``, ``multi_account`` and
-        # ``experimental``; the values are serialized as-is.
+        # Until ComposioHQ/platform#13157 lands, the spec does not mark every
+        # policy block nullable although the API accepts ``None`` (it removes the
+        # stored override), nor the subfield removals inside
+        # ``manage_connections``, ``multi_account`` and ``experimental``; the
+        # values are serialized as-is.
         try:
             response = self._client.tool_router.session.patch(
                 session_id=self.session_id,
@@ -1415,6 +1413,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 experimental=t.cast(
                     t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
                     experimental,
+                ),
+                hooks=t.cast(
+                    t.Union[
+                        t.Optional[
+                            t.Iterable[
+                                t.Union[
+                                    session_patch_params.CurrentHookVariant0,
+                                    session_patch_params.CurrentHookVariant1,
+                                ]
+                            ]
+                        ],
+                        "Omit",
+                    ],
+                    hooks,
                 ),
                 extra_body=extra_body,
                 # A stale precondition is a deterministic 409: never retry it.

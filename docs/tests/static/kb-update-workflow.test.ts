@@ -284,20 +284,35 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(resolveSource?.run).toBe('bash scripts/resolve-kb-refresh-source.sh');
   });
 
-  test('serializes refreshes and checks complete upstream history', () => {
+  test('serializes both KB writers before checkout and pins artifacts to their docs base', () => {
     const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
-      concurrency?: { group?: string; 'cancel-in-progress'?: boolean };
+      concurrency?: { group?: string; 'cancel-in-progress'?: boolean; queue?: string };
       jobs?: Record<string, WorkflowJob>;
     };
     const checkout = workflow.jobs?.refresh?.steps?.find(
       step => step.name === 'Checkout support knowledge',
     );
 
-    expect(workflow.concurrency).toEqual({
-      group: 'docs-support-knowledge-refresh',
-      'cancel-in-progress': true,
-    });
+    const publish = Bun.YAML.parse(readFileSync(
+      resolve(process.cwd(), '..', '.github/workflows/docs-kb-publish.yml'), 'utf8',
+    )) as { concurrency: { group: string }; jobs: Record<string, WorkflowJob> };
+    expect(workflow.concurrency?.group).toBe(publish.concurrency.group);
+    expect(workflow.concurrency?.['cancel-in-progress']).toBe(false);
+    expect(workflow.concurrency?.queue).toBe('max');
     expect(checkout?.with?.['fetch-depth']).toBe(0);
+    for (const job of [workflow.jobs?.refresh, publish.jobs.publish]) {
+      const steps = job?.steps ?? [];
+      const waitIndex = steps.findIndex(step => step.name === 'Wait for earlier KB publications');
+      const checkoutIndex = steps.findIndex(step => step.name === 'Checkout docs repository');
+      expect(waitIndex).toBeGreaterThanOrEqual(0);
+      expect(waitIndex).toBeLessThan(checkoutIndex);
+      expect(steps[checkoutIndex]?.with?.ref).toBe('next');
+    }
+    const proposalCheckout = workflow.jobs?.propose?.steps?.find(
+      step => step.name === 'Checkout docs repository',
+    );
+    expect(workflow.jobs?.refresh?.outputs?.docs_base_sha).toBe('${{ steps.docs-base.outputs.sha }}');
+    expect(proposalCheckout?.with?.ref).toBe('${{ needs.refresh.outputs.docs_base_sha }}');
   });
 
   test('tracks failures until both refresh and PR proposal recover', () => {

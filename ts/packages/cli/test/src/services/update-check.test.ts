@@ -6,9 +6,13 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Fiber, Layer } from 'effect';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
-import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-ui';
+import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
+import { commandIdentity } from 'test/__utils__/command-identity';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import {
   createUpdateChecker,
+  UpdateNotice,
   parseLatestVersionFromReleases,
   type UpdateCheckConfig,
   type UpdateCheckState,
@@ -283,6 +287,46 @@ describe('showUpdateNotice', () => {
       expect(output).toEqual([]);
     }).pipe(Effect.provide(PlatformLayers))
   );
+});
+
+// ── UpdateNotice (the service the invocation runs) ────────────────────────────
+
+describe('UpdateNotice', () => {
+  /** `UpdateNotice.Default` over a home directory in `tempDir` and a recording, decorating stderr. */
+  const noticeLayer = (output: string[]) =>
+    Layer.provide(
+      UpdateNotice.Default,
+      Layer.mergeAll(
+        PlatformLayers,
+        Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })),
+        Layer.succeed(TerminalUI, TerminalUI.of({ ...terminalUITestImpl, ...makeTerminal(output) }))
+      )
+    );
+
+  // `makeConfig()`'s state file is where the service looks under that home directory.
+  const writeCachedLatest = (latestVersion: string) =>
+    writeState(makeConfig(), { lastChecked: new Date().toISOString(), latestVersion });
+
+  // Which commands run it is their `CommandMeta`'s business: see
+  // `test/src/invocation/invocation-hooks.test.ts`.
+  it.effect('[Given] a newer cached release [Then] prints the notice', () => {
+    const output: string[] = [];
+    writeCachedLatest('999.0.0');
+    return Effect.gen(function* () {
+      const notice = yield* UpdateNotice;
+      yield* notice.run({ identity: commandIdentity(['tools', 'list']) });
+      expect(output.some(line => line.includes('999.0.0'))).toBe(true);
+    }).pipe(Effect.provide(noticeLayer(output)));
+  });
+
+  it.effect('[Given] no cached release [Then] prints nothing', () => {
+    const output: string[] = [];
+    return Effect.gen(function* () {
+      const notice = yield* UpdateNotice;
+      yield* notice.run({ identity: commandIdentity(['tools', 'list']) });
+      expect(output).toEqual([]);
+    }).pipe(Effect.provide(noticeLayer(output)));
+  });
 });
 
 // ── getUpdateStatus ─────────────────────────────────────────────────────

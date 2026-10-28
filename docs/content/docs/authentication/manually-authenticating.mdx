@@ -12,7 +12,7 @@ Manual authentication lets you connect users to toolkits outside the chat flow. 
 
 Call `session.authorize()` to generate a [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to finish:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(user_id="user_123")
@@ -22,7 +22,7 @@ connection_request = session.authorize("gmail")
 print(connection_request.redirect_url)
 # https://connect.composio.dev/link/ln_abc123
 
-connected_account = connection_request.wait_for_connection(60000)
+connected_account = connection_request.wait_for_connection(60)
 print(f"Connected: {connected_account.id}")
 ```
 </Tab>
@@ -40,6 +40,38 @@ console.log(connectionRequest.redirectUrl);
 
 const connectedAccount = await connectionRequest.waitForConnection(60000);
 console.log(`Connected: ${connectedAccount.id}`);
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+CONNECTION=$(curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail"}')
+echo "$CONNECTION" | jq -r '.redirect_url'
+CONNECTED_ACCOUNT_ID=$(echo "$CONNECTION" | jq -r '.connected_account_id')
+
+# Open the printed link. Wait at most 60 seconds for authorization.
+DEADLINE=$((SECONDS + 60))
+while true; do
+  ACCOUNT=$(curl --fail-with-body -s https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+    -H "x-api-key: $COMPOSIO_API_KEY") || exit 1
+  STATUS=$(echo "$ACCOUNT" | jq -r '.status')
+  case "$STATUS" in
+    ACTIVE) echo "$ACCOUNT" | jq -r '.id'; break ;;
+    FAILED|EXPIRED|INACTIVE|REVOKED) echo "Connection ended: $STATUS" >&2; exit 1 ;;
+  esac
+  if [ "$SECONDS" -ge "$DEADLINE" ]; then
+    echo "Timed out waiting for authorization" >&2
+    exit 1
+  fi
+  sleep 1
+done
 ```
 </Tab>
 </Tabs>
@@ -62,7 +94,7 @@ Use `session.authorize()` and `waitForConnection()` when you need to display or 
 
 Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which `userID` or session triggered the connection.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 connection_request = session.authorize(
@@ -84,6 +116,15 @@ const connectionRequest = await session.authorize("gmail", {
 });
 
 console.log(connectionRequest.redirectUrl);
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail", "callback_url": "https://your-app.com/callback?user_id=user_123&source=onboarding"}'
 ```
 </Tab>
 </Tabs>
@@ -114,9 +155,11 @@ These identifiers serve different purposes:
 
 For a "Connected as…" label, read `state.val.displayName` when available. For additional profile fields, get the toolkit's current-user endpoint and call it through Composio's [authenticated proxy](/reference/api-reference/tools/postToolsExecuteProxy) with the same connected account ID:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
+from typing import Literal, cast
+
 # Continue after connected_account = connection_request.wait_for_connection().
 account_id = connected_account.id
 state = connected_account.model_dump().get("state") or {}
@@ -126,17 +169,18 @@ print(f"Connected as {display_name}" if display_name else "Account connected")
 toolkit = composio.toolkits.get(connected_account.toolkit.slug)
 endpoint = toolkit.get_current_user_endpoint
 method = toolkit.get_current_user_endpoint_method
-if not endpoint or method not in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"):
+if not endpoint or method not in ("GET", "POST", "PUT", "PATCH", "DELETE"):
     raise ValueError("This toolkit doesn't publish a supported current-user endpoint")
+# The membership check validates the value; cast records that narrowing for mypy.
 
 response = composio.tools.proxy(
     endpoint=endpoint,
-    method=method,
+    method=cast(Literal["GET", "POST", "PUT", "PATCH", "DELETE"], method),
     connected_account_id=account_id,
 )
-if response["status"] != 200:
+if response.status != 200:
     raise RuntimeError("Could not retrieve the connected account's profile")
-profile = response["data"]  # Parse the fields documented by this provider.
+profile = response.data  # Parse the fields documented by this provider.
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -172,6 +216,26 @@ const profile = z.record(z.string(), z.unknown()).parse(response.data);
 // Validate the provider-specific fields before using them in your application.
 ```
 </Tab>
+<Tab value="API">
+```bash
+# CONNECTED_ACCOUNT_ID is the connected_account_id returned by the link request
+ACCOUNT=$(curl -s -X GET https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY")
+echo "$ACCOUNT" | jq -r '.state.val.displayName // "Account connected"'
+TOOLKIT_SLUG=$(echo "$ACCOUNT" | jq -r '.toolkit.slug')
+
+TOOLKIT=$(curl -s -X GET https://backend.composio.dev/api/v3.1/toolkits/$TOOLKIT_SLUG \
+  -H "x-api-key: $COMPOSIO_API_KEY")
+ENDPOINT=$(echo "$TOOLKIT" | jq -r '.get_current_user_endpoint')
+METHOD=$(echo "$TOOLKIT" | jq -r '.get_current_user_endpoint_method')
+
+# Response has status and data; parse the fields documented by this provider
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"endpoint": "'"$ENDPOINT"'", "method": "'"$METHOD"'", "connected_account_id": "'"$CONNECTED_ACCOUNT_ID"'"}'
+```
+</Tab>
 </Tabs>
 
 Toolkit metadata describes where to request a profile; it doesn't contain the account owner's details. Endpoint availability, required scopes, and response fields vary by provider. If the metadata is absent, use a documented profile endpoint or tool for that provider. A GitHub username or display label isn't a verified email address.
@@ -182,13 +246,17 @@ For an application policy, validate the provider's response before giving an age
 
 Use `session.toolkits()` to see all toolkits in the session and their connection status:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 toolkits = session.toolkits()
 
 for toolkit in toolkits.items:
-    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
+    connection = toolkit.connection
+    if connection and connection.is_active and connection.connected_account:
+        status = connection.connected_account.id
+    else:
+        status = "Not connected"
     print(f"{toolkit.name}: {status}")
 ```
 </Tab>
@@ -201,8 +269,16 @@ const session = await composio.create("user_123");
 const toolkits = await session.toolkits();
 
 toolkits.items.forEach((toolkit) => {
-  console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
+  console.log(`${toolkit.name}: ${toolkit.connection?.isActive ? toolkit.connection.connectedAccount?.id : "Not connected"}`);
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq -r '.items[] | "\(.name): \(if .connected_account.status == "ACTIVE" then .connected_account.id else "Not connected" end)"'
 ```
 </Tab>
 </Tabs>
@@ -211,7 +287,7 @@ toolkits.items.forEach((toolkit) => {
 
 By default, sessions include the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To turn it off and handle auth entirely in your own UI, set `manage_connections` to `False`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -230,13 +306,21 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "manage_connections": {"enable": false}}'
+```
+</Tab>
 </Tabs>
 
 ## Putting it together
 
 A common pattern is to verify all required connections before starting the agent:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -252,7 +336,7 @@ session = composio.create(
 
 toolkits = session.toolkits()
 
-connected = {t.slug for t in toolkits.items if t.connection.is_active}
+connected = {t.slug for t in toolkits.items if t.connection is not None and t.connection.is_active}
 pending = [slug for slug in required_toolkits if slug not in connected]
 
 print(f"Connected: {connected}")
@@ -281,7 +365,7 @@ const session = await composio.create("user_123", {
 const toolkits = await session.toolkits();
 
 const connected = toolkits.items
-  .filter((t) => t.connection?.connectedAccount)
+  .filter((t) => t.connection?.isActive)
   .map((t) => t.slug);
 
 const pending = requiredToolkits.filter((slug) => !connected.includes(slug));
@@ -296,6 +380,27 @@ for (const slug of pending) {
 }
 
 console.log("All toolkits connected!");
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "manage_connections": {"enable": false}}' | jq -r '.session_id')
+
+# Required toolkits without an active connection
+PENDING=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?toolkits=gmail,github" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq -r '.items[] | select(.connected_account.status != "ACTIVE") | .slug')
+
+for SLUG in $PENDING; do
+  # Send the user to redirect_url, then poll GET /connected_accounts/{connected_account_id} until ACTIVE
+  curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+    -H "x-api-key: $COMPOSIO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"toolkit": "'"$SLUG"'"}' | jq -r --arg slug "$SLUG" '"Connect \($slug): \(.redirect_url)"'
+done
 ```
 </Tab>
 </Tabs>

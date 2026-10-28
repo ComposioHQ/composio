@@ -15,11 +15,37 @@ You can brand the hosted Connect Link or build your own connection UI with a cus
 
 For the hosted path, create an auth config, then run this on your server with a project API key:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+request = composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+    callback_url="https://your-app.com/connections/callback",
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const request = await composio.connectedAccounts.link(
+  'user_123',
+  'ac_your_github_config',
+  { callbackUrl: 'https://your-app.com/connections/callback' },
+);
+```
+</Tab>
+<Tab value="API">
 ```bash
 export COMPOSIO_API_KEY="your_project_api_key"
 
 curl --request POST \
-  --url https://backend.composio.dev/api/v3/connected_accounts/link \
+  --url https://backend.composio.dev/api/v3.1/connected_accounts/link \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{
@@ -28,8 +54,10 @@ curl --request POST \
     "callback_url": "https://your-app.com/connections/callback"
   }' | jq '{connected_account_id, redirect_url}'
 ```
+</Tab>
+</Tabs>
 
-This example requires cURL and `jq`. Replace the auth config ID with your project's config and derive `user_id` from your authenticated application session, not a browser-supplied field. Store the returned `connected_account_id` against that user on your server before sending the browser to `redirect_url`. [Verify the connection](#verify-the-connection-on-your-server) before showing success.
+Set `COMPOSIO_API_KEY` in your server environment; the API option also requires cURL and `jq`. Replace the auth config ID with your project's config and derive `user_id` from your authenticated application session, not a browser-supplied field. Store the returned `connected_account_id` (`request.id` in the SDKs) against that user on your server before sending the browser to `redirect_url` (`request.redirect_url` in Python or `request.redirectUrl` in TypeScript). [Verify the connection](#verify-the-connection-on-your-server) before showing success.
 
 Use [your own OAuth app](#using-your-own-oauth-apps) to change the provider consent-screen identity in either mode. Use an application `callbackUrl` to return to your product after authentication. If you don't want the hosted connection page, follow [Build an app-owned connection UI](#build-an-app-owned-connection-ui).
 
@@ -86,15 +114,17 @@ The Connect Link shows English by default. To show it in your user's language, a
 
 Use these values exactly as written. Any other value, including variants such as `es-MX` or `zh-cn`, shows English. The language stays the same for the whole flow, including the success or failure screen after the user returns from the OAuth provider.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from urllib.parse import urlencode
 
 connection_request = session.authorize("gmail")
 
-# Show the Connect Link in Spanish
-connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+if connection_request.redirect_url:
+    # Show the Connect Link in Spanish
+    connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+    print(connect_url)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -111,6 +141,18 @@ if (connectionRequest.redirectUrl) {
   connectUrl.searchParams.set("locale", "es");
   console.log(connectUrl.toString());
 }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+REDIRECT_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail"}' | jq -r '.redirect_url')
+
+# Show the Connect Link in Spanish
+echo "$REDIRECT_URL?locale=es"
 ```
 </Tab>
 </Tabs>
@@ -143,6 +185,23 @@ For code-based provisioning, see [Programmatic auth configs](/docs/authenticatio
 
 For sessions, select the custom config explicitly:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.create(
+    user_id="user_123",
+    auth_configs={"github": "ac_your_github_config"},
+)
+request = session.authorize(
+    "github",
+    callback_url="https://your-app.com/connections/callback",
+)
+```
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 
@@ -154,6 +213,26 @@ const request = await session.authorize('github', {
   callbackUrl: 'https://your-app.com/connections/callback',
 });
 ```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s --request POST \
+  --url https://backend.composio.dev/api/v3.1/tool_router/session \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config"}
+  }' | jq -r '.session_id')
+
+curl --request POST \
+  --url "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link" \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{"toolkit": "github", "callback_url": "https://your-app.com/connections/callback"}'
+```
+</Tab>
+</Tabs>
 
 Set `COMPOSIO_API_KEY` in your server environment. Persist `request.id` with the authenticated user's connection attempt, then send the browser to `request.redirectUrl`. Without a session, use `connectedAccounts.link(userId, authConfigId, { callbackUrl })` or the cURL example above. These methods return a hosted Connect Link, not a page you host.
 
@@ -181,26 +260,24 @@ For a toolkit that supports direct OAuth2 initiation with custom credentials, yo
 2. When the signed-in user clicks, authorize the request in your backend. Select the toolkit and custom auth config from server-controlled values.
 3. Create a connection using `initiate()`. Set `long_redirect_url` to request an unshortened authorization URL:
 
-```bash
-curl --request POST \
-  --url https://backend.composio.dev/api/v3/connected_accounts \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --header "Content-Type: application/json" \
-  --data '{
-    "auth_config": {"id": "ac_your_github_config"},
-    "connection": {
-      "user_id": "user_123",
-      "callback_url": "https://your-app.com/connections/callback",
-      "state": {
-        "authScheme": "OAUTH2",
-        "val": {"status": "INITIALIZING", "long_redirect_url": true}
-      }
-    }
-  }' | jq '{id, redirect_url: .connectionData.val.redirectUrl}'
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+request = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+    callback_url="https://your-app.com/connections/callback",
+    config={
+        "auth_scheme": "OAUTH2",
+        "val": {"status": "INITIALIZING", "long_redirect_url": True},
+    },
+)
 ```
-
-The SDK equivalent is:
-
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 
@@ -217,6 +294,27 @@ const request = await composio.connectedAccounts.initiate(
   },
 );
 ```
+</Tab>
+<Tab value="API">
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/connected_accounts \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "auth_config": {"id": "ac_your_github_config"},
+    "connection": {
+      "user_id": "user_123",
+      "callback_url": "https://your-app.com/connections/callback",
+      "state": {
+        "authScheme": "OAUTH2",
+        "val": {"status": "INITIALIZING", "long_redirect_url": true}
+      }
+    }
+  }' | jq '{id, redirect_url: .connectionData.val.redirectUrl}'
+```
+</Tab>
+</Tabs>
 
 4. Store the returned `id`, authenticated application user, expected toolkit, and auth config as a pending attempt on your server. Return only the authorization URL to your frontend and navigate the browser to it. Don't send the raw API response or credentials to the browser or a model.
 5. On return to your application callback, [verify the stored attempt and connected account](#verify-the-connection-on-your-server), then render your own result page. If the browser closes or never returns, keep the attempt pending until your application expires it; don't infer success.
@@ -227,6 +325,21 @@ For supported direct OAuth flows, the unshortened URL points to the provider rat
 
 After verification, pass the connected account ID to a session for the same server-derived user:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.create(
+    user_id="user_123",
+    auth_configs={"github": "ac_your_github_config"},
+    connected_accounts={"github": "ca_verified_github_account"},
+    manage_connections=False,
+)
+```
+</Tab>
+<Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 
@@ -237,6 +350,22 @@ const session = await composio.create('user_123', {
   manageConnections: false,
 });
 ```
+</Tab>
+<Tab value="API">
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/tool_router/session \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config"},
+    "connected_accounts": {"github": ["ca_verified_github_account"]},
+    "manage_connections": {"enable": false}
+  }'
+```
+</Tab>
+</Tabs>
 
 Replace `ca_verified_github_account` with the ID your backend verified, not a browser-selected account. `manageConnections: false` disables the agent's connection manager, which can otherwise return hosted Connect Links for missing connections. Initiate missing connections from your own app, and don't call `session.authorize()`, which starts the hosted flow.
 
@@ -287,6 +416,37 @@ The custom endpoint changes the redirect URI registered with the provider and ad
 
 Pass an application `callbackUrl` when starting either flow to return to your product instead of the default hosted success page. The examples above use `https://your-app.com/connections/callback`. Keep this URL server-controlled, or validate it against an allowlist if your application supports multiple return destinations.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+connection_request = session.authorize(
+    "gmail",
+    callback_url="https://your-app.com/callback"
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connectionRequest = await session.authorize("gmail", {
+  callbackUrl: "https://your-app.com/callback",
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail", "callback_url": "https://your-app.com/callback"}'
+```
+</Tab>
+</Tabs>
+
 The callback can include `status=success` or `status=failed` and `connected_account_id`. Treat these as navigation hints, not proof that the connection is active or belongs to the current user. See [callback parameters](/docs/authentication/manually-authenticating#redirecting-users-after-authentication).
 
 ## Verify the connection on your server
@@ -297,9 +457,40 @@ Before marking an integration connected:
 2. Match any callback `connected_account_id` against the ID saved when your backend started the attempt. Don't trust a callback `user_id`, an account ID from the browser, or `status=success` on its own.
 3. Query Composio with your project API key, filtering by the saved account ID, the server-derived user, expected auth config, toolkit, and `ACTIVE` status:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+accounts = composio.connected_accounts.list(
+    connected_account_ids=["ca_saved_connection_id"],
+    user_ids=["user_123"],
+    auth_config_ids=["ac_your_github_config"],
+    toolkit_slugs=["github"],
+    statuses=["ACTIVE"],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+// Use the public raw client to retain the saved-account ID filter.
+const accounts = await composio.getClient().connectedAccounts.list({
+  connected_account_ids: ['ca_saved_connection_id'],
+  user_ids: ['user_123'],
+  auth_config_ids: ['ac_your_github_config'],
+  toolkit_slugs: ['github'],
+  statuses: ['ACTIVE'],
+});
+```
+</Tab>
+<Tab value="API">
 ```bash
 curl --get \
-  --url https://backend.composio.dev/api/v3/connected_accounts \
+  --url https://backend.composio.dev/api/v3.1/connected_accounts \
   --header "x-api-key: $COMPOSIO_API_KEY" \
   --data-urlencode "connected_account_ids=ca_saved_connection_id" \
   --data-urlencode "user_ids=user_123" \
@@ -308,6 +499,8 @@ curl --get \
   --data-urlencode "statuses=ACTIVE" \
   | jq '{items: [.items[] | {id, status, is_disabled, toolkit, auth_config}]}'
 ```
+</Tab>
+</Tabs>
 
 4. Require the saved account ID in the result, with the expected toolkit, auth config, and `ACTIVE` status. Require both the connection and auth config to be enabled (`is_disabled: false`). An empty result isn't success. The `user_id` field on individual account responses is deprecated, so don't rely on it being returned; use the user filter and your stored user-to-attempt binding.
 5. Mark the attempt complete once and show your success UI. If it's still pending, show progress and check again from your backend. Handle failed, expired, cancelled, and abandoned attempts without enabling tool access.

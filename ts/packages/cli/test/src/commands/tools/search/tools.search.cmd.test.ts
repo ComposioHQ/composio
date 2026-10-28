@@ -8,6 +8,7 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
 import { CommandInputError } from 'src/commands/errors';
+import { MissingActingUserError } from 'src/commands/surface';
 
 const testTools: Tools = [
   {
@@ -833,4 +834,44 @@ describe('CLI: composio search', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      ...testLiveOptions,
+      // A response without the field at all, which only a mock can answer.
+      accountData: { consumerUserId: null },
+    })
+  )('[Given] no consumer user id [Then] the search fails with the missing-user error', it => {
+    it.effect('[Then] the message points at composio login', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['search', 'send']).pipe(Effect.flip);
+
+        expect(failure).toBeInstanceOf(MissingActingUserError);
+        expect(failure).toMatchObject({
+          message: 'Missing consumer user id. Run `composio login` and try again.',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      ...testLiveOptions,
+      // The backend's "logged in, but no consumer user" shape counts as no user.
+      accountData: { consumerUserId: '' },
+    })
+  )('[Given] an empty consumer user id [Then] the search fails with the missing-user error', it => {
+    it.effect('[Then] no results are printed', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['search', 'send']).pipe(Effect.flip);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(failure).toBeInstanceOf(MissingActingUserError);
+        expect(failure).toMatchObject({
+          message: 'Missing consumer user id. Run `composio login` and try again.',
+        });
+        expect(output).not.toContain('GMAIL_SEND_EMAIL');
+      })
+    );
+  });
 });

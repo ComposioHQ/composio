@@ -28,7 +28,7 @@ If you're starting fresh, use [Configuring Sessions](/docs/configuring-sessions)
 
 You already have auth configs (e.g. `ac_github_config`, `ac_slack_config`). Pass them when creating a session so it uses your existing OAuth credentials and your users' connected accounts carry over.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -65,6 +65,17 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config", "slack": "ac_your_slack_config"}
+  }'
+```
+</Tab>
 </Tabs>
 
 Since the session uses the same `user_id` and auth configs, it automatically picks up existing connected accounts. No re-authentication needed.
@@ -76,7 +87,7 @@ Since the session uses the same `user_id` and auth configs, it automatically pic
 
 Instead of fetching specific tools by name, get the session's meta tools. These let the agent discover, authenticate, and execute any tool at runtime.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 # Before: manually specifying which tools to fetch
@@ -99,6 +110,13 @@ const session = await composio.create("user_123");
 const tools = await session.tools();
 ```
 </Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 </Step>
@@ -108,7 +126,7 @@ const tools = await session.tools();
 
 If you were manually creating connect links and waiting for connections, sessions handle this automatically. When a tool requires authentication, the agent prompts the user with a connect link in-chat.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 # Before: manual auth flow
@@ -121,7 +139,10 @@ If you were manually creating connect links and waiting for connections, session
 
 # After: auth happens automatically in-chat
 # Or if you need to pre-authenticate outside of chat:
-connection_request = session.authorize("github")
+connection_request = session.authorize(
+    "github",
+    callback_url="https://your-app.com/callback",
+)
 print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection()
 ```
@@ -147,6 +168,15 @@ console.log(connectionRequest.redirectUrl);
 const connectedAccount = await connectionRequest.waitForConnection();
 ```
 </Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "github", "callback_url": "https://your-app.com/callback"}'
+```
+</Tab>
 </Tabs>
 
 </Step>
@@ -156,7 +186,7 @@ const connectedAccount = await connectionRequest.waitForConnection();
 
 If you were pinning toolkit versions in your code or environment variables, you can remove that. Sessions handle versioning automatically.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 # Before: manual version pinning
@@ -189,6 +219,14 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}'
+```
+</Tab>
 </Tabs>
 
 </Step>
@@ -198,7 +236,7 @@ const session = await composio.create("user_123");
 
 If you were fetching tools from specific toolkits, you can restrict the session to only those toolkits:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -227,13 +265,29 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["github", "gmail", "slack"]},
+    "auth_configs": {
+      "github": "ac_your_github_config",
+      "gmail": "ac_your_gmail_config",
+      "slack": "ac_your_slack_config"
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 ## Multiple connected accounts
 
 If your users have multiple accounts for the same toolkit (e.g., work and personal Gmail), you can specify which one to use per session:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -260,6 +314,18 @@ const session = await composio.create("user_123", {
     gmail: ["ca_work_gmail"],
   },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"gmail": "ac_your_gmail_config"},
+    "connected_accounts": {"gmail": ["ca_work_gmail"]}
+  }'
 ```
 </Tab>
 </Tabs>

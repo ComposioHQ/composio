@@ -34,7 +34,7 @@ export const runProjectsList = ({ orgId, limit }: ProjectsListParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    // `requireLogin` on the command has already proven the key is there.
+    // `requiresLogin` on the command has already proven the key is there.
     const apiKey = yield* Effect.fromOption(ctx.data.apiKey, notLoggedIn);
 
     yield* ui.intro(PROJECTS_LIST_INTRO);

@@ -1,11 +1,11 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command, Flag } from 'effect/cli';
 import { Effect, Option } from 'effect';
 import { CommandInputError } from './errors';
 import { initCmd } from './init.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
 import { logsCmd } from './logs/logs.cmd';
-import { devToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { devToolsCmd$Execute } from './tools/execute/tools.execute.cmd';
 import { toolkitsCmd } from './toolkits/toolkits.cmd';
 import { authConfigsCmd } from './auth-configs/auth-configs.cmd';
 import { connectedAccountsCmd } from './connected-accounts/connected-accounts.cmd';
@@ -15,7 +15,8 @@ import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-us
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
-import { CommandSurface, rejectSharedFlags, rejectsSharedFlags } from './surface';
+import { CommandSurface, NO_SHARED_FLAGS, rejectSharedFlags } from './surface';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
   Flag.withDescription('Set developer mode on or off.'),
@@ -30,7 +31,7 @@ const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
 const userId = Flag.String('user-id').pipe(
   Flag.optional,
   Flag.withDescription(
-    'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.'
+    'User id to act as or filter by. Without it, commands that act as a user use the test user id of this directory (for its own project), then the global one, and name it on stderr.'
   )
 );
 
@@ -40,15 +41,15 @@ const projectName = Flag.String('project-name').pipe(
 );
 
 export const devSubcommands = [
-  initCmd.pipe(rejectsSharedFlags('dev init')),
+  initCmd.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
   devToolsCmd$Execute,
-  triggersCmd$Listen.pipe(requireLogin),
-  logsCmd.pipe(rejectsSharedFlags('dev logs', ['--project-name'])),
+  triggersCmd$Listen.pipe(withCommandMeta({ requiresLogin: true })),
+  logsCmd.pipe(withCommandMeta({ sharedFlags: { projectName: false } })),
   toolkitsCmd,
-  authConfigsCmd.pipe(rejectsSharedFlags('dev auth-configs')),
+  authConfigsCmd.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
   connectedAccountsCmd,
   triggersCmd,
-  projectsCmd.pipe(rejectsSharedFlags('dev projects')),
+  projectsCmd.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
 ] as const;
 
 const describeCurrentMode = (enabled: boolean) =>
@@ -176,11 +177,9 @@ const toggleRejections = {
 export const buildDevCommand = (visibility: CommandVisibility) =>
   visibility.isDevModeEnabled
     ? makeDevCommand(visibility, input =>
-        rejectSharedFlags('dev', undefined, toggleRejections).pipe(
-          Effect.andThen(developerModeHandler(input))
-        )
+        rejectSharedFlags('dev', toggleRejections).pipe(Effect.andThen(developerModeHandler(input)))
       ).pipe(
-        Command.withSubcommands([...devSubcommands]),
+        withRegisteredSubcommands([...devSubcommands], { ownAction: true }),
         Command.withSharedFlags({ userId, projectName }),
         Command.provide(({ userId, projectName }) => CommandSurface.dev({ userId, projectName }))
       )

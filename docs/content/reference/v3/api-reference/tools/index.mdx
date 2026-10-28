@@ -28,8 +28,25 @@ Proxy execute sends an authenticated HTTP request through a toolkit's [connected
 
 Call it with `composio.tools.proxyExecute()` in the TypeScript SDK, `composio.tools.proxy()` in the Python SDK, or `POST /api/v3.1/tools/execute/proxy` over HTTP. The `endpoint` can be an absolute URL (`https://api.example.com/v1/resource`) or a path relative to the toolkit's base URL (`/v1/resource`), `method` is the HTTP verb, `connectedAccountId` selects the account to authenticate as, `body` carries the JSON payload, and `parameters` adds extra headers and query parameters. The response forwards the upstream `status`, `headers`, and parsed `data` verbatim.
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+response = composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ca_github_user_123",
+    parameters=[{"name": "Accept", "value": "application/vnd.github.v3+json", "type": "header"}],
+)
+
+print(response.status, response.data)
+```
+</Tab>
+<Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: 'your_api_key' });
@@ -43,6 +60,21 @@ const { status, data } = await composio.tools.proxyExecute({
 
 console.log(status, data);
 ```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "endpoint": "/repos/composiohq/composio/issues/1",
+    "method": "GET",
+    "connected_account_id": "ca_github_user_123",
+    "parameters": [{ "name": "Accept", "value": "application/vnd.github.v3+json", "type": "header" }]
+  }'
+```
+</Tab>
+</Tabs>
 
 <Callout type="warn">
 Proxy execute rejects cross-domain requests, so the `endpoint` must resolve to the same domain as the connected account's toolkit, and you should not set the `Authorization` header yourself because Composio injects the correct credential for the account's auth scheme. This is an intentional security boundary, not a quota, so it cannot be bypassed by reshaping the request.

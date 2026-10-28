@@ -4,11 +4,11 @@ import { afterEach, vi } from 'vitest';
 import { writeStoredAgentIdentity } from 'src/services/agents';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 describe('CLI: composio agent whoami', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {
@@ -36,12 +36,12 @@ describe('CLI: composio agent whoami', () => {
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
     it.effect('[Given] the CLI is signed in as a human user [Then] shows a soft auth warning', () =>
       Effect.gen(function* () {
-        yield* cli(['agent', 'whoami']);
+        const exit = yield* Effect.exit(cli(['agent', 'whoami']));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('currently signed in to Composio as a regular user');
         expect(output).toContain('composio agent login <composio_agent_key>');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });

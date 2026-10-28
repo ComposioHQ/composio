@@ -76,10 +76,10 @@ Move files between your app and the mount with `session.experimental.files`. Upl
 The files API ships under `session.experimental`, so the surface may change in a future release.
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-session = composio.create("user_123")
+session = composio.create(user_id="user_123")
 
 # Upload a local file; the sandbox sees it at /mnt/files/sales.csv
 uploaded = session.experimental.files.upload("./sales.csv")
@@ -106,6 +106,30 @@ console.log(uploaded.sandboxMountPrefix, uploaded.mountRelativePath);
 // After the agent writes a result in the sandbox, download it
 const report = await session.experimental.files.download("/report.pdf");
 await report.save("./report.pdf");
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+# Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+UPLOAD_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/mounts/files/upload_url \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mount_relative_path": "sales.csv", "mimetype": "application/octet-stream"}' | jq -r '.upload_url')
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @sales.csv
+
+# After the agent writes a result in the sandbox, download it
+DOWNLOAD_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/mounts/files/download_url \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mount_relative_path": "/report.pdf"}' | jq -r '.download_url')
+curl -X GET "$DOWNLOAD_URL" -o report.pdf
 ```
 </Tab>
 </Tabs>

@@ -1,0 +1,67 @@
+---
+title: Troubleshooting triggers
+description: Find where events stop between your provider, Composio, and your webhook handler
+keywords: [triggers, troubleshooting, missing events, Gmail, polling, webhook delivery]
+---
+
+An active trigger instance confirms that the trigger exists. Test delivery separately: the provider must produce a matching event, Composio must receive or poll it, and your webhook handler must accept it.
+
+## Check the connection and identifiers
+
+Record the trigger instance ID and its connected account before changing the configuration. Keep these identifiers separate:
+
+| Value | Purpose |
+| --- | --- |
+| `GMAIL_NEW_GMAIL_MESSAGE` | A trigger type slug. It selects which event to watch. |
+| `ti_...` | A trigger instance ID. Use it to inspect, enable, disable, or delete that instance. |
+| `ca_...` | A connected account ID. It selects the provider account to watch. |
+| `user_id` / `userId` | Your application's user ID, supplied when that account was connected. |
+| `composio.trigger.message` | The outbound webhook event type for trigger events. |
+
+An organization member ID or trigger instance ID cannot replace a connected account ID. If you have multiple connections for the same toolkit, [target the specific connected account](/docs/setting-up-triggers/creating-triggers#targeting-a-specific-connected-account) and inspect that same trigger instance's logs.
+
+Check that both the connected account and the trigger are enabled. Successfully executing a tool verifies a different path from receiving a trigger event.
+
+## Separate provider ingress from outbound delivery
+
+Use the trigger logs to locate the first missing step:
+
+| What you see | What to check next |
+| --- | --- |
+| No trigger event appears | Confirm the provider event matches the trigger type and configuration. For polling triggers, allow the polling interval to pass. For realtime triggers, check provider ingress. |
+| A trigger event exists, but your app receives nothing | Inspect the project's outbound webhook subscription, destination URL, enabled events, and delivery response. |
+| Your app receives a request, but the handler rejects it | Check the signing secret, raw request body, timestamp, and handler logs using [signature verification](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures). |
+
+Your outbound subscription must include `composio.trigger.message`. A toolkit's trigger slug is not a webhook subscription event type. See [project subscriptions](/docs/setting-up-triggers/subscribing-to-events#manage-project-subscriptions).
+
+With Composio-managed OAuth, Composio manages provider ingress. If matching events never reach the trigger logs, contact support with the evidence below. If you bring your own OAuth app, check whether the trigger requires [custom OAuth webhook setup](/docs/setting-up-triggers/custom-oauth-webhooks), including provider verification and signing credentials.
+
+## Test Gmail polling with a new message
+
+Gmail polling on Composio-managed auth can take up to about 15 minutes. An empty legacy `last_synced_at` field alone does not establish that polling has stopped. Gmail polling uses a mailbox history cursor, and its first successful poll establishes a baseline. Messages that existed before that baseline are not a backfill.
+
+Wait for the first successful poll to establish the baseline, then send one new message to the connected mailbox. Keep its Gmail message ID and UTC arrival time, then check the intended trigger instance and your webhook delivery logs after another full polling interval. If you need older messages, fetch them separately with Gmail tools.
+
+### Prevent reply loops
+
+<Callout type="warn">
+Before an agent replies to a `GMAIL_NEW_GMAIL_MESSAGE` event, compare the event's `sender` with the connected mailbox address and its send-as aliases. Skip replies to messages sent by those addresses. This prevents a reply loop if a sent reply appears in the new-message events. Creating `GMAIL_EMAIL_SENT_TRIGGER` does not suppress events from the new-message trigger.
+</Callout>
+
+## Resume triggers after reconnecting
+
+Disabling a connected account also disables its triggers. Re-enabling the account does not automatically re-enable those triggers. [List the disabled instances](/docs/setting-up-triggers/managing-triggers#listing-active-triggers), then enable the ones you want to resume.
+
+If you connect under a different application user ID, you create a new connected account. Existing trigger instances remain attached to the original connection. Create triggers against the new connection when you intend to watch it.
+
+## Send a reproducible support report
+
+Include the following so support can correlate provider activity, trigger events, and webhook deliveries:
+
+- Your project ID, trigger type, trigger instance ID, and connected account ID.
+- Whether you use Composio-managed OAuth or your own OAuth app.
+- The relevant trigger configuration, with secrets removed.
+- One provider event's ID and UTC timestamp, such as a Gmail message ID or Notion page ID and edit time.
+- Whether the event appears in Composio's trigger logs, and any webhook delivery status or request/log ID.
+
+Share identifiers and redacted errors. Keep API keys, OAuth tokens, and webhook signing secrets out of the report.

@@ -1,5 +1,5 @@
 import { describe, expect, it, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, FileSystem, Path } from 'effect';
+import { Cause, ConfigProvider, Effect, Exit, FileSystem, Path } from 'effect';
 import { buildRootCommand } from 'src/commands';
 import { CommandInputError } from 'src/commands/errors';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -7,13 +7,21 @@ import { ProjectResolutionError } from 'src/services/command-project';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { NodeProcess } from 'src/services/node-process';
 import { ComposioUserContext } from 'src/services/user-context';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import {
+  cli,
+  cliExit,
+  MockConsole,
+  recordedInvocationCalls,
+  resetInvocationCalls,
+  TestLive,
+} from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeOrgProject } from 'test/__utils__/models/account';
 
 const SHARED_PROJECT_DESCRIPTION =
   'Developer project to use instead of the one configured in this directory';
 const SHARED_USER_DESCRIPTION =
-  'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.';
+  'User id to act as or filter by. Without it, commands that act as a user use the test user id of this directory (for its own project), then the global one, and name it on stderr.';
 // `dev logs tools|triggers` declare a comma-separated `--user-id` filter of their own, which
 // `withSharedFlags` accepts below a group entry and the help page shows in place of the shared row.
 const OWN_USER_ID_PAGES = ['dev logs tools', 'dev logs triggers'];
@@ -188,16 +196,17 @@ describe('CommandSurface: toolkits list reports the named project it cannot find
       accountData: { projects: [] },
     })
   )(it => {
-    // `toolkits list` reports every failure on stderr and exits 1 rather than failing.
+    // `toolkits list` prints every failure on stderr itself, then fails already reported.
     it.effect('looks the named project up', () =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        yield* cli(['dev', 'toolkits', 'list', '--project-name', 'nope']);
+        const exit = yield* Effect.exit(cli(['dev', 'toolkits', 'list', '--project-name', 'nope']));
         const stderr = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' })).join(
           '\n'
         );
         expect(stderr).toContain('Developer project "nope" was not found in org "org_test"');
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });
@@ -342,28 +351,57 @@ describe('CommandSurface: playground-execute --parallel finds its command name',
 });
 
 // `dev logs tools|triggers` honor --user-id as their filter and reject only --project-name.
+// `dev logs`, `dev auth-configs` and `dev projects` declare the flags unsupported for every
+// command under them; the message still names the command that ran.
 const rejectingCommands = [
-  { path: ['init'], flags: ['--project-name', '--user-id'] },
-  { path: ['logs', 'tools'], flags: ['--project-name'] },
-  { path: ['logs', 'triggers'], flags: ['--project-name'] },
-  { path: ['auth-configs', 'list'], flags: ['--project-name', '--user-id'] },
-  { path: ['projects', 'list'], flags: ['--project-name', '--user-id'] },
-  { path: ['toolkits', 'search', 'email'], flags: ['--project-name', '--user-id'] },
-  { path: ['toolkits', 'version', 'gmail'], flags: ['--project-name', '--user-id'] },
-  { path: ['connected-accounts', 'info', 'ca_1'], flags: ['--project-name', '--user-id'] },
-  { path: ['connected-accounts', 'whoami', 'ca_1'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'list', 'gmail'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'status'], flags: ['--project-name', '--user-id'] },
+  { command: ['init'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['logs', 'tools'], args: [], flags: ['--project-name'] },
+  { command: ['logs', 'triggers'], args: [], flags: ['--project-name'] },
+  { command: ['auth-configs', 'list'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['projects', 'list'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['toolkits', 'search'], args: ['email'], flags: ['--project-name', '--user-id'] },
+  { command: ['toolkits', 'version'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
   {
-    path: ['triggers', 'create', 'GMAIL_NEW_GMAIL_MESSAGE'],
-    flags: ['--project-name'],
+    command: ['connected-accounts', 'info'],
+    args: ['ca_1'],
+    flags: ['--project-name', '--user-id'],
   },
-  { path: ['triggers', 'enable', 'ti_1'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'disable', 'ti_1'], flags: ['--project-name', '--user-id'] },
-].flatMap(({ path, flags }) =>
-  flags.map(flag => ({ path, flag, name: `dev ${path.join(' ')} ${flag}` }))
+  {
+    command: ['connected-accounts', 'whoami'],
+    args: ['ca_1'],
+    flags: ['--project-name', '--user-id'],
+  },
+  { command: ['triggers', 'list'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
+  {
+    command: ['triggers', 'info'],
+    args: ['GMAIL_NEW_GMAIL_MESSAGE'],
+    flags: ['--project-name', '--user-id'],
+  },
+  { command: ['triggers', 'status'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['triggers', 'create'], args: ['GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name'] },
+  { command: ['triggers', 'enable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
+  { command: ['triggers', 'disable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
+].flatMap(({ command, args, flags }) =>
+  flags.flatMap(flag =>
+    (['before', 'after'] as const).map(position => {
+      const path = ['dev', ...command].join(' ');
+      return {
+        argv:
+          position === 'before'
+            ? ['dev', flag, 'other', ...command, ...args]
+            : ['dev', ...command, ...args, flag, 'other'],
+        flag,
+        path,
+        name: `${path} ${flag} (${position} the command)`,
+      };
+    })
+  )
 );
+
+const rejectionMessage = (command: string, flag: string) =>
+  flag === '--project-name'
+    ? `\`composio ${command}\` cannot target another project yet. Remove --project-name, or run it from that project's directory.`
+    : `\`composio ${command}\` does not act as a user. Remove --user-id.`;
 
 describe('CommandSurface: dev commands that cannot honor a shared flag reject it', () => {
   layer(
@@ -373,13 +411,26 @@ describe('CommandSurface: dev commands that cannot honor a shared flag reject it
       }),
     })
   )(it => {
-    it.effect.each(rejectingCommands)('rejects `$name`', ({ path, flag }) =>
+    it.effect.each(rejectingCommands)('rejects `$name`', ({ argv, flag, path }) =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        const error = yield* Effect.flip(cli(['dev', flag, 'other', ...path]));
+        yield* resetInvocationCalls;
+        const { exit, exitCode } = yield* cliExit(argv);
+        expect(exitCode).toBe(1);
+        const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
         expect(error).toBeInstanceOf(CommandInputError);
-        expect(error).toMatchObject({ option: flag });
+        expect(error).toMatchObject({
+          command: path,
+          option: flag,
+          message: rejectionMessage(path, flag),
+        });
+        const lifecycle = (yield* recordedInvocationCalls).flatMap(call =>
+          call.service === 'CommandLifecycleTelemetry' && call.event !== 'pluginHintShown'
+            ? [`${call.event} ${call.context.commandPath}`]
+            : []
+        );
+        expect(lifecycle).toEqual([`invoked ${path}`, `failed ${path}`]);
       })
     );
   });
@@ -422,13 +473,15 @@ describe('CommandSurface: a named project does not borrow the directory test use
     );
   });
 
+  /** The users the command opened sessions as, and the fallback notices it printed. */
   const sessionUser = (args: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const userIds: Array<string> = [];
-      yield* Effect.gen(function* () {
+      const lines = yield* Effect.gen(function* () {
         yield* writeDirectoryProject;
         yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
         yield* Effect.exit(cli(args));
+        return yield* MockConsole.getLines({ stripAnsi: true });
       }).pipe(
         Effect.provide(
           TestLive({
@@ -460,7 +513,10 @@ describe('CommandSurface: a named project does not borrow the directory test use
         ),
         Effect.scoped
       );
-      return [...new Set(userIds)];
+      return {
+        users: [...new Set(userIds)],
+        notices: lines.filter(line => /^Using (global )?test user id/u.test(line)),
+      };
     });
 
   const projects = [
@@ -474,24 +530,52 @@ describe('CommandSurface: a named project does not borrow the directory test use
       command: 'playground-execute',
       args: ['dev', 'playground-execute', 'GMAIL_SEND_EMAIL', '-d', '{}', '--skip-checks'],
     },
+    {
+      command: 'playground-execute --parallel',
+      args: [
+        'dev',
+        'playground-execute',
+        '--parallel',
+        'GMAIL_SEND_EMAIL',
+        '-d',
+        '{}',
+        'GMAIL_FETCH_EMAILS',
+        '-d',
+        '{}',
+        '--skip-checks',
+      ],
+    },
+    {
+      command: 'connected-accounts link',
+      args: ['dev', 'connected-accounts', 'link', 'gmail', '--no-wait'],
+    },
   ];
   const projectCases = [
-    { project: ['--project-name', 'other-project'], expected: 'global_user' },
-    { project: ['--project-name', 'dir-project'], expected: 'directory_user' },
-    { project: [], expected: 'directory_user' },
+    {
+      project: ['--project-name', 'other-project'],
+      expected: 'global_user',
+      notice: 'Using global test user id "global_user"',
+    },
+    {
+      project: ['--project-name', 'dir-project'],
+      expected: 'directory_user',
+      notice: 'Using test user id "directory_user"',
+    },
+    { project: [], expected: 'directory_user', notice: 'Using test user id "directory_user"' },
   ];
 
   it.effect.each(
     sessionCommands.flatMap(({ command, args }) =>
-      projectCases.map(({ project, expected }) => ({
+      projectCases.map(({ project, expected, notice }) => ({
         args: [...args, ...project],
         expected,
+        notice,
         name: `${command} ${project.join(' ') || 'without --project-name'}`,
       }))
     )
-  )('`$name` opens its session as $expected', ({ args, expected }) =>
+  )('`$name` opens its session as $expected and says so once', ({ args, expected, notice }) =>
     Effect.gen(function* () {
-      expect(yield* sessionUser(args)).toEqual([expected]);
+      expect(yield* sessionUser(args)).toEqual({ users: [expected], notices: [notice] });
     })
   );
 
@@ -515,46 +599,32 @@ describe('CommandSurface: a named project does not borrow the directory test use
     test_request_endpoint: '',
   });
 
-  // `link --list` without --project-name resolves the consumer project and its own user, so only
-  // the named cases apply.
   it.effect.each([
-    { project: 'other-project', expected: 'ca_global', other: 'ca_dir' },
-    { project: 'dir-project', expected: 'ca_dir', other: 'ca_global' },
-  ])(
-    '`connected-accounts link --list --project-name $project` lists $expected',
-    ({ project, expected, other }) =>
-      Effect.gen(function* () {
-        yield* writeDirectoryProject;
-        yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          'gmail',
-          '--list',
-          '--project-name',
-          project,
-        ]);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-        expect(output).toContain(expected);
-        expect(output).not.toContain(other);
-      }).pipe(
-        Effect.provide(
-          TestLive({
-            baseConfigProvider: ConfigProvider.fromEnv({
-              env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
-            }),
-            accountData: { projects },
-            connectedAccountsData: {
-              items: [
-                accountFor('global_user', 'ca_global'),
-                accountFor('directory_user', 'ca_dir'),
-              ],
-            },
-          })
-        ),
-        Effect.scoped
-      )
+    { project: ['--project-name', 'other-project'], expected: 'ca_global', other: 'ca_dir' },
+    { project: ['--project-name', 'dir-project'], expected: 'ca_dir', other: 'ca_global' },
+    { project: [], expected: 'ca_dir', other: 'ca_global' },
+  ])('`connected-accounts link --list $project` lists $expected', ({ project, expected, other }) =>
+    Effect.gen(function* () {
+      yield* writeDirectoryProject;
+      yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
+      yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list', ...project]);
+      const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+      expect(output).toContain(expected);
+      expect(output).not.toContain(other);
+    }).pipe(
+      Effect.provide(
+        TestLive({
+          baseConfigProvider: ConfigProvider.fromEnv({
+            env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+          }),
+          accountData: { projects },
+          connectedAccountsData: {
+            items: [accountFor('global_user', 'ca_global'), accountFor('directory_user', 'ca_dir')],
+          },
+        })
+      ),
+      Effect.scoped
+    )
   );
 
   it.effect.each([

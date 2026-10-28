@@ -1,5 +1,5 @@
 import { Argument, Command, Flag } from 'effect/cli';
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { runConnectedAccountsLink } from './connected-accounts.link.handler';
 
 const toolkit = Argument.String('toolkit').pipe(
@@ -60,5 +60,5 @@ export const connectedAccountsCmd$Link = Command.make(
     'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
   ),
   Command.withExamples(linkExamples),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

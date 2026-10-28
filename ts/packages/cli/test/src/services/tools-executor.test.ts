@@ -18,6 +18,7 @@ describe('isExecutionSuccessful', () => {
       raw: { result_type: 'failed' as const, error: 'Boom' },
       expected: false,
     },
+    { name: 'blocked', raw: { result_type: 'blocked' as const }, expected: false },
     { name: 'completed', raw: { result_type: 'completed' as const, error: null }, expected: true },
   ])('[Given] $name [Then] successful is $expected', ({ raw, expected }) => {
     expect(isExecutionSuccessful(raw)).toBe(expected);
@@ -54,6 +55,39 @@ describe('normalizeResponse', () => {
       data: { ok: true },
       error: null,
       logId: 'log_test',
+    });
+  });
+
+  it('[Given] a call a session hook blocked [Then] it is a failed call with the hook message', () => {
+    const response = normalizeResponse({
+      result_type: 'blocked',
+      reason: { type: 'request_blocked', hook_id: 'no_external_email' },
+      message: 'Blocked by session policy: No external email',
+    });
+
+    expect(response).toEqual({
+      successful: false,
+      data: {},
+      error: 'Blocked by session policy: No external email',
+      logId: '',
+    });
+  });
+
+  it('[Given] a blocked result of a call that ran [Then] it keeps the log id and the charge', () => {
+    const response = normalizeResponse({
+      result_type: 'blocked',
+      reason: { type: 'response_blocked', hook_id: 'no_outside_data' },
+      message: 'Blocked by session policy',
+      log_id: 'log_456',
+      instant_charge: { amount: '0.01', currency: 'USD', charged_by: 'composio' },
+    });
+
+    expect(response).toEqual({
+      successful: false,
+      data: {},
+      error: 'Blocked by session policy',
+      logId: 'log_456',
+      instantCharge: { amount: '0.01', currency: 'USD', chargedBy: 'composio' },
     });
   });
 });

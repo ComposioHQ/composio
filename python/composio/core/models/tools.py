@@ -8,19 +8,20 @@ from pathlib import Path
 import typing_extensions as te
 from composio_client import APIStatusError, omit
 from composio_client.types.tool_router.session_execute_meta_response import (
+    SessionExecuteMetaBlockedResponse,
     SessionExecuteMetaInputRequiredResponse,
-    SessionExecuteMetaResponse,
+    SessionExecuteMetaResult,
 )
 from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteBlockedResponse,
     SessionExecuteInputRequiredResponse,
     SessionExecuteResponse,
+    SessionExecuteResult,
 )
 from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteInputRequiredResponse,
 )
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import TypeAdapter
-from pydantic import ValidationError as PydanticValidationError
 
 from composio.client import HttpClient
 from composio.client.types import (
@@ -40,7 +41,11 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
 from composio.core.provider import TTool, TToolCollection
-from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
+from composio.core.provider.agentic import (
+    AgenticProvider,
+    AgenticProviderExecuteFn,
+    bind_execution_target,
+)
 from composio.core.provider.base import BaseProvider, ExecuteToolFn
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
@@ -174,102 +179,75 @@ def require_executed(
     )
 
 
-class _BlockReasonWire(PydanticBaseModel):
-    type: t.Literal["request_blocked", "response_blocked"]
-    hook_id: str
+class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
+    """Result of a session tool execution.
 
-
-class BlockedResponse(PydanticBaseModel):
-    """A call a session hook blocked, as the API returns it.
-
-    The generated client does not type it yet, so it is validated here.
-    ``log_id`` and ``instant_charge`` come only from session execute; session
-    proxy execute leaves them out.
+    The client's model, with ``hook_results`` as the SDK's own
+    :class:`ToolRouterHookResult` dicts, as they were before the client typed
+    them. ``instant_charge`` is present only when the Session sets
+    ``instant.return_instant_charge`` and a charge is available.
     """
 
-    result_type: t.Literal["blocked"]
-    reason: _BlockReasonWire
-    message: str
-    log_id: t.Optional[str] = None
-    instant_charge: t.Optional[t.Any] = None
-    hook_results: t.Optional[t.List[ToolRouterHookResult]] = None
+    hook_results: t.Optional[t.List[ToolRouterHookResult]] = None  # type: ignore[assignment]
 
 
-_HOOK_RESULTS_ADAPTER: TypeAdapter[t.List[ToolRouterHookResult]] = TypeAdapter(
-    t.List[ToolRouterHookResult]
-)
+def _session_execute_result(
+    fields: t.Mapping[str, t.Any], fields_set: t.AbstractSet[str]
+) -> ToolRouterSessionExecuteResponse:
+    """The SDK's result over fields the client already parsed, without parsing them again."""
+    return ToolRouterSessionExecuteResponse.model_construct(
+        _fields_set=set(fields_set), **fields
+    )
 
 
-def parse_blocked_response(
-    response: t.Any, subject: str
-) -> t.Optional[BlockedResponse]:
-    """Read a ``blocked`` response, or return ``None`` for any other ``result_type``.
-
-    :raises ValidationError: If a ``blocked`` response does not match its shape.
-    """
-    if getattr(response, "result_type", None) != "blocked":
-        return None
-    try:
-        return BlockedResponse.model_validate(
-            {
-                # ``instant_charge`` stays the client's model: the provider
-                # execute path reads it as one.
-                key: value if key == "instant_charge" else _plain(value)
-                for key, value in dict(response).items()
-            }
-        )
-    except PydanticValidationError as exc:
-        raise ValidationError(
-            f"{subject} returned a malformed blocked response"
-        ) from exc
-
-
-def _plain(value: t.Any) -> t.Any:
-    """Nested client models as plain data.
-
-    The generated client may return ``reason`` and ``hook_results`` as its own
-    nested models; the SDK validates plain data against its own types.
-    """
-    if isinstance(value, PydanticBaseModel):
-        return value.model_dump()
-    if isinstance(value, list):
-        return [_plain(item) for item in value]
-    return value
-
-
-def _response_field(response: t.Any, name: str) -> t.Any:
-    """A field of a generated client response model, declared or not.
-
-    The generated client keeps fields it does not type yet (``hook_results``)
-    as extras; once it types them they become declared fields.
-    """
-    if not isinstance(response, PydanticBaseModel):
-        return None
-    if name in type(response).model_fields:
-        return getattr(response, name, None)
-    return (response.model_extra or {}).get(name)
-
-
-def parse_hook_results(
-    response: t.Any, subject: str
+def hook_results_of(
+    hook_results: t.Optional[t.Sequence[PydanticBaseModel]],
 ) -> t.Optional[t.List[ToolRouterHookResult]]:
-    """The ``hook_results`` of a call that ran, or ``None`` when no hook applied.
+    """The client's typed ``hook_results`` as the SDK's own plain dicts.
 
-    :raises ValidationError: If ``hook_results`` does not match its shape.
+    The SDK returns hook results as :class:`ToolRouterHookResult` dicts, as it
+    did before the client typed them.
     """
-    raw = _plain(_response_field(response, "hook_results"))
-    if raw is None:
+    if hook_results is None:
         return None
-    try:
-        return _HOOK_RESULTS_ADAPTER.validate_python(raw)
-    except PydanticValidationError as exc:
-        raise ValidationError(f"{subject} returned malformed hook results") from exc
+    return [
+        t.cast(ToolRouterHookResult, hook_result.model_dump())
+        for hook_result in hook_results
+    ]
+
+
+def _blocked_execute_result(
+    blocked: t.Union[SessionExecuteBlockedResponse, SessionExecuteMetaBlockedResponse],
+) -> ToolRouterSessionExecuteResponse:
+    """A call a session hook blocked, as the session execute model.
+
+    The agent reads ``error``, so a blocked call reaches it as a failed call
+    with the hook's message. The fields are carried over as the client parsed
+    them instead of being validated a second time.
+    """
+    fields: t.Dict[str, t.Any] = {
+        "data": {},
+        "error": blocked.message,
+        "log_id": blocked.log_id or "",
+        "result_type": "blocked",
+        "block_reason": {
+            "type": blocked.reason.type,
+            "hook_id": blocked.reason.hook_id,
+        },
+    }
+    hook_results = hook_results_of(blocked.hook_results)
+    if hook_results is not None:
+        fields["hook_results"] = hook_results
+    if blocked.instant_charge is not None:
+        # The client's model: the provider execute path reads it as one.
+        fields["instant_charge"] = blocked.instant_charge
+    return _session_execute_result(fields, fields.keys())
 
 
 def require_execute_result(
-    response: t.Union[SessionExecuteResponse, SessionExecuteInputRequiredResponse],
+    response: SessionExecuteResult,
     slug: str,
-) -> SessionExecuteResponse:
+) -> ToolRouterSessionExecuteResponse:
     """Narrow a session execute response to a tool that ran.
 
     Every session execute response carries a ``result_type``. A ``blocked``
@@ -283,40 +261,23 @@ def require_execute_result(
         running.
     :raises ValidationError: If ``result_type`` is missing or unknown.
     """
+    if isinstance(response, SessionExecuteBlockedResponse):
+        return _blocked_execute_result(response)
     executed = require_executed(response, f"Tool {slug}")
-    blocked = parse_blocked_response(executed, f"Tool {slug}")
-    if blocked is not None:
-        # The agent reads ``error``, so a blocked call reaches it as a failed
-        # call with the hook's message.
-        fields: t.Dict[str, t.Any] = {
-            "data": {},
-            "error": blocked.message,
-            "log_id": blocked.log_id or "",
-            "result_type": "blocked",
-            "block_reason": {
-                "type": blocked.reason.type,
-                "hook_id": blocked.reason.hook_id,
-            },
-        }
-        if blocked.hook_results is not None:
-            fields["hook_results"] = blocked.hook_results
-        if blocked.instant_charge is not None:
-            fields["instant_charge"] = blocked.instant_charge
-        return SessionExecuteResponse.model_construct(_fields_set=set(fields), **fields)
-    if getattr(executed, "result_type", None) not in ("completed", "failed"):
+    if executed.result_type not in ("completed", "failed"):
         raise ValidationError(
             f"Tool {slug} returned an execute response without a known result_type"
         )
-    parse_hook_results(executed, f"Tool {slug}")
-    return executed
+    return _session_execute_result(
+        {**dict(executed), "hook_results": hook_results_of(executed.hook_results)},
+        executed.model_fields_set,
+    )
 
 
 def require_execute_meta_result(
-    response: t.Union[
-        SessionExecuteMetaResponse, SessionExecuteMetaInputRequiredResponse
-    ],
+    response: SessionExecuteMetaResult,
     slug: str,
-) -> SessionExecuteResponse:
+) -> ToolRouterSessionExecuteResponse:
     """Narrow a session execute_meta response to a meta tool that ran.
 
     The meta endpoint answers in the same shape as session execute, so the
@@ -327,6 +288,8 @@ def require_execute_meta_result(
         running.
     :raises ValidationError: If ``result_type`` is missing or unknown.
     """
+    if isinstance(response, SessionExecuteMetaBlockedResponse):
+        return _blocked_execute_result(response)
     executed = require_executed(response, f"Tool {slug}")
     # Carry the fields over as the client parsed them instead of validating
     # them a second time.
@@ -711,7 +674,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         user_id: t.Optional[str] = None,
     ) -> AgenticProviderExecuteFn:
         """Wrap the execute tool function"""
-        return t.cast(
+        execute_tool = t.cast(
             AgenticProviderExecuteFn,
             functools.partial(
                 self.execute,
@@ -722,6 +685,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 dangerously_skip_version_check=True,
             ),
         )
+        if user_id is None:
+            return execute_tool
+        return bind_execution_target(execute_tool, user_id)
 
     def _wrap_execute_tool_for_tool_router(
         self,

@@ -24,7 +24,7 @@ const params = {
 
 describe('runAuthConfigsList', () => {
   it.effect('[Given] auth configs [Then] prints their summary JSON to stdout', () => {
-    const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+    const { layer, outputs } = AuthConfigsHandlerTest({
       authConfigsData: { items: [gmail, slack] },
     });
     return Effect.gen(function* () {
@@ -59,7 +59,6 @@ describe('runAuthConfigsList', () => {
       expect(decoration).toContain(
         `To view details of an auth config:\n> composio dev auth-configs info "${redact({ value: 'ac_gmail_default', prefix: 'ac_' })}"`
       );
-      expect(exitCode()).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
@@ -102,7 +101,7 @@ describe('runAuthConfigsList', () => {
   ])(
     '[Given] no matches and $name [Then] warns and prints nothing to stdout',
     ({ toolkits, warning }) => {
-      const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+      const { layer, outputs } = AuthConfigsHandlerTest({
         authConfigsData: { items: [gmail] },
       });
       return Effect.gen(function* () {
@@ -112,7 +111,6 @@ describe('runAuthConfigsList', () => {
           warning,
         ]);
         expect(outputs).toEqual([]);
-        expect(exitCode()).toBeUndefined();
       }).pipe(Effect.provide(layer));
     }
   );

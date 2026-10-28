@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@effect/vitest';
+import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { isUsageFailure } from 'src/commands/errors';
 import { runToolsInfo } from 'src/commands/tools/info/tools.info.handler';
@@ -11,6 +11,7 @@ import type { Tools } from 'src/models/tools';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -53,10 +54,6 @@ const toolsInfoTest = () => {
 };
 
 describe('runToolsInfo', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   it.effect('[Given] no slug [Then] fails with a usage error before any request', () => {
     const { layer, outputs } = toolsInfoTest();
     return Effect.gen(function* () {
@@ -72,11 +69,10 @@ describe('runToolsInfo', () => {
         option: '<slug>',
         message: `${MISSING_SLUG_MESSAGE}\n${MISSING_SLUG_HINT}`,
       });
-      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      // The invocation prints a usage failure on stderr and exits 1.
       expect(isUsageFailure(failure)).toBe(true);
       expect(yield* MockConsole.getLines()).toEqual([]);
       expect(outputs).toEqual([]);
-      expect(process.exitCode).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
@@ -104,7 +100,6 @@ describe('runToolsInfo', () => {
         inputSchema: TOOLS[0]?.input_parameters,
       });
       expect(printed.schemaPath).toMatch(/\/tool_definitions\/GMAIL_SEND_EMAIL\.json$/);
-      expect(process.exitCode).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
@@ -113,13 +108,13 @@ describe('runToolsInfo', () => {
     () => {
       const { layer, outputs } = toolsInfoTest();
       return Effect.gen(function* () {
-        yield* runToolsInfo({ slug: Option.some('GMAIL_SEND') });
+        const exit = yield* Effect.exit(runToolsInfo({ slug: Option.some('GMAIL_SEND') }));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain(toolNotFoundMessage('GMAIL_SEND'));
         expect(output).toContain('> composio tools info "GMAIL_SEND_EMAIL"');
         expect(outputs).toEqual([]);
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       }).pipe(Effect.provide(layer));
     }
   );
