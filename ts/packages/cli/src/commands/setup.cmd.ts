@@ -352,5 +352,5 @@ export const setupCmd = setupBaseCmd.pipe(
       command: 'composio setup --target all',
     },
   ]),
-  withRegisteredSubcommands([setupSkillCmd])
+  withRegisteredSubcommands([setupSkillCmd], { ownAction: true })
 );

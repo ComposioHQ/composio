@@ -15,10 +15,11 @@ import { TestLive } from 'test/__utils__';
 class GuardFailed extends CliError.UserError {}
 
 /**
- * A tree shaped like the CLI's: `app` (own handler) registers `outer` (own handler), a root
- * shortcut to `link` with its own family, a login-gated group, and a group whose own guard fails.
- * `outer` registers `inner` (no handler, aliased `in`) and the same `link` value again. Every
- * provider, registration, `begin`, and handler appends to the trace.
+ * A tree shaped like the CLI's: `app` (whose own handler shows help, like the root's overview)
+ * registers `outer` (whose own handler is an action), a root shortcut to `link` with its own
+ * family, a login-gated group, and a group whose own guard fails. `outer` registers `inner` (no
+ * handler, aliased `in`) and the same `link` value again. Every provider, registration, `begin`,
+ * and handler appends to the trace.
  */
 const traced = (args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
@@ -40,7 +41,7 @@ const traced = (args: ReadonlyArray<string>) =>
       provider('inner')
     );
     const outer = Command.make('outer', {}, handler('outer')).pipe(
-      withRegisteredSubcommands([inner, link]),
+      withRegisteredSubcommands([inner, link], { ownAction: true }),
       provider('outer')
     );
     const gated = Command.make('gated').pipe(
@@ -113,7 +114,7 @@ describe('effect/cli handler composition', () => {
         ],
       },
       {
-        name: 'a bare group with a handler runs its own handler, no subcommand',
+        name: 'a bare group with its own action begins it with its input, no subcommand',
         args: ['outer'],
         trace: [
           'provider app',
@@ -124,9 +125,9 @@ describe('effect/cli handler composition', () => {
         ],
       },
       {
-        name: 'the root with no subcommand runs its own handler',
+        name: 'the root with no subcommand begins as help, then runs its own handler',
         args: [],
-        trace: ['provider app', 'begin composio command', 'handler app'],
+        trace: ['provider app', 'begin composio command unparsed', 'handler app'],
       },
       {
         name: 'a root shortcut is its own registration, with its own meta',
@@ -153,7 +154,7 @@ describe('effect/cli handler composition', () => {
       })
     );
 
-    it.effect('a bare group without a handler begins, then shows its help', () =>
+    it.effect('a bare group without a handler begins as help, then shows its help', () =>
       Effect.gen(function* () {
         const { exit, trace } = yield* traced(['outer', 'inner']);
         expect(trace).toEqual([
@@ -162,7 +163,7 @@ describe('effect/cli handler composition', () => {
           'provider outer',
           'enter outer inner',
           'provider inner',
-          'begin outer inner command',
+          'begin outer inner command unparsed',
         ]);
         expect(failureOf(exit)).toMatchObject({
           _tag: 'ShowHelp',
