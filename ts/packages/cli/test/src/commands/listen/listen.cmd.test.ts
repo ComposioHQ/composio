@@ -1,7 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { TestClock } from 'effect/testing';
-import { ListenCommandError } from 'src/commands/listen.cmd';
+import { ListenCommandError } from 'src/commands/listen/listen.errors';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import {
