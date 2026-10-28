@@ -94,3 +94,26 @@ Where supported, your users can connect their own provider credentials instead. 
 4. Check existing Sessions and pinned direct-tool versions. A successful replacement call doesn't prove every old workflow has migrated.
 
 After the cutoff, affected legacy executions will stop working. If you need help mapping an action or adapting a workflow, contact [support@composio.dev](mailto:support@composio.dev).
+
+
+## Optional Session setup helper
+
+[Download the Python helper](/assets/migrations/migrate_no_auth_to_instant.py) if you want to preview and create a replacement Session with explicit toolkit and tool allowlists. It requires Python 3.10 or later and uses only the standard library.
+
+Save the file locally, inspect it, then preview a request:
+
+```bash
+python3 migrate_no_auth_to_instant.py --user-id user_123 --tool exa:EXA_SEARCH
+```
+
+Use your existing application user ID and repeat `--tool toolkit:TOOL_SLUG` for each required action. The preview makes no network requests. The helper does not guess equivalents for retired actions or adapt their arguments and responses.
+
+After enabling Instant and funding the intended project's organization, set `COMPOSIO_API_KEY` securely for that project. Review the selected actions and their published rates before creating a replacement Session:
+
+```bash
+python3 migrate_no_auth_to_instant.py --user-id user_123 --tool exa:EXA_SEARCH --apply
+```
+
+`--apply` verifies each tool's current identity, Instant support and published price, then creates one Session. It does not run provider tools, edit existing Sessions, change project settings, or rewrite your application. Use the returned Session ID in your application and test the workflow separately. Normal account-selection rules still apply.
+
+If creation times out or returns an ambiguous server error, inspect your project before trying again. The helper never retries automatically. This helper is for Sessions; direct-tool callers should follow the separate guidance above.
