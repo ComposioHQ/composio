@@ -718,3 +718,131 @@ describe('expected failures without the crash banner', () => {
     30_000
   );
 });
+
+describe('local file uploads', () => {
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+  // Records the presigned-URL request, then refuses it so no upload is attempted.
+  const fakeUploadBackend =
+    (presignRequests: Array<unknown>) => (req: IncomingMessage, res: ServerResponse) => {
+      const { pathname } = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (/^\/api\/v3(\.1)?\/tools\/CANVA_CREATE_DESIGN_IMPORT_JOB$/u.test(pathname)) {
+        return sendJson(res, 200, {
+          slug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          name: 'Create Design Import Job',
+          description: '',
+          version: '20260101_00',
+          available_versions: ['20260101_00'],
+          input_parameters: {
+            type: 'object',
+            properties: {
+              file: { type: 'object', file_uploadable: true },
+              title: { type: 'string' },
+            },
+          },
+          output_parameters: {},
+          tags: [],
+        });
+      }
+      if (pathname.endsWith('/files/upload/request')) {
+        const chunks: Array<Buffer> = [];
+        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        req.on('end', () => {
+          presignRequests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          sendJson(res, 400, { error: { message: 'stop here', status: 400 } });
+        });
+        return;
+      }
+      fakeComposio(req, res);
+    };
+
+  const uploadWith = async (
+    baseUrl: string,
+    file: string,
+    stagedFiles?: Record<string, { name: string; mimetype?: string }>
+  ) => {
+    const metadataDirectory = fs.mkdtempSync(path.join(tempy.temporaryDirectory(), 'labels-'));
+    const metadataFile = path.join(metadataDirectory, 'files.json');
+    if (stagedFiles) fs.writeFileSync(metadataFile, JSON.stringify(stagedFiles));
+    try {
+      return await runCliAgainst(
+        baseUrl,
+        [
+          'execute',
+          'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          '--skip-connection-check',
+          '--file',
+          file,
+          '-d',
+          '{"title":"Deck"}',
+        ],
+        {
+          env: { COMPOSIO_RUN_STAGED_FILES_FILE: stagedFiles ? metadataFile : '' },
+        }
+      );
+    } finally {
+      fs.rmSync(metadataDirectory, { recursive: true, force: true });
+    }
+  };
+
+  it.each([
+    {
+      name: 'a .pptx path',
+      onDisk: 'deck.pptx',
+      staged: undefined,
+      filename: 'deck.pptx',
+      mimetype: PPTX,
+    },
+    {
+      name: 'an extensionless path with no staged name or type',
+      onDisk: 'deck',
+      staged: undefined,
+      filename: 'deck',
+      mimetype: 'application/octet-stream',
+    },
+    {
+      name: 'a path `composio run` staged an extensionless PPTX File at',
+      onDisk: 'file-a1b2c3d4',
+      staged: { name: 'deck', mimetype: PPTX },
+      filename: 'deck',
+      mimetype: PPTX,
+    },
+    {
+      name: 'a path `composio run` staged a `.env.example` File at',
+      onDisk: 'file-a1b2c3d4.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      filename: '.env.example',
+      mimetype: 'text/plain',
+    },
+  ])(
+    '[Given] $name [Then] `composio execute --file` requests the upload as $filename, $mimetype',
+    ({ onDisk, staged, filename, mimetype }) => {
+      const file = path.join(tempy.temporaryDirectory(), onDisk);
+      fs.writeFileSync(file, 'PK fake pptx');
+      const presignRequests: Array<unknown> = [];
+      return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+        await uploadWith(baseUrl, file, staged && { [file]: staged });
+
+        expect(presignRequests).toEqual([
+          expect.objectContaining({ filename, mimetype, toolkit_slug: 'canva' }),
+        ]);
+      });
+    },
+    30_000
+  );
+
+  it('[Given] a `.env` path staged under a harmless name [Then] the denylist still refuses it', () => {
+    const file = path.join(tempy.temporaryDirectory(), '.env');
+    fs.writeFileSync(file, 'SECRET=value');
+    const presignRequests: Array<unknown> = [];
+    return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+      const result = await uploadWith(baseUrl, file, {
+        [file]: { name: 'deck.pptx', mimetype: PPTX },
+      });
+
+      expect(result.status).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).toContain('looks like a credential');
+      expect(presignRequests).toEqual([]);
+    });
+  }, 30_000);
+});

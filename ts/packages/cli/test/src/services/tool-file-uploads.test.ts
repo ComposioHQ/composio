@@ -15,6 +15,7 @@ import {
   MAX_URL_UPLOAD_SIZE_BYTES,
 } from '@composio/core';
 import {
+  readRunStagedFiles,
   findFileUploadablePaths,
   findLocalPathArguments,
   schemaHasFileUploadable,
@@ -109,62 +110,6 @@ describe('file argument paths', () => {
   });
 });
 
-describe('local file MIME metadata', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-
-  it.effect.each([
-    { filename: 'picture.png', expectedMime: 'image/png' },
-    { filename: 'picture.JPG', expectedMime: 'image/jpeg' },
-    { filename: 'document.pdf', expectedMime: 'application/pdf' },
-    {
-      filename: 'slides.pptx',
-      expectedMime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    },
-    {
-      filename: 'document.docx',
-      expectedMime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    },
-    { filename: 'unknown.extension-dogfood', expectedMime: 'application/octet-stream' },
-    { filename: 'no-extension', expectedMime: 'application/octet-stream' },
-  ])(
-    'uses the same MIME for the request, upload, and hydrated $filename',
-    ({ filename, expectedMime }) => {
-      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-mime-'));
-      const file = path.join(root, filename);
-      writeFileSync(file, 'fixture bytes');
-      const { client, requests } = makeClient();
-      const uploadFetch = vi.fn(async () => new Response(null, { status: 200 }));
-      vi.stubGlobal('fetch', uploadFetch);
-      return Effect.gen(function* () {
-        const fsApi = yield* FileSystem.FileSystem;
-        const pathApi = yield* Path.Path;
-        const result = yield* uploadToolInputFiles({
-          fs: fsApi,
-          path: pathApi,
-          toolSlug: 'GMAIL_SEND_EMAIL',
-          arguments_: { attachment: file },
-          inputSchema,
-          client,
-        });
-        expect(requests[0]?.body).toMatchObject({ mimetype: expectedMime });
-        expect(uploadFetch).toHaveBeenCalledWith(
-          'https://1.1.1.1/put',
-          expect.objectContaining({
-            headers: expect.objectContaining({ 'Content-Type': expectedMime }),
-          })
-        );
-        expect(result.attachment).toMatchObject({ name: filename, mimetype: expectedMime });
-      }).pipe(
-        Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
-        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
-      );
-    }
-  );
-});
-
 // The client over a transport that answers the presigned-URL request with
 // `presigned`, and records each request it receives.
 const makeClient = (
@@ -173,6 +118,50 @@ const makeClient = (
     key: 's3key-123',
   }
 ) => stubComposioClient(() => Response.json(presigned));
+
+describe('readRunStagedFiles', () => {
+  it.effect('loads original upload names and MIME types from the manifest', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-labels-'));
+    const file = path.join(root, 'files.json');
+    writeFileSync(
+      file,
+      JSON.stringify({
+        '/tmp/file-1': { name: 'deck', mimetype: 'application/pdf' },
+        '/tmp/file-2': { name: 'notes.txt' },
+      })
+    );
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      expect(yield* readRunStagedFiles(fsApi, file)).toEqual(
+        new Map([
+          ['/tmp/file-1', { name: 'deck', mimetype: 'application/pdf' }],
+          ['/tmp/file-2', { name: 'notes.txt' }],
+        ])
+      );
+    }).pipe(
+      Effect.provide(BunFileSystem.layer),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  });
+
+  it.effect.each(['not json', '["a"]', '{"/a":1}', '{"/a":{"mimetype":"text/plain"}}', undefined])(
+    'rejects unreadable or invalid metadata (%s) instead of dropping labels',
+    content => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-labels-'));
+      const file = path.join(root, 'files.json');
+      if (content !== undefined) writeFileSync(file, content);
+      return Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const failure = yield* Effect.flip(readRunStagedFiles(fsApi, file));
+        expect(failure).toBeInstanceOf(ToolFileUploadError);
+        expect(failure.reason).toBe('source-read');
+      }).pipe(
+        Effect.provide(BunFileSystem.layer),
+        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+      );
+    }
+  );
+});
 
 describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
   afterEach(() => {
@@ -307,6 +296,148 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
   });
+});
+
+describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  const canvaSchema = {
+    type: 'object',
+    properties: {
+      file: { file_uploadable: true, type: 'object' },
+      title: { type: 'string' },
+      mime_type: { type: 'string' },
+    },
+  };
+
+  it.effect.each([
+    // A file the caller did not stage takes the type of its extension.
+    { onDisk: 'deck.pptx', staged: undefined, name: 'deck.pptx', mimetype: PPTX },
+    { onDisk: 'Deck.PPTX', staged: undefined, name: 'Deck.PPTX', mimetype: PPTX },
+    { onDisk: 'picture.png', staged: undefined, name: 'picture.png', mimetype: 'image/png' },
+    { onDisk: 'picture.JPG', staged: undefined, name: 'picture.JPG', mimetype: 'image/jpeg' },
+    {
+      onDisk: 'document.pdf',
+      staged: undefined,
+      name: 'document.pdf',
+      mimetype: 'application/pdf',
+    },
+    {
+      onDisk: 'document.docx',
+      staged: undefined,
+      name: 'document.docx',
+      mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    },
+    {
+      onDisk: 'unknown.extension-dogfood',
+      staged: undefined,
+      name: 'unknown.extension-dogfood',
+      mimetype: 'application/octet-stream',
+    },
+    {
+      onDisk: 'no-extension',
+      staged: undefined,
+      name: 'no-extension',
+      mimetype: 'application/octet-stream',
+    },
+    // What its caller staged it under (a `composio run` File's own name and type)
+    // wins over the path's.
+    { onDisk: 'file-a1', staged: { name: 'deck', mimetype: PPTX }, name: 'deck', mimetype: PPTX },
+    {
+      onDisk: 'file-a1.pdf',
+      staged: { name: 'deck.pdf', mimetype: PPTX },
+      name: 'deck.pdf',
+      mimetype: PPTX,
+    },
+    { onDisk: 'file-a1.pptx', staged: { name: 'deck.pptx' }, name: 'deck.pptx', mimetype: PPTX },
+    // Names the denylist refuses on a path are only labels here.
+    {
+      onDisk: 'file-a1.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      name: '.env.example',
+      mimetype: 'text/plain',
+    },
+    {
+      onDisk: 'file-a1',
+      staged: { name: 'id_rsa' },
+      name: 'id_rsa',
+      mimetype: 'application/octet-stream',
+    },
+  ])(
+    '[Given] $onDisk staged as $staged [Then] the presign request, the PUT and the tool input carry $name and $mimetype',
+    ({ onDisk, staged, name, mimetype }) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+      const file = path.join(root, onDisk);
+      writeFileSync(file, 'PK fake pptx');
+
+      const { client, requests } = makeClient();
+      const uploadFetch = vi.fn(async (_url: string, _init: RequestInit) => ({
+        ok: true,
+        statusText: 'OK',
+      }));
+      vi.stubGlobal('fetch', uploadFetch);
+
+      return Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const result = yield* uploadToolInputFiles({
+          fs: fsApi,
+          path: pathApi,
+          toolSlug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          arguments_: { file, title: 'Deck', mime_type: PPTX },
+          inputSchema: canvaSchema,
+          client,
+          stagedFiles: new Map(staged === undefined ? [] : [[file, staged]]),
+        });
+
+        expect(requests).toMatchObject([
+          { body: { filename: name, mimetype, toolkit_slug: 'canva' } },
+        ]);
+        expect(uploadFetch.mock.calls[0]?.[1]?.headers).toMatchObject({
+          'Content-Type': mimetype,
+        });
+        expect(result).toEqual({
+          file: { name, mimetype, s3key: 's3key-123' },
+          title: 'Deck',
+          mime_type: PPTX,
+        });
+      }).pipe(
+        Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+        Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+      );
+    }
+  );
+
+  it.effect(
+    '[Given] a sensitive path staged under a harmless name [Then] it is still refused',
+    () =>
+      Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
+        const pathApi = yield* Path.Path;
+        const { client, requests } = makeClient();
+        const envFile = path.join(os.homedir(), '.env');
+
+        // The staged-file labels rename an upload; they never exempt a path from the denylist.
+        const failure = yield* Effect.flip(
+          uploadToolInputFiles({
+            fs: fsApi,
+            path: pathApi,
+            toolSlug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+            arguments_: { file: envFile, title: 'Deck' },
+            inputSchema: canvaSchema,
+            client,
+            stagedFiles: new Map([[envFile, { name: 'deck.pptx', mimetype: PPTX }]]),
+          })
+        );
+
+        expect(failure.cause).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
+        expect(requests).toEqual([]);
+      }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
 });
 
 describe('uploadToolInputFiles — presigned-URL request', () => {

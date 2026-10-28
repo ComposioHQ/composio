@@ -10,12 +10,12 @@
   exits 1. Without it, a failed event is still reported and skipped, and the
   exit code stays 0.
 
-- `composio execute` and `composio proxy` now fail with an error listing
-  the candidate accounts, instead of silently using the newest one, when a
-  toolkit has several connected accounts, none is aliased `default`, and no
-  `--account` is passed. Scripts that relied on the implicit newest-account
-  pick now fail. To migrate, pass `--account <id|alias>`, or alias one account
-  `default`.
+- `composio execute`, `composio proxy` and `composio listen` (for a trigger
+  slug) now fail with an error listing the candidate accounts, instead of
+  silently using the newest one, when a toolkit has several connected accounts,
+  none is aliased `default`, and no `--account` is passed. Scripts that relied
+  on the implicit newest-account pick now fail. To migrate, pass
+  `--account <id|alias>`, or alias one account `default`.
 
 ### Patch Changes
 
@@ -31,6 +31,19 @@
   `application/octet-stream`. `execute --file` preserves arrays and injects into
   the single matching upload field in an existing array item; ambiguous targets
   require explicit JSON. This fixes Word and PowerPoint image editing through the CLI.
+
+- `composio listen` now picks the connected account for a trigger slug the way
+  `composio execute` and `composio proxy` do, through the same resolver, so the
+  three commands choose the same account for the same `--account` (or its
+  absence). An `--account` that matches no active account, or a failed account
+  lookup, now fails with the message those commands print, as a plain message
+  on stderr with exit 1.
+
+- In `composio run`, a `File` or `Blob` passed to `execute()` now uploads with
+  its own `type`, even when its name has no extension, and a `File` keeps its
+  name. It used to upload as `application/octet-stream` under a name with a
+  random prefix, such as `1bfa14f5-deck.pptx`. A nameless `Blob` whose type has
+  no short extension, such as PPTX, is named `file-<id>.bin`.
 
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
