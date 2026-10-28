@@ -4,8 +4,8 @@
 `Command`, `Flag` (was `Options`), `Argument` (was `Args`), `GlobalFlag` (was
 `BuiltInOptions`), `CliConfig`, `CliOutput`, `CliError` (was `ValidationError`/
 `HelpDoc`). Ground truth for this reference is
-`ts/packages/cli/src/cli-config.ts` and `ts/packages/cli/src/cli-main.ts` — read their
-full module docstrings before touching the runner, not just the excerpts below.
+`ts/packages/cli/src/cli-config.ts`, `ts/packages/cli/src/cli-main.ts`, and
+`ts/packages/cli/src/invocation/invocation.ts` — read their full module docstrings before touching the runner, not just the excerpts below.
 
 ## Command shape
 
@@ -59,7 +59,7 @@ longer reproduces either behavior:
   exact, so case-sensitivity needs no config.
 
 `ComposioCliConfig`'s `builtIns` narrowing is the _only_ `CliConfig` customization
-Composio makes. There is no custom `CliOutput.Formatter` — `cli-main.ts` provides no
+Composio makes. There is no custom `CliOutput.Formatter` — `InvocationLive` provides no
 `CliOutput.layer(...)` at all, so `Command.runWith` uses v4's own
 `CliOutput.defaultFormatter()` for everything: suggestions render as-is. An earlier revision of this file
 wrapped `defaultFormatter()` to strip suggestions and flatten `formatVersion` back to a
@@ -95,25 +95,30 @@ Those markers _are_ the contract: "I already printed my own output; don't log me
 `Runtime.defaultTeardown` reads `errorExitCode` the same way — see
 `ts/vendor/effect/packages/effect/src/Runtime.ts`'s `getErrorReported`/`getErrorExitCode`.
 
-Consequently `ts/packages/cli/src/cli-main.ts` does **not** intercept `ShowHelp` to
-derive an exit code by hand anymore. Its sandboxed catch-all handler special-cases
-`ShowHelp` (via `CliError.isCliError(squashed) && Predicate.isTagged(squashed,
-'ShowHelp')`, never a direct `._tag ===` check) and re-fails with the original `Cause`
-via `Effect.failCause(cause)` instead of swallowing it like every other error — that lets
-the failure reach `BunRuntime.runMain` untouched, where `errorReported`/`errorExitCode`
-take over. The custom `teardown` in the same file reads `Runtime.getErrorExitCode` off
-the squashed failure for exactly this case, falling back to `Number(process.exitCode ??
-1)` otherwise. If you add rendering anywhere in this path, you will double-print — this
-is the single most important rule when touching the runner. The separate catch-all
-defect handler further down (genuine command-handler failures captured via
-`effect-errors`) is a different path that `Command.runWith` never renders, so appending
-help text there is not a double-print.
+The CLI's own errors use the same contract. A failure a command already printed
+(`ReportedFailure` from `src/effects/report-failure.ts`, `ReportedToolExecutionError`,
+`ShellSetupAbortError`, `SetupCommandError`, …) or that carries a custom code
+(`ChildProcessExited` from `composio run`) declares the markers as getters, and
+the CLI's runner (`ts/packages/cli/src/run-main.ts`, built on `Runtime.makeRunMain`) exits
+through `Runtime.defaultTeardown`: 0 on success, and otherwise with the squashed failure's
+`errorExitCode` (1 when unset). An exit made of interruptions alone after a signal is 128 + the
+signal's number instead (130, 143, 129). Nothing in `src/` assigns `process.exitCode`.
+
+`runInvocation` (`src/invocation/invocation.ts`) skips every failure whose `errorReported`
+is false (`ShowHelp` included); when nothing is left it prints nothing. If you add rendering
+anywhere in this path, you will double-print — this is the single most important rule when
+touching the runner. It prints an expected failure's message, a rejected key's hint, or, for
+whatever else is left, the defect report captured via `effect-errors`, then re-fails with the
+original `Cause`, so tests still match the typed error. `forRunner` (in `cli-main.ts`'s
+pipeline) turns what the invocation printed into a `ReportedFailure` and passes failures
+already on screen untouched, so the markers take over. `Command.runWith` never renders the
+defect path, so appending help text there is not a double-print.
 
 ## argv preprocessing and the executable-prefix contract
 
 `Command.runWith(rootCommand, { version })` expects argv **without** the node/bun
 executable and script path prefix — unlike v3's `Command.run`, which stripped that
-prefix internally. `cli-main.ts` still passes the _full_ `process.argv` into
+prefix internally. `runInvocation` still passes the _full_ `process.argv` into
 `runWithConfig` (from `src/commands`); that module is responsible for slicing
 `argv.slice(2)` immediately before calling `Command.runWith`. Do not change this
 boundary without updating both sides together.

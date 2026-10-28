@@ -11,7 +11,7 @@ export const handleAgentAuthError = <E, R>(effect: Effect.Effect<void, E | Agent
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
-          yield* reportFailure(
+          return yield* reportFailure(
             ui,
             error.message,
             error.nextSteps.length > 0

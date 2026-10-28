@@ -8,6 +8,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import type { AgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 const readyIdentity: AgentIdentity = {
   status: 'READY',
@@ -41,7 +42,6 @@ const stubAgentsApi = (body: AgentIdentity) =>
 describe('CLI: composio signup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())('[Given] no login', it => {
@@ -125,11 +125,11 @@ describe('CLI: composio signup', () => {
       Effect.gen(function* () {
         const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-        yield* cli(['signup']);
+        const exit = yield* Effect.exit(cli(['signup']));
 
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('currently signed in to Composio as a regular user');
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
         expect(fetchSpy).not.toHaveBeenCalled();
       })
     );

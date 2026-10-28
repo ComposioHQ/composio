@@ -9,6 +9,7 @@ import { readStoredAgentIdentity, writeStoredAgentIdentity } from 'src/services/
 import { MockConsole } from 'test/__utils__';
 import { AgentHandlerTest } from 'test/__utils__/layers/agents';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 const params = (overrides: Partial<AgentSignupParams> = {}): AgentSignupParams => ({
   noWait: false,
@@ -56,7 +57,6 @@ const summaryJson = (identity: ReturnType<typeof makeAgentIdentity>, loggedIn: b
 describe('runAgentSignup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   it.effect(
@@ -199,13 +199,13 @@ describe('runAgentSignup', () => {
     return Effect.gen(function* () {
       const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-      yield* runAgentSignup(params());
+      const exit = yield* Effect.exit(runAgentSignup(params()));
 
       expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
         'This CLI is currently signed in to Composio as a regular user, not an agent.',
         expect.stringMatching(/^Next steps:\n/),
       ]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCodeOf(exit)).toBe(1);
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(logins).toEqual([]);
       expect(outputs).toEqual([]);

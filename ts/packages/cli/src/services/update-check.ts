@@ -1,12 +1,13 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
+import { Context, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { GITHUB_CONFIG } from 'src/config';
-import { rootCommandIndex } from 'src/utils/cli-args';
+import { captureServices } from 'src/effects/capture-services';
 import { APP_VERSION } from '../constants';
+import type { InvocationHookShape } from './invocation-hook';
 import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
@@ -14,11 +15,11 @@ import { TerminalUI } from './terminal-ui';
 /**
  * Background update check for @composio/cli.
  *
- * Two entry points, both called from cli-main BEFORE the root command's
- * Effect runtime boots — they must never block or throw:
+ * Two invocation hooks, both run for the selected command before its handler — they must never
+ * block or fail. A command opts out of either in its `CommandMeta` (`src/commands/index.ts`):
  *
- *   showUpdateNotice                — reads a tiny cached JSON file (~1 ms)
- *   checkForUpdateInBackground()    — fire-and-forget fetch, no await
+ *   UpdateNotice             — reads a tiny cached JSON file (~1 ms)
+ *   BackgroundUpdateCheck    — fire-and-forget fetch, no await
  *
  * Strategy:
  *   Uses GitHub's releases API and only considers stable @composio/cli releases
@@ -27,12 +28,6 @@ import { TerminalUI } from './terminal-ui';
  */
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-/**
- * `composio upgrade` resolves the latest release live, so a cached hint printed before it runs
- * could only repeat that answer or contradict it with an older version.
- */
-const UPGRADE_COMMAND_NAME = 'upgrade';
 
 /** Matches `@composio/cli@<semver>` — excludes prereleases. */
 const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
@@ -203,15 +198,10 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
   /**
    * If a cached newer version is known, print a one-line hint to stderr.
-   * Reads a tiny JSON file and does a semver compare. Skipped for `composio upgrade`.
+   * Reads a tiny JSON file and does a semver compare.
    */
-  function showUpdateNotice(
-    terminal: Pick<TerminalUI, 'capabilities' | 'error'>,
-    commandName?: string
-  ) {
+  function showUpdateNotice(terminal: Pick<TerminalUI, 'capabilities' | 'error'>) {
     return Effect.gen(function* () {
-      if (commandName === UPGRADE_COMMAND_NAME) return;
-
       // `terminal.error` writes even when stderr is redirected, so gate this
       // advisory notice explicitly while leaving stdout out of the decision.
       const { canDecorate } = yield* terminal.capabilities;
@@ -348,15 +338,65 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
 const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
 
-/** Print upgrade hint to stderr if a newer version is cached, unless argv runs `composio upgrade`. */
-export const showUpdateNotice = (argv: ReadonlyArray<string>) =>
-  Effect.gen(function* () {
-    const terminal = yield* TerminalUI;
-    const stateFile = yield* defaultStateFile;
-    const config = yield* defaultConfig(stateFile);
-    const args = argv.slice(2);
-    yield* createUpdateChecker(config).showUpdateNotice(terminal, args[rootCommandIndex(args)]);
-  }).pipe(Effect.provide(DefaultConfigLayers));
+export type UpdateNoticeShape = InvocationHookShape;
+
+/**
+ * Prints the upgrade hint to stderr if a newer version is cached. Reads the cache under the home
+ * directory `NodeOs` reports; never fetches. `composio upgrade` turns it off: it resolves the
+ * latest release live, so a cached hint could only repeat that answer or contradict it.
+ */
+export class UpdateNotice extends Context.Service<UpdateNotice, UpdateNoticeShape>()(
+  'services/UpdateNotice'
+) {
+  static readonly Default: Layer.Layer<
+    UpdateNotice,
+    never,
+    TerminalUI | FileSystem.FileSystem | Path.Path | NodeOs
+  > = Layer.effect(
+    UpdateNotice,
+    Effect.gen(function* () {
+      const terminal = yield* TerminalUI;
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs);
+      return UpdateNotice.of({
+        run: () =>
+          Effect.gen(function* () {
+            const stateFile = yield* defaultStateFile;
+            const config = yield* defaultConfig(stateFile);
+            yield* createUpdateChecker(config).showUpdateNotice(terminal);
+          }).pipe(Effect.provideContext(services)),
+      });
+    })
+  );
+}
+
+/**
+ * Refreshes the release cache from GitHub if it is stale; `checkForUpdate` swallows its own
+ * failures. `BackgroundUpdateCheck` forks it detached, so the command that started it neither
+ * waits for it nor interrupts it when it ends. A successful run still ends when the event loop
+ * drains (`src/run-main.ts`), so the request can finish; any other exit ends the process at once.
+ */
+const refreshReleaseCache = Effect.gen(function* () {
+  const stateFile = yield* defaultStateFile;
+  const config = yield* defaultConfig(stateFile);
+  yield* createUpdateChecker(config).checkForUpdate;
+}).pipe(Effect.provide(DefaultConfigLayers));
+
+export type BackgroundUpdateCheckShape = InvocationHookShape;
+
+/**
+ * Starts refreshing the release cache in the background (at most once per check interval) and
+ * returns at once. `composio upgrade` and `composio version --check` turn it off: they resolve
+ * releases themselves.
+ */
+export class BackgroundUpdateCheck extends Context.Service<
+  BackgroundUpdateCheck,
+  BackgroundUpdateCheckShape
+>()('services/BackgroundUpdateCheck') {
+  static readonly Default: Layer.Layer<BackgroundUpdateCheck> = Layer.succeed(
+    BackgroundUpdateCheck,
+    BackgroundUpdateCheck.of({ run: () => Effect.asVoid(Effect.forkDetach(refreshReleaseCache)) })
+  );
+}
 
 /**
  * Record a live-resolved latest stable release (e.g. `@composio/cli@0.5.0`) as the cached update
@@ -384,16 +424,3 @@ export const getUpdateStatus: Effect.Effect<UpdateStatus> = Effect.gen(function*
   const config = yield* defaultConfig(stateFile);
   return yield* createUpdateChecker(config).getUpdateStatus;
 }).pipe(Effect.provide(DefaultConfigLayers));
-
-/** Fire-and-forget background fetch to GitHub. */
-export function checkForUpdateInBackground(): void {
-  // Uses a detached runtime so short-lived command handlers do not interrupt the refresh.
-  // runPromiseExit never throws into the caller, and checkForUpdate swallows its own failures.
-  void Effect.runPromiseExit(
-    Effect.gen(function* () {
-      const stateFile = yield* defaultStateFile;
-      const config = yield* defaultConfig(stateFile);
-      yield* createUpdateChecker(config).checkForUpdate;
-    }).pipe(Effect.provide(DefaultConfigLayers))
-  );
-}

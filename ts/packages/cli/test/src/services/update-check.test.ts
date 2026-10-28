@@ -6,9 +6,13 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Fiber, Layer } from 'effect';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
-import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-ui';
+import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
+import { commandIdentity } from 'test/__utils__/command-identity';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import {
   createUpdateChecker,
+  UpdateNotice,
   parseLatestVersionFromReleases,
   type UpdateCheckConfig,
   type UpdateCheckState,
@@ -221,21 +225,6 @@ describe('showUpdateNotice', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('skips the cached hint for composio upgrade but keeps it for other commands', () =>
-    Effect.gen(function* () {
-      const config = makeConfig({ currentVersion: '0.4.2' });
-      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.4.5' });
-      const { showUpdateNotice } = createUpdateChecker(config);
-
-      yield* showUpdateNotice(makeTerminal(output), 'upgrade');
-      expect(output).toEqual([]);
-
-      yield* showUpdateNotice(makeTerminal(output), 'tools');
-      expect(output).toHaveLength(1);
-      expect(output[0]).toContain('0.4.5');
-    }).pipe(Effect.provide(PlatformLayers))
-  );
-
   it.effect('does not print upgrade hint when stderr is captured', () =>
     Effect.gen(function* () {
       const config = makeConfig({ currentVersion: '0.2.0' });
@@ -298,6 +287,46 @@ describe('showUpdateNotice', () => {
       expect(output).toEqual([]);
     }).pipe(Effect.provide(PlatformLayers))
   );
+});
+
+// ── UpdateNotice (the service the invocation runs) ────────────────────────────
+
+describe('UpdateNotice', () => {
+  /** `UpdateNotice.Default` over a home directory in `tempDir` and a recording, decorating stderr. */
+  const noticeLayer = (output: string[]) =>
+    Layer.provide(
+      UpdateNotice.Default,
+      Layer.mergeAll(
+        PlatformLayers,
+        Layer.succeed(NodeOs, defaultNodeOs({ homedir: tempDir })),
+        Layer.succeed(TerminalUI, TerminalUI.of({ ...terminalUITestImpl, ...makeTerminal(output) }))
+      )
+    );
+
+  // `makeConfig()`'s state file is where the service looks under that home directory.
+  const writeCachedLatest = (latestVersion: string) =>
+    writeState(makeConfig(), { lastChecked: new Date().toISOString(), latestVersion });
+
+  // Which commands run it is their `CommandMeta`'s business: see
+  // `test/src/invocation/invocation-hooks.test.ts`.
+  it.effect('[Given] a newer cached release [Then] prints the notice', () => {
+    const output: string[] = [];
+    writeCachedLatest('999.0.0');
+    return Effect.gen(function* () {
+      const notice = yield* UpdateNotice;
+      yield* notice.run({ identity: commandIdentity(['tools', 'list']) });
+      expect(output.some(line => line.includes('999.0.0'))).toBe(true);
+    }).pipe(Effect.provide(noticeLayer(output)));
+  });
+
+  it.effect('[Given] no cached release [Then] prints nothing', () => {
+    const output: string[] = [];
+    return Effect.gen(function* () {
+      const notice = yield* UpdateNotice;
+      yield* notice.run({ identity: commandIdentity(['tools', 'list']) });
+      expect(output).toEqual([]);
+    }).pipe(Effect.provide(noticeLayer(output)));
+  });
 });
 
 // ── getUpdateStatus ─────────────────────────────────────────────────────

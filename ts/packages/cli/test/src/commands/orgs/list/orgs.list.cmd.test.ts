@@ -52,10 +52,10 @@ describe('CLI: composio orgs list', () => {
           ]),
         ]);
         expect(stderr).toEqual([
-          '-- composio dev orgs list --',
+          '-- composio orgs list --',
           'Loaded 2 orgs',
           '  Other Org (org_0)\n✓ Current Org (org_1)',
-          '-- Hint: run `composio dev orgs switch` to switch the default global org/project. --',
+          '-- Hint: run `composio orgs switch` to switch the default global org/project. --',
         ]);
         expect(defaultLimit.limits).toEqual([50]);
       })
@@ -91,7 +91,7 @@ describe('CLI: composio orgs list', () => {
           expect(stdout).toEqual([]);
           expect(stderr).toContain('No organizations found.');
           expect(stderr).not.toContain(
-            '-- Hint: run `composio dev orgs switch` to switch the default global org/project. --'
+            '-- Hint: run `composio orgs switch` to switch the default global org/project. --'
           );
         })
       );

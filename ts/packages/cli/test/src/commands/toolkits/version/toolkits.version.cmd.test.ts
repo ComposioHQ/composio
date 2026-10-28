@@ -1,7 +1,7 @@
-import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
@@ -61,10 +61,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio dev toolkits version', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] shows latest and last 20 versions',
     it => {
@@ -94,8 +90,8 @@ describe('CLI: composio dev toolkits version', () => {
       it.effect('prints fetch failure and browse hint on a redirected stderr and exits 1', () =>
         Effect.gen(function* () {
           const terminal = redirectedTerminalUI();
-          yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(
-            Effect.provide(terminal.layer)
+          const exit = yield* Effect.exit(
+            cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.provide(terminal.layer))
           );
 
           expect(terminal.stderr()).toContain('Toolkit "unknown" not found');
@@ -103,7 +99,7 @@ describe('CLI: composio dev toolkits version', () => {
             'Browse available toolkits:\n> composio dev toolkits list\n'
           );
           expect(terminal.stdout()).toBe('');
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

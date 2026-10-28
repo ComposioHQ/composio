@@ -12,8 +12,8 @@ describe('CLI: composio', () => {
 
   // v4 migration note: v3's `Command.run` returned a `ValidationError.CommandMismatch` for the
   // caller to render by hand. `effect/cli`'s `Command.runWith` renders parse/validation
-  // errors itself (see `src/cli-main.ts` module docs) before re-failing with `CliError.ShowHelp`,
-  // so these tests now assert on the printed `MockConsole` output instead of inspecting the error
+  // errors itself (see `src/invocation/invocation.ts` module docs) before re-failing with
+  // `CliError.ShowHelp`, so these tests now assert on the printed `MockConsole` output instead of inspecting the error
   // value directly.
   layer(TestLive())(it => {
     it.effect('[Given] unknown argument [Then] print error message', () =>

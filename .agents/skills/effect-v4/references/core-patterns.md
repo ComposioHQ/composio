@@ -45,7 +45,7 @@ own class before writing `.Default` or `.layer`** — the two names are not
 interchangeable and picking the wrong one is a real compile error, not a style nit.
 
 For services with dependencies, compose the layer where it is consumed rather than
-inside the class, e.g. `ts/packages/cli/src/cli-main.ts`:
+inside the class, e.g. `ts/packages/cli/src/invocation/live.ts`:
 
 ```ts
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
