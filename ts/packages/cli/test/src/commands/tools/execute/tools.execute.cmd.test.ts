@@ -17,7 +17,7 @@ import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import { parseParallelExecuteArgs } from 'src/commands/tools/commands/tools.execute.cmd';
+import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -66,7 +66,7 @@ const noActiveConnectionEnvelope: ApiErrorEnvelope = {
 // need a cache directory of their own, seeded with the fixture's user data.
 const isolatedCacheConfigProvider = (fixture: string) => {
   const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-cli-test-cache-'));
-  fs.cpSync(new URL(`../../../__fixtures__/${fixture}/.composio`, import.meta.url), cacheDir, {
+  fs.cpSync(new URL(`../../../../__fixtures__/${fixture}/.composio`, import.meta.url), cacheDir, {
     recursive: true,
   });
   // Fresh learned slugs keep the background catalog refresh from running, so

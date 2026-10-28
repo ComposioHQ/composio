@@ -45,7 +45,7 @@ Every command registration of the CLI and the file that defines it. To find a co
 | `dev logs`                      | dev  | `ts/packages/cli/src/commands/logs/logs.cmd.ts`                                           |       |                               | yes   | listed       |
 | `dev logs tools`                | dev  | `ts/packages/cli/src/commands/logs/tools/logs.tools.cmd.ts`                               |       |                               | yes   | listed       |
 | `dev logs triggers`             | dev  | `ts/packages/cli/src/commands/logs/triggers/logs.triggers.cmd.ts`                         |       |                               | yes   | listed       |
-| `dev playground-execute`        | dev  | `ts/packages/cli/src/commands/tools/commands/tools.execute.cmd.ts`                        |       |                               | yes   | listed       |
+| `dev playground-execute`        | dev  | `ts/packages/cli/src/commands/tools/execute/tools.execute.cmd.ts`                         |       |                               | yes   | listed       |
 | `dev projects`                  | dev  | `ts/packages/cli/src/commands/projects/projects.cmd.ts`                                   |       |                               | no    | listed       |
 | `dev projects list`             | dev  | `ts/packages/cli/src/commands/projects/list/projects.list.cmd.ts`                         |       |                               | yes   | listed       |
 | `dev projects switch`           | dev  | `ts/packages/cli/src/commands/projects/switch/projects.switch.cmd.ts`                     |       |                               | no    | listed       |
@@ -62,7 +62,7 @@ Every command registration of the CLI and the file that defines it. To find a co
 | `dev triggers list`             | dev  | `ts/packages/cli/src/commands/triggers/list/triggers.list.cmd.ts`                         |       | `triggers list`               | yes   | listed       |
 | `dev triggers listen`           | dev  | `ts/packages/cli/src/commands/triggers/commands/triggers.listen.cmd.ts`                   |       | `dev listen`                  | yes   | listed       |
 | `dev triggers status`           | dev  | `ts/packages/cli/src/commands/triggers/status/triggers.status.cmd.ts`                     |       |                               | yes   | listed       |
-| `execute`                       | root | `ts/packages/cli/src/commands/tools/commands/tools.execute.cmd.ts`                        |       |                               | yes   | listed       |
+| `execute`                       | root | `ts/packages/cli/src/commands/tools/execute/tools.execute.cmd.ts`                         |       |                               | yes   | listed       |
 | `generate`                      | root | `ts/packages/cli/src/commands/generate/generate.cmd.ts`                                   |       |                               | no    | listed       |
 | `generate py`                   | root | `ts/packages/cli/src/commands/generate/py/generate.py.cmd.ts`                             |       |                               | no    | listed       |
 | `generate ts`                   | root | `ts/packages/cli/src/commands/generate/ts/generate.ts.cmd.ts`                             |       |                               | no    | listed       |

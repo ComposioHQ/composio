@@ -10,7 +10,7 @@ import { ProxyCommandError, ReportedProxyCommandError } from 'src/commands/proxy
 import {
   ReportedToolExecutionError,
   ToolExecutionError,
-} from 'src/commands/tools/commands/tools.execute.cmd';
+} from 'src/commands/tools/execute/tools.execute.errors';
 import { LoginSessionError } from 'src/effects/browser-login';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import { ComposioCorePkgNotFound } from 'src/effects/find-composio-core-generated';
