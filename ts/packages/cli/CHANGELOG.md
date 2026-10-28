@@ -87,9 +87,12 @@
 - The update notice, the Composio plugin tip, the backend mismatch warning,
   and the daily background check for a newer release now run only for a
   command that runs. `--help`, `--version`, `composio help …`, a bare
-  `composio`, and a mistyped command or flag no longer print them or start the
-  check. `composio upgrade` still skips the notice and the check,
-  `composio version --check` the check, and `composio setup` the plugin tip.
+  `composio` or command group that only prints its help (`composio tools`,
+  `composio orgs`), and a mistyped command or flag no longer print them or
+  start the check; a group with an action of its own (`composio dev`,
+  `composio setup`, `composio generate`) still does. `composio upgrade` still
+  skips the notice and the check, `composio version --check` the check, and
+  `composio setup` the plugin tip.
   The `CLI_PLUGIN_HINT_SHOWN` event now records the full command path
   (`dev triggers list`) instead of the first word.
 

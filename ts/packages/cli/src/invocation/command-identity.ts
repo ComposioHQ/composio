@@ -189,9 +189,9 @@ export const CommandRegistration = Context.Reference<CommandIdentity>(
 export interface CommandInvocationShape {
   /**
    * Records `identity` as the command this invocation runs, with the input `effect/cli` parsed
-   * for it (none for help, version, and parse failures), and reports that it started; with
-   * parsed input, first runs the invocation hooks its `CommandMeta` keeps. Only the first call
-   * counts. Never fails.
+   * for it (none for help, version, parse failures, and a group that only shows its help), and
+   * reports that it started; with parsed input, first runs the invocation hooks its
+   * `CommandMeta` keeps. Only the first call counts. Never fails.
    */
   readonly begin: (identity: CommandIdentity, input: Option.Option<unknown>) => Effect.Effect<void>;
   /**

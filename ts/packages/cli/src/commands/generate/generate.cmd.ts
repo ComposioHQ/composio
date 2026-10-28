@@ -45,5 +45,5 @@ export const generateCmd = Command.make(
   Command.withDescription(
     'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)'
   ),
-  withRegisteredSubcommands([generateCmd$Py, generateCmd$Ts])
+  withRegisteredSubcommands([generateCmd$Py, generateCmd$Ts], { ownAction: true })
 );

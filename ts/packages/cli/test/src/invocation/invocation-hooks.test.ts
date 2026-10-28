@@ -98,12 +98,26 @@ describe('invocation hooks', () => {
       { name: 'a typo', args: ['whoamii'] },
       { name: 'a missing argument', args: ['dev', 'triggers', 'list'] },
       { name: 'the bare root', args: [] },
+      { name: 'a bare group (`tools`)', args: ['tools'] },
+      { name: 'a bare group (`orgs`)', args: ['orgs'] },
+      { name: 'a bare nested group (`dev triggers`)', args: ['dev', 'triggers'] },
       { name: '`help`', args: ['help'] },
       { name: '`help <command>`', args: ['help', 'tools'] },
     ])('[Given] $name [Then] no hook runs', ({ args }) =>
       Effect.gen(function* () {
         const { hooked } = yield* sequenceOf(args);
         expect(hooked).toEqual([]);
+      })
+    );
+
+    // `dev`'s own handler is the developer-mode toggle, an action of its own, not its help.
+    it.effect.each([
+      { name: 'dev --mode off', args: ['dev', '--mode', 'off'] },
+      { name: 'dev', args: ['dev'] },
+    ])("[Given] a group's own action (`$name`) [Then] its hooks run, for the group", ({ args }) =>
+      Effect.gen(function* () {
+        const { hooked } = yield* sequenceOf(args);
+        expect(hooked).toEqual(INVOCATION_HOOKS.map(() => 'dev'));
       })
     );
   });
