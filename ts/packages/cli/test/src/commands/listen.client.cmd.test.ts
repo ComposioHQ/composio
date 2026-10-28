@@ -190,10 +190,11 @@ describe('CLI: composio listen over the API client', () => {
           Effect.flip
         );
 
+        // The same failure `composio execute` and `composio proxy` report.
         expect(failure).toMatchObject({
-          _tag: 'commands/ListenCommandError',
-          reason: 'connected_accounts',
-          message: `Failed to list connected accounts for "gmail": Error: ${invalidConfigText}`,
+          _tag: 'services/ConnectedAccountResolutionError',
+          toolkitSlug: 'gmail',
+          message: `Failed to load connected accounts for toolkit "gmail": Error: ${invalidConfigText}`,
         });
       })
     );

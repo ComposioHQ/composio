@@ -29,6 +29,7 @@ import {
   isMaybeToolNotFoundError,
   isMaybeToolValidationError,
 } from 'src/analytics/events';
+import { MissingActingUserError } from 'src/commands/surface';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import { CLI_RELEASE_CHANNELS } from 'src/experimental-features';
@@ -385,6 +386,27 @@ describe('CLI analytics setup runtime-context events', () => {
         journey_stage: 'setup',
         cli_channel: inferSkillReleaseChannel(APP_VERSION),
       },
+    });
+  });
+
+  // Execute, search, link, connections, listen and proxy each used to report their own class.
+  it.each([
+    { path: ['execute'], family: 'execute' },
+    { path: ['search'], family: 'search' },
+    { path: ['link'], family: 'link' },
+    { path: ['connections', 'list'], family: 'command' },
+    { path: ['listen'], family: 'command' },
+    { path: ['proxy'], family: 'proxy' },
+  ] as const)('reports a missing user on `$path` as MissingActingUserError', ({ path, family }) => {
+    const context = commandContext(path, { path, family });
+    const error = new MissingActingUserError({
+      tree: 'root',
+      projectName: Option.none(),
+      message: 'Missing consumer user id. Run `composio login` and try again.',
+    });
+
+    expect(getPrimaryLifecycleFailedEvent(context, error)?.properties).toMatchObject({
+      error_name: 'commands/MissingActingUserError',
     });
   });
 
