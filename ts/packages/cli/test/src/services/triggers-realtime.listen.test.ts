@@ -152,6 +152,47 @@ describe('TriggersRealtime.listenInProject', () => {
     }
   );
 
+  // pusher-js emits the subscription events again whenever it resubscribes after a reconnect.
+  // Completing the already-done Deferred again returns false rather than throwing, so the
+  // listener keeps delivering events.
+  it.live(
+    '[Given] Pusher resubscribes after a reconnect [Then] the listener keeps handling events',
+    () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async input =>
+        Response.json(realtimeResponses[new URL(new Request(input).url).pathname])
+      );
+
+      return Effect.gen(function* () {
+        const realtime = yield* TriggersRealtime;
+        const onSubscribed = yield* Deferred.make<void>();
+        const received: Array<unknown> = [];
+        const listening = yield* Effect.forkChild(
+          realtime.listenInProject(
+            { orgId: 'org_test', projectId: 'pr_test' },
+            event => received.push(event),
+            { onSubscribed: Deferred.succeed(onSubscribed, undefined) }
+          )
+        );
+        yield* Effect.promise(() => pusher.constructed);
+        yield* Effect.yieldNow;
+
+        pusher.emit('pusher:subscription_succeeded');
+        yield* Deferred.await(onSubscribed);
+        expect(() => pusher.emit('pusher:subscription_succeeded')).not.toThrow();
+        expect(() =>
+          pusher.emit('pusher:subscription_error', { type: 'AuthError', status: 403 })
+        ).not.toThrow();
+        pusher.emit('trigger_to_client', { id: 'evt_after_reconnect' });
+        yield* Effect.yieldNow;
+        const stillListening = listening.pollUnsafe() === undefined;
+        yield* Fiber.interrupt(listening);
+
+        expect(stillListening).toBe(true);
+        expect(received).toEqual([{ id: 'evt_after_reconnect' }]);
+      }).pipe(Effect.provide(realtimeLayer()));
+    }
+  );
+
   it.live('[Given] Pusher rejects the subscription [Then] the listener fails', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async input =>
       Response.json(realtimeResponses[new URL(new Request(input).url).pathname])
