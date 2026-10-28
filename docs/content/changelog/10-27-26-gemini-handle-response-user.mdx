@@ -1,0 +1,33 @@
+---
+title: 'Gemini Manual Function Calling Runs as the Right User'
+description: 'The Python Gemini provider no longer executes a manually handled function call as whichever user fetched the tools last'
+date: '2026-10-27'
+---
+
+With Automatic Function Calling turned off, `GeminiProvider.handle_response(response)` in `composio-gemini` executed each function call with the executor stored by the latest `tools.get()` or `session.tools()` for that tool. When one `Composio` instance served several users, a call from Alice's conversation could run with Bob's `user_id` and connected account, and Bob's result went back into Alice's chat. The callables used by Automatic Function Calling were not affected.
+
+### Bug Fixes
+
+- **Gemini** (`composio-gemini`): `handle_response` accepts `user_id=` or `session=`, with the same names as `GoogleProvider.handle_response` in `composio-google`. Each call runs exactly as the tool fetched for that user or Tool Router session would: validated against the schema from that fetch (including its schema modifiers), with the modifiers given to `tools.get()`, and through the session's routing, so local custom tools in a `COMPOSIO_MULTI_EXECUTE_TOOL` batch run in process.
+- Without a user or session, `handle_response` keeps working for a process that has fetched tools for a single user or session. Once the provider has wrapped tools for more than one, it raises a `ValueError` instead of picking one, and executes nothing.
+
+**Before:**
+
+```python
+alice_tools = composio.tools.get(user_id="alice", tools=["GMAIL_FETCH_EMAILS"])
+bob_tools = composio.tools.get(user_id="bob", tools=["GMAIL_FETCH_EMAILS"])
+
+# response comes from Alice's conversation
+composio.provider.handle_response(response)
+# The tool executed as bob
+```
+
+**After:**
+
+```python
+composio.provider.handle_response(response, user_id="alice")
+# The tool executes as alice
+
+composio.provider.handle_response(response)
+# ValueError: tools were wrapped for more than one user or session
+```

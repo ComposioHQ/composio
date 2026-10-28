@@ -24,7 +24,7 @@ import {
   TOOLKIT_AND_AUTH_CONFIG_MESSAGE,
   missingArgumentMessage,
 } from 'src/commands/connected-accounts/link/connected-accounts.link.format';
-import { CommandSurface } from 'src/commands/surface';
+import { CommandSurface, MissingActingUserError } from 'src/commands/surface';
 import { CliUserConfig } from 'src/models/cli-user-config';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { ProjectKeys } from 'src/models/project-keys';
@@ -109,6 +109,8 @@ const params = (
 interface LinkFixture {
   readonly surface?: Layer.Layer<CommandSurface>;
   readonly accounts?: ReadonlyArray<ConnectedAccountItem>;
+  /** The `consumer_user_id` the consumer project resolves with; see `AccountTestData`. */
+  readonly consumerUserId?: string | null;
   readonly directoryProject?: Option.Option<ProjectKeys>;
   readonly globalTestUserId?: Option.Option<string>;
   /** Replaces the `link.create` answer, e.g. to fail it. */
@@ -169,6 +171,8 @@ const cliUserConfig = ComposioCliUserConfig.of({
  */
 const linkHandlerTest = (fixture: LinkFixture = {}) => {
   const requests: Array<LinkRequest> = [];
+  /** The `user_id` of every Tool Router session the handler created. */
+  const sessionUsers: Array<string> = [];
   const connectedAccounts = mockConnectedAccountResources(
     resolveConnectedAccountsTestData({ items: [...(fixture.accounts ?? [])] })
   );
@@ -195,7 +199,10 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
     // client's full response types; `test-layer.ts` shadows its mock client the same way.
     ({
       ...baseClient,
-      ...mockAccountResources({ projects: [DEVELOPER_PROJECT] }, scope),
+      ...mockAccountResources(
+        { projects: [DEVELOPER_PROJECT], consumerUserId: fixture.consumerUserId },
+        scope
+      ),
       ...connectedAccountsResources,
       link: {
         create: (linkParams: { auth_config_id: string; user_id: string }) =>
@@ -211,7 +218,10 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
         ...baseClient.toolRouter,
         session: {
           ...baseClient.toolRouter.session,
-          create: () => Effect.succeed({ session_id: 'trs_handler_test' }),
+          create: (sessionParams: { user_id: string }) =>
+            Effect.sync(() => sessionUsers.push(sessionParams.user_id)).pipe(
+              Effect.as({ session_id: 'trs_handler_test' })
+            ),
           link: (sessionId: string, linkParams: { toolkit: string; alias?: string }) =>
             record('toolRouter.session.link', { sessionId, ...linkParams }).pipe(
               Effect.andThen(
@@ -277,7 +287,7 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
     Layer.succeed(ComposioCliUserConfig, cliUserConfig),
     ConfigProvider.layer(hostOnlyEnvConfigProvider)
   );
-  return { layer, requests };
+  return { layer, requests, sessionUsers };
 };
 
 const lines = MockConsole.getLines({ stripAnsi: true });
@@ -318,14 +328,14 @@ const legacyPendingJson = () =>
   });
 
 /** The pending payload of a Tool Router link, byte for byte. */
-const toolRouterPendingJson = () =>
+const toolRouterPendingJson = (projectType: 'CONSUMER' | 'DEVELOPER' = 'CONSUMER') =>
   toJson({
     status: 'pending',
     message: 'Complete authorization by opening the URL',
     connected_account_id: TOOL_ROUTER_LINK_TARGET.connected_account_id,
     redirect_url: TOOL_ROUTER_LINK_TARGET.redirect_url,
     toolkit: 'gmail',
-    project_type: 'CONSUMER',
+    project_type: projectType,
   });
 
 /** The payload once polling saw `con_new` ACTIVE, byte for byte. */
@@ -426,7 +436,8 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
     { flow: 'tool-router', input: { toolkit: Option.some('gmail') } },
   ])('[Given] the flags select the $flow flow [Then] it runs that flow', c =>
     Effect.gen(function* () {
-      const fixtureAccount = account({ alias: 'work' });
+      // On the dev tree every flow acts as --user-id on the directory's developer project.
+      const fixtureAccount = account({ alias: 'work', user_id: 'user_1' });
       const { layer } = linkHandlerTest({
         surface: devSurface({ userId: 'user_1' }),
         accounts: [fixtureAccount],
@@ -446,7 +457,7 @@ describe('connected-accounts link handler: runConnectedAccountsLink', () => {
           ? toJson({ toolkit: 'gmail', total: 1, items: [fixtureAccount] })
           : c.flow === 'legacy'
             ? legacyPendingJson()
-            : toolRouterPendingJson()
+            : toolRouterPendingJson('DEVELOPER')
       );
     })
   );
@@ -554,6 +565,47 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
     })
   );
 
+  it.effect.each([
+    { name: '--user-id', userId: 'user_flag', expectedUser: 'user_flag' },
+    { name: 'the directory’s test user', userId: undefined, expectedUser: 'user_directory' },
+  ])(
+    '[Given] dev without --project-name and $name [Then] lists that user’s accounts in the directory’s project',
+    c =>
+      Effect.gen(function* () {
+        const { layer } = linkHandlerTest({
+          surface: devSurface({ userId: c.userId }),
+          directoryProject: directory(Option.some('user_directory')),
+          accounts: [CONSUMER_USER_ID, 'user_flag', 'user_directory'].map(userId =>
+            account({ id: `con_${userId}`, user_id: userId })
+          ),
+        });
+        const result = yield* handleListConnectedAccounts(
+          params({ toolkit: Option.some('gmail'), list: true })
+        ).pipe(Effect.andThen(lastJson), Effect.provide(layer));
+
+        expect(result).toMatchObject({ total: 1, items: [{ user_id: c.expectedUser }] });
+      })
+  );
+
+  it.effect(
+    '[Given] dev without --project-name outside a developer project [Then] fails with ProjectResolutionError',
+    () =>
+      Effect.gen(function* () {
+        const { layer, requests } = linkHandlerTest({
+          surface: devSurface({ userId: 'user_flag' }),
+        });
+        const error = yield* handleListConnectedAccounts(
+          params({ toolkit: Option.some('gmail'), list: true })
+        ).pipe(Effect.flip, Effect.provide(layer));
+
+        expect(error).toMatchObject({
+          _tag: 'services/ProjectResolutionError',
+          reason: 'missing_developer_project',
+        });
+        expect(requests).toEqual([]);
+      })
+  );
+
   it.effect('[Given] the list request fails [Then] fails with the request error', () =>
     Effect.gen(function* () {
       const { layer } = linkHandlerTest({ connectedAccountsListFails: true });
@@ -568,6 +620,34 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
     })
   );
 
+  it.effect.each([
+    {
+      tree: 'root',
+      surface: CommandSurface.root,
+      message: 'Missing consumer user id. Run `composio login` and try again.',
+    },
+    {
+      tree: 'dev',
+      surface: devSurface(),
+      message:
+        'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
+    },
+  ])('[Given] no user on the $tree tree [Then] fails with that tree’s message', c =>
+    Effect.gen(function* () {
+      const { layer } = linkHandlerTest({
+        surface: c.surface,
+        directoryProject: directory(Option.none()),
+        consumerUserId: '',
+      });
+      const error = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.flip,
+        Effect.provide(layer)
+      );
+
+      expect(error).toMatchObject({ message: c.message });
+    })
+  );
+
   it.effect(
     '[Given] dev --project-name and no user anywhere [Then] fails pointing at --user-id',
     () =>
@@ -578,8 +658,7 @@ describe('connected-accounts link handler: handleListConnectedAccounts', () => {
         ).pipe(Effect.flip, Effect.provide(layer));
 
         expect(error).toMatchObject({
-          _tag: 'commands/MissingLinkUserIdError',
-          flow: 'list',
+          _tag: 'commands/MissingActingUserError',
           message:
             'Missing user id. Provide --user-id, or run `composio login` to store a global test user id.',
         });
@@ -640,11 +719,29 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
       ).pipe(Effect.flip, Effect.provide(layer));
 
       expect(error).toMatchObject({
-        _tag: 'commands/MissingLinkUserIdError',
-        flow: 'legacy',
-        message: 'Missing user id. Provide --user-id or run composio dev init to set test_user_id.',
+        _tag: 'commands/MissingActingUserError',
+        message:
+          'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.',
       });
     })
+  );
+
+  it.effect(
+    '[Given] no developer project and no user [Then] reports the missing project first',
+    () =>
+      Effect.gen(function* () {
+        const { layer, requests } = linkHandlerTest({ surface: devSurface() });
+        const error = yield* handleLegacyAuthConfigLink(
+          params({ authConfig: Option.some('ac_gmail') })
+        ).pipe(Effect.flip, Effect.provide(layer));
+
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          option: '--auth-config',
+          message: AUTH_CONFIG_SCOPE_MESSAGE,
+        });
+        expect(requests).toEqual([]);
+      })
   );
 
   it.effect(
@@ -716,6 +813,52 @@ describe('connected-accounts link handler: handleLegacyAuthConfigLink', () => {
 });
 
 describe('connected-accounts link handler: handleToolRouterLink', () => {
+  it.effect.each([
+    { name: '--user-id', userId: 'user_flag', expectedUser: 'user_flag' },
+    { name: 'the directory’s test user', userId: undefined, expectedUser: 'user_directory' },
+  ])(
+    '[Given] dev without --project-name and $name [Then] links that user in the directory’s project',
+    c =>
+      Effect.gen(function* () {
+        const { layer, sessionUsers } = linkHandlerTest({
+          surface: devSurface({ userId: c.userId }),
+          directoryProject: directory(Option.some('user_directory')),
+          globalTestUserId: Option.some('user_global'),
+        });
+        const output = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+          Effect.andThen(lines),
+          Effect.provide(layer)
+        );
+
+        expect(sessionUsers).toEqual([c.expectedUser]);
+        expect(String(output.at(-1))).toBe(toolRouterPendingJson('DEVELOPER'));
+      })
+  );
+
+  it.effect(
+    '[Given] dev and an alias already in use [Then] points at the dev commands, sends nothing, and exits 1',
+    () =>
+      Effect.gen(function* () {
+        const { layer, requests } = linkHandlerTest({
+          surface: devSurface({ userId: 'user_1' }),
+          directoryProject: directory(Option.none()),
+          accounts: [account({ user_id: 'user_1', alias: 'Work' })],
+        });
+        const { exit, output } = yield* exitAndLines(
+          handleToolRouterLink(
+            params({ toolkit: Option.some('gmail'), alias: Option.some('work') })
+          )
+        ).pipe(Effect.provide(layer));
+
+        expect(output).toEqual([
+          'Alias "work" is already in use by connected account "con_existing".',
+          "[Tips] Use the existing alias: composio dev playground-execute <TOOL_SLUG> --account work -d '{ ... }'\nList connected accounts: composio dev connected-accounts list --toolkits gmail",
+        ]);
+        expect(exitCodeOf(exit)).toBe(1);
+        expect(requests).toEqual([]);
+      })
+  );
+
   it.effect(
     '[Given] the consumer project and --alias [Then] links with the alias and prints the pending link',
     () =>
@@ -836,6 +979,26 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
         command: 'link',
         option: '<toolkit>',
         message: missingArgumentMessage('root'),
+      });
+      expect(requests).toEqual([]);
+    })
+  );
+
+  it.effect.each([
+    { case: 'no consumer user id at all', consumerUserId: null },
+    { case: 'an empty consumer user id', consumerUserId: '' },
+  ])('[Given] $case and no test user [Then] fails before any link request', c =>
+    Effect.gen(function* () {
+      const { layer, requests } = linkHandlerTest({ consumerUserId: c.consumerUserId });
+      const failure = yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.flip,
+        Effect.provide(layer)
+      );
+
+      // An empty id counts as no user, so both shapes fail with the shared missing-user error.
+      expect(failure).toBeInstanceOf(MissingActingUserError);
+      expect(failure).toMatchObject({
+        message: 'Missing consumer user id. Run `composio login` and try again.',
       });
       expect(requests).toEqual([]);
     })

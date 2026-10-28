@@ -1,6 +1,6 @@
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
-import { connectionsCmd$List } from './commands/connections.list.cmd';
+import { connectionsCmd$List } from './list/connections.list.cmd';
 import { connectionsCmd$Remove } from './remove/connections.remove.cmd';
 import { withRegisteredSubcommands } from 'src/commands/registration';
 

@@ -12,15 +12,6 @@ export class ConnectionPollingError extends Data.TaggedError('commands/Connectio
   }
 }
 
-export class MissingLinkUserIdError extends Data.TaggedError('commands/MissingLinkUserIdError')<{
-  readonly message: string;
-  readonly flow: 'list' | 'legacy' | 'tool-router';
-}> {
-  get [ExpectedFailure]() {
-    return true;
-  }
-}
-
 export class ConnectedAccountsDecodeError extends Data.TaggedError(
   'commands/ConnectedAccountsDecodeError'
 )<{
