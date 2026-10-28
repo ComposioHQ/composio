@@ -46,8 +46,8 @@ export function HomeFeatures() {
           visual={<ToolkitsVisual />}
         />
         <FeatureCard
-          title="Auth and context, per end-user."
-          description="OAuth, API keys, and tokens scoped to each user and refreshed automatically."
+          title="Act for users without exposing their tokens."
+          description="Composio stores and refreshes each user's credentials. Your application and model receive tool results, not raw OAuth tokens."
           href="/docs/authentication"
           visual={<AuthDiagram />}
         />
