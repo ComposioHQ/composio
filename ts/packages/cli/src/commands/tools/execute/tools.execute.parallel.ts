@@ -1,5 +1,5 @@
 import { Context, Effect, Option } from 'effect';
-import { CommandSurface } from 'src/commands/surface';
+import { actingUser, CommandSurface } from 'src/commands/surface';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapComposioError } from 'src/services/composio-error-overrides';
 import {
@@ -34,7 +34,7 @@ import {
   type DryRunSummary,
 } from './tools.execute.format';
 import { prepareExecuteOutput } from './tools.execute.output';
-import { validateDryRunArguments } from './tools.execute.validation';
+import { checkDryRunArguments } from './tools.execute.validation';
 
 export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(
   'commands/ExecuteInvocationArgs',
@@ -48,6 +48,7 @@ type ParallelExecuteSpec = {
 };
 
 type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
+  readonly userId: Option.Option<string>;
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
 
@@ -300,7 +301,6 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       () =>
         resolveSchemaContext({
           account: params.account,
-          userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
           projectMode: params.projectMode,
@@ -394,24 +394,29 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       return yield* runParallelSchemaFetchFromParsed(params);
     }
 
+    // Resolved once, so a test user's notice prints once; each tool still fails on its own
+    // input before it fails on a missing user.
+    const user = Effect.fromResult(yield* Effect.result(actingUser()));
     const contexts = yield* Effect.forEach(
       params.specs,
       spec =>
-        resolveExecuteContext({
-          slug: spec.slug,
-          data: spec.data,
-          file: Option.none(),
-          account: spec.account,
-          userId: params.userId,
-          projectName: params.projectName,
-          surface: params.surface,
-          projectMode: params.projectMode,
-          getSchema: params.getSchema,
-          dryRun: params.dryRun,
-          skipConnectionCheck: params.skipConnectionCheck,
-          skipToolParamsCheck: params.skipToolParamsCheck,
-          skipChecks: params.skipChecks,
-        }),
+        resolveExecuteContext(
+          {
+            slug: spec.slug,
+            data: spec.data,
+            file: Option.none(),
+            account: spec.account,
+            projectName: params.projectName,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            getSchema: params.getSchema,
+            dryRun: params.dryRun,
+            skipConnectionCheck: params.skipConnectionCheck,
+            skipToolParamsCheck: params.skipToolParamsCheck,
+            skipChecks: params.skipChecks,
+          },
+          user
+        ),
       { concurrency: 'unbounded' }
     );
     const entries = contexts.map((context, index) => ({
@@ -435,16 +440,15 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           });
 
           if (params.dryRun) {
-            const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
-            const definition = verificationDisabled
-              ? null
-              : yield* getOrFetchToolInputDefinition(toolSlug, {
-                  orgId: context.resolvedProject.orgId,
-                  projectId: context.resolvedProject.projectId,
-                });
-            if (definition) {
-              yield* validateDryRunArguments(toolSlug, context.args, definition);
-            }
+            const definition = yield* checkDryRunArguments({
+              slug: toolSlug,
+              args: context.args,
+              projectScope: {
+                orgId: context.resolvedProject.orgId,
+                projectId: context.resolvedProject.projectId,
+              },
+              verificationDisabled: params.skipChecks || params.skipToolParamsCheck,
+            });
             return {
               successful: true,
               dryRun: true,
@@ -603,12 +607,16 @@ export const runParallelFromCommand = (config: {
       allowProjectName: config.surface === 'dev',
     });
     // The tail starts after the command name, so the `dev` group's shared flags given before
-    // it reach the command only through the surface.
+    // it reach the command only through the surface; the tail's own win.
     const surface = yield* CommandSurface;
+    const userId = Option.orElse(parsed.userId, () => surface.userId);
+    const projectName = Option.orElse(parsed.projectName, () => surface.projectName);
     return yield* runParallelToolsExecuteFromParsed({
       ...parsed,
       ...config,
-      userId: Option.orElse(parsed.userId, () => surface.userId),
-      projectName: Option.orElse(parsed.projectName, () => surface.projectName),
-    });
+      userId,
+      projectName,
+    }).pipe(
+      Effect.provideService(CommandSurface, CommandSurface.of({ ...surface, userId, projectName }))
+    );
   });

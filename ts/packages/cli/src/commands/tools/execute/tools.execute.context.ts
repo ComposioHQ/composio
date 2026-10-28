@@ -1,5 +1,5 @@
 import { Effect, Option } from 'effect';
-import { directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
+import { actingUser } from 'src/commands/surface';
 import { APP_CONFIG } from 'src/config';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { resolveCliSessionArtifacts } from 'src/services/cli-session-artifacts';
@@ -8,21 +8,17 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
-import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { ToolsExecutor } from 'src/services/tools-executor';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
-import { ComposioUserContext } from 'src/services/user-context';
 import { injectSingleFileArgument, parseArguments, resolveInput } from './tools.execute.arguments';
-import { ToolExecutionError } from './tools.execute.errors';
 
 export type RunToolsExecuteParams = {
   slug: string;
   data: Option.Option<string>;
   file: Option.Option<string>;
   account: Option.Option<string>;
-  userId: Option.Option<string>;
   projectName: Option.Option<string>;
   surface: 'root' | 'dev';
   projectMode: 'consumer' | 'developer';
@@ -70,7 +66,11 @@ type ResolvedSchemaContext = {
   };
 };
 
-export const resolveExecuteContext = (params: RunToolsExecuteParams) =>
+export const resolveExecuteContext = (
+  params: RunToolsExecuteParams,
+  /** The acting user; `--parallel` resolves it once for all its tools. */
+  user: ReturnType<typeof actingUser> = actingUser()
+) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const executor = yield* ToolsExecutor;
@@ -78,44 +78,8 @@ export const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
-    // The root tree has no --project-name.
-    const projectName = Option.filter(params.projectName, () => params.surface !== 'root');
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName: Option.getOrUndefined(projectName),
-    });
+    const { userId: resolvedUserId, project: resolvedProject } = yield* user;
     const clientSingleton = yield* ComposioClientSingleton;
-    const userContext = yield* ComposioUserContext;
-    const projectContext = yield* ProjectContext;
-
-    const localProjectContext = yield* projectContext.resolve.pipe(
-      Effect.catch(() => Effect.succeed(Option.none()))
-    );
-    const localTestUserId = directoryTestUserId(
-      localProjectContext,
-      Option.as(projectName, resolvedProject.projectId)
-    );
-    const resolvedUserId =
-      resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullishOr(resolvedProject.consumerUserId)
-        : Option.match(params.userId, {
-            onSome: value => Option.some(value),
-            onNone: () => Option.orElse(localTestUserId, () => userContext.data.testUserId),
-          });
-
-    if (Option.isNone(resolvedUserId)) {
-      return yield* new ToolExecutionError({
-        reason: 'missing_user_id',
-        toolSlug: params.slug,
-        message: missingUserIdMessage(
-          projectName,
-          params.projectMode === 'developer'
-            ? 'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-        ),
-      });
-    }
-
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
@@ -127,7 +91,7 @@ export const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
-      userId: resolvedUserId.value,
+      userId: resolvedUserId,
       selector: params.account,
     });
     const args = Option.isSome(params.file)
@@ -168,11 +132,11 @@ export const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       executor,
       resolvedProject,
       args,
-      resolvedUserId: resolvedUserId.value,
+      resolvedUserId,
       selectedConnectedAccountId,
       executeOutputDir,
       executeParams: {
-        userId: resolvedUserId.value,
+        userId: resolvedUserId,
         target: executesViaDashboard
           ? { kind: 'dashboard', orgId: resolvedProject.orgId }
           : { kind: 'backend' },

@@ -2,12 +2,7 @@ import { Effect, Match, Option, Schedule, pipe } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { commandInputError } from 'src/commands/errors';
-import {
-  CommandSurface,
-  directoryTestUserId,
-  missingUserIdMessage,
-  type CommandTree,
-} from 'src/commands/surface';
+import { actingUser, CommandSurface, type CommandTree } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { failedWith } from 'src/effects/request-error';
@@ -18,7 +13,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
-import { resolveCommandProject, type ResolvedCommandProject } from 'src/services/command-project';
+import type { ResolvedCommandProject } from 'src/services/command-project';
 import {
   invalidateConsumerConnectedToolkitsCache,
   writeConsumerConnectedToolkitsCache,
@@ -35,7 +30,6 @@ import {
   ConnectedAccountsDecodeError,
   ConnectedAccountsRequestError,
   ConnectionPollingError,
-  MissingLinkUserIdError,
 } from './connected-accounts.link.errors';
 import {
   AUTH_CONFIG_SCOPE_MESSAGE,
@@ -377,9 +371,8 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
 // --- the three flows --------------------------------------------------------------------------
 
 /**
- * `link <toolkit> --list`: the user's active accounts in the toolkit, as a table on stderr and
- * JSON on stdout. Resolves the consumer project on both trees; `dev --project-name` names a
- * developer project instead, whose user comes from `--user-id` or a test user id.
+ * `link <toolkit> --list`: the acting user's active accounts in the toolkit, as a table on
+ * stderr and JSON on stdout.
  */
 export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
@@ -397,35 +390,9 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
     }
     const toolkitSlug = params.toolkit.value;
 
-    const { userId, projectName } = yield* CommandSurface;
     const clientSingleton = yield* ComposioClientSingleton;
-    const userContext = yield* ComposioUserContext;
-    const resolvedProject = yield* resolveCommandProject({
-      mode: 'consumer',
-      projectName: Option.getOrUndefined(projectName),
-    });
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser();
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
-    const localTestUserId = directoryTestUserId(
-      yield* directoryProject,
-      Option.as(projectName, resolvedProject.projectId)
-    );
-    const resolvedUserId = yield* pipe(
-      resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullishOr(resolvedProject.consumerUserId)
-        : Option.orElse(userId, () =>
-            Option.orElse(localTestUserId, () => userContext.data.testUserId)
-          ),
-      Effect.fromOption(
-        () =>
-          new MissingLinkUserIdError({
-            message: missingUserIdMessage(
-              projectName,
-              'Missing user id. Provide --user-id, or run composio dev init or composio login first.'
-            ),
-            flow: 'list',
-          })
-      )
-    );
 
     const accounts = yield* ui.withSpinner(
       `Listing connected accounts for "${toolkitSlug}"...`,
@@ -478,13 +445,13 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
 
 /**
  * `dev connected-accounts link --auth-config <id>`: the legacy flow against a developer
- * project, without the Tool Router. The project is `--project-name` or the directory's; the
- * user is `--user-id`, then the directory's test user, then the global one.
+ * project, without the Tool Router, as the acting user. A missing project is reported before a
+ * missing user.
  */
 export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { tree, userId, projectName } = yield* CommandSurface;
+    const { tree, projectName } = yield* CommandSurface;
     // The dispatcher never gets here without --auth-config. This narrows it for direct callers.
     if (Option.isNone(params.authConfig)) {
       return yield* Effect.fail(
@@ -494,54 +461,14 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
     const authConfigId = params.authConfig.value;
 
     const clientSingleton = yield* ComposioClientSingleton;
-    const userContext = yield* ComposioUserContext;
-    const resolvedProjectContext = yield* directoryProject;
-    // A named project is looked up first: its id decides whether the directory's test user applies.
-    const namedResolvedProject = yield* Effect.transposeOption(
-      Option.map(projectName, name =>
-        resolveCommandProject({ mode: 'developer', projectName: name })
-      )
-    );
-    const localTestUserId = directoryTestUserId(
-      resolvedProjectContext,
-      Option.map(namedResolvedProject, project => project.projectId)
-    );
-    const globalTestUserId = userContext.data.testUserId;
-    const resolvedUserId = yield* pipe(
-      Option.orElse(userId, () => Option.orElse(localTestUserId, () => globalTestUserId)),
-      Effect.fromOption(
-        () =>
-          new MissingLinkUserIdError({
-            message: missingUserIdMessage(
-              projectName,
-              'Missing user id. Provide --user-id or run composio dev init to set test_user_id.'
-            ),
-            flow: 'legacy',
-          })
-      )
-    );
-    if (Option.isNone(projectName) && Option.isNone(resolvedProjectContext)) {
+    if (Option.isNone(projectName) && Option.isNone(yield* directoryProject)) {
       return yield* Effect.fail(
         invalidOptionValueFor(tree)(AUTH_CONFIG_SCOPE_MESSAGE, '--auth-config')
       );
     }
-    // Without --user-id, say which test user stands in.
-    yield* Option.isSome(userId)
-      ? Effect.void
-      : Option.match(localTestUserId, {
-          onSome: testUserId => ui.log.warn(`Using test user id "${testUserId}"`),
-          onNone: () =>
-            Effect.transposeOption(
-              Option.map(globalTestUserId, testUserId =>
-                ui.log.warn(`Using global test user id "${testUserId}"`)
-              )
-            ),
-        });
+    const acting = yield* actingUser();
+    const { userId: resolvedUserId, project: resolvedProject } = acting;
 
-    const resolvedProject = yield* Option.match(namedResolvedProject, {
-      onSome: Effect.succeed,
-      onNone: () => resolveCommandProject({ mode: 'developer' }),
-    });
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
     const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const existingAccounts = yield* existingAccountsForHints({
@@ -598,13 +525,13 @@ export const handleLegacyAuthConfigLink = (params: ConnectedAccountsLinkParams) 
   });
 
 /**
- * `link <toolkit>`: the Tool Router flow against the consumer project (or the developer
- * project `dev --project-name` names). Records the link in the session history.
+ * `link <toolkit>`: the Tool Router flow as the acting user, against the consumer project on the
+ * root tree and the developer project on the dev tree. Records the link in the session history.
  */
 export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const { tree, userId, projectName } = yield* CommandSurface;
+    const { tree } = yield* CommandSurface;
     // The dispatcher never gets here without a toolkit. This narrows it for direct callers.
     if (Option.isNone(params.toolkit)) {
       return yield* Effect.fail(
@@ -615,24 +542,7 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
 
     const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias, tree);
     const clientSingleton = yield* ComposioClientSingleton;
-    const userContext = yield* ComposioUserContext;
-    const resolvedProject = yield* resolveCommandProject({
-      mode: 'consumer',
-      projectName: Option.getOrUndefined(projectName),
-    });
-    const resolvedUserId = yield* pipe(
-      resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullishOr(resolvedProject.consumerUserId)
-        : Option.orElse(userId, () => userContext.data.testUserId),
-      Effect.fromOption(
-        () =>
-          new MissingLinkUserIdError({
-            message:
-              'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
-            flow: 'tool-router',
-          })
-      )
-    );
+    const { userId: resolvedUserId, project: resolvedProject } = yield* actingUser();
     const client = yield* clientSingleton.getFor(projectScope(resolvedProject));
     const existingAccounts = yield* existingAccountsForHints({
       client,
@@ -643,8 +553,15 @@ export const handleToolRouterLink = (params: ConnectedAccountsLinkParams) =>
       ui,
       alias: normalizedAlias,
       existingAccounts,
-      executeCommand: 'composio execute',
-      listCommand: `composio connections list --toolkit ${toolkitSlug}`,
+      ...(tree === 'dev'
+        ? {
+            executeCommand: 'composio dev playground-execute',
+            listCommand: `composio dev connected-accounts list --toolkits ${toolkitSlug}`,
+          }
+        : {
+            executeCommand: 'composio execute',
+            listCommand: `composio connections list --toolkit ${toolkitSlug}`,
+          }),
     });
 
     const scope = consumerScope(resolvedProject);

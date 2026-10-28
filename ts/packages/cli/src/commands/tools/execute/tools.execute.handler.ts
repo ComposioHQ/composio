@@ -37,10 +37,7 @@ import {
 } from './tools.execute.format';
 import { prepareExecuteOutput } from './tools.execute.output';
 import { runParallelFromCommand } from './tools.execute.parallel';
-import {
-  validateDryRunArguments,
-  validateToolInputBeforeExecute,
-} from './tools.execute.validation';
+import { checkDryRunArguments, validateToolInputBeforeExecute } from './tools.execute.validation';
 
 const runConnectedToolkitFailFast = (params: {
   readonly slug: string;
@@ -175,39 +172,27 @@ const runExecuteWithSpinner = (params: {
     yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         if (params.dryRun) {
-          const definition = verificationDisabled
-            ? null
-            : yield* getOrFetchToolInputDefinition(params.slug, {
-                orgId: params.resolvedProject.orgId,
-                projectId: params.resolvedProject.projectId,
-              }).pipe(
-                Effect.tapError(error =>
-                  emitExecuteFailureTelemetry({
-                    toolSlug: params.slug,
-                    args: params.args,
-                    error,
-                    surface: params.surface,
-                    projectMode: params.projectMode,
-                    stage: 'dry_run',
-                    projectScope: toolkitProjectScope(params.resolvedProject),
-                  })
-                )
-              );
-          if (definition) {
-            yield* validateDryRunArguments(params.slug, params.args, definition).pipe(
-              Effect.tapError(error =>
-                emitExecuteFailureTelemetry({
-                  toolSlug: params.slug,
-                  args: params.args,
-                  error,
-                  surface: params.surface,
-                  projectMode: params.projectMode,
-                  stage: 'dry_run',
-                  projectScope: toolkitProjectScope(params.resolvedProject),
-                })
-              )
-            );
-          }
+          const definition = yield* checkDryRunArguments({
+            slug: params.slug,
+            args: params.args,
+            projectScope: {
+              orgId: params.resolvedProject.orgId,
+              projectId: params.resolvedProject.projectId,
+            },
+            verificationDisabled,
+          }).pipe(
+            Effect.tapError(error =>
+              emitExecuteFailureTelemetry({
+                toolSlug: params.slug,
+                args: params.args,
+                error,
+                surface: params.surface,
+                projectMode: params.projectMode,
+                stage: 'dry_run',
+                projectScope: toolkitProjectScope(params.resolvedProject),
+              })
+            )
+          );
           const summary: DryRunSummary = {
             successful: true,
             dryRun: true,
@@ -467,7 +452,7 @@ export const runToolsExecuteCommand = ({
   skipChecks,
 }: ToolsExecuteParams) =>
   Effect.gen(function* () {
-    const { tree, userId, projectName } = yield* CommandSurface;
+    const { tree, projectName } = yield* CommandSurface;
     const projectMode = tree === 'root' ? 'consumer' : 'developer';
     if (parallel) {
       return yield* runParallelFromCommand({
@@ -488,7 +473,6 @@ export const runToolsExecuteCommand = ({
       data,
       file,
       account,
-      userId,
       projectName,
       surface: tree,
       projectMode,
