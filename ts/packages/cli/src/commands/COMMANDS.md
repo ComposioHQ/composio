@@ -24,7 +24,7 @@ Every command registration of the CLI and the file that defines it. To find a co
 | `config`                        | root | `ts/packages/cli/src/commands/config/config.cmd.ts`                                       |       |                               | no    | listed       |
 | `config experimental`           | root | `ts/packages/cli/src/commands/config/config.experimental.cmd.ts`                          |       |                               | no    | listed       |
 | `connections`                   | root | `ts/packages/cli/src/commands/connections/connections.cmd.ts`                             |       |                               | yes   | listed       |
-| `connections list`              | root | `ts/packages/cli/src/commands/connections/commands/connections.list.cmd.ts`               |       |                               | yes   | listed       |
+| `connections list`              | root | `ts/packages/cli/src/commands/connections/list/connections.list.cmd.ts`                   |       |                               | yes   | listed       |
 | `connections remove`            | root | `ts/packages/cli/src/commands/connections/remove/connections.remove.cmd.ts`               |       |                               | yes   | listed       |
 | `debug`                         | root | `ts/packages/cli/src/commands/debug/debug.cmd.ts`                                         |       |                               | no    | unlisted     |
 | `debug api-info`                | root | `ts/packages/cli/src/commands/debug/api-info/debug.api-info.cmd.ts`                       |       |                               | no    | unlisted     |

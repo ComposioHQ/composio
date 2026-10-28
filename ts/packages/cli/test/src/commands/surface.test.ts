@@ -21,7 +21,7 @@ import { makeOrgProject } from 'test/__utils__/models/account';
 const SHARED_PROJECT_DESCRIPTION =
   'Developer project to use instead of the one configured in this directory';
 const SHARED_USER_DESCRIPTION =
-  'User id to act as or filter by. Commands that act as a user default to the project test user id, then the global one.';
+  'User id to act as or filter by. Without it, commands that act as a user use the test user id of this directory (for its own project), then the global one, and name it on stderr.';
 // `dev logs tools|triggers` declare a comma-separated `--user-id` filter of their own, which
 // `withSharedFlags` accepts below a group entry and the help page shows in place of the shared row.
 const OWN_USER_ID_PAGES = ['dev logs tools', 'dev logs triggers'];
@@ -473,13 +473,15 @@ describe('CommandSurface: a named project does not borrow the directory test use
     );
   });
 
+  /** The users the command opened sessions as, and the fallback notices it printed. */
   const sessionUser = (args: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const userIds: Array<string> = [];
-      yield* Effect.gen(function* () {
+      const lines = yield* Effect.gen(function* () {
         yield* writeDirectoryProject;
         yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
         yield* Effect.exit(cli(args));
+        return yield* MockConsole.getLines({ stripAnsi: true });
       }).pipe(
         Effect.provide(
           TestLive({
@@ -511,7 +513,10 @@ describe('CommandSurface: a named project does not borrow the directory test use
         ),
         Effect.scoped
       );
-      return [...new Set(userIds)];
+      return {
+        users: [...new Set(userIds)],
+        notices: lines.filter(line => /^Using (global )?test user id/u.test(line)),
+      };
     });
 
   const projects = [
@@ -525,24 +530,52 @@ describe('CommandSurface: a named project does not borrow the directory test use
       command: 'playground-execute',
       args: ['dev', 'playground-execute', 'GMAIL_SEND_EMAIL', '-d', '{}', '--skip-checks'],
     },
+    {
+      command: 'playground-execute --parallel',
+      args: [
+        'dev',
+        'playground-execute',
+        '--parallel',
+        'GMAIL_SEND_EMAIL',
+        '-d',
+        '{}',
+        'GMAIL_FETCH_EMAILS',
+        '-d',
+        '{}',
+        '--skip-checks',
+      ],
+    },
+    {
+      command: 'connected-accounts link',
+      args: ['dev', 'connected-accounts', 'link', 'gmail', '--no-wait'],
+    },
   ];
   const projectCases = [
-    { project: ['--project-name', 'other-project'], expected: 'global_user' },
-    { project: ['--project-name', 'dir-project'], expected: 'directory_user' },
-    { project: [], expected: 'directory_user' },
+    {
+      project: ['--project-name', 'other-project'],
+      expected: 'global_user',
+      notice: 'Using global test user id "global_user"',
+    },
+    {
+      project: ['--project-name', 'dir-project'],
+      expected: 'directory_user',
+      notice: 'Using test user id "directory_user"',
+    },
+    { project: [], expected: 'directory_user', notice: 'Using test user id "directory_user"' },
   ];
 
   it.effect.each(
     sessionCommands.flatMap(({ command, args }) =>
-      projectCases.map(({ project, expected }) => ({
+      projectCases.map(({ project, expected, notice }) => ({
         args: [...args, ...project],
         expected,
+        notice,
         name: `${command} ${project.join(' ') || 'without --project-name'}`,
       }))
     )
-  )('`$name` opens its session as $expected', ({ args, expected }) =>
+  )('`$name` opens its session as $expected and says so once', ({ args, expected, notice }) =>
     Effect.gen(function* () {
-      expect(yield* sessionUser(args)).toEqual([expected]);
+      expect(yield* sessionUser(args)).toEqual({ users: [expected], notices: [notice] });
     })
   );
 
@@ -566,46 +599,32 @@ describe('CommandSurface: a named project does not borrow the directory test use
     test_request_endpoint: '',
   });
 
-  // `link --list` without --project-name resolves the consumer project and its own user, so only
-  // the named cases apply.
   it.effect.each([
-    { project: 'other-project', expected: 'ca_global', other: 'ca_dir' },
-    { project: 'dir-project', expected: 'ca_dir', other: 'ca_global' },
-  ])(
-    '`connected-accounts link --list --project-name $project` lists $expected',
-    ({ project, expected, other }) =>
-      Effect.gen(function* () {
-        yield* writeDirectoryProject;
-        yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          'gmail',
-          '--list',
-          '--project-name',
-          project,
-        ]);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-        expect(output).toContain(expected);
-        expect(output).not.toContain(other);
-      }).pipe(
-        Effect.provide(
-          TestLive({
-            baseConfigProvider: ConfigProvider.fromEnv({
-              env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
-            }),
-            accountData: { projects },
-            connectedAccountsData: {
-              items: [
-                accountFor('global_user', 'ca_global'),
-                accountFor('directory_user', 'ca_dir'),
-              ],
-            },
-          })
-        ),
-        Effect.scoped
-      )
+    { project: ['--project-name', 'other-project'], expected: 'ca_global', other: 'ca_dir' },
+    { project: ['--project-name', 'dir-project'], expected: 'ca_dir', other: 'ca_global' },
+    { project: [], expected: 'ca_dir', other: 'ca_global' },
+  ])('`connected-accounts link --list $project` lists $expected', ({ project, expected, other }) =>
+    Effect.gen(function* () {
+      yield* writeDirectoryProject;
+      yield* (yield* ComposioUserContext).login('test_api_key', 'org_test', 'global_user');
+      yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list', ...project]);
+      const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+      expect(output).toContain(expected);
+      expect(output).not.toContain(other);
+    }).pipe(
+      Effect.provide(
+        TestLive({
+          baseConfigProvider: ConfigProvider.fromEnv({
+            env: { COMPOSIO_USER_API_KEY: 'test_api_key', COMPOSIO_ORG_ID: 'org_test' },
+          }),
+          accountData: { projects },
+          connectedAccountsData: {
+            items: [accountFor('global_user', 'ca_global'), accountFor('directory_user', 'ca_dir')],
+          },
+        })
+      ),
+      Effect.scoped
+    )
   );
 
   it.effect.each([

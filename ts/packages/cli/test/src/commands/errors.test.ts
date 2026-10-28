@@ -1,12 +1,10 @@
-import { Predicate } from 'effect';
+import { Option, Predicate } from 'effect';
 import { describe, expect, it } from 'vitest';
-import {
-  ConnectionPollingError,
-  MissingLinkUserIdError,
-} from 'src/commands/connected-accounts/link/connected-accounts.link.errors';
+import { ConnectionPollingError } from 'src/commands/connected-accounts/link/connected-accounts.link.errors';
 import { commandInputError, isUsageFailure, notLoggedIn } from 'src/commands/errors';
 import { InvalidOrganizationError } from 'src/commands/login/login.errors';
-import { ProxyCommandError, ReportedProxyCommandError } from 'src/commands/proxy/proxy.errors';
+import { ReportedProxyCommandError } from 'src/commands/proxy/proxy.errors';
+import { MissingActingUserError } from 'src/commands/surface';
 import {
   ReportedToolExecutionError,
   ToolExecutionError,
@@ -35,8 +33,13 @@ const expected = [
     error: new ConnectedAccountResolutionError({ message: 'No match.', toolkitSlug: 'gmail' }),
   },
   {
-    name: 'execute without a user id',
-    error: new ToolExecutionError({ reason: 'missing_user_id', message: 'Missing user id.' }),
+    // Every command without a user to act as: execute, search, link, connections, listen, proxy.
+    name: 'a command without a user to act as',
+    error: new MissingActingUserError({
+      tree: 'root',
+      projectName: Option.none(),
+      message: 'Missing consumer user id.',
+    }),
   },
   {
     name: 'execute with a --file the tool cannot take',
@@ -45,14 +48,6 @@ const expected = [
   {
     name: 'execute with a toolkit that is not connected',
     error: new ToolExecutionError({ reason: 'connection_check', message: 'Not connected.' }),
-  },
-  {
-    name: 'proxy without a consumer user',
-    error: new ProxyCommandError({ message: 'No user.' }),
-  },
-  {
-    name: 'link without a user id',
-    error: new MissingLinkUserIdError({ message: 'Missing user id.', flow: 'list' }),
   },
   {
     name: 'link with an authorization not finished in time',

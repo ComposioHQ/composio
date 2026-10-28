@@ -9,7 +9,7 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -17,7 +17,7 @@ import {
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
-import { ProxyCommandError, ProxyRequestError, ReportedProxyCommandError } from './proxy.errors';
+import { ProxyRequestError, ReportedProxyCommandError } from './proxy.errors';
 import {
   formatProxyErrorOutput,
   formatProxyNotConnectedOutput,
@@ -169,14 +169,7 @@ export const runProxy = (params: ProxyParams) =>
     const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = params;
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
-    const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
-
-    if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
-      return yield* new ProxyCommandError({
-        message: 'No consumer project user is available for proxy execution in this context.',
-      });
-    }
-    const consumerUserId = resolvedProject.consumerUserId;
+    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
     const normalizedToolkit = toolkit.toLowerCase();
 
     yield* runProxyConnectedToolkitFailFast({

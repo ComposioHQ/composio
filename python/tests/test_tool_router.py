@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
+from composio.core.provider import get_execution_target
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -1758,6 +1759,9 @@ class TestToolRouter:
         assert result == "mocked-custom-tools"
 
         execute_tool = mock_provider.wrap_tools.call_args.kwargs["execute_tool"]
+        # Gemini's manual handle_response(session=...) finds this routing
+        # executor by the session recorded on it.
+        assert get_execution_target(execute_tool) is session
         local_result = execute_tool(slug="SERVER_GREP", arguments={"pattern": "needle"})
         assert local_result == {
             "data": {"matches": ["needle"]},

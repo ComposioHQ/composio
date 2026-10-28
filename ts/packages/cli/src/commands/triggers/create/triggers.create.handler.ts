@@ -1,12 +1,10 @@
 import { Effect, Match, Option, Result } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { CommandSurface } from 'src/commands/surface';
+import { actingUserOption } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
-import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { ComposioUserContext } from 'src/services/user-context';
 import { parseJsonRecord, type JsonParsingError } from 'src/utils/parse-json';
 
 export type TriggersCreateParams = {
@@ -61,9 +59,6 @@ export const runTriggersCreate = ({
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
-    const { userId } = yield* CommandSurface;
-    const projectContext = yield* ProjectContext;
-    const userContext = yield* ComposioUserContext;
 
     if (Option.isNone(triggerName)) {
       return yield* invalidInput(
@@ -77,20 +72,10 @@ export const runTriggersCreate = ({
       return yield* invalidTriggerConfig(parsedTriggerConfig.failure);
     }
 
-    const project = yield* projectContext.resolve;
-    const projectTestUserId = Option.flatMap(project, keys => keys.testUserId);
-    const globalTestUserId = userContext.data.testUserId;
-    const resolvedUserId = userId.pipe(
-      Option.orElse(() => projectTestUserId),
-      Option.orElse(() => globalTestUserId)
-    );
-
-    // A defaulted user id must own the connected account on a 2FA project, so name it.
-    if (Option.isNone(userId) && Option.isSome(projectTestUserId)) {
-      yield* ui.log.warn(`Using test user id "${projectTestUserId.value}"`);
-    } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
-      yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
-    }
+    // The group rejects --project-name, so this is the directory's project. A defaulted user id
+    // must own the connected account on a 2FA project; `actingUserOption` names it on stderr.
+    const acting = yield* actingUserOption();
+    const resolvedUserId = Option.map(acting, found => found.userId);
 
     const created = yield* ui
       .withSpinner(
