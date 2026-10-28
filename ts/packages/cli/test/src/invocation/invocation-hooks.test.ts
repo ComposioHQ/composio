@@ -4,15 +4,18 @@
  * `CommandMeta` turns off.
  */
 import { describe, expect, it, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, Option } from 'effect';
+import { Cause, Effect, Exit, Option, Schema } from 'effect';
+import { Command } from 'effect/cli';
 import { buildRootCommand } from 'src/commands';
 import { NotLoggedInError } from 'src/commands/errors';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 import {
   commandPathOf,
   identityAt,
   INVOCATION_HOOKS,
   type InvocationHookName,
   runsHook,
+  withCommandMeta,
 } from 'src/invocation/command-identity';
 import { cliExit, recordedInvocationCalls, resetInvocationCalls, TestLive } from 'test/__utils__';
 
@@ -165,5 +168,30 @@ describe('hook opt-outs from CommandMeta', () => {
     const identity = identityAt(root, ['composio', ...path]);
     expect(identity.path).toEqual(path);
     expect(runsHook(identity.meta, hook, input)).toBe(runs);
+  });
+
+  it('a subcommand inherits a boolean policy, never a predicate over its group input', () => {
+    const groupInput = Schema.is(Schema.Struct({ quiet: Schema.Literal(true) }));
+    const seen: Array<unknown> = [];
+    const group = Command.make('group').pipe(
+      withRegisteredSubcommands([Command.make('leaf', {}, () => Effect.void)]),
+      withCommandMeta({
+        hooks: {
+          updateNotice: false,
+          pluginHint: input => {
+            seen.push(input);
+            return !groupInput(input);
+          },
+        },
+      })
+    );
+    const tree = Command.make('app').pipe(withRegisteredSubcommands([group]));
+    const groupMeta = identityAt(tree, ['app', 'group']).meta;
+    const leafMeta = identityAt(tree, ['app', 'group', 'leaf']).meta;
+
+    expect(runsHook(groupMeta, 'pluginHint', { quiet: true })).toBe(false);
+    expect(runsHook(leafMeta, 'pluginHint', { quiet: true })).toBe(true);
+    expect(runsHook(leafMeta, 'updateNotice', {})).toBe(false);
+    expect(seen).toEqual([{ quiet: true }]);
   });
 });

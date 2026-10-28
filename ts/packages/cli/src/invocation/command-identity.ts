@@ -9,7 +9,7 @@
  * `--version`, and parse failures have no selected handler; they resolve the identity from the
  * command path `effect/cli` hands them (`identityAt`).
  */
-import { Array as Arr, Context, Effect, Option, Predicate } from 'effect';
+import { Array as Arr, Context, Effect, Option, Predicate, Record as EffectRecord } from 'effect';
 import { Command } from 'effect/cli';
 import type { TelemetryFamily } from 'src/analytics/types';
 
@@ -28,7 +28,9 @@ export type InvocationHookName = (typeof INVOCATION_HOOKS)[number];
 
 /**
  * Whether a hook runs for a command: always (`true`), never (`false`), or as the input
- * `effect/cli` parsed for the command decides (`composio version --check`).
+ * `effect/cli` parsed for the command decides (`composio version --check`). Subcommands inherit
+ * a boolean; a predicate applies only to the registration that declares it, since a
+ * subcommand's input has another shape, and its subcommands run the hook.
  */
 export type HookPolicy = boolean | ((input: unknown) => boolean);
 
@@ -51,7 +53,8 @@ export interface CommandMetaShape {
   readonly requiresLogin?: boolean;
   /**
    * Which invocation hooks run for the command. Every hook runs unless the command, or a group
-   * above it, says otherwise; a policy is inherited per hook.
+   * above it, says otherwise; a boolean policy is inherited per hook, a predicate is not (see
+   * `HookPolicy`).
    */
   readonly hooks?: Partial<Readonly<Record<InvocationHookName, HookPolicy>>>;
 }
@@ -74,6 +77,10 @@ const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
   backgroundUpdateCheck: true,
 };
 
+/** The hook policies a subcommand inherits from `hooks`: the booleans; a predicate runs the hook. */
+const inheritedHooks = (hooks: ResolvedCommandMeta['hooks']): ResolvedCommandMeta['hooks'] =>
+  EffectRecord.map(hooks, policy => (Predicate.isBoolean(policy) ? policy : true));
+
 /** Resolves what a command declares (`own`) under a parent registration's resolved meta. */
 export const resolveCommandMeta = (
   parent: ResolvedCommandMeta | undefined,
@@ -81,7 +88,7 @@ export const resolveCommandMeta = (
 ): ResolvedCommandMeta => ({
   telemetryFamily: own.telemetryFamily ?? 'command',
   requiresLogin: own.requiresLogin ?? parent?.requiresLogin ?? false,
-  hooks: { ...(parent?.hooks ?? EVERY_HOOK), ...own.hooks },
+  hooks: { ...(parent === undefined ? EVERY_HOOK : inheritedHooks(parent.hooks)), ...own.hooks },
 });
 
 /** Whether `hook` runs for a command with `meta`, given the input `effect/cli` parsed for it. */
