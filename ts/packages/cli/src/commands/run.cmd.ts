@@ -4,7 +4,7 @@ import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
-import { Data, Duration, Effect, Option, Result } from 'effect';
+import { Data, Duration, Effect, Option, Ref, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
 import { childExitStatus } from 'src/effects/child-exit-status';
@@ -12,6 +12,7 @@ import {
   STOP_SIGNALS,
   ShutdownSignal,
   type ShutdownSignalShape,
+  type StopSignal,
   type TerminationSignal,
 } from 'src/services/shutdown-signal';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
@@ -345,11 +346,15 @@ const signalChildProcessGroup = (pid: number, signal: TerminationSignal): void =
  * Hands the CLI's first signal to the script, then makes sure the script ends: SIGTERM after a
  * grace period, SIGKILL after another. The script decides how the run ends, as it would under a
  * shell: one that handles SIGINT and exits 0 makes the run succeed.
+ *
+ * `escalatedFrom` records the first signal once the CLI sends one of its own, so a script the
+ * escalation killed is reported as cancelled by that signal rather than by SIGTERM or SIGKILL.
  */
 const relayStopToChild = (
   child: ChildProcessSpawner.ChildProcessHandle,
   pid: number,
-  shutdown: ShutdownSignalShape
+  shutdown: ShutdownSignalShape,
+  escalatedFrom: Ref.Ref<Option.Option<StopSignal>>
 ) =>
   Effect.gen(function* () {
     const signal = yield* shutdown.requested;
@@ -362,7 +367,11 @@ const relayStopToChild = (
         Effect.sleep(CHILD_SIGNAL_GRACE_PERIOD).pipe(
           Effect.andThen(child.isRunning),
           Effect.flatMap(running =>
-            running ? Effect.sync(() => signalChildProcessGroup(pid, next)) : Effect.void
+            running
+              ? Ref.set(escalatedFrom, Option.some(signal)).pipe(
+                  Effect.andThen(Effect.sync(() => signalChildProcessGroup(pid, next)))
+                )
+              : Effect.void
           )
         ),
       { discard: true }
@@ -394,8 +403,13 @@ const superviseChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
       onForce: () => signalChildProcessGroup(pid, 'SIGKILL'),
       reraiseOnForce: true,
     });
-    yield* Effect.forkScoped(relayStopToChild(child, pid, shutdown));
-    return yield* childExitStatus(child);
+    const escalatedFrom = yield* Ref.make(Option.none<StopSignal>());
+    yield* Effect.forkScoped(relayStopToChild(child, pid, shutdown, escalatedFrom));
+    const status = yield* childExitStatus(child);
+    const escalated = yield* Ref.get(escalatedFrom);
+    return status.signal !== null && Option.isSome(escalated)
+      ? { code: null, signal: escalated.value }
+      : status;
   });
 
 export const runCmd = Command.make('run', {

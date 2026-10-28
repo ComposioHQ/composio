@@ -270,7 +270,7 @@ describe('CLI: composio run', () => {
       );
 
       it.effect(
-        '[Given] a child that ignores the signal [Then] it gets SIGTERM, then SIGKILL, and the run mirrors SIGKILL',
+        '[Given] a child that ignores the signal [Then] it gets SIGTERM, then SIGKILL, and the run ends by the first signal',
         () =>
           Effect.gen(function* () {
             childRunning.mockImplementation(() => true);
@@ -292,8 +292,9 @@ describe('CLI: composio run', () => {
               [-STUB_CHILD_PID, 'SIGTERM'],
               [-STUB_CHILD_PID, 'SIGKILL'],
             ]);
+            // The CLI's own SIGKILL ended the script; the user cancelled with SIGINT.
             expect(exitActionFor(exit, Option.some('SIGINT'))).toEqual(
-              ExitAction.Reraise({ signal: 'SIGKILL' })
+              ExitAction.Reraise({ signal: 'SIGINT' })
             );
           })
       );
