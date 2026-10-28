@@ -11,8 +11,8 @@ export interface HookInvocation {
 
 /**
  * A hook the invocation (`src/invocation/invocation.ts`) runs once for the selected command,
- * when the command begins and before any request it makes, unless the command's `CommandMeta` turns it off. Its output goes
- * to stderr; it never fails the command.
+ * when the command begins and before any request it makes, unless the command's `CommandMeta`
+ * turns it off. Its output goes to stderr; it never fails the command.
  */
 export interface InvocationHookShape {
   readonly run: (invocation: HookInvocation) => Effect.Effect<void>;
