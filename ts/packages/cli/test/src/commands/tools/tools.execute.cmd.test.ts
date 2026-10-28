@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { Config, ConfigProvider, DateTime, Effect, Exit, Option } from 'effect';
+import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Schema } from 'effect';
 import { APIConnectionError, BadRequestError } from '@composio/client/effect';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -120,6 +120,120 @@ const parseLastJson = (lines: ReadonlyArray<string>) =>
   };
 
 describe('CLI: composio execute', () => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Nested Image Edit',
+            slug: 'NESTED_IMAGE_EDIT_TOOL',
+            description: 'Edit fixture',
+            tags: ['test'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                item_id: { type: 'string' },
+                operations: {
+                  type: 'array',
+                  items: {
+                    oneOf: [
+                      {
+                        type: 'object',
+                        properties: { type: { const: 'set_text' }, text: { type: 'string' } },
+                        required: ['type', 'text'],
+                      },
+                      {
+                        type: 'object',
+                        properties: {
+                          type: { const: 'add_image' },
+                          image: { type: 'object', file_uploadable: true },
+                        },
+                        required: ['type', 'image'],
+                      },
+                      {
+                        type: 'object',
+                        properties: {
+                          type: { const: 'replace_image' },
+                          image: { type: 'object', file_uploadable: true },
+                        },
+                        required: ['type', 'image'],
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )('nested --file array injection', it => {
+    it.effect('preserves sibling operations and injects into the selected array element', () =>
+      Effect.gen(function* () {
+        const operations = [{ type: 'set_text', text: 'Preserve me' }, { type: 'add_image' }];
+        yield* cli([
+          'execute',
+          'NESTED_IMAGE_EDIT_TOOL',
+          '--skip-connection-check',
+          '--dry-run',
+          '--file',
+          '/tmp/dogfood.png',
+          '-d',
+          JSON.stringify({ item_id: 'deck', operations }),
+        ]);
+        const output = Schema.decodeUnknownSync(Schema.Struct({ arguments: Schema.Unknown }))(
+          parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }))
+        );
+        expect(output.arguments).toEqual({
+          item_id: 'deck',
+          operations: [
+            { type: 'set_text', text: 'Preserve me' },
+            { type: 'add_image', image: '/tmp/dogfood.png' },
+          ],
+        });
+        expect(operations).toEqual([
+          { type: 'set_text', text: 'Preserve me' },
+          { type: 'add_image' },
+        ]);
+      })
+    );
+
+    it.effect.each([
+      {
+        operations: [{ type: 'add_image' }, { type: 'replace_image' }],
+        message: 'multiple file_uploadable inputs',
+      },
+      {
+        operations: [{ type: 'add_image', image: '/tmp/existing.png' }],
+        message: 'already set in -d',
+      },
+      { operations: [], message: 'no matching file_uploadable input' },
+      {
+        operations: [{ type: 'set_text', text: 'Keep' }],
+        message: 'no matching file_uploadable input',
+      },
+    ])('rejects without overwriting: $message ($operations)', scenario =>
+      Effect.gen(function* () {
+        const failure = yield* cli([
+          'execute',
+          'NESTED_IMAGE_EDIT_TOOL',
+          '--skip-connection-check',
+          '--dry-run',
+          '--file',
+          '/tmp/dogfood.png',
+          '-d',
+          JSON.stringify({ operations: scenario.operations }),
+        ]).pipe(Effect.flip);
+        expect(String(failure)).toContain(scenario.message);
+      })
+    );
+  });
+
   it.effect('returns a CLI validation error for malformed parallel arguments', () =>
     Effect.gen(function* () {
       const failure = yield* parseParallelExecuteArgs(['--parallel', '--data', '{}'], {
@@ -2203,6 +2317,150 @@ describe('CLI: composio execute', () => {
           );
 
           fs.rmSync(tempFile, { force: true });
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Add attachment to card',
+            slug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            description: 'Adds an attachment to a Trello card',
+            tags: ['trello'],
+            available_versions: ['20261007_01'],
+            input_parameters: {
+              type: 'object',
+              required: ['idCard'],
+              properties: {
+                idCard: { type: 'string' },
+                // As the API serves it: a local path that is not file_uploadable.
+                file: {
+                  type: 'string',
+                  title: 'File',
+                  description: 'Path to the local file to attach if not linking a `url`.',
+                },
+              },
+            },
+            output_parameters: { type: 'object', properties: {} },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] a local file for an input that is not file_uploadable [Then] execute fails instead of sending the path (issue #4965)',
+    it => {
+      it.effect('refuses before the tool runs', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+          const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-connection-check',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          expect(failure).toContain(`"file" (${tempFile})`);
+          expect(fetchSpy).not.toHaveBeenCalled();
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('"successful": true');
+        })
+      );
+
+      it.effect('reports the same problem under --dry-run', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-connection-check',
+            '--dry-run',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('Dry run successful');
+        })
+      );
+
+      // The real call refuses the file whatever the skip flags say, so the
+      // dry run must too.
+      it.effect('reports the same problem under --dry-run --skip-checks', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          const failure = yield* cli([
+            'execute',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '--skip-checks',
+            '--dry-run',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error as Error).message),
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          expect(failure).toContain('cannot upload local files');
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).not.toContain('Dry run successful');
+        })
+      );
+
+      it.effect('reports the same problem under --parallel --dry-run', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-trello-${crypto.randomUUID()}.jpg`);
+          fs.writeFileSync(tempFile, 'jpeg bytes', 'utf8');
+
+          yield* cli([
+            'execute',
+            '--parallel',
+            '--skip-connection-check',
+            '--dry-run',
+            'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+            '-d',
+            JSON.stringify({ idCard: 'card', file: tempFile }),
+          ]).pipe(
+            Effect.flip,
+            Effect.ensuring(Effect.sync(() => fs.rmSync(tempFile, { force: true })))
+          );
+
+          const output = parseLastJson(yield* MockConsole.getLines({ stripAnsi: true }));
+          expect(output).toMatchObject({
+            successful: false,
+            results: [
+              {
+                slug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+                successful: false,
+                error: expect.stringContaining('cannot upload local files'),
+              },
+            ],
+          });
         })
       );
     }

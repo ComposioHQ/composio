@@ -16,6 +16,8 @@ import {
 } from '@composio/core';
 import {
   readRunStagedFiles,
+  findFileUploadablePaths,
+  findLocalPathArguments,
   schemaHasFileUploadable,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -30,6 +32,83 @@ const inputSchema = {
     attachment: { file_uploadable: true, type: 'string' },
   },
 };
+
+describe('file argument paths', () => {
+  const schema = {
+    type: 'object',
+    properties: {
+      operations: {
+        type: 'array',
+        items: {
+          oneOf: [
+            {
+              properties: { type: { const: 'add_image' }, image: { file_uploadable: true } },
+              required: ['type'],
+            },
+            {
+              properties: { type: { const: 'replace_image' }, image: { file_uploadable: true } },
+              required: ['type'],
+            },
+            {
+              properties: { type: { const: 'set_text' }, text: { type: 'string' } },
+              required: ['type'],
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  it('binds the selected union branch to the existing array index', () => {
+    expect(
+      findFileUploadablePaths(schema, [], {
+        operations: [{ type: 'set_text', text: 'keep' }, { type: 'add_image' }],
+      })
+    ).toEqual([['operations', 1, 'image']]);
+  });
+
+  it('does not invent array entries or choose between multiple image operations', () => {
+    expect(findFileUploadablePaths(schema, [], { operations: [] })).toEqual([]);
+    expect(findFileUploadablePaths(schema, [], { operations: [{ type: 'set_text' }] })).toEqual([]);
+    expect(
+      findFileUploadablePaths(schema, [], {
+        operations: [{ type: 'add_image' }, { type: 'replace_image' }],
+      })
+    ).toEqual([
+      ['operations', 0, 'image'],
+      ['operations', 1, 'image'],
+    ]);
+  });
+
+  it('preserves tuple indices, including preceding boolean schemas', () => {
+    expect(
+      findFileUploadablePaths(
+        { type: 'array', items: [true, { file_uploadable: true }] },
+        [],
+        ['keep', undefined]
+      )
+    ).toEqual([[1]]);
+  });
+
+  const optionalModeSchema = (required: ReadonlyArray<string>) => ({
+    type: 'object',
+    allOf: [
+      {
+        properties: { mode: { const: 'upload' }, file: { file_uploadable: true } },
+        required,
+      },
+    ],
+  });
+
+  it('keeps a branch whose optional const property the caller omitted', () => {
+    expect(findFileUploadablePaths(optionalModeSchema(['file']), [], {})).toEqual([['file']]);
+  });
+
+  it('drops a branch whose const property is required and omitted, or set to another value', () => {
+    expect(findFileUploadablePaths(optionalModeSchema(['mode', 'file']), [], {})).toEqual([]);
+    expect(findFileUploadablePaths(optionalModeSchema(['file']), [], { mode: 'link' })).toEqual([]);
+  });
+});
 
 // The client over a transport that answers the presigned-URL request with
 // `presigned`, and records each request it receives.
@@ -236,8 +315,29 @@ describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () 
   };
 
   it.effect.each([
+    // A file the caller did not stage takes the type of its extension.
     { onDisk: 'deck.pptx', staged: undefined, name: 'deck.pptx', mimetype: PPTX },
     { onDisk: 'Deck.PPTX', staged: undefined, name: 'Deck.PPTX', mimetype: PPTX },
+    { onDisk: 'picture.png', staged: undefined, name: 'picture.png', mimetype: 'image/png' },
+    { onDisk: 'picture.JPG', staged: undefined, name: 'picture.JPG', mimetype: 'image/jpeg' },
+    {
+      onDisk: 'document.pdf',
+      staged: undefined,
+      name: 'document.pdf',
+      mimetype: 'application/pdf',
+    },
+    {
+      onDisk: 'document.docx',
+      staged: undefined,
+      name: 'document.docx',
+      mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    },
+    {
+      onDisk: 'unknown.extension-dogfood',
+      staged: undefined,
+      name: 'unknown.extension-dogfood',
+      mimetype: 'application/octet-stream',
+    },
     {
       onDisk: 'no-extension',
       staged: undefined,
@@ -537,5 +637,418 @@ describe('uploadToolInputFiles — URL download size cap', () => {
       expect(failure.message).toMatch(/exceeds maximum allowed size/);
       expect(requests).toEqual([]);
     }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
+  });
+});
+
+// TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD as the API serves it (issue #4965):
+// `file` is described as a local file but is not `file_uploadable`.
+const trelloAttachmentSchema = {
+  type: 'object',
+  required: ['idCard'],
+  properties: {
+    idCard: { type: 'string', description: 'ID or shortLink of the Trello card.' },
+    url: {
+      type: 'string',
+      description:
+        "URL of an external resource to attach if not uploading a `file`. Must start with 'http://' or 'https://'.",
+    },
+    file: {
+      type: 'string',
+      title: 'File',
+      description: 'Path to the local file to attach if not linking a `url`.',
+    },
+  },
+};
+
+describe('uploadToolInputFiles — local file for an input that is not file_uploadable (issue #4965)', () => {
+  const withTempFile = <A, E, R>(
+    use: (paths: { readonly root: string; readonly file: string }) => Effect.Effect<A, E, R>
+  ) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+    const file = path.join(root, 'photo.jpg');
+    writeFileSync(file, 'jpeg bytes');
+    return use({ root, file }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
+  };
+
+  const run = (arguments_: Record<string, unknown>, schema: Record<string, unknown>) =>
+    Effect.gen(function* () {
+      const { client, requests } = makeClient();
+      const result = yield* uploadToolInputFiles({
+        fs: yield* FileSystem.FileSystem,
+        path: yield* Path.Path,
+        toolSlug: 'TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD',
+        arguments_,
+        inputSchema: schema,
+        client,
+      }).pipe(Effect.result);
+      return { result, requests };
+    });
+
+  it.effect('fails before anything is sent when the argument names a local file', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        const { result, requests } = yield* run({ idCard: 'card', file }, trelloAttachmentSchema);
+
+        const failure = yield* Effect.flip(Effect.fromResult(result));
+        expect(failure).toBeInstanceOf(ToolFileUploadError);
+        expect(failure).toMatchObject({ reason: 'not-uploadable' });
+        expect(failure.message).toContain(`"file" (${file})`);
+        expect(failure.message).toContain('Nothing was executed');
+        expect(requests).toEqual([]);
+      })
+    )
+  );
+
+  it.effect('names every offending argument, including ones nested in arrays', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        const { result } = yield* run(
+          { files: [{ file_path: file }, { content: 'inline' }] },
+          {
+            type: 'object',
+            properties: {
+              files: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    file_path: {
+                      type: 'string',
+                      description: 'Local filesystem path to the file.',
+                    },
+                    content: { type: 'string' },
+                  },
+                },
+              },
+            },
+          }
+        );
+
+        const failure = yield* Effect.flip(Effect.fromResult(result));
+        expect(failure.message).toContain(`"files.0.file_path" (${file})`);
+      })
+    )
+  );
+
+  it.effect('passes a path that does not exist here through, as it may be remote', () =>
+    withTempFile(({ root }) =>
+      Effect.gen(function* () {
+        const remote = path.join(root, 'missing', 'report.pdf');
+        const { result, requests } = yield* run(
+          { idCard: 'card', file: remote },
+          trelloAttachmentSchema
+        );
+
+        expect(yield* Effect.fromResult(result)).toEqual({ idCard: 'card', file: remote });
+        expect(requests).toEqual([]);
+      })
+    )
+  );
+
+  it.effect.each([
+    { name: 'a directory', value: (root: string) => root },
+    { name: 'a URL', value: () => 'https://example.com/photo.jpg' },
+    { name: 'a bare word', value: () => 'photo' },
+  ])('passes $name through', ({ value }) =>
+    withTempFile(({ root }) =>
+      Effect.gen(function* () {
+        const file = value(root);
+        const { result } = yield* run({ idCard: 'card', file }, trelloAttachmentSchema);
+        expect(yield* Effect.fromResult(result)).toEqual({ idCard: 'card', file });
+      })
+    )
+  );
+
+  it.effect('leaves an existing file alone when the input is a repository path', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        const { result } = yield* run(
+          { path: file },
+          {
+            type: 'object',
+            properties: {
+              path: {
+                type: 'string',
+                description: 'The full path to the file in the repository, including the filename.',
+              },
+            },
+          }
+        );
+
+        expect(yield* Effect.fromResult(result)).toEqual({ path: file });
+      })
+    )
+  );
+
+  it('reads the description of an optional input from its non-null variant', () => {
+    expect(
+      findLocalPathArguments(
+        { file: '/tmp/photo.jpg' },
+        {
+          type: 'object',
+          properties: {
+            file: {
+              anyOf: [
+                { type: 'string', description: 'Local file path of the video to upload.' },
+                { type: 'null' },
+              ],
+            },
+          },
+        }
+      )
+    ).toEqual([{ argumentPath: ['file'], value: '/tmp/photo.jpg' }]);
+  });
+
+  it('skips an input that also accepts an upload', () => {
+    expect(
+      findLocalPathArguments(
+        { file: '/tmp/photo.jpg' },
+        {
+          type: 'object',
+          properties: {
+            file: {
+              description: 'Path to the local file to upload.',
+              anyOf: [{ file_uploadable: true }, { type: 'string' }],
+            },
+          },
+        }
+      )
+    ).toEqual([]);
+  });
+
+  const localPathDescription = { type: 'string', description: 'Path to the local file to attach.' };
+
+  it.each([
+    {
+      name: 'allOf splits the description and the upload marker across branches',
+      schema: {
+        type: 'object',
+        allOf: [
+          { properties: { file: localPathDescription } },
+          { properties: { file: { file_uploadable: true } } },
+        ],
+      },
+    },
+    {
+      name: 'anyOf offers an uploadable branch beside the path branch',
+      schema: {
+        type: 'object',
+        properties: { file: { anyOf: [localPathDescription, { file_uploadable: true }] } },
+      },
+    },
+    {
+      name: 'oneOf nests the uploadable branch one level down',
+      schema: {
+        type: 'object',
+        properties: {
+          file: { oneOf: [localPathDescription, { allOf: [{ file_uploadable: true }] }] },
+        },
+      },
+    },
+  ])('never flags an input the upload code uploads: $name', ({ schema }) => {
+    expect(findLocalPathArguments({ file: '/tmp/photo.jpg' }, schema)).toEqual([]);
+  });
+
+  it.effect('uploads, not refuses, a local file for an allOf-split uploadable input', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(async () => ({ ok: true, statusText: 'OK' }))
+        );
+        const { result, requests } = yield* run(
+          { file },
+          {
+            type: 'object',
+            allOf: [
+              { properties: { file: localPathDescription } },
+              { properties: { file: { file_uploadable: true } } },
+            ],
+          }
+        );
+
+        expect(yield* Effect.fromResult(result)).toMatchObject({
+          file: { name: 'photo.jpg', s3key: 's3key-123' },
+        });
+        expect(requests).toHaveLength(1);
+      }).pipe(Effect.ensuring(Effect.sync(() => vi.unstubAllGlobals())))
+    )
+  );
+
+  it.effect('uploads an input once when several branches mark it uploadable', () =>
+    withTempFile(({ file }) =>
+      Effect.gen(function* () {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(async () => ({ ok: true, statusText: 'OK' }))
+        );
+        const { result, requests } = yield* run(
+          { file, note: 'keep' },
+          {
+            type: 'object',
+            anyOf: [
+              { properties: { file: { file_uploadable: true } } },
+              { properties: { file: { file_uploadable: true }, note: { type: 'string' } } },
+            ],
+          }
+        );
+
+        expect(yield* Effect.fromResult(result)).toEqual({
+          file: { name: 'photo.jpg', mimetype: 'image/jpeg', s3key: 's3key-123' },
+          note: 'keep',
+        });
+        expect(requests).toHaveLength(1);
+      }).pipe(Effect.ensuring(Effect.sync(() => vi.unstubAllGlobals())))
+    )
+  );
+
+  it('flags only the tuple elements the upload code does not upload', () => {
+    // `hydrateFileUploads` reads each tuple element against its own `items` schema.
+    expect(
+      findLocalPathArguments(
+        { files: ['/tmp/photo.jpg', '/tmp/other.jpg'] },
+        {
+          type: 'object',
+          properties: {
+            files: {
+              type: 'array',
+              items: [localPathDescription, { ...localPathDescription, file_uploadable: true }],
+            },
+          },
+        }
+      )
+    ).toEqual([{ argumentPath: ['files', 0], value: '/tmp/photo.jpg' }]);
+  });
+
+  it('reads descriptions in nested composition branches', () => {
+    expect(
+      findLocalPathArguments(
+        { file: '/tmp/photo.jpg' },
+        {
+          type: 'object',
+          properties: {
+            file: { anyOf: [{ type: 'null' }, { allOf: [localPathDescription] }] },
+          },
+        }
+      )
+    ).toEqual([{ argumentPath: ['file'], value: '/tmp/photo.jpg' }]);
+  });
+});
+
+describe('multiple PowerPoint images', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.effect('keeps each nested image reference paired with its uploaded bytes', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-multiple-images-'));
+    const first = path.join(root, 'first.png');
+    const second = path.join(root, 'second.png');
+    writeFileSync(first, 'first image bytes');
+    writeFileSync(second, 'second image bytes');
+    const { client, requests } = stubComposioClient(request => {
+      const { filename } = request.body as { filename: string };
+      return Response.json({
+        new_presigned_url: `https://1.1.1.1/${filename}`,
+        key: `uploads/${filename}`,
+      });
+    });
+    const uploaded = new Map<string, string>();
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      uploaded.set(url, Buffer.from(init.body as Uint8Array).toString());
+      return new Response(null, { status: 200 });
+    });
+    const schema = {
+      type: 'object',
+      properties: {
+        slides: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              blocks: {
+                type: 'array',
+                items: {
+                  oneOf: [
+                    { properties: { type: { const: 'text' }, text: { type: 'string' } } },
+                    { properties: { type: { const: 'image' }, image: { file_uploadable: true } } },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const arguments_ = {
+      filename: 'two-images.pptx',
+      slides: [
+        {
+          blocks: [
+            { type: 'text', text: 'Keep this' },
+            { type: 'image', image: first },
+          ],
+        },
+        { blocks: [{ type: 'image', image: second }] },
+      ],
+    };
+    return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
+      const pathApi = yield* Path.Path;
+      const result = yield* uploadToolInputFiles({
+        fs: fsApi,
+        path: pathApi,
+        toolSlug: 'MICROSOFT_POWERPOINT_CREATE_PRESENTATION',
+        arguments_,
+        inputSchema: schema,
+        client,
+      });
+      expect(requests).toHaveLength(2);
+      expect(uploaded).toEqual(
+        new Map([
+          ['https://1.1.1.1/first.png', 'first image bytes'],
+          ['https://1.1.1.1/second.png', 'second image bytes'],
+        ])
+      );
+      expect(result).toEqual({
+        filename: 'two-images.pptx',
+        slides: [
+          {
+            blocks: [
+              { type: 'text', text: 'Keep this' },
+              {
+                type: 'image',
+                image: {
+                  name: 'first.png',
+                  mimetype: 'image/png',
+                  s3key: 'uploads/first.png',
+                },
+              },
+            ],
+          },
+          {
+            blocks: [
+              {
+                type: 'image',
+                image: {
+                  name: 'second.png',
+                  mimetype: 'image/png',
+                  s3key: 'uploads/second.png',
+                },
+              },
+            ],
+          },
+        ],
+      });
+      expect(arguments_.slides[0]?.blocks[1]?.image).toBe(first);
+      expect(arguments_.slides[1]?.blocks[0]?.image).toBe(second);
+    }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
   });
 });
