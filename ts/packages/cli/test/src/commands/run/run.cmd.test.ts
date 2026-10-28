@@ -24,7 +24,7 @@ import {
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, beforeEach, it, vi } from 'vitest';
-import { buildRunHelpersSource, inferCliInvocationPrefix } from 'src/commands/run.cmd';
+import { buildRunHelpersSource, inferCliInvocationPrefix } from 'src/commands/run/run.handler';
 import {
   extractInlineExecuteToolSlugs,
   wrapInlineCodeForRun,
@@ -417,6 +417,25 @@ describe('CLI: composio run', () => {
         expect(preloadSource).not.toContain('"master":');
         expect(preloadSource).not.toContain('"readAccessRoots":');
         expect(preloadSource).not.toContain('"cliConfigPath":');
+      })
+    );
+
+    it.effect('[Given] a run from source [Then] the preload imports the helper runtime', () =>
+      Effect.gen(function* () {
+        let preloadSource = '';
+        commandRuns.mockImplementation(command => {
+          preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
+        });
+
+        yield* cli(['run', 'console.log("hi")']);
+
+        const helpersRuntimeUrl = pathToFileURL(
+          path.resolve(import.meta.dirname, '../../../../src/services/run-helpers-runtime.ts')
+        ).href;
+        expect(preloadSource).toContain(
+          `import { installRunHelpers } from ${JSON.stringify(helpersRuntimeUrl)};`
+        );
       })
     );
   });

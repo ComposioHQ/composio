@@ -16,7 +16,7 @@ import { signupCmd } from './signup/signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
-import { runCmd } from './run.cmd';
+import { runCmd } from './run/run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts/artifacts.cmd';
 import { installCmd } from './install/install.cmd';
