@@ -5,6 +5,7 @@ Default: print a plan, with no network requests. --apply reads COMPOSIO_API_KEY,
 verifies current tool metadata, and creates one Session. No provider tool runs.
 """
 import argparse
+import http.client
 import json
 import os
 import re
@@ -66,7 +67,7 @@ def request(method, path, key, body=None):
         if method == "POST" and (error.code >= 500 or error.code in (408, 429)):
             raise RuntimeError(f"POST returned HTTP {error.code}. Session creation outcome is unknown. Check your project before trying again. No automatic retry was made.") from None
         raise RuntimeError(f"{method} returned HTTP {error.code}. Check the project and permissions; no retry was made.") from None
-    except (OSError, TimeoutError, json.JSONDecodeError, UnicodeError):
+    except (OSError, TimeoutError, http.client.HTTPException, json.JSONDecodeError, UnicodeError):
         message = "Session creation outcome is unknown. Check your project before trying again." if method == "POST" else "Metadata could not be read. No Session was created."
         raise RuntimeError(message + " No automatic retry was made.") from None
 
