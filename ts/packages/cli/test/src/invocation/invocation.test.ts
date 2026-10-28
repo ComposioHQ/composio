@@ -63,10 +63,10 @@ describe('runInvocation', () => {
 
           expect(result.exitCode).toBe(exitCode);
           expect(yield* recordedSequence).toEqual([
-            'CommandLifecycleTelemetry.invoked',
             ...(hooks
               ? ['BackendMismatchWarning', 'UpdateNotice', 'PluginHint', 'BackgroundUpdateCheck']
               : []),
+            'CommandLifecycleTelemetry.invoked',
             `CommandLifecycleTelemetry.${outcome}`,
           ]);
         })

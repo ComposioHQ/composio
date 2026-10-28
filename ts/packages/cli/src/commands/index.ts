@@ -1,4 +1,4 @@
-import { Array as Arr, Console, Effect, Predicate } from 'effect';
+import { Array as Arr, Console, Effect, Schema } from 'effect';
 import { CliError, CliOutput, Command } from 'effect/cli';
 import type { TelemetryFamily } from 'src/analytics/types';
 import {
@@ -60,8 +60,7 @@ const hooks = (policies: NonNullable<CommandMetaShape['hooks']>) =>
   withCommandMeta({ hooks: policies });
 
 /** `composio version --check` resolves releases itself, like `composio upgrade`. */
-const isExplicitVersionCheck = (input: unknown): boolean =>
-  Predicate.hasProperty(input, 'check') && input.check === true;
+const isExplicitVersionCheck = Schema.is(Schema.Struct({ check: Schema.Literal(true) }));
 
 /** `composio help …` only prints help, like `--help`. */
 const NO_HOOKS = {
