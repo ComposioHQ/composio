@@ -49,6 +49,13 @@
 
 ### Patch Changes
 
+- `composio dev triggers listen --toolkits` now matches toolkits whose slug
+  contains an underscore, such as `one_drive`, `launch_darkly` and
+  `agent_mail`. Events carry no toolkit slug, so the listener took the first
+  `_` segment of the trigger slug (`ONE` for `ONE_DRIVE_FILE_CREATED_TRIGGER`)
+  and dropped every event of those toolkits. A `--toolkits` entry now also
+  matches when the trigger slug starts with `<toolkit>_`.
+
 - `composio connections list`, `composio connections remove`, and
   `composio listen` without a consumer user now print the message on stderr
   and exit 1, like other expected errors. They used to print it under a `💥`
