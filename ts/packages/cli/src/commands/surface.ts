@@ -1,7 +1,7 @@
-import { Context, Data, Effect, Layer, Option, pipe } from 'effect';
-import { Command } from 'effect/cli';
+import { Array as Arr, Context, Data, Effect, Layer, Option, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
+import type { CommandIdentity, SharedFlagName } from 'src/invocation/command-identity';
 import {
   resolveCommandProject,
   type ProjectMode,
@@ -249,40 +249,57 @@ export const actingUserOption = () =>
 /** A shared flag of the `dev` group. */
 export type SharedFlag = '--user-id' | '--project-name';
 
+/**
+ * `CommandMeta.sharedFlags` for a `dev` command, or a group, that honors neither shared flag:
+ * it cannot target another project and does not act as a user.
+ */
+export const NO_SHARED_FLAGS = { userId: false, projectName: false } as const;
+
+/** The shared flags, in the order a rejection reports them when several are given. */
+const SHARED_FLAGS: ReadonlyArray<{ readonly name: SharedFlagName; readonly flag: SharedFlag }> = [
+  { name: 'projectName', flag: '--project-name' },
+  { name: 'userId', flag: '--user-id' },
+];
+
 const unsupportedSharedFlag = (command: string): Record<SharedFlag, string> => ({
   '--project-name': `\`composio ${command}\` cannot target another project yet. Remove --project-name, or run it from that project's directory.`,
   '--user-id': `\`composio ${command}\` does not act as a user. Remove --user-id.`,
 });
 
-/**
- * Fails with a `CommandInputError` when the surface carries one of `flags`, for a `dev` command
- * that cannot honor it. Without it the flag would be accepted and ignored. `messages` defaults
- * to the wording for a command that runs against the directory's project.
- */
-export const rejectSharedFlags = (
-  command: string,
-  flags: ReadonlyArray<SharedFlag> = ['--project-name', '--user-id'],
-  messages: Record<SharedFlag, string> = unsupportedSharedFlag(command)
-) =>
+/** The first shared flag the surface carries among those `rejects` picks, if any. */
+const givenSharedFlag = (rejects: (name: SharedFlagName) => boolean) =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
-    const values: Record<SharedFlag, Option.Option<string>> = {
-      '--project-name': surface.projectName,
-      '--user-id': surface.userId,
-    };
-    const given = flags.find(flag => Option.isSome(values[flag]));
-    if (given !== undefined) {
-      return yield* commandInputError(command)(messages[given], given);
-    }
+    return Arr.findFirst(SHARED_FLAGS, ({ name }) => rejects(name) && Option.isSome(surface[name]));
   });
 
 /**
- * Applies `rejectSharedFlags` to a `dev` command, or to a group entry and every subcommand
- * under it. `flags` defaults to both.
+ * Fails with a `CommandInputError` when the surface carries either shared flag, with `messages`
+ * for its wording: the `dev` group's own `--mode` toggle, which changes a global setting.
  */
-export const rejectsSharedFlags =
-  (command: string, flags?: ReadonlyArray<SharedFlag>) =>
-  <const Name extends string, Input, ContextInput, E, R>(
-    self: Command.Command<Name, Input, ContextInput, E, R>
-  ) =>
-    Command.provideEffectDiscard(self, rejectSharedFlags(command, flags));
+export const rejectSharedFlags = (command: string, messages: Record<SharedFlag, string>) =>
+  Effect.flatMap(
+    givenSharedFlag(() => true),
+    Option.match({
+      onNone: () => Effect.void,
+      onSome: ({ flag }) => Effect.fail(commandInputError(command)(messages[flag], flag)),
+    })
+  );
+
+/**
+ * Fails with a `CommandInputError` when the surface carries a shared flag the selected command
+ * cannot honor (`CommandMeta.sharedFlags`), naming the command that ran even when a group above
+ * it declared so. Without it the flag would be accepted and ignored. The registration runs it
+ * right after the command began (`src/commands/registration.ts`).
+ */
+export const rejectUnsupportedSharedFlags = (identity: CommandIdentity) =>
+  Effect.flatMap(
+    givenSharedFlag(name => identity.meta.unsupportedSharedFlags.includes(name)),
+    Option.match({
+      onNone: () => Effect.void,
+      onSome: ({ flag }) => {
+        const command = identity.path.join(' ');
+        return Effect.fail(commandInputError(command)(unsupportedSharedFlag(command)[flag], flag));
+      },
+    })
+  );

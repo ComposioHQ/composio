@@ -71,9 +71,10 @@ describe('CLI: composio dev triggers list', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] root triggers list with nonexistent toolkit [Then] shows root toolkit hint',
+    '[Given] root triggers list with nonexistent toolkit [Then] points at search',
     it => {
-      it.effect('uses root toolkit command in the no-results hint', () =>
+      // Toolkits are listed only under `dev`; root users find one through `composio search`.
+      it.effect('names `composio search` in the invalid-toolkit hint', () =>
         Effect.gen(function* () {
           const failure = yield* cli(['triggers', 'list', 'nonexistent']).pipe(Effect.flip);
           expect(failure).toMatchObject({
@@ -84,8 +85,10 @@ describe('CLI: composio dev triggers list', () => {
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('composio toolkits list');
-          expect(output).not.toContain('composio dev toolkits list');
+          expect(output).toContain(
+            'Find the toolkit for a task with:\n> composio search "<what you want to do>"'
+          );
+          expect(output).not.toContain('composio dev');
         })
       );
     }

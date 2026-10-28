@@ -106,6 +106,24 @@
   `failure_reason_code: "parse_error"`. Every other command path and event
   family is unchanged.
 
+- Hints no longer name commands that do not exist. `composio orgs list` and
+  the "No current org configured" error pointed at `composio dev orgs list` and
+  `composio dev orgs switch`; they now name `composio orgs list` and
+  `composio orgs switch`. `composio triggers list` with an unknown toolkit
+  pointed at `composio toolkits list`; it now suggests
+  `composio search "<what you want to do>"` to find the toolkit.
+  `composio dev triggers list` still names `composio dev toolkits list`.
+
+- A `composio dev` command that cannot honor `--user-id` or `--project-name`
+  now rejects it before checking that you are logged in, and the message names
+  the exact subcommand you ran instead of the group that declared the
+  restriction: `composio dev logs tools --project-name x` now names
+  `composio dev logs tools`, where it named `composio dev logs`. Telemetry
+  records the failure against that subcommand too. A group run on its own
+  rejects the flag the same way instead of printing its help:
+  `composio dev projects --user-id x` fails with that error, while
+  `composio dev projects --help` still prints the help.
+
 - CLI telemetry now records a command that prints its own
   failure and exits 1 (a failed API request, an alias conflict on
   `composio link`, a `--fail-fast` listener stop) as failed instead of

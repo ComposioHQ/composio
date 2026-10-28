@@ -34,6 +34,9 @@ export type InvocationHookName = (typeof INVOCATION_HOOKS)[number];
  */
 export type HookPolicy = boolean | ((input: unknown) => boolean);
 
+/** The `dev` group's shared flags (`--user-id`, `--project-name`), by their `CommandSurface` field. */
+export type SharedFlagName = 'userId' | 'projectName';
+
 /**
  * What a command declares about itself, under one annotation key (`Command.annotate`, or
  * `withCommandMeta`). Every field is optional; what an absent field means is set once, in
@@ -57,6 +60,13 @@ export interface CommandMetaShape {
    * `HookPolicy`).
    */
   readonly hooks?: Partial<Readonly<Record<InvocationHookName, HookPolicy>>>;
+  /**
+   * Which of the `dev` group's shared flags the command can honor. Every one can unless the
+   * command, or a group above it, says `false`; inherited per flag. A flag the command cannot
+   * honor fails with `CommandInputError` right after the command began, naming the command that
+   * ran (`src/commands/registration.ts`), instead of being accepted and ignored.
+   */
+  readonly sharedFlags?: Partial<Readonly<Record<SharedFlagName, boolean>>>;
 }
 
 export const CommandMeta = Context.Reference<CommandMetaShape>('commands/CommandMeta', {
@@ -68,6 +78,8 @@ export interface ResolvedCommandMeta {
   readonly telemetryFamily: TelemetryFamily;
   readonly requiresLogin: boolean;
   readonly hooks: Readonly<Record<InvocationHookName, HookPolicy>>;
+  /** The shared flags the command cannot honor, declared on itself or on a group above it. */
+  readonly unsupportedSharedFlags: ReadonlyArray<SharedFlagName>;
 }
 
 const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
@@ -76,6 +88,8 @@ const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
   pluginHint: true,
   backgroundUpdateCheck: true,
 };
+
+const SHARED_FLAG_NAMES: ReadonlyArray<SharedFlagName> = ['userId', 'projectName'];
 
 /** The hook policies a subcommand inherits from `hooks`: the booleans; a predicate runs the hook. */
 const inheritedHooks = (hooks: ResolvedCommandMeta['hooks']): ResolvedCommandMeta['hooks'] =>
@@ -89,6 +103,12 @@ export const resolveCommandMeta = (
   telemetryFamily: own.telemetryFamily ?? 'command',
   requiresLogin: own.requiresLogin ?? parent?.requiresLogin ?? false,
   hooks: { ...(parent === undefined ? EVERY_HOOK : inheritedHooks(parent.hooks)), ...own.hooks },
+  unsupportedSharedFlags: SHARED_FLAG_NAMES.filter(flag => {
+    const declared = own.sharedFlags?.[flag];
+    return declared === undefined
+      ? (parent?.unsupportedSharedFlags.includes(flag) ?? false)
+      : !declared;
+  }),
 });
 
 /** Whether `hook` runs for a command with `meta`, given the input `effect/cli` parsed for it. */
@@ -107,8 +127,9 @@ export const commandMetaOf = (command: Command.Command.Any): CommandMetaShape =>
 
 /**
  * Adds `meta` to what `self` already declares in its `CommandMeta` annotation; a hook policy
- * replaces only that hook's. `withCommandMeta({ requiresLogin: true })` makes a command, or a
- * group entry and every subcommand under it, require a logged-in user.
+ * replaces only that hook's, and a shared-flag declaration only that flag's.
+ * `withCommandMeta({ requiresLogin: true })` makes a command, or a group entry and every
+ * subcommand under it, require a logged-in user.
  */
 export const withCommandMeta =
   (meta: CommandMetaShape) =>
@@ -120,6 +141,7 @@ export const withCommandMeta =
       ...current,
       ...meta,
       hooks: { ...current.hooks, ...meta.hooks },
+      sharedFlags: { ...current.sharedFlags, ...meta.sharedFlags },
     });
   };
 
@@ -140,10 +162,10 @@ export const ROOT_IDENTITY: CommandIdentity = {
 export const childIdentity = (
   parent: CommandIdentity,
   child: Command.Command.Any
-): CommandIdentity => ({
-  path: [...parent.path, child.name],
-  meta: resolveCommandMeta(parent.meta, commandMetaOf(child)),
-});
+): CommandIdentity => {
+  const path = [...parent.path, child.name];
+  return { path, meta: resolveCommandMeta(parent.meta, commandMetaOf(child)) };
+};
 
 /** The command path as telemetry records it: the names joined by spaces, `composio` for the root. */
 export const commandPathOf = (identity: CommandIdentity): string =>

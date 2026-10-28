@@ -8,6 +8,7 @@ import { Effect, Exit, Option, Ref } from 'effect';
 import { CliError, Command } from 'effect/cli';
 import { NotLoggedInError } from 'src/commands/errors';
 import { withRegisteredSubcommands } from 'src/commands/registration';
+import { CommandSurface } from 'src/commands/surface';
 import { CommandInvocation, commandPathOf, withCommandMeta } from 'src/invocation/command-identity';
 import { TestLive } from 'test/__utils__';
 
@@ -72,6 +73,7 @@ const traced = (args: ReadonlyArray<string>) =>
         enter: identity => note(`enter ${commandPathOf(identity)}`),
         runId: Effect.succeedNone,
       }),
+      Effect.provide(CommandSurface.root),
       Effect.exit
     );
     return { exit, trace: yield* Ref.get(trace) };
@@ -186,7 +188,7 @@ describe('effect/cli handler composition', () => {
 
     // A guard a group pipes on itself wraps its whole dispatch, so it runs before the selected
     // command is reached: only the registrations entered so far are known. A required login is
-    // `CommandMeta` for this reason; the `dev` group's `rejectsSharedFlags` guards are not yet.
+    // `CommandMeta` for this reason, and so is a shared flag a command cannot honor.
     it.effect('a group-level guard runs before the selected command begins', () =>
       Effect.gen(function* () {
         const { exit, trace } = yield* traced(['guarded', 'leaf']);

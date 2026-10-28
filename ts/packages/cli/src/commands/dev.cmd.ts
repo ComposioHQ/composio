@@ -15,7 +15,7 @@ import { ComposioCliUserConfig, resolveCliConfigPath } from 'src/services/cli-us
 import { Stdin } from 'src/services/stdin';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandVisibility } from './feature-tags';
-import { CommandSurface, rejectSharedFlags, rejectsSharedFlags } from './surface';
+import { CommandSurface, NO_SHARED_FLAGS, rejectSharedFlags } from './surface';
 import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const devMode = Flag.Literals('mode', ['on', 'off'] as const).pipe(
@@ -41,15 +41,15 @@ const projectName = Flag.String('project-name').pipe(
 );
 
 export const devSubcommands = [
-  initCmd.pipe(rejectsSharedFlags('dev init')),
+  initCmd.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
   devToolsCmd$Execute,
   triggersCmd$Listen.pipe(withCommandMeta({ requiresLogin: true })),
-  logsCmd.pipe(rejectsSharedFlags('dev logs', ['--project-name'])),
+  logsCmd.pipe(withCommandMeta({ sharedFlags: { projectName: false } })),
   toolkitsCmd,
-  authConfigsCmd.pipe(rejectsSharedFlags('dev auth-configs')),
+  authConfigsCmd.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
   connectedAccountsCmd,
   triggersCmd,
-  projectsCmd.pipe(rejectsSharedFlags('dev projects')),
+  projectsCmd.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
 ] as const;
 
 const describeCurrentMode = (enabled: boolean) =>
@@ -177,9 +177,7 @@ const toggleRejections = {
 export const buildDevCommand = (visibility: CommandVisibility) =>
   visibility.isDevModeEnabled
     ? makeDevCommand(visibility, input =>
-        rejectSharedFlags('dev', undefined, toggleRejections).pipe(
-          Effect.andThen(developerModeHandler(input))
-        )
+        rejectSharedFlags('dev', toggleRejections).pipe(Effect.andThen(developerModeHandler(input)))
       ).pipe(
         withRegisteredSubcommands([...devSubcommands], { ownAction: true }),
         Command.withSharedFlags({ userId, projectName }),

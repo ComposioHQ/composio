@@ -1,5 +1,5 @@
 import { describe, expect, it, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, FileSystem, Path } from 'effect';
+import { Cause, ConfigProvider, Effect, Exit, FileSystem, Path } from 'effect';
 import { buildRootCommand } from 'src/commands';
 import { CommandInputError } from 'src/commands/errors';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -7,7 +7,14 @@ import { ProjectResolutionError } from 'src/services/command-project';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { NodeProcess } from 'src/services/node-process';
 import { ComposioUserContext } from 'src/services/user-context';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import {
+  cli,
+  cliExit,
+  MockConsole,
+  recordedInvocationCalls,
+  resetInvocationCalls,
+  TestLive,
+} from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeOrgProject } from 'test/__utils__/models/account';
 
@@ -344,28 +351,57 @@ describe('CommandSurface: playground-execute --parallel finds its command name',
 });
 
 // `dev logs tools|triggers` honor --user-id as their filter and reject only --project-name.
+// `dev logs`, `dev auth-configs` and `dev projects` declare the flags unsupported for every
+// command under them; the message still names the command that ran.
 const rejectingCommands = [
-  { path: ['init'], flags: ['--project-name', '--user-id'] },
-  { path: ['logs', 'tools'], flags: ['--project-name'] },
-  { path: ['logs', 'triggers'], flags: ['--project-name'] },
-  { path: ['auth-configs', 'list'], flags: ['--project-name', '--user-id'] },
-  { path: ['projects', 'list'], flags: ['--project-name', '--user-id'] },
-  { path: ['toolkits', 'search', 'email'], flags: ['--project-name', '--user-id'] },
-  { path: ['toolkits', 'version', 'gmail'], flags: ['--project-name', '--user-id'] },
-  { path: ['connected-accounts', 'info', 'ca_1'], flags: ['--project-name', '--user-id'] },
-  { path: ['connected-accounts', 'whoami', 'ca_1'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'list', 'gmail'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'status'], flags: ['--project-name', '--user-id'] },
+  { command: ['init'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['logs', 'tools'], args: [], flags: ['--project-name'] },
+  { command: ['logs', 'triggers'], args: [], flags: ['--project-name'] },
+  { command: ['auth-configs', 'list'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['projects', 'list'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['toolkits', 'search'], args: ['email'], flags: ['--project-name', '--user-id'] },
+  { command: ['toolkits', 'version'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
   {
-    path: ['triggers', 'create', 'GMAIL_NEW_GMAIL_MESSAGE'],
-    flags: ['--project-name'],
+    command: ['connected-accounts', 'info'],
+    args: ['ca_1'],
+    flags: ['--project-name', '--user-id'],
   },
-  { path: ['triggers', 'enable', 'ti_1'], flags: ['--project-name', '--user-id'] },
-  { path: ['triggers', 'disable', 'ti_1'], flags: ['--project-name', '--user-id'] },
-].flatMap(({ path, flags }) =>
-  flags.map(flag => ({ path, flag, name: `dev ${path.join(' ')} ${flag}` }))
+  {
+    command: ['connected-accounts', 'whoami'],
+    args: ['ca_1'],
+    flags: ['--project-name', '--user-id'],
+  },
+  { command: ['triggers', 'list'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
+  {
+    command: ['triggers', 'info'],
+    args: ['GMAIL_NEW_GMAIL_MESSAGE'],
+    flags: ['--project-name', '--user-id'],
+  },
+  { command: ['triggers', 'status'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['triggers', 'create'], args: ['GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name'] },
+  { command: ['triggers', 'enable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
+  { command: ['triggers', 'disable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
+].flatMap(({ command, args, flags }) =>
+  flags.flatMap(flag =>
+    (['before', 'after'] as const).map(position => {
+      const path = ['dev', ...command].join(' ');
+      return {
+        argv:
+          position === 'before'
+            ? ['dev', flag, 'other', ...command, ...args]
+            : ['dev', ...command, ...args, flag, 'other'],
+        flag,
+        path,
+        name: `${path} ${flag} (${position} the command)`,
+      };
+    })
+  )
 );
+
+const rejectionMessage = (command: string, flag: string) =>
+  flag === '--project-name'
+    ? `\`composio ${command}\` cannot target another project yet. Remove --project-name, or run it from that project's directory.`
+    : `\`composio ${command}\` does not act as a user. Remove --user-id.`;
 
 describe('CommandSurface: dev commands that cannot honor a shared flag reject it', () => {
   layer(
@@ -375,13 +411,26 @@ describe('CommandSurface: dev commands that cannot honor a shared flag reject it
       }),
     })
   )(it => {
-    it.effect.each(rejectingCommands)('rejects `$name`', ({ path, flag }) =>
+    it.effect.each(rejectingCommands)('rejects `$name`', ({ argv, flag, path }) =>
       Effect.gen(function* () {
         const userContext = yield* ComposioUserContext;
         yield* userContext.login('test_api_key', 'org_test');
-        const error = yield* Effect.flip(cli(['dev', flag, 'other', ...path]));
+        yield* resetInvocationCalls;
+        const { exit, exitCode } = yield* cliExit(argv);
+        expect(exitCode).toBe(1);
+        const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
         expect(error).toBeInstanceOf(CommandInputError);
-        expect(error).toMatchObject({ option: flag });
+        expect(error).toMatchObject({
+          command: path,
+          option: flag,
+          message: rejectionMessage(path, flag),
+        });
+        const lifecycle = (yield* recordedInvocationCalls).flatMap(call =>
+          call.service === 'CommandLifecycleTelemetry' && call.event !== 'pluginHintShown'
+            ? [`${call.event} ${call.context.commandPath}`]
+            : []
+        );
+        expect(lifecycle).toEqual([`invoked ${path}`, `failed ${path}`]);
       })
     );
   });
