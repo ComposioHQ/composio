@@ -31,6 +31,8 @@ class TestGuess:
             ),
             ("a.psd", "image/vnd.adobe.photoshop"),
             ("a.py", "text/x-python"),
+            ("a.h5", "application/x-hdf5"),
+            ("a.pyc", "application/x-python-code"),
             ("a.png", "image/png"),
             ("a.jpg", "image/jpeg"),
             ("a.jpeg", "image/jpeg"),

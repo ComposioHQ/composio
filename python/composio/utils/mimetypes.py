@@ -303,9 +303,23 @@ _types = {
     ".yaml": "text/yaml",
     ".yml": "text/yaml",
     ".zip": "application/zip",
-    # Not known to the `mime` npm package.
+    # Not known to the `mime` npm package; values from Python's standard
+    # `mimetypes`, except `.tgz`.
+    ".3gpp2": "audio/3gpp2",
+    ".ass": "audio/aac",
+    ".h5": "application/x-hdf5",
+    ".ksh": "text/plain",
+    ".loas": "audio/aac",
+    ".mpa": "video/mpeg",
+    ".nws": "message/rfc822",
+    ".ppa": "application/vnd.ms-powerpoint",
+    ".pwz": "application/vnd.ms-powerpoint",
     ".py": "text/x-python",
+    ".pyc": "application/x-python-code",
     ".tgz": "application/gzip",
+    ".wiz": "application/msword",
+    ".xlb": "application/vnd.ms-excel",
+    ".xpdl": "application/xml",
 }
 
 

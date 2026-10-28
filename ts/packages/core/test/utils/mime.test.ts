@@ -19,10 +19,31 @@ describe('getExtensionFromMimeType', () => {
 // The CLI's `composio execute` labels local files with the `mime` package, so the
 // SDK must send the same type for the same extension.
 describe('MIME_TYPES_BY_EXTENSION', () => {
-  const EXTENSIONS_UNKNOWN_TO_MIME = { py: 'text/x-python', tgz: 'application/gzip' };
+  // Extensions the mime package does not know, kept for parity with the Python SDK.
+  const EXTENSIONS_UNKNOWN_TO_MIME = [
+    '3gpp2',
+    'ass',
+    'h5',
+    'ksh',
+    'loas',
+    'mpa',
+    'nws',
+    'ppa',
+    'pwz',
+    'py',
+    'pyc',
+    'tgz',
+    'wiz',
+    'xlb',
+    'xpdl',
+  ];
+  const known = Object.fromEntries(
+    Object.entries(MIME_TYPES_BY_EXTENSION).filter(
+      ([extension]) => !EXTENSIONS_UNKNOWN_TO_MIME.includes(extension)
+    )
+  );
 
   it('matches the mime package for every extension it knows', () => {
-    const { py: _py, tgz: _tgz, ...known } = MIME_TYPES_BY_EXTENSION;
     const fromMimePackage = Object.fromEntries(
       Object.keys(known).map(extension => [extension, mime.getType(`file.${extension}`)])
     );
@@ -30,11 +51,9 @@ describe('MIME_TYPES_BY_EXTENSION', () => {
   });
 
   it('adds only extensions the mime package does not know', () => {
-    expect(mime.getType('file.py')).toBeNull();
-    expect(mime.getType('file.tgz')).toBeNull();
-    expect({
-      py: MIME_TYPES_BY_EXTENSION.py,
-      tgz: MIME_TYPES_BY_EXTENSION.tgz,
-    }).toEqual(EXTENSIONS_UNKNOWN_TO_MIME);
+    const fromMimePackage = EXTENSIONS_UNKNOWN_TO_MIME.map(extension =>
+      mime.getType(`file.${extension}`)
+    );
+    expect(fromMimePackage).toEqual(EXTENSIONS_UNKNOWN_TO_MIME.map(() => null));
   });
 });
