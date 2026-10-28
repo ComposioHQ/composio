@@ -1,5 +1,5 @@
 import { Argument, Command, Flag } from 'effect/cli';
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { runToolsSearch } from './tools.search.handler';
 
 const query = Argument.String('query').pipe(
@@ -69,5 +69,5 @@ export const toolsCmd$Search = Command.make(
       description: 'Narrow results to a specific toolkit',
     },
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

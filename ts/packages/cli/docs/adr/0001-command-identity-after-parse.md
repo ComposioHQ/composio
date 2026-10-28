@@ -28,7 +28,7 @@ Industry practice agrees: gh, the Stripe CLI, cobra and commander based CLIs, Tu
 - Parse failures still emit the invoked and failed pair, so current dashboards keep working. The path comes from `ShowHelp`, uses canonical command names, never raw user tokens, and the reason is `parse_error`. A separate rejected event (as the Stripe CLI does) was considered and deferred; adopting it means migrating funnels on purpose.
 - The design depends on the order in which effect/cli (`effect` 4.0.5, the version the workspace locks) composes handlers in `withSubcommands`, which is undocumented. A contract test (`test/src/commands/registration.test.ts`) pins it (nested providers, guards, bare groups, reused registrations, root shortcuts), so an `effect` upgrade that changes it fails there first.
 - Group-level guards such as `requireLogin` can run before the selected handler, so they would fire without an identity. They become command metadata, enforced right after identity is recorded.
-- Invocation hooks (update notice, plugin hint) still run before parsing, so `--help`, `--version`, and typos can still show them.
+- Hooks that ran before parse (update notice, plugin hint) run only for a selected command, so `--help`, `--version`, typos, and a group that only shows its help no longer show them. A group's own handler that is an action (`composio dev --mode`) still runs them; the group declares it, since effect/cli does not expose whether a command has a handler.
 
 ## Revisit when
 

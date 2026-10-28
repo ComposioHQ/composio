@@ -1,7 +1,7 @@
 /**
- * One CLI invocation, from argv to a finished command: the hooks every invocation runs, the
- * command's lifecycle telemetry, `effect/cli`'s parser and the selected command, and the one place
- * a failure is put on screen. `runCli` (`src/cli-main.ts`) runs it for the binary over
+ * One CLI invocation, from argv to a finished command: the command's lifecycle telemetry,
+ * `effect/cli`'s parser and the selected command, the hooks the selected command runs, and the one
+ * place a failure is put on screen. `runCli` (`src/cli-main.ts`) runs it for the binary over
  * `InvocationLive`; tests run it through `cli()` over `TestLive`.
  *
  * Every failure leaves `runInvocation` on screen exactly once: printed by `Command.runWith` (help
@@ -29,19 +29,22 @@ import {
   type CommandIdentity,
   CommandInvocation,
   type CommandInvocationShape,
+  INVOCATION_HOOKS,
+  type InvocationHookName,
   ROOT_IDENTITY,
+  runsHook,
 } from 'src/invocation/command-identity';
 import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
 import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
 import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
-import type { HookInvocation } from 'src/services/invocation-hook';
+import type { InvocationHookShape } from 'src/services/invocation-hook';
 import { PluginHint } from 'src/services/plugin-hint';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import type { ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
-import { UpdateNotice } from 'src/services/update-check';
+import { BackgroundUpdateCheck, UpdateNotice } from 'src/services/update-check';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import type { InvocationLive } from './live';
 
@@ -65,9 +68,10 @@ const runWithArgs = (argv: ReadonlyArray<string>) =>
  * Runs the command `effect/cli` selects for `argv` under its lifecycle telemetry. The command's
  * identity is known only once the parser selected it: the selected registration calls
  * `CommandInvocation.begin` (`src/commands/registration.ts`), and so do `--help`, `--version`,
- * and a parse failure, for the command path `effect/cli` gives them. `begin` reports the invoked
- * event; the outcome is reported for the same command. A failure before any `begin` (a group-level
- * check) is reported against the deepest registration whose dispatch started.
+ * and a parse failure, for the command path `effect/cli` gives them. `begin` runs the selected
+ * command's invocation hooks, then reports the invoked event; the outcome is reported for the
+ * same command. A failure before any `begin` (a group-level check) is reported against the
+ * deepest registration whose dispatch started.
  */
 const runWithTelemetry = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
@@ -100,6 +104,7 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
         return { ...context, toolkitSlug };
       });
 
+    const runHooks = yield* invocationHooks;
     const started = yield* Ref.make(Option.none<CliCommandTelemetryContext>());
     const entered = yield* Ref.make(ROOT_IDENTITY);
     const start = (identity: CommandIdentity, input: Option.Option<unknown>) =>
@@ -109,11 +114,18 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
       );
     const invocation: CommandInvocationShape = {
       // Only the first command to begin counts: the bare group whose help ended in `ShowHelp`.
+      // A selected command (one with parsed input) runs its hooks first, so the backend mismatch
+      // warning precedes the toolkit lookup an `execute` invoked event makes; help (`--help`, a
+      // bare group), version, and parse failures run none.
       begin: (identity, input) =>
         Effect.flatMap(Ref.get(started), current =>
           Option.match(current, {
             onSome: () => Effect.void,
-            onNone: () => Effect.asVoid(start(identity, input)),
+            onNone: () =>
+              Option.match(input, {
+                onNone: () => Effect.void,
+                onSome: parsed => runHooks(identity, parsed),
+              }).pipe(Effect.andThen(start(identity, input))),
           })
         ),
       enter: identity => Ref.set(entered, identity),
@@ -144,16 +156,25 @@ const runWithTelemetry = (argv: ReadonlyArray<string>) =>
     );
   });
 
-/** Runs the hooks every invocation gets before its command, in order, on stderr. */
-const runInvocationHooks = (invocation: HookInvocation) =>
-  Effect.gen(function* () {
-    const backendMismatchWarning = yield* BackendMismatchWarning;
-    const updateNotice = yield* UpdateNotice;
-    const pluginHint = yield* PluginHint;
-    yield* backendMismatchWarning.run(invocation);
-    yield* updateNotice.run(invocation);
-    yield* pluginHint.run(invocation);
-  });
+/**
+ * Runs, in order and on stderr, the invocation hooks the selected command's `CommandMeta` keeps,
+ * for the input `effect/cli` parsed for it. A group that only shows its help (the bare root
+ * included) begins with no input, like `--help`, so it never gets here.
+ */
+const invocationHooks = Effect.gen(function* () {
+  const hooks: Readonly<Record<InvocationHookName, InvocationHookShape>> = {
+    backendMismatch: yield* BackendMismatchWarning,
+    updateNotice: yield* UpdateNotice,
+    pluginHint: yield* PluginHint,
+    backgroundUpdateCheck: yield* BackgroundUpdateCheck,
+  };
+  return (identity: CommandIdentity, input: unknown): Effect.Effect<void> =>
+    Effect.forEach(
+      INVOCATION_HOOKS.filter(hook => runsHook(identity.meta, hook, input)),
+      hook => hooks[hook].run({ identity }),
+      { discard: true }
+    );
+});
 
 /**
  * Whether `reason` has nothing for this module to print: a failure already on screen, or an
@@ -214,15 +235,14 @@ export const reportInvocationFailure = (cause: Cause.Cause<unknown>) =>
 
 /**
  * Runs one invocation of the CLI for the full process `argv` (executable and script included):
- * the invocation hooks (before parsing), then the command under lifecycle telemetry.
+ * the command under lifecycle telemetry, with the invocation hooks when it begins.
  *
  * Fails with the command's own cause once it is on screen; an interruption alone is not printed.
  */
 export const runInvocation = (
   argv: ReadonlyArray<string>
 ): Effect.Effect<void, unknown, InvocationServices> =>
-  runInvocationHooks({ argv }).pipe(
-    Effect.andThen(runWithTelemetry(argv)),
+  runWithTelemetry(argv).pipe(
     Effect.withSpan('composio-cli', {
       attributes: {
         name: constants.APP_NAME,

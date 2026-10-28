@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { reportFailure } from 'src/effects/report-failure';
 import { eventCount, finishAcceptedEvents, makeSinkFailures } from '../sink-failures';
 import { Command, Flag } from 'effect/cli';
@@ -404,5 +404,5 @@ export const triggersCmd$Listen = Command.make(
   Command.withDescription(
     'Listen to realtime trigger events for your developer project and optionally forward them into your local dev environment.'
   ),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

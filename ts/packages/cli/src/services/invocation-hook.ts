@@ -1,20 +1,19 @@
 import type { Effect } from 'effect';
+import type { CommandIdentity } from 'src/invocation/command-identity';
 
 /**
- * What a hook knows about the invocation it runs for.
- *
- * Hooks run before the root command is parsed, so today this is only the process argv. Anything
- * a hook later learns about the selected command belongs here, not in a hook's own argv parsing.
+ * What a hook knows about the invocation it runs for: the command `effect/cli` selected. A hook
+ * never reads argv; anything it needs to know about the command belongs in its `CommandMeta`.
  */
 export interface HookInvocation {
-  /** The full, unchanged process argv (executable and script included). */
-  readonly argv: ReadonlyArray<string>;
+  readonly identity: CommandIdentity;
 }
 
 /**
- * A hook the invocation (`src/invocation/invocation.ts`) runs once, before the command. Its
- * output goes to stderr; it fails the invocation only with the errors `E` names.
+ * A hook the invocation (`src/invocation/invocation.ts`) runs once for the selected command,
+ * when the command begins and before any request it makes, unless the command's `CommandMeta`
+ * turns it off. Its output goes to stderr; it never fails the command.
  */
-export interface InvocationHookShape<E = never> {
-  readonly run: (invocation: HookInvocation) => Effect.Effect<void, E>;
+export interface InvocationHookShape {
+  readonly run: (invocation: HookInvocation) => Effect.Effect<void>;
 }

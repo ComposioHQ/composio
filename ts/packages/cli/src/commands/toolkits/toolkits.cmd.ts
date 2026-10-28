@@ -1,4 +1,4 @@
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
 import { rejectsSharedFlags } from 'src/commands/surface';
 import { toolkitsCmd$List } from './list/toolkits.list.cmd';
@@ -23,5 +23,5 @@ export const toolkitsCmd = Command.make('toolkits').pipe(
     toolkitsCmd$Search.pipe(rejectsSharedFlags('dev toolkits search')),
     toolkitsCmd$Version.pipe(rejectsSharedFlags('dev toolkits version')),
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );

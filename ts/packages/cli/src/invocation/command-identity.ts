@@ -9,14 +9,35 @@
  * `--version`, and parse failures have no selected handler; they resolve the identity from the
  * command path `effect/cli` hands them (`identityAt`).
  */
-import { Array as Arr, Context, Effect, Option } from 'effect';
+import { Array as Arr, Context, Effect, Option, Predicate, Record as EffectRecord } from 'effect';
 import { Command } from 'effect/cli';
 import type { TelemetryFamily } from 'src/analytics/types';
 
 /**
+ * The hooks the invocation runs for the selected command (`src/invocation/invocation.ts`), in
+ * this order, when the command begins: before its invoked event and its login check.
+ */
+export const INVOCATION_HOOKS = [
+  'backendMismatch',
+  'updateNotice',
+  'pluginHint',
+  'backgroundUpdateCheck',
+] as const;
+
+export type InvocationHookName = (typeof INVOCATION_HOOKS)[number];
+
+/**
+ * Whether a hook runs for a command: always (`true`), never (`false`), or as the input
+ * `effect/cli` parsed for the command decides (`composio version --check`). Subcommands inherit
+ * a boolean; a predicate applies only to the registration that declares it, since a
+ * subcommand's input has another shape, and its subcommands run the hook.
+ */
+export type HookPolicy = boolean | ((input: unknown) => boolean);
+
+/**
  * What a command declares about itself, under one annotation key (`Command.annotate`, or
- * `withCommandMeta` in `src/commands/registration.ts`). Every field is optional; what an
- * absent field means is set once, in `resolveCommandMeta`.
+ * `withCommandMeta`). Every field is optional; what an absent field means is set once, in
+ * `resolveCommandMeta`.
  */
 export interface CommandMetaShape {
   /**
@@ -25,10 +46,17 @@ export interface CommandMetaShape {
    */
   readonly telemetryFamily?: TelemetryFamily;
   /**
-   * Whether the command needs a logged-in user (`requireLogin`). Inherited: a group's
-   * subcommands need one too.
+   * Whether the command needs a logged-in user. Inherited: a group's subcommands need one too.
+   * The selected command checks it right after it began (`src/commands/registration.ts`), so
+   * `NotLoggedInError` names the command the user ran.
    */
   readonly requiresLogin?: boolean;
+  /**
+   * Which invocation hooks run for the command. Every hook runs unless the command, or a group
+   * above it, says otherwise; a boolean policy is inherited per hook, a predicate is not (see
+   * `HookPolicy`).
+   */
+  readonly hooks?: Partial<Readonly<Record<InvocationHookName, HookPolicy>>>;
 }
 
 export const CommandMeta = Context.Reference<CommandMetaShape>('commands/CommandMeta', {
@@ -39,7 +67,19 @@ export const CommandMeta = Context.Reference<CommandMetaShape>('commands/Command
 export interface ResolvedCommandMeta {
   readonly telemetryFamily: TelemetryFamily;
   readonly requiresLogin: boolean;
+  readonly hooks: Readonly<Record<InvocationHookName, HookPolicy>>;
 }
+
+const EVERY_HOOK: ResolvedCommandMeta['hooks'] = {
+  backendMismatch: true,
+  updateNotice: true,
+  pluginHint: true,
+  backgroundUpdateCheck: true,
+};
+
+/** The hook policies a subcommand inherits from `hooks`: the booleans; a predicate runs the hook. */
+const inheritedHooks = (hooks: ResolvedCommandMeta['hooks']): ResolvedCommandMeta['hooks'] =>
+  EffectRecord.map(hooks, policy => (Predicate.isBoolean(policy) ? policy : true));
 
 /** Resolves what a command declares (`own`) under a parent registration's resolved meta. */
 export const resolveCommandMeta = (
@@ -48,19 +88,40 @@ export const resolveCommandMeta = (
 ): ResolvedCommandMeta => ({
   telemetryFamily: own.telemetryFamily ?? 'command',
   requiresLogin: own.requiresLogin ?? parent?.requiresLogin ?? false,
+  hooks: { ...(parent === undefined ? EVERY_HOOK : inheritedHooks(parent.hooks)), ...own.hooks },
 });
+
+/** Whether `hook` runs for a command with `meta`, given the input `effect/cli` parsed for it. */
+export const runsHook = (
+  meta: ResolvedCommandMeta,
+  hook: InvocationHookName,
+  input: unknown
+): boolean => {
+  const policy = meta.hooks[hook];
+  return Predicate.isBoolean(policy) ? policy : policy(input);
+};
 
 /** The meta `command` declares on itself. */
 export const commandMetaOf = (command: Command.Command.Any): CommandMetaShape =>
   Context.get(command.annotations, CommandMeta);
 
-/** Adds `meta` to what `self` already declares in its `CommandMeta` annotation. */
+/**
+ * Adds `meta` to what `self` already declares in its `CommandMeta` annotation; a hook policy
+ * replaces only that hook's. `withCommandMeta({ requiresLogin: true })` makes a command, or a
+ * group entry and every subcommand under it, require a logged-in user.
+ */
 export const withCommandMeta =
   (meta: CommandMetaShape) =>
   <const Name extends string, Input, ContextInput, E, R>(
     self: Command.Command<Name, Input, ContextInput, E, R>
-  ): Command.Command<Name, Input, ContextInput, E, R> =>
-    Command.annotate(self, CommandMeta, { ...commandMetaOf(self), ...meta });
+  ): Command.Command<Name, Input, ContextInput, E, R> => {
+    const current = commandMetaOf(self);
+    return Command.annotate(self, CommandMeta, {
+      ...current,
+      ...meta,
+      hooks: { ...current.hooks, ...meta.hooks },
+    });
+  };
 
 /** One command registration: where a command sits in the tree and what applies to it there. */
 export interface CommandIdentity {
@@ -135,8 +196,9 @@ export const CommandRegistration = Context.Reference<CommandIdentity>(
 export interface CommandInvocationShape {
   /**
    * Records `identity` as the command this invocation runs, with the input `effect/cli` parsed
-   * for it (none for help, version, and parse failures), and reports that it started. Only the
-   * first call counts. Never fails.
+   * for it (none for help, version, parse failures, and a group that only shows its help), and
+   * reports that it started; with parsed input, first runs the invocation hooks its
+   * `CommandMeta` keeps. Only the first call counts. Never fails.
    */
   readonly begin: (identity: CommandIdentity, input: Option.Option<unknown>) => Effect.Effect<void>;
   /**
