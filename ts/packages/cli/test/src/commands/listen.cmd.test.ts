@@ -407,6 +407,28 @@ describe('CLI: composio listen', () => {
           });
         })
     );
+
+    it.effect(
+      '[Then] no --account and no default alias fails like `composio execute` and `composio proxy`',
+      () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          // --max-events bounds the run, so a listener that picked an account stops instead of hanging.
+          const failure = yield* cli([
+            'listen',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--max-events',
+            '1',
+          ]).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(ConnectedAccountResolutionError);
+          expect(failure).toMatchObject({
+            toolkitSlug: 'gmail',
+            message:
+              'Multiple connected accounts exist for toolkit "gmail" and no --account was given. Available accounts: personal (con_personal), work (con_work). Pass --account <alias or id> to choose one.',
+          });
+        })
+    );
   });
 
   layer(

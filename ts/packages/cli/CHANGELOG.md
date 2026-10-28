@@ -10,12 +10,12 @@
   exits 1. Without it, a failed event is still reported and skipped, and the
   exit code stays 0.
 
-- `composio execute` and `composio proxy` now fail with an error listing
-  the candidate accounts, instead of silently using the newest one, when a
-  toolkit has several connected accounts, none is aliased `default`, and no
-  `--account` is passed. Scripts that relied on the implicit newest-account
-  pick now fail. To migrate, pass `--account <id|alias>`, or alias one account
-  `default`.
+- `composio execute`, `composio proxy` and `composio listen` (for a trigger
+  slug) now fail with an error listing the candidate accounts, instead of
+  silently using the newest one, when a toolkit has several connected accounts,
+  none is aliased `default`, and no `--account` is passed. Scripts that relied
+  on the implicit newest-account pick now fail. To migrate, pass
+  `--account <id|alias>`, or alias one account `default`.
 
 ### Patch Changes
 
