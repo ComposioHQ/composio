@@ -6,7 +6,7 @@ import {
 } from 'src/commands/connected-accounts/link/connected-accounts.link.errors';
 import { commandInputError, isUsageFailure, notLoggedIn } from 'src/commands/errors';
 import { InvalidOrganizationError } from 'src/commands/login/login.errors';
-import { ProxyCommandError, ReportedProxyCommandError } from 'src/commands/proxy.cmd';
+import { ProxyCommandError, ReportedProxyCommandError } from 'src/commands/proxy/proxy.errors';
 import {
   ReportedToolExecutionError,
   ToolExecutionError,
