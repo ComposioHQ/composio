@@ -660,6 +660,9 @@ describe('expected failures without the crash banner', () => {
         })
       : fakeComposio(req, res);
 
+  /** Every root-tree command without a consumer user says this. */
+  const ROOT_MISSING_USER = 'Missing consumer user id. Run `composio login` and try again.';
+
   const notConnected = (toolkit: string) =>
     `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
 
@@ -691,8 +694,59 @@ describe('expected failures without the crash banner', () => {
       ],
       setup: {},
       server: withoutConsumerUser,
-      tag: 'ProxyCommandError',
-      message: 'No consumer project user is available for proxy execution in this context.',
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // An empty consumer user id is no user; these commands used to act as the user "", and
+    // told a consumer to pass --user-id, which the root tree does not take.
+    {
+      name: '`execute` without a consumer user',
+      args: ['execute', 'GMAIL_FETCH_EMAILS', '-d', '{}'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`search` without a consumer user',
+      args: ['search', 'send an email'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`link` without a consumer user',
+      args: ['link', 'gmail', '--no-wait'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    // These printed the defect banner for a missing consumer user.
+    {
+      name: '`connections list` without a consumer user',
+      args: ['connections', 'list'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`connections remove` without a consumer user',
+      args: ['connections', 'remove', 'gmail', '--yes'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
+    },
+    {
+      name: '`listen` without a consumer user',
+      args: ['listen', 'GMAIL_NEW_GMAIL_MESSAGE'],
+      setup: {},
+      server: withoutConsumerUser,
+      tag: 'MissingActingUserError',
+      message: ROOT_MISSING_USER,
     },
   ])(
     '[Given] $name [Then] prints the message without the banner and exits 1',
@@ -739,6 +793,134 @@ describe('expected failures without the crash banner', () => {
       }),
     30_000
   );
+});
+
+describe('local file uploads', () => {
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+  // Records the presigned-URL request, then refuses it so no upload is attempted.
+  const fakeUploadBackend =
+    (presignRequests: Array<unknown>) => (req: IncomingMessage, res: ServerResponse) => {
+      const { pathname } = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (/^\/api\/v3(\.1)?\/tools\/CANVA_CREATE_DESIGN_IMPORT_JOB$/u.test(pathname)) {
+        return sendJson(res, 200, {
+          slug: 'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          name: 'Create Design Import Job',
+          description: '',
+          version: '20260101_00',
+          available_versions: ['20260101_00'],
+          input_parameters: {
+            type: 'object',
+            properties: {
+              file: { type: 'object', file_uploadable: true },
+              title: { type: 'string' },
+            },
+          },
+          output_parameters: {},
+          tags: [],
+        });
+      }
+      if (pathname.endsWith('/files/upload/request')) {
+        const chunks: Array<Buffer> = [];
+        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        req.on('end', () => {
+          presignRequests.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          sendJson(res, 400, { error: { message: 'stop here', status: 400 } });
+        });
+        return;
+      }
+      fakeComposio(req, res);
+    };
+
+  const uploadWith = async (
+    baseUrl: string,
+    file: string,
+    stagedFiles?: Record<string, { name: string; mimetype?: string }>
+  ) => {
+    const metadataDirectory = fs.mkdtempSync(path.join(tempy.temporaryDirectory(), 'labels-'));
+    const metadataFile = path.join(metadataDirectory, 'files.json');
+    if (stagedFiles) fs.writeFileSync(metadataFile, JSON.stringify(stagedFiles));
+    try {
+      return await runCliAgainst(
+        baseUrl,
+        [
+          'execute',
+          'CANVA_CREATE_DESIGN_IMPORT_JOB',
+          '--skip-connection-check',
+          '--file',
+          file,
+          '-d',
+          '{"title":"Deck"}',
+        ],
+        {
+          env: { COMPOSIO_RUN_STAGED_FILES_FILE: stagedFiles ? metadataFile : '' },
+        }
+      );
+    } finally {
+      fs.rmSync(metadataDirectory, { recursive: true, force: true });
+    }
+  };
+
+  it.each([
+    {
+      name: 'a .pptx path',
+      onDisk: 'deck.pptx',
+      staged: undefined,
+      filename: 'deck.pptx',
+      mimetype: PPTX,
+    },
+    {
+      name: 'an extensionless path with no staged name or type',
+      onDisk: 'deck',
+      staged: undefined,
+      filename: 'deck',
+      mimetype: 'application/octet-stream',
+    },
+    {
+      name: 'a path `composio run` staged an extensionless PPTX File at',
+      onDisk: 'file-a1b2c3d4',
+      staged: { name: 'deck', mimetype: PPTX },
+      filename: 'deck',
+      mimetype: PPTX,
+    },
+    {
+      name: 'a path `composio run` staged a `.env.example` File at',
+      onDisk: 'file-a1b2c3d4.example',
+      staged: { name: '.env.example', mimetype: 'text/plain' },
+      filename: '.env.example',
+      mimetype: 'text/plain',
+    },
+  ])(
+    '[Given] $name [Then] `composio execute --file` requests the upload as $filename, $mimetype',
+    ({ onDisk, staged, filename, mimetype }) => {
+      const file = path.join(tempy.temporaryDirectory(), onDisk);
+      fs.writeFileSync(file, 'PK fake pptx');
+      const presignRequests: Array<unknown> = [];
+      return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+        await uploadWith(baseUrl, file, staged && { [file]: staged });
+
+        expect(presignRequests).toEqual([
+          expect.objectContaining({ filename, mimetype, toolkit_slug: 'canva' }),
+        ]);
+      });
+    },
+    30_000
+  );
+
+  it('[Given] a `.env` path staged under a harmless name [Then] the denylist still refuses it', () => {
+    const file = path.join(tempy.temporaryDirectory(), '.env');
+    fs.writeFileSync(file, 'SECRET=value');
+    const presignRequests: Array<unknown> = [];
+    return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+      const result = await uploadWith(baseUrl, file, {
+        [file]: { name: 'deck.pptx', mimetype: PPTX },
+      });
+
+      expect(result.status).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).toContain('looks like a credential');
+      expect(presignRequests).toEqual([]);
+    });
+  }, 30_000);
 });
 
 describe('signals', () => {

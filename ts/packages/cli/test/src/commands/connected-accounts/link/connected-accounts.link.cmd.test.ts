@@ -205,21 +205,29 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData: makeConnectedAccountsData(),
+      connectedAccountsData: makeConnectedAccountsData({
+        items: [
+          makeConnectedAccount(),
+          makeConnectedAccount({ id: 'con_global', alias: 'global', user_id: 'global-default' }),
+        ],
+      }),
       fixture: 'global-test-user-id',
     })
   )(
-    '[Given] dev connected-accounts link --list without developer project context [Then] it still uses consumer resolution',
+    '[Given] dev connected-accounts link --list in a developer project directory [Then] it lists the test user’s accounts',
     it => {
-      it.effect('lists connected accounts instead of requiring a developer project', () =>
+      // `link` on the dev tree acts on the developer project; it used to list the consumer
+      // user's accounts in the consumer project.
+      it.effect('lists the global test user’s accounts, not the consumer user’s', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
 
-          expect(output).toContain('default');
-          expect(output).toContain('castle');
-          expect(output).not.toContain('MissingDeveloperProjectError');
+          expect(lines).toContain('Using global test user id "global-default"');
+          expect(parseLastLine(lines)).toMatchObject({
+            total: 1,
+            items: [{ id: 'con_global', user_id: 'global-default' }],
+          });
         })
       );
     }

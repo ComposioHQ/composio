@@ -180,9 +180,46 @@ const layers = Layer.mergeAll(
   )
 ) satisfies RequiredLayer;
 
-/** Whether `reason` is a failure already on screen, which nothing here may print again. */
-const isAlreadyReported = (reason: Cause.Reason<unknown>): boolean =>
-  Cause.isFailReason(reason) && !Runtime.getErrorReported(reason.error);
+/**
+ * Whether `reason` has nothing for the catch-all to print: a failure already on screen, or an
+ * interruption, which must reach the runner untouched: 128 + n after a signal, else 130 from
+ * `Runtime.defaultTeardown`.
+ */
+const hasNothingToPrint = (reason: Cause.Reason<unknown>): boolean =>
+  Cause.isInterruptReason(reason) ||
+  (Cause.isFailReason(reason) && !Runtime.getErrorReported(reason.error));
+
+/**
+ * Prints the parts of `cause` nobody reported yet and fails with `ReportedFailure`. A cause with
+ * nothing to print (a failure already on screen — `ShowHelp`, which `Command.runWith` printed
+ * with any parse/validation errors, a command's own report, or a message printed in
+ * `cliProgram` — or an interruption) is re-failed untouched: its `[Runtime.errorReported]` is
+ * false, so the runner logs nothing, and `Runtime.defaultTeardown` exits with its
+ * `[Runtime.errorExitCode]`; interruptions alone exit 128 + n after a signal, else 130. Nothing
+ * here may print it, or output doubles.
+ */
+export const reportUnreportedCause = Effect.fn(function* (cause: Cause.Cause<unknown>) {
+  const unreported = Cause.fromReasons(cause.reasons.filter(reason => !hasNothingToPrint(reason)));
+  if (unreported.reasons.length > 0) {
+    const captured = yield* captureErrors(unreported, { stripCwd: true });
+    const message =
+      captured.errors.length > 0
+        ? prettyPrintFromCapturedErrors(captured, {
+            hideStackTrace: true,
+            stripCwd: true,
+            enabled: true,
+          }).trim()
+        : '';
+    if (message.length > 0) {
+      const ui = yield* TerminalUI;
+      yield* ui.error(message);
+      return yield* new ReportedFailure({ message });
+    }
+  }
+  // Nothing printable: keep the original cause so its exit code survives and the runner logs
+  // whatever is still unreported, instead of exiting 0.
+  return yield* Effect.failCause(cause);
+});
 
 // `runWithConfig`'s root command tree (built from every `.cmd.ts` subcommand in
 // `src/commands`) is deep and wide enough that TypeScript's inference collapses its
@@ -304,37 +341,7 @@ const cliProgram = (argv: ReadonlyArray<string>) =>
       },
     }),
     Effect.sandbox,
-    Effect.catch(
-      Effect.fn(function* (cause) {
-        // A failure already on screen — `ShowHelp` (`Command.runWith` printed help and any
-        // parse/validation errors before failing with it), a command's own report, or a message
-        // printed above — reaches the runner untouched: its `[Runtime.errorReported]`
-        // is false, so the runner logs nothing, and `Runtime.defaultTeardown` exits with its
-        // `[Runtime.errorExitCode]`. Nothing here may print it, or output doubles.
-        const unreported = Cause.fromReasons(
-          cause.reasons.filter(reason => !isAlreadyReported(reason))
-        );
-        if (unreported.reasons.length === 0) {
-          return yield* Effect.failCause(cause);
-        }
-
-        const captured = yield* captureErrors(unreported, {
-          stripCwd: true,
-        });
-        if (captured.interrupted || captured.errors.length > 0) {
-          const message = prettyPrintFromCapturedErrors(captured, {
-            hideStackTrace: true,
-            stripCwd: true,
-            enabled: true,
-          }).trim();
-          if (message.length > 0) {
-            const ui = yield* TerminalUI;
-            yield* ui.error(message);
-            return yield* new ReportedFailure({ message });
-          }
-        }
-      })
-    ),
+    Effect.catch(reportUnreportedCause),
     Effect.provide(layers),
     // Built per invocation, never at module scope: `ConfigProvider.fromEnv()` snapshots
     // `process.env` when constructed, and the ambient `ConfigProvider` reference caches its

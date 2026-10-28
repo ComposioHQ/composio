@@ -1,5 +1,5 @@
 import { requireLogin } from 'src/effects/require-auth';
-import { CommandSurface, directoryTestUserId, missingUserIdMessage } from 'src/commands/surface';
+import { actingUser, CommandSurface } from 'src/commands/surface';
 import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import { Argument, Command, Flag } from 'effect/cli';
@@ -28,8 +28,6 @@ import type {
   ToolExecuteResponse,
 } from 'src/services/tools-executor';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
-import { ProjectContext } from 'src/services/project-context';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import {
@@ -57,7 +55,9 @@ import {
   normalizeFileUploadSchema,
   schemaHasFileUploadable,
   rejectLocalFilesWithoutUpload,
+  setArgumentAt,
 } from 'src/services/tool-file-uploads';
+import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -136,12 +136,12 @@ const invalidArguments = commandInputError('execute');
 // union from scattered constructor calls, so a new reason is added here next to its first use.
 
 /**
- * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, no user
- * id to run it for, or (with `--parallel`) a toolkit the user has not connected. An expected
+ * `composio execute` cannot run the tool as invoked: a `--file` the tool cannot take, or (with
+ * `--parallel`) a toolkit the user has not connected. An expected
  * failure: `cli-main.ts` prints the message and exits 1.
  */
 export class ToolExecutionError extends Data.TaggedError('ToolExecutionError')<{
-  readonly reason: 'file_input' | 'missing_user_id' | 'connection_check';
+  readonly reason: 'file_input' | 'connection_check';
   readonly message: string;
   readonly toolSlug?: string;
 }> {
@@ -196,28 +196,6 @@ const hasNestedKey = (
   return true;
 };
 
-const setNestedKey = (
-  record: Record<string, unknown>,
-  pathParts: ReadonlyArray<string | number>,
-  value: unknown
-): Record<string, unknown> => {
-  const set = (current: unknown, remaining: ReadonlyArray<string | number>): unknown => {
-    const [key, ...rest] = remaining;
-    if (key === undefined) return value;
-    if (typeof key === 'number') {
-      if (!Array.isArray(current)) return current;
-      const copy = [...current];
-      copy[key] = set(copy[key], rest);
-      return copy;
-    }
-    const copy = isPlainRecord(current) ? { ...current } : {};
-    copy[key] = set(copy[key], rest);
-    return copy;
-  };
-  const updated = set(record, pathParts);
-  return isPlainRecord(updated) ? updated : record;
-};
-
 const injectSingleFileArgument = (params: {
   readonly slug: string;
   readonly args: Record<string, unknown>;
@@ -254,7 +232,7 @@ const injectSingleFileArgument = (params: {
       });
     }
 
-    return setNestedKey(params.args, targetPath, params.filePath);
+    return setArgumentAt(params.args, targetPath, params.filePath);
   });
 
 const connectionTips = (params: {
@@ -718,22 +696,41 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
-// What a dry run checks against the schema: the arguments, then any local file
-// the tool cannot upload, which the real call refuses before sending.
-const validateDryRunArguments = (
-  slug: string,
-  args: Record<string, unknown>,
-  definition: { readonly schemaPath: string; readonly schema: Record<string, unknown> }
-) =>
+// What a dry run checks, matching the real call: the arguments against the
+// schema unless checks are skipped, then any local file the tool cannot upload.
+// The real call refuses that file whatever the skip flags say, loading the
+// schema for it and going on without one, and never for a meta tool, which
+// uploads nothing. Returns the schema only when the arguments were checked.
+const checkDryRunArguments = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly projectScope: { readonly orgId?: string; readonly projectId?: string };
+  readonly verificationDisabled: boolean;
+}) =>
   Effect.gen(function* () {
-    yield* validateToolInputArgumentsWithDefinition(slug, args, definition);
-    yield* rejectLocalFilesWithoutUpload({
-      fs: yield* FileSystem.FileSystem,
-      path: yield* Path.Path,
-      toolSlug: slug,
-      arguments_: args,
-      inputSchema: definition.schema,
-    });
+    const { slug, args, verificationDisabled } = params;
+    if (verificationDisabled && isMetaToolSlug(slug)) return null;
+
+    const definition = verificationDisabled
+      ? yield* getOrFetchToolInputDefinition(slug, params.projectScope).pipe(
+          Effect.catch(() => Effect.succeed(null))
+        )
+      : yield* getOrFetchToolInputDefinition(slug, params.projectScope);
+    if (!definition) return null;
+
+    if (!verificationDisabled) {
+      yield* validateToolInputArgumentsWithDefinition(slug, args, definition);
+    }
+    if (!isMetaToolSlug(slug)) {
+      yield* rejectLocalFilesWithoutUpload({
+        fs: yield* FileSystem.FileSystem,
+        path: yield* Path.Path,
+        toolSlug: slug,
+        arguments_: args,
+        inputSchema: definition.schema,
+      });
+    }
+    return verificationDisabled ? null : definition;
   });
 
 // Gates the tool call: the request is only sent once the arguments pass. A
@@ -772,7 +769,6 @@ type RunToolsExecuteParams = {
   data: Option.Option<string>;
   file: Option.Option<string>;
   account: Option.Option<string>;
-  userId: Option.Option<string>;
   projectName: Option.Option<string>;
   surface: 'root' | 'dev';
   projectMode: 'consumer' | 'developer';
@@ -792,6 +788,7 @@ type ParallelExecuteSpec = {
 };
 
 type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
+  readonly userId: Option.Option<string>;
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
 
@@ -873,7 +870,11 @@ const emitCachedSchema = (
     );
   });
 
-const resolveExecuteContext = (params: RunToolsExecuteParams) =>
+const resolveExecuteContext = (
+  params: RunToolsExecuteParams,
+  /** The acting user; `--parallel` resolves it once for all its tools. */
+  user: ReturnType<typeof actingUser> = actingUser()
+) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const executor = yield* ToolsExecutor;
@@ -881,44 +882,8 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 
-    // The root tree has no --project-name.
-    const projectName = Option.filter(params.projectName, () => params.surface !== 'root');
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName: Option.getOrUndefined(projectName),
-    });
+    const { userId: resolvedUserId, project: resolvedProject } = yield* user;
     const clientSingleton = yield* ComposioClientSingleton;
-    const userContext = yield* ComposioUserContext;
-    const projectContext = yield* ProjectContext;
-
-    const localProjectContext = yield* projectContext.resolve.pipe(
-      Effect.catch(() => Effect.succeed(Option.none()))
-    );
-    const localTestUserId = directoryTestUserId(
-      localProjectContext,
-      Option.as(projectName, resolvedProject.projectId)
-    );
-    const resolvedUserId =
-      resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullishOr(resolvedProject.consumerUserId)
-        : Option.match(params.userId, {
-            onSome: value => Option.some(value),
-            onNone: () => Option.orElse(localTestUserId, () => userContext.data.testUserId),
-          });
-
-    if (Option.isNone(resolvedUserId)) {
-      return yield* new ToolExecutionError({
-        reason: 'missing_user_id',
-        toolSlug: params.slug,
-        message: missingUserIdMessage(
-          projectName,
-          params.projectMode === 'developer'
-            ? 'Missing user id. Provide --user-id or run `composio dev init` to set a playground test user id.'
-            : 'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-        ),
-      });
-    }
-
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
@@ -930,7 +895,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
-      userId: resolvedUserId.value,
+      userId: resolvedUserId,
       selector: params.account,
     });
     const args = Option.isSome(params.file)
@@ -971,11 +936,11 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       executor,
       resolvedProject,
       args,
-      resolvedUserId: resolvedUserId.value,
+      resolvedUserId,
       selectedConnectedAccountId,
       executeOutputDir,
       executeParams: {
-        userId: resolvedUserId.value,
+        userId: resolvedUserId,
         target: executesViaDashboard
           ? { kind: 'dashboard', orgId: resolvedProject.orgId }
           : { kind: 'backend' },
@@ -1151,39 +1116,27 @@ const runExecuteWithSpinner = (params: {
     yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         if (params.dryRun) {
-          const definition = verificationDisabled
-            ? null
-            : yield* getOrFetchToolInputDefinition(params.slug, {
-                orgId: params.resolvedProject.orgId,
-                projectId: params.resolvedProject.projectId,
-              }).pipe(
-                Effect.tapError(error =>
-                  emitExecuteFailureTelemetry({
-                    toolSlug: params.slug,
-                    args: params.args,
-                    error,
-                    surface: params.surface,
-                    projectMode: params.projectMode,
-                    stage: 'dry_run',
-                    projectScope: toolkitProjectScope(params.resolvedProject),
-                  })
-                )
-              );
-          if (definition) {
-            yield* validateDryRunArguments(params.slug, params.args, definition).pipe(
-              Effect.tapError(error =>
-                emitExecuteFailureTelemetry({
-                  toolSlug: params.slug,
-                  args: params.args,
-                  error,
-                  surface: params.surface,
-                  projectMode: params.projectMode,
-                  stage: 'dry_run',
-                  projectScope: toolkitProjectScope(params.resolvedProject),
-                })
-              )
-            );
-          }
+          const definition = yield* checkDryRunArguments({
+            slug: params.slug,
+            args: params.args,
+            projectScope: {
+              orgId: params.resolvedProject.orgId,
+              projectId: params.resolvedProject.projectId,
+            },
+            verificationDisabled,
+          }).pipe(
+            Effect.tapError(error =>
+              emitExecuteFailureTelemetry({
+                toolSlug: params.slug,
+                args: params.args,
+                error,
+                surface: params.surface,
+                projectMode: params.projectMode,
+                stage: 'dry_run',
+                projectScope: toolkitProjectScope(params.resolvedProject),
+              })
+            )
+          );
           const summary: DryRunSummary = {
             successful: true,
             dryRun: true,
@@ -1646,7 +1599,6 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       () =>
         resolveSchemaContext({
           account: params.account,
-          userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
           projectMode: params.projectMode,
@@ -1740,24 +1692,29 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       return yield* runParallelSchemaFetchFromParsed(params);
     }
 
+    // Resolved once, so a test user's notice prints once; each tool still fails on its own
+    // input before it fails on a missing user.
+    const user = Effect.fromResult(yield* Effect.result(actingUser()));
     const contexts = yield* Effect.forEach(
       params.specs,
       spec =>
-        resolveExecuteContext({
-          slug: spec.slug,
-          data: spec.data,
-          file: Option.none(),
-          account: spec.account,
-          userId: params.userId,
-          projectName: params.projectName,
-          surface: params.surface,
-          projectMode: params.projectMode,
-          getSchema: params.getSchema,
-          dryRun: params.dryRun,
-          skipConnectionCheck: params.skipConnectionCheck,
-          skipToolParamsCheck: params.skipToolParamsCheck,
-          skipChecks: params.skipChecks,
-        }),
+        resolveExecuteContext(
+          {
+            slug: spec.slug,
+            data: spec.data,
+            file: Option.none(),
+            account: spec.account,
+            projectName: params.projectName,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            getSchema: params.getSchema,
+            dryRun: params.dryRun,
+            skipConnectionCheck: params.skipConnectionCheck,
+            skipToolParamsCheck: params.skipToolParamsCheck,
+            skipChecks: params.skipChecks,
+          },
+          user
+        ),
       { concurrency: 'unbounded' }
     );
     const entries = contexts.map((context, index) => ({
@@ -1781,16 +1738,15 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           });
 
           if (params.dryRun) {
-            const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
-            const definition = verificationDisabled
-              ? null
-              : yield* getOrFetchToolInputDefinition(toolSlug, {
-                  orgId: context.resolvedProject.orgId,
-                  projectId: context.resolvedProject.projectId,
-                });
-            if (definition) {
-              yield* validateDryRunArguments(toolSlug, context.args, definition);
-            }
+            const definition = yield* checkDryRunArguments({
+              slug: toolSlug,
+              args: context.args,
+              projectScope: {
+                orgId: context.resolvedProject.orgId,
+                projectId: context.resolvedProject.projectId,
+              },
+              verificationDisabled: params.skipChecks || params.skipToolParamsCheck,
+            });
             return {
               successful: true,
               dryRun: true,
@@ -1949,14 +1905,18 @@ const runParallelFromCommand = (config: {
       allowProjectName: config.surface === 'dev',
     });
     // The tail starts after the command name, so the `dev` group's shared flags given before
-    // it reach the command only through the surface.
+    // it reach the command only through the surface; the tail's own win.
     const surface = yield* CommandSurface;
+    const userId = Option.orElse(parsed.userId, () => surface.userId);
+    const projectName = Option.orElse(parsed.projectName, () => surface.projectName);
     return yield* runParallelToolsExecuteFromParsed({
       ...parsed,
       ...config,
-      userId: Option.orElse(parsed.userId, () => surface.userId),
-      projectName: Option.orElse(parsed.projectName, () => surface.projectName),
-    });
+      userId,
+      projectName,
+    }).pipe(
+      Effect.provideService(CommandSurface, CommandSurface.of({ ...surface, userId, projectName }))
+    );
   });
 
 const executeExamples = [
@@ -2038,7 +1998,6 @@ export const rootToolsCmd$Execute = Command.make(
         data,
         file,
         account,
-        userId: Option.none(),
         projectName: Option.none(),
         surface: 'root',
         projectMode: 'consumer',
@@ -2089,7 +2048,7 @@ export const devToolsCmd$Execute = Command.make(
     skipChecks,
   }) =>
     Effect.gen(function* () {
-      const { userId, projectName } = yield* CommandSurface;
+      const { projectName } = yield* CommandSurface;
       if (parallel) {
         return yield* runParallelFromCommand({
           surface: 'dev',
@@ -2109,7 +2068,6 @@ export const devToolsCmd$Execute = Command.make(
         data,
         file,
         account,
-        userId,
         projectName,
         surface: 'dev',
         projectMode: 'developer',

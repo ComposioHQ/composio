@@ -3,7 +3,11 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ListenCommandError } from 'src/commands/listen.cmd';
+import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { ConnectedAccountResolutionError } from 'src/services/connected-account-selection';
+import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { ComposioUserContext } from 'src/services/user-context';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import {
   makeShutdownController,
@@ -371,6 +375,135 @@ describe('CLI: composio listen', () => {
     );
   });
 
+  const gmailAccount = (id: string, alias: string, updatedAt: string): ConnectedAccountItem => ({
+    id,
+    alias,
+    word_id: null,
+    status: 'ACTIVE',
+    status_reason: null,
+    is_disabled: false,
+    user_id: 'consumer-user-org_test',
+    toolkit: { slug: 'gmail' },
+    auth_config: {
+      id: 'auth_gmail_test',
+      auth_scheme: 'OAUTH2',
+      is_composio_managed: true,
+      is_disabled: false,
+    },
+    created_at: '2026-04-06T17:00:00.000Z',
+    updated_at: updatedAt,
+    test_request_endpoint: '',
+  });
+
+  const gmailMessageFor = (connectedAccountId: string) => ({
+    id: `evt_${connectedAccountId}`,
+    type: 'composio.trigger.message',
+    timestamp: '2026-04-06T18:00:00.000Z',
+    metadata: {
+      log_id: `log_${connectedAccountId}`,
+      trigger_slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+      trigger_id: `trg_gmail_new_gmail_message_${connectedAccountId}`,
+      connected_account_id: connectedAccountId,
+      auth_config_id: 'auth_gmail_test',
+      user_id: 'consumer-user-org_test',
+    },
+    data: { threadId: `thread_${connectedAccountId}` },
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      connectedAccountsData: {
+        items: [
+          gmailAccount('con_work', 'work', '2026-04-06T18:00:00.000Z'),
+          gmailAccount('con_personal', 'personal', '2026-04-06T18:01:00.000Z'),
+        ],
+      },
+      toolkitsData: {
+        triggerTypes: [
+          {
+            slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+            name: 'New Gmail Message',
+            description: 'Fires when a new email arrives.',
+            instructions: '',
+            type: 'poll',
+            config: {},
+            payload: {},
+            toolkit: { name: 'Gmail', slug: 'gmail' },
+          },
+        ],
+      },
+      // One event per account, so the run stops whichever account the temporary trigger uses.
+      realtimeData: {
+        events: [gmailMessageFor('con_work'), gmailMessageFor('con_personal')],
+      },
+    })
+  )('[Given] several active accounts for the inferred toolkit', it => {
+    it.effect('[Then] --account picks the matching account for the temporary trigger', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        yield* cli([
+          'listen',
+          'GMAIL_NEW_GMAIL_MESSAGE',
+          '--account',
+          'work',
+          '--max-events',
+          '1',
+          '--debug',
+        ]);
+
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('trigger_id=trg_gmail_new_gmail_message_con_work ');
+        expect(output).toContain('Stopped after receiving 1 event. Temporary trigger disabled.');
+      })
+    );
+
+    it.effect(
+      '[Then] an --account that matches none fails like `composio execute` and `composio proxy`',
+      () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const failure = yield* cli([
+            'listen',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--account',
+            'nope',
+          ]).pipe(Effect.flip);
+
+          // An expected failure: `cli-main.ts` prints the message and exits 1.
+          expect(failure).toBeInstanceOf(ConnectedAccountResolutionError);
+          expect(failure).toMatchObject({
+            toolkitSlug: 'gmail',
+            message:
+              'No connected account matched "nope" for toolkit "gmail". Available accounts: personal (con_personal), work (con_work).',
+          });
+        })
+    );
+
+    it.effect(
+      '[Then] no --account and no default alias fails like `composio execute` and `composio proxy`',
+      () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          // --max-events bounds the run, so a listener that picked an account stops instead of hanging.
+          const failure = yield* cli([
+            'listen',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--max-events',
+            '1',
+          ]).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(ConnectedAccountResolutionError);
+          expect(failure).toMatchObject({
+            toolkitSlug: 'gmail',
+            message:
+              'Multiple connected accounts exist for toolkit "gmail" and no --account was given. Available accounts: personal (con_personal), work (con_work). Pass --account <alias or id> to choose one.',
+          });
+        })
+    );
+  });
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -513,4 +646,29 @@ describe('CLI: composio listen', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, accountData: { consumerUserId: '' } }))(
+    '[Given] no consumer user in the project context',
+    it => {
+      it.effect('[Then] fails before subscribing with the missing-user error', () =>
+        Effect.gen(function* () {
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          yield* enableListen;
+          const failure = yield* cli([
+            'listen',
+            'composio.connected_account.expired',
+            '--max-events',
+            '1',
+          ]).pipe(Effect.flip);
+
+          // An empty id counts as no user, so listen fails with the shared missing-user error.
+          expect(failure).toBeInstanceOf(MissingActingUserError);
+          expect(failure).toMatchObject({
+            message: 'Missing consumer user id. Run `composio login` and try again.',
+          });
+        })
+      );
+    }
+  );
 });

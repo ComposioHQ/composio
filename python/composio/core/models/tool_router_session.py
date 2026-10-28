@@ -439,7 +439,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         in-process, remote tools are sent to the backend.
         """
         from composio.core.models.tools import Tools as ToolsModel
-        from composio.core.provider import AgenticProvider, NonAgenticProvider
+        from composio.core.provider import (
+            AgenticProvider,
+            NonAgenticProvider,
+            bind_execution_target,
+        )
 
         if self._provider is None:
             raise ValueError(
@@ -490,7 +494,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             TToolCollection,
             t.cast(AgenticProvider[TTool, TToolCollection], self._provider).wrap_tools(
                 tools=router_tools,
-                execute_tool=execute_fn,
+                execute_tool=bind_execution_target(execute_fn, self),
             ),
         )
 
