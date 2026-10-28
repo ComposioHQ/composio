@@ -18,7 +18,7 @@ BASE = "https://backend.composio.dev"
 RETIRED = {
     "browser_tool": "Choose supported browser_use tools.",
     "composio_search": "Choose supported exa, tavily, or serpapi tools.",
-    "text_to_pdf": "Adapt the workflow. pdf_co URL conversion is not an inline text/Markdown replacement.",
+    "text_to_pdf": "Choose supported pdf_co tools. PDF.co Instant supports URL-based conversion.",
     "weathermap": "Choose supported accu_weather tools and adapt arguments and responses.",
 }
 
