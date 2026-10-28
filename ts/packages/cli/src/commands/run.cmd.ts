@@ -4,14 +4,15 @@ import { Argument, Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
-import { Data, Duration, Effect, Option, Result } from 'effect';
+import { Data, Duration, Effect, Option, Ref, Result } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
-import { childExitStatus } from 'src/effects/child-exit-status';
+import { childExitStatus, type ChildExitStatus } from 'src/effects/child-exit-status';
 import {
   STOP_SIGNALS,
   ShutdownSignal,
   type ShutdownSignalShape,
+  type StopSignal,
   type TerminationSignal,
 } from 'src/services/shutdown-signal';
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
@@ -321,6 +322,12 @@ const resolveRunHelperContext = () =>
  */
 const CHILD_SIGNAL_GRACE_PERIOD = Duration.seconds(2);
 
+/** The first signal the CLI received, and the signals it then sent the script itself. */
+interface Escalation {
+  readonly first: StopSignal;
+  readonly sent: ReadonlyArray<TerminationSignal>;
+}
+
 class ChildSignalError extends Data.TaggedError('ChildSignalError')<{
   readonly pid: number;
   readonly signal: TerminationSignal;
@@ -345,24 +352,34 @@ const signalChildProcessGroup = (pid: number, signal: TerminationSignal): void =
  * Hands the CLI's first signal to the script, then makes sure the script ends: SIGTERM after a
  * grace period, SIGKILL after another. The script decides how the run ends, as it would under a
  * shell: one that handles SIGINT and exits 0 makes the run succeed.
+ *
+ * `escalation` records the first signal and each signal the CLI sends of its own, so a script
+ * that one of them killed is reported as cancelled by the first signal rather than by SIGTERM or
+ * SIGKILL.
  */
 const relayStopToChild = (
   child: ChildProcessSpawner.ChildProcessHandle,
   pid: number,
-  shutdown: ShutdownSignalShape
+  shutdown: ShutdownSignalShape,
+  escalation: Ref.Ref<Option.Option<Escalation>>
 ) =>
   Effect.gen(function* () {
     const signal = yield* shutdown.requested;
     signalChildProcessGroup(pid, signal);
-    const escalation: ReadonlyArray<TerminationSignal> =
+    const followUps: ReadonlyArray<TerminationSignal> =
       signal === 'SIGTERM' ? ['SIGKILL'] : ['SIGTERM', 'SIGKILL'];
     yield* Effect.forEach(
-      escalation,
-      next =>
+      followUps,
+      (next, index) =>
         Effect.sleep(CHILD_SIGNAL_GRACE_PERIOD).pipe(
           Effect.andThen(child.isRunning),
           Effect.flatMap(running =>
-            running ? Effect.sync(() => signalChildProcessGroup(pid, next)) : Effect.void
+            running
+              ? Ref.set(
+                  escalation,
+                  Option.some({ first: signal, sent: followUps.slice(0, index + 1) })
+                ).pipe(Effect.andThen(Effect.sync(() => signalChildProcessGroup(pid, next))))
+              : Effect.void
           )
         ),
       { discard: true }
@@ -375,8 +392,10 @@ const relayStopToChild = (
  * A terminal Ctrl-C only reaches the CLI's process group, so without this the script never
  * observes SIGINT and its `process.on('SIGINT')` cleanup never runs. The run cooperates on every
  * signal the runner handles (`ShutdownSignal`): the CLI is not interrupted, it forwards the
- * signal and mirrors the script's exit. A second signal kills the script's process group and
- * re-raises that signal.
+ * signal and mirrors the script's exit. When the CLI's own SIGTERM or SIGKILL ended the script,
+ * the run ends by the first signal instead; a script that dies by any other signal (a SIGABRT in
+ * its cleanup, say) keeps that signal, so its crash stays visible. A second signal kills the
+ * script's process group and re-raises that signal.
  */
 const superviseChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
   Effect.gen(function* () {
@@ -394,8 +413,16 @@ const superviseChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
       onForce: () => signalChildProcessGroup(pid, 'SIGKILL'),
       reraiseOnForce: true,
     });
-    yield* Effect.forkScoped(relayStopToChild(child, pid, shutdown));
-    return yield* childExitStatus(child);
+    const escalation = yield* Ref.make(Option.none<Escalation>());
+    yield* Effect.forkScoped(relayStopToChild(child, pid, shutdown, escalation));
+    const status = yield* childExitStatus(child);
+    return Option.match(yield* Ref.get(escalation), {
+      onNone: (): ChildExitStatus => status,
+      onSome: ({ first, sent }): ChildExitStatus =>
+        status.signal !== null && sent.includes(status.signal)
+          ? { code: null, signal: first }
+          : status,
+    });
   });
 
 export const runCmd = Command.make('run', {
