@@ -5,6 +5,7 @@ import { Context, Data, Effect, Layer, Option, Predicate, Schema } from 'effect'
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { GITHUB_CONFIG } from 'src/config';
+import { captureServices } from 'src/effects/capture-services';
 import { rootCommandIndex } from 'src/utils/cli-args';
 import { APP_VERSION } from '../constants';
 import type { InvocationHookShape } from './invocation-hook';
@@ -366,11 +367,7 @@ export class UpdateNotice extends Context.Service<UpdateNotice, UpdateNoticeShap
     UpdateNotice,
     Effect.gen(function* () {
       const terminal = yield* TerminalUI;
-      const services = Context.pick(
-        FileSystem.FileSystem,
-        Path.Path,
-        NodeOs
-      )(yield* Effect.context<FileSystem.FileSystem | Path.Path | NodeOs>());
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs);
       return UpdateNotice.of({
         run: ({ argv }) =>
           Effect.gen(function* () {

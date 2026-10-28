@@ -2,6 +2,7 @@ import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Cause, Context, Effect, Layer } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
+import { captureServices } from 'src/effects/capture-services';
 import {
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
@@ -39,12 +40,7 @@ export class CommandLifecycleTelemetry extends Context.Service<
   > = Layer.effect(
     CommandLifecycleTelemetry,
     Effect.gen(function* () {
-      const services = Context.pick(
-        FileSystem.FileSystem,
-        Path.Path,
-        NodeOs,
-        TerminalUI
-      )(yield* Effect.context<FileSystem.FileSystem | Path.Path | NodeOs | TerminalUI>());
+      const services = yield* captureServices(FileSystem.FileSystem, Path.Path, NodeOs, TerminalUI);
       const track = (event: TrackEvent) =>
         trackCliEventEffect(event).pipe(Effect.provideContext(services));
       return CommandLifecycleTelemetry.of({

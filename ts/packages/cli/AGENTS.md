@@ -140,7 +140,7 @@ OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Ke
 
 ### Effects — `src/effects/`
 
-Reusable Effect computations: `require-auth` (`requireLogin`, the login gate for commands and groups), `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
+Reusable Effect computations: `require-auth` (`requireLogin`, the login gate for commands and groups), `setup-cache-dir`, `toolkit-version-overrides` (maps `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` pins to toolkit slugs), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`, `capture-services` (`captureServices`, for a layer whose methods provide services it captured).
 
 ### Models — `src/models/`
 
