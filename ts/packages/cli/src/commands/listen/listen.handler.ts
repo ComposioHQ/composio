@@ -3,6 +3,7 @@ import * as Path from 'effect/Path';
 import type { ComposioClientShape } from '@composio/client/effect';
 import { Deferred, Effect, FiberSet, Option, Predicate } from 'effect';
 import { commandInputError } from 'src/commands/errors';
+import { actingUser } from 'src/commands/surface';
 import { matchesTriggerListenFilters } from 'src/commands/triggers/filter';
 import { parseTriggerListenEvent } from 'src/commands/triggers/parse';
 import {
@@ -10,7 +11,6 @@ import {
   finishAcceptedEvents,
   makeSinkFailures,
 } from 'src/commands/triggers/sink-failures';
-import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import { reportFailure } from 'src/effects/report-failure';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
@@ -18,13 +18,9 @@ import {
   resolveArtifactsRoot,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
-import { resolveCommandProject } from 'src/services/command-project';
 import { ComposioClientSingleton, type ToolkitProjectScope } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
-import {
-  formatConnectedAccountChoices,
-  resolveConnectedAccountSelection,
-} from 'src/services/connected-account-selection';
+import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -103,9 +99,9 @@ const assertSupportedListenParams = (params: {
 /**
  * Fails with an `unknown_trigger` error when `slug` is not a known trigger type.
  *
- * Called when no active connected account matched, and when creating the temporary trigger fails,
- * so a mistyped slug is reported as such instead of as a missing connection or a generic creation
- * failure. Neither call site is on the happy path, which makes no additional request.
+ * Called when the toolkit has no active connected account, and when creating the temporary trigger
+ * fails, so a mistyped slug is reported as such instead of as a missing connection or a generic
+ * creation failure. Neither call site is on the happy path, which makes no additional request.
  */
 const assertTriggerTypeExists = (params: {
   client: ComposioClientShape;
@@ -148,60 +144,23 @@ const resolveConnectedAccountIdForTrigger = (params: {
       );
     }
 
-    const connectedAccounts = yield* params.client.connectedAccounts
-      .list(
-        {
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [params.consumerUserId],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        },
-        idempotent
-      )
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new ListenCommandError({
-              reason: 'connected_accounts',
-              message: `Failed to list connected accounts for "${toolkitSlug}": Error: ${cause.message}`,
-              slug: params.slug,
-              toolkitSlug,
-              cause,
-            })
-        )
-      );
-    const selectableAccounts = yield* decodeConnectedAccountItems(connectedAccounts.items).pipe(
-      Effect.mapError(
-        cause =>
-          new ListenCommandError({
-            reason: 'connected_accounts',
-            message: `Connected accounts for toolkit "${toolkitSlug}" did not match the expected response shape.`,
-            slug: params.slug,
-            toolkitSlug,
-            cause,
-          })
-      )
-    );
-    const selectedAccount = resolveConnectedAccountSelection(
-      selectableAccounts,
-      Option.getOrUndefined(params.account)
-    );
-    if (selectedAccount?.id) {
-      return selectedAccount.id;
+    // The resolver `composio execute` and `composio proxy` use, so all three pick the same
+    // account for the same `--account` (or its absence) and fail the same way when they cannot.
+    const connectedAccountId = yield* resolveConnectedAccountForToolkit({
+      client: params.client,
+      toolkitSlug,
+      userId: params.consumerUserId,
+      selector: params.account,
+    });
+    if (connectedAccountId) {
+      return connectedAccountId;
     }
 
     yield* assertTriggerTypeExists({ client: params.client, slug: params.slug, toolkitSlug });
 
-    const choices = formatConnectedAccountChoices(selectableAccounts);
-    const suffix =
-      Option.isSome(params.account) && choices.length > 0
-        ? ` Available accounts: ${choices.join(', ')}.`
-        : '';
     return yield* new ListenCommandError({
       reason: 'connected_account_not_found',
-      message: Option.isSome(params.account)
-        ? `No connected account matched "${params.account.value}" for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
-        : `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`,
+      message: `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`,
       slug: params.slug,
       toolkitSlug,
     });
@@ -258,19 +217,11 @@ const resolveListenSetup = (params: {
   readonly resolvedProject: {
     readonly orgId: string;
     readonly projectId: string;
-    readonly consumerUserId?: string;
   };
+  readonly consumerUserId: string;
 }) =>
   Effect.gen(function* () {
-    const consumerUserId = params.resolvedProject.consumerUserId;
-    if (!consumerUserId) {
-      return yield* new ListenCommandError({
-        reason: 'project_context',
-        message: 'No consumer user is available in the current project context.',
-        slug: params.slug,
-      });
-    }
-
+    const consumerUserId = params.consumerUserId;
     const listeningToProjectEvent = isProjectEventType(params.slug);
     const rawParams = Option.isSome(params.inputParams)
       ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
@@ -363,7 +314,7 @@ export const runListen = (input: ListenParams) =>
     const realtime = yield* TriggersRealtime;
     const shutdown = yield* ShutdownSignal;
 
-    const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
+    const { userId: actingUserId, project: resolvedProject } = yield* actingUser();
 
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
@@ -386,6 +337,7 @@ export const runListen = (input: ListenParams) =>
       account,
       client,
       resolvedProject,
+      consumerUserId: actingUserId,
     });
 
     const { triggerDir, streamFilePath } = yield* prepareListenEventFiles({
@@ -530,10 +482,7 @@ export const runListen = (input: ListenParams) =>
 
           const listenEffect = realtime
             .listenInProject(
-              {
-                orgId: resolvedProject.orgId,
-                projectId: resolvedProject.projectId,
-              },
+              { orgId: resolvedProject.orgId, projectId: resolvedProject.projectId },
               onEvent,
               { onSubscribed: shutdown.cooperate(LISTENER_STOP) }
             )

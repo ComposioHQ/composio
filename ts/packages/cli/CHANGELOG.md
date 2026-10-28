@@ -19,20 +19,69 @@
   128 plus the signal's number, or, for `composio run`, the script's process
   group is killed and the CLI is killed by that signal.
 
+- `composio dev connected-accounts link <toolkit>` (with or without `--list`)
+  now acts on your developer project, like the other `composio dev` commands:
+  the directory's project, or the one `--project-name` names. It links or lists
+  accounts for `--user-id` when given, else the directory's test user id (for
+  the directory's own project), else the global test user id. Without
+  `--project-name` it used to act as your consumer user on your consumer
+  project and silently ignore `--user-id`; outside a directory set up with
+  `composio dev init` it now fails asking for one. With `--project-name`,
+  linking a toolkit now also uses the directory's test user when the name is
+  the directory's own project. `composio link` is unchanged. With
+  `--auth-config`, a missing developer project is now reported before a
+  missing user id. On the dev tree, the alias hints point at
+  `composio dev playground-execute` and `composio dev connected-accounts list`.
+
 - `composio listen`, `composio dev listen` and `composio dev triggers listen`
   gain `--fail-fast`: the listener stops at the first event it fails to save,
   forward, or append to `--out`, prints how many events failed on stderr, and
   exits 1. Without it, a failed event is still reported and skipped, and the
   exit code stays 0.
 
-- `composio execute` and `composio proxy` now fail with an error listing
-  the candidate accounts, instead of silently using the newest one, when a
-  toolkit has several connected accounts, none is aliased `default`, and no
-  `--account` is passed. Scripts that relied on the implicit newest-account
-  pick now fail. To migrate, pass `--account <id|alias>`, or alias one account
-  `default`.
+- `composio execute`, `composio proxy` and `composio listen` (for a trigger
+  slug) now fail with an error listing the candidate accounts, instead of
+  silently using the newest one, when a toolkit has several connected accounts,
+  none is aliased `default`, and no `--account` is passed. Scripts that relied
+  on the implicit newest-account pick now fail. To migrate, pass
+  `--account <id|alias>`, or alias one account `default`.
 
 ### Patch Changes
+
+- `composio connections list`, `composio connections remove`, and
+  `composio listen` without a consumer user now print the message on stderr
+  and exit 1, like other expected errors. They used to print it under a `💥`
+  banner with the error tag and a stack location. Telemetry: every missing-user
+  failure now reports `error_name` `commands/MissingActingUserError` in
+  `cli.command.failed` and the command-family failure events, replacing
+  `ToolExecutionError` (execute), `commands/CommandInputError` (search),
+  `commands/MissingLinkUserIdError` (link),
+  `commands/MissingConnectionsConsumerUserIdError` (connections list),
+  `commands/MissingConnectionRemovalConsumerUserIdError` (connections remove),
+  `commands/ListenCommandError` (listen), and `commands/ProxyCommandError`
+  (proxy). Other failures of those commands keep their names.
+
+- Every `composio dev` command that acts as a user now names the test user it
+  falls back to on stderr (`Using test user id "…"` for the directory's,
+  `Using global test user id "…"` for the global one) when you pass no
+  `--user-id`. `composio dev playground-execute` printed nothing before; with
+  `--parallel` it names the user once.
+
+- A missing user id now gets the same message on every command of a tree.
+  Root commands (`composio execute`, `search`, `link`, `listen`, `proxy`,
+  `connections`) report a missing consumer user id and point at
+  `composio login`; root `execute`, `search`, and `link` no longer tell you to
+  pass `--user-id`, which the root tree does not take, and `listen` and `proxy`
+  no longer describe a missing "project context". `composio dev` commands point
+  at `--user-id` or `composio dev init`, or at `--user-id` or `composio login`
+  with `--project-name`.
+
+- An empty consumer user id now counts as no user on every command.
+  `composio execute`, `composio search`, and `composio link` fail with the
+  missing-user error and exit 1, as `composio connections`, `composio listen`,
+  and `composio proxy` already did; they used to send requests for the user
+  `""`. `composio run` starts the script without the consumer user's context,
+  as it does when there is no consumer user.
 
 - The update notice, the Composio plugin tip, the backend mismatch warning,
   and the daily background check for a newer release now run only for a
@@ -86,6 +135,19 @@
   `application/octet-stream`. `execute --file` preserves arrays and injects into
   the single matching upload field in an existing array item; ambiguous targets
   require explicit JSON. This fixes Word and PowerPoint image editing through the CLI.
+
+- `composio listen` now picks the connected account for a trigger slug the way
+  `composio execute` and `composio proxy` do, through the same resolver, so the
+  three commands choose the same account for the same `--account` (or its
+  absence). An `--account` that matches no active account, or a failed account
+  lookup, now fails with the message those commands print, as a plain message
+  on stderr with exit 1.
+
+- In `composio run`, a `File` or `Blob` passed to `execute()` now uploads with
+  its own `type`, even when its name has no extension, and a `File` keeps its
+  name. It used to upload as `application/octet-stream` under a name with a
+  random prefix, such as `1bfa14f5-deck.pptx`. A nameless `Blob` whose type has
+  no short extension, such as PPTX, is named `file-<id>.bin`.
 
 - `composio upgrade` no longer starts with a stale "Update available" line.
   The line came from the cached daily update check, so right after a release
