@@ -5,7 +5,6 @@ import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { ExpectedFailure } from 'src/effects/expected-failure';
 import { requestError } from 'src/effects/request-error';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -16,7 +15,7 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -78,18 +77,6 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'DELETE',
   'PATCH',
 ];
-
-/**
- * `composio proxy` has no consumer user to send the request as. An expected failure:
- * the invocation (`src/invocation/invocation.ts`) prints the message and exits 1.
- */
-export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
-  readonly message: string;
-}> {
-  get [ExpectedFailure]() {
-    return true;
-  }
-}
 
 /**
  * A proxy call refused before sending it because the toolkit is not connected, already reported
@@ -312,14 +299,7 @@ export const proxyCmd = Command.make('proxy', {
       const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
       const ui = yield* TerminalUI;
       const clientSingleton = yield* ComposioClientSingleton;
-      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' });
-
-      if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
-        return yield* new ProxyCommandError({
-          message: 'No consumer project user is available for proxy execution in this context.',
-        });
-      }
-      const consumerUserId = resolvedProject.consumerUserId;
+      const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
       const normalizedToolkit = toolkit.toLowerCase();
 
       yield* runProxyConnectedToolkitFailFast({
