@@ -3,7 +3,7 @@ import { afterEach, vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { Cause, Effect, Layer } from 'effect';
-import { createCliCommandTelemetryContext } from 'src/analytics/events';
+import type { TelemetryFamily } from 'src/analytics/types';
 import { ChildProcessExited } from 'src/effects/child-process-exited';
 import {
   CommandLifecycleTelemetry,
@@ -11,6 +11,7 @@ import {
 } from 'src/services/command-lifecycle-telemetry';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { commandTelemetryContext } from 'test/__utils__/telemetry-context';
 import { trackedEvents } from 'test/__utils__/tracked-events';
 
 vi.mock('src/analytics/dispatch', async importOriginal => {
@@ -30,13 +31,15 @@ const TelemetryLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, TerminalUITest)
 );
 
-const contextFor = (args: ReadonlyArray<string>) =>
-  createCliCommandTelemetryContext(
-    ['/bin/bun', '/cli/bin.ts', ...args],
-    '1.2.3',
-    { stdoutIsTTY: false, stderrIsTTY: false },
-    { invocationOrigin: 'cli', parentRunId: undefined }
-  );
+// The root commands these tests run are named after their families, except generic `whoami`.
+const contextFor = (args: ReadonlyArray<string>) => {
+  const [name = 'whoami'] = args;
+  return commandTelemetryContext(args, {
+    path: [name],
+    family: name === 'whoami' ? 'command' : (name as TelemetryFamily),
+    input: {},
+  });
+};
 
 const report = (
   telemetry: CommandLifecycleTelemetryShape,

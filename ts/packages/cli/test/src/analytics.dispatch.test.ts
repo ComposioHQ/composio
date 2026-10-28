@@ -18,7 +18,7 @@ import {
   trackCliEventEffect,
 } from 'src/analytics/dispatch';
 import { CLI_ANALYTICS_EVENTS } from 'src/analytics/events';
-import { cliRunIdLayer } from 'src/services/runtime-cli-context';
+import { CommandInvocation } from 'src/invocation/command-identity';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
@@ -447,7 +447,7 @@ describe('CLI analytics dispatch', () => {
   });
 
   it.effect(
-    'stamps codact failures with the minted CliRunId when no parent run id is inherited',
+    'stamps codact failures with the run id the command minted when no parent run id is inherited',
     () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;
@@ -470,7 +470,14 @@ describe('CLI analytics dispatch', () => {
             parent_run_id: 'run_minted',
           },
         });
-      }).pipe(Effect.provide(cliRunIdLayer('run_minted')), Effect.provide(makePlatformLayer(home)));
+      }).pipe(
+        Effect.provideService(CommandInvocation, {
+          begin: () => Effect.void,
+          enter: () => Effect.void,
+          runId: Effect.succeedSome('run_minted'),
+        }),
+        Effect.provide(makePlatformLayer(home))
+      );
     }
   );
 

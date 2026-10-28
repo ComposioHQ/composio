@@ -28,7 +28,8 @@ import {
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
 } from 'src/services/runtime-flags';
-import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
+import { invocationRunId } from 'src/invocation/command-identity';
 import {
   repairMissingInstalledRunCompanionModules,
   resolveRunCompanionModulePath,
@@ -482,7 +483,7 @@ export const runCmd = Command.make('run', {
         const path = yield* Path.Path;
         const invocation = yield* cliInvocationContext;
         const runId = Option.getOrElse(
-          yield* CliRunId,
+          yield* invocationRunId,
           () => invocation.parentRunId ?? crypto.randomUUID()
         );
         const perfDebug = yield* isPerfDebugEnabled;

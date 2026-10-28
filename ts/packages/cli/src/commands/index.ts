@@ -1,5 +1,7 @@
-import { Array as Arr, Console, Effect, Layer } from 'effect';
-import { CliOutput, Command } from 'effect/cli';
+import { Array as Arr, Console, Effect } from 'effect';
+import { CliError, CliOutput, Command } from 'effect/cli';
+import type { TelemetryFamily } from 'src/analytics/types';
+import { beginAtCommandPath, withCommandMeta } from 'src/invocation/command-identity';
 import { $defaultCmd, withRootLogLevel } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -34,7 +36,6 @@ import { configCmd } from './config/config.cmd';
 import { rootConnectionsCmd } from './connections/connections.cmd';
 import { agentCmd } from './agent/agent.cmd';
 import { cliDebugFlagsLayer, CLI_DEBUG_GLOBAL_FLAGS } from 'src/services/runtime-flags';
-import { cliRunIdLayer } from 'src/services/runtime-cli-context';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
@@ -44,26 +45,31 @@ import { normalizeListenStreamFlag, normalizeRunScriptArgs } from './argv-compat
 import { configureCliAnalyticsReleaseVersion } from 'src/analytics/events';
 import { CommandSurface } from './surface';
 
+// Lifecycle telemetry families are declared on root registrations only: every `dev` command,
+// including `dev connected-accounts link` (the same `Command` value as the root `link`), reports the
+// generic `CLI_COMMAND_*` events.
+const family = (telemetryFamily: TelemetryFamily) => withCommandMeta({ telemetryFamily });
+
 const ROOT_COMMANDS = [
   tagged(debugCmd),
   tagged(versionCmd),
   tagged(upgradeCmd),
   tagged(whoamiCmd),
-  tagged(loginCmd),
+  tagged(loginCmd.pipe(family('login'))),
   tagged(signupCmd),
-  tagged(setupCmd),
+  tagged(setupCmd.pipe(family('setup'))),
   tagged(agentCmd),
   experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
-  tagged(logoutCmd),
-  tagged(runCmd),
-  tagged(proxyCmd),
+  tagged(logoutCmd.pipe(family('logout'))),
+  tagged(runCmd.pipe(family('run'))),
+  tagged(proxyCmd.pipe(family('proxy'))),
   tagged(artifactsCmd),
-  tagged(installCmd),
+  tagged(installCmd.pipe(family('install'))),
   tagged(rootToolsCmd),
   tagged(rootTriggersCmd),
-  tagged(toolsCmd$Search),
-  tagged(connectedAccountsCmd$Link),
-  tagged(rootToolsCmd$Execute),
+  tagged(toolsCmd$Search.pipe(family('search'))),
+  tagged(connectedAccountsCmd$Link.pipe(family('link'))),
+  tagged(rootToolsCmd$Execute.pipe(family('execute'))),
   tagged(rootConnectionsCmd),
   tagged(generateCmd),
   tagged(orgsCmd),
@@ -92,15 +98,6 @@ export const buildRootCommand = (visibility: CommandVisibility) => {
   );
 };
 
-/**
- * Values the CLI bootstrap resolved before the root command runs and that the command tree needs
- * as an input. Optional for callers that drive the root command directly in tests.
- */
-export type RootCommandBootstrap = {
-  /** Run id minted for a `composio run` invocation, shared with its telemetry events. */
-  readonly runId?: string;
-};
-
 export const runWithConfig = Effect.gen(function* () {
   const cliUserConfig = yield* ComposioCliUserConfig;
   const visibility: CommandVisibility = {
@@ -115,6 +112,13 @@ export const runWithConfig = Effect.gen(function* () {
   // prefix — see `cli-main.ts` module docs for the full contract at this boundary.
   const run = (args: ReadonlyArray<string>) => {
     return Command.runWith(rootCommand, { version })(args).pipe(
+      // A parse failure selects no command: begin the one `effect/cli` names (canonical names,
+      // never the user's tokens). After a command began, this changes nothing.
+      Effect.tapError(error =>
+        error instanceof CliError.ShowHelp
+          ? beginAtCommandPath(rootCommand, error.commandPath)
+          : Effect.void
+      ),
       Effect.provideService(RootHelpContext, { command: rootCommand, version }),
       Effect.provideService(CliOutput.Formatter, helpFormatter())
     );
@@ -142,11 +146,11 @@ export const runWithConfig = Effect.gen(function* () {
       ? run(args)
       : runWithDecorationOnStderr(args);
 
-  return (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap = {}) => {
+  return (argv: ReadonlyArray<string>) => {
     const parsedArgv = normalizeRunScriptArgs(normalizeListenStreamFlag(argv));
     return runCli(parsedArgv.slice(2)).pipe(
       Effect.provideService(ExecuteInvocationArgs, parsedArgv.slice(2)),
-      Effect.provide(Layer.merge(cliDebugFlagsLayer(), cliRunIdLayer(bootstrap.runId)))
+      Effect.provide(cliDebugFlagsLayer())
     );
   };
 });

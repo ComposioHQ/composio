@@ -8,6 +8,7 @@ import { triggersCmd$Create } from './create/triggers.create.cmd';
 import { triggersCmd$Enable } from './enable/triggers.enable.cmd';
 import { triggersCmd$Disable } from './disable/triggers.disable.cmd';
 import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 /**
  * CLI entry point for realtime trigger commands.
@@ -19,7 +20,7 @@ import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
  */
 export const triggersCmd = Command.make('triggers').pipe(
   Command.withDescription('Inspect and subscribe to trigger events.'),
-  Command.withSubcommands([
+  withRegisteredSubcommands([
     triggersCmd$Listen,
     triggersCmd$List.pipe(rejectsSharedFlags('dev triggers list')),
     triggersCmd$Info.pipe(rejectsSharedFlags('dev triggers info')),

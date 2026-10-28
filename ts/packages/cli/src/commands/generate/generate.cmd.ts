@@ -2,6 +2,7 @@ import { Command, Flag } from 'effect/cli';
 import { runGenerate } from './generate.handler';
 import { generateCmd$Py } from './py/generate.py.cmd';
 import { generateCmd$Ts } from './ts/generate.ts.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const outputDir = Flag.optional(Flag.Directory('output-dir')).pipe(
   Flag.withAlias('o'),
@@ -44,5 +45,5 @@ export const generateCmd = Command.make(
   Command.withDescription(
     'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)'
   ),
-  Command.withSubcommands([generateCmd$Py, generateCmd$Ts])
+  withRegisteredSubcommands([generateCmd$Py, generateCmd$Ts])
 );

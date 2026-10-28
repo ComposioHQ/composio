@@ -5,6 +5,7 @@ import { toolkitsCmd$List } from './list/toolkits.list.cmd';
 import { toolkitsCmd$Info } from './info/toolkits.info.cmd';
 import { toolkitsCmd$Search } from './search/toolkits.search.cmd';
 import { toolkitsCmd$Version } from './version/toolkits.version.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 /**
  * CLI entry point for toolkit discovery commands.
@@ -16,7 +17,7 @@ import { toolkitsCmd$Version } from './version/toolkits.version.cmd';
  */
 export const toolkitsCmd = Command.make('toolkits').pipe(
   Command.withDescription('Discover and inspect Composio toolkits.'),
-  Command.withSubcommands([
+  withRegisteredSubcommands([
     toolkitsCmd$List,
     toolkitsCmd$Info,
     toolkitsCmd$Search.pipe(rejectsSharedFlags('dev toolkits search')),

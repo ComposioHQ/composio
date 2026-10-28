@@ -25,7 +25,8 @@ import { NodeOs } from 'src/services/node-os';
 import { detectPluginHost, rawHostEnvironment } from 'src/services/agent-host-env';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
-import { cliInvocationContext, CliRunId } from 'src/services/runtime-cli-context';
+import { cliInvocationContext } from 'src/services/runtime-cli-context';
+import { invocationRunId } from 'src/invocation/command-identity';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
@@ -583,11 +584,11 @@ type CliInvocationContext = {
 };
 
 // The COMPOSIO_CLI_PARENT_RUN_ID handshake only exists in processes `composio run` spawned. The
-// root run process holds its freshly minted id in the CliRunId service instead, so failures it
+// root run process minted its id when the command began (`invocationRunId`), so failures it
 // reports carry the same run id its children stamp from the environment.
 const getCliInvocationContext: Effect.Effect<CliInvocationContext> = Effect.gen(function* () {
   const { invocationOrigin, parentRunId } = yield* cliInvocationContext;
-  const mintedRunId = Option.flatten(yield* Effect.serviceOption(CliRunId));
+  const mintedRunId = yield* invocationRunId;
   return {
     origin: invocationOrigin,
     parentRunId: parentRunId ?? Option.getOrUndefined(mintedRunId),

@@ -10,29 +10,37 @@
  * its own cause, so a caller can still match its typed error; `forRunner` turns it into what the
  * runner needs to print nothing more and exit with the right code.
  */
-import { Cause, Effect, Exit, Option, Runtime, type Layer } from 'effect';
+import { Cause, Effect, Exit, Option, Ref, Runtime, type Layer } from 'effect';
 import { CliError } from 'effect/cli';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import {
   configureCliAnalyticsReleaseVersion,
   createCliCommandTelemetryContext,
-  getExecuteCommandToolSlug,
 } from 'src/analytics/events';
-import { runWithConfig, type RootCommandBootstrap } from 'src/commands';
+import type { CliCommandTelemetryContext } from 'src/analytics/types';
+import { runWithConfig } from 'src/commands';
 import * as constants from 'src/constants';
 import { isExpectedFailure } from 'src/effects/expected-failure';
 import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
 import { ReportedFailure } from 'src/effects/report-failure';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { getVersion } from 'src/effects/version';
+import {
+  type CommandIdentity,
+  CommandInvocation,
+  type CommandInvocationShape,
+  ROOT_IDENTITY,
+} from 'src/invocation/command-identity';
 import { BackendMismatchWarning } from 'src/services/backend-mismatch-warning';
 import { CommandLifecycleTelemetry } from 'src/services/command-lifecycle-telemetry';
+import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import type { HookInvocation } from 'src/services/invocation-hook';
 import { PluginHint } from 'src/services/plugin-hint';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import type { ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
+import type { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { UpdateNotice } from 'src/services/update-check';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import type { InvocationLive } from './live';
@@ -46,46 +54,93 @@ export type InvocationServices = Layer.Success<typeof InvocationLive> | Shutdown
 // `any` is otherwise infectious through the rest of this pipeline, so it is pinned here to the
 // services an invocation is given — this changes nothing at runtime, it only restores the
 // precise static type that inference failed to produce on its own.
-const runWithArgs = (argv: ReadonlyArray<string>, bootstrap: RootCommandBootstrap) =>
-  Effect.flatMap(runWithConfig, run => run(argv, bootstrap)) as Effect.Effect<
+const runWithArgs = (argv: ReadonlyArray<string>) =>
+  Effect.flatMap(runWithConfig, run => run(argv)) as Effect.Effect<
     void,
     unknown,
     InvocationServices
   >;
 
+/**
+ * Runs the command `effect/cli` selects for `argv` under its lifecycle telemetry. The command's
+ * identity is known only once the parser selected it: the selected registration calls
+ * `CommandInvocation.begin` (`src/commands/registration.ts`), and so do `--help`, `--version`,
+ * and a parse failure, for the command path `effect/cli` gives them. `begin` reports the invoked
+ * event; the outcome is reported for the same command. A failure before any `begin` (a group-level
+ * check) is reported against the deepest registration whose dispatch started.
+ */
 const runWithTelemetry = (argv: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const terminal = yield* ui.capabilities;
-
     const version = yield* getVersion;
     configureCliAnalyticsReleaseVersion(version);
-    const baseTelemetryContext = createCliCommandTelemetryContext(
-      argv,
-      version,
-      terminal,
-      yield* cliInvocationContext
-    );
-    const executeToolSlug = getExecuteCommandToolSlug(baseTelemetryContext);
-    const commandTelemetryContext =
-      executeToolSlug === undefined
-        ? baseTelemetryContext
-        : { ...baseTelemetryContext, toolkitSlug: yield* toolkitFromToolSlug(executeToolSlug) };
-    // `composio run` mints its run id here so the lifecycle events and the id the spawned script
-    // inherits are the same value; every other command leaves it unset.
-    const bootstrap: RootCommandBootstrap =
-      commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId
-        ? { runId: commandTelemetryContext.runId }
-        : {};
+    const invocationContext = yield* cliInvocationContext;
     const telemetry = yield* CommandLifecycleTelemetry;
-    return yield* telemetry.invoked(commandTelemetryContext).pipe(
-      Effect.andThen(runWithArgs(argv, bootstrap)),
+    const toolkitLookup = yield* Effect.context<ComposioToolkitsRepository | ToolkitSlugCatalog>();
+    const startedAt = Date.now();
+
+    const contextFor = (identity: CommandIdentity, input: Option.Option<unknown>) =>
+      Effect.gen(function* () {
+        const context = createCliCommandTelemetryContext({
+          argv,
+          cliVersion: version,
+          terminal,
+          invocation: invocationContext,
+          identity,
+          input,
+          startedAt,
+        });
+        if (context.family !== 'execute' || context.argument === undefined) {
+          return context;
+        }
+        const toolkitSlug = yield* toolkitFromToolSlug(context.argument).pipe(
+          Effect.provideContext(toolkitLookup)
+        );
+        return { ...context, toolkitSlug };
+      });
+
+    const started = yield* Ref.make(Option.none<CliCommandTelemetryContext>());
+    const entered = yield* Ref.make(ROOT_IDENTITY);
+    const start = (identity: CommandIdentity, input: Option.Option<unknown>) =>
+      contextFor(identity, input).pipe(
+        Effect.tap(context => Ref.set(started, Option.some(context))),
+        Effect.tap(context => telemetry.invoked(context))
+      );
+    const invocation: CommandInvocationShape = {
+      // Only the first command to begin counts: the bare group whose help ended in `ShowHelp`.
+      begin: (identity, input) =>
+        Effect.flatMap(Ref.get(started), current =>
+          Option.match(current, {
+            onSome: () => Effect.void,
+            onNone: () => Effect.asVoid(start(identity, input)),
+          })
+        ),
+      enter: identity => Ref.set(entered, identity),
+      runId: Effect.map(
+        Ref.get(started),
+        Option.flatMap(context => Option.fromNullishOr(context.runId))
+      ),
+    };
+    // The command the outcome is reported for: the one that began, else the deepest registration
+    // entered, begun now so its invoked event still precedes the outcome.
+    const outcomeContext = Effect.flatMap(Ref.get(started), current =>
+      Option.match(current, {
+        onSome: Effect.succeed,
+        onNone: () => Effect.flatMap(Ref.get(entered), identity => start(identity, Option.none())),
+      })
+    );
+
+    return yield* runWithArgs(argv).pipe(
+      Effect.provideService(CommandInvocation, invocation),
       Effect.scoped,
       Effect.mapError(error =>
         CliError.isCliError(error) ? error : mapOnlyComposioOverrideError({ error })
       ),
-      Effect.tap(() => telemetry.succeeded(commandTelemetryContext)),
-      Effect.tapCause(cause => telemetry.failed(commandTelemetryContext, cause))
+      Effect.tap(() => Effect.flatMap(outcomeContext, context => telemetry.succeeded(context))),
+      Effect.tapCause(cause =>
+        Effect.flatMap(outcomeContext, context => telemetry.failed(context, cause))
+      )
     );
   });
 

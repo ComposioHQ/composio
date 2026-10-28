@@ -3,6 +3,7 @@ import { Command } from 'effect/cli';
 import { authConfigsCmd$List } from './list/auth-configs.list.cmd';
 import { authConfigsCmd$Info } from './info/auth-configs.info.cmd';
 import { authConfigsCmd$Create } from './create/auth-configs.create.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 /**
  * CLI entry point for auth config management commands.
@@ -14,6 +15,6 @@ import { authConfigsCmd$Create } from './create/auth-configs.create.cmd';
  */
 export const authConfigsCmd = Command.make('auth-configs').pipe(
   Command.withDescription('View and manage Composio auth configs.'),
-  Command.withSubcommands([authConfigsCmd$List, authConfigsCmd$Info, authConfigsCmd$Create]),
+  withRegisteredSubcommands([authConfigsCmd$List, authConfigsCmd$Info, authConfigsCmd$Create]),
   requireLogin
 );

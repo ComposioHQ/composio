@@ -84,6 +84,16 @@
   `""`. `composio run` starts the script without the consumer user's context,
   as it does when there is no consumer user.
 
+- CLI telemetry now records the command `effect/cli` parsed instead of guessing
+  it from argv. `composio signup`, `agent …`, `connections …`, `config …`,
+  `debug …` and `help …` were recorded as `composio`, `composio dev init` as
+  `dev`, and `composio setup skill` as `setup` with the `CLI_SETUP_*` events;
+  each is now recorded under its own command path with the generic
+  `CLI_COMMAND_*` events. A rejected invocation (unknown command or flag,
+  missing argument) is recorded with the command path the parser reached and
+  `failure_reason_code: "parse_error"`. Every other command path and event
+  family is unchanged.
+
 - CLI telemetry now records a command that prints its own
   failure and exits 1 (a failed API request, an alias conflict on
   `composio link`, a `--fail-fast` listener stop) as failed instead of
