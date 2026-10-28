@@ -47,7 +47,11 @@ export function isPublicFileUrl(url: string, publicDir = 'public'): boolean {
   const target = resolve(root, '.' + pathname);
   const inside = relative(root, target);
   if (!inside || inside.startsWith('..')) return false;
-  return statSync(target, { throwIfNoEntry: false })?.isFile() ?? false;
+  try {
+    return statSync(target, { throwIfNoEntry: false })?.isFile() ?? false;
+  } catch {
+    return false;
+  }
 }
 
 export function withoutFrontmatter(content: string): string {

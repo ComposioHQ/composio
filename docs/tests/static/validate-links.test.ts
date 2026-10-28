@@ -22,6 +22,7 @@ describe('link validation', () => {
     expect(linkValidation.isPublicFileUrl('/%2e%2e/package.json')).toBe(false);
     expect(linkValidation.isPublicFileUrl('//example.com/robots.txt')).toBe(false);
     expect(linkValidation.isPublicFileUrl('/%E0%A4%A.py')).toBe(false);
+    expect(linkValidation.isPublicFileUrl('/assets/file%00.py')).toBe(false);
   });
 
   test('accepts redirecting toolkit knowledge routes as resolvable links', async () => {
