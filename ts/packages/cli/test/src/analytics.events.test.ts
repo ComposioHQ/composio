@@ -6,7 +6,7 @@ import { it } from '@effect/vitest';
 import { afterEach, describe, expect, vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Option } from 'effect';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
   CLI_ANALYTICS_EVENTS,
@@ -29,6 +29,7 @@ import {
   isMaybeToolNotFoundError,
   isMaybeToolValidationError,
 } from 'src/analytics/events';
+import { MissingActingUserError } from 'src/commands/surface';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import { CLI_RELEASE_CHANNELS } from 'src/experimental-features';
@@ -388,6 +389,28 @@ describe('CLI analytics setup runtime-context events', () => {
       },
     });
   });
+
+  // Execute, search, link, connections, listen and proxy each used to report their own class.
+  it.each(['execute', 'search', 'link', 'connections list', 'listen', 'proxy'])(
+    'reports a missing user on `%s` as MissingActingUserError',
+    command => {
+      const context = createCliCommandTelemetryContext(
+        ['bun', 'composio', ...command.split(' ')],
+        APP_VERSION,
+        { stdoutIsTTY: false, stderrIsTTY: false },
+        CLI_INVOCATION
+      );
+      const error = new MissingActingUserError({
+        tree: 'root',
+        projectName: Option.none(),
+        message: 'Missing consumer user id. Run `composio login` and try again.',
+      });
+
+      expect(getPrimaryLifecycleFailedEvent(context, error)?.properties).toMatchObject({
+        error_name: 'commands/MissingActingUserError',
+      });
+    }
+  );
 
   it('records the setup failure reason code carried by SetupCommandError', () => {
     const context = createCliCommandTelemetryContext(
