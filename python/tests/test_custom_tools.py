@@ -1704,3 +1704,68 @@ class TestMultiExecuteRouting:
             result["error"]
             == "Remote batch failed before per-tool results were produced"
         )
+
+
+@pytest.mark.parametrize("toolkit", [False, True])
+@pytest.mark.parametrize(
+    "signature",
+    [
+        "single_keyword",
+        "both_keyword",
+        "context_keyword",
+        "single_positional",
+        "both_positional",
+        "positional_only",
+    ],
+)
+def test_decorated_tool_executes_keyword_only_parameters(signature, toolkit):
+    context = MagicMock()
+
+    def single_keyword(*, payload: GrepInput):
+        """Search for a pattern."""
+        return {"pattern": payload.pattern}
+
+    def both_keyword(*, payload: GrepInput, session):
+        """Search for a pattern."""
+        assert session is context
+        return {"pattern": payload.pattern}
+
+    def context_keyword(payload: GrepInput, *, session):
+        """Search for a pattern."""
+        assert session is context
+        return {"pattern": payload.pattern}
+
+    def single_positional(payload: GrepInput):
+        """Search for a pattern."""
+        return {"pattern": payload.pattern}
+
+    def both_positional(payload: GrepInput, session):
+        """Search for a pattern."""
+        assert session is context
+        return {"pattern": payload.pattern}
+
+    def positional_only(payload: GrepInput, /, session):
+        """Search for a pattern."""
+        assert session is context
+        return {"pattern": payload.pattern}
+
+    function = {
+        "single_keyword": single_keyword,
+        "both_keyword": both_keyword,
+        "context_keyword": context_keyword,
+        "single_positional": single_positional,
+        "both_positional": both_positional,
+        "positional_only": positional_only,
+    }[signature]
+    if toolkit:
+        builder = ExperimentalToolkit(
+            slug="SEARCH", name="Search", description="Search tools"
+        )
+        handle = builder.tool()(function)
+    else:
+        handle = exp.tool()(function)
+    tools = build_custom_tools_map([handle])
+    entry = find_custom_tool(tools, handle.slug)
+    assert entry is not None
+    result = execute_custom_tool(entry, {"pattern": "hello"}, context)
+    assert result == {"data": {"pattern": "hello"}, "error": None, "successful": True}
