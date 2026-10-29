@@ -87,8 +87,9 @@ const writeJSON = (file: string, value: unknown) => {
   fs.renameSync(`${file}.tmp`, file);
 };
 
+const taskIdPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 function taskDirectory(id: string) {
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(id ?? ''))
+  if (!taskIdPattern.test(id ?? ''))
     throw new Error(
       'Use a task id of 1-64 letters, digits, dots, underscores or hyphens, starting with a letter or digit.'
     );
@@ -143,15 +144,65 @@ function latestReceipt(directory: string): StoredReceipt | null {
     : { file, id: latest, status: 'interrupted' };
 }
 
+function taskIds() {
+  return fs.existsSync(tasksRoot)
+    ? fs
+        .readdirSync(tasksRoot)
+        .filter(name =>
+          fs.statSync(path.join(tasksRoot, name), { throwIfNoEntry: false })?.isDirectory()
+        )
+        .sort()
+    : [];
+}
+
+function readLockOwner(file: string): LockOwner | null {
+  let owner: Partial<LockOwner> | null;
+  try {
+    owner = readJSON<Partial<LockOwner> | null>(file);
+  } catch (error) {
+    if (error instanceof SyntaxError) return null;
+    throw error;
+  }
+  return typeof owner?.pid === 'number' &&
+    Number.isSafeInteger(owner.pid) &&
+    owner.pid > 0 &&
+    typeof owner.task === 'string' &&
+    taskIdPattern.test(owner.task)
+    ? { pid: owner.pid, task: owner.task }
+    : null;
+}
+
+// Without a readable owner, only the attempts themselves can show that verification is still live.
+function assertNoLiveAttempt(file: string) {
+  for (const id of taskIds()) {
+    let receipt: StoredReceipt | null;
+    try {
+      receipt = latestReceipt(taskDirectory(id));
+    } catch {
+      continue;
+    }
+    if (receipt?.status !== 'running') continue;
+    const group = receipt.commands?.at(-1)?.pid;
+    if (alive(receipt.runnerPid) || alive(group ? processGroup(group) : undefined))
+      throw new Error(
+        `${file} is unreadable and task ${id} still has a running attempt (runner ${receipt.runnerPid}); inspect ${receipt.file} before retrying.`
+      );
+  }
+}
+
 function lockTask(task: string) {
   const file = path.join(tasksRoot, 'verify.lock');
   const acquisitionFile = path.join(tasksRoot, 'acquire.lock');
   const acquisition = fs.openSync(acquisitionFile, 'wx', 0o600);
   try {
     fs.writeFileSync(acquisition, String(process.pid));
-    if (fs.existsSync(file)) {
-      const owner = readJSON<LockOwner>(file);
-      if (!Number.isSafeInteger(owner.pid) || owner.pid <= 0 || alive(owner.pid))
+    const owner = fs.existsSync(file) ? readLockOwner(file) : undefined;
+    if (owner === null) {
+      assertNoLiveAttempt(file);
+      console.error(`Replacing unreadable lock ${file}; no task attempt is still running.`);
+      fs.unlinkSync(file);
+    } else if (owner) {
+      if (alive(owner.pid))
         throw new Error(
           `Worktree verification is owned by task ${owner.task} (runner ${owner.pid}); inspect ${file} before retrying.`
         );
@@ -460,14 +511,7 @@ const verifyCommand = CliCommand.make('verify', { id: taskId }, ({ id }) =>
 ).pipe(CliCommand.withDescription('Run the selected checks and retain a revision-bound receipt'));
 const listCommand = CliCommand.make('list', {}, () =>
   operation(() => {
-    const ids = fs.existsSync(tasksRoot)
-      ? fs
-          .readdirSync(tasksRoot)
-          .filter(name =>
-            fs.statSync(path.join(tasksRoot, name), { throwIfNoEntry: false })?.isDirectory()
-          )
-      : [];
-    print(ids.sort().map(status));
+    print(taskIds().map(status));
   })
 ).pipe(CliCommand.withDescription('List saved tasks and their verification status'));
 const rootCommand = CliCommand.make('agent:task').pipe(

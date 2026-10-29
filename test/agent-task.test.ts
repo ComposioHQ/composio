@@ -443,6 +443,32 @@ test('different task profiles serialize shared worktree verification', async () 
   assert.equal(f.run('verify', 'other').status, 0);
 });
 
+test('an unreadable lock is replaced once no attempt is running', () => {
+  const f = fixture();
+  assert.equal(f.init().status, 0);
+  mkdirSync(path.join(f.root, '.artifacts/agent-tasks'), { recursive: true });
+  writeFileSync(path.join(f.root, '.artifacts/agent-tasks/verify.lock'), '');
+  const result = f.run('verify', 'case');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /Replacing unreadable lock/);
+  assert.equal(f.state('case').status, 'passed');
+});
+
+test('an unreadable lock still blocks verification while another attempt runs', async () => {
+  const f = fixture();
+  const { runner, exit } = await runningFixture(f);
+  assert.equal(f.init('other').status, 0);
+  try {
+    writeFileSync(path.join(f.root, '.artifacts/agent-tasks/verify.lock'), '{');
+    const overlap = f.run('verify', 'other');
+    assert.equal(overlap.status, 1);
+    assert.match(overlap.stderr, /unreadable and task case still has a running attempt/);
+  } finally {
+    runner.kill('SIGTERM');
+    await exit;
+  }
+});
+
 test('a revision-only change invalidates otherwise identical source evidence', () => {
   const f = fixture();
   assert.equal(f.init().status, 0);

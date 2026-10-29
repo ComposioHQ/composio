@@ -56,7 +56,9 @@ commands after the first failure were not run. An abruptly killed runner reads a
 interrupted, including when its latest attempt has no finished receipt. A retry
 recovers a dead runner's lock once its old command group is gone. If that group
 remains alive, the error identifies the group and receipt to inspect and stop
-before retrying. Live-runner locks are never recovered automatically.
+before retrying. Live-runner locks are never recovered automatically. An empty or
+corrupt `verify.lock` is replaced only when no task has a running attempt whose
+runner or command group is alive.
 
 Verification is serialized per worktree because profiles share build and nox outputs.
 Use separate worktrees for parallel tasks. An interrupted lock acquisition can leave
