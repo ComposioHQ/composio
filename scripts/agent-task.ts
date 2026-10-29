@@ -68,6 +68,8 @@ const errorMessage = (error: unknown) => (error instanceof Error ? error.message
 
 const root = path.resolve(import.meta.dir, '..');
 const tasksRoot = path.join(root, '.artifacts/agent-tasks');
+// Locks live outside the task namespace so no task id can collide with them.
+const locksRoot = path.join(root, '.artifacts/agent-locks');
 const logHeadLimit = 16 * 1024;
 const logTailLimit = 48 * 1024;
 const readJSON = <T>(file: string): T => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -172,6 +174,40 @@ function readLockOwner(file: string): LockOwner | null {
     : null;
 }
 
+// A command saved without a pid may have started before its runner died, so its group is unknown.
+function commandGroupBlocker(receipt: StoredReceipt | null) {
+  const command = receipt?.commands?.at(-1);
+  if (!command) return null;
+  if (command.pid === undefined && !command.finishedAt)
+    return `command \`${command.argv.join(' ')}\` has no recorded process group and may still be running. Stop any process it started, then remove the lock`;
+  return alive(command.pid ? processGroup(command.pid) : undefined)
+    ? `command group ${command.pid} remains. Inspect and stop that group before retrying`
+    : null;
+}
+
+const groupAlive = (pid: number) => alive(processGroup(pid));
+const signalGroup = (pid: number, signal: NodeJS.Signals) => {
+  try {
+    process.kill(processGroup(pid), signal);
+  } catch (error) {
+    if (errorCode(error) !== 'ESRCH') throw error;
+  }
+};
+
+// A command can exit while workers it started keep running and writing shared outputs.
+async function endGroup(pid: number) {
+  for (const [signal, grace] of [
+    ['SIGTERM', 1500],
+    ['SIGKILL', 5000],
+  ] as const) {
+    if (!groupAlive(pid)) return;
+    signalGroup(pid, signal);
+    for (const deadline = Date.now() + grace; Date.now() < deadline && groupAlive(pid);)
+      await Bun.sleep(25);
+  }
+  if (groupAlive(pid)) throw new Error(`Command group ${pid} survived SIGKILL.`);
+}
+
 // Without a readable owner, only the attempts themselves can show that verification is still live.
 function assertNoLiveAttempt(file: string) {
   for (const id of taskIds()) {
@@ -182,8 +218,7 @@ function assertNoLiveAttempt(file: string) {
       continue;
     }
     if (receipt?.status !== 'running') continue;
-    const group = receipt.commands?.at(-1)?.pid;
-    if (alive(receipt.runnerPid) || alive(group ? processGroup(group) : undefined))
+    if (alive(receipt.runnerPid) || commandGroupBlocker(receipt))
       throw new Error(
         `${file} is unreadable and task ${id} still has a running attempt (runner ${receipt.runnerPid}); inspect ${receipt.file} before retrying.`
       );
@@ -191,8 +226,9 @@ function assertNoLiveAttempt(file: string) {
 }
 
 function lockTask(task: string) {
-  const file = path.join(tasksRoot, 'verify.lock');
-  const acquisitionFile = path.join(tasksRoot, 'acquire.lock');
+  const file = path.join(locksRoot, 'verify.lock');
+  const acquisitionFile = path.join(locksRoot, 'acquire.lock');
+  fs.mkdirSync(locksRoot, { recursive: true, mode: 0o700 });
   const acquisition = fs.openSync(acquisitionFile, 'wx', 0o600);
   try {
     fs.writeFileSync(acquisition, String(process.pid));
@@ -207,10 +243,10 @@ function lockTask(task: string) {
           `Worktree verification is owned by task ${owner.task} (runner ${owner.pid}); inspect ${file} before retrying.`
         );
       const previous = latestReceipt(taskDirectory(owner.task));
-      const command = previous?.status === 'running' ? previous.commands?.at(-1) : null;
-      if (alive(command?.pid ? processGroup(command.pid) : undefined))
+      const blocker = commandGroupBlocker(previous);
+      if (blocker)
         throw new Error(
-          `Runner ${owner.pid} ended but command group ${command?.pid} remains. Inspect and stop that group before retrying; its receipt is ${previous?.file}.`
+          `Runner ${owner.pid} ended but its ${blocker}. Lock: ${file}. Receipt: ${previous?.file}.`
         );
       fs.unlinkSync(file);
     }
@@ -330,21 +366,14 @@ async function verify(id: string) {
     const marker = omitted > 0 ? `\n[agent-task: ${omitted} bytes of output omitted]\n` : '';
     fs.writeFileSync(logFile, Buffer.concat([head, Buffer.from(marker), tail]));
   };
-  const killChild = (signal: NodeJS.Signals, pid: number) => {
-    try {
-      process.kill(processGroup(pid), signal);
-    } catch (error) {
-      if (errorCode(error) !== 'ESRCH') throw error;
-    }
-  };
   const stop = (signal: NodeJS.Signals) => {
     interrupted = signal;
     if (!child?.pid || cancellation) return;
     const pid = child.pid;
-    killChild(signal, pid);
+    signalGroup(pid, signal);
     cancellation = new Promise<void>(resolve =>
       setTimeout(() => {
-        killChild('SIGKILL', pid);
+        signalGroup(pid, 'SIGKILL');
         resolve();
       }, 1500)
     );
@@ -404,8 +433,9 @@ async function verify(id: string) {
           resolve();
         });
       });
-      // The group id may be reused once its command ends, so later signals must not target it.
+      // Interrupts stop targeting the group here; endGroup signals it only while it still has members.
       child = undefined;
+      if (result.pid) await endGroup(result.pid);
       result.finishedAt = now();
       flushLog();
       writeJSON(receiptFile, receipt);
@@ -429,6 +459,15 @@ async function verify(id: string) {
     receipt.error = errorMessage(error);
   } finally {
     await cancellation;
+    // Release the worktree only once the last command group is gone.
+    let groupEnded = true;
+    const lastGroup = receipt.commands.at(-1)?.pid;
+    if (lastGroup)
+      await endGroup(lastGroup).catch((error: unknown) => {
+        groupEnded = false;
+        receipt.status = 'failed';
+        receipt.error ??= errorMessage(error);
+      });
     receipt.finishedAt = now();
     receipt.logTruncated = logBytes > logHeadLimit + logTailLimit;
     try {
@@ -439,7 +478,7 @@ async function verify(id: string) {
     try {
       if (fs.existsSync(attemptDirectory)) writeJSON(receiptFile, receipt);
     } finally {
-      fs.unlinkSync(lock);
+      if (groupEnded) fs.unlinkSync(lock);
       for (const signal of stopSignals) process.off(signal, stop);
     }
   }

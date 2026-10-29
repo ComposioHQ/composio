@@ -56,14 +56,16 @@ and source edits during verification cannot produce a passing attempt. Remaining
 commands after the first failure were not run. An abruptly killed runner reads as
 interrupted, including when its latest attempt has no finished receipt. A retry
 recovers a dead runner's lock once its old command group is gone. If that group
-remains alive, the error identifies the group and receipt to inspect and stop
-before retrying. Live-runner locks are never recovered automatically. An empty or
-corrupt `verify.lock` is replaced only when no task has a running attempt whose
-runner or command group is alive.
+remains alive, or the runner died before saving the command's process group, the
+error identifies the command and receipt to inspect before retrying. Live-runner
+locks are never recovered automatically. An empty or corrupt `verify.lock` is
+replaced only when no task has a running attempt whose runner or command group is
+alive. A command that exits while workers it started are still running does not end
+its step: the runner stops those workers before the next command or lock release.
 
 Verification is serialized per worktree because profiles share build and nox outputs.
 Use separate worktrees for parallel tasks. An interrupted lock acquisition can leave
-`.artifacts/agent-tasks/acquire.lock`; inspect its PID and remove it only after
+`.artifacts/agent-locks/acquire.lock`; inspect its PID and remove it only after
 confirming that process has ended.
 
 ## Learn from interventions

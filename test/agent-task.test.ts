@@ -29,6 +29,9 @@ afterEach(() => {
   for (const cleanup of cleanups.splice(0).reverse()) cleanup();
 });
 
+const lingeringWorker =
+  'process.on("SIGTERM",()=>{});require("fs").writeFileSync(".artifacts/child.pid",String(process.pid));setInterval(()=>{},1000)';
+
 const fixture = () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'composio-agent-task-'));
   cleanups.push(() => rmSync(root, { recursive: true, force: true }));
@@ -97,6 +100,19 @@ const fixture = () => {
             process.execPath,
             '-e',
             'const child=require("child_process").spawn(process.execPath,["-e","setInterval(()=>{},1000)"],{stdio:"inherit"});require("fs").writeFileSync(".artifacts/child.pid",String(child.pid));setInterval(()=>{},1000)',
+          ],
+        },
+      ],
+    },
+    lingering: {
+      boundary: 'offline',
+      commands: [
+        {
+          cwd: '.',
+          argv: [
+            process.execPath,
+            '-e',
+            `require("child_process").spawn(process.execPath,["-e",${JSON.stringify(lingeringWorker)}],{stdio:"ignore"});setInterval(()=>{if(require("fs").existsSync(".artifacts/child.pid"))process.exit(0)},10)`,
           ],
         },
       ],
@@ -438,7 +454,7 @@ test('verification remains locked until independent-stdio descendants stop', asy
   runner.kill('SIGTERM');
   await waitGone(group);
   process.kill(childPid, 0);
-  assert.equal(existsSync(path.join(f.root, '.artifacts/agent-tasks/verify.lock')), true);
+  assert.equal(existsSync(path.join(f.root, '.artifacts/agent-locks/verify.lock')), true);
   const overlap = f.run('verify', 'other');
   assert.equal(
     overlap.status,
@@ -472,8 +488,8 @@ test('different task profiles serialize shared worktree verification', async () 
 test('an unreadable lock is replaced once no attempt is running', () => {
   const f = fixture();
   assert.equal(f.init().status, 0);
-  mkdirSync(path.join(f.root, '.artifacts/agent-tasks'), { recursive: true });
-  writeFileSync(path.join(f.root, '.artifacts/agent-tasks/verify.lock'), '');
+  mkdirSync(path.join(f.root, '.artifacts/agent-locks'), { recursive: true });
+  writeFileSync(path.join(f.root, '.artifacts/agent-locks/verify.lock'), '');
   const result = f.run('verify', 'case');
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stderr, /Replacing unreadable lock/);
@@ -485,7 +501,8 @@ test('an unreadable lock still blocks verification while another attempt runs', 
   const { runner, exit } = await runningFixture(f);
   assert.equal(f.init('other').status, 0);
   try {
-    writeFileSync(path.join(f.root, '.artifacts/agent-tasks/verify.lock'), '{');
+    mkdirSync(path.join(f.root, '.artifacts/agent-locks'), { recursive: true });
+    writeFileSync(path.join(f.root, '.artifacts/agent-locks/verify.lock'), '{');
     const overlap = f.run('verify', 'other');
     assert.equal(overlap.status, 1);
     assert.match(overlap.stderr, /unreadable and task case still has a running attempt/);
@@ -514,4 +531,64 @@ test('a revision-only change invalidates otherwise identical source evidence', (
     { cwd: f.root }
   );
   assert.equal(f.state('case').status, 'stale');
+});
+
+test('task ids cannot collide with worktree lock files', () => {
+  const f = fixture();
+  assert.equal(f.init('verify.lock').status, 0);
+  assert.equal(f.init('acquire.lock').status, 0);
+  assert.equal(f.init().status, 0);
+  const result = f.run('verify', 'case');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(f.run('verify', 'verify.lock').status, 0);
+  assert.equal(f.state('verify.lock').status, 'passed');
+});
+
+test('a command that exits 0 cannot leave workers running after verification', () => {
+  const f = fixture();
+  assert.equal(f.init('case', 'lingering').status, 0);
+  const result = f.run('verify', 'case');
+  const childPid = Number(readFileSync(path.join(f.root, '.artifacts/child.pid'), 'utf8'));
+  cleanups.push(() => {
+    try {
+      process.kill(childPid, 'SIGKILL');
+    } catch {}
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.throws(() => process.kill(childPid, 0), { code: 'ESRCH' });
+  assert.equal(f.state('case').status, 'passed');
+});
+
+test('a runner killed before saving its command pid keeps the lock', () => {
+  const f = fixture();
+  assert.equal(f.init().status, 0);
+  const deadRunner = spawnSync(process.execPath, ['-e', '']).pid;
+  const attempt = path.join(f.root, '.artifacts/agent-tasks/case/attempts/1-unsaved-pid');
+  mkdirSync(attempt, { recursive: true });
+  writeFileSync(
+    path.join(attempt, 'receipt.json'),
+    JSON.stringify({
+      version: 1,
+      id: '1-unsaved-pid',
+      runnerPid: deadRunner,
+      status: 'running',
+      commands: [
+        {
+          cwd: '.',
+          argv: ['long-check'],
+          startedAt: new Date().toISOString(),
+          finishedAt: null,
+          exitCode: null,
+          signal: null,
+        },
+      ],
+    })
+  );
+  const lock = path.join(f.root, '.artifacts/agent-locks/verify.lock');
+  mkdirSync(path.dirname(lock), { recursive: true });
+  writeFileSync(lock, JSON.stringify({ pid: deadRunner, task: 'case' }));
+  const blocked = f.run('verify', 'case');
+  assert.equal(blocked.status, 1);
+  assert.match(blocked.stderr, /no recorded process group/);
+  assert.equal(existsSync(lock), true);
 });
