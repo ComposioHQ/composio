@@ -17,7 +17,13 @@ import { afterEach, test } from 'bun:test';
 import { setTimeout as delay } from 'node:timers/promises';
 
 interface TaskStatus {
-  task: { goal: string; nextStep: string | null; blocker: string | null; authority: string };
+  task: {
+    id: string;
+    goal: string;
+    nextStep: string | null;
+    blocker: string | null;
+    authority: string;
+  };
   status: string;
   receipt: string;
 }
@@ -591,4 +597,52 @@ test('a runner killed before saving its command pid keeps the lock', () => {
   assert.equal(blocked.status, 1);
   assert.match(blocked.stderr, /no recorded process group/);
   assert.equal(existsSync(lock), true);
+});
+
+test('an interrupted init can be retried and staging folders stay out of the list', () => {
+  const f = fixture();
+  mkdirSync(path.join(f.root, '.artifacts/agent-tasks/case'), { recursive: true });
+  mkdirSync(path.join(f.root, '.artifacts/agent-tasks/.init-leftover'));
+  const result = f.init();
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(f.state('case').task.goal, 'Verify the changed behavior');
+  assert.deepEqual(
+    JSON.parse(f.run('list').stdout).map((entry: TaskStatus) => entry.task.id),
+    ['case']
+  );
+});
+
+test('a newer attempt stays latest when the clock moves backwards', () => {
+  const f = fixture();
+  assert.equal(f.init('case', 'failure').status, 0);
+  writeFileSync(path.join(f.root, '.artifacts/succeed'), 'ready');
+  assert.equal(f.run('verify', 'case').status, 0);
+  rmSync(path.join(f.root, '.artifacts/succeed'));
+  const clock = path.join(f.root, '.artifacts/clock.ts');
+  writeFileSync(clock, 'Date.now = () => 1;');
+  const earlier = spawnSync(
+    process.execPath,
+    ['--preload', clock, 'scripts/agent-task.ts', 'verify', 'case'],
+    { cwd: f.root, encoding: 'utf8' }
+  );
+  assert.equal(earlier.status, 1, earlier.stderr);
+  assert.equal(f.state('case').status, 'failed');
+});
+
+test('output written before a runner is killed survives in the log', async () => {
+  const f = fixture();
+  const file = path.join(f.root, 'scripts/agent-profiles.json');
+  const profiles = JSON.parse(readFileSync(file, 'utf8'));
+  profiles.interrupt.commands[0].argv[2] =
+    'process.stdout.write("x".repeat(20000)+"\\nlate diagnostic\\n",()=>{require("fs").writeFileSync(".artifacts/child.pid",String(process.pid))});setInterval(()=>{},1000)';
+  writeFileSync(file, JSON.stringify(profiles));
+  const { runner, exit } = await runningFixture(f);
+  const log = path.join(f.root, path.dirname(f.state('case').receipt), 'output.log');
+  for (let i = 0; i < 250 && !readFileSync(log, 'utf8').includes('late diagnostic'); i++)
+    await delay(20);
+  runner.kill('SIGKILL');
+  await exit;
+  const saved = readFileSync(log, 'utf8');
+  assert.match(saved, /^x{100}/);
+  assert.match(saved, /late diagnostic\n$/);
 });

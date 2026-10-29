@@ -136,9 +136,22 @@ function alive(pid: number | null | undefined) {
   }
 }
 
+// Attempts are numbered under the worktree lock, so their order does not depend on the clock.
+const attemptNumber = (name: string) => Number.parseInt(name, 10);
+function latestAttempt(directory: string) {
+  const attempts = path.join(directory, 'attempts');
+  return fs.existsSync(attempts)
+    ? fs
+        .readdirSync(attempts)
+        .filter(name => Number.isSafeInteger(attemptNumber(name)))
+        .sort((a, b) => attemptNumber(a) - attemptNumber(b))
+        .at(-1)
+    : undefined;
+}
+
 function latestReceipt(directory: string): StoredReceipt | null {
   const attempts = path.join(directory, 'attempts');
-  const latest = fs.existsSync(attempts) ? fs.readdirSync(attempts).sort().at(-1) : null;
+  const latest = latestAttempt(directory);
   if (!latest) return null;
   const file = path.join(attempts, latest, 'receipt.json');
   return fs.existsSync(file)
@@ -150,8 +163,10 @@ function taskIds() {
   return fs.existsSync(tasksRoot)
     ? fs
         .readdirSync(tasksRoot)
-        .filter(name =>
-          fs.statSync(path.join(tasksRoot, name), { throwIfNoEntry: false })?.isDirectory()
+        .filter(
+          name =>
+            taskIdPattern.test(name) &&
+            fs.statSync(path.join(tasksRoot, name), { throwIfNoEntry: false })?.isDirectory()
         )
         .sort()
     : [];
@@ -202,8 +217,7 @@ async function endGroup(pid: number) {
   ] as const) {
     if (!groupAlive(pid)) return;
     signalGroup(pid, signal);
-    for (const deadline = Date.now() + grace; Date.now() < deadline && groupAlive(pid);)
-      await Bun.sleep(25);
+    for (let waited = 0; waited < grace && groupAlive(pid); waited += 25) await Bun.sleep(25);
   }
   if (groupAlive(pid)) throw new Error(`Command group ${pid} survived SIGKILL.`);
 }
@@ -333,7 +347,7 @@ async function verify(id: string) {
   const task = readJSON<Task>(path.join(directory, 'task.json'));
   const profile = profileFor(task);
   const lock = lockTask(id);
-  const attempt = `${Date.now()}-${randomUUID()}`;
+  const attempt = String(attemptNumber(latestAttempt(directory) ?? '0') + 1);
   const attemptDirectory = path.join(directory, 'attempts', attempt);
   const receiptFile = path.join(attemptDirectory, 'receipt.json');
   const receipt: Receipt = {
@@ -358,7 +372,10 @@ async function verify(id: string) {
   let logHead = 0;
   const logTail: Buffer[] = [];
   let logTailBytes = 0;
+  let flushTimer: ReturnType<typeof setTimeout> | undefined;
   const flushLog = () => {
+    clearTimeout(flushTimer);
+    flushTimer = undefined;
     if (logBytes === logHead) return;
     const tail = Buffer.concat(logTail).subarray(-logTailLimit);
     const omitted = logBytes - logHead - tail.length;
@@ -421,6 +438,12 @@ async function verify(id: string) {
           logTailBytes += chunk.length - head.length;
           while (logTailBytes - logTail[0]!.length >= logTailLimit)
             logTailBytes -= logTail.shift()!.length;
+          // Save the tail while the command runs so a killed runner keeps recent diagnostics.
+          flushTimer ??= setTimeout(() => {
+            try {
+              flushLog();
+            } catch {}
+          }, 250);
         };
         child.stdout.on('data', output);
         child.stderr.on('data', output);
@@ -529,9 +552,19 @@ const initCommand = CliCommand.make(
         createdAt: now(),
       };
       profileFor(task);
-      fs.mkdirSync(tasksRoot, { recursive: true, mode: 0o700 });
-      fs.mkdirSync(directory, { mode: 0o700 });
-      writeJSON(path.join(directory, 'task.json'), task);
+      // Publish the task folder in one rename so an interrupted init leaves no partial task.
+      // An empty folder left by an older interrupted init is replaced; a real task is kept.
+      const staging = path.join(tasksRoot, `.init-${randomUUID()}`);
+      fs.mkdirSync(staging, { recursive: true, mode: 0o700 });
+      try {
+        writeJSON(path.join(staging, 'task.json'), task);
+        fs.renameSync(staging, directory);
+      } catch (error) {
+        fs.rmSync(staging, { recursive: true, force: true });
+        if (errorCode(error) === 'ENOTEMPTY' || errorCode(error) === 'EEXIST')
+          throw new Error(`Task ${id} already exists.`);
+        throw error;
+      }
       print(status(id));
     })
 ).pipe(
