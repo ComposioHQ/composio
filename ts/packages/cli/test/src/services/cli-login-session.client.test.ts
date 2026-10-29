@@ -113,15 +113,18 @@ const stubApi = () => {
   return sent;
 };
 
-/** The real session repository and client over `globalThis.fetch`, with in-memory login state. */
-const wireTest = () => {
+/**
+ * The real session repository and client over `globalThis.fetch`, with in-memory login state.
+ * `env` adds to the environment the client's configuration is read from.
+ */
+const wireTest = (env: Record<string, string> = {}) => {
   const home = tempy.temporaryDirectory({ prefix: 'cli-login-session' });
   const pending = PendingLoginSessionTest();
   const platform = Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
     Layer.succeed(NodeOs, NodeOs.of(defaultNodeOs({ homedir: home }))),
-    ConfigProvider.layer(ConfigProvider.fromEnv({ env: { COMPOSIO_BASE_URL: BASE_URL } }))
+    ConfigProvider.layer(ConfigProvider.fromEnv({ env: { COMPOSIO_BASE_URL: BASE_URL, ...env } }))
   );
   const layer = Layer.mergeAll(
     Layer.provide(ComposioSessionRepository.Default, platform),
@@ -252,6 +255,26 @@ describe('CLI login session on the wire', () => {
         const lines = yield* MockConsole.getLines();
         expect(lines.join('\n')).not.toContain(verifier);
         expect(Option.isNone(pending.current())).toBe(true);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a stored user API key [Then] get-session sends the proof and no API key',
+    () => {
+      const { layer } = wireTest({ COMPOSIO_USER_API_KEY: 'uak_stale' });
+      return Effect.gen(function* () {
+        const sent = stubApi();
+        const repository = yield* ComposioSessionRepository;
+
+        yield* repository.getSession({ id: SESSION_ID, verifier: 'the-verifier' });
+
+        const [poll] = sent;
+        expect(poll.pathAndQuery).toBe(`/api/v3.1/cli/get-session?id=${SESSION_ID}`);
+        expect(poll.headers.get('x-cli-session-secret')).toBe('the-verifier');
+        expect(poll.headers.has('x-user-api-key')).toBe(false);
+        expect(poll.headers.has('x-api-key')).toBe(false);
+        expect(poll.rendered).not.toContain('uak_stale');
       }).pipe(Effect.provide(layer));
     }
   );

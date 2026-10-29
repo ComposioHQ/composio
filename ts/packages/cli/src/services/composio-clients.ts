@@ -86,11 +86,24 @@ const normalizeApiKey = (rawApiKey?: string): string | undefined =>
 
 /**
  * Which key a client sends: the user's (`userApiKey`, defaulting to the
- * logged-in user's), or a project key in its place.
+ * logged-in user's), a project key in its place, or none at all (`anonymous`).
  */
 type ClientCredential =
-  | { readonly userApiKey?: string; readonly projectApiKey?: undefined }
-  | { readonly projectApiKey: string; readonly userApiKey?: undefined };
+  | {
+      readonly userApiKey?: string;
+      readonly projectApiKey?: undefined;
+      readonly anonymous?: false;
+    }
+  | {
+      readonly projectApiKey: string;
+      readonly userApiKey?: undefined;
+      readonly anonymous?: false;
+    }
+  | {
+      readonly anonymous: true;
+      readonly userApiKey?: undefined;
+      readonly projectApiKey?: undefined;
+    };
 
 /**
  * Whose requests a client sends. The org and project headers are only sent
@@ -113,7 +126,8 @@ export interface ComposioClientSingletonShape {
   readonly get: () => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
    * The client for an explicit scope. `userApiKey` defaults to the user's key;
-   * a `projectApiKey` is sent instead of any user key.
+   * a `projectApiKey` is sent instead of any user key, and `anonymous` sends
+   * no key.
    */
   readonly getFor: (
     params: ClientScope
@@ -164,9 +178,9 @@ export const clientScopeKey = (client: ComposioClientShape): string => {
  * configuration. Custom HTTP base URLs remain supported. A client
  * authenticates with `Auth.user` and the user key, with `Auth.project` when a
  * caller names a project key, and with `Auth.none()` before anyone has logged
- * in; the org and project go in its `scope`. No credential or scope header is
- * placed in `defaultHeaders`, which the client refuses while `auth` and
- * `scope` own them.
+ * in or when a caller asks for an anonymous client; the org and project go in
+ * its `scope`. No credential or scope header is placed in `defaultHeaders`,
+ * which the client refuses while `auth` and `scope` own them.
  *
  * Every lookup builds a new client (`make` costs a few microseconds), so no
  * credential is held anywhere but in the client a caller is using.
@@ -188,9 +202,9 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
     const getFor = (params?: ClientScope) =>
       Effect.gen(function* () {
         const cliSessionId = yield* currentCwdSessionId;
-        const userApiKey = normalizeApiKey(
-          params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
-        );
+        const userApiKey = params?.anonymous
+          ? undefined
+          : normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
         const auth =
           params?.projectApiKey !== undefined
             ? Auth.project(params.projectApiKey)
@@ -505,6 +519,9 @@ const makeComposioSessionRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
   const os = yield* NodeOs;
   const client = clientSingleton.get();
+  // `get-session` is authorized by the proof alone; a stored user key that is stale would
+  // otherwise risk a 401 the CLI reads as a rejected proof.
+  const anonymousClient = clientSingleton.getFor({ anonymous: true });
   // Shown to the approver as the device that started the login, labelled as self-reported.
   const source = `composio-cli ${APP_VERSION} (${os.platform}/${os.arch})`;
 
@@ -533,10 +550,10 @@ const makeComposioSessionRepository = Effect.gen(function* () {
       ),
     /**
      * Retrieves the current state of a CLI session by its id, proving with `verifier` that this
-     * terminal created it.
+     * terminal created it. No API key is sent: the proof is the only credential.
      */
     getSession: (session: { readonly id: string; readonly verifier: string }) =>
-      client.pipe(
+      anonymousClient.pipe(
         Effect.flatMap(c =>
           c._internal.cli.getSession(
             { id: session.id },
