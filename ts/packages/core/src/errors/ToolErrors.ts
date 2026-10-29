@@ -6,6 +6,7 @@ export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
   TOOL_NOT_FOUND: 'TOOL_NOT_FOUND',
   TOOL_FETCH_ERROR: 'TOOL_FETCH_ERROR',
+  TOOL_SCHEMA_INVALID: 'TOOL_SCHEMA_INVALID',
   INVALID_MODIFIER: 'INVALID_MODIFIER',
   TOOL_EXECUTION_ERROR: 'TOOL_EXECUTION_ERROR',
   INVALID_TOOL_ARGUMENTS: 'INVALID_TOOL_ARGUMENTS',
@@ -66,6 +67,30 @@ export class ComposioToolFetchError extends ComposioError {
       ],
     });
     this.name = 'ComposioToolFetchError';
+  }
+}
+
+/**
+ * Error thrown when a tool was retrieved but its declared parameters cannot be
+ * parsed, so the tool cannot be offered. Distinct from
+ * `ComposioToolNotFoundError`: the tool exists, its schema is what is broken,
+ * and a caller that treats `TOOL_NOT_FOUND` as "no such tool" would otherwise
+ * report a real tool as missing.
+ */
+export class ComposioToolSchemaInvalidError extends ComposioError {
+  constructor(
+    message: string = 'Tool schema is invalid',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ToolErrorCodes.TOOL_SCHEMA_INVALID,
+      possibleFixes: options.possibleFixes || [
+        'The tool exists but its declared input schema could not be parsed',
+        'Report the tool slug to Composio so the schema can be corrected',
+      ],
+    });
+    this.name = 'ComposioToolSchemaInvalidError';
   }
 }
 

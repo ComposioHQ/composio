@@ -1,0 +1,5 @@
+---
+'@composio/core': patch
+---
+
+Tolerate malformed tool schemas instead of failing a whole toolkit's tool list. `getRawComposioTools` and the raw list path previously ran every tool's parameters through the strict schema validator with `parse`, so one tool whose schema used a valid-but-unusual JSON Schema shape — a boolean schema node (`items: true`, still emitted by MCP toolkits), a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum`, or a bare combinator root with no `type: "object"` — threw a `ZodError` and returned no tools at all for that toolkit (8 of 1562 toolkits ship such tools). Those shapes are now rewritten into the strict subset, preserving their meaning (`true` becomes `{}`, `false` becomes `{ not: {} }` — coercing it to `{}` would invert the schema). If a schema still cannot be repaired, the tool is skipped with a warning when its *input* schema failed — providers build their call schema from it, so a tool without one is not callable — and returned without the *output* schema when only that side failed. Identity-field failures stay loud.
