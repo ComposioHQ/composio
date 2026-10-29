@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Skill-routing smoke test: a lightweight, deterministic eval that guards against
 // SKILL.md description edits silently breaking which skill a task routes to.
 //
@@ -9,7 +9,7 @@
 // obvious match, or another skill grows ambiguous overlap. It also fails if a
 // skill has no probe, so routing coverage tracks the taxonomy.
 //
-// Run: pnpm validate:skill-routing  (enforced in CI by
+// Run: bun run validate:skill-routing  (enforced in CI by
 // .github/workflows/agent-substrate.yml).
 
 import fs from 'node:fs';
@@ -19,7 +19,7 @@ import process from 'node:process';
 const repoRoot = process.cwd();
 const skillsRoot = path.join(repoRoot, '.agents/skills');
 
-const readDescription = skillName => {
+const readDescription = (skillName: string) => {
   const file = path.join(skillsRoot, skillName, 'SKILL.md');
   const content = fs.readFileSync(file, 'utf8');
   const match = content.match(/^description:\s*(.*)$/m);
@@ -33,6 +33,16 @@ const readDescription = skillName => {
 // should make `expect` the obvious match. Phrases are matched case-insensitively
 // as substrings against the skill description.
 const probes = [
+  {
+    task: 'resume a task in another agent and verify revision-bound evidence',
+    expect: 'verify-change',
+    terms: [
+      'resumable task records',
+      'verification profiles',
+      'revision-bound receipts',
+      'carrying work between coding agents',
+    ],
+  },
   {
     task: 'reproduce a reported bug, find the root cause, and add a regression test',
     expect: 'bug-fixing',
@@ -158,13 +168,13 @@ const skillNames = fs
 
 const descriptions = new Map(skillNames.map(name => [name, readDescription(name).toLowerCase()]));
 
-const failures = [];
+const failures: string[] = [];
 
 // Coverage: every skill must have at least one probe so routing tracks the taxonomy.
 const covered = new Set(probes.map(probe => probe.expect));
 for (const name of skillNames) {
   if (!covered.has(name)) {
-    failures.push(`skill "${name}" has no routing probe; add one to test-skill-routing.mjs`);
+    failures.push(`skill "${name}" has no routing probe; add one to test-skill-routing.ts`);
   }
 }
 
@@ -174,8 +184,7 @@ for (const probe of probes) {
     continue;
   }
 
-  const scores = skillNames.map(name => {
-    const description = descriptions.get(name);
+  const scores = [...descriptions].map(([name, description]) => {
     const score = probe.terms.reduce(
       (total, term) => total + (description.includes(term.toLowerCase()) ? 1 : 0),
       0
@@ -185,7 +194,7 @@ for (const probe of probes) {
 
   const maxScore = Math.max(...scores.map(entry => entry.score));
   const winners = scores.filter(entry => entry.score === maxScore).map(entry => entry.name);
-  const expectScore = scores.find(entry => entry.name === probe.expect).score;
+  const expectScore = scores.find(entry => entry.name === probe.expect)?.score ?? 0;
 
   if (expectScore === 0) {
     failures.push(

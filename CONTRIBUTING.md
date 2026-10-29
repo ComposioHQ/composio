@@ -168,13 +168,13 @@ This repository ships its own agent guidance, and CI keeps it accurate. An agent
 Two deterministic checks guard this guidance:
 
 ```bash
-pnpm validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
-pnpm validate:skill-routing   # routing smoke test over skill descriptions
+bun run validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
+bun run validate:skill-routing   # routing smoke test over skill descriptions
 ```
 
 `validate:agent-skills` parses `package.json`, `python/Makefile`, and `python/noxfile.py`, then verifies that every command mentioned in guidance exists. Both checks run in CI through `.github/workflows/agent-substrate.yml`.
 
-If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.mjs`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
+If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.ts`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
 
 Using an agent doesn't change your responsibility: [read the code you submit](#read-the-code-you-submit).
 
