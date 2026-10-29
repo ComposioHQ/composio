@@ -1,0 +1,60 @@
+---
+title: Migrate from No Auth to Instant
+description: Move shared-access workflows to Instant with your existing agents and Sessions
+keywords: [No Auth, Instant, migration, Sessions, shared access]
+---
+
+Move affected shared-access workflows to Instant before **13 November 2026**. On that date, Composio retires the No Auth and shared-access routes listed below.
+
+Use [Instant Tools](/docs/instant-tools) for supported actions, or provider credentials connected by your users where the toolkit supports them. This guide is for existing developer-platform integrations.
+
+## What carries over
+
+Keep your agent integration, application user IDs, and unaffected toolkits and connections. If you already use Sessions, you don't need to migrate to a different execution model.
+
+## Choose a replacement
+
+| Toolkit | Change | Migration path |
+| --- | --- | --- |
+| Gemini (`gemini`) | No Auth/shared-key access ends; the toolkit remains | Use supported Gemini Instant tools or credentials connected by your users. |
+| Yelp (`yelp`) | No Auth/shared-key access ends; the toolkit remains | Use eligible Yelp Instant tools or supported credentials connected by your users. |
+| Browser Tool (`browser_tool`) | Legacy toolkit retired | Replace with supported Browser Use (`browser_use`) Instant tools. |
+| Composio Search (`composio_search`) | Legacy toolkit retired | Choose Exa (`exa`), Tavily (`tavily`), or SerpAPI (`serpapi`) tools for your use case. |
+| Text to PDF (`text_to_pdf`) | Toolkit removed | PDF.co (`pdf_co`) Instant supports URL-based conversion. |
+| WeatherMap (`weathermap`) | Toolkit removed | Use supported AccuWeather (`accu_weather`) Instant tools and update requests and response handling. |
+| SeatGeek (`seat_geek`) | No Auth/shared-key access ends | SeatGeek will be available through Composio Instant. |
+
+Instant support is per tool. [Check each tool's support, rate, and input schema](/docs/instant-tools#find-supported-tools-and-rates) before replacing it.
+
+## Update your application
+
+First, [enable Instant and check your organization's balance](/docs/instant-tools#enable-instant). Then replace affected toolkit references, tool names, arguments, and response handling in your application.
+
+For example, replace `composio_search` with `exa` in your Session's toolkit filter, choose the replacement search action, and update any tool restrictions. Keep the other toolkits your agent needs. Use the existing [Session and agent examples](/docs/instant-tools#report-charges-and-use-instant-tools) for your framework.
+
+If your Session already permits eligible Instant tools, keep that policy. If it disables Instant, restricts it to other tools, or selects a provider account explicitly, follow [Control Instant usage](/docs/instant-tools#control-instant-usage) and [Know which account runs the tool](/docs/instant-tools#know-which-account-runs-the-tool).
+
+Update or recreate existing Sessions that reference retired toolkits, and update saved configurations for future Sessions. Enabling Instant doesn't rewrite these references.
+
+Keeping retired toolkit references in your Session configuration doesn't block Session creation, but retired tools remain unavailable. Remove any retired tools listed in [`preload.tools`](/docs/configuring-sessions#preloading-tools).
+
+## If you call tools directly
+
+`composio.tools.execute()` is a different execution path from Sessions. A Session's `instant` policy doesn't configure direct-tool calls.
+
+To keep direct execution, replace retired tool references. To choose Instant explicitly, pass `connected_account_id="instant_account"` to `composio.tools.execute()` in Python or `connectedAccountId: "instant_account"` in TypeScript. Instant runs the latest toolkit version, so a call pinned to an older version fails. To run `latest`, the SDKs also need `dangerously_skip_version_check=True` in Python or `dangerouslySkipVersionCheck: true` in TypeScript; see [Use the latest version](/docs/tools-direct/executing-tools#use-the-latest-version). An older toolkit version isn't a way to preserve retired shared access.
+
+Alternatively, follow [Migrate from Direct Tools to Sessions](/docs/migration-guide/direct-to-sessions). This is a separate migration; agents already using Sessions don't need it.
+
+## Verify before the cutoff
+
+1. [Check the published rate](/docs/instant-tools#find-supported-tools-and-rates) for each replacement tool.
+2. Replace affected toolkit and tool references, including saved configurations. Check request and response differences for each replacement.
+3. Test your agent or direct execution path, then [check the execution logs](/docs/instant-tools#balance-usage-and-troubleshooting) for the credential source and charge.
+4. Check existing Sessions and pinned direct-tool versions. A successful replacement call doesn't prove every old workflow has migrated.
+
+After the cutoff, affected legacy executions will stop working. If you need help mapping a tool or adapting a workflow, contact [support@composio.dev](mailto:support@composio.dev).
+
+## Next
+
+<Card title="Instant Tools" href="/docs/instant-tools" description="Enable Instant, control usage, check rates, select accounts, and troubleshoot charges" />
