@@ -34,6 +34,12 @@ export interface TypesafeSystemOneRequest {
 export interface TypesafeRequestOptions {
   signal?: AbortSignal;
   timeout?: number;
+  /** Maximum number of retries for transient errors. Default: 3. */
+  maxRetries?: number;
+  /** Initial delay in ms for exponential backoff. Default: 200. */
+  backoffMs?: number;
+  /** HTTP status codes that trigger a retry. Default: [429, 500, 502, 503, 504]. */
+  retryStatusCodes?: number[];
 }
 
 /**
