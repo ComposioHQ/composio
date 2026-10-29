@@ -68,7 +68,8 @@ const errorMessage = (error: unknown) => (error instanceof Error ? error.message
 
 const root = path.resolve(import.meta.dir, '..');
 const tasksRoot = path.join(root, '.artifacts/agent-tasks');
-const logLimit = 64 * 1024;
+const logHeadLimit = 16 * 1024;
+const logTailLimit = 48 * 1024;
 const readJSON = <T>(file: string): T => JSON.parse(fs.readFileSync(file, 'utf8'));
 const digest = (value: unknown) =>
   createHash('sha256')
@@ -262,6 +263,18 @@ async function verify(id: string) {
   let cancellation: Promise<void> | undefined;
   let interrupted: NodeJS.Signals | undefined;
   let logBytes = 0;
+  // The log keeps the start and end of combined output; late failures matter most.
+  let logHead = 0;
+  const logTail: Buffer[] = [];
+  let logTailBytes = 0;
+  const flushLog = () => {
+    if (logBytes === logHead) return;
+    const tail = Buffer.concat(logTail).subarray(-logTailLimit);
+    const omitted = logBytes - logHead - tail.length;
+    const head = fs.readFileSync(logFile).subarray(0, logHead);
+    const marker = omitted > 0 ? `\n[agent-task: ${omitted} bytes of output omitted]\n` : '';
+    fs.writeFileSync(logFile, Buffer.concat([head, Buffer.from(marker), tail]));
+  };
   const killChild = (signal: NodeJS.Signals, pid: number) => {
     try {
       process.kill(processGroup(pid), signal);
@@ -314,9 +327,17 @@ async function verify(id: string) {
         writeJSON(receiptFile, receipt);
         const output = (chunk: Uint8Array) => {
           process.stderr.write(chunk);
-          const remaining = Math.max(0, logLimit - logBytes);
-          if (remaining > 0) fs.appendFileSync(logFile, chunk.subarray(0, remaining));
           logBytes += chunk.length;
+          const head = chunk.subarray(0, logHeadLimit - logHead);
+          if (head.length > 0) {
+            fs.appendFileSync(logFile, head);
+            logHead += head.length;
+          }
+          if (head.length === chunk.length) return;
+          logTail.push(Buffer.from(chunk.subarray(head.length)));
+          logTailBytes += chunk.length - head.length;
+          while (logTailBytes - logTail[0]!.length >= logTailLimit)
+            logTailBytes -= logTail.shift()!.length;
         };
         child.stdout.on('data', output);
         child.stderr.on('data', output);
@@ -330,6 +351,7 @@ async function verify(id: string) {
         });
       });
       result.finishedAt = now();
+      flushLog();
       writeJSON(receiptFile, receipt);
       if (result.exitCode !== 0 || result.error) break;
     }
@@ -352,7 +374,12 @@ async function verify(id: string) {
   } finally {
     await cancellation;
     receipt.finishedAt = now();
-    receipt.logTruncated = logBytes > logLimit;
+    receipt.logTruncated = logBytes > logHeadLimit + logTailLimit;
+    try {
+      flushLog();
+    } catch (error) {
+      receipt.error ??= `Could not write the output log: ${errorMessage(error)}`;
+    }
     try {
       if (fs.existsSync(attemptDirectory)) writeJSON(receiptFile, receipt);
     } finally {

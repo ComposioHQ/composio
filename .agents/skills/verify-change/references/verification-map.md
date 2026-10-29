@@ -48,8 +48,9 @@ receipt does not cover ignored binaries or environment state changing later.
 Fresh external observations are still required for production and registry claims.
 Changing only `nextStep` or `blocker` preserves verification evidence.
 
-Each attempt has its own receipt and a private output log capped at 64 KiB. Failed
-attempts survive subsequent success. Missing tools, failed commands, interruption
+Each attempt has its own receipt and a private output log capped at 64 KiB. Longer
+output keeps its first 16 KiB and last 48 KiB around an omission marker, so final
+errors survive. Failed attempts survive subsequent success. Missing tools, failed commands, interruption
 and source edits during verification cannot produce a passing attempt. Remaining
 commands after the first failure were not run. An abruptly killed runner reads as
 interrupted, including when its latest attempt has no finished receipt. A retry

@@ -73,6 +73,19 @@ const fixture = () => {
         },
       ],
     },
+    noisy: {
+      boundary: 'offline',
+      commands: [
+        {
+          cwd: '.',
+          argv: [
+            process.execPath,
+            '-e',
+            'console.log("first line");console.log("x".repeat(200000));console.error("final type error");process.exitCode=2',
+          ],
+        },
+      ],
+    },
     interrupt: {
       boundary: 'offline',
       commands: [
@@ -342,6 +355,20 @@ test('missing tools fail and preserve an attempted command receipt', () => {
   );
   assert.equal(receipt.commands.length, 1);
   assert.notEqual(receipt.commands[0].exitCode, 0);
+});
+
+test('long output keeps its start and end in the capped log', () => {
+  const f = fixture();
+  assert.equal(f.init('case', 'noisy').status, 0);
+  assert.equal(f.run('verify', 'case').status, 1);
+  const receiptPath = path.join(f.root, f.state('case').receipt);
+  const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+  assert.equal(receipt.logTruncated, true);
+  const log = readFileSync(path.join(path.dirname(receiptPath), 'output.log'), 'utf8');
+  assert.ok(log.length <= 64 * 1024 + 100, `log has ${log.length} bytes`);
+  assert.match(log, /^first line\n/);
+  assert.match(log, /bytes of output omitted/);
+  assert.match(log, /final type error\n$/);
 });
 
 test('a successful command that edits its verification subject cannot establish fresh proof', () => {
