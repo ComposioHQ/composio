@@ -140,8 +140,8 @@ const provableLogin = (pending: PendingLogin) =>
 /**
  * Completes the cached CLI session: checks it once (`noWait`) or waits until it is linked,
  * then stores its user API key. The cache is cleared once the key arrives or the API ends the
- * login. With `defaultToFirstOrg`, the first of the account's organizations becomes the current
- * org. Reports the login only when `announce`.
+ * login, unless it holds another login by then. With `defaultToFirstOrg`, the first of the
+ * account's organizations becomes the current org. Reports the login only when `announce`.
  */
 const loginWithKey = (
   params: ProvableLogin & {
@@ -160,11 +160,11 @@ const loginWithKey = (
             new LoginSessionRequestError({ message: 'Failed to load the login session.', cause })
         )
       );
-    const linkedSession = yield* settlingPendingLogin(
+    const linkedSession = yield* (
       params.noWait
         ? Effect.flatMap(getSession, requireLinkedNow)
         : waitForLinkedSession(getSession, params.expiresAt)
-    );
+    ).pipe(settlingPendingLogin(params.key));
 
     const uakApiKey = linkedSession.api_key;
     const sessionInfo = yield* getSessionInfoByUserApiKey({ userApiKey: uakApiKey });

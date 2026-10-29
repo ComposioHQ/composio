@@ -55,8 +55,11 @@ export type PendingLoginSessionShape = {
     PendingLogin,
     PendingLoginError | Config.ConfigError | PlatformError.PlatformError
   >;
-  /** Deletes the cached login; a missing file is not an error. */
-  readonly clear: Effect.Effect<void>;
+  /**
+   * Deletes the cached login when it is the session `key`. A login another command cached
+   * since, a missing file, or one that cannot be read is left alone.
+   */
+  readonly clear: (key: string) => Effect.Effect<void>;
 };
 
 const decodePendingLogin = Schema.decodeUnknownEffect(Schema.fromJsonString(PendingLogin));
@@ -79,10 +82,18 @@ const makePendingLoginSession = Effect.gen(function* () {
     Effect.provideService(NodeOs, os)
   );
 
-  const clear = filePath.pipe(
+  const remove = filePath.pipe(
     Effect.flatMap(target => fs.remove(target)),
     Effect.ignore
   );
+
+  const clear: PendingLoginSessionShape['clear'] = key =>
+    filePath.pipe(
+      Effect.flatMap(target => fs.readFileString(target, 'utf8')),
+      Effect.flatMap(decodePendingLogin),
+      Effect.flatMap(cached => (cached.key === key ? remove : Effect.void)),
+      Effect.ignore
+    );
 
   const write: PendingLoginSessionShape['write'] = session =>
     Effect.gen(function* () {
@@ -131,7 +142,7 @@ const makePendingLoginSession = Effect.gen(function* () {
     );
     const now = yield* Clock.currentTimeMillis;
     if (isExpired(session.cachedAt, now)) {
-      yield* clear;
+      yield* remove;
       return yield* new PendingLoginError({
         message: 'Pending login expired. Run `composio login < /dev/null` again.',
         reason: 'expired',
