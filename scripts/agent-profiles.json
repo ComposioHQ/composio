@@ -4,7 +4,7 @@
     "commands": [
       {
         "cwd": ".",
-        "argv": ["bun", "test", "test/agent-task.test.ts"]
+        "argv": ["bun", "run", "test:agent-workflow"]
       },
       {
         "cwd": ".",

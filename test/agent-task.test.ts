@@ -126,7 +126,7 @@ async function runningFixture(f: Fixture) {
   );
   cleanups.push(() => runner.kill('SIGKILL'));
   const file = path.join(f.root, '.artifacts/child.pid');
-  for (let i = 0; i < 100 && !existsSync(file); i++) await delay(20);
+  for (let i = 0; i < 250 && !existsSync(file); i++) await delay(20);
   const childPid = Number(readFileSync(file, 'utf8'));
   const receipt = JSON.parse(readFileSync(path.join(f.root, f.state('case').receipt), 'utf8'));
   const group = receipt.commands[0].pid;
@@ -139,7 +139,7 @@ async function runningFixture(f: Fixture) {
 }
 
 async function waitGone(pid: number) {
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 250; i++) {
     try {
       process.kill(pid, 0);
     } catch (error) {

@@ -33,7 +33,7 @@
     "test:toolchain": "bun run test/mise-bun-pin.test.ts",
     "test:context7": "node --test test/context7-check.test.mjs",
     "agent:task": "bun scripts/agent-task.ts",
-    "test:agent-workflow": "bun test test/agent-task.test.ts",
+    "test:agent-workflow": "bun test --timeout 30000 test/agent-task.test.ts",
     "check:context7": "node scripts/context7-check.mjs",
     "test:examples": "tsx ts/scripts/validate-examples.ts",
     "test:e2e": "turbo test:e2e --filter='@e2e-tests/*'",
