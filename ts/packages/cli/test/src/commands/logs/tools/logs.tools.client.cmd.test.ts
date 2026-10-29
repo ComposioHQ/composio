@@ -83,7 +83,7 @@ describe('CLI: public tool logs over the API client', () => {
           );
           expect(stderr).toContain('log_drift');
           expect(stderr).toContain('GMAIL_SEND_EMAIL');
-          expect(stderr).toContain('0ms');
+          expect(stderr).not.toContain('0ms');
           expect((yield* MockConsole.getLines({ stream: 'stdout' })).slice(stdoutBefore)).toEqual([
             JSON.stringify(drifted, null, 2),
           ]);

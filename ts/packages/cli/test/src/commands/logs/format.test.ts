@@ -40,6 +40,7 @@ const makeToolLog = (
   overrides: {
     status?: string;
     connectedAccountId?: string | null;
+    metrics?: Record<string, unknown>;
   } = {}
 ): ToolLog =>
   ({
@@ -55,11 +56,15 @@ const makeToolLog = (
       connected_account_id:
         overrides.connectedAccountId === undefined ? 'conn_123' : overrides.connectedAccountId,
     },
-    metrics: { duration_ms: 20 },
+    metrics: overrides.metrics ?? { duration_ms: 20 },
   }) as ToolLog;
 
 const makeToolLogDetailed = (
-  overrides: Partial<{ startTime: number | null; endTime: number | null }> = {}
+  overrides: Partial<{
+    startTime: number | null;
+    endTime: number | null;
+    metrics: Record<string, unknown>;
+  }> = {}
 ): ToolLogDetailed =>
   ({
     id: 'tool_log_1',
@@ -69,7 +74,7 @@ const makeToolLogDetailed = (
       start_time: overrides.startTime === undefined ? 0 : overrides.startTime,
       end_time: overrides.endTime === undefined ? 0 : overrides.endTime,
     },
-    metrics: { duration_ms: 20 },
+    metrics: overrides.metrics ?? { duration_ms: 20 },
     data: {},
   }) as unknown as ToolLogDetailed;
 
@@ -135,6 +140,16 @@ describe('formatToolLogsTable', () => {
     expect(output).toContain(red('failed  '.padEnd(8)));
   });
 
+  it.each([
+    { metrics: { duration_ms: 20 }, expected: '20ms' },
+    { metrics: {}, expected: '-' },
+  ])('[Given] metrics $metrics [Then] Exec Time is $expected', ({ metrics, expected }) => {
+    const [header, row] = stripAnsi(formatToolLogsTable([makeToolLog(0, { metrics })])).split('\n');
+    const column = header.indexOf('Exec Time');
+
+    expect(row.slice(column, column + 12).trim()).toBe(expected);
+  });
+
   it('[Given] null connected account [Then] it renders dash', () => {
     const output = stripAnsi(formatToolLogsTable([makeToolLog(0, { connectedAccountId: null })]));
     const [, rowLine] = output.split('\n');
@@ -161,6 +176,11 @@ describe('formatToolLogInfo', () => {
     expect(plain).toContain('Start Time: -');
     expect(plain).toContain('End Time: -');
     expect(plain).not.toContain('1970-01-01T00:00:00.000Z');
+  });
+
+  it('[Given] no recorded duration [Then] it renders a dash', () => {
+    const plain = stripAnsi(formatToolLogInfo(makeToolLogDetailed({ metrics: {} })));
+    expect(plain).toContain('Total Duration: -');
   });
 });
 

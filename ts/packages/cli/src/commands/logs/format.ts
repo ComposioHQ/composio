@@ -113,9 +113,7 @@ export const formatToolLogsTable = (logs: ReadonlyArray<ToolLog>): string => {
       readString(readRecord(metadata.tool).slug) ?? '-',
       TOOL_LOG_TABLE.actionKey
     ).padEnd(TOOL_LOG_TABLE.actionKey);
-    const executionMs = `${readNumber(metrics.duration_ms) ?? 0}ms`.padEnd(
-      TOOL_LOG_TABLE.executionMs
-    );
+    const executionMs = formatDuration(metrics.duration_ms).padEnd(TOOL_LOG_TABLE.executionMs);
     const connectedAccountId = truncate(
       valueOrDash(readString(metadata.connected_account_id)),
       TOOL_LOG_TABLE.connectedAccountId
@@ -140,6 +138,11 @@ const valueOrDash = (value: string | null | undefined): string => {
   if (value == null) return '-';
   const normalizedValue = value.trim();
   return normalizedValue.length > 0 ? normalizedValue : '-';
+};
+
+const formatDuration = (value: unknown): string => {
+  const durationMs = readNumber(value);
+  return durationMs === undefined ? '-' : `${durationMs}ms`;
 };
 
 const formatEpoch = (value: number): string => {
@@ -167,7 +170,7 @@ export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
     `${bold('Entity:')} ${valueOrDash(readString(metadata.user_id))}`,
     `${bold('Start Time:')} ${formatCreatedAt(toolLog.timings?.start_time ?? toolLog.timestamp)}`,
     `${bold('End Time:')} ${formatCreatedAt(toolLog.timings?.end_time)}`,
-    `${bold('Total Duration:')} ${readNumber(readRecord(toolLog.metrics).duration_ms) ?? 0}ms`,
+    `${bold('Total Duration:')} ${formatDuration(readRecord(toolLog.metrics).duration_ms)}`,
     `${bold('Version:')} ${valueOrDash(readString(tool.version))}`,
     `\nPayload:\n${JSON.stringify(readRecord(data.request).payload ?? {}, null, 2)}`,
     `\nResponse:\n${JSON.stringify(readRecord(data.response).body ?? {}, null, 2)}`,
