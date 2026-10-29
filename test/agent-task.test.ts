@@ -378,20 +378,22 @@ test('a successful command that edits its verification subject cannot establish 
   assert.equal(f.state('case').status, 'stale');
 });
 
-test('interruption terminates the command group, preserves evidence and releases the task for retry', async () => {
-  const f = fixture();
-  const { runner, exit, childPid } = await runningFixture(f);
-  runner.kill('SIGTERM');
-  assert.deepEqual(await Promise.race([exit, delay(5000, 'timed out', { ref: false })]), {
-    code: 1,
-    signal: null,
+for (const signal of ['SIGTERM', 'SIGHUP'] as const) {
+  test(`${signal} terminates the command group, preserves evidence and releases the task for retry`, async () => {
+    const f = fixture();
+    const { runner, exit, childPid } = await runningFixture(f);
+    runner.kill(signal);
+    assert.deepEqual(await Promise.race([exit, delay(5000, 'timed out', { ref: false })]), {
+      code: 1,
+      signal: null,
+    });
+    assert.equal(f.state('case').status, 'interrupted');
+    await waitGone(childPid);
+    useOfflineProfile(f);
+    assert.equal(f.run('verify', 'case').status, 0);
+    assert.equal(f.state('case').status, 'passed');
   });
-  assert.equal(f.state('case').status, 'interrupted');
-  await waitGone(childPid);
-  useOfflineProfile(f);
-  assert.equal(f.run('verify', 'case').status, 0);
-  assert.equal(f.state('case').status, 'passed');
-});
+}
 
 test('verification remains locked until independent-stdio descendants stop', async () => {
   const f = fixture();

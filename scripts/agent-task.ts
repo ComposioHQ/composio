@@ -294,10 +294,9 @@ async function verify(id: string) {
       }, 1500)
     );
   };
-  const onInterrupt = () => stop('SIGINT');
-  const onTerminate = () => stop('SIGTERM');
-  process.on('SIGINT', onInterrupt);
-  process.on('SIGTERM', onTerminate);
+  // A closed terminal sends SIGHUP; detached command groups would otherwise outlive the runner.
+  const stopSignals = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
+  for (const signal of stopSignals) process.on(signal, stop);
   const logFile = path.join(attemptDirectory, 'output.log');
   try {
     fs.mkdirSync(attemptDirectory, { recursive: true, mode: 0o700 });
@@ -350,6 +349,8 @@ async function verify(id: string) {
           resolve();
         });
       });
+      // The group id may be reused once its command ends, so later signals must not target it.
+      child = undefined;
       result.finishedAt = now();
       flushLog();
       writeJSON(receiptFile, receipt);
@@ -384,8 +385,7 @@ async function verify(id: string) {
       if (fs.existsSync(attemptDirectory)) writeJSON(receiptFile, receipt);
     } finally {
       fs.unlinkSync(lock);
-      process.off('SIGINT', onInterrupt);
-      process.off('SIGTERM', onTerminate);
+      for (const signal of stopSignals) process.off(signal, stop);
     }
   }
   print(status(id));
