@@ -189,6 +189,10 @@ overrides:
   'sharp@<0.35.4': '>=0.35.4 <0.36'
   'vite@<=7.3.4': 7.3.5
   'esbuild@>=0.27.3 <0.28.1': 0.28.1
+  # temporary: GHSA-pqg4-j6r4-53mv (quote() command injection) is patched in
+  # 1.11.0. launch-editor (dev-only, via the changesets tooling) accepts the
+  # 1.x line. Drop when its lockfile resolution is >=1.11.0 without an override.
+  'shell-quote@>=1.8.4 <1.11.0': '>=1.11.0 <2'
 
 auditConfig:
   ignoreGhsas:

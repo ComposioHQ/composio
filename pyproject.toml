@@ -28,3 +28,12 @@ composio = { workspace = true }
 dev = [
     "composio==1.0.0rc6",
 ]
+
+[tool.uv]
+# temporary: crewai-cli 1.15.22 (pulled in by crewai, via composio-crewai)
+# pins `uv~=0.11.6`, whose bundled CA store trusts a compromised emSign root
+# (GHSA-hq85-5cpj-mr62, patched in 0.13.4). crewai-cli 1.15.29+ requires
+# uv>=0.13.4 itself, but those crewai releases need opentelemetry-sdk>=1.45.1,
+# which google-adk (<=1.44) rejects, so crewai can't move in this shared
+# workspace lock yet. Drop this once crewai can be upgraded to >=1.15.29.
+override-dependencies = ["uv>=0.13.4,<1"]

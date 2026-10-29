@@ -70,7 +70,7 @@
     "lucide-react": "^1.42.0",
     "mermaid": "^11.17.2",
     "motion": "^12.43.0",
-    "next": "16.3.8",
+    "next": "16.4.1",
     "nucleo-pixel": "^1.5.1",
     "posthog-js": "^1.428.4",
     "react": "^19.2.8",
@@ -139,7 +139,7 @@
     "unist-util-visit": "^5.1.0"
   },
   "patchedDependencies": {
-    "next@16.3.8": "patches/next@16.3.8.patch"
+    "next@16.4.1": "patches/next@16.4.1.patch"
   },
   "overrides": {
     "@mastra/mcp": "1.17.2",
