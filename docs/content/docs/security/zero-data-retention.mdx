@@ -44,9 +44,7 @@ In a ZDR project, Composio does not store payloads for:
 
 ### Firewall in ZDR projects
 
-[Firewall](/docs/firewall) works in ZDR projects, but with a limit. Composio does not keep the arguments or responses of earlier tool calls, so Firewall judges each call in isolation. Conditions that depend on an earlier call's result may not block. For example, blocking posts to a Slack channel that an earlier call showed is shared with another company needs that earlier result.
-
-Write conditions that the current tool call or its result can match on its own.
+[Firewall](/docs/firewall) works in ZDR projects, but it judges each tool call in isolation because Composio does not keep the arguments or responses of earlier calls. A condition that depends on an earlier call's result may not block, such as posting to a Slack channel that an earlier call showed is shared with another company. Write conditions that the current tool call or its result can match on its own.
 
 ## What ZDR does not cover
 
