@@ -1,7 +1,6 @@
-import { statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
-import { relative, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { type FileObject, printErrors, scanURLs, validateFiles } from 'next-validate-link';
 import GithubSlugger from 'github-slugger';
 import { z } from 'zod';
@@ -30,29 +29,6 @@ type AnySource =
   | typeof knowledgeBaseSource;
 
 type PageOf = ReturnType<AnySource['getPages']>[number];
-
-/**
- * Static files in `public/` (such as downloadable `/assets/...` helpers) are
- * served at the site root but aren't pages, so `scanURLs` doesn't know them.
- */
-export function isPublicFileUrl(url: string, publicDir = 'public'): boolean {
-  if (!url.startsWith('/') || url.startsWith('//')) return false;
-  let pathname: string;
-  try {
-    pathname = decodeURI(url.split(/[?#]/, 1)[0]);
-  } catch {
-    return false;
-  }
-  const root = resolve(publicDir);
-  const target = resolve(root, '.' + pathname);
-  const inside = relative(root, target);
-  if (!inside || inside.startsWith('..')) return false;
-  try {
-    return statSync(target, { throwIfNoEntry: false })?.isFile() ?? false;
-  } catch {
-    return false;
-  }
-}
 
 export function withoutFrontmatter(content: string): string {
   return content.replace(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
@@ -273,7 +249,7 @@ async function checkLinks() {
   const filteredErrors = errors
     .map(fileError => ({
       ...fileError,
-      errors: fileError.errors.filter(e => !ignoredUrls.includes(e.url) && !isPublicFileUrl(e.url)),
+      errors: fileError.errors.filter(e => !ignoredUrls.includes(e.url)),
       detected: fileError.detected.filter(d => !ignoredUrls.includes(d[0] as string)),
     }))
     .filter(fileError => fileError.errors.length > 0);

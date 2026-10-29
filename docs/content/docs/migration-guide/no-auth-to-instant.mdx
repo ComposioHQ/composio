@@ -4,13 +4,11 @@ description: Move shared-access workflows to Instant with your existing agents a
 keywords: [No Auth, Instant, migration, Sessions, shared access]
 ---
 
-From **13 November 2026**, the No Auth and shared-access routes for the toolkits below are being retired. This change supports growing usage while maintaining performance and quality for web search, browsing and AI tools via Composio.
+Move affected shared-access workflows to Instant before **13 November 2026**. On that date, Composio retires the No Auth and shared-access routes listed below.
 
-[Instant](/docs/instant-tools) replaces them. It runs supported tools on Composio's provider accounts and charges your organization's Composio balance, so your users don't need their own provider credentials for those tools.
+Use [Instant Tools](/docs/instant-tools) for supported actions, or provider credentials connected by your users where the toolkit supports them. This guide is for existing developer-platform integrations.
 
 ## Choose a replacement
-
-All changes in this table take effect on **13 November 2026** for the developer platform.
 
 | Toolkit | Change | Migration path |
 | --- | --- | --- |
@@ -22,57 +20,21 @@ All changes in this table take effect on **13 November 2026** for the developer 
 | WeatherMap (`weathermap`) | Toolkit removed | Use supported AccuWeather (`accu_weather`) Instant tools and update requests and response handling. |
 | SeatGeek (`seat_geek`) | No Auth/shared-key access ends | SeatGeek will be available through Composio Instant. |
 
-These alternatives aren't interchangeable APIs, and Instant support is per tool. [Check each tool's support, rate, and input schema](/docs/instant-tools#find-supported-tools-and-rates) before replacing it.
+Instant support is per tool. [Check each tool's support, rate, and input schema](/docs/instant-tools#find-supported-tools-and-rates) before replacing it.
 
-## Update your Session
+## What carries over
 
-First, [enable Instant and check your organization's balance](/docs/instant-tools#enable-instant). If your agent already uses Sessions, keep your agent integration and change only the affected toolkit references.
+Keep your agent integration, application user IDs, and unaffected toolkits and connections. If you already use Sessions, you don't need to migrate to a different execution model.
 
-For example, replace the legacy `composio_search` toolkit with `exa`:
+## Update your application
 
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-from composio import Composio
+First, [enable Instant and check your organization's balance](/docs/instant-tools#enable-instant). Then replace affected toolkit references, tool names, arguments, and response handling in your application.
 
-composio = Composio()
-session = composio.sessions.create(
-    user_id="user_123",
-    toolkits=["exa"],
-)
-tools = session.tools()
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
+For example, replace `composio_search` with `exa` in your Session's toolkit filter, choose the replacement search action, and update any tool restrictions. Keep the other toolkits your agent needs. Use the existing [Session and agent examples](/docs/instant-tools#report-charges-and-use-instant-tools) for your framework.
 
-const composio = new Composio();
-const session = await composio.create("user_123", {
-  toolkits: ["exa"],
-});
-const tools = await session.tools();
-```
-</Tab>
-<Tab value="API">
-```bash
-SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"user_123","toolkits":{"enable":["exa"]}}' \
-  | jq -r '.session_id')
+If your Session already permits eligible Instant tools, keep that policy. If it disables Instant, restricts it to other tools, or selects a provider account explicitly, follow [Control Instant usage](/docs/instant-tools#control-instant-usage) and [Know which account runs the tool](/docs/instant-tools#know-which-account-runs-the-tool).
 
-curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
-  -H "x-api-key: $COMPOSIO_API_KEY"
-```
-</Tab>
-</Tabs>
-
-Pass `tools` to your existing agent as usual, using your framework's [provider adapter](/docs/providers). Keep your other required toolkits in the `toolkits` list.
-
-You don't need to add an `instant` setting; Sessions permit eligible Instant usage by default. If your Session sets `instant=false`, restricts Instant to other toolkits, or selects a provider account explicitly, update that policy. See [Control Instant usage](/docs/instant-tools#control-instant-usage) and [Know which account runs the tool](/docs/instant-tools#know-which-account-runs-the-tool).
-
-Enabling Instant doesn't rewrite tool slugs, arguments, or response handling. Update or recreate existing Sessions that still reference retired toolkits, and update saved Session configurations so future Sessions use the replacements.
+Update or recreate existing Sessions that reference retired toolkits, and update saved configurations for future Sessions. Enabling Instant doesn't rewrite these references.
 
 ## If you call tools directly
 
@@ -91,24 +53,37 @@ Alternatively, follow [Migrate from Direct Tools to Sessions](/docs/migration-gu
 
 After the cutoff, affected legacy executions will stop working. If you need help mapping a tool or adapting a workflow, contact [support@composio.dev](mailto:support@composio.dev).
 
-## Optional Session setup helper
+## Migrate with your coding agent
 
-[Download the Python helper](/assets/migrations/migrate_no_auth_to_instant.py) to preview and create a replacement Session with explicit toolkit and tool allowlists. It requires Python 3.10 or later and uses only the standard library. It is for Sessions only.
+Open your application repository in your coding agent and paste this prompt. The prompt asks the agent to inspect your integration, update its code, and verify the affected workflows.
 
-Save the file locally, inspect it, then preview a request:
+```text
+Migrate this repository's affected Composio No Auth/shared-access workflows
+before 13 November 2026.
 
-```bash
-python3 migrate_no_auth_to_instant.py --user-id user_123 --tool exa:EXA_SEARCH
+Read these guides first:
+https://docs.composio.dev/docs/migration-guide/no-auth-to-instant
+https://docs.composio.dev/docs/instant-tools
+
+1. Inspect the repository and installed SDK version. Find affected toolkit
+   and tool references in application code, saved configurations, tests,
+   Session policies, and direct-execution version settings. Show the files
+   and proposed replacements before editing.
+2. Check each replacement action's current schema, Instant eligibility, and
+   published rate. Use the migration guide's toolkit mapping. Report missing
+   coverage or unavailable replacements instead of guessing tool names.
+3. Update the affected code and tests. Preserve the current execution model,
+   application user IDs, unrelated toolkits, and existing user connections.
+   Adapt arguments and response handling to each replacement action. Follow
+   the Instant guide for Session policies or direct-execution account selection.
+4. Run relevant local tests. Identify existing Sessions or project settings
+   that need a separate update. Before creating or changing remote resources,
+   or running paid tools, confirm the target project, test scope, and budget
+   with me. Never print or commit credentials.
+5. Summarize the diff, tests run, remaining manual steps, and coverage gaps.
+   Distinguish mocked tests from live execution. For any authorized live test,
+   check execution logs for the credential source and charge. Do not claim
+   migration is complete while affected workflows remain unverified.
 ```
 
-Use your existing application user ID and repeat `--tool toolkit:TOOL_SLUG` for each required tool. The preview makes no network requests. The helper doesn't guess equivalents for retired tools or adapt their arguments and responses.
-
-After enabling Instant for the intended project, set `COMPOSIO_API_KEY` for that project. Review the selected tools and their published rates, then create the replacement Session:
-
-```bash
-python3 migrate_no_auth_to_instant.py --user-id user_123 --tool exa:EXA_SEARCH --apply
-```
-
-`--apply` checks each tool's current identity, Instant support and published rate, then creates one Session. It doesn't run provider tools, edit existing Sessions, change project settings, or rewrite your application. Use the returned Session ID in your application and test the workflow separately.
-
-If creation times out or returns an ambiguous server error, check your project before trying again. The helper never retries automatically.
+Review the diff and the [verification checklist](#verify-before-the-cutoff) before deploying the changes.
