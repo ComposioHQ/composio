@@ -42,7 +42,7 @@ Keeping retired toolkit references in your Session configuration doesn't block S
 
 `composio.tools.execute()` is a different execution path from Sessions. A Session's `instant` policy doesn't configure direct-tool calls.
 
-To keep direct execution, replace retired tool references. To choose Instant explicitly, pass `connected_account_id="instant_account"` to `composio.tools.execute()` in Python or `connectedAccountId: "instant_account"` in TypeScript. Instant runs the latest toolkit version, so a call pinned to an older version fails. An older toolkit version isn't a way to preserve retired shared access.
+To keep direct execution, replace retired tool references. To choose Instant explicitly, pass `connected_account_id="instant_account"` to `composio.tools.execute()` in Python or `connectedAccountId: "instant_account"` in TypeScript. Instant runs the latest toolkit version, so a call pinned to an older version fails. To run `latest`, the SDKs also need `dangerously_skip_version_check=True` in Python or `dangerouslySkipVersionCheck: true` in TypeScript; see [Use the latest version](/docs/tools-direct/executing-tools#use-the-latest-version). An older toolkit version isn't a way to preserve retired shared access.
 
 Alternatively, follow [Migrate from Direct Tools to Sessions](/docs/migration-guide/direct-to-sessions). This is a separate migration; agents already using Sessions don't need it.
 
