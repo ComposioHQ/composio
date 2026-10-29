@@ -8,6 +8,10 @@ Move affected shared-access workflows to Instant before **13 November 2026**. On
 
 Use [Instant Tools](/docs/instant-tools) for supported actions, or provider credentials connected by your users where the toolkit supports them. This guide is for existing developer-platform integrations.
 
+## What carries over
+
+Keep your agent integration, application user IDs, and unaffected toolkits and connections. If you already use Sessions, you don't need to migrate to a different execution model.
+
 ## Choose a replacement
 
 | Toolkit | Change | Migration path |
@@ -21,10 +25,6 @@ Use [Instant Tools](/docs/instant-tools) for supported actions, or provider cred
 | SeatGeek (`seat_geek`) | No Auth/shared-key access ends | SeatGeek will be available through Composio Instant. |
 
 Instant support is per tool. [Check each tool's support, rate, and input schema](/docs/instant-tools#find-supported-tools-and-rates) before replacing it.
-
-## What carries over
-
-Keep your agent integration, application user IDs, and unaffected toolkits and connections. If you already use Sessions, you don't need to migrate to a different execution model.
 
 ## Update your application
 
@@ -46,7 +46,7 @@ Alternatively, follow [Migrate from Direct Tools to Sessions](/docs/migration-gu
 
 ## Verify before the cutoff
 
-1. Check [Instant pricing](https://composio.dev/pricing) and the published rate for each replacement tool.
+1. [Check the published rate](/docs/instant-tools#find-supported-tools-and-rates) for each replacement tool.
 2. Replace affected toolkit and tool references, including saved configurations. Check request and response differences for each replacement.
 3. Test your agent or direct execution path, then [check the execution logs](/docs/instant-tools#balance-usage-and-troubleshooting) for the credential source and charge.
 4. Check existing Sessions and pinned direct-tool versions. A successful replacement call doesn't prove every old workflow has migrated.
@@ -61,29 +61,33 @@ Open your application repository in your coding agent and paste this prompt. The
 Migrate this repository's affected Composio No Auth/shared-access workflows
 before 13 November 2026.
 
-Read these guides first:
+Read:
 https://docs.composio.dev/docs/migration-guide/no-auth-to-instant
 https://docs.composio.dev/docs/instant-tools
 
 1. Inspect the repository and installed SDK version. Find affected toolkit
    and tool references in application code, saved configurations, tests,
-   Session policies, and direct-execution version settings. Show the files
-   and proposed replacements before editing.
-2. Check each replacement action's current schema, Instant eligibility, and
-   published rate. Use the migration guide's toolkit mapping. Report missing
-   coverage or unavailable replacements instead of guessing tool names.
+   Session policies, and direct-execution version settings. Show the affected
+   files and proposed replacements before editing.
+2. Verify each replacement action's current schema, Instant eligibility, and
+   published rate. Follow the migration guide's toolkit mapping. Report
+   unavailable replacements or missing coverage instead of guessing tool names.
 3. Update the affected code and tests. Preserve the current execution model,
    application user IDs, unrelated toolkits, and existing user connections.
-   Adapt arguments and response handling to each replacement action. Follow
-   the Instant guide for Session policies or direct-execution account selection.
+   Adapt arguments and response handling to each replacement. Follow the
+   Instant guide for Session policies or direct-execution account selection.
 4. Run relevant local tests. Identify existing Sessions or project settings
-   that need a separate update. Before creating or changing remote resources,
-   or running paid tools, confirm the target project, test scope, and budget
-   with me. Never print or commit credentials.
+   that require a separate update. Before changing remote resources or running
+   paid tools, confirm the target project, test scope, and budget with me.
+   Never print or commit credentials.
 5. Summarize the diff, tests run, remaining manual steps, and coverage gaps.
-   Distinguish mocked tests from live execution. For any authorized live test,
-   check execution logs for the credential source and charge. Do not claim
-   migration is complete while affected workflows remain unverified.
+   Distinguish mocked tests from live execution. For authorized live tests,
+   check execution logs for the credential source and charge. Report any
+   affected workflows that remain unverified.
 ```
 
 Review the diff and the [verification checklist](#verify-before-the-cutoff) before deploying the changes.
+
+## Next
+
+<Card title="Instant Tools" href="/docs/instant-tools" description="Enable Instant, control usage, check rates, select accounts, and troubleshoot charges" />
