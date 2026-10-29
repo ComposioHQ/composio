@@ -4,17 +4,17 @@ description: Connect each user's accounts and call provider APIs from your own t
 keywords: [auth-only, per-user OAuth, multi-tenant agents, custom tools, managed authentication, API proxy, token custody]
 ---
 
-Use Composio to connect your users' accounts while keeping your tool definitions and business logic in your application. Call provider endpoints through Proxy Execute; Composio supplies the connected account's credentials and returns the response. You don't need predefined Composio tools, MCP, or an LLM.
-
-In Composio Cloud, the authenticated provider request still runs through Composio. Your function runs in your process, but Composio stores and refreshes credentials and sends the provider request. This is managed authentication for your own tools, not a token-export service.
+Use Composio to connect your users' accounts and authenticate API requests from your own tools. Your tool definitions and business logic stay in your application. Composio stores and refreshes credentials, sends requests to the provider, and returns the response. You don't need predefined Composio tools, MCP, or an LLM.
 
 ## Connect an account and call its API
 
 This example connects GitHub and reads the connected account's profile through `GET /user`. Install the SDK with `pip install composio` or `npm install @composio/core`. Set `COMPOSIO_API_KEY` in your backend environment. The API example also needs Bash and `jq`.
 
-Use a [project API key](/reference/authenticating-to-composio/project-api-key-permissions) with **Session management**, permission to read connected accounts, and **Proxy execute**. Proxy permission is separate from session tool execution. Keep the key server-side.
+For a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), enable **Session management → Write only**, **Connected accounts → Read only**, and **Proxy execute (Legacy) → Write only**. Default full-access project keys already include these permissions. Keep the key server-side.
 
 The example uses `org_42:user_7` as an illustrative connection owner. In your application, derive this value from the authenticated request after checking workspace membership. Never accept a model-supplied or browser-supplied owner ID as authorization. See [B2B connection ownership](/docs/b2b-agents#choose-the-connection-owner) for member-owned and workspace-owned connections.
+
+This example uses a session to create the Connect Link. Subsequent API calls pass the owner and connected-account ID directly.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -41,7 +41,9 @@ def read_github_profile(connected_account_id: str):
 
 
 # Use the account returned by this owner's connection attempt.
-print(read_github_profile(account.id))
+response = read_github_profile(account.id)
+print(response.status)
+print(response.data)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -67,7 +69,9 @@ function readGitHubProfile(connectedAccountId: string) {
 }
 
 // Use the account returned by this owner's connection attempt.
-console.log(await readGitHubProfile(account.id));
+const response = await readGitHubProfile(account.id);
+console.log(response.status);
+console.log(response.data);
 ```
 </Tab>
 <Tab value="API">
@@ -109,18 +113,23 @@ done
 curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"user_id\":\"$OWNER_ID\",\"connected_account_id\":\"$CONNECTED_ACCOUNT_ID\",\"endpoint\":\"/user\",\"method\":\"GET\"}"
+  -d "{\"user_id\":\"$OWNER_ID\",\"connected_account_id\":\"$CONNECTED_ACCOUNT_ID\",\"endpoint\":\"/user\",\"method\":\"GET\"}" \
+  | jq '{status, data}'
 ```
 </Tab>
 </Tabs>
 
 Open the printed Connect Link and authorize GitHub within 60 seconds. The connection must become `ACTIVE` before the proxy request runs. During this wait, `INACTIVE` can still become `ACTIVE`, so keep polling until the deadline. Stop immediately on `FAILED`, `EXPIRED`, or `REVOKED`. The proxy returns the provider's response, not its OAuth token. No tool schemas are fetched and no model selects an action.
 
-The session above provides a user-scoped context for creating the connection. The direct proxy call is independent of that session: pass both the owner (`user_id` in Python and REST, `userId` in TypeScript) and the exact returned connected-account ID. Projects with 2FA enabled check the owner against the connected account and may require it. Your own tool can call `read_github_profile()` or `readGitHubProfile()` from any framework, or you can make the equivalent REST request from your backend.
+The [proxy response](/reference/api-reference/tools/postToolsExecuteProxy) contains the provider's response body in `data`, HTTP status in `status`, and response headers in `headers`.
+
+The direct proxy call is independent of the session: pass both the owner (`user_id` in Python and REST, `userId` in TypeScript) and the exact returned connected-account ID. Projects with 2FA enabled check the owner against the connected account and may require it. Your own tool can call `read_github_profile()` or `readGitHubProfile()` from any framework, or you can make the equivalent REST request from your backend.
 
 ## Reuse connections in your application
 
-For onboarding or a settings page, send the Connect Link to the browser and persist the connection attempt server-side rather than holding an HTTP request open while the person signs in. On callback, verify that the connected-account ID belongs to that attempt and the signed-in owner, then retrieve its current status. Callback query parameters aren't proof of ownership. See [Manual auth management](/docs/authentication/manually-authenticating#identify-the-connected-account).
+For onboarding or a settings page, send the Connect Link to the browser and persist the connection attempt server-side rather than holding an HTTP request open while the person signs in. When creating the Connect Link, pass your application's callback URL through `callback_url` in Python and REST, or `callbackUrl` in TypeScript. See [Redirecting users after authentication](/docs/authentication/manually-authenticating#redirecting-users-after-authentication) for setup.
+
+On callback, verify that the connected-account ID belongs to that attempt and the signed-in owner, then retrieve its current status. Callback query parameters aren't proof of ownership. See [Identify the connected account](/docs/authentication/manually-authenticating#identify-the-connected-account).
 
 Store the verified connected-account ID with your tenant/member mapping. On subsequent requests, authorize the caller and resolve that stored mapping before calling the proxy. Don't expose an endpoint that accepts arbitrary connected-account IDs from a browser or model.
 
@@ -133,7 +142,7 @@ Keep Composio-managed OAuth apps in production when their consent branding, scop
 ## Understand the boundaries
 
 <Callout type="warn" title="Managed authentication is not token export">
-Connected-account reads redact credentials and aren't a supported way to retrieve access or refresh tokens. A custom OAuth app doesn't move token custody out of Composio Cloud. If your local vendor SDK requires a raw token, this proxy pattern doesn't supply one. Review [token custody and deployment options](/docs/security/token-custody) instead of attempting to extract credentials from account state.
+This is managed authentication for your own tools, not a token-export service. Connected-account reads redact credentials and aren't a supported way to retrieve access or refresh tokens. A custom OAuth app doesn't move token custody out of Composio Cloud. If your local vendor SDK requires a raw token, this proxy pattern doesn't supply one. Review [token custody and deployment options](/docs/security/token-custody) instead of attempting to extract credentials from account state.
 </Callout>
 
 - **Provider scope:** Use relative paths for the connected provider. Proxy Execute is not an arbitrary authenticated HTTP relay; absolute URLs must keep the connected provider's scheme and registrable domain.
