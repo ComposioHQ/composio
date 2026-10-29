@@ -15,7 +15,6 @@ import { Clock, ConfigProvider, Console, DateTime, Effect, Fiber, Layer, Option 
 import { Base64Url } from 'effect/encoding';
 import { HttpClient } from 'effect/http';
 import { TestClock } from 'effect/testing';
-import { createHash } from 'node:crypto';
 import * as tempy from 'tempy';
 import {
   handleBrowserLogin,
@@ -167,8 +166,11 @@ const cachedLogin = (overrides: Partial<PendingLogin> = {}): Option.Option<Pendi
     ...overrides,
   });
 
+/** The S256 challenge of `verifier`, through Web Crypto rather than the CLI's own helper. */
 const s256 = (verifier: string) =>
-  Base64Url.encode(new Uint8Array(createHash('sha256').update(verifier).digest()));
+  Effect.promise(() => crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))).pipe(
+    Effect.map(digest => Base64Url.encode(new Uint8Array(digest)))
+  );
 
 /** The login another terminal's `composio login --no-wait` caches while this one waits. */
 const OTHER_LOGIN: PendingLogin = {
@@ -959,7 +961,7 @@ describe('handleBrowserLogin', () => {
         const cached = Option.getOrThrow(pending.current());
         const verifier = cached.verifier ?? '';
         expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
-        expect(challenges).toEqual([s256(verifier)]);
+        expect(challenges).toEqual([yield* s256(verifier)]);
         expect(cached).toEqual({
           key: 'session-new',
           loginUrl: 'https://platform.mock.invalid/?cliKey=session-new',
@@ -1011,7 +1013,7 @@ describe('handleBrowserLogin', () => {
         yield* handleBrowserLogin(params({ yes: true }));
 
         expect(sessionRequests).toHaveLength(1);
-        expect(challenges).toEqual([s256(sessionRequests[0].verifier)]);
+        expect(challenges).toEqual([yield* s256(sessionRequests[0].verifier)]);
         expect(sessionRequests[0].id).toBe('session-new');
         expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
         expect(Option.isNone(pending.current())).toBe(true);
