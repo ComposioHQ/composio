@@ -390,7 +390,8 @@ async function verify(id: string) {
     signalGroup(pid, signal);
     cancellation = new Promise<void>(resolve =>
       setTimeout(() => {
-        signalGroup(pid, 'SIGKILL');
+        // Once the command closes, its group id may be reused; endGroup owns any stragglers.
+        if (child?.pid === pid) signalGroup(pid, 'SIGKILL');
         resolve();
       }, 1500)
     );
@@ -482,11 +483,12 @@ async function verify(id: string) {
     receipt.error = errorMessage(error);
   } finally {
     await cancellation;
-    // Release the worktree only once the last command group is gone.
+    // Release the worktree only once the last command group is gone. A finished command's group
+    // was already ended, and its id may since belong to an unrelated process group.
     let groupEnded = true;
-    const lastGroup = receipt.commands.at(-1)?.pid;
-    if (lastGroup)
-      await endGroup(lastGroup).catch((error: unknown) => {
+    const last = receipt.commands.at(-1);
+    if (last?.pid && !last.finishedAt)
+      await endGroup(last.pid).catch((error: unknown) => {
         groupEnded = false;
         receipt.status = 'failed';
         receipt.error ??= errorMessage(error);
