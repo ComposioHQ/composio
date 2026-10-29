@@ -86,15 +86,6 @@ jobs:
             # reassess it before adding a stateful MCP HTTP server here.
             # https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-84m7-p3x7-pcfv
             #
-            # PYSEC-2026-4321 / GHSA-hq85-5cpj-mr62: uv's vendored CA bundle
-            # trusts a root whose intermediates are compromised, so uv's own
-            # network requests can be intercepted. `uv` is in this lock only
-            # as a dependency of crewai-cli (through crewai); Composio never
-            # runs it. crewai-cli pins uv~=0.11.6, excluding the 0.13.4 fix
-            # (the latest published crewai-cli 1.15.28 has the same
-            # constraint). Remove this exception once crewai-cli permits it.
-            # https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
-            #
             # CVE-2026-114603 / GHSA-xcq7-p3pf-p88h: opentelemetry-api's
             # inbound tracestate parser can exhaust CPU. google-adk 2.9.1
             # caps opentelemetry-api/sdk at 1.42.1, excluding the 1.45.1 fix;
@@ -104,7 +95,7 @@ jobs:
             # the fix, or reassess before adding an instrumented HTTP server.
             # The standalone Claude provider lock uses the patched version.
             # https://github.com/open-telemetry/opentelemetry-python/security/advisories/GHSA-xcq7-p3pf-p88h
-            ignored-vulns: 'CVE-2026-59951 PYSEC-2026-4321 CVE-2026-114603'
+            ignored-vulns: 'CVE-2026-59951 CVE-2026-114603'
           # Provider projects with their own lockfiles, which pin the published
           # `composio` from PyPI rather than the workspace checkout. uv resolves
           # them on their own even though python/providers/openai is listed as
