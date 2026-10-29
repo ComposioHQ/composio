@@ -1,0 +1,146 @@
+---
+title: Managed authentication for your own tools
+description: Connect each user's accounts and call provider APIs from your own tools without handling OAuth tokens
+keywords: [auth-only, per-user OAuth, multi-tenant agents, custom tools, managed authentication, API proxy, token custody]
+---
+
+Use Composio to connect your users' accounts while keeping your tool definitions and business logic in your application. Call provider endpoints through Proxy Execute; Composio supplies the connected account's credentials and returns the response. You don't need predefined Composio tools, MCP, or an LLM.
+
+In Composio Cloud, the authenticated provider request still runs through Composio. Your function runs in your process, but Composio stores and refreshes credentials and sends the provider request. This is managed authentication for your own tools, not a token-export service.
+
+## Connect an account and call its API
+
+This example connects GitHub and reads the connected account's profile through `GET /user`. Install the SDK with `pip install composio` or `npm install @composio/core`. Set `COMPOSIO_API_KEY` in your backend environment. The API example also needs Bash and `jq`.
+
+Use a [project API key](/reference/authenticating-to-composio/project-api-key-permissions) with **Session management**, permission to read connected accounts, and **Proxy execute**. Proxy permission is separate from session tool execution. Keep the key server-side.
+
+The example uses `org_42:user_7` as an illustrative connection owner. In your application, derive this value from the authenticated request after checking workspace membership. Never accept a model-supplied or browser-supplied owner ID as authorization. See [B2B connection ownership](/docs/b2b-agents#choose-the-connection-owner) for member-owned and workspace-owned connections.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Resolve this owner from your authenticated application session.
+owner_id = "org_42:user_7"
+session = composio.create(user_id=owner_id, toolkits=["github"])
+connection = session.authorize("github")
+print(f"Open this Connect Link: {connection.redirect_url}")
+account = connection.wait_for_connection(60)
+
+
+def read_github_profile(connected_account_id: str):
+    return composio.tools.proxy(
+        connected_account_id=connected_account_id,
+        endpoint="/user",
+        method="GET",
+    )
+
+
+# Use the account returned by this owner's connection attempt.
+print(read_github_profile(account.id))
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Resolve this owner from your authenticated application session.
+const ownerId = 'org_42:user_7';
+const session = await composio.create(ownerId, { toolkits: ['github'] });
+const connection = await session.authorize('github');
+console.log(`Open this Connect Link: ${connection.redirectUrl}`);
+const account = await connection.waitForConnection(60000);
+
+function readGitHubProfile(connectedAccountId: string) {
+  return composio.tools.proxyExecute({
+    connectedAccountId,
+    endpoint: '/user',
+    method: 'GET',
+  });
+}
+
+// Use the account returned by this owner's connection attempt.
+console.log(await readGitHubProfile(account.id));
+```
+</Tab>
+<Tab value="API">
+```bash
+set -euo pipefail
+
+# Resolve this owner from your authenticated application session.
+SESSION_ID=$(curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"org_42:user_7","toolkits":{"enable":["github"]}}' | jq -r '.session_id')
+
+CONNECTION=$(curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit":"github"}')
+echo "$CONNECTION" | jq -r '.redirect_url'
+CONNECTED_ACCOUNT_ID=$(echo "$CONNECTION" | jq -r '.connected_account_id')
+
+# Open the printed link. Wait at most 60 seconds for authorization.
+DEADLINE=$((SECONDS + 60))
+while true; do
+  ACCOUNT=$(curl --fail-with-body -s https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+    -H "x-api-key: $COMPOSIO_API_KEY")
+  STATUS=$(echo "$ACCOUNT" | jq -r '.status')
+  case "$STATUS" in
+    ACTIVE) break ;;
+    FAILED|EXPIRED|INACTIVE|REVOKED) echo "Connection ended: $STATUS" >&2; exit 1 ;;
+  esac
+  if [ "$SECONDS" -ge "$DEADLINE" ]; then
+    echo "Timed out waiting for authorization" >&2
+    exit 1
+  fi
+  sleep 1
+done
+
+# Use the account returned by this owner's connection attempt.
+curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"connected_account_id\":\"$CONNECTED_ACCOUNT_ID\",\"endpoint\":\"/user\",\"method\":\"GET\"}"
+```
+</Tab>
+</Tabs>
+
+Open the printed Connect Link and authorize GitHub within 60 seconds. The connection must become `ACTIVE` before the proxy request runs. The proxy returns the provider's response, not its OAuth token. No tool schemas are fetched and no model selects an action.
+
+The session above provides a user-scoped context for creating the connection. The final request uses the exact returned connected-account ID, so another GitHub connection cannot be selected accidentally. Your own tool can call `read_github_profile()` or `readGitHubProfile()` from any framework, or you can make the equivalent REST request from your backend.
+
+## Reuse connections in your application
+
+For onboarding or a settings page, send the Connect Link to the browser and persist the connection attempt server-side rather than holding an HTTP request open while the person signs in. On callback, verify that the connected-account ID belongs to that attempt and the signed-in owner, then retrieve its current status. Callback query parameters aren't proof of ownership. See [Manual auth management](/docs/authentication/manually-authenticating#identify-the-connected-account).
+
+Store the verified connected-account ID with your tenant/member mapping. On subsequent requests, authorize the caller and resolve that stored mapping before calling the proxy. Don't expose an endpoint that accepts arbitrary connected-account IDs from a browser or model.
+
+If authorization fails or times out, don't call the provider. If a connection expires or is revoked, stop using it and ask its owner to reconnect. Subscribe to the [connection expiration event](/docs/authentication#connection-lifecycle) to surface reconnect prompts before a request fails. Don't automatically retry side-effecting provider requests; see [retry failed executions deliberately](/docs/production-readiness#retry-failed-executions-deliberately).
+
+## Choose your OAuth app separately
+
+Keep Composio-managed OAuth apps in production when their consent branding, scopes, and shared provider quotas fit your product. Use a [custom auth config](/docs/authentication/custom-app-vs-managed-app) when you need your own OAuth app, different scopes, dedicated quotas, or a custom provider instance. Composio still manages the resulting connected-account credentials in either case.
+
+## Understand the boundaries
+
+<Callout type="warn" title="Managed authentication is not token export">
+Connected-account reads redact credentials and aren't a supported way to retrieve access or refresh tokens. A custom OAuth app doesn't move token custody out of Composio Cloud. If your local vendor SDK requires a raw token, this proxy pattern doesn't supply one. Review [token custody and deployment options](/docs/security/token-custody) instead of attempting to extract credentials from account state.
+</Callout>
+
+- **Provider scope:** Use relative paths for the connected provider. Proxy Execute is not an arbitrary authenticated HTTP relay; absolute URLs must keep the connected provider's scheme and registrable domain.
+- **Authorization:** Proxy permission can allow operations beyond predefined tool schemas. Validate endpoints and inputs in your own tools, enforce your application's tenant and role checks, and request only the provider scopes you need.
+- **Deployment:** Private VPC and self-hosted deployments are Enterprise arrangements. Customer-managed keys require a separate deployment design with Composio. Confirm operator access, decryption, logs, and backups against your requirements.
+
+## Next
+
+<Cards>
+  <Card title="Proxy Execute" href="/docs/extending-sessions/proxy-execute" description="Call provider endpoints from a session and understand proxy restrictions." />
+  <Card title="Custom tools and toolkits" href="/docs/extending-sessions/custom-tools-and-toolkits" description="Optionally expose your custom business logic through experimental session extension tools." />
+  <Card title="Token custody architecture" href="/docs/security/token-custody" description="Review credential redaction, OAuth app ownership, and deployment boundaries." />
+</Cards>

@@ -1012,6 +1012,8 @@ async function generateManagedAuthIndex(): Promise<string> {
     '',
     'Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.',
     '',
+    'This catalog identifies who provides the OAuth app, not which execution framework you must use. For per-user OAuth with application-owned tools, follow [Managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools.md). Call provider endpoints through the authenticated proxy without predefined tools, MCP, or an LLM.',
+    '',
     'This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.',
     '',
     'Call the toolkit endpoint and read `composio_managed_auth_schemes`:',
