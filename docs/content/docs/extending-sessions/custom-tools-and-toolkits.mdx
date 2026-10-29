@@ -7,6 +7,8 @@ experimental: true
 
 For a complete agent that combines an internal lookup with a public API, follow [Combine your own tools with Composio](/examples/custom-tools).
 
+If you already have your own tool definitions, start with [Managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). You can call the authenticated proxy from your code without adopting the experimental session-extension API below.
+
 Custom tools let you define tools that run in-process alongside remote Composio tools within a session. You have three patterns:
 
 - **Standalone tools**: internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules).
