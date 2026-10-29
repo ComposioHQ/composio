@@ -27,45 +27,45 @@ const caseSensitive = Flag.Boolean('case-sensitive').pipe(
 );
 
 const toolkit = Flag.String('toolkit').pipe(
-  Flag.withDescription('Filter by toolkit key(s), comma-separated (e.g. "gmail,slack")'),
+  Flag.withDescription('Filter by one toolkit key (e.g. "gmail")'),
   Flag.optional
 );
 
 const tool = Flag.String('tool').pipe(
-  Flag.withDescription('Filter by tool key(s), comma-separated (e.g. "GMAIL_SEND_EMAIL")'),
+  Flag.withDescription('Filter by one tool key (e.g. "GMAIL_SEND_EMAIL")'),
   Flag.optional
 );
 
 const connectedAccountId = Flag.String('connected-account-id').pipe(
-  Flag.withDescription('Filter by connected account id(s), comma-separated'),
+  Flag.withDescription('Filter by one connected account id'),
   Flag.optional
 );
 
 const authConfigId = Flag.String('auth-config-id').pipe(
-  Flag.withDescription('Filter by auth config id(s), comma-separated'),
+  Flag.withDescription('Filter by one auth config id'),
   Flag.optional
 );
 
 const status = Flag.String('status').pipe(
-  Flag.withDescription('Filter by success or failed, comma-separated'),
+  Flag.withDescription('Filter by success or failed'),
   Flag.optional
 );
 
-// Declared for its help row, which documents the comma-separated filter in place of the `dev`
+// Declared for its help row, which documents the user filter in place of the `dev`
 // group's shared row. The parser hands every `--user-id` under `dev` to the shared flag, so
 // the value is read from `CommandSurface`.
 const userId = Flag.String('user-id').pipe(
-  Flag.withDescription('Filter by user id(s), comma-separated'),
+  Flag.withDescription('Filter by one user id'),
   Flag.optional
 );
 
 const logIdFilter = Flag.String('log-id').pipe(
-  Flag.withDescription('Filter by log id(s), comma-separated'),
+  Flag.withDescription('Filter by one log id'),
   Flag.optional
 );
 
 const toolRouterSessionId = Flag.String('tool-router-session-id').pipe(
-  Flag.withDescription('Filter by tool router session id(s), comma-separated'),
+  Flag.withDescription('Filter by one tool router session id'),
   Flag.optional
 );
 

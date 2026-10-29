@@ -26,7 +26,7 @@ describe('CLI: composio dev logs tools', () => {
             '--tool-router-session-id',
             'trs_1',
             '--log-id',
-            'log_a,log_b',
+            'log_a',
             '--user-id',
             'user_1',
             '--status',
@@ -36,7 +36,7 @@ describe('CLI: composio dev logs tools', () => {
             '--connected-account-id',
             'ca_1',
             '--toolkit',
-            'gmail,slack',
+            'gmail',
             '--tool',
             'GMAIL_SEND_EMAIL',
             '--cursor',
@@ -59,13 +59,11 @@ describe('CLI: composio dev logs tools', () => {
                 filters: [
                   { field: 'tool_slug', operator: '==', value: 'GMAIL_SEND_EMAIL' },
                   { field: 'toolkit_slug', operator: '==', value: 'gmail' },
-                  { field: 'toolkit_slug', operator: '==', value: 'slack' },
                   { field: 'connected_account_id', operator: '==', value: 'ca_1' },
                   { field: 'auth_config_id', operator: '==', value: 'ac_1' },
                   { field: 'status', operator: '==', value: 'failed' },
                   { field: 'user_id', operator: '==', value: 'user_1' },
                   { field: 'log_id', operator: '==', value: 'log_a' },
-                  { field: 'log_id', operator: '==', value: 'log_b' },
                   { field: 'session_id', operator: '==', value: 'trs_1' },
                 ],
               },
@@ -88,19 +86,16 @@ describe('CLI: composio dev logs tools', () => {
     );
 
     it.effect.each([
-      { args: ['dev', 'logs', 'tools', '--user-id', 'user_1,user_2'] },
-      { args: ['dev', '--user-id', 'user_1,user_2', 'logs', 'tools'] },
+      { args: ['dev', 'logs', 'tools', '--user-id', 'user_1'] },
+      { args: ['dev', '--user-id', 'user_1', 'logs', 'tools'] },
     ])(
-      '[Given] shared user filters at either position [Then] includes each user in the public filters',
+      '[Given] a shared user filter at either position [Then] includes the user in the public filters',
       ({ args }) =>
         Effect.gen(function* () {
           const stub = stubClientResources(['logs'], () => Response.json({ logs: [] }));
           yield* cli(args).pipe(Effect.provide(stub.layer));
           expect(stub.requests[0]?.body).toMatchObject({
-            filters: [
-              { field: 'user_id', operator: '==', value: 'user_1' },
-              { field: 'user_id', operator: '==', value: 'user_2' },
-            ],
+            filters: [{ field: 'user_id', operator: '==', value: 'user_1' }],
           });
         })
     );
@@ -109,6 +104,10 @@ describe('CLI: composio dev logs tools', () => {
       { args: ['--case-sensitive'], option: '--case-sensitive' },
       { args: ['--session-id', 'cli_session'], option: '--session-id' },
       { args: ['--status', 'unknown'], option: '--status' },
+      { args: ['--status', 'success,failed'], option: '--status' },
+      { args: ['--toolkit', 'gmail,slack'], option: '--toolkit' },
+      { args: ['--log-id', 'log_a,log_b'], option: '--log-id' },
+      { args: ['--user-id', 'user_1,user_2'], option: '--user-id' },
     ])(
       '[Given] $args [Then] rejects unsupported filtering before requesting logs',
       ({ args, option }) =>

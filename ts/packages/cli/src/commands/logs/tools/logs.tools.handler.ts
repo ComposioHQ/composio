@@ -42,30 +42,37 @@ type ToolLogFilterInput = {
   readonly toolRouterSessionId?: string;
 };
 
-/** The search field each filter is sent as, in the order the filters are sent. */
+/**
+ * The search field each filter is sent as and the flag that sets it, in the
+ * order the filters are sent.
+ */
 const TOOL_LOG_FILTER_FIELDS = [
-  ['tool', 'tool_slug'],
-  ['toolkit', 'toolkit_slug'],
-  ['connectedAccountId', 'connected_account_id'],
-  ['authConfigId', 'auth_config_id'],
-  ['status', 'status'],
-  ['userId', 'user_id'],
-  ['logId', 'log_id'],
-  ['toolRouterSessionId', 'session_id'],
-] as const satisfies ReadonlyArray<readonly [keyof ToolLogFilterInput, string]>;
+  ['tool', 'tool_slug', '--tool'],
+  ['toolkit', 'toolkit_slug', '--toolkit'],
+  ['connectedAccountId', 'connected_account_id', '--connected-account-id'],
+  ['authConfigId', 'auth_config_id', '--auth-config-id'],
+  ['status', 'status', '--status'],
+  ['userId', 'user_id', '--user-id'],
+  ['logId', 'log_id', '--log-id'],
+  ['toolRouterSessionId', 'session_id', '--tool-router-session-id'],
+] as const satisfies ReadonlyArray<readonly [keyof ToolLogFilterInput, string, string]>;
 
 /**
- * One equality filter per comma-separated value of each present flag, in
- * the order of `TOOL_LOG_FILTER_FIELDS`.
+ * The flag of the first filter given more than one comma-separated value. The
+ * public API combines filters with AND, so several values for one field would
+ * match nothing.
  */
+const findMultiValuedFilter = (filters: ToolLogFilterInput): Option.Option<string> =>
+  Arr.findFirst(TOOL_LOG_FILTER_FIELDS, ([key]) => parseCsv(filters[key] ?? '').length > 1).pipe(
+    Option.map(([, , flag]) => flag)
+  );
+
+/** One equality filter for each present flag, in the order of `TOOL_LOG_FILTER_FIELDS`. */
 const buildToolLogFilters = (
   filters: ToolLogFilterInput
 ): NonNullable<LogCreateToolExecutionParams['filters']> =>
   Arr.flatMap(TOOL_LOG_FILTER_FIELDS, ([key, field]) =>
-    Option.match(Option.fromUndefinedOr(filters[key]), {
-      onNone: () => [],
-      onSome: csv => parseCsv(csv).map(value => ({ field, operator: '==' as const, value })),
-    })
+    parseCsv(filters[key] ?? '').map(value => ({ field, operator: '==' as const, value }))
   );
 
 const showToolLog = (toolLogId: string) =>
@@ -116,31 +123,34 @@ const listToolLogs = ({
         '--session-id'
       );
     }
+    const filterInput = optionalParams({
+      tool,
+      toolkit,
+      connectedAccountId,
+      authConfigId,
+      status,
+      userId: userIdFilter,
+      logId: logIdFilter,
+      toolRouterSessionId,
+    });
+    const multiValuedFlag = findMultiValuedFilter(filterInput);
+    if (Option.isSome(multiValuedFlag)) {
+      return yield* invalidInput(
+        `The public tool logs API matches one value per filter. Pass a single value to ${multiValuedFlag.value}.`,
+        multiValuedFlag.value
+      );
+    }
     if (
       Option.isSome(status) &&
       parseCsv(status.value).some(value => value !== 'success' && value !== 'failed')
     ) {
-      return yield* invalidInput(
-        'Use success or failed for --status (comma-separated).',
-        '--status'
-      );
+      return yield* invalidInput('Use success or failed for --status.', '--status');
     }
     const timeRange =
       Option.isSome(from) || Option.isSome(to)
         ? { from: Option.getOrElse(from, () => 0), to: Option.getOrElse(to, () => now) }
         : undefined;
-    const filters = buildToolLogFilters(
-      optionalParams({
-        tool,
-        toolkit,
-        connectedAccountId,
-        authConfigId,
-        status,
-        userId: userIdFilter,
-        logId: logIdFilter,
-        toolRouterSessionId,
-      })
-    );
+    const filters = buildToolLogFilters(filterInput);
 
     const client = yield* (yield* ComposioClientSingleton).get();
     // The client names this read-only search POST createToolExecution.
