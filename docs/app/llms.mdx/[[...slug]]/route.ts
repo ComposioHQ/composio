@@ -1162,7 +1162,7 @@ function renderMetaToolParams(
       typeof param.items === 'object' &&
       (param.items as Record<string, unknown>).type
         ? `array<${(param.items as Record<string, unknown>).type}>`
-        : param.type;
+        : param.type || 'any';
     const reqMark = requiredFields.includes(name) ? ' *(required)*' : '';
     const desc = param.description
       ? `: ${param.description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()}`
@@ -1216,6 +1216,14 @@ function metaToolToMarkdown(tool: MetaTool): string {
   }
 
   lines.push('');
+
+  lines.push(tool.summary || tool.description, '');
+  if (tool.whenToUse) {
+    lines.push('## When to use it', '', tool.whenToUse, '');
+  }
+  if (tool.usageNote) {
+    lines.push(tool.usageNote, '');
+  }
 
   const inputProps = tool.inputParameters?.properties || {};
   if (Object.keys(inputProps).length > 0) {

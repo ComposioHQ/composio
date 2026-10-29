@@ -3,7 +3,7 @@ import { join } from 'path';
 import { getMetaToolOverride } from './meta-tool-overrides';
 
 export interface MetaToolParameter {
-  type: string;
+  type?: string;
   description: string;
   required?: string[] | boolean;
   default?: unknown;

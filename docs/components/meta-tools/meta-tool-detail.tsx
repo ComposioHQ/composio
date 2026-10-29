@@ -51,7 +51,7 @@ function ParameterRow({ name, param, isLast, showRequired = true, isRequired = f
   // Show array<itemType> for simple item types
   const typeLabel = param.type === 'array' && items?.type && !itemsHaveProperties
     ? `array<${items.type}>`
-    : param.type;
+    : param.type || 'any';
 
   return (
     <div className={cn(!isLast && 'border-b border-fd-border')}>
