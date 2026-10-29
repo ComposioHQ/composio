@@ -1,0 +1,85 @@
+---
+title: Composio vs Nango for multi-tenant agents
+description: Compare provider execution, integration-code ownership, credential access, deployment, and migration for a multi-tenant agent.
+keywords: [Composio vs Nango, multi tenant agents, managed auth, token custody, custom tools, integration infrastructure]
+---
+
+Choose between Composio and Nango by deciding who owns provider-call logic, whether your backend needs raw credentials, and where credentials may be stored and decrypted. Both offer predefined operations, custom integration paths, and authenticated proxies. Neither removes your application's responsibility to authorize tenant access.
+
+**Sources checked: 2026-10-29.** This guide compares the documented interfaces and deployment boundaries linked below, not benchmark results or a universal security ranking. Confirm provider coverage and commercial terms for your deployment before committing.
+
+## Start with your execution requirements
+
+| Requirement | Composio | Nango |
+|---|---|---|
+| Use predefined provider operations | [Session tools](/docs/how-composio-works#meta-tools) support runtime discovery; the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) exposes a fixed selection. | [Catalog actions](https://nango.dev/docs/guides/functions/functions-guide) are available directly or through agent sessions. Nango maintains and automatically updates them. |
+| Own provider-specific logic | Keep code in your backend and call [Proxy Execute](/docs/extending-sessions/proxy-execute). Experimental [extension tools](/docs/extending-sessions/custom-tools-and-toolkits) run custom functions in your process alongside session tools. | Write and deploy TypeScript [functions](https://nango.dev/docs/guides/functions/functions-guide) to Nango, pull catalog functions into your repository, or keep code in your backend and use its proxy. |
+| Call an endpoint without reading tokens | Proxy Execute injects authentication and returns the provider response. It requires the **Proxy execute** API-key permission. | The [requests proxy](https://nango.dev/docs/guides/platform/proxy-requests) authenticates provider requests. It requires `environment:proxy`. |
+| Retrieve credentials for calls from your own HTTP client | Connected-account reads redact credentials for managed and custom auth configs. There is no supported token-export workflow. Use execution or the proxy instead. | [Get connection & credentials](https://nango.dev/docs/reference/backend/http-api/connections/get) can return tokens with credential-read permission. Your backend then handles those secrets. |
+| Run deterministic backend operations | A session is runtime context, not a required agent framework. Backend code can call tools or the proxy without an LLM; account-specific proxy calls can run without a session. | Your backend can call actions, functions, or the proxy without an agent. Agent sessions are an additional interface, not a requirement. |
+
+Nango's [functions guide](https://nango.dev/docs/guides/functions/functions-guide) distinguishes automatically updated catalog actions from repository-owned functions. If deterministic code needs a stable contract, Nango recommends pulling and deploying the action so it stops following catalog updates. Don't compare Composio's predefined tools against only Nango's custom-code path: both have predefined and custom options.
+
+For Composio's credential and execution boundaries, see [Token custody architecture](/docs/security/token-custody#execution-paths). Custom tool logic does not require token retrieval: your function can construct a request and delegate its authentication to the proxy.
+
+## Define tenant authorization before choosing tools
+
+In either product, authenticate the caller in your trusted backend and resolve the tenant, member, and allowed connections before granting execution access. A user ID, connection ID, or caller-supplied tag is not proof of identity.
+
+- **Composio:** Choose [member-owned or workspace-owned connections](/docs/b2b-agents#choose-the-connection-owner), derive an immutable `userID`, and select the allowed accounts and tools before creating or restoring a session. Authorize members separately when they use a shared workspace connection.
+- **Nango:** Its [auth guide](https://nango.dev/docs/guides/auth/auth-guide) requires you to persist the connection ID against the owning user, organization, or project. Its [agent sessions](https://nango.dev/docs/guides/agent-sessions) let your backend select connections using tags or pinned IDs and restrict the toolset. The [API-key reference](https://nango.dev/docs/reference/backend/http-api/api-keys) labels agent sessions experimental, with possible breaking changes.
+
+Test two members of one workspace and a member of another workspace. Verify that changing a request's tenant, user, connection, or session identifier cannot grant access to another owner's data.
+
+## Separate OAuth app ownership from token custody
+
+Your OAuth app determines provider-facing configuration such as client credentials, branding, and requested scopes. It does not, by itself, determine where tokens live.
+
+With a [Composio custom auth config](/docs/authentication/custom-app-vs-managed-app), Composio Cloud still stores and uses the resulting tokens. Account-read redaction is unchanged. Nango's [auth guide](https://nango.dev/docs/guides/auth/auth-guide) supports managed OAuth apps where available and your own OAuth app; in either case, Nango Auth stores the resulting connection credentials in the selected Nango deployment.
+
+If your application must not receive raw credentials, both products offer proxy-based execution. If it must retrieve tokens for an existing HTTP client, Nango documents that path. Its [API-key scopes](https://nango.dev/docs/reference/backend/http-api/api-keys#credential-scopes) distinguish metadata-only `environment:connections:read` from `environment:connections:read_credentials`. The credential endpoint omits the refresh token by default; requesting it requires `refresh_token=true` and appropriate credential access. Keep retrieved tokens out of model context and application logs.
+
+## Choose the deployment and key boundary
+
+| Deployment | Composio | Nango |
+|---|---|---|
+| Hosted cloud | Composio hosts credential storage and execution. | Nango Cloud hosts credential storage and execution. Its [security guide](https://nango.dev/docs/guides/platform/security) documents envelope encryption with AWS KMS. |
+| Private infrastructure | Private VPC and self-hosted deployments are **Enterprise arrangements**, not default Cloud settings. Specify storage, operator access, and key ownership in the agreed design. | [BYOC and Self-Managed](https://nango.dev/docs/guides/platform/self-hosting/self-hosting) both require an **Enterprise subscription**. BYOC is operated by Nango in your AWS, GCP, or Azure account. Self-Managed is operated by you on your infrastructure. |
+| Customer-managed keys | A separately agreed customer-managed key deployment uses a proxy in your cloud to handle credential plaintext under your KMS keys. Composio retains the control plane without that key material. This is not implied by an Enterprise subscription or a custom OAuth app. | [BYOC](https://nango.dev/docs/guides/platform/self-hosting/byoc#encryption-credentials) provisions a customer-managed key in your cloud account. The deployment identity has encrypt permission; the running application's workload identity can unwrap the data-encryption key. [Self-Managed](https://nango.dev/docs/guides/platform/self-hosting/self-managed#encryption-key) requires you to configure encryption and supports wrapping the key with your KMS. |
+| Limited free self-hosting | The documented self-hosted offering is an Enterprise arrangement. | Nango separately documents a free self-hosted option for hobby projects with **Auth and Proxy**. It does not include functions, tool calls, syncs, webhooks, MCP, or the full Enterprise feature set. |
+
+Composio's [deployment options](/docs/security/token-custody#deployment-options) describe its VPC, self-hosted, and customer-managed key boundaries. Confirm the architecture and availability with the team rather than assuming these options are interchangeable.
+
+Nango's [self-hosting overview](https://nango.dev/docs/guides/platform/self-hosting/self-hosting) specifies an annual license and maintenance fee plus a portion of Cloud usage-based fees for Enterprise self-hosting, in addition to infrastructure you run. Its BYOC guide documents operational telemetry sent to Datadog and Nango-operated updates. Its Self-Managed guide documents anonymous usage telemetry and customer-operated updates. Confirm the exact access, telemetry, and support terms in your agreement.
+
+For either product, ask who can decrypt credentials, who can update the running application, and where logs and backups reside. A customer-managed key or a VPC label alone is not a complete operator-access policy.
+
+## Plan migration before onboarding customers
+
+Separate migration of your code and identity mappings from migration of provider credentials:
+
+1. **Inventory connection ownership.** Record the tenant, member or workspace owner, provider, OAuth app, scopes, connection ID, and refresh responsibility. Keep your application's IDs independent of either vendor's IDs.
+2. **Check credential access.** Composio account reads are not an export mechanism. Plan reauthorization when leaving unless a supported migration arrangement is explicitly agreed. Nango documents credential retrieval, including optional refresh-token retrieval, and a [connection import API](https://nango.dev/docs/reference/backend/http-api/connections/post). These are building blocks, not a guarantee that every provider grant is portable.
+3. **Check the destination's auth model.** [Composio imports](/docs/authentication/importing-existing-connections) require credentials you already possess. Importing an OAuth access token as a bearer token does not transfer refresh management: your backend must refresh it and push updates. Nango's import fields depend on the authentication type and can include refresh tokens and OAuth client overrides.
+4. **Validate with one provider and tenant.** Verify app ownership, provider rules, required scopes, refresh-token behavior, and destination support. If credentials cannot be transferred or remain valid only for an app you cannot use at the destination, plan a reconnect flow. Do not promise migration without reauthorization merely because you own the OAuth app.
+5. **Cut over execution and events together.** Rebind tools, jobs, webhooks, and stored connection mappings. Verify a real operation and refresh or reconnect before retiring the old connection path.
+
+## Make the decision with a representative workflow
+
+Choose one provider operation your product needs, including a custom endpoint and a workspace-owned account. Evaluate these acceptance criteria on each candidate:
+
+- Can you use a maintained action, and who owns changes to its input and output contract?
+- Can your own business logic call the provider without receiving a token? If raw credentials are required, is retrieval supported under the permissions you intend to grant?
+- Can your backend prevent cross-tenant access and revoke a removed member's access?
+- Does the agreed deployment meet your storage, decryption, operator-access, and telemetry requirements?
+- Can you document the exit path, including which customers would need to reconnect?
+
+Start with Composio's session tools if its predefined actions and managed execution fit your workflow. Use its proxy when you want to own integration logic without retrieving credentials. Evaluate Nango's functions when you want repository-owned integration code deployed to its runtime, or its credential API when your backend must make token-authenticated calls itself. Validate coverage and custody requirements on both rather than choosing on a feature label alone.
+
+## Next
+
+<Cards>
+  <Card title="Design a B2B agent" href="/docs/b2b-agents" description="Choose member-owned or workspace-owned connections and tenant identities." />
+  <Card title="Token custody architecture" href="/docs/security/token-custody" description="Review Composio's credential redaction, execution paths, and deployment options." />
+  <Card title="Proxy Execute" href="/docs/extending-sessions/proxy-execute" description="Call provider endpoints from your own code with managed authentication." />
+</Cards>

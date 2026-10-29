@@ -95,6 +95,22 @@ If each customer supplies different OAuth credentials, create and manage auth co
 
 For a fully branded connection flow, combine custom OAuth credentials with [white-labeling](/docs/authentication/white-labeling-authentication).
 
+## Choose how your code calls providers
+
+Connection ownership and execution are separate decisions. You can combine these paths for the same customer:
+
+| You need | Use |
+|---|---|
+| Predefined provider actions with runtime discovery | [Session tools](/docs/how-composio-works#meta-tools). For a fixed tool list, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset). |
+| Your own tool or backend logic calling a provider endpoint | [Proxy Execute](/docs/extending-sessions/proxy-execute). Your code owns the request and business logic; Composio supplies the connected account's authentication. Proxy access requires its own API-key permission. |
+| Custom functions alongside session tools | Experimental [extension tools](/docs/extending-sessions/custom-tools-and-toolkits). Functions run in your process and can delegate authenticated requests to the proxy. Pin and test your SDK version before production use. |
+
+A session is runtime context for identity, connections, and tools, not an agent framework you must adopt. You can call providers from deterministic backend code without an LLM. Account-specific [proxy calls](/docs/tools-direct/executing-tools#proxy-execute) also work independently of a session.
+
+Choosing your own OAuth app does not move token storage into your infrastructure. In Composio Cloud, account reads redact tokens for managed and custom auth configs, and there is no supported token-export workflow. Review [token custody and deployment options](/docs/security/token-custody#deployment-options) separately: private VPC and self-hosted deployments are Enterprise arrangements, and customer-managed keys require a separately agreed setup.
+
+If you're evaluating integration infrastructure, use [Composio vs Nango for multi-tenant agents](/docs/composio-vs-nango) to compare execution ownership, credential access, deployment, and migration.
+
 ## Route events back to the right tenant
 
 Store your workspace and member mapping next to the Composio user and connected-account IDs. When a trigger event arrives, resolve that mapping before running customer-specific work. Your webhook handler must also enforce any tenant or role checks required by your product.
@@ -115,5 +131,6 @@ See [Subscribing to trigger events](/docs/setting-up-triggers/subscribing-to-eve
 <Cards>
   <Card title="Build a consumer agent" href="/docs/consumer-agents" description="Use a simpler per-person identity and connection model." />
   <Card title="White-label authentication" href="/docs/authentication/white-labeling-authentication" description="Brand Connect Links, consent screens, domains, and callbacks." />
+  <Card title="Compare Composio and Nango" href="/docs/composio-vs-nango" description="Choose execution, token custody, and deployment boundaries for a multi-tenant agent." />
   <Card title="Move to production" href="/docs/production-readiness" description="Review identity, auth, security, logging, and trigger decisions." />
 </Cards>
