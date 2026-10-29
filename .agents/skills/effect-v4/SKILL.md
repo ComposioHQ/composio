@@ -63,7 +63,7 @@ pnpm typecheck
 pnpm --filter @composio/cli test
 ```
 
-Run `pnpm validate:agent-skills` and `pnpm validate:skill-routing` after editing this
+Run `bun run validate:agent-skills` and `bun run validate:skill-routing` after editing this
 skill or its descriptions, and compile the TypeScript blocks in this skill and in
 `typescript-testing/references/effect-v4-cli.md` against the pinned packages with:
 
