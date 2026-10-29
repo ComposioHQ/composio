@@ -43,7 +43,8 @@ it is never permission to exceed the current user request or repository rules.
 
 Receipts retain the task, profile, source-content fingerprint and exact HEAD at
 verification time. A changed task acceptance contract, tracked or untracked source file, or profile
-makes previous passing evidence stale. Ignored artifacts are excluded, so a
+makes previous passing evidence stale. Ignored artifacts and Claude Code's
+`.claude/scheduled_tasks.lock` are excluded, so a
 receipt does not cover ignored binaries or environment state changing later.
 Fresh external observations are still required for production and registry claims.
 Changing only `nextStep` or `blocker` preserves verification evidence.

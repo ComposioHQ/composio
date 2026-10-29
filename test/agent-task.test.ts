@@ -37,6 +37,8 @@ const fixture = () => {
   symlinkSync(new URL('../node_modules', import.meta.url), path.join(root, 'node_modules'), 'dir');
   writeFileSync(path.join(root, '.gitignore'), '.artifacts/\nnode_modules\n');
   writeFileSync(path.join(root, 'source.txt'), 'original');
+  mkdirSync(path.join(root, '.claude'));
+  writeFileSync(path.join(root, '.claude/scheduled_tasks.lock'), 'session one');
   const profiles = {
     offline: {
       boundary: 'offline',
@@ -295,6 +297,16 @@ test('successful profile evidence expires after dirty edits, untracked sources, 
   const task = JSON.parse(readFileSync(taskPath, 'utf8'));
   task.goal = 'A different acceptance outcome';
   writeFileSync(taskPath, JSON.stringify(task));
+  assert.equal(f.state('case').status, 'stale');
+});
+
+test('the Claude Code scheduler lock does not invalidate evidence', () => {
+  const f = fixture();
+  assert.equal(f.init().status, 0);
+  assert.equal(f.run('verify', 'case').status, 0);
+  writeFileSync(path.join(f.root, '.claude/scheduled_tasks.lock'), 'session two');
+  assert.equal(f.state('case').status, 'passed');
+  writeFileSync(path.join(f.root, 'source.txt'), 'changed without a commit');
   assert.equal(f.state('case').status, 'stale');
 });
 

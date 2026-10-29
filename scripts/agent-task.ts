@@ -230,12 +230,16 @@ function lockTask(task: string) {
   }
 }
 
+// Claude Code rewrites this tracked file while sessions run; it is not a verification input.
+const volatilePaths = ['.claude/scheduled_tasks.lock'];
+
 function subject() {
   const hash = createHash('sha256');
   const addTree = (cwd: string, prefix = '') => {
-    hash.update(git(['ls-files', '--stage', '-z'], cwd));
+    const pathspec = prefix ? [] : ['--', '.', ...volatilePaths.map(file => `:(exclude)${file}`)];
+    hash.update(git(['ls-files', '--stage', '-z', ...pathspec], cwd));
     const names = new Set(
-      git(['ls-files', '--cached', '--others', '--exclude-standard', '-z'], cwd)
+      git(['ls-files', '--cached', '--others', '--exclude-standard', '-z', ...pathspec], cwd)
         .toString()
         .split('\0')
         .filter(Boolean)
