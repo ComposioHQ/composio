@@ -56,6 +56,7 @@ describe('proxy execute meta-tool reference', () => {
     expect(tool).not.toBeNull();
     const html = renderToStaticMarkup(<MetaToolDetail tool={tool!} />);
     expect(html).toMatch(/>body<\/code><span[^>]*>any<\/span>/);
+    expect(html).toMatch(/>parameters<\/code><span[^>]*>array&lt;object&gt;<\/span>/);
     expect(html).toContain('HEAD');
   });
 
@@ -68,6 +69,7 @@ describe('proxy execute meta-tool reference', () => {
     const markdown = await response.text();
     expect(markdown).toContain('`body` (any)');
     expect(markdown).toContain('`data` (any)');
+    expect(markdown).toContain('`parameters` (array<object>)');
     expect(markdown).not.toContain('(undefined)');
     expect(markdown).toContain('`successful: false`');
     expect(markdown).toContain('non-2xx');
