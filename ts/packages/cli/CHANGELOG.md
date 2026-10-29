@@ -25,6 +25,8 @@
   `logs` / `next_cursor` envelope and unified log detail fields. The public API
   does not support `--case-sensitive` or the legacy `--session-id` filter;
   these now fail with an explanation. `--tool-router-session-id` remains supported.
+  Each filter flag takes one value; a comma-separated list now fails instead of
+  matching nothing.
 
 - `composio dev connected-accounts link <toolkit>` (with or without `--list`)
   now acts on your developer project, like the other `composio dev` commands:
