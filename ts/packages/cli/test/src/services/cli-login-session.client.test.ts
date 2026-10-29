@@ -6,7 +6,6 @@ import { ConfigProvider, Effect, Fiber, Layer, Option, Schema } from 'effect';
 import { Base64Url } from 'effect/encoding';
 import { HttpClient } from 'effect/http';
 import { TestClock } from 'effect/testing';
-import { createHash } from 'node:crypto';
 import * as tempy from 'tempy';
 import { vi } from 'vitest';
 import { handlePollLogin } from 'src/commands/login/login.handler';
@@ -179,8 +178,11 @@ const wireTest = (env: Record<string, string> = {}) => {
   return { layer, pending };
 };
 
+/** The S256 challenge of `verifier`, through Web Crypto rather than the CLI's own helper. */
 const s256 = (verifier: string) =>
-  Base64Url.encode(new Uint8Array(createHash('sha256').update(verifier).digest()));
+  Effect.promise(() => crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))).pipe(
+    Effect.map(digest => Base64Url.encode(new Uint8Array(digest)))
+  );
 
 describe('CLI login session on the wire', () => {
   afterEach(() => {
@@ -217,7 +219,7 @@ describe('CLI login session on the wire', () => {
         )(create.body);
         expect(createBody).toMatchObject({
           scope: 'user',
-          code_challenge: s256(verifier),
+          code_challenge: yield* s256(verifier),
           code_challenge_method: 'S256',
         });
         expect(createBody.code_challenge).toMatch(BASE64URL_43);
