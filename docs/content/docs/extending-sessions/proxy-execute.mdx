@@ -141,6 +141,10 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 The option also accepts `{ enable: true }` (`{"enable": True}` in Python). If you omit it at creation, the meta tool is off and `sandbox.enableProxyExecution` (`sandbox.enable_proxy_execution` in Python) controls the sandbox's `proxy_execute()` helper.
 
+The [`COMPOSIO_PROXY_EXECUTE`](/toolkits/meta-tools/proxy_execute) meta tool uses different arguments from `session.proxyExecute()`: pass `toolkit_slug` instead of `toolkit`, put each parameter's location in `type` instead of `in`, and `method` also accepts `HEAD`.
+
+Failures come back as a tool result with `successful: false` and an `error`. An upstream non-2xx response returns normally in `data`, with its HTTP `status` and body. Large responses can be offloaded to the [sandbox](/docs/sandbox/remote), as with other tool results.
+
 Change the setting with `session.update({ proxyExecute: false })` or Python `session.update(proxy_execute=False)`. Disabling it also disables the sandbox helper. Pass `null` (`None` in Python) on update to remove the stored setting.
 
 <Callout type="warn">

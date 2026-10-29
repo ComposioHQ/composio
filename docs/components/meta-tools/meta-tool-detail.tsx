@@ -25,13 +25,6 @@ const TAG_LABELS: Record<string, { label: string; className: string }> = {
   },
 };
 
-/** Extract the required field names array from a schema-like object */
-function getRequiredFields(schema: unknown): string[] {
-  if (!schema || typeof schema !== 'object') return [];
-  const req = (schema as Record<string, unknown>).required;
-  return Array.isArray(req) ? req : [];
-}
-
 function TagBadge({ tag }: { tag: string }) {
   const info = TAG_LABELS[tag];
   if (!info) return null;
@@ -43,37 +36,32 @@ function TagBadge({ tag }: { tag: string }) {
 }
 
 function ParameterRow({ name, param, isLast, showRequired = true, isRequired = false }: { name: string; param: MetaToolParameter; isLast: boolean; showRequired?: boolean; isRequired?: boolean }) {
-  const hasNested = param.properties && Object.keys(param.properties).length > 0;
-  const items = param.items && typeof param.items === 'object' ? param.items as Record<string, unknown> : null;
-  const itemsHaveProperties = items && typeof items.properties === 'object' && Object.keys(items.properties as object).length > 0;
+  const hasNested = Object.keys(param.properties).length > 0;
+  const nestedSchema = hasNested ? param : param.items;
+  const nestedCount = nestedSchema ? Object.keys(nestedSchema.properties).length : 0;
   const [isOpen, setIsOpen] = useState(false);
-
-  // Show array<itemType> for simple item types
-  const typeLabel = param.type === 'array' && items?.type && !itemsHaveProperties
-    ? `array<${items.type}>`
-    : param.type;
 
   return (
     <div className={cn(!isLast && 'border-b border-fd-border')}>
       <div className="py-3">
         <div className="flex flex-wrap items-center gap-2">
           <code className="text-sm font-semibold font-mono text-fd-foreground">{name}</code>
-          <span className="text-xs font-mono text-fd-muted-foreground">{typeLabel}</span>
+          <span className="text-xs font-mono text-fd-muted-foreground">{param.typeLabel}</span>
           {showRequired && isRequired && (
             <span className="text-xs font-medium text-red-500 dark:text-red-400">Required</span>
           )}
-          {param.default !== undefined && param.default !== null && param.default !== '' && (
+          {param.defaultLabel !== null && (
             <span className="text-xs text-fd-muted-foreground">
-              Default: <code className="rounded border border-fd-border px-1 py-0.5 text-xs">{String(param.default)}</code>
+              Default: <code className="rounded border border-fd-border px-1 py-0.5 text-xs">{param.defaultLabel}</code>
             </span>
           )}
         </div>
         {param.description && (
           <p className="mt-1.5 text-sm text-fd-muted-foreground leading-relaxed">
-            {param.description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()}
+            {param.description}
           </p>
         )}
-        {param.enum && param.enum.length > 0 && (
+        {param.enum.length > 0 && (
           <div className="mt-2">
             <span className="text-xs text-fd-muted-foreground">Possible values: </span>
             <span className="inline-flex flex-wrap gap-1 mt-0.5">
@@ -85,19 +73,17 @@ function ParameterRow({ name, param, isLast, showRequired = true, isRequired = f
             </span>
           </div>
         )}
-        {(hasNested || itemsHaveProperties) && (
+        {nestedSchema && nestedCount > 0 && (
           <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mt-2">
             <CollapsibleTrigger className="flex items-center gap-1 text-xs text-fd-muted-foreground hover:text-fd-foreground font-medium transition-colors">
               {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              {hasNested
-                ? `Show ${Object.keys(param.properties!).length} properties`
-                : `Show ${Object.keys((items!.properties as object)).length} item properties`}
+              {hasNested ? `Show ${nestedCount} properties` : `Show ${nestedCount} item properties`}
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-2 pl-3 border-l-2 border-fd-border">
                 <ParameterList
-                  parameters={(hasNested ? param.properties! : items!.properties) as Record<string, MetaToolParameter>}
-                  requiredFields={getRequiredFields(hasNested ? param : items)}
+                  parameters={nestedSchema.properties}
+                  requiredFields={nestedSchema.required}
                   showRequired={showRequired}
                 />
               </div>
@@ -121,7 +107,7 @@ function ParameterList({ parameters, requiredFields = [], showRequired = true }:
 }
 
 function SchemaSection({ title, schema, showRequired = true }: { title: string; schema: MetaToolSchema; showRequired?: boolean }) {
-  const properties = schema.properties || {};
+  const properties = schema.properties;
   const entries = Object.entries(properties);
 
   if (entries.length === 0) return null;
@@ -131,7 +117,7 @@ function SchemaSection({ title, schema, showRequired = true }: { title: string; 
       <h2 className="text-base font-semibold text-fd-foreground mb-3">{title}</h2>
       <div className="rounded-lg border border-fd-border bg-fd-card">
         <div className="px-4">
-          <ParameterList parameters={properties} requiredFields={schema.required || []} showRequired={showRequired} />
+          <ParameterList parameters={properties} requiredFields={schema.required} showRequired={showRequired} />
         </div>
       </div>
     </div>

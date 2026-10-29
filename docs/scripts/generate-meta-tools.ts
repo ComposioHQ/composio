@@ -94,6 +94,8 @@ async function createSession(): Promise<string> {
         recipesEnabled: true,
         enableWaitForConnections: true,
       },
+      // Opt-in meta tools are listed only in sessions that enable them.
+      proxy_execute: { enable: true },
     }),
   });
 

@@ -1158,48 +1158,32 @@ function renderMetaToolParams(
   const prefix = '  '.repeat(indent);
 
   for (const [name, param] of Object.entries(properties)) {
-    const typeStr =
-      param.type === 'array' &&
-      param.items &&
-      typeof param.items === 'object' &&
-      (param.items as Record<string, unknown>).type
-        ? `array<${(param.items as Record<string, unknown>).type}>`
-        : param.type;
     const reqMark = requiredFields.includes(name) ? ' *(required)*' : '';
     const desc = param.description
-      ? `: ${param.description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()}`
+      ? `: ${param.description}`
       : '';
     const defaultStr =
-      param.default !== undefined && param.default !== null && param.default !== ''
-        ? ` (default: \`${String(param.default)}\`)`
+      param.defaultLabel !== null
+        ? ` (default: \`${param.defaultLabel}\`)`
         : '';
     const enumStr =
-      param.enum && param.enum.length > 0
+      param.enum.length > 0
         ? ` — values: ${param.enum.map(v => `\`${v}\``).join(', ')}`
         : '';
 
-    lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}${defaultStr}${enumStr}`);
+    lines.push(`${prefix}- \`${name}\` (${param.typeLabel})${reqMark}${desc}${defaultStr}${enumStr}`);
 
-    if (param.properties && Object.keys(param.properties).length > 0) {
-      const nestedRequired = Array.isArray(param.required) ? param.required : [];
-      lines.push(...renderMetaToolParams(param.properties, nestedRequired, indent + 1));
+    if (Object.keys(param.properties).length > 0) {
+      lines.push(...renderMetaToolParams(param.properties, param.required, indent + 1));
     }
 
-    const items =
-      param.items && typeof param.items === 'object'
-        ? (param.items as Record<string, unknown>)
-        : null;
-    if (
-      items?.properties &&
-      typeof items.properties === 'object' &&
-      Object.keys(items.properties as object).length > 0
-    ) {
-      const itemsRequired = Array.isArray(items.required) ? (items.required as string[]) : [];
+    const items = param.items;
+    if (items && Object.keys(items.properties).length > 0) {
       lines.push(`${prefix}  - Array items:`);
       lines.push(
         ...renderMetaToolParams(
-          items.properties as Record<string, MetaToolParameter>,
-          itemsRequired,
+          items.properties,
+          items.required,
           indent + 2
         )
       );
@@ -1219,17 +1203,25 @@ function metaToolToMarkdown(tool: MetaTool): string {
 
   lines.push('');
 
-  const inputProps = tool.inputParameters?.properties || {};
+  lines.push(tool.summary, '');
+  if (tool.whenToUse) {
+    lines.push('## When to use it', '', tool.whenToUse, '');
+  }
+  if (tool.usageNote) {
+    lines.push(tool.usageNote, '');
+  }
+
+  const inputProps = tool.inputParameters.properties;
   if (Object.keys(inputProps).length > 0) {
     lines.push('## Input Parameters', '');
-    lines.push(...renderMetaToolParams(inputProps, tool.inputParameters?.required || []));
+    lines.push(...renderMetaToolParams(inputProps, tool.inputParameters.required));
     lines.push('');
   }
 
-  const responseProps = tool.responseSchema?.properties || {};
+  const responseProps = tool.responseSchema.properties;
   if (Object.keys(responseProps).length > 0) {
     lines.push('## Response', '');
-    lines.push(...renderMetaToolParams(responseProps, tool.responseSchema?.required || []));
+    lines.push(...renderMetaToolParams(responseProps, tool.responseSchema.required));
     lines.push('');
   }
 
