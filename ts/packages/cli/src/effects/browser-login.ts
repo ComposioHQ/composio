@@ -282,16 +282,22 @@ export const waitForLinkedSession = <E, R>(
     );
   });
 
-export const settlingPendingLogin = <A, E, R>(self: Effect.Effect<A, E, R>) =>
-  Effect.gen(function* () {
-    const pendingLogin = yield* PendingLoginSession;
-    return yield* self.pipe(
-      Effect.tap(() => pendingLogin.clear),
-      Effect.tapError(error =>
-        error instanceof LoginSessionEndedError ? pendingLogin.clear : Effect.void
-      )
-    );
-  });
+/**
+ * Clears the cached login for session `key` once `self` gets its key or the API ends the
+ * login. A login another terminal cached in the meantime stays for its own `--poll`.
+ */
+export const settlingPendingLogin =
+  (key: string) =>
+  <A, E, R>(self: Effect.Effect<A, E, R>) =>
+    Effect.gen(function* () {
+      const pendingLogin = yield* PendingLoginSession;
+      return yield* self.pipe(
+        Effect.tap(() => pendingLogin.clear(key)),
+        Effect.tapError(error =>
+          error instanceof LoginSessionEndedError ? pendingLogin.clear(key) : Effect.void
+        )
+      );
+    });
 
 /**
  * Verifies the linked session's key through session/info and stores it as the CLI's login.
@@ -520,14 +526,12 @@ export const browserLogin = (params: {
       yield* openLoginUrl(url);
     }
 
-    const linkedSession = yield* settlingPendingLogin(
-      waitForLinkedSession(
-        client
-          .getSession({ id: session.id, verifier: proof.verifier })
-          .pipe(mapSessionEnding(error => error)),
-        session.expiresAt
-      )
-    );
+    const linkedSession = yield* waitForLinkedSession(
+      client
+        .getSession({ id: session.id, verifier: proof.verifier })
+        .pipe(mapSessionEnding(error => error)),
+      session.expiresAt
+    ).pipe(settlingPendingLogin(session.id));
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
 
     // e.g., "uak_b813ydmoEYdB_xBxGHeW"

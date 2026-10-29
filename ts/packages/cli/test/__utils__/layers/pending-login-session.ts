@@ -7,8 +7,8 @@ import {
 
 /**
  * An in-memory `PendingLoginSession`: `write` stamps `cachedAt`, `read` answers what was
- * written (or `initial`) and fails as `missing` once cleared, and `current` shows the cached
- * login, for assertions.
+ * written (or `initial`) and fails as `missing` once cleared, `clear` drops only the login with
+ * the key it names, and `current` shows the cached login, for assertions.
  */
 export const PendingLoginSessionTest = (initial: Option.Option<PendingLogin> = Option.none()) => {
   let cached = initial;
@@ -29,9 +29,10 @@ export const PendingLoginSessionTest = (initial: Option.Option<PendingLogin> = O
           ),
       })
     ),
-    clear: Effect.sync(() => {
-      cached = Option.none();
-    }),
+    clear: key =>
+      Effect.sync(() => {
+        cached = Option.filter(cached, login => login.key !== key);
+      }),
   });
   return {
     layer: Layer.succeed(PendingLoginSession, service),

@@ -170,6 +170,34 @@ const cachedLogin = (overrides: Partial<PendingLogin> = {}): Option.Option<Pendi
 const s256 = (verifier: string) =>
   Base64Url.encode(new Uint8Array(createHash('sha256').update(verifier).digest()));
 
+/** The login another terminal's `composio login --no-wait` caches while this one waits. */
+const OTHER_LOGIN: PendingLogin = {
+  key: 'session-other',
+  loginUrl: 'https://platform.mock.invalid/?cliKey=session-other',
+  expiresAt: EXPIRES_AT,
+  cachedAt: '2026-01-01T00:00:00.000Z',
+  verifier: 'b3RoZXItdGVybWluYWwtdmVyaWZpZXItZm9yLXRlc3Q',
+};
+
+/** Runs `self` with session lookups that each let another terminal cache `OTHER_LOGIN` first. */
+const whileAnotherTerminalCaches = <A, E, R>(self: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* () {
+    const pendingLogin = yield* PendingLoginSession;
+    const repository = yield* ComposioSessionRepository;
+    const { cachedAt: _cachedAt, ...started } = OTHER_LOGIN;
+    return yield* Effect.provideService(
+      self,
+      ComposioSessionRepository,
+      ComposioSessionRepository.of({
+        ...repository,
+        getSession: request =>
+          Effect.orDie(pendingLogin.write(started)).pipe(
+            Effect.andThen(repository.getSession(request))
+          ),
+      })
+    );
+  });
+
 /** A `get-session` failure with `status`, as the Effect client reports it. */
 const sessionFailure = (
   status: 401 | 409 | 410,
@@ -500,6 +528,19 @@ describe('handlePollLogin', () => {
   );
 
   it.effect(
+    '[Given] another terminal caches its own login while --poll waits [Then] completes this login and keeps the other one cached',
+    () => {
+      const { layer, logins, pending } = loginHandlerTest({ pending: cachedLogin() });
+      return Effect.gen(function* () {
+        yield* whileAnotherTerminalCaches(handlePollLogin({ noSkillInstall: true }));
+
+        expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
+        expect(pending.current()).toEqual(Option.some(OTHER_LOGIN));
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
     '[Given] a cached login is completed while stderr is not a terminal [Then] names the account from session info on stderr',
     () => {
       const { layer } = loginHandlerTest({ pending: cachedLogin() });
@@ -752,7 +793,7 @@ describe('handleSessionKeyLogin', () => {
         PendingLoginSession.of({
           write: () => Effect.void,
           read: Effect.fail(expired),
-          clear: Effect.void,
+          clear: () => Effect.void,
         })
       );
       return Effect.gen(function* () {
@@ -977,6 +1018,19 @@ describe('handleBrowserLogin', () => {
         const lines = (yield* MockConsole.getLines()).join('\n');
         expect(lines).toContain('Confirmation code: 001122');
         expect(lines).not.toContain(sessionRequests[0].verifier);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] another terminal caches its own login while an interactive login waits [Then] completes this login and keeps the other one cached',
+    () => {
+      const { layer, logins, pending } = loginHandlerTest({ interactive: true });
+      return Effect.gen(function* () {
+        yield* whileAnotherTerminalCaches(handleBrowserLogin(params({ yes: true })));
+
+        expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
+        expect(pending.current()).toEqual(Option.some(OTHER_LOGIN));
       }).pipe(Effect.provide(layer));
     }
   );
