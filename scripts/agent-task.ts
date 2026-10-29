@@ -511,7 +511,15 @@ const verifyCommand = CliCommand.make('verify', { id: taskId }, ({ id }) =>
 ).pipe(CliCommand.withDescription('Run the selected checks and retain a revision-bound receipt'));
 const listCommand = CliCommand.make('list', {}, () =>
   operation(() => {
-    print(taskIds().map(status));
+    print(
+      taskIds().map(id => {
+        try {
+          return status(id);
+        } catch (error) {
+          return { id, status: 'unreadable', error: errorMessage(error) };
+        }
+      })
+    );
   })
 ).pipe(CliCommand.withDescription('List saved tasks and their verification status'));
 const rootCommand = CliCommand.make('agent:task').pipe(

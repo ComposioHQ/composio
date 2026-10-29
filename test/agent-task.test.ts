@@ -265,6 +265,20 @@ test('task context survives a fresh invocation and duplicate init preserves it',
   assert.equal(JSON.parse(f.run('list').stdout)[0].task.id, 'case');
 });
 
+test('list reports an unreadable task folder without hiding the others', () => {
+  const f = fixture();
+  assert.equal(f.init().status, 0);
+  mkdirSync(path.join(f.root, '.artifacts/agent-tasks/broken'));
+  writeFileSync(path.join(f.root, '.artifacts/agent-tasks/broken/task.json'), '{');
+  const result = f.run('list');
+  assert.equal(result.status, 0, result.stderr);
+  const [broken, valid] = JSON.parse(result.stdout);
+  assert.equal(broken.id, 'broken');
+  assert.equal(broken.status, 'unreadable');
+  assert.equal(valid.task.id, 'case');
+  assert.equal(valid.status, 'pending');
+});
+
 test('successful profile evidence expires after dirty edits, untracked sources, or task changes', () => {
   const f = fixture();
   assert.equal(f.init().status, 0);
