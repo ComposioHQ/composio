@@ -42,6 +42,12 @@ In a ZDR project, Composio does not store payloads for:
 
 <ZdrLogVisual />
 
+### Firewall in ZDR projects
+
+[Firewall](/docs/firewall) works in ZDR projects, but with a limit. Composio does not keep the arguments or responses of earlier tool calls, so Firewall judges each call in isolation. Conditions that depend on an earlier call's result may not block. For example, blocking posts to a Slack channel that an earlier call showed is shared with another company needs that earlier result.
+
+Write conditions that the current tool call or its result can match on its own.
+
 ## What ZDR does not cover
 
 ZDR does not cover the following, even in a ZDR project. For how long Composio keeps logs, files, and sandbox data, see [Data retention and handling](/docs/security/data-retention).
@@ -53,7 +59,6 @@ ZDR does not cover the following, even in a ZDR project. For how long Composio k
 | Triggers | With ZDR on, trigger logs leave out event payloads, but Composio still stores the events to process and deliver them. | Do not use triggers for data that needs ZDR. |
 | Sandbox | The sandbox includes the Workbench and remote Bash. Sessions also offload large responses to it. Sessions turn on the sandbox by default. | [Disable the sandbox](#disable-the-sandbox-in-sessions) when you create sessions. |
 | Files | Composio stages files that tools upload or download, including Proxy Execute binary responses, and cleans them up after 24 hours. | Do not use tools that upload or download files for data that needs ZDR. |
-| [Firewall](/docs/firewall) | Composio does not keep the arguments or responses of earlier tool calls, so Firewall judges each call in isolation. Conditions that depend on an earlier call's result, such as blocking posts to a Slack channel that an earlier call showed is shared with another company, may not block. | Write conditions that the current tool call or its result can match on its own. |
 | Tool search in sessions | Composio can cache search queries to improve results. | Keep sensitive data out of search queries, or use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to turn off tool search. |
 | Third parties | The destination apps you connect, your model provider, external MCP servers, and your own logs keep their own data policies. | Review each provider's data policy, and set retention for your own logs. |
 
