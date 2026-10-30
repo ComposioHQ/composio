@@ -189,7 +189,9 @@ const program = Effect.gen(function* () {
   return { baseURL, results };
 });
 
-const escapeCell = (text: string) => text.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+/** Keeps an error message inside one Markdown table cell. */
+const escapeCell = (text: string) =>
+  text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 
 const { baseURL, results } = await Effect.runPromise(
   program.pipe(Effect.provide(FetchHttpClient.layer))
