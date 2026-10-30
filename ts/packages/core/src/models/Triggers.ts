@@ -442,12 +442,18 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     filters: TriggerSubscribeParams,
     data: IncomingTriggerPayload
   ): boolean {
-    // Check if toolkits filter is provided and matches
+    // Check if toolkits filter is provided and matches.
+    // Payloads don't carry the toolkit slug, so `data.toolkitSlug` is the trigger slug's
+    // first `_` segment, which is wrong for toolkits whose slug contains an underscore
+    // (`ONE_DRIVE_FILE_CREATED_TRIGGER` gives `ONE`). Trigger slugs start with
+    // `<TOOLKIT>_`, so a filter also matches on that prefix.
+    const toolkitSlug = data.toolkitSlug.toLowerCase();
+    const triggerSlug = data.triggerSlug.toLowerCase();
     if (
       filters.toolkits?.length &&
       !filters.toolkits
         .map(toolkit => toolkit.toLowerCase())
-        .includes(data.toolkitSlug.toLowerCase())
+        .some(toolkit => toolkit === toolkitSlug || triggerSlug.startsWith(`${toolkit}_`))
     ) {
       logger.debug(
         'Trigger does not match toolkits filter',
