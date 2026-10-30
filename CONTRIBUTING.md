@@ -144,7 +144,7 @@ pnpm create:example <example-name>                 # New TypeScript example
 
 ### Dead code detection
 
-The `Dead Code` CI workflow reports likely-orphaned code on every PR. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
+The `Dead Code` CI workflow reports likely-orphaned code every Monday, and can be run on demand. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
 
 ```bash
 # TypeScript: unused files, exports, types, and dependencies
