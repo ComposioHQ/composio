@@ -130,7 +130,7 @@ Sessions expose a small set of meta tools by default so the agent can discover i
 
 Keep connection management enabled for interactive agents. It returns a Connect Link when a user needs to authorize an app; do not build a provider OAuth flow.
 
-Classify the request before restricting the session. A generic capability request such as “send an email” does not select Gmail, Outlook, or a provider-specific action. Keep the default meta tools so Composio and the agent can choose the integration and tool from user intent. Narrow the session only when the user, existing application configuration, or inspected code explicitly fixes the provider or exact action.
+Before you restrict a session, check whether the request names a toolkit. A capability request such as "send an email" doesn't name Gmail, Outlook, or any other toolkit. Keep the default meta tools so the agent can find the toolkit and tool with `COMPOSIO_SEARCH_TOOLS`. Restrict the session only when the user, the application's configuration, or the inspected code names the toolkit. Then enable only that toolkit and keep the meta tools.
 
 Use the direct-tools preset only for a narrow, deterministic agent with a fixed allowlist. It removes meta tools by default. Re-enable connection management when users must authenticate in the agent, and keep or disable the sandbox deliberately. Fetch `configuring-sessions.md` for the current preset and option syntax before implementing it.
 
