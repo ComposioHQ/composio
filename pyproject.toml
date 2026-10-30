@@ -2,7 +2,6 @@
 members = [
     "python",
     "python/providers/anthropic",
-    "python/providers/crewai", 
     "python/providers/gemini",
     "python/providers/google",
     "python/providers/google_adk",
@@ -15,7 +14,6 @@ members = [
 
 # Provider packages
 composio-anthropic = { workspace = true }
-composio-crewai = { workspace = true }
 composio-langchain = { workspace = true }
 composio-google = { workspace = true }
 composio-google-adk = { workspace = true }

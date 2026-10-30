@@ -1,5 +1,7 @@
 import { APIConnectionError, type RequestOptions } from '@composio/client/effect';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
+import type { PermissionsResolveResponse } from '@composio/client/resources/_internal/consumer';
+import type { ConsumerRetrieveConfigResponse } from '@composio/client/resources/_internal/org/consumer';
 import { Effect, Option } from 'effect';
 import type { OrganizationSummary, OrgProject } from 'src/services/composio-account';
 import { TIMESTAMP } from '../models/account';
@@ -59,6 +61,8 @@ export interface AccountTestData {
   connectedToolkits?: ReadonlyArray<string>;
   latestToolVersion?: { readonly tool_slug: string; readonly version: string };
   projectApiKey?: string;
+  consumerConfig?: ConsumerRetrieveConfigResponse;
+  consumerPermissions?: PermissionsResolveResponse;
   onRequest?: (request: MockAccountRequest) => void;
 }
 
@@ -181,6 +185,18 @@ export const mockAccountResources = (accountData: AccountTestData, base: MockReq
               accountData.connectedToolkits,
               'org.consumer.listConnectedToolkits'
             ).pipe(Effect.map(toolkits => ({ toolkits: [...toolkits] })));
+          },
+          retrieveConfig: (options?: RequestOptions) => {
+            record('org.consumer.config', options);
+            return withTestData(accountData.consumerConfig, 'org.consumer.config');
+          },
+        },
+      },
+      consumer: {
+        permissions: {
+          resolve: (body?: unknown, options?: RequestOptions) => {
+            record('consumer.permissions.resolve', options, body);
+            return withTestData(accountData.consumerPermissions, 'consumer.permissions.resolve');
           },
         },
       },

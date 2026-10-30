@@ -8,6 +8,7 @@ import { SessionConfigs } from '../../src/models/SessionConfigs';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
+import logger from '../../src/utils/logger';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
@@ -63,19 +64,27 @@ describe('SessionConfigs', () => {
       expect(result).toEqual({ items: [], nextCursor: null });
     });
 
-    it('forwards search, archived, limit and cursor unchanged', async () => {
+    it('forwards archived, limit and cursor unchanged', async () => {
       mockClient.sessionConfigs.list.mockResolvedValue({ items: [], next_cursor: null });
       const signal = new AbortController().signal;
 
-      await sessionConfigs.list(
-        { search: 'Daily', archived: true, limit: 50, cursor: 'c1' },
-        { signal }
-      );
+      await sessionConfigs.list({ archived: true, limit: 50, cursor: 'c1' }, { signal });
 
       expect(mockClient.sessionConfigs.list).toHaveBeenCalledWith(
-        { search: 'Daily', archived: true, limit: 50, cursor: 'c1' },
+        { archived: true, limit: 50, cursor: 'c1' },
         { signal }
       );
+    });
+
+    it('drops the removed search option and warns', async () => {
+      mockClient.sessionConfigs.list.mockResolvedValue({ items: [], next_cursor: null });
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+      await sessionConfigs.list({ search: 'Daily', limit: 50 });
+
+      expect(mockClient.sessionConfigs.list).toHaveBeenCalledWith({ limit: 50 }, undefined);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('search'));
+      warnSpy.mockRestore();
     });
 
     it('forwards a limit above the backend cap without clamping', async () => {

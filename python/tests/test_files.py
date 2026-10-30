@@ -744,7 +744,7 @@ class TestFileUploadSubstitutionWithUnionTypes:
         }
 
         # Mock the file upload
-        mock_client.post.return_value = Mock(
+        mock_client.files.create_presigned_url.return_value = Mock(
             key="s3key/file.txt", new_presigned_url="https://s3.example.com/upload"
         )
 
@@ -2063,7 +2063,7 @@ class TestUploadBytesToS3:
         mock_s3_response = MagicMock()
         mock_s3_response.key = "s3-key-123"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
-        mock_client.post.return_value = mock_s3_response
+        mock_client.files.create_presigned_url.return_value = mock_s3_response
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 200
@@ -2079,7 +2079,7 @@ class TestUploadBytesToS3:
         )
 
         assert result == "s3-key-123"
-        mock_client.post.assert_called_once()
+        mock_client.files.create_presigned_url.assert_called_once()
         mock_safe_request.assert_called_once_with(
             "PUT",
             "https://s3.example.com/upload",
@@ -2095,7 +2095,7 @@ class TestUploadBytesToS3:
         mock_s3_response = MagicMock()
         mock_s3_response.key = "s3-key-123"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
-        mock_client.post.return_value = mock_s3_response
+        mock_client.files.create_presigned_url.return_value = mock_s3_response
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 500
@@ -2120,7 +2120,7 @@ class TestUploadBytesToS3:
         mock_s3_response = MagicMock()
         mock_s3_response.key = "s3-key-123"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload?token=abc"
-        mock_client.post.return_value = mock_s3_response
+        mock_client.files.create_presigned_url.return_value = mock_s3_response
         # The exception text itself carries the presigned URL (incl. token), as
         # real urllib3 errors do — the SDK must not surface it in the message.
         mock_safe_request.side_effect = requests.exceptions.Timeout(
@@ -2905,7 +2905,7 @@ class TestS3UploadErrorHandling:
         mock_s3_response = MagicMock()
         mock_s3_response.key = "s3-key"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
-        mock_client.post.return_value = mock_s3_response
+        mock_client.files.create_presigned_url.return_value = mock_s3_response
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 403
@@ -2928,7 +2928,7 @@ class TestS3UploadErrorHandling:
         mock_s3_response = MagicMock()
         mock_s3_response.key = "s3-key"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
-        mock_client.post.return_value = mock_s3_response
+        mock_client.files.create_presigned_url.return_value = mock_s3_response
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 200
@@ -2951,7 +2951,7 @@ class TestS3UploadErrorHandling:
         mock_s3_response = MagicMock()
         mock_s3_response.key = "s3-key"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
-        mock_client.post.return_value = mock_s3_response
+        mock_client.files.create_presigned_url.return_value = mock_s3_response
 
         mock_put_response = MagicMock()
         mock_put_response.status_code = 500
@@ -3572,7 +3572,7 @@ class TestFromPathSensitiveGuard:
                 toolkit="gmail",
             )
         # The guard runs before the SDK contacts the API for a presigned URL.
-        mock_client.post.assert_not_called()
+        mock_client.files.create_presigned_url.assert_not_called()
 
     def test_from_path_blocks_dotenv_basename(self, mock_client):
         p = Path(tempfile.gettempdir()) / ".env"
@@ -3583,7 +3583,7 @@ class TestFromPathSensitiveGuard:
                 tool="GMAIL_SEND_EMAIL",
                 toolkit="gmail",
             )
-        mock_client.post.assert_not_called()
+        mock_client.files.create_presigned_url.assert_not_called()
 
     def test_from_path_opt_out_disables_guard(self, mock_client):
         p = Path.home() / ".ssh" / "composio-does-not-exist-guard-test"
@@ -3596,7 +3596,7 @@ class TestFromPathSensitiveGuard:
                 sensitive_file_upload_protection=False,
             )
         assert not isinstance(exc_info.value, SensitiveFilePathBlockedError)
-        mock_client.post.assert_not_called()
+        mock_client.files.create_presigned_url.assert_not_called()
 
 
 class TestResponseDerivedUrlsAreGuarded:
@@ -3612,7 +3612,7 @@ class TestResponseDerivedUrlsAreGuarded:
         s3meta = MagicMock()
         s3meta.key = "s3-key"
         s3meta.new_presigned_url = presigned_url
-        client.post.return_value = s3meta
+        client.files.create_presigned_url.return_value = s3meta
         return client
 
     def test_download_validates_s3url(self, tmp_path):

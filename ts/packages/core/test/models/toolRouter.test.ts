@@ -49,10 +49,10 @@ const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
   post: vi.fn(),
-  delete: vi.fn(),
   toolRouter: {
     session: {
       create: vi.fn(),
+      delete: vi.fn(),
       retrieve: vi.fn(),
       attach: vi.fn(),
       patch: vi.fn(),
@@ -3834,15 +3834,15 @@ describe('ToolRouter', () => {
 
   describe('delete method', () => {
     it('should delete a session by ID and return a camelCase response', async () => {
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: 'trs_delete_123',
         deleted: true,
       });
 
       const result = await toolRouter.delete('trs_delete_123');
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/trs_delete_123',
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(
+        'trs_delete_123',
         undefined
       );
       expect(result).toEqual({
@@ -3853,15 +3853,15 @@ describe('ToolRouter', () => {
 
     it('should forward request options when deleting by ID', async () => {
       const requestOptions = { signal: new AbortController().signal };
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: 'trs_delete_123',
         deleted: true,
       });
 
       await toolRouter.delete('trs_delete_123', requestOptions);
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/trs_delete_123',
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(
+        'trs_delete_123',
         requestOptions
       );
     });
@@ -4026,7 +4026,7 @@ describe('ToolRouter', () => {
 
     it('should return a session with working delete function', async () => {
       mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: sessionId,
         deleted: true,
       });
@@ -4034,10 +4034,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.use(sessionId);
       const result = await session.delete();
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/session_123',
-        undefined
-      );
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(sessionId, undefined);
       expect(result).toEqual({
         sessionId,
         deleted: true,
