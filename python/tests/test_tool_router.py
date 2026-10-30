@@ -280,38 +280,31 @@ class TestToolRouter:
 
     def test_delete_session_by_id(self, tool_router, mock_client):
         """delete() removes a session by ID."""
-        mock_client.delete.return_value = {
-            "session_id": "session_123",
-            "deleted": True,
-        }
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=True
+        )
 
         result = tool_router.delete("session_123")
 
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session_123",
-            cast_to=t.Dict[str, t.Any],
-        )
+        mock_client.tool_router.session.delete.assert_called_once_with("session_123")
         assert result == {
             "session_id": "session_123",
             "deleted": True,
         }
 
-    def test_delete_session_by_id_escapes_session_id(self, tool_router, mock_client):
-        """delete() URL-encodes session IDs before calling the raw endpoint."""
-        mock_client.delete.return_value = {
-            "session_id": "session/with spaces",
-            "deleted": True,
-        }
-
-        tool_router.delete("session/with spaces")
-
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session%2Fwith%20spaces",
-            cast_to=t.Dict[str, t.Any],
+    def test_delete_session_by_id_rejects_unconfirmed_response(
+        self, tool_router, mock_client
+    ):
+        """delete() raises when the response does not confirm the deletion."""
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=False
         )
 
-    def test_delete_session_by_id_calls_raw_http_endpoint(self):
-        """delete() works with the low-level Stainless HTTP client."""
+        with pytest.raises(ValidationError):
+            tool_router.delete("session_123")
+
+    def test_delete_session_by_id_calls_http_endpoint(self):
+        """delete() sends one DELETE with the session ID URL-encoded."""
         requests: t.List[httpx.Request] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -1251,18 +1244,14 @@ class TestToolRouter:
 
     def test_session_delete(self, tool_router, mock_client):
         """Session delete removes the current session."""
-        mock_client.delete.return_value = {
-            "session_id": "session_123",
-            "deleted": True,
-        }
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=True
+        )
         session = tool_router.use(session_id="session_123")
 
         result = session.delete()
 
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session_123",
-            cast_to=t.Dict[str, t.Any],
-        )
+        mock_client.tool_router.session.delete.assert_called_once_with("session_123")
         assert result == {
             "session_id": "session_123",
             "deleted": True,

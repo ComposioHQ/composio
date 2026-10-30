@@ -12,7 +12,9 @@ import datetime
 
 import requests
 import typing_extensions as te
-from composio_client import BaseModel as _ComposioBaseModel
+from composio_client.types.file_create_presigned_url_response import (
+    FileCreatePresignedURLResponse,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from composio.client import HttpClient
@@ -46,7 +48,6 @@ if t.TYPE_CHECKING:
     from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
-_FILE_UPLOAD = "/api/v3/files/upload/request"
 _MAX_FILENAME_LENGTH = 100
 """
 Maximum filename length to prevent issues with long URLs from public buckets.
@@ -257,13 +258,6 @@ def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
     return True
 
 
-class _FileUploadResponse(_ComposioBaseModel):
-    id: str
-    key: str
-    type: str
-    new_presigned_url: str
-
-
 def _request_presigned_upload(
     client: HttpClient,
     *,
@@ -272,22 +266,18 @@ def _request_presigned_upload(
     mimetype: str,
     tool: str,
     toolkit: str,
-) -> _FileUploadResponse:
+) -> FileCreatePresignedURLResponse:
     """Request a presigned S3 upload URL from the backend.
 
     Single-sources the presign wire shape so the file and bytes upload paths
     request the same fields they later send.
     """
-    return client.post(
-        path=_FILE_UPLOAD,
-        body={
-            "md5": md5,
-            "filename": filename,
-            "mimetype": mimetype,
-            "tool_slug": tool,
-            "toolkit_slug": toolkit,
-        },
-        cast_to=_FileUploadResponse,
+    return client.files.create_presigned_url(
+        md5=md5,
+        filename=filename,
+        mimetype=mimetype,
+        tool_slug=tool,
+        toolkit_slug=toolkit,
     )
 
 
