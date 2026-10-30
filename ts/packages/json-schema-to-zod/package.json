@@ -59,7 +59,7 @@
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^4.5.4",
+    "zod": "^4.6.6",
     "zod-3-25": "npm:zod@3.25.76",
     "zod-floor": "npm:zod@4.1.13",
     "zod-to-json-schema": "catalog:"
