@@ -37,6 +37,12 @@ vi.mock('../../src/utils/fileUtils.node', async importOriginal => {
   };
 });
 
+// URL uploads run through the SSRF guard, which resolves the host before
+// fetching. Resolve as public so the URL case never needs real DNS.
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+}));
+
 const mkTemp = () => mkdtempSync(path.join(os.tmpdir(), 'composio-matrix-'));
 
 const makeTools = (opts: {
