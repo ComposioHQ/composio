@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11, <3.16"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -873,7 +873,7 @@ release = [
 [package.metadata]
 requires-dist = [
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "composio-client", specifier = "==2.0.0rc22" },
+    { name = "composio-client", specifier = "==2.0.0rc23" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11,<1" },
     { name = "jsonschema", specifier = ">=4.23.0,<5" },
     { name = "openai", specifier = ">=2.48.0,<4" },
@@ -925,16 +925,16 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.0.0rc22"
+version = "2.0.0rc23"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/d5/49c1a94b0d3d1afe5460b433f0ab752e1cba06b7ca61ca8cfae6ebc0e704/composio_client-2.0.0rc22.tar.gz", hash = "sha256:0d8e0adaa202c5bcc6366dc0ab362b61fb1c664530cd2b262e3e8fbb9d5616cd", size = 579602, upload-time = "2026-10-23T13:22:27.64Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/41/1a6a076f44639f712731300f1b3e4688be8dfc2d61d9576f9803016e18fb/composio_client-2.0.0rc23.tar.gz", hash = "sha256:763d02a48a22aca9d078d9fcbed576fcea2b5df45cf6de237224fbe8e038e4c3", size = 582099, upload-time = "2026-10-30T14:22:14.593Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/d1/cc5945b9bfebb141577cae13e6eecbb4fbff170e5049907c0fae0d06bf16/composio_client-2.0.0rc22-py3-none-any.whl", hash = "sha256:4400522de2311e3b69fa6dca68e55d905b22dfd0c841d873d9ca787e5d78419e", size = 466491, upload-time = "2026-10-23T13:22:25.339Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/68/016860107362b89ed6772b642011d6264b3394714b3766e4cd29490a03c6/composio_client-2.0.0rc23-py3-none-any.whl", hash = "sha256:0c29e312169e68ba642ebd1e6cb65d9fe43d6372ac901a9a7e2e3ab7d5e1ae60", size = 468192, upload-time = "2026-10-30T14:22:13.124Z" },
 ]
 
 [[package]]

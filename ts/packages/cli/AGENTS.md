@@ -172,7 +172,7 @@ Steps 3–4 (and the TypeScript compiler they need) ship as the `generation-runt
 
 ### Key Dependencies
 
-`effect` (pinned exactly to `4.0.5` through the workspace catalog; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.22` via the workspace catalog; the CLI calls it through the `@composio/client/effect` entry point and imports only types from the rest of the package), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
+`effect` (pinned exactly to `4.0.5` through the workspace catalog; `@effect/cli` and `@effect/platform` no longer exist as separate packages — folded into `effect`'s barrel and `effect/{cli,http,process}`), `@effect/platform-bun`, `@effect/vitest` (same exact pin), `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (owned Composio API client, `2.0.0-rc.23` via the workspace catalog; the CLI calls it through the `@composio/client/effect` entry point and imports only types from the rest of the package), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/json-schema-to-effect-schema`, `semver`, `open`, `extract-zip`.
 
 ## Output Conventions: Composable CLI Output
 

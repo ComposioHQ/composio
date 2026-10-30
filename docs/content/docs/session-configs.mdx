@@ -18,7 +18,7 @@ Listing Session configs and creating a session from one are not yet available in
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const { items } = await composio.sessionConfigs.list({ search: "support" });
+const { items } = await composio.sessionConfigs.list();
 
 const session = await composio.sessions.create("user_123", {
   authConfigs: { github: "ac_123" },
@@ -30,7 +30,7 @@ console.log(session.experimental.sourceSessionConfig); // { id: "sc_..." }
 </Tab>
 <Tab value="API">
 ```bash
-SESSION_CONFIG_ID=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/session_configs?search=support" \
+SESSION_CONFIG_ID=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/session_configs" \
   -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[0].id')
 
 curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
@@ -53,7 +53,7 @@ The top-level `composio.sessionConfigs` read methods are available in TypeScript
 
 ## Finding a config
 
-`composio.sessionConfigs.list()` returns summaries (`id`, `name`, `archived`, `createdAt`, `updatedAt`) and a `nextCursor`. It returns active configs unless you pass `archived: true`, which returns only archived ones. Pass `search` to match names and `limit` and `cursor` to page; the backend returns 20 per page by default and at most 100.
+`composio.sessionConfigs.list()` returns summaries (`id`, `name`, `archived`, `createdAt`, `updatedAt`) and a `nextCursor`. It returns active configs unless you pass `archived: true`, which returns only archived ones. Pass `limit` and `cursor` to page; the backend returns 20 per page by default and at most 100.
 
 `composio.sessionConfigs.get(id)` adds the `description` and the stored policy under `config`:
 

@@ -25,7 +25,9 @@ async function reads(): Promise<void> {
   const page: SessionConfigListResponse = await composio.sessionConfigs.list();
   const nextCursor: string | null = page.nextCursor;
   void nextCursor;
-  await composio.sessionConfigs.list({ search: 'Daily', archived: true, limit: 50, cursor: 'c1' });
+  await composio.sessionConfigs.list({ archived: true, limit: 50, cursor: 'c1' });
+  // Deprecated and ignored, but still accepted so existing callers compile.
+  await composio.sessionConfigs.list({ search: 'Daily' });
   // @ts-expect-error limit is a number
   await composio.sessionConfigs.list({ limit: '10' });
 
