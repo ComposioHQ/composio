@@ -3,6 +3,7 @@
   "defaultOpen": false,
   "pages": [
     "overview",
+    "delegated-authorization",
     "token-custody",
     "data-retention",
     "zero-data-retention"

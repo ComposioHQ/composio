@@ -173,12 +173,9 @@ describe('Docs product navigation', () => {
     expect(forYouUrls).toContain('/docs/using-composio-skill');
     expect(platformUrls).toContain('/docs/using-composio-skill');
 
-    const securityUrls = [
-      '/docs/security/overview',
-      '/docs/security/token-custody',
-      '/docs/security/data-retention',
-      '/docs/security/zero-data-retention',
-    ];
+    const securityUrls = pageTreeUrls(source.pageTree).filter(
+      url => url.startsWith('/docs/security/'),
+    );
     const security = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],
     ).find(node => node.type === 'folder' && node.name === 'Security and data');

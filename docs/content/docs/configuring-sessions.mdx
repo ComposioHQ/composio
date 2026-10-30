@@ -43,7 +43,7 @@ Both SDKs pass product and runtime identity through the API client's `identity` 
 If you use a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), grant permissions for the session operations your application needs:
 
 - **Session management** controls creating, viewing, configuring, and deleting sessions. It does not grant tool execution access.
-- **Session tool execution** covers search, tool execution, proxy execution, and session-linked MCP access.
+- **Session tool execution** covers search, tool execution, and session-linked MCP access. Session proxy execution requires the separate **Proxy execute** permission.
 
 Enable both permissions if your application manages sessions and executes tools through them.
 
