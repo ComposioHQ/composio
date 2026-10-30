@@ -24,7 +24,7 @@
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@composio/typesafe": "workspace:*",
-    "@typesafe-ai/sdk": "0.6.0",
+    "@typesafe-ai/sdk": "0.7.0",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

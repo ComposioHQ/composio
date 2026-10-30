@@ -26,37 +26,37 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.80
+  '@ai-sdk/mcp': ^2.0.85
   '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.5.1'
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
-  '@cloudflare/workers-types': ^5.20261019.1
+  '@cloudflare/workers-types': ^5.20261027.1
   '@composio/client': 2.0.0-rc.22
   '@effect/language-service': ^0.87.5
-  '@effect/platform-bun': 4.0.5
-  '@effect/vitest': 4.0.5
+  '@effect/platform-bun': 4.0.6
+  '@effect/vitest': 4.0.6
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.32.1
-  '@types/bun': ^1.4.3
+  '@modelcontextprotocol/sdk': ^1.32.2
+  '@types/bun': ^1.4.4
   ai: ^7.0.146
-  dotenv: ^18.0.8
-  effect: 4.0.5
-  hono: ^4.13.13
-  openai: ^7.39.0
+  dotenv: ^18.0.9
+  effect: 4.0.6
+  hono: ^4.13.14
+  openai: ^7.45.0
   picocolors: ^1.1.1
   publint: ^0.3.25
-  tsdown: ^0.23.1
+  tsdown: ^0.23.2
   tsx: ^4.23.15
   typescript: ^7.0.2
   '@vitest/ui': ^5.0.5
   vitest: ^5.0.5
-  wrangler: ^4.151.2
+  wrangler: ^4.153.0
   zod: ^4.5.4
   zod-to-json-schema: ^3.25.2
 
