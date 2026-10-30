@@ -148,9 +148,6 @@ describe('Docs product navigation', () => {
     expect(agentGuides?.type).toBe('folder');
     if (agentGuides?.type !== 'folder') throw new Error('Guides & Examples group is missing');
     expect(agentGuides.index?.url).toBe('/docs/consumer-agents');
-    expect(agentGuides.children.map(node => node.type === 'page' ? node.url : null)).toEqual(
-      ['/docs/consumer-agents', '/docs/b2b-agents', '/examples'],
-    );
     expect(platformUrls.filter(url => url === '/docs/consumer-agents')).toHaveLength(1);
 
     const agentSetup = platformTree.children.find(

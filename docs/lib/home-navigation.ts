@@ -125,6 +125,7 @@ export const DOCS_PRODUCTS = {
       '/docs/quickstart',
       '/docs/consumer-agents',
       '/docs/b2b-agents',
+      '/docs/composio-vs-nango',
       '/docs/production-readiness',
       '/docs/providers',
       '/docs/how-composio-works',
@@ -218,6 +219,7 @@ export const DOCS_PRODUCTS = {
             links: [
               { url: '/docs/consumer-agents' },
               { url: '/docs/b2b-agents' },
+              { url: '/docs/composio-vs-nango' },
               { type: 'link', url: '/examples', label: 'Examples' },
             ],
           },
