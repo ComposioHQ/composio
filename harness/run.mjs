@@ -29,7 +29,7 @@ import { HarnessError } from './errors.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = join(ROOT, '.artifacts', 'examples-parity');
-const AIMOCK_VERSION = '1.38.0';
+const AIMOCK_VERSION = '1.47.0';
 const AIMOCK_PORT = Number(process.env.AIMOCK_PORT ?? 4010);
 
 // Set by cmdSweep when --llm mock: LLM traffic goes to a local aimock server
@@ -366,7 +366,7 @@ const startLlmMock = async (runDir) => {
   const logFile = join(runDir, 'aimock.log');
   const child = spawn(
     'npx',
-    ['-y', `@copilotkit/aimock@${AIMOCK_VERSION}`, '-c', 'aimock.json', '-p', String(AIMOCK_PORT), '-h', '127.0.0.1'],
+    ['-y', `@copilotkit/aimock@${AIMOCK_VERSION}`, '-c', 'aimock.json', '-p', String(AIMOCK_PORT), '--host', '127.0.0.1'],
     { cwd: mockDir, detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
   );
   child.stdout.on('data', (c) => appendFileSync(logFile, c));
