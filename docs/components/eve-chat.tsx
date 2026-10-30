@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEveAgent } from 'eve/react';
-import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
+import { RotateCcw, Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
 import { AssistantMessage, EagerSourcePreview, ToolActivity, type EagerSource } from './eve-message';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
+import { findRetryableFailedTurn, getFailedTurnIds } from './eve-chat-failure';
 
 const SUGGESTIONS = [
   'How do I create a session?',
@@ -26,8 +27,13 @@ export function EveChat() {
     prepareSend: (input) => ({ ...input, clientContext: { route: pathname } }),
   });
 
+  const [retriedTurnIds, setRetriedTurnIds] = useState<ReadonlySet<string>>(new Set());
+
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming';
-  const messages = agent.data.messages;
+  // Hide only turns the user retried, so the resent question doesn't appear twice.
+  const messages = agent.data.messages.filter(
+    (message) => !retriedTurnIds.has(message.metadata?.turnId ?? '')
+  );
   const lastMessage = messages[messages.length - 1];
   const lastHasAssistantText =
     lastMessage?.role === 'assistant' &&
@@ -35,6 +41,12 @@ export function EveChat() {
   // Show the loading indicator from submit through retrieval/model synthesis,
   // until the assistant's text actually starts streaming, so it doesn't flicker off.
   const thinking = isBusy && !lastHasAssistantText;
+  // Recoverable model failures park the session (status back to `ready`), so
+  // read them from the event log. Terminal failures keep the `error` status.
+  const failedTurn =
+    agent.status === 'ready'
+      ? findRetryableFailedTurn(messages, getFailedTurnIds(agent.events))
+      : undefined;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
@@ -46,7 +58,7 @@ export function EveChat() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [agent.data.messages]);
+  }, [agent.data.messages, failedTurn?.turnId]);
 
   function clearEagerPreview() {
     previewAbortRef.current?.abort();
@@ -112,6 +124,7 @@ export function EveChat() {
               onClick={() => {
                 if (isBusy) agent.stop();
                 clearEagerPreview();
+                setRetriedTurnIds(new Set());
                 agent.reset();
                 inputRef.current?.focus();
               }}
@@ -133,7 +146,7 @@ export function EveChat() {
 
         {/* messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-          {agent.data.messages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="flex h-full flex-col justify-center gap-3 text-center">
               <p className="text-sm text-fd-muted-foreground">
                 Ask about the Composio docs. It answers from the docs and links the pages it used. It&apos;s not customer support and can&apos;t act on your Composio account.
@@ -153,7 +166,7 @@ export function EveChat() {
             </div>
           ) : (
             <ul className="flex flex-col gap-4">
-              {agent.data.messages.map((message) => (
+              {messages.map((message) => (
                 <li key={message.id} className={message.role === 'user' ? 'flex justify-end' : ''}>
                   <div
                     className={
@@ -192,6 +205,22 @@ export function EveChat() {
                     <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60" />
                   </span>
                   Thinking with the docs…
+                </li>
+              )}
+              {failedTurn && (
+                <li role="alert" className="flex items-center justify-between gap-3 text-[13px] text-fd-muted-foreground">
+                  <span>Couldn&apos;t get an answer. The docs assistant may be busy.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRetriedTurnIds((prev) => new Set(prev).add(failedTurn.turnId));
+                      submit(failedTurn.question);
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-fd-border bg-fd-card px-2.5 py-1 text-[12px] text-fd-foreground/80 transition-colors hover:border-[var(--composio-brand)]/40 hover:text-fd-foreground"
+                  >
+                    <RotateCcw className="size-3" aria-hidden="true" />
+                    Retry
+                  </button>
                 </li>
               )}
             </ul>
