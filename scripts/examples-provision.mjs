@@ -80,8 +80,37 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+// The backend's edge rate-limits bursts of requests with a 429. Listing and
+// deleting are safe to repeat, so wait and retry those; never retry a create.
+const RETRYABLE_METHODS = new Set(['GET', 'DELETE']);
+const MAX_RATE_LIMIT_RETRIES = 5;
+
+const rateLimitDelayMs = (res, attempt) => {
+  const retryAfter = Number(res.headers.get('retry-after'));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) return Math.min(retryAfter, 60) * 1000;
+  return Math.min(2 ** (attempt + 1), 32) * 1000;
+};
+
 async function api(method, path, body) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  for (let attempt = 0; ; attempt++) {
+    const res = await request(method, path, body);
+    if (res.status === 429 && RETRYABLE_METHODS.has(method) && attempt < MAX_RATE_LIMIT_RETRIES) {
+      await res.body?.cancel();
+      const delayMs = rateLimitDelayMs(res, attempt);
+      report(`rate limited on ${method} ${path}; retrying in ${delayMs / 1000}s`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      continue;
+    }
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`${method} ${path} -> ${res.status}: ${text.slice(0, 300)}`);
+    }
+    return text ? JSON.parse(text) : undefined;
+  }
+}
+
+function request(method, path, body) {
+  return fetch(`${BASE_URL}${path}`, {
     method,
     headers: { 'x-api-key': API_KEY, 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -92,11 +121,6 @@ async function api(method, path, body) {
     // stripped), so a 3xx would hand the key to whatever host it names.
     redirect: 'error',
   });
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`${method} ${path} -> ${res.status}: ${text.slice(0, 300)}`);
-  }
-  return text ? JSON.parse(text) : undefined;
 }
 
 // Two pagination shapes are in play. Most v3.1 collections (auth_configs,
