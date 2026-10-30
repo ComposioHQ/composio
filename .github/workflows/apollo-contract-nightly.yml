@@ -1,0 +1,52 @@
+name: Apollo Contract Nightly
+
+# Checks that staging Apollo still returns responses the CLI's client accepts:
+# a fixed set of reads the CLI makes, validated against the response schemas
+# the CLI ships with (`@composio/client/effect/schemas`). Read-only, no retries.
+# See ts/packages/cli/scripts/apollo-contract.ts for the cases.
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Staging Apollo contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check Apollo responses against client schemas
+        working-directory: ts/packages/cli
+        env:
+          COMPOSIO_BASE_URL: https://staging-backend.composio.dev
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+        run: bun scripts/apollo-contract.ts
+
+      - name: Send Slack Notification (Failure)
+        if: failure() && github.event_name == 'schedule'
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "⚠️ Staging Apollo no longer matches the CLI's client schemas.\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
