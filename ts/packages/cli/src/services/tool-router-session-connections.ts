@@ -8,7 +8,7 @@ import {
   resolveDefaultConnectedAccountsByToolkit,
   type SelectableConnectedAccount,
 } from 'src/services/connected-account-selection';
-import { idempotent } from 'src/services/composio-request';
+import { listAllConnectedAccounts } from 'src/services/list-all-connected-accounts';
 
 type RawConnectedAccount = {
   readonly id: string;
@@ -58,15 +58,11 @@ const listConnectedAccountsForToolkits = (
   userId: string,
   toolkits: ReadonlyArray<string>
 ) =>
-  client.connectedAccounts.list(
-    {
-      user_ids: [userId],
-      statuses: ['ACTIVE'],
-      toolkit_slugs: [...toolkits],
-      limit: 1000,
-    },
-    idempotent
-  );
+  listAllConnectedAccounts(client, {
+    user_ids: [userId],
+    statuses: ['ACTIVE'],
+    toolkit_slugs: [...toolkits],
+  });
 
 export const resolveToolRouterSessionConnections = (
   client: ComposioClientShape,
@@ -81,8 +77,8 @@ export const resolveToolRouterSessionConnections = (
       // account picker, so it is fetched once per process and shared.
       listActiveConnectedAccounts({ client, userId })
   ).pipe(
-    Effect.map(response => {
-      const items = (response.items ?? []) as ReadonlyArray<RawConnectedAccount>;
+    Effect.map(accounts => {
+      const items = accounts as ReadonlyArray<RawConnectedAccount>;
       const unknownStatuses = new Set<string>();
       const normalizedItems: SelectableConnectedAccount[] = items.map(item => {
         const normalizedStatus = normalizeConnectedAccountStatus(item.status);

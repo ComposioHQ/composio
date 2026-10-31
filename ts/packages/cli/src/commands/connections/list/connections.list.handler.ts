@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect';
 import {
   CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
-  decodeConnectedAccountList,
+  decodeAllConnectedAccountPages,
 } from 'src/effects/decode-connected-account-list';
 import { failedWith } from 'src/effects/request-error';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -11,7 +11,7 @@ import {
   getConnectedAccountPermissionGroup,
   getConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
-import { idempotent } from 'src/services/composio-request';
+import { listAllConnectedAccounts } from 'src/services/list-all-connected-accounts';
 import { ConnectionsListRequestError } from './connections.list.errors';
 import { formatConnectionsJson } from './connections.list.format';
 
@@ -35,27 +35,21 @@ export const runConnectionsList = ({ toolkit }: ConnectionsListParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const rawResult = yield* client.connectedAccounts
-      .list(
-        {
-          toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
-          user_ids: [consumerUserId],
-          limit: 1000,
-        },
-        idempotent
-      )
-      .pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
-    const result = yield* decodeConnectedAccountList(rawResult).pipe(
+    const rawItems = yield* listAllConnectedAccounts(client, {
+      toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
+      user_ids: [consumerUserId],
+    }).pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
+    const items = yield* decodeAllConnectedAccountPages(rawItems).pipe(
       failedWith(ConnectionsListRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
     );
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
       consumerUserId,
-      connectedAccountIds: result.items.map(item => item.id),
+      connectedAccountIds: items.map(item => item.id),
     });
     const permissionGroups = new Map(
-      result.items.map(item => [
+      items.map(item => [
         item.id,
         getConnectedAccountPermissionGroup({
           snapshot: permissionSnapshot,
@@ -64,5 +58,5 @@ export const runConnectionsList = ({ toolkit }: ConnectionsListParams) =>
       ])
     );
 
-    yield* ui.output(formatConnectionsJson(result.items, permissionGroups), { force: true });
+    yield* ui.output(formatConnectionsJson(items, permissionGroups), { force: true });
   });

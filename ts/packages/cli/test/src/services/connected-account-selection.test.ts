@@ -155,35 +155,6 @@ describe('listConnectedAccountsForToolkit', () => {
     })
   );
 
-  it.effect('matches toolkit slugs the way the grouping helpers do, on the filtered request', () =>
-    Effect.gen(function* () {
-      // A shared list that pages is incomplete, so the filtered request runs
-      // and its answer is taken as is.
-      const { client, requests } = stubComposioClient(
-        pagesInOrder(
-          page(
-            [
-              makeAccount({ id: 'con_github', toolkit: { slug: 'GitHub ' } }),
-              makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } }),
-            ],
-            { total_items: 2, next_cursor: 'more' }
-          ),
-          page([makeAccount({ id: 'con_github', toolkit: { slug: 'GitHub ' } })])
-        )
-      );
-
-      const accounts = yield* listConnectedAccountsForToolkit({
-        client,
-        userId: 'default',
-        toolkitSlug: ' github',
-      });
-
-      expect(accounts.map(item => item.id)).toEqual(['con_github']);
-      expect(requests).toHaveLength(2);
-      expect(toolkitSlugsQuery(requests[1]!.path)).toBe('github');
-    })
-  );
-
   it.effect('derives from a short page even when total_items counts more', () =>
     Effect.gen(function* () {
       // A server that reports the all-status count must not push every call
@@ -208,14 +179,16 @@ describe('listConnectedAccountsForToolkit', () => {
     })
   );
 
-  it.effect('falls back to the filtered request when the shared page is full', () =>
+  it.effect('derives from every page of the shared list, following next_cursor', () =>
     Effect.gen(function* () {
-      const fullPage = Array.from({ length: 1000 }, (_, index) =>
+      // The server serves at most 50 accounts per page, so the toolkit's
+      // account can sit past the first page.
+      const firstPage = Array.from({ length: 50 }, (_, index) =>
         makeAccount({ id: `con_slack_${index}`, toolkit: { slug: 'slack' } })
       );
       const { client, requests } = stubComposioClient(
         pagesInOrder(
-          page(fullPage, { total_items: 1001, next_cursor: null }),
+          page(firstPage, { total_items: 51, next_cursor: 'page-2' }),
           page([makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } })])
         )
       );
@@ -228,7 +201,10 @@ describe('listConnectedAccountsForToolkit', () => {
 
       expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
       expect(requests).toHaveLength(2);
-      expect(toolkitSlugsQuery(requests[1]!.path)).toBe('gmail');
+      const query = (path: string) => new URL(path, 'https://stub.invalid').searchParams;
+      expect(query(requests[0]!.path).get('limit')).toBe('50');
+      expect(query(requests[1]!.path).get('cursor')).toBe('page-2');
+      expect(requests.map(request => toolkitSlugsQuery(request.path))).toEqual([null, null]);
     })
   );
 });
