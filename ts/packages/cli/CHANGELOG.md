@@ -49,6 +49,15 @@
 
 ### Patch Changes
 
+- `composio connections list` now prints every connection. The server serves
+  at most 50 connected accounts per request and the CLI read only the first
+  page, so a user with more than 50 saw a partial list with no sign it was cut
+  off, and a connected toolkit (such as an active Slack account) looked
+  disconnected. `composio connections remove` could not find an account past
+  the first 50, and `composio execute` sessions left out toolkits whose
+  accounts were past the first 50 active ones. All three now follow
+  `next_cursor` through every page.
+
 - `composio dev triggers listen --toolkits` now matches toolkits whose slug
   contains an underscore, such as `one_drive`, `launch_darkly` and
   `agent_mail`. Events carry no toolkit slug, so the listener took the first

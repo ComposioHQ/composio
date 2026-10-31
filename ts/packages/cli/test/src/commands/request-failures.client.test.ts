@@ -224,7 +224,7 @@ describe('CLI: a rejected request the command recovers from', () => {
         ]);
         expect(stub.requests.map(request => request.path)).toEqual([
           `${LISTING}user_ids=consumer-user-org_test&toolkit_slugs=gmail&statuses=ACTIVE&limit=100`,
-          `${LISTING}user_ids=consumer-user-org_test&statuses=ACTIVE&limit=1000`,
+          `${LISTING}user_ids=consumer-user-org_test&statuses=ACTIVE&limit=50`,
         ]);
       })
     );
