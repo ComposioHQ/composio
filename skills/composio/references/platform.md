@@ -141,7 +141,7 @@ If the application has its own connect UI, use session authorization and connect
 Do not force advanced requests through first-time setup. Route them to current documentation:
 
 - Session scoping, account selection, callbacks, direct tools, and sandbox controls: `configuring-sessions.md`
-- Custom connection UI: `manually-authenticating.md`
+- Custom connection UI: `authentication/manually-authenticating.md`
 - Triggers and webhooks: `triggers.md` and the setting-up-triggers guides
 - Custom MCP servers, tools, toolkits, or proxy execution: the `extending-sessions` guides
 - Legacy direct execution, MCP servers, or Tool Router migrations: the migration and sessions guides
