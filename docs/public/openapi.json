@@ -122,9 +122,6 @@
       "description": "Arena conversations, messages and terms"
     },
     {
-      "name": "Invite Codes"
-    },
-    {
       "name": "Projects"
     },
     {
@@ -2094,6 +2091,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "credentials": {
@@ -2186,6 +2184,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "authScheme": {
@@ -2328,6 +2327,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "credentials": {
@@ -2454,6 +2454,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "scopes": {
@@ -2540,6 +2541,7 @@
         "properties": {
           "alias": {
             "type": "string",
+            "maxLength": 255,
             "description": "A human-readable alias for this connected account. Pass an empty string to clear the alias. Must be unique per entity and toolkit within the project."
           },
           "connection": {
@@ -6232,128 +6234,6 @@
           },
           "500": {
             "description": "Internal server error - Something went wrong on the server",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.1"
-      }
-    },
-    "/api/v3.1/org/clanker/create_claim": {
-      "post": {
-        "summary": "Create a clanker-claim slug",
-        "description": "Mints a four-word claim slug (no email sent) tied to the org's clanker and restricted to the given human email. The human redeems it via POST /api/v3.1/org/clanker/redeem_claim while authenticated. On redeem, the human joins the org and is recorded as the humanOwner of the clanker. Called by external services (e.g. agents.composio.dev) using an org API key.",
-        "tags": [
-          "Invite Codes"
-        ],
-        "operationId": "postOrgClankerCreateClaim",
-        "security": [
-          {
-            "OrgApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "human_email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "Email of the human who will claim the clanker"
-                  }
-                },
-                "required": [
-                  "human_email"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Clanker claim invite created and emailed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "claim_slug": {
-                      "type": "string",
-                      "description": "Four-word hyphen-separated slug (e.g. \"red-castle-amber-pine\") the human types into /redeem_claim. Valid for 7 days, restricted to the provided email."
-                    },
-                    "expires_at": {
-                      "type": "string",
-                      "format": "date-time",
-                      "description": "ISO timestamp when this claim slug expires."
-                    }
-                  },
-                  "required": [
-                    "claim_slug",
-                    "expires_at"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Org has no clanker to claim.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict. The org's clanker has already been claimed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error.",
             "content": {
               "application/json": {
                 "schema": {
@@ -19280,6 +19160,7 @@
                       },
                       "alias": {
                         "type": "string",
+                        "maxLength": 255,
                         "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                       },
                       "callback_url": {
@@ -20769,6 +20650,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -21701,7 +21583,8 @@
                         "type": "string"
                       },
                       "display_name": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 75
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -30722,6 +30605,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {

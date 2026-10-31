@@ -111,6 +111,10 @@
                         "type": "string",
                         "description": "The trigger that fired (for example GITHUB_COMMIT_EVENT)."
                       },
+                      "toolkit_slug": {
+                        "type": "string",
+                        "description": "Lowercase slug of the toolkit of the connected account the trigger belongs to (for example one_drive). It matches the trigger type's toolkit, except for some older Slack bot triggers, which report `slack`. Use it instead of parsing `trigger_slug`."
+                      },
                       "trigger_id": {
                         "type": "string",
                         "description": "ID of the trigger instance."
@@ -134,6 +138,7 @@
                     "required": [
                       "log_id",
                       "trigger_slug",
+                      "toolkit_slug",
                       "trigger_id",
                       "connected_account_id",
                       "auth_config_id",
@@ -161,6 +166,7 @@
                 "metadata": {
                   "log_id": "log_abc123",
                   "trigger_slug": "GITHUB_COMMIT_EVENT",
+                  "toolkit_slug": "github",
                   "trigger_id": "ti_xyz789",
                   "connected_account_id": "ca_def456",
                   "auth_config_id": "ac_xyz789",

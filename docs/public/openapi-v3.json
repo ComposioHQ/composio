@@ -204,6 +204,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "credentials": {
@@ -296,6 +297,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "authScheme": {
@@ -438,6 +440,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "credentials": {
@@ -564,6 +567,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "scopes": {
@@ -650,6 +654,7 @@
         "properties": {
           "alias": {
             "type": "string",
+            "maxLength": 255,
             "description": "A human-readable alias for this connected account. Pass an empty string to clear the alias. Must be unique per entity and toolkit within the project."
           },
           "connection": {
@@ -4610,6 +4615,7 @@
                       },
                       "alias": {
                         "type": "string",
+                        "maxLength": 255,
                         "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                       },
                       "callback_url": {
@@ -6099,6 +6105,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -7031,7 +7038,8 @@
                         "type": "string"
                       },
                       "display_name": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 75
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -23758,6 +23766,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
