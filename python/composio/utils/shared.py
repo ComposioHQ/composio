@@ -494,7 +494,11 @@ def json_schema_to_pydantic_field(
     description = schema_object.get("description")
     if "oneOf" in schema_object:
         description = " | ".join(
-            [option.get("description", "") for option in schema_object["oneOf"]]
+            [
+                option.get("description", "")
+                for option in schema_object["oneOf"]
+                if isinstance(option, dict)
+            ]
         )
         description = f"Any of the following options(separated by |): {description}"
 
