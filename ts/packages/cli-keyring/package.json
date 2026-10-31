@@ -46,7 +46,7 @@
     "libsecret"
   ],
   "author": "Composio",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^26.6.4",
     "bun-types": "^1.4.3",
