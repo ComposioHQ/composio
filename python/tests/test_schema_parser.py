@@ -197,6 +197,36 @@ class TestJsonSchemaToPydanticField:
 class TestJsonSchemaToModel:
     """Test cases for json_schema_to_model function."""
 
+    @pytest.mark.parametrize(
+        ("boolean_schema", "accepted", "rejected"),
+        [(False, "ready", 42), (True, 42, "ready")],
+    )
+    def test_oneof_boolean_branch_preserves_validation(
+        self, boolean_schema, accepted, rejected
+    ):
+        model = json_schema_to_model(
+            {
+                "title": "BooleanOneOf",
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "oneOf": [
+                            boolean_schema,
+                            {"type": "string", "description": "String option"},
+                        ]
+                    }
+                },
+                "required": ["value"],
+            }
+        )
+
+        assert model.model_fields["value"].description == (
+            "Any of the following options(separated by |): String option"
+        )
+        assert model.model_validate({"value": accepted}).value == accepted
+        with pytest.raises(ValidationError):
+            model.model_validate({"value": rejected})
+
     def test_simple_model_creation(self):
         """Test creating a simple Pydantic model from JSON schema."""
         json_schema = {
