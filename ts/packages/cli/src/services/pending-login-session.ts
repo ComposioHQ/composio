@@ -1,7 +1,8 @@
 /**
- * The browser login that `composio login` started without waiting: its session key and URL,
- * cached in `<cache dir>/pending-login-session.json` so that `composio login --poll` can
- * complete it from another process. `composio dev init` starts the same browser login, so the
+ * The browser login that `composio login` started without waiting: its session key, URL, and
+ * the verifier that proves this machine started it, cached in
+ * `<cache dir>/pending-login-session.json` so that `composio login --poll` can complete it
+ * from another process. `composio dev init` starts the same browser login, so the
  * file outlives any one command.
  */
 import * as FileSystem from 'effect/FileSystem';
@@ -23,17 +24,21 @@ export const PendingLogin = Schema.Struct({
   loginUrl: Schema.String,
   expiresAt: Schema.String,
   cachedAt: Schema.String,
+  verifier: Schema.optional(Schema.String),
 });
 export type PendingLogin = Schema.Schema.Type<typeof PendingLogin>;
 
 export class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
   readonly message: string;
-  readonly reason: 'invalid' | 'io' | 'missing' | 'expired';
+  readonly reason: 'invalid' | 'io' | 'missing' | 'expired' | 'outdated';
   readonly cause?: unknown;
 }> {
-  /** No login was started, or it expired; a cache that cannot be read or decoded is a defect. */
+  /**
+   * No login was started, it expired, or an older CLI started it without a verifier; a cache
+   * that cannot be read or decoded is a defect.
+   */
   get [ExpectedFailure]() {
-    return this.reason === 'missing' || this.reason === 'expired';
+    return this.reason === 'missing' || this.reason === 'expired' || this.reason === 'outdated';
   }
 }
 
@@ -50,8 +55,11 @@ export type PendingLoginSessionShape = {
     PendingLogin,
     PendingLoginError | Config.ConfigError | PlatformError.PlatformError
   >;
-  /** Deletes the cached login; a missing file is not an error. */
-  readonly clear: Effect.Effect<void>;
+  /**
+   * Deletes the cached login when it is the session `key`. A login another command cached
+   * since, a missing file, or one that cannot be read is left alone.
+   */
+  readonly clear: (key: string) => Effect.Effect<void>;
 };
 
 const decodePendingLogin = Schema.decodeUnknownEffect(Schema.fromJsonString(PendingLogin));
@@ -74,10 +82,18 @@ const makePendingLoginSession = Effect.gen(function* () {
     Effect.provideService(NodeOs, os)
   );
 
-  const clear = filePath.pipe(
+  const remove = filePath.pipe(
     Effect.flatMap(target => fs.remove(target)),
     Effect.ignore
   );
+
+  const clear: PendingLoginSessionShape['clear'] = key =>
+    filePath.pipe(
+      Effect.flatMap(target => fs.readFileString(target, 'utf8')),
+      Effect.flatMap(decodePendingLogin),
+      Effect.flatMap(cached => (cached.key === key ? remove : Effect.void)),
+      Effect.ignore
+    );
 
   const write: PendingLoginSessionShape['write'] = session =>
     Effect.gen(function* () {
@@ -126,7 +142,7 @@ const makePendingLoginSession = Effect.gen(function* () {
     );
     const now = yield* Clock.currentTimeMillis;
     if (isExpired(session.cachedAt, now)) {
-      yield* clear;
+      yield* remove;
       return yield* new PendingLoginError({
         message: 'Pending login expired. Run `composio login < /dev/null` again.',
         reason: 'expired',

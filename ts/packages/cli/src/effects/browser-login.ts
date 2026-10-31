@@ -1,9 +1,12 @@
 /**
  * The browser login through a CLI session, shared by `composio login` (user scope) and
- * `composio dev init` (project scope): create the session, show or open its URL, wait for it
- * to be linked, then store the user API key it carries.
+ * `composio dev init` (project scope): create the session bound to a verifier only this
+ * terminal holds, show or open its URL, wait for it to be linked, then store the user API key
+ * it carries.
  */
+import { isAPIError } from '@composio/client/effect';
 import { Data, DateTime, Effect, Option, Schedule, pipe } from 'effect';
+import { CODE_CHALLENGE_METHOD, makeCliSessionProof } from 'src/effects/cli-session-proof';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import open from 'open';
 import type { RetrievedSession } from 'src/models/session';
@@ -24,9 +27,39 @@ import { runOrgSelection } from './select-org-project';
 
 export class LoginSessionError extends Data.TaggedError('commands/LoginSessionError')<{
   readonly message: string;
-  readonly operation: 'load' | 'poll';
-  readonly status?: string;
+  readonly status: string;
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
+
+export type LoginSessionEndReason =
+  | 'proof-rejected'
+  | 'not-found'
+  | 'already-issued'
+  | 'link-conflict'
+  | 'upgrade-required'
+  | 'expired';
+
+export class LoginSessionEndedError extends Data.TaggedError('commands/LoginSessionEndedError')<{
+  readonly message: string;
+  readonly reason: LoginSessionEndReason;
   readonly cause?: unknown;
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
+
+/**
+ * `create-session` did not acknowledge the session's proof, so the session could be completed
+ * by anyone holding its id. The CLI refuses to use it.
+ */
+export class LoginProofNotAcknowledgedError extends Data.TaggedError(
+  'commands/LoginProofNotAcknowledgedError'
+)<{
+  readonly message: string;
 }> {
   get [ExpectedFailure]() {
     return true;
@@ -41,27 +74,46 @@ class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenE
 export type LinkedSession = Extract<RetrievedSession, { readonly status: 'linked' }>;
 
 /** Seconds between two checks of a session that is not linked yet. */
-export const LOGIN_POLL_INTERVAL_SECONDS = 5;
-
-/** How many times a session is checked again before the wait gives up, by default. */
-const DEFAULT_LOGIN_POLL_RETRIES = 15;
+const LOGIN_POLL_INTERVAL_SECONDS = 5;
 
 const POLL_COMMAND = 'composio login --poll';
 
+const LINK_CONFLICT_SLUG = 'CLI_SessionLinkConflict';
+
+export const LOGIN_PROOF_NOT_ACKNOWLEDGED_MESSAGE =
+  'The Composio API did not confirm that this login is bound to this terminal, so the CLI stopped it. Log in with `composio login --user-api-key <key>` instead.';
+export const LOGIN_PROOF_REJECTED_MESSAGE =
+  "The Composio API rejected this terminal's proof for the login, so the login was stopped. Run `composio login` again.";
+export const LOGIN_SESSION_NOT_FOUND_MESSAGE =
+  'Login session not found or expired. Run `composio login` again.';
+export const LOGIN_ALREADY_ISSUED_MESSAGE =
+  'This login already received its key. Run `composio login` again.';
+export const LOGIN_LINK_CONFLICT_MESSAGE =
+  'Another account approved this login, so it was cancelled. Run `composio login` again.';
+export const LOGIN_UPGRADE_REQUIRED_MESSAGE =
+  'This version of the Composio CLI can no longer log in through the browser. Run `composio upgrade`, or log in with `composio login --user-api-key <key>`.';
+export const LOGIN_EXPIRED_MESSAGE =
+  'The login expired before it was approved. Run `composio login` again.';
+
 // --- presentation -----------------------------------------------------------------------------
+
+const formatConfirmationCode = (code: string) => `Confirmation code: ${code}`;
 
 const formatNonInteractiveLoginInstructions = (params: {
   readonly loginUrl: string;
+  readonly confirmationCode: string;
   readonly pollCommand: string;
 }) => `Open this URL in your browser to log in:
 
   ${params.loginUrl}
 
+${formatConfirmationCode(params.confirmationCode)}
+
 Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+hint: For agents: Show the URL and the confirmation code above to the user, so they can check that the browser page shows the same code, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
 
 hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
@@ -83,6 +135,31 @@ const formatLoginCompleteJson = (params: {
     org_name: params.orgName ?? '',
   });
 
+const formatLoginAccountLine = (params: {
+  readonly email?: string;
+  readonly orgId: string;
+  readonly orgName?: string;
+}): string =>
+  `Logged in ${params.email ? `as ${params.email}` : 'successfully'} (${params.orgName || params.orgId})`;
+
+/**
+ * Names the account a login stored on stderr when stderr is not a terminal, where the
+ * decorated success line does not render, so a log or an agent relaying the login still
+ * sees whose key the CLI now holds.
+ */
+export const reportLoginAccount = (params: {
+  readonly email?: string;
+  readonly orgId: string;
+  readonly orgName?: string;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { stderrIsTTY } = yield* ui.capabilities;
+    if (!stderrIsTTY) {
+      yield* ui.error(formatLoginAccountLine(params));
+    }
+  });
+
 /** Reports a completed login: the success line and next-step hints on stderr, the JSON on stdout. */
 export const emitLoginComplete = (params: {
   readonly email?: string;
@@ -92,6 +169,7 @@ export const emitLoginComplete = (params: {
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     yield* ui.log.success(formatLoginSuccessMessage(params));
+    yield* reportLoginAccount(params);
     yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
     yield* ui.log.info(commandHintStep('Switch your current org', 'root.orgs.switch'));
     yield* ui.output(formatLoginCompleteJson(params));
@@ -117,45 +195,109 @@ export const playgroundTestUserId = (
     Option.getOrUndefined
   );
 
-/** The session, or a `poll` failure naming its status while it is not linked yet. */
 const requireLinkedSession = (session: RetrievedSession) =>
   session.status === 'linked'
     ? Effect.succeed(session)
     : Effect.fail(
         new LoginSessionError({
           message: `Session status is still '${session.status}', waiting for 'linked'`,
-          operation: 'poll',
           status: session.status,
         })
       );
 
+const ended = (reason: LoginSessionEndReason, message: string, cause: unknown) =>
+  Option.some(new LoginSessionEndedError({ reason, message, cause }));
+
+const sessionEnding = (error: unknown): Option.Option<LoginSessionEndedError> => {
+  if (!isAPIError(error)) return Option.none();
+  switch (error.status) {
+    case 401:
+      return ended('proof-rejected', LOGIN_PROOF_REJECTED_MESSAGE, error);
+    case 404:
+      return ended('not-found', LOGIN_SESSION_NOT_FOUND_MESSAGE, error);
+    case 409:
+      return error.details?.slug === LINK_CONFLICT_SLUG
+        ? ended('link-conflict', LOGIN_LINK_CONFLICT_MESSAGE, error)
+        : ended('already-issued', LOGIN_ALREADY_ISSUED_MESSAGE, error);
+    case 410:
+      return ended(
+        'upgrade-required',
+        error.details?.message || LOGIN_UPGRADE_REQUIRED_MESSAGE,
+        error
+      );
+    default:
+      return Option.none();
+  }
+};
+
+/** Fails with the session's ending when the API's answer is final, otherwise with `fallback`. */
+export const mapSessionEnding =
+  <E, F>(fallback: (error: E) => F) =>
+  <A, R>(self: Effect.Effect<A, E, R>): Effect.Effect<A, LoginSessionEndedError | F, R> =>
+    Effect.mapError(self, error =>
+      Option.getOrElse(sessionEnding(error), (): LoginSessionEndedError | F => fallback(error))
+    );
+
+export const loginEmail = (sessionInfo: SessionInfoResponse, linkedSession: LinkedSession) =>
+  sessionInfo.org_member.email || linkedSession.account.email || undefined;
+
 /**
- * Checks the session behind a spinner until it is linked, `times` more times at most, waiting
- * at least `LOGIN_POLL_INTERVAL_SECONDS` between checks.
+ * Checks the session behind a spinner until it is linked, every `LOGIN_POLL_INTERVAL_SECONDS`
+ * until `expiresAt`. A `LoginSessionEndedError` stops the wait at once. Any other failure is
+ * retried until `expiresAt`; the wait then ends as `expired` only when the session was still
+ * not linked, and otherwise fails with the last error unchanged.
  */
 export const waitForLinkedSession = <E, R>(
   getSession: Effect.Effect<RetrievedSession, E, R>,
-  times: number = DEFAULT_LOGIN_POLL_RETRIES
+  expiresAt: DateTime.Utc
 ) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
+    const beforeExpiry = Effect.map(DateTime.now, now => DateTime.isLessThan(now, expiresAt));
     return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
-      Effect.retry(Effect.flatMap(getSession, requireLinkedSession), {
-        // v4 dropped `Schedule.intersect`/`Schedule.recurs`; `Schedule.max` recurs while every
-        // schedule in the list still wants to and waits for the slowest one between attempts
-        // (the v4 equivalent of intersecting delay-producing schedules), and the retry count
-        // cap moves onto `Effect.retry`'s own `times` option.
-        schedule: Schedule.max([
-          Schedule.exponential('0.3 seconds'),
-          Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`),
-        ]),
-        times,
-      }).pipe(
+      Effect.flatMap(getSession, requireLinkedSession).pipe(
+        Effect.retry({
+          schedule: Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`),
+          while: error =>
+            error instanceof LoginSessionEndedError ? Effect.succeed(false) : beforeExpiry,
+        }),
+        Effect.mapError(error =>
+          error instanceof LoginSessionError
+            ? new LoginSessionEndedError({
+                reason: 'expired',
+                message: LOGIN_EXPIRED_MESSAGE,
+                cause: error,
+              })
+            : error
+        ),
         Effect.tap(() => spinner.stop('Login successful')),
-        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
+        Effect.tapError(error =>
+          spinner.error(
+            error instanceof LoginSessionEndedError && error.reason === 'expired'
+              ? 'Login timed out.'
+              : 'Login stopped.'
+          )
+        )
       )
     );
   });
+
+/**
+ * Clears the cached login for session `key` once `self` gets its key or the API ends the
+ * login. A login another terminal cached in the meantime stays for its own `--poll`.
+ */
+export const settlingPendingLogin =
+  (key: string) =>
+  <A, E, R>(self: Effect.Effect<A, E, R>) =>
+    Effect.gen(function* () {
+      const pendingLogin = yield* PendingLoginSession;
+      return yield* self.pipe(
+        Effect.tap(() => pendingLogin.clear(key)),
+        Effect.tapError(error =>
+          error instanceof LoginSessionEndedError ? pendingLogin.clear(key) : Effect.void
+        )
+      );
+    });
 
 /**
  * Verifies the linked session's key through session/info and stores it as the CLI's login.
@@ -284,7 +426,7 @@ const completeOrgSelection = (params: {
       },
     });
     yield* emitLoginComplete({
-      email: linkedSession.account.email ?? undefined,
+      email: loginEmail(sessionInfo, linkedSession),
       orgId,
       orgName: Option.match(selected, {
         onNone: () => sessionInfo.project.org.name ?? '',
@@ -335,7 +477,16 @@ export const browserLogin = (params: {
     const pendingLogin = yield* PendingLoginSession;
 
     yield* Effect.logDebug(`Authenticating (scope: ${params.scope})...`);
-    const session = yield* client.createSession({ scope: params.scope });
+    const proof = yield* makeCliSessionProof;
+    const session = yield* client.createSession({
+      scope: params.scope,
+      codeChallenge: proof.challenge,
+    });
+    if (session.code_challenge_method !== CODE_CHALLENGE_METHOD) {
+      return yield* new LoginProofNotAcknowledgedError({
+        message: LOGIN_PROOF_NOT_ACKNOWLEDGED_MESSAGE,
+      });
+    }
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
@@ -343,6 +494,7 @@ export const browserLogin = (params: {
       key: session.id,
       loginUrl: url,
       expiresAt: DateTime.formatIso(session.expiresAt),
+      verifier: proof.verifier,
     });
 
     const { canPrompt, canDecorate } = yield* ui.capabilities;
@@ -352,6 +504,7 @@ export const browserLogin = (params: {
     if (effectiveNoWait) {
       const loginInstructions = formatNonInteractiveLoginInstructions({
         loginUrl: url,
+        confirmationCode: session.code,
         pollCommand: POLL_COMMAND,
       });
       if (canDecorate) {
@@ -367,12 +520,18 @@ export const browserLogin = (params: {
       ? ui.log.info('Please login using the following URL:')
       : ui.log.step('Redirecting you to the login page');
     yield* ui.note(url, 'Login URL');
+    yield* ui.log.info(formatConfirmationCode(session.code));
     yield* ui.output(url);
     if (!effectiveNoBrowser) {
       yield* openLoginUrl(url);
     }
 
-    const linkedSession = yield* waitForLinkedSession(client.getSession({ id: session.id }));
+    const linkedSession = yield* waitForLinkedSession(
+      client
+        .getSession({ id: session.id, verifier: proof.verifier })
+        .pipe(mapSessionEnding(error => error)),
+      session.expiresAt
+    ).pipe(settlingPendingLogin(session.id));
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
 
     // e.g., "uak_b813ydmoEYdB_xBxGHeW"

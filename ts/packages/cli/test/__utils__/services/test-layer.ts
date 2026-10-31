@@ -1146,6 +1146,7 @@ function setupComposioSessionRepository() {
           code: sessionCode,
           expiresAt,
           status: 'pending',
+          code_challenge_method: 'S256',
         }),
       getSession: () =>
         Effect.succeed({

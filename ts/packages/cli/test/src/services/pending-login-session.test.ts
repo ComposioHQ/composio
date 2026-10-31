@@ -15,6 +15,7 @@ const STARTED = {
   key: 'session-key',
   loginUrl: 'https://dashboard.composio.dev/?cliKey=session-key',
   expiresAt: '1970-01-01T00:10:00.000Z',
+  verifier: 'dGVzdC12ZXJpZmllci1mb3ItdGhlLWxvZ2luLXRlc3Q',
 };
 
 /** The real service over a fresh home directory, so the file lands in `<home>/.composio`. */
@@ -49,6 +50,29 @@ describe('PendingLoginSession', () => {
 
         expect(yield* pending.read).toEqual({ ...STARTED, cachedAt: '1970-01-01T00:00:00.000Z' });
         expect((yield* fs.stat(file)).mode & 0o777).toBe(0o600);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a file an older CLI wrote without a verifier [Then] still reads it, without a verifier',
+    () => {
+      const { file, layer } = pendingLoginTest();
+      return Effect.gen(function* () {
+        const pending = yield* PendingLoginSession;
+        const fs = yield* FileSystem.FileSystem;
+        const { verifier: _verifier, ...olderLogin } = STARTED;
+        yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+        yield* fs.writeFileString(
+          file,
+          JSON.stringify({ ...olderLogin, cachedAt: '1970-01-01T00:00:00.000Z' })
+        );
+        yield* fs.chmod(file, 0o600);
+
+        expect(yield* pending.read).toEqual({
+          ...olderLogin,
+          cachedAt: '1970-01-01T00:00:00.000Z',
+        });
       }).pipe(Effect.provide(layer));
     }
   );
@@ -107,7 +131,7 @@ describe('PendingLoginSession', () => {
   );
 
   it.effect(
-    '[Given] a cached login [When] cleared twice [Then] the file is gone and both succeed',
+    '[Given] a cached login [When] cleared twice for its session [Then] the file is gone and both succeed',
     () => {
       const { file, layer } = pendingLoginTest();
       return Effect.gen(function* () {
@@ -115,10 +139,43 @@ describe('PendingLoginSession', () => {
         const fs = yield* FileSystem.FileSystem;
         yield* pending.write(STARTED);
 
-        yield* pending.clear;
-        yield* pending.clear;
+        yield* pending.clear(STARTED.key);
+        yield* pending.clear(STARTED.key);
 
         expect(yield* fs.exists(file)).toBe(false);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a login another command cached since [When] cleared for an earlier session [Then] keeps it',
+    () => {
+      const { layer } = pendingLoginTest();
+      return Effect.gen(function* () {
+        const pending = yield* PendingLoginSession;
+        const later = { ...STARTED, key: 'later-session-key' };
+        yield* pending.write(later);
+
+        yield* pending.clear(STARTED.key);
+
+        expect(yield* pending.read).toEqual({ ...later, cachedAt: '1970-01-01T00:00:00.000Z' });
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a file that is not a cached login [When] cleared [Then] leaves it and succeeds',
+    () => {
+      const { file, layer } = pendingLoginTest();
+      return Effect.gen(function* () {
+        const pending = yield* PendingLoginSession;
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+        yield* fs.writeFileString(file, '{"key":"only-a-key"}');
+
+        yield* pending.clear('only-a-key');
+
+        expect(yield* fs.readFileString(file)).toBe('{"key":"only-a-key"}');
       }).pipe(Effect.provide(layer));
     }
   );

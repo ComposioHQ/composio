@@ -63,13 +63,25 @@ export async function startMockAgentsServer(options?: {
       return;
     }
 
-    // Apollo surface used by the default login path
+    // Apollo surface used by the default login path. Like Apollo, it acknowledges the
+    // session's proof by echoing `code_challenge_method` when the request carried one.
     if (method === 'POST' && url.pathname === '/api/v3.1/cli/create-session') {
-      sendJson(res, 200, {
-        id: 'e2e00000-0000-4000-8000-000000000001',
-        code: 'E2E123',
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-        status: 'pending',
+      let raw = '';
+      req.setEncoding('utf8');
+      req.on('data', (chunk: string) => {
+        raw += chunk;
+      });
+      req.on('end', () => {
+        const body = (raw === '' ? {} : JSON.parse(raw)) as { code_challenge_method?: unknown };
+        sendJson(res, 200, {
+          id: 'e2e00000-0000-4000-8000-000000000001',
+          code: 'E2E123',
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+          status: 'pending',
+          ...(body.code_challenge_method === undefined
+            ? {}
+            : { code_challenge_method: body.code_challenge_method }),
+        });
       });
       return;
     }

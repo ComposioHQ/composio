@@ -41,7 +41,7 @@ Each command uses `effect/cli`'s `Command.make()` pattern. Current top-level com
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | `version` | Display CLI version |
 | `whoami` | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions) |
-| `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--poll`, `--key`, `--user-api-key`, `--org`); `--key <id>` completes only the login this machine started and cached, otherwise use `--poll` or start a new login |
 | `logout` | Clear stored API key |
 | `signup` | Create a Composio account |
 | `upgrade` | Self-update binary from GitHub releases |

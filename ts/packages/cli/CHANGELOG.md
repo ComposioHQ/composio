@@ -176,6 +176,40 @@
   request that needs approval opens the same approval page, before anything is
   sent.
 
+- `composio login` now binds a browser login to the terminal that started it.
+  Before, anyone who saw a login's URL or session id could complete it and
+  take the API key it produced. Now:
+  - The CLI keeps a secret that it never prints, sends only a hash of it when
+    the login starts, and presents it each time it checks the login. The API
+    hands the key only to that CLI. When the API does not confirm the login is
+    bound this way, the CLI stops and points to
+    `composio login --user-api-key <key>`.
+  - The CLI prints a confirmation code next to the login URL. The browser page
+    shows the same code, so you can check that you are approving your own
+    login. The headless instructions tell agents to show the user both the URL
+    and the code.
+  - A login the API rejects, one that already received its key, one another
+    account approved, an expired one, and a CLI too old to log in each end at
+    once with their own message. Before, they waited until the login timed out.
+  - The CLI checks the login every 5 seconds until it expires, so a login
+    approved late is still collected. When the check keeps failing for another
+    reason, such as a connection error, the CLI reports that failure once the
+    login expires instead of calling the login expired, and keeps the cached
+    login.
+  - `composio login --key <id>` completes only the login this machine started
+    and cached. For any other login it fails before sending a request; use
+    `composio login --poll`, or start a new login. A login cached by an older
+    CLI, or one that expired, cannot be completed; start a new one.
+
+- Every successful `composio login` names the account on stderr, as
+  `Logged in as <email> (<org>)`, including `--poll`, `--key`,
+  `--user-api-key` and `composio dev init`; `composio login --agent` and
+  `composio agent login` name the agent as
+  `Logged in as Composio agent <email>`. The line is written even when
+  stderr is not a terminal, so logs and agents relaying a login see which
+  account the CLI now uses. In a terminal, the existing success line still
+  names the account once.
+
 - A tool call or proxied request that a session hook blocks is now reported as
   a failure carrying the hook's message. `composio execute` prints it as a
   failed call (`successful: false`) with the message in `error`; on consumer

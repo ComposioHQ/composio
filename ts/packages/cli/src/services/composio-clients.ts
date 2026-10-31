@@ -1,7 +1,7 @@
 import { Context, Effect, Layer, Option, Stream, Array, Order } from 'effect';
 import * as Str from 'effect/String';
 import type { Cause } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/http';
+import { FetchHttpClient, Headers, HttpClient } from 'effect/http';
 import {
   // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
@@ -19,7 +19,10 @@ import {
   type ToolkitVersionSpec,
   type ToolkitVersionOverrides,
 } from 'src/effects/toolkit-version-overrides';
-import { Session, RetrievedSession } from 'src/models/session';
+import { CreatedSession, RetrievedSession } from 'src/models/session';
+import { APP_VERSION } from 'src/constants';
+import { CODE_CHALLENGE_METHOD } from 'src/effects/cli-session-proof';
+import { NodeOs } from './node-os';
 import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { cliClientIdentity } from './client-provenance';
 import { sha256Hex } from 'src/utils/checksums';
@@ -83,11 +86,24 @@ const normalizeApiKey = (rawApiKey?: string): string | undefined =>
 
 /**
  * Which key a client sends: the user's (`userApiKey`, defaulting to the
- * logged-in user's), or a project key in its place.
+ * logged-in user's), a project key in its place, or none at all (`anonymous`).
  */
 type ClientCredential =
-  | { readonly userApiKey?: string; readonly projectApiKey?: undefined }
-  | { readonly projectApiKey: string; readonly userApiKey?: undefined };
+  | {
+      readonly userApiKey?: string;
+      readonly projectApiKey?: undefined;
+      readonly anonymous?: false;
+    }
+  | {
+      readonly projectApiKey: string;
+      readonly userApiKey?: undefined;
+      readonly anonymous?: false;
+    }
+  | {
+      readonly anonymous: true;
+      readonly userApiKey?: undefined;
+      readonly projectApiKey?: undefined;
+    };
 
 /**
  * Whose requests a client sends. The org and project headers are only sent
@@ -110,7 +126,8 @@ export interface ComposioClientSingletonShape {
   readonly get: () => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
    * The client for an explicit scope. `userApiKey` defaults to the user's key;
-   * a `projectApiKey` is sent instead of any user key.
+   * a `projectApiKey` is sent instead of any user key, and `anonymous` sends
+   * no key.
    */
   readonly getFor: (
     params: ClientScope
@@ -161,9 +178,9 @@ export const clientScopeKey = (client: ComposioClientShape): string => {
  * configuration. Custom HTTP base URLs remain supported. A client
  * authenticates with `Auth.user` and the user key, with `Auth.project` when a
  * caller names a project key, and with `Auth.none()` before anyone has logged
- * in; the org and project go in its `scope`. No credential or scope header is
- * placed in `defaultHeaders`, which the client refuses while `auth` and
- * `scope` own them.
+ * in or when a caller asks for an anonymous client; the org and project go in
+ * its `scope`. No credential or scope header is placed in `defaultHeaders`,
+ * which the client refuses while `auth` and `scope` own them.
  *
  * Every lookup builds a new client (`make` costs a few microseconds), so no
  * credential is held anywhere but in the client a caller is using.
@@ -185,9 +202,9 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
     const getFor = (params?: ClientScope) =>
       Effect.gen(function* () {
         const cliSessionId = yield* currentCwdSessionId;
-        const userApiKey = normalizeApiKey(
-          params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
-        );
+        const userApiKey = params?.anonymous
+          ? undefined
+          : normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
         const auth =
           params?.projectApiKey !== undefined
             ? Auth.project(params.projectApiKey)
@@ -494,27 +511,60 @@ export class ComposioToolkitsRepository extends Context.Service<
   ).pipe(Layer.provide(ComposioClientSingleton.Default));
 }
 
+const CLI_SESSION_SECRET_HEADER = 'x-cli-session-secret';
+
+const CREATE_SESSION_PATH = '/api/v3.1/cli/create-session';
+
 const makeComposioSessionRepository = Effect.gen(function* () {
   const clientSingleton = yield* ComposioClientSingleton;
+  const os = yield* NodeOs;
   const client = clientSingleton.get();
+  // `get-session` is authorized by the proof alone; a stored user key that is stale would
+  // otherwise risk a 401 the CLI reads as a rejected proof.
+  const anonymousClient = clientSingleton.getFor({ anonymous: true });
+  // Shown to the approver as the device that started the login, labelled as self-reported.
+  const source = `composio-cli ${APP_VERSION} (${os.platform}/${os.arch})`;
 
   return {
     /**
-     * Generates a new CLI session with a random 6-character code.
-     * @param params.scope - 'user' for login, 'project' for init (future)
+     * Creates a CLI session bound to `codeChallenge` (S256). The typed `createSession` does not
+     * know the proof fields yet, so the call goes through the raw `post`.
+     * @param params.scope - 'user' for login, 'project' for init
      */
-    createSession: (params?: { scope?: 'user' | 'project' }) =>
+    createSession: (params: {
+      readonly scope: 'user' | 'project';
+      readonly codeChallenge: string;
+    }) =>
       client.pipe(
-        Effect.flatMap(c => c._internal.cli.createSession({ scope: params?.scope ?? 'user' })),
-        Effect.flatMap(decode(Session))
+        Effect.flatMap(c =>
+          c.post(CREATE_SESSION_PATH, {
+            body: {
+              scope: params.scope,
+              source,
+              code_challenge: params.codeChallenge,
+              code_challenge_method: CODE_CHALLENGE_METHOD,
+            },
+          })
+        ),
+        Effect.flatMap(decode(CreatedSession))
       ),
     /**
-     * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
+     * Retrieves the current state of a CLI session by its id, proving with `verifier` that this
+     * terminal created it. No API key is sent: the proof is the only credential.
      */
-    getSession: (session: { id: string }) =>
-      client.pipe(
-        Effect.flatMap(c => c._internal.cli.getSession({ id: session.id }, idempotent)),
-        Effect.flatMap(decode(RetrievedSession))
+    getSession: (session: { readonly id: string; readonly verifier: string }) =>
+      anonymousClient.pipe(
+        Effect.flatMap(c =>
+          c._internal.cli.getSession(
+            { id: session.id },
+            { ...idempotent, headers: { [CLI_SESSION_SECRET_HEADER]: session.verifier } }
+          )
+        ),
+        Effect.flatMap(decode(RetrievedSession)),
+        Effect.updateService(Headers.CurrentRedactedNames, names => [
+          ...names,
+          CLI_SESSION_SECRET_HEADER,
+        ])
       ),
     getRealtimeCredentials: () =>
       Effect.flatMap(client, c =>
