@@ -90,6 +90,25 @@ export const decodeConnectedAccountList = (
   );
 
 /**
+ * Decodes the accounts of every page of a connected-accounts listing (see
+ * `listAllConnectedAccounts`) through the same allowlist as
+ * {@link decodeConnectedAccountList}, failing with the same redacted
+ * {@link ConnectedAccountListShapeError}, for commands that print the accounts.
+ */
+export const decodeAllConnectedAccountPages = (
+  items: ApiConnectedAccountListResponse['items']
+): Effect.Effect<ConnectedAccountItems, ConnectedAccountListShapeError, TerminalUI> =>
+  Schema.decodeEffect(ConnectedAccountItems)(items).pipe(
+    Effect.mapError(
+      error =>
+        new ConnectedAccountListShapeError({
+          message: `Mismatched fields: ${formatParseErrorRedacted(error)}`,
+        })
+    ),
+    Effect.tap(decoded => warnOnUnknownStatuses(decoded))
+  );
+
+/**
  * Item-level variant of {@link decodeConnectedAccountList} for call sites
  * that decode `response.items` rather than the whole list response. It fails
  * with the raw `SchemaError`, which callers wrap in their own error.

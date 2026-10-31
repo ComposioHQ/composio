@@ -225,6 +225,56 @@ describe('CLI: composio connections list', () => {
   });
 });
 
+describe('CLI: composio connections list pagination', () => {
+  layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
+    it.effect(
+      '[Given] more accounts than one page holds [Then] prints the accounts of every page',
+      () =>
+        Effect.gen(function* () {
+          // The server serves at most 50 accounts per page; the slack account
+          // sits on the second one.
+          const firstPage = Array.from({ length: 50 }, (_, index) => ({
+            ...testConnections[0]!,
+            id: `con_gmail_${index}`,
+          }));
+          const slack = { ...testConnections[0]!, id: 'con_slack', toolkit: { slug: 'slack' } };
+          const stub = stubClientResources(['connectedAccounts'], request =>
+            new URL(request.path, 'https://stub.invalid').searchParams.get('cursor') === 'page-2'
+              ? Response.json({
+                  items: [slack],
+                  total_items: 51,
+                  total_pages: 2,
+                  current_page: 2,
+                  next_cursor: null,
+                })
+              : Response.json({
+                  items: firstPage,
+                  total_items: 51,
+                  total_pages: 2,
+                  current_page: 1,
+                  next_cursor: 'page-2',
+                })
+          );
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          yield* cli(['connections', 'list']).pipe(Effect.provide(stub.layer));
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const parsed = JSON.parse(String(lines.at(-1))) as Record<string, ReadonlyArray<unknown>>;
+
+          expect(parsed.gmail).toHaveLength(50);
+          expect(parsed.slack).toEqual([
+            { id: 'con_slack', status: 'ACTIVE', permission_group: null },
+          ]);
+          const listings = stub.requests.filter(request =>
+            request.path.startsWith('/api/v3.1/connected_accounts')
+          );
+          expect(listings).toHaveLength(2);
+        })
+    );
+  });
+});
+
 describe('CLI: composio connections list account identity', () => {
   layer(
     TestLive({
