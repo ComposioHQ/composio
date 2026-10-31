@@ -42,7 +42,7 @@ Available globally without imports:
 - `Callout`
 - `Step`, `Steps`
 - `Card`, `Cards`
-- `ProviderCard`, `ProviderGrid`
+- `ProviderList` (`group="ai-sdks"`, `"agent-frameworks"`, or `"custom"`), backed by `lib/providers.ts`
 - `FrameworkSelector`, `QuickstartFlow`, `FrameworkOption`
 - `IntegrationTabs`, `IntegrationContent`
 - `ToolTypeFlow`, `ToolTypeOption`
