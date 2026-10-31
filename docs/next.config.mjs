@@ -1127,6 +1127,33 @@ const config = {
         destination: '/docs/authentication/white-labeling-authentication',
         permanent: true,
       },
+      // Exact legacy entry points reported in DEVREL-304. Machine-readable
+      // requests redirect to .md destinations rather than the HTML guides.
+      {
+        source: '/authentication/authentication-overview',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/authentication/connected-accounts/overview',
+        destination: '/docs/authentication/manually-authenticating',
+        permanent: true,
+      },
+      {
+        source: '/llms.mdx/authentication/connected-accounts/overview',
+        destination: '/docs/authentication/manually-authenticating.md',
+        permanent: true,
+      },
+      {
+        source: '/llms.mdx/sessions/sessions-via-mcp',
+        destination: '/docs/sessions-via-mcp.md',
+        permanent: true,
+      },
+      {
+        source: '/docs/manually-authenticating.md',
+        destination: '/docs/authentication/manually-authenticating.md',
+        permanent: true,
+      },
       // Auth, security, and deployment paths coding agents guess while
       // evaluating Composio. Each source returned 404 in Gauge agent sessions.
       {
