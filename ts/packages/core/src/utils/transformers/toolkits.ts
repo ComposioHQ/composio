@@ -12,6 +12,7 @@ import {
 import {
   ToolKitListResponse,
   ToolKitListResponseSchema,
+  ToolkitInstantSchema,
   ToolkitAuthField,
   ToolkitRetrieveResponse,
   ToolkitRetrieveResponseSchema,
@@ -108,28 +109,32 @@ export const transformToolkitListResponse = (
   return transform(response)
     .with(ToolKitListResponseSchema)
     .using(response =>
-      response.items.map(item => ({
-        name: item.name,
-        slug: item.slug,
-        meta: {
-          ...item.meta,
-          categories: item.meta.categories?.map(category => ({
-            slug: category.id,
-            name: category.name,
-          })),
-          createdAt: item.meta.created_at,
-          description: item.meta.description,
-          logo: item.meta.logo,
-          toolsCount: item.meta.tools_count,
-          triggersCount: item.meta.triggers_count,
-          updatedAt: item.meta.updated_at,
-          appUrl: item.meta.app_url ?? undefined,
-        },
-        isLocalToolkit: item.is_local_toolkit,
-        authSchemes: item.auth_schemes,
-        composioManagedAuthSchemes: item.composio_managed_auth_schemes,
-        noAuth: item.no_auth,
-      }))
+      response.items.map(item => {
+        const instant = ToolkitInstantSchema.safeParse(item.instant);
+        return {
+          name: item.name,
+          slug: item.slug,
+          ...(instant.success && { instant: instant.data }),
+          meta: {
+            ...item.meta,
+            categories: item.meta.categories?.map(category => ({
+              slug: category.id,
+              name: category.name,
+            })),
+            createdAt: item.meta.created_at,
+            description: item.meta.description,
+            logo: item.meta.logo,
+            toolsCount: item.meta.tools_count,
+            triggersCount: item.meta.triggers_count,
+            updatedAt: item.meta.updated_at,
+            appUrl: item.meta.app_url ?? undefined,
+          },
+          isLocalToolkit: item.is_local_toolkit,
+          authSchemes: item.auth_schemes,
+          composioManagedAuthSchemes: item.composio_managed_auth_schemes,
+          noAuth: item.no_auth,
+        };
+      })
     );
 };
 
