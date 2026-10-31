@@ -9,7 +9,7 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
 import { Heading } from '@/components/heading';
 import { YouTube } from '@/components/youtube';
-import { ProviderCard, ProviderGrid } from '@/components/provider-card';
+import { ProviderList } from '@/components/provider-list';
 import { FrameworkSelector, QuickstartFlow, FrameworkOption } from '@/components/quickstart';
 import { IntegrationTabs, IntegrationContent } from '@/components/quickstart/integration-tabs';
 import { ToolTypeFlow, ToolTypeOption } from '@/components/tool-type-selector';
@@ -113,8 +113,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Steps,
     Card,
     Cards,
-    ProviderCard,
-    ProviderGrid,
+    ProviderList,
     FrameworkSelector,
     QuickstartFlow,
     FrameworkOption,

@@ -1,19 +1,8 @@
-'use client';
-
 import Link from 'next/link';
 import Image from 'next/image';
-import type { ReactNode } from 'react';
+import { PROVIDERS, type Provider, type ProviderGroup } from '@/lib/providers';
 
-interface ProviderCardProps {
-  name: string;
-  href: string;
-  logo?: string;
-  logoDark?: string;
-  icon?: ReactNode;
-  languages?: ('Python' | 'TypeScript')[];
-}
-
-export function ProviderCard({ name, href, logo, logoDark, icon, languages }: ProviderCardProps) {
+function ProviderCard({ name, href, logo, logoDark, languages, experimental }: Provider) {
   return (
     <Link
       href={href}
@@ -45,8 +34,6 @@ export function ProviderCard({ name, href, logo, logoDark, icon, languages }: Pr
             height={48}
             className="h-10 w-auto"
           />
-        ) : icon ? (
-          <span className="text-fd-muted-foreground">{icon}</span>
         ) : (
           <span className="text-2xl font-bold text-fd-muted-foreground/40">
             {name.charAt(0)}
@@ -56,6 +43,7 @@ export function ProviderCard({ name, href, logo, logoDark, icon, languages }: Pr
 
       <div className="flex flex-col justify-center gap-2">
         <span className="text-sm font-semibold text-fd-foreground">{name}</span>
+        {experimental && <span className="text-xs text-fd-muted-foreground">Experimental</span>}
         {languages && languages.length > 0 && (
           <div className="flex gap-2">
             {languages.map((lang) => (
@@ -73,10 +61,14 @@ export function ProviderCard({ name, href, logo, logoDark, icon, languages }: Pr
   );
 }
 
-export function ProviderGrid({ children }: { children: React.ReactNode }) {
+export function ProviderList({ group }: { group: ProviderGroup }) {
   return (
-    <div className="not-prose grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {children}
-    </div>
+    <ul className="not-prose m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
+      {PROVIDERS[group].map(provider => (
+        <li key={provider.name}>
+          <ProviderCard {...provider} />
+        </li>
+      ))}
+    </ul>
   );
 }
