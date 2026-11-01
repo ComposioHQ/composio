@@ -603,7 +603,6 @@ describe('CLI analytics journey taxonomy', () => {
     return commandContext(argv, {
       path: [name],
       family: name === 'version' ? 'command' : (name as TelemetryFamily),
-      input: {},
       invocation,
     });
   };

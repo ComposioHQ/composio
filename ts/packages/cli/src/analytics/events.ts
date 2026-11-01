@@ -213,41 +213,17 @@ const failureReasonProperties = (error: unknown) => {
   return {};
 };
 
-// Help and parse failures have no parsed input. These are the legacy empty-event values,
-// not CLI defaults: successful parsing always supplies the command's effective values.
-const UNPARSED_OPTIONS = {
-  execute: {
-    dry_run: false,
-    get_schema: false,
-    has_data: false,
-    skip_connection_check: false,
-    skip_tool_params_check: false,
-    skip_checks: false,
-  },
-  link: { no_browser: false, no_wait: false, has_auth_config: false },
-  run: {
-    debug: false,
-    dry_run: false,
-    skip_connection_check: false,
-    skip_tool_params_check: false,
-    skip_checks: false,
-    file_mode: false,
-    arg_count: 0,
-  },
-  install: { completions: false, no_completions: false },
-  setup: { operation: 'setup', yes: false, if_present: false },
-  login: { no_browser: false, no_wait: false, has_key: false, skip_org_picker: false },
-  proxy: { has_data: false, header_count: 0, skip_connection_check: false },
-} as const;
-
 const commandProperties = (context: CliCommandTelemetryContext) => ({
+  ...context.options,
   source: 'cli',
   invocation_origin: context.invocationOrigin,
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
 });
+
 const parentProperties = (context: CliCommandTelemetryContext) => ({
+  ...commandProperties(context),
   parent_run_id: context.parentRunId,
   parent_command: context.parentRunId ? 'run' : undefined,
 });
@@ -255,9 +231,6 @@ const parentProperties = (context: CliCommandTelemetryContext) => ({
 const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   const slug = context.argument;
   return {
-    ...UNPARSED_OPTIONS.execute,
-    ...context.options,
-    ...commandProperties(context),
     ...parentProperties(context),
     surface: context.commandPath === 'execute' ? 'root' : 'dev',
     tool_slug: slug,
@@ -268,63 +241,19 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   };
 };
 
-// Search queries are user-authored free text, so only their shape is recorded.
-const getSearchCommandProperties = (context: CliCommandTelemetryContext) => {
-  const query = context.argument ?? '';
-  return {
-    ...context.options,
-    ...commandProperties(context),
-    ...parentProperties(context),
-    query_length: query.length,
-    query_term_count: query.split(/\s+/u).filter(Boolean).length,
-  };
-};
-
-const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
-  return {
-    ...UNPARSED_OPTIONS.link,
-    ...context.options,
-    ...commandProperties(context),
-    ...parentProperties(context),
-    toolkit: context.argument,
-  };
-};
+const getLinkCommandProperties = (context: CliCommandTelemetryContext) => ({
+  ...parentProperties(context),
+  toolkit: context.argument,
+});
 
 const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
-  ...UNPARSED_OPTIONS.run,
-  ...context.options,
   ...commandProperties(context),
   run_id: context.runId,
 });
 
-const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
-  ...UNPARSED_OPTIONS.install,
-  ...context.options,
-  ...commandProperties(context),
-});
-
 const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
-  ...UNPARSED_OPTIONS.setup,
-  ...context.options,
   ...commandProperties(context),
   stdout_is_tty: context.stdoutIsTTY,
-});
-
-const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
-  ...UNPARSED_OPTIONS.login,
-  ...context.options,
-  ...commandProperties(context),
-});
-
-const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
-  ...commandProperties(context),
-});
-
-const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
-  ...UNPARSED_OPTIONS.proxy,
-  ...context.options,
-  ...commandProperties(context),
-  has_endpoint: typeof context.argument === 'string',
 });
 
 /**
@@ -423,7 +352,7 @@ const SPECIAL_LIFECYCLE_FAMILIES: Record<
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_FAILED,
-    getProperties: getSearchCommandProperties,
+    getProperties: parentProperties,
   },
   link: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_INVOKED,
@@ -435,19 +364,19 @@ const SPECIAL_LIFECYCLE_FAMILIES: Record<
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_FAILED,
-    getProperties: getLoginCommandProperties,
+    getProperties: commandProperties,
   },
   logout: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_FAILED,
-    getProperties: getLogoutCommandProperties,
+    getProperties: commandProperties,
   },
   proxy: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_FAILED,
-    getProperties: getProxyCommandProperties,
+    getProperties: commandProperties,
   },
   run: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
@@ -459,7 +388,7 @@ const SPECIAL_LIFECYCLE_FAMILIES: Record<
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_FAILED,
-    getProperties: getInstallCommandProperties,
+    getProperties: commandProperties,
   },
   setup: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_INVOKED,

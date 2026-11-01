@@ -73,15 +73,15 @@ const toolsCmd$SearchBase = Command.make(
   withCommandMeta({ requiresLogin: true })
 );
 
-export const toolsCmd$Search = withCommandTelemetry(toolsCmd$SearchBase, input =>
-  telemetry.fields(
-    {
-      toolkits: {
-        value: telemetry.optional(input.toolkits),
-        flags: telemetry.present(input.toolkits) ? ['--toolkits'] : [],
-      },
-      limit: telemetry.value(input.limit === undefined ? undefined : String(input.limit)),
+export const toolsCmd$Search = withCommandTelemetry(toolsCmd$SearchBase, input => {
+  const query = input.query[0] ?? '';
+  return telemetry.fields({
+    toolkits: {
+      value: telemetry.optional(input.toolkits),
+      flags: telemetry.present(input.toolkits) ? ['--toolkits'] : [],
     },
-    input.query?.[0]
-  )
-);
+    limit: telemetry.value(input.limit === undefined ? undefined : String(input.limit)),
+    query_length: telemetry.value(query.length),
+    query_term_count: telemetry.value(query.split(/\s+/u).filter(Boolean).length),
+  });
+});

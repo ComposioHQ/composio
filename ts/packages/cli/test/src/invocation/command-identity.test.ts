@@ -4,6 +4,7 @@ import type { Command } from 'effect/cli';
 import {
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
+  getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
 import type { TelemetryFamily } from 'src/analytics/types';
 import { buildRootCommand, runWithConfig } from 'src/commands';
@@ -271,15 +272,92 @@ describe('lifecycle telemetry from the command identity', () => {
     })
   );
 
-  it.effect('does not report command defaults when help bypassed parsing', () =>
+  it.effect.each(
+    [
+      {
+        command: 'execute',
+        invalid: [],
+        fields: [
+          'dry_run',
+          'get_schema',
+          'has_data',
+          'skip_connection_check',
+          'skip_tool_params_check',
+          'skip_checks',
+        ],
+      },
+      {
+        command: 'search',
+        invalid: ['--limit', 'invalid'],
+        fields: ['limit', 'toolkits', 'query_length', 'query_term_count'],
+      },
+      {
+        command: 'link',
+        invalid: ['--no-wait=invalid'],
+        fields: ['no_browser', 'no_wait', 'has_auth_config'],
+      },
+      {
+        command: 'login',
+        invalid: ['--no-wait=invalid'],
+        fields: ['no_browser', 'no_wait', 'has_key', 'skip_org_picker'],
+      },
+      {
+        command: 'install',
+        invalid: ['--completions=invalid'],
+        fields: ['completions', 'no_completions'],
+      },
+      {
+        command: 'setup',
+        invalid: ['--target', 'invalid'],
+        fields: ['operation', 'target', 'yes', 'if_present'],
+      },
+      {
+        command: 'proxy',
+        invalid: [],
+        fields: [
+          'method',
+          'toolkit',
+          'has_endpoint',
+          'has_data',
+          'header_count',
+          'skip_connection_check',
+        ],
+      },
+      {
+        command: 'run',
+        invalid: ['--file'],
+        fields: [
+          'debug',
+          'dry_run',
+          'skip_connection_check',
+          'skip_tool_params_check',
+          'skip_checks',
+          'file_mode',
+          'arg_count',
+        ],
+      },
+    ].flatMap(({ command, invalid, fields }) => [
+      { command, fields, args: [command, '--help'], outcome: 'succeeded' },
+      { command, fields, args: [command, ...invalid], outcome: 'failed' },
+    ])
+  )('omits unparsed input for `$args` ($outcome)', ({ command, fields, args, outcome }) =>
     Effect.gen(function* () {
-      const events = yield* lifecycleOf(['proxy', '--help']);
-      expect(events).toHaveLength(2);
+      const events = yield* lifecycleOf(args);
+      expect(events.map(({ event }) => event)).toEqual(['invoked', outcome]);
       events.forEach(({ call }) => {
-        const properties = getPrimaryLifecycleInvokedEvent(call.context)?.properties;
-        expect(properties).not.toHaveProperty('method');
-        expect(properties).not.toHaveProperty('toolkit');
+        const event =
+          call.event === 'failed'
+            ? getPrimaryLifecycleFailedEvent(call.context, Cause.squash(call.cause))
+            : call.event === 'succeeded'
+              ? getPrimaryLifecycleSucceededEvent(call.context)
+              : getPrimaryLifecycleInvokedEvent(call.context);
+        expect(event?.properties).toMatchObject({ source: 'cli', command_path: command });
+        fields.forEach(field => expect(event?.properties).not.toHaveProperty(field));
+        expect(call.context.options).toEqual({});
         expect(call.context.flagNames).toEqual([]);
+        if (call.event === 'failed') {
+          expect(event?.properties).toHaveProperty('failure_reason_code', 'parse_error');
+        }
       });
     })
   );
@@ -322,10 +400,12 @@ describe('lifecycle telemetry from the command identity', () => {
       expect(context.options).toEqual({
         toolkit: 'gmail',
         method: 'GET',
+        has_endpoint: true,
         has_data: true,
         header_count: 1,
         skip_connection_check: false,
       });
+      expect(context.argument).toBeUndefined();
       expect(context.flagNames).toEqual(['--data', '--header']);
       expect(JSON.stringify(getPrimaryLifecycleInvokedEvent(context))).not.toContain('private-');
     })

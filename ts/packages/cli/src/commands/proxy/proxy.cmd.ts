@@ -77,17 +77,15 @@ const proxyCmdBase = Command.make(
 );
 
 export const proxyCmd = withCommandTelemetry(proxyCmdBase, input =>
-  telemetry.fields(
-    {
-      toolkit: telemetry.value(input.toolkit),
-      method: telemetry.value(input.method),
-      has_data: telemetry.flag('--data', telemetry.present(input.data)),
-      header_count: {
-        value: input.headers?.length ?? 0,
-        flags: input.headers?.length ? ['--header'] : [],
-      },
-      skip_connection_check: telemetry.flag('--skip-connection-check', input.skipConnectionCheck),
+  telemetry.fields({
+    toolkit: telemetry.value(input.toolkit),
+    method: telemetry.value(input.method),
+    has_endpoint: telemetry.value(true),
+    has_data: telemetry.flag('--data', telemetry.present(input.data)),
+    header_count: {
+      value: input.headers?.length ?? 0,
+      flags: input.headers?.length ? ['--header'] : [],
     },
-    input.endpoint
-  )
+    skip_connection_check: telemetry.flag('--skip-connection-check', input.skipConnectionCheck),
+  })
 );

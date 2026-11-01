@@ -45,9 +45,8 @@ export type CliCommandTelemetryContext = {
   readonly commandPath: string;
   readonly family: TelemetryFamily;
   /**
-   * The input argument the family's events describe, from the input `effect/cli` parsed: the tool
-   * slug of `execute`, the first query of `search`, the toolkit of `link`, the endpoint of
-   * `proxy`, including shared definitions registered under `dev`. Unset when nothing was
+   * The safe argument the family's events describe: the tool slug of `execute` or the toolkit
+   * of `link`, including shared definitions registered under `dev`. Unset when nothing was
    * parsed (help, version, parse errors) or the command declares no argument projection.
    */
   readonly argument?: string;
