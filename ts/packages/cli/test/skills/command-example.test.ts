@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
-import { Effect } from 'effect';
+import { Effect, Layer } from 'effect';
+import { ComposioClientSingleton, type ClientScope } from 'src/services/composio-clients';
 import { describe, expect, it } from '@effect/vitest';
 import { cliExit, MockConsole, recordedInvocationCalls, pkg, TestLive } from 'test/__utils__';
 import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
@@ -15,7 +16,25 @@ const invoke = (args: ReadonlyArray<string>, loggedIn = true) =>
     const stub = stubClientResources(['connectedAccounts'], () =>
       Response.json({ items: [], next_cursor: null })
     );
-    const { exitCode } = yield* cliExit(args).pipe(Effect.provide(stub.layer));
+    const scopes: ClientScope[] = [];
+    const recordingFactory = Layer.effect(
+      ComposioClientSingleton,
+      Effect.gen(function* () {
+        const base = yield* ComposioClientSingleton;
+        return ComposioClientSingleton.of({
+          ...base,
+          getFor: params =>
+            Effect.suspend(() => {
+              scopes.push(params);
+              return base.getFor(params);
+            }),
+        });
+      })
+    );
+    const { exitCode } = yield* cliExit(args).pipe(
+      Effect.provide(recordingFactory),
+      Effect.provide(stub.layer)
+    );
     const stdout = yield* MockConsole.getLines({ stream: 'stdout', stripAnsi: true });
     const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
     const calls = yield* recordedInvocationCalls;
@@ -24,7 +43,7 @@ const invoke = (args: ReadonlyArray<string>, loggedIn = true) =>
         ? [{ event: call.event, path: call.context.commandPath }]
         : []
     );
-    return { exitCode, stdout, stderr, calls, lifecycle, requests: stub.requests };
+    return { exitCode, stdout, stderr, calls, lifecycle, requests: stub.requests, scopes };
   }).pipe(Effect.provide(TestLive(loggedIn ? { fixture: 'user-config-with-global-context' } : {})));
 
 describe('CLI skill command example', () => {
@@ -35,6 +54,7 @@ describe('CLI skill command example', () => {
       expect(result.stdout).toEqual(['[]']);
       expect(result.stderr).toEqual([]);
       expect(result.requests).toHaveLength(1);
+      expect(result.scopes.at(-1)).toEqual({ orgId: 'org_1', projectId: 'consumer_project_test' });
       const request = result.requests[0]!;
       expect(request.method).toBe('GET');
       const url = new URL(request.path, 'https://stub.invalid');

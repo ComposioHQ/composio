@@ -60,6 +60,12 @@ if (import.meta.main) {
       'test/src/invocation/invocation.test.ts',
       'test/src/invocation/command-identity.test.ts',
       'test/src/services/composio-client-singleton.test.ts',
+      'test/src/services/terminal-ui.test.ts',
+      'test/src/run-main.test.ts',
+      'test/src/services/shutdown-signal.test.ts',
+      'test/src/commands/triggers/sink-failures.test.ts',
+      'test/src/commands/listen/listen.cmd.test.ts',
+      'test/src/commands/triggers/triggers.listen.cmd.test.ts',
     ],
     ['pnpm', '--filter', '@composio/cli', 'run', 'lint:effect'],
   ];
