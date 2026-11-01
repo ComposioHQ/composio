@@ -249,6 +249,88 @@ describe('lifecycle telemetry from the command identity', () => {
     })
   );
 
+  it.effect.each([
+    { args: ['search', 'send email'], properties: { limit: '10' } },
+    { args: ['search', 'send email', '--limit', '7'], properties: { limit: '7' } },
+    {
+      args: ['proxy', '/private-path', '--toolkit', 'gmail'],
+      properties: { method: 'GET', toolkit: 'gmail', header_count: 0 },
+    },
+    {
+      args: ['proxy', '/private-path', '--toolkit', 'gmail', '-X', 'POST'],
+      properties: { method: 'POST', toolkit: 'gmail', header_count: 0 },
+    },
+    { args: ['setup', '--if-present'], properties: { target: 'auto', if_present: true } },
+  ])('uses effective parser values for `$args`', ({ args, properties }) =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(args);
+      expect(events).toHaveLength(2);
+      events.forEach(({ call }) => {
+        expect(getPrimaryLifecycleInvokedEvent(call.context)?.properties).toMatchObject(properties);
+      });
+    })
+  );
+
+  it.effect('does not report command defaults when help bypassed parsing', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(['proxy', '--help']);
+      expect(events).toHaveLength(2);
+      events.forEach(({ call }) => {
+        const properties = getPrimaryLifecycleInvokedEvent(call.context)?.properties;
+        expect(properties).not.toHaveProperty('method');
+        expect(properties).not.toHaveProperty('toolkit');
+        expect(call.context.flagNames).toEqual([]);
+      });
+    })
+  );
+
+  it.effect('keeps the projection when a shared command is registered under dev', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf([
+        'dev',
+        'connected-accounts',
+        'link',
+        'gmail',
+        '--no-browser',
+      ]);
+      expect(events).toHaveLength(2);
+      events.forEach(({ call }) => {
+        expect(call.context.family).toBe('command');
+        expect(call.context.flagNames).toEqual(['--no-browser']);
+        expect(getPrimaryLifecycleInvokedEvent(call.context)?.properties).toMatchObject({
+          flag_names: ['--no-browser'],
+        });
+      });
+    })
+  );
+
+  it.effect('projects only measured fields from parsed proxy input', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf([
+        'proxy',
+        '/private-path',
+        '--toolkit',
+        'gmail',
+        '--account',
+        'private-account',
+        '-H',
+        'Authorization: private-header',
+        '-d',
+        'private-body',
+      ]);
+      const context = events[0]!.call.context;
+      expect(context.options).toEqual({
+        toolkit: 'gmail',
+        method: 'GET',
+        has_data: true,
+        header_count: 1,
+        skip_connection_check: false,
+      });
+      expect(context.flagNames).toEqual(['--data', '--header']);
+      expect(JSON.stringify(getPrimaryLifecycleInvokedEvent(context))).not.toContain('private-');
+    })
+  );
+
   it.effect('reads the execute tool slug from the parsed input, and none for --help', () =>
     Effect.gen(function* () {
       const [executed] = yield* lifecycleOf(['execute', 'GMAIL_SEND_EMAIL']);

@@ -1,3 +1,4 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { setupSkillCmd } from './setup-skill.cmd';
 import { Command, Flag } from 'effect/cli';
 import { Effect, Predicate } from 'effect';
@@ -336,7 +337,17 @@ const setupBaseCmd = Command.make(
     )
 );
 
-export const setupCmd = setupBaseCmd.pipe(
+export const setupCmd = withCommandTelemetry(setupBaseCmd, input =>
+  telemetry.fields({
+    operation: {
+      value: input.uninstall ? 'uninstall' : 'setup',
+      flags: input.uninstall ? ['--uninstall'] : [],
+    },
+    target: telemetry.value(input.target),
+    yes: telemetry.flag('--yes', input.yes),
+    if_present: telemetry.flag('--if-present', input.ifPresent),
+  })
+).pipe(
   Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.'),
   Command.withExamples([
     {

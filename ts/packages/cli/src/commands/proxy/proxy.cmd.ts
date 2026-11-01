@@ -1,3 +1,4 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { Argument, Command, Flag } from 'effect/cli';
 import { runProxy } from './proxy.handler';
@@ -43,7 +44,7 @@ const skipConnectionCheck = Flag.Boolean('skip-connection-check').pipe(
   )
 );
 
-export const proxyCmd = Command.make(
+const proxyCmdBase = Command.make(
   'proxy',
   {
     endpoint,
@@ -73,4 +74,20 @@ export const proxyCmd = Command.make(
     },
   ]),
   withCommandMeta({ requiresLogin: true })
+);
+
+export const proxyCmd = withCommandTelemetry(proxyCmdBase, input =>
+  telemetry.fields(
+    {
+      toolkit: telemetry.value(input.toolkit),
+      method: telemetry.value(input.method),
+      has_data: telemetry.flag('--data', telemetry.present(input.data)),
+      header_count: {
+        value: input.headers?.length ?? 0,
+        flags: input.headers?.length ? ['--header'] : [],
+      },
+      skip_connection_check: telemetry.flag('--skip-connection-check', input.skipConnectionCheck),
+    },
+    input.endpoint
+  )
 );

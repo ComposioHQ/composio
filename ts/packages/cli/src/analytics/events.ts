@@ -1,5 +1,5 @@
 import { cliAnalyticsProvenance } from 'src/services/client-provenance';
-import { Option, Schema } from 'effect';
+import { Option } from 'effect';
 import { CliError } from 'effect/cli';
 import type { CliCommandTelemetryContext, TelemetryFamily, TrackEvent } from './types';
 import { type CommandIdentity, commandPathOf } from 'src/invocation/command-identity';
@@ -213,28 +213,58 @@ const failureReasonProperties = (error: unknown) => {
   return {};
 };
 
+// Help and parse failures have no parsed input. These are the legacy empty-event values,
+// not CLI defaults: successful parsing always supplies the command's effective values.
+const UNPARSED_OPTIONS = {
+  execute: {
+    dry_run: false,
+    get_schema: false,
+    has_data: false,
+    skip_connection_check: false,
+    skip_tool_params_check: false,
+    skip_checks: false,
+  },
+  link: { no_browser: false, no_wait: false, has_auth_config: false },
+  run: {
+    debug: false,
+    dry_run: false,
+    skip_connection_check: false,
+    skip_tool_params_check: false,
+    skip_checks: false,
+    file_mode: false,
+    arg_count: 0,
+  },
+  install: { completions: false, no_completions: false },
+  setup: { operation: 'setup', yes: false, if_present: false },
+  login: { no_browser: false, no_wait: false, has_key: false, skip_org_picker: false },
+  proxy: { has_data: false, header_count: 0, skip_connection_check: false },
+} as const;
+
+const commandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: context.invocationOrigin,
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+});
+const parentProperties = (context: CliCommandTelemetryContext) => ({
+  parent_run_id: context.parentRunId,
+  parent_command: context.parentRunId ? 'run' : undefined,
+});
+
 const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   const slug = context.argument;
   return {
-    source: 'cli',
-    invocation_origin: context.invocationOrigin,
-    parent_run_id: context.parentRunId,
-    parent_command: context.parentRunId ? 'run' : undefined,
-    cli_version: context.cliVersion,
-    command_path: context.commandPath,
-    duration_ms: Date.now() - context.startedAt,
+    ...UNPARSED_OPTIONS.execute,
+    ...context.options,
+    ...commandProperties(context),
+    ...parentProperties(context),
     surface: context.commandPath === 'execute' ? 'root' : 'dev',
     tool_slug: slug,
     tool_name: slug,
     toolkit_slug:
       context.toolkitSlug ??
       (typeof slug === 'string' ? guessToolkitFromToolSlug(slug) : undefined),
-    dry_run: context.options.dry_run ?? false,
-    get_schema: context.options.get_schema ?? false,
-    has_data: context.options.has_data ?? false,
-    skip_connection_check: context.options.skip_connection_check ?? false,
-    skip_tool_params_check: context.options.skip_tool_params_check ?? false,
-    skip_checks: context.options.skip_checks ?? false,
   };
 };
 
@@ -242,243 +272,60 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
 const getSearchCommandProperties = (context: CliCommandTelemetryContext) => {
   const query = context.argument ?? '';
   return {
-    source: 'cli',
-    invocation_origin: context.invocationOrigin,
-    parent_run_id: context.parentRunId,
-    parent_command: context.parentRunId ? 'run' : undefined,
-    cli_version: context.cliVersion,
-    command_path: context.commandPath,
-    duration_ms: Date.now() - context.startedAt,
+    ...context.options,
+    ...commandProperties(context),
+    ...parentProperties(context),
     query_length: query.length,
     query_term_count: query.split(/\s+/u).filter(Boolean).length,
-    toolkits: context.options.toolkits,
-    limit: context.options.limit,
   };
 };
 
 const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
   return {
-    source: 'cli',
-    invocation_origin: context.invocationOrigin,
-    parent_run_id: context.parentRunId,
-    parent_command: context.parentRunId ? 'run' : undefined,
-    cli_version: context.cliVersion,
-    command_path: context.commandPath,
-    duration_ms: Date.now() - context.startedAt,
+    ...UNPARSED_OPTIONS.link,
+    ...context.options,
+    ...commandProperties(context),
+    ...parentProperties(context),
     toolkit: context.argument,
-    no_browser: context.options.no_browser ?? false,
-    no_wait: context.options.no_wait ?? false,
-    has_auth_config: context.options.has_auth_config ?? false,
   };
 };
 
 const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
+  ...UNPARSED_OPTIONS.run,
+  ...context.options,
+  ...commandProperties(context),
   run_id: context.runId,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  debug: context.options.debug ?? false,
-  dry_run: context.options.dry_run ?? false,
-  skip_connection_check: context.options.skip_connection_check ?? false,
-  skip_tool_params_check: context.options.skip_tool_params_check ?? false,
-  skip_checks: context.options.skip_checks ?? false,
-  file_mode: context.options.file_mode ?? false,
-  arg_count: context.options.arg_count ?? 0,
 });
 
 const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  completions: context.options.completions ?? false,
-  no_completions: context.options.no_completions ?? false,
+  ...UNPARSED_OPTIONS.install,
+  ...context.options,
+  ...commandProperties(context),
 });
 
 const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  operation: context.options.uninstall ? 'uninstall' : 'setup',
-  target: context.options.target ?? 'auto',
-  yes: context.options.yes ?? false,
-  if_present: context.options.if_present ?? false,
+  ...UNPARSED_OPTIONS.setup,
+  ...context.options,
+  ...commandProperties(context),
   stdout_is_tty: context.stdoutIsTTY,
 });
 
 const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  no_browser: context.options.no_browser ?? false,
-  no_wait: context.options.no_wait ?? false,
-  has_key: context.options.has_key ?? false,
-  skip_org_picker: context.options.yes ?? false,
+  ...UNPARSED_OPTIONS.login,
+  ...context.options,
+  ...commandProperties(context),
 });
 
 const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
+  ...commandProperties(context),
 });
 
 const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
+  ...UNPARSED_OPTIONS.proxy,
+  ...context.options,
+  ...commandProperties(context),
   has_endpoint: typeof context.argument === 'string',
-  toolkit: context.options.toolkit,
-  method: context.options.method ?? 'GET',
-  has_data: context.options.has_data ?? false,
-  header_count: context.options.header_count ?? 0,
-  skip_connection_check: context.options.skip_connection_check ?? false,
 });
-
-const firstOf = (values: ReadonlyArray<string>) => values[0];
-
-/**
- * How each family that describes an input argument finds it in the input `effect/cli` parsed for
- * the command (see `CliCommandTelemetryContext.argument`).
- */
-const FAMILY_ARGUMENTS: Partial<
-  Record<TelemetryFamily, (input: unknown) => Option.Option<string>>
-> = {
-  execute: input =>
-    Option.map(
-      Schema.decodeUnknownOption(Schema.Struct({ slug: Schema.String }))(input),
-      ({ slug }) => slug
-    ),
-  search: input =>
-    Option.flatMap(
-      Schema.decodeUnknownOption(Schema.Struct({ query: Schema.Array(Schema.String) }))(input),
-      ({ query }) => Option.fromNullishOr(firstOf(query))
-    ),
-  link: input =>
-    Option.flatMap(
-      Schema.decodeUnknownOption(Schema.Struct({ toolkit: Schema.Option(Schema.String) }))(input),
-      ({ toolkit }) => toolkit
-    ),
-  proxy: input =>
-    Option.map(
-      Schema.decodeUnknownOption(Schema.Struct({ endpoint: Schema.String }))(input),
-      ({ endpoint }) => endpoint
-    ),
-};
-
-const familyArgument = (
-  family: TelemetryFamily,
-  input: Option.Option<unknown>
-): string | undefined =>
-  Option.getOrUndefined(
-    Option.flatMap(input, parsed =>
-      Option.flatMap(Option.fromNullishOr(FAMILY_ARGUMENTS[family]), argument => argument(parsed))
-    )
-  );
-
-/** Only these parsed fields can contribute telemetry. Extra fields are discarded by Schema. */
-const TelemetryInput = Schema.Struct({
-  dryRun: Schema.optional(Schema.Boolean),
-  getSchema: Schema.optional(Schema.Boolean),
-  skipConnectionCheck: Schema.optional(Schema.Boolean),
-  skipToolParamsCheck: Schema.optional(Schema.Boolean),
-  skipChecks: Schema.optional(Schema.Boolean),
-  noBrowser: Schema.optional(Schema.Boolean),
-  noWait: Schema.optional(Schema.Boolean),
-  debug: Schema.optional(Schema.Boolean),
-  completions: Schema.optional(Schema.Boolean),
-  noCompletions: Schema.optional(Schema.Boolean),
-  uninstall: Schema.optional(Schema.Boolean),
-  yes: Schema.optional(Schema.Boolean),
-  ifPresent: Schema.optional(Schema.Boolean),
-  data: Schema.optional(Schema.Option(Schema.String)),
-  authConfig: Schema.optional(Schema.Option(Schema.String)),
-  file: Schema.optional(Schema.Option(Schema.String)),
-  key: Schema.optional(Schema.Option(Schema.String)),
-  userApiKey: Schema.optional(Schema.Option(Schema.String)),
-  toolkits: Schema.optional(Schema.Option(Schema.String)),
-  target: Schema.optional(Schema.String),
-  method: Schema.optional(Schema.String),
-  limit: Schema.optional(Schema.Number),
-  headers: Schema.optional(Schema.Array(Schema.String)),
-  args: Schema.optional(Schema.Array(Schema.String)),
-});
-
-const parsedTelemetry = (value: Option.Option<unknown>) => {
-  const input = Option.getOrElse(
-    Option.flatMap(value, Schema.decodeUnknownOption(TelemetryInput)),
-    (): typeof TelemetryInput.Type => ({})
-  );
-  const present = (option: Option.Option<string> | undefined) =>
-    option !== undefined && Option.isSome(option);
-  const options = {
-    dry_run: input.dryRun ?? false,
-    get_schema: input.getSchema ?? false,
-    skip_connection_check: input.skipConnectionCheck ?? false,
-    skip_tool_params_check: input.skipToolParamsCheck ?? false,
-    skip_checks: input.skipChecks ?? false,
-    no_browser: input.noBrowser ?? false,
-    no_wait: input.noWait ?? false,
-    debug: input.debug ?? false,
-    completions: input.completions ?? false,
-    no_completions: input.noCompletions ?? false,
-    uninstall: input.uninstall ?? false,
-    yes: input.yes ?? false,
-    if_present: input.ifPresent ?? false,
-    has_data: present(input.data),
-    has_auth_config: present(input.authConfig),
-    has_key: present(input.key) || present(input.userApiKey),
-    file_mode: present(input.file),
-    toolkits: input.toolkits === undefined ? undefined : Option.getOrUndefined(input.toolkits),
-    limit: input.limit === undefined ? undefined : String(input.limit),
-    target: input.target,
-    method: input.method,
-    toolkit: Option.getOrUndefined(
-      Option.map(
-        Option.flatMap(
-          value,
-          Schema.decodeUnknownOption(Schema.Struct({ toolkit: Schema.String }))
-        ),
-        parsed => parsed.toolkit
-      )
-    ),
-    header_count: input.headers?.length ?? 0,
-    arg_count: input.args?.length ?? 0,
-  };
-  const flagNames = [
-    ...(input.dryRun ? ['--dry-run'] : []),
-    ...(input.getSchema ? ['--get-schema'] : []),
-    ...(input.skipConnectionCheck ? ['--skip-connection-check'] : []),
-    ...(input.skipToolParamsCheck ? ['--skip-tool-params-check'] : []),
-    ...(input.skipChecks ? ['--skip-checks'] : []),
-    ...(input.noBrowser ? ['--no-browser'] : []),
-    ...(input.noWait ? ['--no-wait'] : []),
-    ...(input.debug ? ['--debug'] : []),
-    ...(input.completions ? ['--completions'] : []),
-    ...(input.noCompletions ? ['--no-completions'] : []),
-    ...(input.uninstall ? ['--uninstall'] : []),
-    ...(input.yes ? ['--yes'] : []),
-    ...(input.ifPresent ? ['--if-present'] : []),
-    ...(present(input.data) ? ['--data'] : []),
-    ...(present(input.authConfig) ? ['--auth-config'] : []),
-    ...(present(input.file) ? ['--file'] : []),
-    ...(present(input.key) ? ['--key'] : []),
-    ...(present(input.userApiKey) ? ['--user-api-key'] : []),
-    ...(present(input.toolkits) ? ['--toolkits'] : []),
-    ...(input.headers?.length ? ['--header'] : []),
-  ].sort();
-  return { options, flagNames };
-};
 
 /**
  * Builds the telemetry context of the command `identity` names, with the input `effect/cli`
@@ -505,8 +352,12 @@ export const createCliCommandTelemetryContext = (params: {
     parentRunId: invocation.parentRunId,
     commandPath: commandPathOf(identity),
     family,
-    argument: familyArgument(family, params.input),
-    ...parsedTelemetry(params.input),
+    ...Option.getOrElse(
+      Option.flatMap(params.input, input =>
+        Option.map(Option.fromNullishOr(identity.meta.telemetryInput), project => project(input))
+      ),
+      () => ({ options: {}, flagNames: [] })
+    ),
     stdoutIsTTY: terminal.stdoutIsTTY,
     stderrIsTTY: terminal.stderrIsTTY,
     startedAt: params.startedAt,

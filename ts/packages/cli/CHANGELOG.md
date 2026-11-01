@@ -49,6 +49,11 @@
 
 ### Patch Changes
 
+- Command telemetry now derives option types and effective defaults from each
+  command's parser. Commands explicitly select safe properties to measure, and
+  shared root and `dev` definitions reuse that selection. Help and parse failures
+  leave parser-owned values such as the proxy method and setup target unset.
+
 - `composio dev triggers listen --toolkits` now matches toolkits whose slug
   contains an underscore, such as `one_drive`, `launch_darkly` and
   `agent_mail`. Events carry no toolkit slug, so the listener took the first

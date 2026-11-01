@@ -1,3 +1,4 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { Argument, Command, Flag } from 'effect/cli';
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { runConnectedAccountsLink } from './connected-accounts.link.handler';
@@ -48,7 +49,7 @@ const linkExamples = [
   },
 ];
 
-export const connectedAccountsCmd$Link = Command.make(
+const connectedAccountsCmd$LinkBase = Command.make(
   'link',
   { toolkit, authConfig, noWait, noBrowser, alias, list },
   runConnectedAccountsLink
@@ -61,4 +62,17 @@ export const connectedAccountsCmd$Link = Command.make(
   ),
   Command.withExamples(linkExamples),
   withCommandMeta({ requiresLogin: true })
+);
+
+export const connectedAccountsCmd$Link = withCommandTelemetry(
+  connectedAccountsCmd$LinkBase,
+  input =>
+    telemetry.fields(
+      {
+        no_browser: telemetry.flag('--no-browser', input.noBrowser),
+        no_wait: telemetry.flag('--no-wait', input.noWait),
+        has_auth_config: telemetry.flag('--auth-config', telemetry.present(input.authConfig)),
+      },
+      telemetry.optional(input.toolkit)
+    )
 );
