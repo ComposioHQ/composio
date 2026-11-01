@@ -13,3 +13,4 @@ Read the relevant reference:
 - `references/implementation.md` for Effect command wiring and service patterns.
 - `references/client-cache-sync.md` when touching toolkit client services.
 - `references/command-example.md` for the repo-linked authoring recipe, behavioral checks, and an unseen-task evaluation protocol.
+- `references/data-and-lifecycle.md` for TerminalUI, stdin/stdout contracts, streaming commands, terminal controls, and recovery pitfalls.

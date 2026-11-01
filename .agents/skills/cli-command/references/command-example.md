@@ -52,13 +52,13 @@ export const listAccounts = ({ toolkit }: ListParams) =>
   });
 ```
 
-`ComposioClientSingleton` constructs clients from `@composio/client/effect`. The handler yields a native client operation directly. Its test replaces the connected-account resource's HTTP transport with the existing recording transport. It does not replace the resource operation with a function that returns a canned Effect.
+`ComposioClientSingleton` constructs clients from `@composio/client/effect`. The handler yields a native client operation directly. Its test replaces the connected-account resource's HTTP transport with the existing recording transport. The test records scope arguments separately because its fixed recording client does not prove scoped request headers. It does not replace the resource operation with a function that returns a canned Effect.
 
 ## What the checks establish
 
 The root command `bun run validate:cli-skills` runs in Agent Substrate CI. It checks that linked excerpts still match source, compiles standalone Effect examples and the CLI tests, exercises the example, runs existing registration and invocation contracts, and checks Effect diagnostics.
 
-The example asserts optional-filter request mapping, the scoped acting user, JSON stdout, empty stderr, inherited login enforcement, help/version handling, parse failures, skipped hooks, and lifecycle identity. Existing registration and command-identity tests cover nested providers, reused registrations, root/dev command paths, shared flags, and canonical paths after a rejected command token.
+The example asserts the organization and project passed to `getFor`, optional-filter request mapping, the acting user, JSON stdout, empty stderr, inherited login enforcement, help/version handling, parse failures, skipped hooks, and lifecycle identity. Existing registration and command-identity tests cover nested providers, reused registrations, root/dev command paths, shared flags, and canonical paths after a rejected command token.
 
 These checks certify the recipe and the selected contracts at the tested revision. They do not certify arbitrary prose claims, live backend behavior, or an agent's ability to apply the skill to an unfamiliar request. The routing checks measure description matching, not skill use. Known telemetry defects from the architecture review remain separate fixes.
 
