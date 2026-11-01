@@ -93,8 +93,8 @@ jobs:
           - os: macos-15-intel
             name: 'macOS 15 (Intel, zsh)'
             shell: zsh
-          - os: macos-14
-            name: 'macOS 14 (Sonoma)'
+          - os: macos-26
+            name: 'macOS 26 (Apple Silicon)'
             shell: bash
           - os: macos-15
             name: 'macOS 15 (Apple Silicon)'
