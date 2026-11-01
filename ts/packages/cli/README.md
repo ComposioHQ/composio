@@ -204,6 +204,8 @@ It holds derived data, not saved API responses, so it is read on every run regar
 
 ## Development
 
+The [contributor guide](CONTRIBUTING.md) explains command structure, argument parsing, Effect composition, and verification through a worked example. The generated [command catalog](src/commands/COMMANDS.md) lists command registrations and their source files.
+
 ### Installation
 
 ```bash
