@@ -1,7 +1,10 @@
 import { describe, expect, it, layer } from '@effect/vitest';
 import { Cause, Data, Effect, Option, Ref } from 'effect';
 import type { Command } from 'effect/cli';
-import { getPrimaryLifecycleFailedEvent } from 'src/analytics/events';
+import {
+  getPrimaryLifecycleFailedEvent,
+  getPrimaryLifecycleInvokedEvent,
+} from 'src/analytics/events';
 import type { TelemetryFamily } from 'src/analytics/types';
 import { buildRootCommand, runWithConfig } from 'src/commands';
 import {
@@ -205,6 +208,44 @@ describe('lifecycle telemetry from the command identity', () => {
         failure_reason_code: 'parse_error',
       });
       expect(JSON.stringify(properties)).not.toContain('dve');
+    })
+  );
+
+  it.effect('uses the displayed command identity for redundant help', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(['help', 'execute', '--help']);
+      expect(events.map(({ event, path, family }) => ({ event, path, family }))).toEqual([
+        { event: 'invoked', path: 'execute', family: 'execute' },
+        { event: 'succeeded', path: 'execute', family: 'execute' },
+      ]);
+    })
+  );
+
+  it.effect('does not collect a rejected flag name', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(['--customer-secret']);
+      expect(events.map(({ call }) => call.context.flagNames)).toEqual([[], []]);
+    })
+  );
+
+  it.effect('does not interpret run script operands as CLI options', () =>
+    Effect.gen(function* () {
+      // The missing source stops before execution. Parsing and lifecycle telemetry still run.
+      const events = yield* lifecycleOf([
+        'run',
+        '--file',
+        '/missing/cli-telemetry-test.ts',
+        '--',
+        '--dry-run',
+      ]);
+      const invoked = events[0]!;
+      expect(invoked.path).toBe('run');
+      expect(getPrimaryLifecycleInvokedEvent(invoked.call.context)?.properties).toMatchObject({
+        dry_run: false,
+        file_mode: true,
+        arg_count: 1,
+      });
+      expect(invoked.call.context.flagNames).toEqual(['--file']);
     })
   );
 

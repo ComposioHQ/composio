@@ -43,7 +43,10 @@ export type CliCommandTelemetryContext = {
    * `proxy`. Unset for other families and when nothing was parsed (help, version, parse errors).
    */
   readonly argument?: string;
+  /** Canonical configured telemetry options, never raw argv tokens. Empty without parsed input. */
   readonly flagNames: ReadonlyArray<string>;
+  /** Safe option properties projected from parsed input. No credentials, bodies, or script source. */
+  readonly options: Readonly<Record<string, string | number | boolean | undefined>>;
   readonly stdoutIsTTY: boolean;
   readonly stderrIsTTY: boolean;
   readonly startedAt: number;

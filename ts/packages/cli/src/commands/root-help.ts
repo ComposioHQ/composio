@@ -89,18 +89,15 @@ export const buildHelpCommand = (commands: ReadonlyArray<Command.Command.Any>) =
  */
 export const Help = GlobalFlag.Action({
   flag: GlobalFlag.Help.flag,
-  run: (value, context) =>
-    beginAtCommandPath(context.command, context.commandPath).pipe(
-      Effect.andThen(
-        GlobalFlag.Help.run(value, {
-          ...context,
-          commandPath:
-            context.commandPath[1] === 'help'
-              ? [context.commandPath[0], ...context.commandPath.slice(2)]
-              : context.commandPath,
-        })
-      )
-    ),
+  run: (value, context) => {
+    const commandPath =
+      context.commandPath[1] === 'help'
+        ? [context.commandPath[0], ...context.commandPath.slice(2)]
+        : context.commandPath;
+    return beginAtCommandPath(context.command, commandPath).pipe(
+      Effect.andThen(GlobalFlag.Help.run(value, { ...context, commandPath }))
+    );
+  },
 });
 
 /** `--version`: begins the command it was given on (no handler runs), then prints the version. */

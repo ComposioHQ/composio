@@ -171,16 +171,6 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
   3702, // ComposioTools_ValidationError
 ]);
 
-const extractFlagNames = (argv: ReadonlyArray<string>): ReadonlyArray<string> =>
-  [
-    ...new Set(
-      argv
-        .slice(2)
-        .filter(token => token.startsWith('-'))
-        .map(token => token.split('=')[0]!)
-    ),
-  ].sort();
-
 const argumentShape = (args: Record<string, unknown>) => {
   const keys = Object.keys(args).sort();
   return {
@@ -223,31 +213,6 @@ const failureReasonProperties = (error: unknown) => {
   return {};
 };
 
-const isFlagPresent = (argv: ReadonlyArray<string>, ...flags: string[]): boolean =>
-  argv.slice(2).some(token => {
-    if (flags.includes(token)) return true;
-    return flags.some(flag => token.startsWith(`${flag}=`));
-  });
-
-const getFlagValue = (argv: ReadonlyArray<string>, ...flags: string[]): string | undefined => {
-  const args = argv.slice(2);
-  for (let index = 0; index < args.length; index += 1) {
-    const token = args[index];
-    if (!token) continue;
-
-    for (const flag of flags) {
-      if (token === flag) {
-        const next = args[index + 1];
-        return next && !next.startsWith('-') ? next : undefined;
-      }
-      if (token.startsWith(`${flag}=`)) {
-        return token.slice(flag.length + 1);
-      }
-    }
-  }
-  return undefined;
-};
-
 const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
   const slug = context.argument;
   return {
@@ -264,12 +229,12 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
     toolkit_slug:
       context.toolkitSlug ??
       (typeof slug === 'string' ? guessToolkitFromToolSlug(slug) : undefined),
-    dry_run: isFlagPresent(context.argv, '--dry-run'),
-    get_schema: isFlagPresent(context.argv, '--get-schema'),
-    has_data: isFlagPresent(context.argv, '--data', '-d'),
-    skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
-    skip_tool_params_check: isFlagPresent(context.argv, '--skip-tool-params-check'),
-    skip_checks: isFlagPresent(context.argv, '--skip-checks'),
+    dry_run: context.options.dry_run ?? false,
+    get_schema: context.options.get_schema ?? false,
+    has_data: context.options.has_data ?? false,
+    skip_connection_check: context.options.skip_connection_check ?? false,
+    skip_tool_params_check: context.options.skip_tool_params_check ?? false,
+    skip_checks: context.options.skip_checks ?? false,
   };
 };
 
@@ -286,8 +251,8 @@ const getSearchCommandProperties = (context: CliCommandTelemetryContext) => {
     duration_ms: Date.now() - context.startedAt,
     query_length: query.length,
     query_term_count: query.split(/\s+/u).filter(Boolean).length,
-    toolkits: getFlagValue(context.argv, '--toolkits'),
-    limit: getFlagValue(context.argv, '--limit'),
+    toolkits: context.options.toolkits,
+    limit: context.options.limit,
   };
 };
 
@@ -301,9 +266,9 @@ const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
     command_path: context.commandPath,
     duration_ms: Date.now() - context.startedAt,
     toolkit: context.argument,
-    no_browser: isFlagPresent(context.argv, '--no-browser'),
-    no_wait: isFlagPresent(context.argv, '--no-wait'),
-    has_auth_config: isFlagPresent(context.argv, '--auth-config'),
+    no_browser: context.options.no_browser ?? false,
+    no_wait: context.options.no_wait ?? false,
+    has_auth_config: context.options.has_auth_config ?? false,
   };
 };
 
@@ -314,13 +279,13 @@ const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
-  debug: isFlagPresent(context.argv, '--debug'),
-  dry_run: isFlagPresent(context.argv, '--dry-run'),
-  skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
-  skip_tool_params_check: isFlagPresent(context.argv, '--skip-tool-params-check'),
-  skip_checks: isFlagPresent(context.argv, '--skip-checks'),
-  file_mode: isFlagPresent(context.argv, '--file', '-f'),
-  arg_count: Math.max(0, context.argv.length - 3),
+  debug: context.options.debug ?? false,
+  dry_run: context.options.dry_run ?? false,
+  skip_connection_check: context.options.skip_connection_check ?? false,
+  skip_tool_params_check: context.options.skip_tool_params_check ?? false,
+  skip_checks: context.options.skip_checks ?? false,
+  file_mode: context.options.file_mode ?? false,
+  arg_count: context.options.arg_count ?? 0,
 });
 
 const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
@@ -329,8 +294,8 @@ const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
-  completions: isFlagPresent(context.argv, '--completions'),
-  no_completions: isFlagPresent(context.argv, '--no-completions'),
+  completions: context.options.completions ?? false,
+  no_completions: context.options.no_completions ?? false,
 });
 
 const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
@@ -339,10 +304,10 @@ const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
-  operation: isFlagPresent(context.argv, '--uninstall') ? 'uninstall' : 'setup',
-  target: getFlagValue(context.argv, '--target') ?? 'auto',
-  yes: isFlagPresent(context.argv, '--yes', '-y'),
-  if_present: isFlagPresent(context.argv, '--if-present'),
+  operation: context.options.uninstall ? 'uninstall' : 'setup',
+  target: context.options.target ?? 'auto',
+  yes: context.options.yes ?? false,
+  if_present: context.options.if_present ?? false,
   stdout_is_tty: context.stdoutIsTTY,
 });
 
@@ -352,10 +317,10 @@ const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
-  no_browser: isFlagPresent(context.argv, '--no-browser'),
-  no_wait: isFlagPresent(context.argv, '--no-wait'),
-  has_key: isFlagPresent(context.argv, '--key'),
-  skip_org_picker: isFlagPresent(context.argv, '--yes', '-y'),
+  no_browser: context.options.no_browser ?? false,
+  no_wait: context.options.no_wait ?? false,
+  has_key: context.options.has_key ?? false,
+  skip_org_picker: context.options.yes ?? false,
 });
 
 const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
@@ -373,12 +338,11 @@ const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
   has_endpoint: typeof context.argument === 'string',
-  toolkit: getFlagValue(context.argv, '--toolkit', '-t'),
-  method: getFlagValue(context.argv, '--method', '-X') ?? 'GET',
-  has_data: isFlagPresent(context.argv, '--data', '-d'),
-  header_count: context.argv.slice(2).filter(token => token === '--header' || token === '-H')
-    .length,
-  skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
+  toolkit: context.options.toolkit,
+  method: context.options.method ?? 'GET',
+  has_data: context.options.has_data ?? false,
+  header_count: context.options.header_count ?? 0,
+  skip_connection_check: context.options.skip_connection_check ?? false,
 });
 
 const firstOf = (values: ReadonlyArray<string>) => values[0];
@@ -422,6 +386,100 @@ const familyArgument = (
     )
   );
 
+/** Only these parsed fields can contribute telemetry. Extra fields are discarded by Schema. */
+const TelemetryInput = Schema.Struct({
+  dryRun: Schema.optional(Schema.Boolean),
+  getSchema: Schema.optional(Schema.Boolean),
+  skipConnectionCheck: Schema.optional(Schema.Boolean),
+  skipToolParamsCheck: Schema.optional(Schema.Boolean),
+  skipChecks: Schema.optional(Schema.Boolean),
+  noBrowser: Schema.optional(Schema.Boolean),
+  noWait: Schema.optional(Schema.Boolean),
+  debug: Schema.optional(Schema.Boolean),
+  completions: Schema.optional(Schema.Boolean),
+  noCompletions: Schema.optional(Schema.Boolean),
+  uninstall: Schema.optional(Schema.Boolean),
+  yes: Schema.optional(Schema.Boolean),
+  ifPresent: Schema.optional(Schema.Boolean),
+  data: Schema.optional(Schema.Option(Schema.String)),
+  authConfig: Schema.optional(Schema.Option(Schema.String)),
+  file: Schema.optional(Schema.Option(Schema.String)),
+  key: Schema.optional(Schema.Option(Schema.String)),
+  userApiKey: Schema.optional(Schema.Option(Schema.String)),
+  toolkits: Schema.optional(Schema.Option(Schema.String)),
+  target: Schema.optional(Schema.String),
+  method: Schema.optional(Schema.String),
+  limit: Schema.optional(Schema.Number),
+  headers: Schema.optional(Schema.Array(Schema.String)),
+  args: Schema.optional(Schema.Array(Schema.String)),
+});
+
+const parsedTelemetry = (value: Option.Option<unknown>) => {
+  const input = Option.getOrElse(
+    Option.flatMap(value, Schema.decodeUnknownOption(TelemetryInput)),
+    (): typeof TelemetryInput.Type => ({})
+  );
+  const present = (option: Option.Option<string> | undefined) =>
+    option !== undefined && Option.isSome(option);
+  const options = {
+    dry_run: input.dryRun ?? false,
+    get_schema: input.getSchema ?? false,
+    skip_connection_check: input.skipConnectionCheck ?? false,
+    skip_tool_params_check: input.skipToolParamsCheck ?? false,
+    skip_checks: input.skipChecks ?? false,
+    no_browser: input.noBrowser ?? false,
+    no_wait: input.noWait ?? false,
+    debug: input.debug ?? false,
+    completions: input.completions ?? false,
+    no_completions: input.noCompletions ?? false,
+    uninstall: input.uninstall ?? false,
+    yes: input.yes ?? false,
+    if_present: input.ifPresent ?? false,
+    has_data: present(input.data),
+    has_auth_config: present(input.authConfig),
+    has_key: present(input.key) || present(input.userApiKey),
+    file_mode: present(input.file),
+    toolkits: input.toolkits === undefined ? undefined : Option.getOrUndefined(input.toolkits),
+    limit: input.limit === undefined ? undefined : String(input.limit),
+    target: input.target,
+    method: input.method,
+    toolkit: Option.getOrUndefined(
+      Option.map(
+        Option.flatMap(
+          value,
+          Schema.decodeUnknownOption(Schema.Struct({ toolkit: Schema.String }))
+        ),
+        parsed => parsed.toolkit
+      )
+    ),
+    header_count: input.headers?.length ?? 0,
+    arg_count: input.args?.length ?? 0,
+  };
+  const flagNames = [
+    ...(input.dryRun ? ['--dry-run'] : []),
+    ...(input.getSchema ? ['--get-schema'] : []),
+    ...(input.skipConnectionCheck ? ['--skip-connection-check'] : []),
+    ...(input.skipToolParamsCheck ? ['--skip-tool-params-check'] : []),
+    ...(input.skipChecks ? ['--skip-checks'] : []),
+    ...(input.noBrowser ? ['--no-browser'] : []),
+    ...(input.noWait ? ['--no-wait'] : []),
+    ...(input.debug ? ['--debug'] : []),
+    ...(input.completions ? ['--completions'] : []),
+    ...(input.noCompletions ? ['--no-completions'] : []),
+    ...(input.uninstall ? ['--uninstall'] : []),
+    ...(input.yes ? ['--yes'] : []),
+    ...(input.ifPresent ? ['--if-present'] : []),
+    ...(present(input.data) ? ['--data'] : []),
+    ...(present(input.authConfig) ? ['--auth-config'] : []),
+    ...(present(input.file) ? ['--file'] : []),
+    ...(present(input.key) ? ['--key'] : []),
+    ...(present(input.userApiKey) ? ['--user-api-key'] : []),
+    ...(present(input.toolkits) ? ['--toolkits'] : []),
+    ...(input.headers?.length ? ['--header'] : []),
+  ].sort();
+  return { options, flagNames };
+};
+
 /**
  * Builds the telemetry context of the command `identity` names, with the input `effect/cli`
  * parsed for it (none for help, version, and parse failures).
@@ -448,7 +506,7 @@ export const createCliCommandTelemetryContext = (params: {
     commandPath: commandPathOf(identity),
     family,
     argument: familyArgument(family, params.input),
-    flagNames: extractFlagNames(argv),
+    ...parsedTelemetry(params.input),
     stdoutIsTTY: terminal.stdoutIsTTY,
     stderrIsTTY: terminal.stderrIsTTY,
     startedAt: params.startedAt,
