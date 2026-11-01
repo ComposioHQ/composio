@@ -1,5 +1,15 @@
 # CLI Implementation
 
+## Start with the current command model
+
+The [contributor guide](../../../../ts/packages/cli/CONTRIBUTING.md) traces one command through parsing, behavior, registration, and its argv-level test. The generated [command catalog](../../../../ts/packages/cli/src/commands/COMMANDS.md) lists every registration and its source. The package's AGENTS.md remains authoritative.
+
+- Groups register children through `withRegisteredSubcommands`, which supplies parsed identity and inherited policy. Direct `Command.withSubcommands` bypasses it.
+- `withCommandMeta` declares login, hooks, telemetry family, and unsupported shared flags. Handlers do not repeat login gates or lifecycle reporting.
+- `CommandSurface` supplies root/dev context and dev shared flags. `actingUser()` or `actingUserOption()` resolves the acting user and project. A user filter does not use a test-user fallback.
+- The same command definition can have multiple registrations. Root shortcuts do not need copied handlers or descriptions.
+- Changes to command paths or help summaries regenerate `COMMANDS.md` with `pnpm --filter @composio/cli run commands:map`.
+
 ## Command Files
 
 One directory per command under `src/commands/`, files sharing the command's dotted basename. The authoritative description, including the legacy shape and the test mirror, is "Command module layout" in `ts/packages/cli/AGENTS.md`; the short form:
@@ -16,14 +26,14 @@ test/src/commands/<group>/<name>/<group>.<name>.handler.test.ts    handler-level
 
 - Top-level commands use the same shape without a group: `src/commands/<name>/<name>.cmd.ts`.
 - Register new commands through `src/commands/index.ts` or the nearest group entry.
-- A usage mistake the parser cannot see (flag combination, business rule, missing input) raises `CommandInputError` via `commandInputError('<command>')` from `src/commands/errors.ts`, with the `option` at fault; `cli-main.ts` prints the message and exits 1. Do not add a per-command message-only error class.
-- A command that needs a login pipes `requireLogin` from `src/effects/require-auth.ts` on itself or on its group entry after `Command.withSubcommands`; the handler never checks `apiKey`. `resolveCommandProject` fails with `ProjectResolutionError` and `resolveConnectedAccountForToolkit` with `ConnectedAccountResolutionError`; let them flow, they print and exit 1 like `CommandInputError`.
+- A usage mistake the parser cannot see (flag combination, business rule, missing input) raises `CommandInputError` via `commandInputError('<command>')` from `src/commands/errors.ts`, with the `option` at fault; the invocation (`src/invocation/invocation.ts`) prints the message and exits 1. Do not add a per-command message-only error class.
+- A command that needs a login declares `withCommandMeta({ requiresLogin: true })` (`src/invocation/command-identity.ts`) on itself or on its group entry; the selected command checks it right after it began, and the handler never checks `apiKey`. `resolveCommandProject` fails with `ProjectResolutionError` and `resolveConnectedAccountForToolkit` with `ConnectedAccountResolutionError`; let them flow, they print and exit 1 like `CommandInputError`.
 - A command still in the legacy single-file shape (`<group>/commands/<group>.<name>.cmd.ts`, or top-level `<name>.cmd.ts`) is migrated in the PR that next changes it substantively, one command per PR.
 - `pnpm run validate:command-tests` (in `pnpm test`) fails on a command without its mirrored `.cmd.test.ts`, on an orphan `.cmd.test.ts`, and on a stale exemption. Add the test with the command; do not add exemptions.
 
 ## Effect Patterns
 
-The CLI is on `effect@4.0.3` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
+The CLI is on `effect@4.0.5` (exact pin) plus `@effect/platform-bun`/`@effect/vitest` at the same version. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/*` submodules.
 
 Common shape. The command file declares the surface and passes the handler to the three-argument `Command.make`:
 
@@ -75,6 +85,14 @@ export const runToolsList = ({ toolkit, query, limit }: ToolsListParams) =>
 
 Follow existing local patterns before introducing new service abstractions.
 
+## Native Effect client
+
+`ComposioClientSingleton` in `src/services/composio-clients.ts` builds `@composio/client/effect` clients with `make`, explicit `Auth`, scope, the Effect HTTP transport, CLI identity, and schema loaders. Handlers get a client through `getFor({ orgId, projectId })` after resolving project context.
+
+Client operations already return Effects, so handlers yield them directly. Paginated reads use the client's streams. Fallible Promise adapters remain appropriate only for dependencies that return Promises. Read operations can pass `idempotent` from `src/services/composio-request.ts`. Execution and proxy operations must retain their existing retry policy. Runtime response decoding and stdout allowlists remain command-owned contracts.
+
+The command-example reference contains a runnable recipe and request assertions against the real Effect client over a stub HTTP transport.
+
 ## Effect Platform Boundaries
 
 `node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are lint-banned (oxlint) in `src/`:
@@ -109,6 +127,7 @@ For CLI source changes, run from the repo root:
 
 ```bash
 pnpm typecheck
+pnpm --filter @composio/cli run lint:effect
 pnpm --filter @composio/cli test
 ```
 

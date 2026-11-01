@@ -14,7 +14,7 @@ export type OptionalParams<R extends Readonly<Record<string, Option.Option<unkno
  * `Option.getOrUndefined` per field at the call site.
  *
  * @example
- * client.logs.triggers.list({ ...optionalParams({ cursor, from, to }), limit })
+ * client._internal.logs.triggers.list({ ...optionalParams({ cursor, from, to }), limit })
  */
 export const optionalParams = <const R extends Readonly<Record<string, Option.Option<unknown>>>>(
   flags: R

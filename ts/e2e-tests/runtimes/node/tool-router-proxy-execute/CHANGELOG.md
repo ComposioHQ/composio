@@ -1,5 +1,12 @@
 # @e2e-tests/node-tool-router-proxy-execute
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [c2bbfa8]
+  - @composio/core@0.27.0
+
 ## 0.0.3
 
 ### Patch Changes

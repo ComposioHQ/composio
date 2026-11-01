@@ -131,6 +131,7 @@ export const DOCS_PRODUCTS = {
       '/docs/configuring-sessions',
       '/docs/session-configs',
       '/docs/approvals',
+      '/docs/firewall',
       '/docs/instant-tools',
       '/docs/toolkits',
       '/docs/tool-tags',
@@ -179,9 +180,15 @@ export const DOCS_PRODUCTS = {
           },
           {
             type: 'group',
+            label: 'Governance',
+            links: [{ url: '/docs/firewall' }],
+          },
+          {
+            type: 'group',
             label: 'Authentication',
             links: [
               { url: '/docs/authentication', label: 'Authentication with Composio' },
+              { url: '/docs/authentication/managed-auth-for-custom-tools' },
               {
                 url: '/docs/authentication/managing-multiple-connected-accounts',
                 label: 'Multiple connected accounts',

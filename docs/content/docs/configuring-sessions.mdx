@@ -6,7 +6,7 @@ keywords: [session, toolkits, auth configs, connected accounts]
 
 ## Creating a session
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(user_id="user_123")
@@ -20,11 +20,23 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}'
+```
+</Tab>
 </Tabs>
 
 By default, a session has access to every toolkit in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
 
 You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
+
+<Callout type="warn">
+Both SDKs pass product and runtime identity through the API client's `identity` option. If you configure custom default or request headers, remove identity headers such as `x-source`, `x-framework`, `x-sdk-version`, and `x-client-*`. The client rejects attempts to override them.
+</Callout>
 
 ### API key permissions
 
@@ -53,11 +65,27 @@ In Python, `session.config.instant` is a model when it contains a policy. Read i
 If you implement the TypeScript `Session` interface yourself, include the required `config` member. Sessions created by the SDK provide it automatically.
 </Callout>
 
+## Requiring tool approval
+
+Require approval before selected session tools run by adding `requireApproval` (`require_approval` in Python) to toolkit, tool, or tag filters. These approval settings are experimental.
+
+| Scope | TypeScript session option | Python session option |
+| --- | --- | --- |
+| All tools in a toolkit | `toolkits: { requireApproval: ["gmail"] }` | `toolkits={"require_approval": ["gmail"]}` |
+| Specific tools in a toolkit | `tools: { gmail: { requireApproval: ["GMAIL_SEND_EMAIL"] } }` | `tools={"gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]}}` |
+| Tools with matching tags | `tags: { requireApproval: ["destructiveHint"] }` | `tags={"require_approval": ["destructiveHint"]}` |
+
+You can combine an approval list with `enable` or `disable` in the same filter object. An approval list alone does not restrict which tools are available.
+
+When execution needs approval, catch `ComposioToolInputRequiredError` from `@composio/core` in TypeScript or `ToolInputRequiredError` from `composio.exceptions` in Python. Display `inputRequests` (`input_requests`) and wait for the person's answers. Repeat the same tool or meta-tool call with `inputResponses` and `requestState` (`input_responses` and `request_state`), preserving the state from the error. Forward decline and cancel answers unchanged. See [handling input requests](/docs/how-composio-works#handling-requests-for-user-input) for the continuation flow.
+
+For MCP clients, configure the [approval fallback](/docs/sessions-via-mcp#approval-without-elicitation-support) if the client cannot ask for approval.
+
 ## Enabling toolkits
 
 To limit a session to specific toolkits, pass an array of toolkit slugs. The agent can only discover and use tools from these toolkits.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 # Using array format
@@ -89,13 +117,21 @@ const session2 = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github", "gmail", "slack"]}}'
+```
+</Tab>
 </Tabs>
 
 ## Disabling toolkits
 
 To keep every toolkit discoverable except a few, use the `disable` syntax. This is useful when you want broad access but need to exclude specific toolkits.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -114,6 +150,14 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"disable": ["exa", "firecrawl"]}}'
+```
+</Tab>
 </Tabs>
 
 ## Denying every app toolkit
@@ -128,7 +172,7 @@ An explicit empty allowlist means no app toolkits at all. Omitting `toolkits` ke
 
 Use an empty allowlist when a session should only run [custom tools](/docs/extending-sessions/custom-tools-and-toolkits) or session helpers. Meta tools such as `COMPOSIO_SEARCH_TOOLS`, connection management, and the sandbox keep their own enablement, so `session.tools()` can still return them.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -147,6 +191,14 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": []}}'
+```
+</Tab>
 </Tabs>
 
 <Callout type="info">
@@ -161,7 +213,7 @@ The direct tools preset preloads every tool allowed by session filters into the 
 
 This is not the default mode for broad agents. The default session behavior keeps meta tools available so the agent can search for relevant tools and avoid context bloat.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
@@ -218,13 +270,34 @@ console.log(tools.map((tool) => tool.name));
 // GMAIL_CREATE_EMAIL_DRAFT
 ```
 </Tab>
+<Tab value="API">
+```bash
+# The direct tools preset turns off meta tools, preloads every allowed tool, and disables search and multi-execute
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}},
+    "manage_connections": {"enable": false},
+    "workbench": {"enable": false},
+    "preload": {"tools": "all"},
+    "search": {"enable": false},
+    "execute": {"enable_multi_execute": false}
+  }' | jq -r '.session_id')
+
+curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[].slug'
+```
+</Tab>
 </Tabs>
 
 ### Enable selected meta tools
 
 With the direct tools preset, you can re-enable supported meta tool groups that your agent still needs. This session loads Gmail tools upfront while keeping connection management and workbench support available:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
@@ -300,6 +373,26 @@ console.log(tools.map((tool) => tool.name));
 // COMPOSIO_REMOTE_BASH_TOOL
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}},
+    "manage_connections": {"enable": true},
+    "workbench": {"enable": true},
+    "preload": {"tools": "all"},
+    "search": {"enable": false},
+    "execute": {"enable_multi_execute": false}
+  }' | jq -r '.session_id')
+
+curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[].slug'
+```
+</Tab>
 </Tabs>
 
 ## Enabling or disabling specific tools
@@ -308,7 +401,7 @@ To control which individual tools are available within a toolkit, use the `tools
 
 To enable only specific tools, pass an `enable` list per toolkit:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -337,11 +430,25 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+      "github": {"enable": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 The shorthand array syntax is equivalent to `enable`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -366,11 +473,26 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# The SDK expands the array shorthand to {"enable": [...]}
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+      "github": {"enable": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 To keep every tool in a toolkit except a few, use `disable`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -399,6 +521,20 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "slack": {"disable": ["SLACK_DELETE_MESSAGE"]},
+      "github": {"disable": ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"]}
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 ## Filtering tools by tags
@@ -411,7 +547,7 @@ Every tool has a [tag](/docs/tool-tags) for the type of action it takes: `readOn
 
 For example, to block every tool that can delete something:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -430,6 +566,14 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "tags": {"disable": ["destructiveHint"]}}'
+```
+</Tab>
 </Tabs>
 
 ### Overriding for a toolkit
@@ -438,7 +582,7 @@ The session-wide `tags` apply to the tools of every toolkit. To handle a toolkit
 
 For example, this session blocks tools that update or delete everywhere, but overrides GitHub so only its tools that delete are blocked:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -467,6 +611,18 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tags": {"disable": ["updateHint", "destructiveHint"]},
+    "tools": {"github": {"tags": {"disable": ["destructiveHint"]}}}
+  }'
+```
+</Tab>
 </Tabs>
 
 Listing a toolkit's tools with `enable` or `disable`, as in [Enabling or disabling specific tools](#enabling-or-disabling-specific-tools), also overrides the session-wide `tags` for that toolkit.
@@ -490,7 +646,7 @@ Requires `@composio/core` ≥ `0.9.0` (TypeScript) or `composio` ≥ `0.13.0`
 [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -545,6 +701,21 @@ console.log(tools.map((tool) => tool.name));
 // ... other default meta tools
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "preload": {"tools": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}
+  }' | jq -r '.session_id')
+
+curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[].slug'
+```
+</Tab>
 </Tabs>
 
 For SDK custom tools, set `preload: true` on the custom tool or custom toolkit. See [Preloading custom tools](/docs/extending-sessions/custom-tools-and-toolkits#preloading-custom-tools).
@@ -555,7 +726,7 @@ To preload every tool allowed by the session filters, use the `preload.tools = "
 
 Use your own OAuth credentials instead of Composio's defaults. Pass an auth config ID per toolkit:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -580,6 +751,17 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config", "slack": "ac_your_slack_config"}
+  }'
+```
+</Tab>
 </Tabs>
 
 See [White-labeling authentication](/docs/authentication/white-labeling-authentication) for branding, or [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for toolkits that require your own credentials.
@@ -588,7 +770,7 @@ See [White-labeling authentication](/docs/authentication/white-labeling-authenti
 
 When a user has multiple connected accounts for the same toolkit, specify which one the session uses:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -613,6 +795,17 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "connected_accounts": {"gmail": ["ca_work_gmail"], "github": ["ca_personal_github"]}
+  }'
+```
+</Tab>
 </Tabs>
 
 <Callout type="info">
@@ -635,7 +828,7 @@ When a user has multiple connected accounts for a toolkit, the session uses the 
 
 By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -657,6 +850,15 @@ const session = await composio.create("user_123", {
     enable: false,
   },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# The REST API names the sandbox block `workbench`
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "workbench": {"enable": false}}'
 ```
 </Tab>
 </Tabs>
@@ -692,12 +894,13 @@ Requires `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (P
 
 Defaults to `standard` when omitted.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
     sandbox={
+        "enable": True,
         "sandbox_size": "large",
     },
 )
@@ -717,6 +920,14 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "workbench": {"enable": true, "sandbox_size": "large"}}'
+```
+</Tab>
 </Tabs>
 
 <Callout type="info">
@@ -729,7 +940,7 @@ Changing `sandbox_size` on an existing session recreates the sandbox on the next
 
 `session.update()` patches the stored configuration in place. Fields you omit are preserved, so you can widen or narrow one part of a session without restating the rest. The SDK refreshes `session.config` and the session's config version only after the API accepts the change.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.use("session_id")
@@ -745,6 +956,14 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.sessions.use("session_id");
 
 await session.update({ toolkits: { enable: ["gmail", "github"] } });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkits": {"enable": ["gmail", "github"]}}'
 ```
 </Tab>
 </Tabs>
@@ -770,7 +989,7 @@ Stored before the update:
 
 The update:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(
@@ -787,6 +1006,14 @@ const session = await composio.sessions.use("session_id");
 await session.update({
   tools: { slack: { enable: ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"] } },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tools": {"slack": {"enable": ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]}}}'
 ```
 </Tab>
 </Tabs>
@@ -809,7 +1036,7 @@ The same rule applies to `toolkits`, `tags`, and `preload`: a value replaces the
 
 An empty allowlist on update denies every app toolkit, exactly as it does on create. The SDK sends `{ "enable": [] }` as-is instead of dropping it from the request.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(toolkits={"enable": []})
@@ -824,13 +1051,21 @@ const session = await composio.sessions.use("session_id");
 await session.update({ toolkits: { enable: [] } });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkits": {"enable": []}}'
+```
+</Tab>
 </Tabs>
 
 ### Removing a callback URL
 
 `manageConnections.callbackUrl: null` removes only the stored callback URL. `enable` and the other connection settings stay as they are. An empty string is rejected.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(manage_connections={"callback_url": None})
@@ -846,13 +1081,22 @@ const session = await composio.sessions.use("session_id");
 await session.update({ manageConnections: { callbackUrl: null } });
 ```
 </Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-body-schema" operation="PATCH /api/v3.1/tool_router/session/{session_id}" field="manage_connections.callback_url" reason="openapi.json types callback_url as a string; the API accepts null to remove it" */}
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"manage_connections": {"callback_url": null}}'
+```
+</Tab>
 </Tabs>
 
 ### Clearing a block with null
 
 Passing `null` (`None` in Python) for a whole block removes the stored override and the session falls back to the default for that block. Every policy block accepts it: `toolkits`, `tools`, `tags`, `authConfigs`, `connectedAccounts`, `preload`, `manageConnections`, `sandbox`, `proxyExecute`, `multiAccount`, `search`, `execute`, and `experimental`.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(manage_connections=None, multi_account=None)
@@ -867,6 +1111,14 @@ const session = await composio.sessions.use("session_id");
 await session.update({ manageConnections: null, multiAccount: null });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"manage_connections": null, "multi_account": null}'
+```
+</Tab>
 </Tabs>
 
 Clearing a policy can widen access. `toolkits: null` removes the toolkit policy and restores the unrestricted default, which is the opposite of `{ "enable": [] }`; clearing `preload` does the same for preloaded tools, so the agent can reach more than before the update. Send `toolkits: []` when you want to deny every app toolkit. Clearing `multiAccount` resolves to disabled, while omitting it preserves the stored setting.
@@ -875,7 +1127,7 @@ Clearing a policy can widen access. `toolkits: null` removes the toolkit policy 
 
 `search`, `execute`, and `experimental` are not part of `create()`. Reach them with `session.update()` on an existing session.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(
@@ -897,6 +1149,14 @@ await session.update({
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"search": {"enable": false}, "execute": {"enable_multi_execute": false}}'
+```
+</Tab>
 </Tabs>
 
 Both blocks are on by default. `search` controls the session's search helper, so disabling it leaves the agent with the tools you preloaded. `execute.enableMultiExecute` controls whether the agent can run several tool calls in one request. `manageConnections.enableConnectionRemoval` is update-only as well, and controls whether the session exposes the connection-removal tool.
@@ -911,7 +1171,7 @@ The canonical disabled state is `{ "enable": false, "require_explicit_selection"
 
 An update that narrows `toolkits`, `tools`, or `tags` while leaving an explicitly preloaded tool outside the new policy is rejected with a `400`, and nothing changes. Fix `preload` in the same update:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(
@@ -932,6 +1192,14 @@ await session.update({
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkits": {"enable": ["slack"]}, "preload": {"tools": ["SLACK_SEND_MESSAGE"]}}'
+```
+</Tab>
 </Tabs>
 
 ### Concurrent updates
@@ -944,7 +1212,7 @@ The API must support `expected_config_version`. If it doesn't, it rejects a cond
 
 On a conflict, the SDK raises `ComposioSessionConfigConflictError` (TypeScript) or `SessionConfigConflictError` (Python) and leaves the session object as it was. Re-read the session with `sessions.use()`, reapply your change on top of the fresh config, and retry:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio.exceptions import SessionConfigConflictError
@@ -989,6 +1257,20 @@ try {
 }
 ```
 </Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-body-schema" operation="PATCH /api/v3.1/tool_router/session/{session_id}" field="expected_config_version" reason="the PATCH endpoint accepts expected_config_version but its OpenAPI schema omits the field" */}
+```bash
+CONFIG_VERSION=$(curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.config_version')
+
+# Returns 409 and writes nothing if another client changed the session first.
+# Re-read config_version and retry.
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkits": {"enable": ["gmail", "github"]}, "expected_config_version": '"$CONFIG_VERSION"'}'
+```
+</Tab>
 </Tabs>
 
 You can also pass a version you read elsewhere, for example one stored with a queued job. `expectedConfigVersion: false` (`expected_config_version=False`) is the same as omitting it. The API still commits only a fully validated configuration, so a losing update never leaves a half-applied session behind.
@@ -1005,7 +1287,7 @@ For framework examples, see provider-specific documentation like [OpenAI](/docs/
 
 Get the tools the session exposes for your AI framework. By default these are the session's [meta tools](/toolkits/meta-tools), formatted for your configured provider.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 tools = session.tools()
@@ -1020,19 +1302,25 @@ const session = await composio.create("user_123");
 const tools = await session.tools();
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 ### executeMeta() / execute_meta()
 
 Run a `COMPOSIO_*` [meta tool](/toolkits/meta-tools) directly from your session with a slug and optional arguments:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
-session = composio.create("user_123")
+session = composio.create(user_id="user_123")
 result = session.execute_meta(
     "COMPOSIO_SEARCH_TOOLS",
     arguments={"queries": [{"use_case": "send an email"}]},
@@ -1052,9 +1340,24 @@ const result = await session.executeMeta("COMPOSIO_SEARCH_TOOLS", {
 console.log(result.data, result.resultType);
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute_meta \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "COMPOSIO_SEARCH_TOOLS", "arguments": {"queries": [{"use_case": "send an email"}]}}'
+```
+</Tab>
 </Tabs>
 
 The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs. The response includes `resultType` (`result_type` in Python). If execution needs input, such as approval, the SDK raises `ComposioToolInputRequiredError` (`ToolInputRequiredError` in Python). Calls are sent once without retries, so retry only when the operation is safe to repeat.
+
+In TypeScript, the third argument holds input-response options: `session.executeMeta(slug, args, { inputResponses, requestState })`. Request options belong in the fourth argument. To pass only request options, use `session.executeMeta(slug, args, undefined, requestOptions)`.
 
 `COMPOSIO_MULTI_EXECUTE_TOOL` calls through this method run on the backend. Custom tools named in those calls are not executed in your process.
 
@@ -1062,10 +1365,13 @@ The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs. The 
 
 Manually authenticate a user to a toolkit outside of the chat flow.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-connection_request = session.authorize("github")
+connection_request = session.authorize(
+    "github",
+    callback_url="https://myapp.com/callback",
+)
 
 print(connection_request.redirect_url)
 
@@ -1087,6 +1393,14 @@ console.log(connectionRequest.redirectUrl);
 const connectedAccount = await connectionRequest.waitForConnection();
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "github", "callback_url": "https://myapp.com/callback"}' | jq -r '.redirect_url'
+```
+</Tab>
 </Tabs>
 
 For more details, see [Manually authenticating users](/docs/authentication/manually-authenticating).
@@ -1095,13 +1409,17 @@ For more details, see [Manually authenticating users](/docs/authentication/manua
 
 List the toolkits enabled for the session and their connection status, sorted by popularity. Use it to build a UI showing which apps are connected. Each toolkit includes its `slug`, `name`, `logo`, and connection status, and the call returns the first 20 by default.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 toolkits = session.toolkits()
 
 for toolkit in toolkits.items:
-    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
+    connection = toolkit.connection
+    if connection and connection.is_active and connection.connected_account:
+        status = connection.connected_account.id
+    else:
+        status = "Not connected"
     print(f"{toolkit.name}: {status}")
 ```
 </Tab>
@@ -1118,11 +1436,17 @@ toolkits.items.forEach((toolkit) => {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 Filter to only connected toolkits:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 connected = session.toolkits(is_connected=True)
@@ -1137,11 +1461,17 @@ const session = await composio.create("user_123");
 const connected = await session.toolkits({ isConnected: true });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?is_connected=true" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 Paginate through every toolkit with `limit` and the returned cursor:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 all_toolkits = []
@@ -1171,13 +1501,25 @@ do {
 } while (cursor);
 ```
 </Tab>
+<Tab value="API">
+```bash
+CURSOR=""
+while true; do
+  PAGE=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?limit=20${CURSOR:+&cursor=$CURSOR}" \
+    -H "x-api-key: $COMPOSIO_API_KEY")
+  echo "$PAGE" | jq -c '.items[]'
+  CURSOR=$(echo "$PAGE" | jq -r '.next_cursor // empty')
+  [ -z "$CURSOR" ] && break
+done
+```
+</Tab>
 </Tabs>
 
 ### update()
 
 Patch the session configuration in place. See [Updating a session](#updating-a-session) for what omitted fields, replaced maps, `null`, and `expectedConfigVersion` do.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 config = session.update(toolkits={"enable": ["gmail", "github"]})
@@ -1190,6 +1532,14 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
 const config = await session.update({ toolkits: { enable: ["gmail", "github"] } });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkits": {"enable": ["gmail", "github"]}}'
 ```
 </Tab>
 </Tabs>
@@ -1208,7 +1558,7 @@ Delete a session when you're done with it. Deleted sessions immediately stop bei
 Requires `@composio/core` ≥ `0.13.1` (TypeScript) or `composio` ≥ `0.17.1` (Python).
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = session.delete()
@@ -1225,13 +1575,19 @@ const result = await session.delete();
 console.log(result.sessionId, result.deleted);
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X DELETE https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 ## Browsing the catalog
 
 Before configuring a session, explore the toolkits and tools available. Browse them visually at [dashboard.composio.dev](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-configuring-sessions) or in the [docs catalog](/toolkits), or fetch them programmatically:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 # List toolkits
@@ -1254,11 +1610,22 @@ const toolkits = await composio.toolkits.get();
 const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
 ```
 </Tab>
+<Tab value="API">
+```bash
+# List toolkits
+curl -X GET https://backend.composio.dev/api/v3.1/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# List tools within a toolkit (top 20 by default)
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB&limit=20" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
 </Tabs>
 
 Inspect a tool's input and output schema without a user context with `getRawComposioToolBySlug`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
@@ -1278,6 +1645,12 @@ console.log(tool.name);
 console.log(tool.description);
 console.log(tool.inputParameters);
 console.log(tool.outputParameters);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tools/GMAIL_SEND_EMAIL \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>

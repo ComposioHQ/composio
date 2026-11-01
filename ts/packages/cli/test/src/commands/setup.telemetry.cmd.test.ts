@@ -173,7 +173,6 @@ describe('CLI: composio setup telemetry', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
-    process.exitCode = undefined;
   });
 
   const hostSignals = makeFakeHosts({ claude: { available: true } });

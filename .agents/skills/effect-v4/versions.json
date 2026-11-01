@@ -1,7 +1,7 @@
 {
-  "effect": "4.0.3",
-  "@effect/platform-bun": "4.0.3",
-  "@effect/vitest": "4.0.3",
+  "effect": "4.0.5",
+  "@effect/platform-bun": "4.0.5",
+  "@effect/vitest": "4.0.5",
   "@types/node": "26.6.4",
   "typescript": "6.0.2",
   "vitest": "5.0.3"

@@ -23,7 +23,7 @@ When a connection is initiated through a default (Composio-managed) auth config,
 
 The signatures are the same shape — only the method name changes for the OAuth case.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 **Before:**
 
@@ -76,6 +76,25 @@ console.log(connectionRequest.redirectUrl);
 const connectedAccount = await connectionRequest.waitForConnection();
 ```
 </Tab>
+<Tab value="API">
+**Before:**
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "ac_abc"}, "connection": {"user_id": "user_123"}}' | jq -r '.redirect_url'
+```
+
+**After:**
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config_id": "ac_abc", "user_id": "user_123"}' | jq -r '.redirect_url'
+```
+</Tab>
 </Tabs>
 
 `callback_url` / `callbackUrl` works the same way on both methods.
@@ -95,7 +114,7 @@ const connectedAccount = await connectionRequest.waitForConnection();
 
 If you maintain a mix of Composio-managed and custom auth configs and aren't sure which path to take per call, look at the auth config record. The dashboard shows whether each config is "Default (Composio-managed)" or "Custom". Programmatically, the auth config retrieve response includes an `is_composio_managed` (Python) / `isComposioManaged` (TS) boolean. Route the call based on that field:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 auth_config = composio.auth_configs.get("ac_abc")
@@ -122,6 +141,24 @@ const authConfig = await composio.authConfigs.get('ac_abc');
 const request = authConfig.isComposioManaged
   ? await composio.connectedAccounts.link('user_123', 'ac_abc')
   : await composio.connectedAccounts.initiate('user_123', 'ac_abc');
+```
+</Tab>
+<Tab value="API">
+```bash
+IS_MANAGED=$(curl -s -X GET https://backend.composio.dev/api/v3.1/auth_configs/ac_abc \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.is_composio_managed')
+
+if [ "$IS_MANAGED" = "true" ]; then
+  curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
+    -H "x-api-key: $COMPOSIO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"auth_config_id": "ac_abc", "user_id": "user_123"}'
+else
+  curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+    -H "x-api-key: $COMPOSIO_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"auth_config": {"id": "ac_abc"}, "connection": {"user_id": "user_123"}}'
+fi
 ```
 </Tab>
 </Tabs>

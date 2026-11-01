@@ -49,10 +49,10 @@ const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
   post: vi.fn(),
-  delete: vi.fn(),
   toolRouter: {
     session: {
       create: vi.fn(),
+      delete: vi.fn(),
       retrieve: vi.fn(),
       attach: vi.fn(),
       patch: vi.fn(),
@@ -237,6 +237,73 @@ describe('ToolRouter', () => {
       expect(bodies[2]).toMatchObject({ proxy_execute: { enable: true } });
       expect(bodies[3]).toMatchObject({ proxy_execute: { enable: false } });
       expect(bodies[4]).not.toHaveProperty('proxy_execute');
+    });
+
+    it('sends hooks in snake_case, and omits them otherwise', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
+
+      await toolRouter.create(userId, {
+        hooks: [
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            appliesTo: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      });
+      await toolRouter.create(userId);
+
+      const bodies = mockClient.toolRouter.session.create.mock.calls.map(call => call[0]);
+      expect(bodies[0]).toMatchObject({
+        hooks: [
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            applies_to: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      });
+      expect(bodies[1]).not.toHaveProperty('hooks');
+    });
+
+    it('rejects a prompt injection check on a before_execute hook, as the API does', async () => {
+      await expect(
+        toolRouter.create(userId, {
+          hooks: [
+            {
+              type: 'before_execute',
+              id: 'block_injection',
+              appliesTo: 'all',
+              // @ts-expect-error a before_execute hook only takes a condition_check handler
+              handler: { type: 'prompt_injection_check', action: 'block' },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects hooks together with a saved session config', async () => {
+      await expect(
+        toolRouter.create(
+          userId,
+          // @ts-expect-error hooks cannot be combined with sessionConfigId
+          {
+            hooks: [
+              {
+                type: 'after_execute',
+                id: 'block_injection',
+                appliesTo: 'all',
+                handler: { type: 'prompt_injection_check', action: 'block' },
+              },
+            ],
+            experimental: { sessionConfigId: 'sc_1' },
+          }
+        )
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
     });
 
     it('rejects a proxyExecute block without enable', async () => {
@@ -3767,15 +3834,15 @@ describe('ToolRouter', () => {
 
   describe('delete method', () => {
     it('should delete a session by ID and return a camelCase response', async () => {
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: 'trs_delete_123',
         deleted: true,
       });
 
       const result = await toolRouter.delete('trs_delete_123');
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/trs_delete_123',
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(
+        'trs_delete_123',
         undefined
       );
       expect(result).toEqual({
@@ -3786,15 +3853,15 @@ describe('ToolRouter', () => {
 
     it('should forward request options when deleting by ID', async () => {
       const requestOptions = { signal: new AbortController().signal };
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: 'trs_delete_123',
         deleted: true,
       });
 
       await toolRouter.delete('trs_delete_123', requestOptions);
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/trs_delete_123',
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(
+        'trs_delete_123',
         requestOptions
       );
     });
@@ -3959,7 +4026,7 @@ describe('ToolRouter', () => {
 
     it('should return a session with working delete function', async () => {
       mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: sessionId,
         deleted: true,
       });
@@ -3967,10 +4034,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.use(sessionId);
       const result = await session.delete();
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/session_123',
-        undefined
-      );
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(sessionId, undefined);
       expect(result).toEqual({
         sessionId,
         deleted: true,

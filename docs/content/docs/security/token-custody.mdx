@@ -10,7 +10,7 @@ In the default Composio Cloud deployment, Composio has custody of those credenti
 
 For example, after connecting a GitHub account, your backend can call GitHub through [Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute):
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -39,6 +39,14 @@ const response = await composio.tools.proxyExecute({
 });
 
 console.log(response);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"connected_account_id": "ca_your_github_account", "endpoint": "/user", "method": "GET"}'
 ```
 </Tab>
 </Tabs>

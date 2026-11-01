@@ -259,6 +259,17 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
   if (schema.example !== undefined) return schema.example;
   if (schema.default !== undefined) return schema.default;
   if (schema.enum && schema.enum.length > 0) return schema.enum[0];
+  const alternatives = schema.oneOf ?? schema.anyOf;
+  if (alternatives?.length) {
+    // An alternative applies alongside its parent, so merge it instead of
+    // discarding the parent's type and properties. Unions can be circular.
+    const { oneOf: _oneOf, anyOf: _anyOf, ...parent } = schema;
+    const alternative = alternatives[0];
+    const properties = parent.properties || alternative.properties
+      ? { ...parent.properties, ...alternative.properties }
+      : undefined;
+    return generateSampleValue({ ...parent, ...alternative, properties }, depth + 1);
+  }
 
   switch (schema.type) {
     case 'string':
@@ -430,14 +441,15 @@ function getTypeString(schema: OpenAPISchema, depth = 0, maxDepth = 4): string {
   return schema.type || 'any';
 }
 
-// Generate cURL example with sample data
-function generateCurl(
+// Generate equivalent raw HTTP examples from the same URL, headers, and JSON body.
+function generateRequestExamples(
   method: string,
   path: string,
   baseUrl: string,
   parameters: OpenAPIParameter[] = [],
-  requestBody?: OpenAPIRequestBody
-): string {
+  requestBody?: OpenAPIRequestBody,
+  authHeaders: { name: string; env: string }[] = [],
+): Record<'Python' | 'TypeScript' | 'API', string> {
   // Build path with sample values
   let url = path;
   const queryParams: string[] = [];
@@ -456,18 +468,41 @@ function generateCurl(
   }
 
   let curl = `curl -X ${method.toUpperCase()} "${baseUrl}${url}"`;
-  curl += ` \\\n  -H "x-api-key: YOUR_API_KEY"`;
+  for (const header of authHeaders) curl += ` \\\n  -H "${header.name}: $${header.env}"`;
 
+  const headers: Record<string, string> = {};
+  let body: unknown;
   // Add request body
   if (requestBody?.content?.['application/json']) {
     curl += ` \\\n  -H "Content-Type: application/json"`;
     const schema = requestBody.content['application/json'].schema;
     const example = requestBody.content['application/json'].example;
-    const body = example ?? (schema ? generateSampleValue(schema) : {});
-    curl += ` \\\n  -d '${JSON.stringify(body, null, 2).split('\n').join('\n  ')}'`;
+    body = example ?? (schema ? generateSampleValue(schema) : {});
+    curl += ` \\\n  -d '${JSON.stringify(body, null, 2).replaceAll("'", "'\\''").split('\n').join('\n  ')}'`;
+    headers['Content-Type'] = 'application/json';
   }
 
-  return curl;
+  const python = [
+    'import os',
+    'import requests',
+    ...(body === undefined ? [] : ['import json']),
+    '',
+    `response = requests.request(${JSON.stringify(method.toUpperCase())}, ${JSON.stringify(baseUrl + url)},`,
+    `    headers={${[...Object.entries(headers).map(([name, value]) => `${JSON.stringify(name)}: ${JSON.stringify(value)}`), ...authHeaders.map((header) => `${JSON.stringify(header.name)}: os.environ[${JSON.stringify(header.env)}]`)].join(', ')}}${body === undefined ? ')' : ','}`,
+    ...(body === undefined ? [] : [`    json=json.loads(${JSON.stringify(JSON.stringify(body))}))`]),
+    'response.raise_for_status()',
+    'print(response.text)',
+  ].join('\n');
+  const typescript = [
+    `const response = await fetch(${JSON.stringify(baseUrl + url)}, {`,
+    `  method: ${JSON.stringify(method.toUpperCase())},`,
+    `  headers: { ${[...Object.entries(headers).map(([name, value]) => `${JSON.stringify(name)}: ${JSON.stringify(value)}`), ...authHeaders.map((header) => `${JSON.stringify(header.name)}: process.env[${JSON.stringify(header.env)}]!`)].join(', ')} },`,
+    ...(body === undefined ? [] : [`  body: JSON.stringify(${JSON.stringify(body, null, 2)}),`]),
+    '});',
+    'if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);',
+    'console.log(await response.text());',
+  ].join('\n');
+  return { Python: python, TypeScript: typescript, API: curl };
 }
 
 // Convert OpenAPI page to comprehensive markdown
@@ -670,10 +705,22 @@ export async function openapiPageToMarkdown(page: {
 
     // Webhook operations describe inbound deliveries rather than API calls.
     if (!isWebhook) {
-      lines.push('### Example cURL Request', '');
-      lines.push('```bash');
-      lines.push(generateCurl(method, name, baseUrl, operation.parameters, operation.requestBody));
-      lines.push('```', '');
+      const requirement = operation.security?.find((alternative) => Object.keys(alternative).every((key) => {
+        if (key === 'no_auth') return true;
+        const scheme = securitySchemes?.[key];
+        return scheme?.type === 'apiKey' && scheme.in === 'header' && Boolean(scheme.name);
+      }));
+      if (operation.security?.length && !requirement) throw new Error(`Unsupported request-example authentication for ${method} ${name}`);
+      const authHeaders = Object.keys(requirement ?? {}).filter((key) => key !== 'no_auth').map((key) => {
+        const header = securitySchemes![key].name!;
+        return { name: header, env: header.toUpperCase().replace(/^X-/, 'COMPOSIO_').replaceAll('-', '_') };
+      });
+      lines.push('### Example requests', '', 'Python uses `requests`; TypeScript uses Node.js fetch. Replace sample IDs and values before sending these requests.', '');
+      if (authHeaders.length) lines.push(`Set ${authHeaders.map((header) => `\`${header.env}\``).join(', ')} before running these requests.`, '');
+      const examples = generateRequestExamples(method, name, baseUrl, operation.parameters, operation.requestBody, authHeaders);
+      for (const [label, language] of [['Python', 'python'], ['TypeScript', 'typescript'], ['API', 'bash']] as const) {
+        lines.push(`#### ${label}`, '', `\`\`\`${language}`, examples[label], '```', '');
+      }
     }
   }
 
@@ -965,6 +1012,8 @@ async function generateManagedAuthIndex(): Promise<string> {
     '',
     'Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.',
     '',
+    'This catalog identifies who provides the OAuth app, not which execution framework you must use. For per-user OAuth with application-owned tools, follow [Managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools.md). Call provider endpoints through the authenticated proxy without predefined tools, MCP, or an LLM.',
+    '',
     'This list covers only toolkits that support OAuth. It does not include toolkits that use only API keys, bearer tokens, Basic auth, or no authentication.',
     '',
     'Call the toolkit endpoint and read `composio_managed_auth_schemes`:',
@@ -1109,48 +1158,32 @@ function renderMetaToolParams(
   const prefix = '  '.repeat(indent);
 
   for (const [name, param] of Object.entries(properties)) {
-    const typeStr =
-      param.type === 'array' &&
-      param.items &&
-      typeof param.items === 'object' &&
-      (param.items as Record<string, unknown>).type
-        ? `array<${(param.items as Record<string, unknown>).type}>`
-        : param.type;
     const reqMark = requiredFields.includes(name) ? ' *(required)*' : '';
     const desc = param.description
-      ? `: ${param.description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()}`
+      ? `: ${param.description}`
       : '';
     const defaultStr =
-      param.default !== undefined && param.default !== null && param.default !== ''
-        ? ` (default: \`${String(param.default)}\`)`
+      param.defaultLabel !== null
+        ? ` (default: \`${param.defaultLabel}\`)`
         : '';
     const enumStr =
-      param.enum && param.enum.length > 0
+      param.enum.length > 0
         ? ` — values: ${param.enum.map(v => `\`${v}\``).join(', ')}`
         : '';
 
-    lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}${defaultStr}${enumStr}`);
+    lines.push(`${prefix}- \`${name}\` (${param.typeLabel})${reqMark}${desc}${defaultStr}${enumStr}`);
 
-    if (param.properties && Object.keys(param.properties).length > 0) {
-      const nestedRequired = Array.isArray(param.required) ? param.required : [];
-      lines.push(...renderMetaToolParams(param.properties, nestedRequired, indent + 1));
+    if (Object.keys(param.properties).length > 0) {
+      lines.push(...renderMetaToolParams(param.properties, param.required, indent + 1));
     }
 
-    const items =
-      param.items && typeof param.items === 'object'
-        ? (param.items as Record<string, unknown>)
-        : null;
-    if (
-      items?.properties &&
-      typeof items.properties === 'object' &&
-      Object.keys(items.properties as object).length > 0
-    ) {
-      const itemsRequired = Array.isArray(items.required) ? (items.required as string[]) : [];
+    const items = param.items;
+    if (items && Object.keys(items.properties).length > 0) {
       lines.push(`${prefix}  - Array items:`);
       lines.push(
         ...renderMetaToolParams(
-          items.properties as Record<string, MetaToolParameter>,
-          itemsRequired,
+          items.properties,
+          items.required,
           indent + 2
         )
       );
@@ -1170,17 +1203,25 @@ function metaToolToMarkdown(tool: MetaTool): string {
 
   lines.push('');
 
-  const inputProps = tool.inputParameters?.properties || {};
+  lines.push(tool.summary, '');
+  if (tool.whenToUse) {
+    lines.push('## When to use it', '', tool.whenToUse, '');
+  }
+  if (tool.usageNote) {
+    lines.push(tool.usageNote, '');
+  }
+
+  const inputProps = tool.inputParameters.properties;
   if (Object.keys(inputProps).length > 0) {
     lines.push('## Input Parameters', '');
-    lines.push(...renderMetaToolParams(inputProps, tool.inputParameters?.required || []));
+    lines.push(...renderMetaToolParams(inputProps, tool.inputParameters.required));
     lines.push('');
   }
 
-  const responseProps = tool.responseSchema?.properties || {};
+  const responseProps = tool.responseSchema.properties;
   if (Object.keys(responseProps).length > 0) {
     lines.push('## Response', '');
-    lines.push(...renderMetaToolParams(responseProps, tool.responseSchema?.required || []));
+    lines.push(...renderMetaToolParams(responseProps, tool.responseSchema.required));
     lines.push('');
   }
 

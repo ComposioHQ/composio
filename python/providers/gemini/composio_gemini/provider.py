@@ -5,6 +5,7 @@ Calling (AFC). The SDK can introspect the callable's signature to derive
 FunctionDeclaration schemas and auto-execute tool calls in the chat loop.
 """
 
+import threading
 import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
@@ -12,7 +13,12 @@ from inspect import Parameter, Signature
 from pydantic import BaseModel
 
 from composio.client.types import Tool
-from composio.core.provider import AgenticProvider
+from composio.core.provider import (
+    AgenticProvider,
+    ToolCallExecutionTarget,
+    ToolCallSession,
+    get_execution_target,
+)
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.utils.shared import (
     ToolSchemaAliases,
@@ -107,6 +113,30 @@ def _afc_annotation(annotation: t.Any, schema: t.Any = None) -> t.Any:
     return annotation
 
 
+def _execution_context(execute_tool: AgenticProviderExecuteFn) -> object:
+    """Identify who a wrapped tool executes as.
+
+    ``tools.get(user_id=...)`` and ``session.tools()`` record their user ID or
+    session on the execute function, so two fetches for the same user share a
+    context. Any other execute function is its own context.
+    """
+    target = get_execution_target(execute_tool)
+    return execute_tool if target is None else target
+
+
+class _WrappedTool(t.NamedTuple):
+    """How one fetch wrapped a tool: the argument schema it built and the
+    execute function of the user or session it was fetched for.
+
+    They are stored together because schema modifiers can differ per fetch, so
+    a call must be validated with the schema of the fetch whose executor runs it.
+    """
+
+    execute_tool: AgenticProviderExecuteFn
+    aliases: ToolSchemaAliases
+    args_schema: t.Type[BaseModel]
+
+
 def _process_execution_result(result: t.Any) -> t.Dict:
     """Process a tool execution result into a dict suitable for Gemini function responses."""
     if not isinstance(result, dict):
@@ -138,10 +168,13 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
 
     def __init__(self, **kwargs: t.Any):
         super().__init__(**kwargs)
-        self._executors: t.Dict[
-            str,
-            t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases, t.Type[BaseModel]],
-        ] = {}
+        # Guards the registries below: tools can be fetched on one thread while
+        # ``handle_response`` reads them on another.
+        self._lock = threading.Lock()
+        # Wrapped tool per slug, for each user ID or session the tools were
+        # fetched for, so ``handle_response`` runs a call as the caller's user,
+        # with the caller's schema, rather than whoever fetched the tool last.
+        self._wrapped_tools: t.Dict[object, t.Dict[str, _WrappedTool]] = {}
 
     def wrap_tool(
         self,
@@ -161,7 +194,11 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # validation model needs them: without a default every optional field
         # would be required.
         args_schema = json_schema_to_model(aliases.schema, skip_default=False)
-        self._executors[tool.slug] = (execute_tool, aliases, args_schema)
+        context = _execution_context(execute_tool)
+        with self._lock:
+            self._wrapped_tools.setdefault(context, {})[tool.slug] = _WrappedTool(
+                execute_tool, aliases, args_schema
+            )
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
@@ -222,7 +259,13 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
 
     # --- Backward compatibility: manual function calling ---
 
-    def handle_response(self, response: t.Any) -> tuple[list, bool]:
+    def handle_response(
+        self,
+        response: t.Any,
+        *,
+        user_id: t.Optional[str] = None,
+        session: t.Optional[ToolCallSession] = None,
+    ) -> tuple[list, bool]:
         """Manually handle function calls in a Gemini response.
 
         Provided for backward compatibility with code that uses manual function
@@ -230,11 +273,26 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         ``wrap_tools()`` to ``GenerateContentConfig(tools=...)`` and AFC will
         handle execution automatically.
 
+        A Gemini response does not say which user it belongs to. Pass the
+        ``user_id`` given to ``tools.get()``, or the Tool Router ``session``
+        whose ``tools()`` produced the tools, and each call runs exactly as
+        the matching wrapped tool would, with the same modifiers and session
+        routing. Without either, the provider must have wrapped tools for a
+        single user or session only; otherwise this raises ``ValueError``.
+
         Returns:
             tuple: ``(function_responses, executed)`` where *function_responses*
             are ``genai_types.Part`` objects ready to send back, and *executed*
             is ``True`` if any functions were executed.
         """
+        target = (
+            None
+            if user_id is None and session is None
+            else self.resolve_tool_call_execution_target(
+                user_id=user_id, session=session
+            )
+        )
+
         if not HAS_GENAI:
             return [], False
 
@@ -245,19 +303,32 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         if not (hasattr(candidate, "content") and candidate.content.parts):
             return [], False
 
+        function_calls = [
+            part.function_call
+            for part in candidate.content.parts
+            if hasattr(part, "function_call") and part.function_call
+        ]
+
+        # Pick every wrapped tool before running any call, so a concurrent
+        # fetch cannot change who a later call in this response runs as, or
+        # which schema checks it.
+        with self._lock:
+            if not any(
+                fc.name in wrapped
+                for fc in function_calls
+                for wrapped in self._wrapped_tools.values()
+            ):
+                return [], False
+            wrapped_tools = self._wrapped_tools_for(target)
+            calls = [
+                (fc, *wrapped_tools[fc.name])
+                for fc in function_calls
+                if fc.name in wrapped_tools
+            ]
+
         function_responses: list = []
-        executed = False
-
-        for part in candidate.content.parts:
-            if not (hasattr(part, "function_call") and part.function_call):
-                continue
-
-            fc = part.function_call
-            if fc.name not in self._executors:
-                continue
-
+        for fc, execute_tool, aliases, args_schema in calls:
             # Same validate -> serialize -> alias sequence as the AFC callable.
-            execute_tool, aliases, args_schema = self._executors[fc.name]
             arguments = validate_and_serialize_tool_arguments(
                 args_schema,
                 normalize_tool_arguments(_to_serializable(dict(fc.args))),
@@ -273,6 +344,31 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                     )
                 )
             )
-            executed = True
 
-        return function_responses, executed
+        return function_responses, bool(function_responses)
+
+    def _wrapped_tools_for(
+        self,
+        target: t.Optional[ToolCallExecutionTarget],
+    ) -> t.Dict[str, _WrappedTool]:
+        """Return the tools wrapped for *target*. Call with the lock held."""
+        if target is None:
+            if len(self._wrapped_tools) > 1:
+                raise ValueError(
+                    "This provider has wrapped tools for more than one user or "
+                    "session, so the user to execute the response as is "
+                    "ambiguous. Pass the user the response belongs to: "
+                    "handle_response(response, user_id=...) or "
+                    "handle_response(response, session=...)."
+                )
+            return next(iter(self._wrapped_tools.values()), {})
+
+        wrapped_tools = self._wrapped_tools.get(target)
+        if wrapped_tools is None:
+            source = (
+                "composio.tools.get() for this user_id"
+                if isinstance(target, str)
+                else "this session's tools()"
+            )
+            raise ValueError(f"This provider has not wrapped any tools from {source}.")
+        return wrapped_tools

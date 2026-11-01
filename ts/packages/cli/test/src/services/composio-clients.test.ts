@@ -22,7 +22,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 // Exercise real user-context/config resolution without opening the OS credential store.
 vi.mock('@composio/cli-keyring/effect', async importOriginal => {
@@ -578,26 +578,30 @@ describe('composio-clients', () => {
         expect(error).toMatchObject({ details: { message: 'Bad input', code: 1001 } });
         assert(isClientApiError(error));
 
+        const plain: string[] = [];
         const errors: string[] = [];
         const steps: string[] = [];
         const ui = TerminalUI.of({
           ...terminalUITestImpl,
+          error: message => Effect.sync(() => void plain.push(message)),
           log: {
             ...terminalUITestImpl.log,
             error: message => Effect.sync(() => void errors.push(message)),
             step: message => Effect.sync(() => void steps.push(message)),
           },
         });
-        const proc = recordingNodeProcess();
-        yield* handleClientApiError(ui, {
-          fallbackMessage: 'fallback',
-          hint: 'hint',
-          fallbackValue: undefined,
-        })(error).pipe(Effect.provide(proc.layer));
+        const exit = yield* Effect.exit(
+          handleClientApiError(ui, {
+            fallbackMessage: 'fallback',
+            hint: 'hint',
+          })(error)
+        );
 
-        expect(errors).toEqual(['Bad input']);
-        expect(steps).toEqual(['hint']);
-        expect(proc.exitCode()).toBe(1);
+        // On a non-TTY the failure is two plain stderr lines: the message, then the hint.
+        expect(plain).toEqual(['Bad input', 'hint']);
+        expect(errors).toEqual([]);
+        expect(steps).toEqual([]);
+        expect(exitCodeOf(exit)).toBe(1);
       }).pipe(Effect.provide(withRepository))
     );
 

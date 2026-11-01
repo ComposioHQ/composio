@@ -234,7 +234,6 @@ describe('CLI: composio setup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
-    process.exitCode = undefined;
   });
 
   const freshClaude = makeFakeHosts({ claude: { available: true } });
@@ -1250,10 +1249,6 @@ const REASON_CODE_CASES: ReadonlyArray<{
 ];
 
 describe('CLI: composio setup failure reason codes', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   describe.each(REASON_CODE_CASES)('$hosts', ({ hosts, cases }) => {
     layer(TestLive({ commandRunner: REASON_CODE_FIXTURES[hosts]().runner }))(it => {
       it.effect.each(cases)('codes `setup $args` as $expected', ({ args, expected }) =>
@@ -1269,10 +1264,6 @@ describe('CLI: composio setup failure reason codes', () => {
 });
 
 describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ commandRunner: REASON_CODE_FIXTURES['only Claude Code installed']().runner }))(
     'targeted host missing',
     it => {

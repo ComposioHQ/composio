@@ -2,7 +2,215 @@
 
 ## Unreleased
 
+### Minor Changes
+
+- A signal now ends each command the way its work ends. A one-shot command,
+  `composio login` and `composio upgrade` stopped with Ctrl-C (SIGINT), SIGTERM
+  or a closed terminal (SIGHUP) exit 130, 143 or 129. They used to exit 0, so a
+  wrapper or `set -e` script read a cancelled command as a successful one.
+  `composio listen` and `composio dev triggers listen` (`composio dev listen`)
+  treat Ctrl-C and SIGTERM as the way to stop them once subscribed: they
+  disable the temporary trigger, print their summary, and exit 0. A signal
+  before the subscription is confirmed, or SIGHUP, exits 130, 143 or 129 instead.
+  `composio run` forwards SIGINT, SIGTERM and SIGHUP to its script and ends the
+  way the script did: with its exit code, or killed by the same signal. A
+  script still running 2 seconds later gets SIGTERM, then SIGKILL; a script the
+  CLI had to kill this way ends the CLI by the signal it received. A second
+  signal, or a stop that takes longer than 10 seconds, ends the CLI at once:
+  128 plus the signal's number, or, for `composio run`, the script's process
+  group is killed and the CLI is killed by that signal.
+
+- `composio dev connected-accounts link <toolkit>` (with or without `--list`)
+  now acts on your developer project, like the other `composio dev` commands:
+  the directory's project, or the one `--project-name` names. It links or lists
+  accounts for `--user-id` when given, else the directory's test user id (for
+  the directory's own project), else the global test user id. Without
+  `--project-name` it used to act as your consumer user on your consumer
+  project and silently ignore `--user-id`; outside a directory set up with
+  `composio dev init` it now fails asking for one. With `--project-name`,
+  linking a toolkit now also uses the directory's test user when the name is
+  the directory's own project. `composio link` is unchanged. With
+  `--auth-config`, a missing developer project is now reported before a
+  missing user id. On the dev tree, the alias hints point at
+  `composio dev playground-execute` and `composio dev connected-accounts list`.
+
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  gain `--fail-fast`: the listener stops at the first event it fails to save,
+  forward, or append to `--out`, prints how many events failed on stderr, and
+  exits 1. Without it, a failed event is still reported and skipped, and the
+  exit code stays 0.
+
+- `composio execute`, `composio proxy` and `composio listen` (for a trigger
+  slug) now fail with an error listing the candidate accounts, instead of
+  silently using the newest one, when a toolkit has several connected accounts,
+  none is aliased `default`, and no `--account` is passed. Scripts that relied
+  on the implicit newest-account pick now fail. To migrate, pass
+  `--account <id|alias>`, or alias one account `default`.
+
 ### Patch Changes
+
+- Command telemetry now derives option types and effective defaults from each
+  command's parser. Commands explicitly select safe properties to measure, and
+  shared root and `dev` definitions reuse that selection. Help and parse failures
+  omit command input properties instead of reporting synthetic defaults, false
+  booleans, or zero counts for input that was never parsed.
+
+- `composio dev triggers listen --toolkits` now matches toolkits whose slug
+  contains an underscore, such as `one_drive`, `launch_darkly` and
+  `agent_mail`. Events carry no toolkit slug, so the listener took the first
+  `_` segment of the trigger slug (`ONE` for `ONE_DRIVE_FILE_CREATED_TRIGGER`)
+  and dropped every event of those toolkits. A `--toolkits` entry now also
+  matches when the trigger slug starts with `<toolkit>_`.
+
+- `composio connections list`, `composio connections remove`, and
+  `composio listen` without a consumer user now print the message on stderr
+  and exit 1, like other expected errors. They used to print it under a `💥`
+  banner with the error tag and a stack location. Telemetry: every missing-user
+  failure now reports `error_name` `commands/MissingActingUserError` in
+  `cli.command.failed` and the command-family failure events, replacing
+  `ToolExecutionError` (execute), `commands/CommandInputError` (search),
+  `commands/MissingLinkUserIdError` (link),
+  `commands/MissingConnectionsConsumerUserIdError` (connections list),
+  `commands/MissingConnectionRemovalConsumerUserIdError` (connections remove),
+  `commands/ListenCommandError` (listen), and `commands/ProxyCommandError`
+  (proxy). Other failures of those commands keep their names.
+
+- Every `composio dev` command that acts as a user now names the test user it
+  falls back to on stderr (`Using test user id "…"` for the directory's,
+  `Using global test user id "…"` for the global one) when you pass no
+  `--user-id`. `composio dev playground-execute` printed nothing before; with
+  `--parallel` it names the user once.
+
+- A missing user id now gets the same message on every command of a tree.
+  Root commands (`composio execute`, `search`, `link`, `listen`, `proxy`,
+  `connections`) report a missing consumer user id and point at
+  `composio login`; root `execute`, `search`, and `link` no longer tell you to
+  pass `--user-id`, which the root tree does not take, and `listen` and `proxy`
+  no longer describe a missing "project context". `composio dev` commands point
+  at `--user-id` or `composio dev init`, or at `--user-id` or `composio login`
+  with `--project-name`.
+
+- An empty consumer user id now counts as no user on every command.
+  `composio execute`, `composio search`, and `composio link` fail with the
+  missing-user error and exit 1, as `composio connections`, `composio listen`,
+  and `composio proxy` already did; they used to send requests for the user
+  `""`. `composio run` starts the script without the consumer user's context,
+  as it does when there is no consumer user.
+
+- The update notice, the Composio plugin tip, the backend mismatch warning,
+  and the daily background check for a newer release now run only for a
+  command that runs. `--help`, `--version`, `composio help …`, a bare
+  `composio` or command group that only prints its help (`composio tools`,
+  `composio orgs`), and a mistyped command or flag no longer print them or
+  start the check; a group with an action of its own (`composio dev`,
+  `composio setup`, `composio generate`) still does. `composio upgrade` still
+  skips the notice and the check, `composio version --check` the check, and
+  `composio setup` the plugin tip.
+  The `CLI_PLUGIN_HINT_SHOWN` event now records the full command path
+  (`dev triggers list`) instead of the first word.
+
+- CLI telemetry now records the command `effect/cli` parsed instead of guessing
+  it from argv. `composio signup`, `agent …`, `connections …`, `config …`,
+  `debug …` and `help …` were recorded as `composio`, `composio dev init` as
+  `dev`, and `composio setup skill` as `setup` with the `CLI_SETUP_*` events;
+  each is now recorded under its own command path with the generic
+  `CLI_COMMAND_*` events. A rejected invocation (unknown command or flag,
+  missing argument) is recorded with the command path the parser reached and
+  `failure_reason_code: "parse_error"`. Every other command path and event
+  family is unchanged.
+
+- Hints no longer name commands that do not exist. `composio orgs list` and
+  the "No current org configured" error pointed at `composio dev orgs list` and
+  `composio dev orgs switch`; they now name `composio orgs list` and
+  `composio orgs switch`. `composio triggers list` with an unknown toolkit
+  pointed at `composio toolkits list`; it now suggests
+  `composio search "<what you want to do>"` to find the toolkit.
+  `composio dev triggers list` still names `composio dev toolkits list`.
+
+- A `composio dev` command that cannot honor `--user-id` or `--project-name`
+  now rejects it before checking that you are logged in, and the message names
+  the exact subcommand you ran instead of the group that declared the
+  restriction: `composio dev logs tools --project-name x` now names
+  `composio dev logs tools`, where it named `composio dev logs`. Telemetry
+  records the failure against that subcommand too. A group run on its own
+  rejects the flag the same way instead of printing its help:
+  `composio dev projects --user-id x` fails with that error, while
+  `composio dev projects --help` still prints the help.
+
+- CLI telemetry now records a command that prints its own
+  failure and exits 1 (a failed API request, an alias conflict on
+  `composio link`, a `--fail-fast` listener stop) as failed instead of
+  succeeded, and a `composio run` whose script exits non-zero as
+  `CLI_RUN_FAILED` with `failure_reason_code: "child_exit"`.
+
+- `composio execute` now exits 1 when an argument names a file on your machine
+  but the tool does not accept file uploads for that input, such as `file` in
+  `TRELLO_ADD_CARDS_ATTACHMENTS_BY_ID_CARD`. It used to send the path text to
+  the tool and report success, and the tool stored that text instead of the
+  file. The error names the input and the path. Nothing is sent. `--dry-run`
+  reports the same error. Paths that do not exist on your machine are still
+  sent as before.
+
+- Local file uploads now use the filename's MIME type instead of always declaring
+  `application/octet-stream`. `execute --file` preserves arrays and injects into
+  the single matching upload field in an existing array item; ambiguous targets
+  require explicit JSON. This fixes Word and PowerPoint image editing through the CLI.
+
+- `composio listen` now picks the connected account for a trigger slug the way
+  `composio execute` and `composio proxy` do, through the same resolver, so the
+  three commands choose the same account for the same `--account` (or its
+  absence). An `--account` that matches no active account, or a failed account
+  lookup, now fails with the message those commands print, as a plain message
+  on stderr with exit 1.
+
+- In `composio run`, a `File` or `Blob` passed to `execute()` now uploads with
+  its own `type`, even when its name has no extension, and a `File` keeps its
+  name. It used to upload as `application/octet-stream` under a name with a
+  random prefix, such as `1bfa14f5-deck.pptx`. A nameless `Blob` whose type has
+  no short extension, such as PPTX, is named `file-<id>.bin`.
+
+- `composio upgrade` no longer starts with a stale "Update available" line.
+  The line came from the cached daily update check, so right after a release
+  it could name an older version than the one `composio upgrade` then
+  installed. Upgrading also refreshes that cache with the latest stable release
+  it found, so later commands stop suggesting an older version. Installing a
+  specific version, a beta, or a pinned release tag leaves the cache unchanged.
+
+- `composio proxy` now enforces the consumer permission policy that
+  `composio execute` enforces, checked against the connected account the
+  request uses. A denied request fails with the same permission error, and a
+  request that needs approval opens the same approval page, before anything is
+  sent.
+
+- A tool call or proxied request that a session hook blocks is now reported as
+  a failure carrying the hook's message. `composio execute` prints it as a
+  failed call (`successful: false`) with the message in `error`; on consumer
+  projects, whose calls go through the Dashboard, it used to fail as a response
+  the CLI could not read. `composio proxy` fails naming the hook instead of
+  printing a response with no status.
+
+- `composio connections list` now prints each account's `id`, its `alias`
+  whenever it has one (previously only when a toolkit had several accounts),
+  and `display_name` — the provider identity from `state.val.displayName`,
+  trimmed and capped at 200 characters — when Composio has filled one in.
+  Nothing else is read from `state`.
+
+- `composio connections list`, `composio connections remove`, and
+  `composio dev connected-accounts list` exit 1 when the connected-accounts
+  response does not match the shape this CLI expects, naming the mismatched
+  fields. They used to warn and continue with the unchecked response.
+
+- The CLI now uses `@composio/client@2.0.0-rc.23` (up from `2.0.0-rc.20`). No
+  command changes.
+
+- `composio dev triggers create` now accepts `--user-id` and sends it with the
+  request, so it works on projects with 2FA enabled, which require the user who
+  owns the connected account. It used to reject `--user-id` and send no user,
+  so creating a trigger on those projects always failed. Without `--user-id`
+  it sends the project's test user id, else the global test user id, and names
+  the one it used on stderr; with neither configured it sends no user, as
+  before. Given a user and no `--connected-account-id`, the API picks that
+  user's first active connection for the trigger's toolkit.
 
 - More expected errors now print as a plain message on stderr and exit 1, like
   other usage errors. They used to print under a `💥` banner with the error tag
@@ -25,6 +233,57 @@
   reporting that the toolkit is not connected (when the connected-account cache
   is on). The message, tips, and `{"successful": false, ...}` JSON on stdout
   are unchanged, and the exit code is still 1.
+
+- `composio link` and `composio dev connected-accounts link` now exit 1 with
+  the usage message on stderr when their flags can't run: a toolkit together
+  with `--auth-config`, neither a toolkit nor `--auth-config`, `--auth-config`
+  without a developer project, and `--list` without a toolkit or with
+  `--auth-config`. They used to exit 0, and printed the message only when
+  stderr was a terminal, so scripts, CI and agents saw no output and a
+  successful exit. The messages are unchanged.
+- These commands now exit 1 and print their message on stderr. They used to
+  exit 0, and printed the message only when stderr was a terminal, so scripts,
+  CI and agents saw no output and a successful exit. The messages are
+  unchanged.
+  - Missing input, before any request: `composio whoami` without a login,
+    `composio dev projects list` without `--org-id` or a current org,
+    `composio triggers info` and `composio dev triggers info` without a
+    `<slug>`, `composio dev toolkits info` without a `<slug>`,
+    `composio dev triggers disable` without an `<id>`, and
+    `composio dev connected-accounts info` and
+    `composio dev connected-accounts whoami` without an `<id>`.
+  - Missing input that needs one lookup first: `composio dev init` without a
+    stored API key or org (it checks your saved login), and
+    `composio connections remove` with a selector that matches no connection
+    or more than one (it fetches your connections). Both fail before they
+    change anything.
+  - Failures after a request: `composio dev toolkits info` for a toolkit it
+    cannot fetch or find, `composio dev toolkits version` for a toolkit it
+    cannot fetch, `composio dev init` in an org without projects, and
+    `composio link` and `composio dev connected-accounts link` when the link
+    request fails, the link response is incomplete, the `--alias` is already
+    taken, or an account already exists and no `--alias` was passed.
+- These commands already exited 1 but printed their message only when stderr
+  was a terminal; they now print it on stderr either way:
+  `composio dev toolkits list` and `composio dev toolkits search` when the
+  request fails, `composio listen`, `composio dev listen` and
+  `composio dev triggers listen` when the realtime subscription fails, and
+  the `composio agent` commands, `composio signup` and `composio login` when
+  the stored agent identity can't be used.
+- `composio connections remove` gains `--yes` (`-y`) to remove without the
+  confirmation prompt, and `composio logout` accepts `--yes` (`-y`) next to
+  `--force` (`-f`). When not running interactively, both used to answer their
+  own prompt with "no", remove nothing and exit 0; without `--yes` they now
+  exit 1 with "needs --yes when not running interactively" on stderr, before
+  any request (for `logout`, only when logged in as an agent, the case that
+  asks). Declining the prompt on a terminal still removes nothing and exits 0.
+- `composio listen`, `composio dev listen` and `composio dev triggers listen`
+  now print how many events they failed to save, forward, or append to `--out`
+  on stderr when they stop, including on Ctrl+C. The per-event warnings were
+  shown only when stderr was a terminal. One failed event still does not stop
+  the listener, and the exit code is unchanged.
+- `composio listen --max-events N` now stops after N matching events even when
+  saving one of them fails. It used to keep listening until interrupted.
 
 ## 0.5.0
 
@@ -116,8 +375,11 @@
   Composio does not manage, and the waiting and timeout lines shown while a
   link is pending. Exit codes and the JSON printed on stdout are unchanged.
 
-- The CLI now uses `@composio/client@2.0.0-rc.19` (up from `2.0.0-rc.17`). No
-  command changes.
+- The CLI now uses `@composio/client@2.0.0-rc.20` (up from `2.0.0-rc.17`),
+  which drops the Stainless resource structure: resource classes, class
+  statics, namespace-member types and the `.js`/`.mjs` subpath spellings are
+  gone. The CLI's type imports move to the one `@composio/client/resources/*`
+  spelling; no command changes.
 
 - API requests now authenticate through the API client's `auth` option (the
   logged-in user's API key, or no credential before login) and name the org and

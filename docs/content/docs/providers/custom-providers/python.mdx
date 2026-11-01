@@ -3,6 +3,8 @@ title: Python Custom Provider
 description: Build an agent with any Python framework and enable it to use 1000+ tools with Composio.
 ---
 
+{/* code-example: single-language-page reason="Python-specific custom provider guide; TypeScript has its own page" */}
+
 A **custom provider** adapts Composio tools to the format your AI framework expects, so you can use 1000+ tools with a platform Composio doesn't ship support for. This guide shows you how to build one in Python.
 
 ## Provider architecture
@@ -201,7 +203,8 @@ from myai import MyAIClient  # Your AI platform's client
 
 # Initialize tools
 myai_client = MyAIClient()
-composio = Composio(provider=MyAIProvider())
+provider = MyAIProvider()
+composio = Composio(provider=provider)
 
 # Define task
 task = "Star a repo composiohq/composio on GitHub"
@@ -221,7 +224,7 @@ response = myai_client.chat.completions.create(
 print(response)
 
 # Execute the function calls
-result = composio.provider.handle_tool_calls(response=response, user_id="default")
+result = provider.handle_tool_calls(response=response, user_id="default")
 print(result)
 ```
 

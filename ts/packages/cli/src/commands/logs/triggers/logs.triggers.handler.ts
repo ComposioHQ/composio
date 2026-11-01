@@ -1,4 +1,4 @@
-import type { TriggerListParams } from '@composio/client/resources/logs';
+import type { TriggerListParams } from '@composio/client/resources/_internal/logs';
 import { Array as Arr, Effect, Option, String as Str } from 'effect';
 import { CommandSurface } from 'src/commands/surface';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
@@ -51,7 +51,7 @@ const showTriggerLog = (triggerLogId: string) =>
     const client = yield* (yield* ComposioClientSingleton).get();
     const triggerLog = yield* ui.withSpinner(
       `Fetching trigger log "${triggerLogId}"...`,
-      client.logs.triggers
+      client._internal.logs.triggers
         .retrieve(triggerLogId, idempotent)
         .pipe(failedWith(TriggerLogsRequestError, `Failed to fetch trigger log "${triggerLogId}".`))
     );
@@ -92,7 +92,7 @@ const listTriggerLogs = ({
 
     const response = yield* ui.withSpinner(
       'Fetching trigger logs...',
-      client.logs.triggers
+      client._internal.logs.triggers
         .list(
           {
             ...optionalParams({ cursor, from, to, time, search }),

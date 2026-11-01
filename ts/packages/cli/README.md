@@ -38,8 +38,8 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 - `composio proxy <url> --toolkit <toolkit> [-X method] [-H header]... [-d data]`: Call a toolkit API directly through Composio using a connected account.
 - `composio tools list|info`: Inspect available tools and their cached schemas.
 - `composio triggers list <toolkit>|info`: Inspect toolkit-scoped trigger types and their schemas.
-- `composio connections list [--toolkit <toolkit>]`: Print toolkit connection statuses as JSON.
-- `composio connections remove <account>`: Interactively remove a toolkit connection after confirmation.
+- `composio connections list [--toolkit <toolkit>]`: Print toolkit connections as JSON with each account's id, status, alias, and provider display name when available.
+- `composio connections remove <account>`: Remove a toolkit connection after confirmation; pass `--yes` to skip the prompt, which is required when not running interactively.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
 - `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
@@ -50,6 +50,27 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 
 Use `composio execute <slug> --get-schema` to print a tool's input schema as JSON.
 `composio execute <slug> --help` now shows command options and examples.
+
+### Creating development triggers
+
+For a project with 2FA enabled, pass the user who owns the connected account:
+
+```bash
+composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE --connected-account-id ca_123 --user-id user_123
+```
+
+Every `composio dev` command that acts as a user (`playground-execute`,
+`connected-accounts link`, `toolkits list` and `info`, `triggers create`) follows
+one rule. It acts on the developer project (this directory's, or the one
+`--project-name` names) as the shared `--user-id`, which works before or after
+the subcommand. When omitted, it uses the directory project's test user (only
+when acting on that same project), then the global test user configured by
+`composio login`, and names the one it used on stderr. Setting both
+`COMPOSIO_ORG_ID` and `COMPOSIO_PROJECT_ID` in the process environment overrides
+directory configuration, including its test user. If no test user is resolved,
+`triggers create` omits `user_id` and the server applies the project's ownership
+policy. Root commands such as `composio execute` and `composio link` always act as
+your own (consumer) user and take no `--user-id`.
 
 ## Configuration
 
@@ -83,11 +104,12 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 
 The CLI and its installer use these variables to coordinate nested commands. They aren't intended for manual configuration.
 
-| Environment Variable           | Description                                                                | Default |
-| ------------------------------ | -------------------------------------------------------------------------- | ------- |
-| COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it | cli     |
-| COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                      | None    |
-| COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands        | None    |
+| Environment Variable           | Description                                                                                          | Default |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------- |
+| COMPOSIO_CLI_INVOCATION_ORIGIN | Identifies whether another CLI surface, such as `composio run`, invoked it                           | cli     |
+| COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                                                | None    |
+| COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands                                  | None    |
+| COMPOSIO_RUN_STAGED_FILES_FILE | Points to the temporary JSON file containing upload names and types for the child `composio execute` | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
 
@@ -181,6 +203,8 @@ Running a tool means knowing which toolkit it belongs to, and the tool slug alon
 It holds derived data, not saved API responses, so it is read on every run regardless of `FORCE_USE_CACHE` — that variable keeps its meaning of opting in to replaying previously cached API responses. Deleting the file is safe: the CLI re-learns what it needs. Being out of date is also safe, because the backend never removes a toolkit; a slug the file has never seen simply costs one catalog fetch, after which it is remembered and refreshed weekly in the background.
 
 ## Development
+
+The [contributor guide](CONTRIBUTING.md) explains command structure, argument parsing, Effect composition, and verification through a worked example. The generated [command catalog](src/commands/COMMANDS.md) lists command registrations and their source files.
 
 ### Installation
 

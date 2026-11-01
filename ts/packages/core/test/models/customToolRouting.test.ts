@@ -410,6 +410,7 @@ describe('ToolRouterSession execution routing', () => {
         { maxRetries: 0 }
       );
       expect(result).toEqual({
+        resultType: 'completed',
         status: 200,
         data: { ok: true },
         headers: { 'x-test': '1' },

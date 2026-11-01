@@ -1,6 +1,8 @@
-import { afterEach, describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
 
@@ -75,10 +77,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio tools info', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays tool info',
     it => {
@@ -143,7 +141,9 @@ describe('CLI: composio tools info', () => {
             option: '<slug>',
             message: expect.stringContaining('Missing required argument: <slug>'),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }
@@ -154,7 +154,7 @@ describe('CLI: composio tools info', () => {
     it => {
       it.effect('shows not found with suggestions', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'info', 'NONEXISTENT_TOOL']);
+          yield* Effect.exit(cli(['tools', 'info', 'NONEXISTENT_TOOL']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -164,19 +164,19 @@ describe('CLI: composio tools info', () => {
 
       it.effect('exits non-zero and reports the missing tool', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'info', 'NONEXISTENT_TOOL']);
+          const exit = yield* Effect.exit(cli(['tools', 'info', 'NONEXISTENT_TOOL']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
           expect(lines.join('\n')).toContain('Tool "NONEXISTENT_TOOL" not found.');
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
 
       it.effect('keeps a zero exit code for a valid slug', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
+          const exit = yield* Effect.exit(cli(['tools', 'info', 'GMAIL_SEND_EMAIL']));
 
-          expect(process.exitCode).toBeUndefined();
+          expect(exitCodeOf(exit)).toBe(0);
         })
       );
     }

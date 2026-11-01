@@ -29,6 +29,8 @@ export interface KbSourceReference {
 }
 
 export interface KbGuideDefinition {
+  /** Portal approvals own this guide across upstream refreshes. */
+  managedBy?: 'support-portal';
   slug: string;
   title: string;
   description: string;

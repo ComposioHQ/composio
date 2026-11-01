@@ -5,7 +5,8 @@ import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { notFoundError } from 'test/__utils__/layers/not-found';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testToolkits: Toolkits = [
@@ -146,22 +147,23 @@ describe('CLI: composio dev toolkits search', () => {
     it => {
       it.effect('[Then] prints the error, writes `[]` to stdout and exits 1', () =>
         Effect.gen(function* () {
-          const proc = recordingNodeProcess();
           const repository = Layer.succeed(
             ComposioToolkitsRepository,
             makeToolkitsRepositoryStub({
               searchToolkits: () => Effect.fail(notFoundError('Search unavailable')),
             })
           );
-          yield* cli(['dev', 'toolkits', 'search', 'email']).pipe(
-            Effect.provide(Layer.merge(repository, proc.layer))
+          // Redirected streams, as under a script: only plain stderr lines and stdout data show.
+          const terminal = redirectedTerminalUI();
+          const exit = yield* Effect.exit(
+            cli(['dev', 'toolkits', 'search', 'email']).pipe(
+              Effect.provide(Layer.mergeAll(repository, terminal.layer))
+            )
           );
-          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
-          const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
 
-          expect(stderr).toContain('Search unavailable');
-          expect(stdout).toEqual(['[]']);
-          expect(proc.exitCode()).toBe(1);
+          expect(terminal.stderr()).toBe('Search unavailable\n');
+          expect(terminal.stdout()).toBe('[]\n');
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

@@ -87,7 +87,6 @@ const installTest = (
         execPath: params.execPath ?? `${BIN_DIR}/composio`,
         platform: 'linux',
         arch: 'x64',
-        setExitCode: () => Effect.void,
       })
     ),
     uiLayer,

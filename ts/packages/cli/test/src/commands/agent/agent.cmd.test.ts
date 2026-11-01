@@ -11,7 +11,6 @@ import { makeAgentIdentity } from 'test/__utils__/models/agent';
 describe('CLI: composio agent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {

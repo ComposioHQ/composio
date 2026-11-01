@@ -6,8 +6,8 @@ import type { CommandTree } from 'src/commands/surface';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { formatToolsTable } from '../format';
 
-export type SearchToolSchema = SessionSearchResponse.ToolSchemas;
-export type SearchResultRecord = SessionSearchResponse.Result;
+export type SearchToolSchema = NonNullable<SessionSearchResponse['tool_schemas'][string]>;
+export type SearchResultRecord = SessionSearchResponse['results'][number];
 export type SearchResponseRecord = Pick<
   SessionSearchResponse,
   'results' | 'toolkit_connection_statuses' | 'tool_schemas' | 'next_steps_guidance' | 'error'

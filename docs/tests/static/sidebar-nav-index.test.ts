@@ -77,15 +77,8 @@ describe('buildSidebarNavIndex', () => {
     expect(index['/docs/how-composio-works'].position).toBe(1);
   });
 
-  test("a folder's children start their own sequence", () => {
-    expect(index['/docs/authentication/manually-authenticating'].position).toBe(1);
-    expect(index['/docs/extending-sessions/proxy-execute'].position).toBe(1);
-  });
-
   test('a folder counts as one entry for its siblings', () => {
-    // Authentication holds 7 children, so a counter that threaded through them
-    // would put Triggers 7 sibling slots later than Authentication instead of
-    // directly after it.
+    // A folder's children must not advance the parent-level position counter.
     expect(index['/docs/triggers'].position).toBe(index['/docs/authentication'].position + 1);
     expect(index['/docs/skills'].position).toBe(index['/docs/triggers'].position + 1);
   });

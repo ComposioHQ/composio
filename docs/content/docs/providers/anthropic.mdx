@@ -54,6 +54,7 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.19.0 (Python) or `@composio/core` ≥ 0.17.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
 </Callout>
 
+{/* code-example: no-api reason="Anthropic Messages agent loop with the Composio Anthropic provider; not a single REST call" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
@@ -63,7 +64,8 @@ import anthropic
 from composio import Composio
 from composio_anthropic import AnthropicProvider
 
-composio = Composio(provider=AnthropicProvider())
+provider = AnthropicProvider()
+composio = Composio(provider=provider)
 client = anthropic.Anthropic()
 
 # Create a session for your user
@@ -84,7 +86,7 @@ response = client.messages.create(
 # Agentic loop: keep executing tool calls until the model responds with text
 while response.stop_reason == "tool_use":
     tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
-    results = composio.provider.handle_tool_calls(response=response, session=session)
+    results = provider.handle_tool_calls(response=response, session=session)
     messages.append({"role": "assistant", "content": response.content})
     messages.append({
         "role": "user",
@@ -204,13 +206,14 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 <Step>
 **Create session and run**
 
+{/* code-example: no-api reason="Claude Agent SDK integration via the Composio provider and an in-process MCP server" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
 import asyncio
 from composio import Composio
 from composio_claude_agent_sdk import ClaudeAgentSDKProvider
-from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server
+from claude_agent_sdk import AssistantMessage, ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server
 
 composio = Composio(provider=ClaudeAgentSDKProvider())
 
@@ -229,13 +232,14 @@ async def main():
     async with ClaudeSDKClient(options=options) as client:
         await client.query("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")
         async for msg in client.receive_response():
-            print(msg)
+            if isinstance(msg, AssistantMessage):
+                print("Claude:", msg.content)
 
 asyncio.run(main())
 ```
 </Tab>
 <Tab value="TypeScript">
-```js
+```typescript
 import { Composio } from '@composio/core';
 import { ClaudeAgentSDKProvider } from '@composio/claude-agent-sdk';
 import { createSdkMcpServer, query } from '@anthropic-ai/claude-agent-sdk';
@@ -256,6 +260,7 @@ const toolServer = createSdkMcpServer({
 for await (const content of query({
     prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
     options: {
+        systemPrompt: "You are a helpful assistant",
         mcpServers: { composio: toolServer },
         permissionMode: "bypassPermissions",
     },

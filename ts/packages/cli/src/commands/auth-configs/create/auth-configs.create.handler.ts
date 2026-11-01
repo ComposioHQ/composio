@@ -61,7 +61,10 @@ export const buildAuthConfigCreateRequest = (input: {
       auth_config: {
         type: 'use_custom_auth' as const,
         // The API validates the scheme and answers an unknown one with its own error and hint.
-        authScheme: authScheme as AuthConfigCreateRequest.UnionMember1['authScheme'],
+        authScheme: authScheme as Extract<
+          NonNullable<AuthConfigCreateRequest['auth_config']>,
+          { authScheme: unknown }
+        >['authScheme'],
         name: input.name,
         credentials:
           input.customCredentials || input.scopes
@@ -108,25 +111,17 @@ export const runAuthConfigsCreate = ({
       customCredentials: parsedCustomCredentials.success,
     });
 
-    const resultOpt = yield* ui
+    const result = yield* ui
       .withSpinner('Creating auth config...', repo.createAuthConfig(request))
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: 'Failed to create auth config.',
             hint: `Check available auth schemes for "${toolkit}":\n> composio dev toolkits info "${toolkit}"`,
-            fallbackValue: Option.none(),
           })
         )
       );
-
-    if (Option.isNone(resultOpt)) {
-      return;
-    }
-
-    const result = resultOpt.value;
 
     yield* ui.log.success('Auth config created.');
     yield* ui.note(formatAuthConfigCreated(result), 'New Auth Config');

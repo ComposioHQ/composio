@@ -10,6 +10,9 @@ import {
   writeSupportKnowledgeSnapshot,
 } from '@/lib/kb/support-knowledge';
 import type { KbManifest } from '@/lib/kb/types';
+import { buildKbCatalog } from '@/lib/kb/catalog';
+import { createKbArticleReader, createKbSourceReader } from '@/lib/kb/repository';
+import { publishKbGuide } from '../../scripts/publish-kb-guide';
 
 const publicDocument = `---
 type: "reference"
@@ -109,6 +112,75 @@ function previousManifest(): KbManifest {
 }
 
 describe('support-knowledge snapshot import', () => {
+  test('preserves portal creations, rewrites and retirements through repeated upstream refreshes', () => {
+    const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-portal-'));
+    const docsRoot = mkdtempSync(join(tmpdir(), 'kb-publish-'));
+    const targetRoot = join(docsRoot, 'kb');
+    const now = new Date('2026-08-18T00:00:00Z');
+    const validate = (stagedRoot: string) => buildKbCatalog(
+      JSON.parse(readFileSync(join(stagedRoot, 'manifest.json'), 'utf8')),
+      createKbSourceReader(join(stagedRoot, 'source')),
+      now,
+      createKbArticleReader(join(stagedRoot, 'articles')),
+    );
+    try {
+      writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument);
+      writeDocument(sourceRoot, 'toolkits/slack/public.md', publicDocument.replaceAll('GitHub', 'Slack'));
+      writeDocument(sourceRoot, 'toolkits/gitlab/public.md', publicDocument.replaceAll('GitHub', 'GitLab'));
+      const initial = buildSupportKnowledgeSnapshot({ sourceRoot, sourceCommit: 'initial', now });
+      writeSupportKnowledgeSnapshot({ snapshot: initial, targetRoot, validate });
+
+      publishKbGuide({
+        action: 'upsert', slug: 'toolkits-github', title: 'Approved GitHub title',
+        description: 'Approved description.', topics: ['authentication'], tags: [],
+        body: '## Approved answer\n\nUse the approved instructions.',
+      }, docsRoot, now);
+      publishKbGuide({ action: 'retire', slug: 'toolkits-slack' }, docsRoot, now);
+      publishKbGuide({
+        action: 'upsert', slug: 'sdk-portal-guide', area: 'sdk', title: 'Portal guide',
+        description: 'A guide created in the portal.', topics: ['authentication'], tags: [],
+        body: '## Setup\n\nFollow these setup instructions.',
+      }, docsRoot, now);
+      const approved = validate(targetRoot);
+
+      // Upstream changes metadata and headings, removes a retired source, and drops a topic.
+      writeDocument(sourceRoot, 'toolkits/github/public.md', publicDocument
+        .replaceAll('authentication', 'errors-and-troubleshooting')
+        .replaceAll('Tokens are redacted', 'Changed upstream heading'));
+      rmSync(join(sourceRoot, 'toolkits/slack'), { recursive: true });
+      writeDocument(sourceRoot, 'toolkits/gitlab/public.md', publicDocument
+        .replaceAll('GitHub', 'Updated GitLab')
+        .replaceAll('authentication', 'errors-and-troubleshooting'));
+
+      for (const sourceCommit of ['refresh-one', 'refresh-two']) {
+        const previous = validate(targetRoot);
+        const snapshot = buildSupportKnowledgeSnapshot({
+          sourceRoot, sourceCommit, previousManifest: previous.manifest,
+          previousSourceFiles: new Map(previous.guides.flatMap(guide => guide.sources.map(source => [
+            source.sourcePath, readFileSync(join(targetRoot, 'source', source.sourcePath), 'utf8'),
+          ]))),
+          previousArticleFiles: new Map(previous.guides.map(guide => [
+            guide.articlePath!, readFileSync(join(targetRoot, 'articles', guide.articlePath!), 'utf8'),
+          ])),
+          now,
+        });
+        writeSupportKnowledgeSnapshot({ snapshot, targetRoot, validate });
+        const refreshed = validate(targetRoot);
+        for (const slug of ['toolkits-github', 'toolkits-slack', 'sdk-portal-guide']) {
+          expect(refreshed.guides.find(guide => guide.slug === slug))
+            .toEqual(approved.guides.find(guide => guide.slug === slug));
+        }
+        expect(refreshed.guides.find(guide => guide.slug === 'toolkits-gitlab')?.title)
+          .toBe('Updated GitLab');
+        expect(refreshed.topics.some(topic => topic.slug === 'authentication')).toBe(true);
+        expect(refreshed.manifest.source.commit).toBe(sourceCommit);
+      }
+    } finally {
+      rmSync(sourceRoot, { recursive: true, force: true });
+      rmSync(docsRoot, { recursive: true, force: true });
+    }
+  });
+
   test('keeps a retired guide unpublished when its public source is refreshed', () => {
     const sourceRoot = mkdtempSync(join(tmpdir(), 'support-knowledge-retired-'));
     try {

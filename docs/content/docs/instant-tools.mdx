@@ -32,7 +32,7 @@ The Session's top-level `toolkits` filter controls which toolkits your agent can
 
 Keep Exa and Firecrawl available, but allow Instant only for `EXA_SEARCH`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -59,6 +59,21 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["exa", "firecrawl"]},
+    "instant": {
+      "toolkits": {"enable": ["exa"]},
+      "tools": {"exa": {"enable": ["EXA_SEARCH"]}}
+    }
+  }'
+```
+</Tab>
 </Tabs>
 
 Use `disable` instead of `enable` to exclude the listed toolkits or tools. Each filter accepts one or the other, not both. Toolkit and tool filters intersect; they cannot enable anything excluded by the Session's top-level filters.
@@ -69,7 +84,7 @@ Omitting `instant.toolkits` leaves other eligible toolkits permitted. A `tools.e
 
 Your own connected accounts remain available when you disable Instant:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session.update(instant=False)
@@ -84,6 +99,14 @@ const session = await composio.create("user_123");
 await session.update({ instant: false });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"instant": false}'
+```
+</Tab>
 </Tabs>
 
 <Callout type="warning" title="Updating a disabled Session">
@@ -94,19 +117,45 @@ Passing any `instant` object after `instant=false` re-enables Instant usage if t
 
 This human-in-the-loop (HITL) example asks you to approve one Firecrawl scrape before executing it. First, inspect the tool's current published rate:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+tool = composio.client.get(
+    "/api/v3.1/tools/FIRECRAWL_SCRAPE",
+    cast_to=object,
+    query={"toolkit_versions": "latest", "include_pricing": True},
+)
+print(tool)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const tool = await composio.getClient().get<unknown>('/api/v3.1/tools/FIRECRAWL_SCRAPE', {
+  query: { toolkit_versions: 'latest', include_pricing: true },
+});
+console.log(tool);
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl --get 'https://backend.composio.dev/api/v3.1/tools/FIRECRAWL_SCRAPE' \
-  --header "x-api-key: $COMPOSIO_API_KEY" \
-  --data-urlencode 'toolkit_versions=latest' \
-  --data-urlencode 'include_pricing=true' \
+curl -s -X GET "https://backend.composio.dev/api/v3.1/tools/FIRECRAWL_SCRAPE?toolkit_versions=latest&include_pricing=true" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
   | jq '{slug, instant, input_parameters}'
 ```
+</Tab>
+</Tabs>
 
 Check that `instant.supported` is `true`. Read `instant.price.description` and any `instant.price.discount` before approving. These are strings, not a machine-readable maximum cost; missing pricing does not mean the tool is free.
 
 Then run the example. It shows the exact arguments, waits for `yes`, and makes one tool call. Any other answer exits without creating a Session or executing the tool.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 import json
@@ -160,6 +209,28 @@ console.log(result);
 console.log("Instant charge:", result.instantCharge);
 ```
 </Tab>
+<Tab value="API">
+```bash
+echo 'FIRECRAWL_SCRAPE {"url": "https://composio.dev"}'
+read -r -p "Approve this call at the published rate? Type yes: " ANSWER
+if [ "$ANSWER" != "yes" ]; then
+  echo "Not approved. No tool call made."
+  exit 1
+fi
+
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "instant_demo", "toolkits": {"enable": ["firecrawl"]}, "instant": {"return_instant_charge": true}}' \
+  | jq -r '.session_id')
+
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool_slug": "FIRECRAWL_SCRAPE", "arguments": {"url": "https://composio.dev"}, "account": "instant_account"}' \
+  | jq '{result_type, data, instant_charge}'
+```
+</Tab>
 </Tabs>
 
 `account="instant_account"` (Python) or `account: "instant_account"` (TypeScript) explicitly selects Instant rather than your user's provider connection. The response reports the charge when available. To verify billing, check `metadata.credential_source` and `metadata.instant_charge` in the [execution logs](/reference/api-reference/logs/postLogsToolExecution).
@@ -189,7 +260,7 @@ Use exact decimal arithmetic for USD amounts. Reject any call whose maximum cost
 
 Charge reporting is off by default. To include the charge in a `session.execute()` response, set `return_instant_charge` in Python or `returnInstantCharge` in TypeScript:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -215,6 +286,21 @@ const result = await session.execute("FIRECRAWL_SCRAPE", { url: "https://composi
 console.log(result.instantCharge);
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "instant_demo", "toolkits": {"enable": ["firecrawl"]}, "instant": {"return_instant_charge": true}}' \
+  | jq -r '.session_id')
+
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool_slug": "FIRECRAWL_SCRAPE", "arguments": {"url": "https://composio.dev"}}' \
+  | jq '.instant_charge'
+```
+</Tab>
 </Tabs>
 
 The charge includes `amount`, `currency`, and `charged_by`. The amount is an exact USD decimal string. TypeScript exposes `instantCharge` as `unknown`. Turning charge reporting off does not stop billing or remove charges from logs and usage records.
@@ -223,7 +309,7 @@ The charge includes `amount`, `currency`, and `charged_by`. The amount is an exa
 
 To see what an Instant tool costs before you call it, set `return_prices_in_search` in Python or `returnPricesInSearch` in TypeScript. This option is experimental and off by default. Search results then list each Instant tool's published price under the toolkit's Instant account, keyed by tool slug:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -253,6 +339,21 @@ for (const status of results.toolkitConnectionStatuses) {
 }
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "instant_demo", "toolkits": {"enable": ["firecrawl"]}, "instant": {"return_prices_in_search": true}}' \
+  | jq -r '.session_id')
+
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/search \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"queries": [{"use_case": "scrape a web page"}]}' \
+  | jq '.toolkit_connection_statuses[] | select(.instant_account != null) | {toolkit, prices: .instant_account.prices}'
+```
+</Tab>
 </Tabs>
 
 Each price has a `description` and, when one applies, a `discount`. Like charge reporting, this setting only controls what the response shows. It does not turn Instant usage on or off.
@@ -262,7 +363,7 @@ Each price has a `description` and, when one applies, a `discount`. Like charge 
 
 If your agent can spend without per-call approval, pass it the Session tools as usual:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.sessions.create(
@@ -281,6 +382,18 @@ const session = await composio.create("instant_demo", {
   toolkits: ["firecrawl"],
 });
 const tools = await session.tools();
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "instant_demo", "toolkits": {"enable": ["firecrawl"]}}' \
+  | jq -r '.session_id')
+
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>

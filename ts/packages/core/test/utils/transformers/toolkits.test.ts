@@ -176,6 +176,25 @@ describe('transformToolkitRetrieveResponse', () => {
     expect(details?.authHintUrl).toBe('https://shopify.dev/api-keys');
   });
 
+  it('maps meta.app_url to meta.appUrl', () => {
+    const withAppUrl = {
+      ...rawToolkit,
+      meta: { ...rawToolkit.meta, app_url: 'https://shopify.com' },
+    } as RawRetrieveResponse;
+
+    expect(transformToolkitRetrieveResponse(withAppUrl).meta.appUrl).toBe('https://shopify.com');
+  });
+
+  it('omits meta.appUrl when the API sends app_url as null or leaves it out', () => {
+    const withNullAppUrl = {
+      ...rawToolkit,
+      meta: { ...rawToolkit.meta, app_url: null },
+    } as RawRetrieveResponse;
+
+    expect(transformToolkitRetrieveResponse(withNullAppUrl).meta).not.toHaveProperty('appUrl');
+    expect(transformToolkitRetrieveResponse(rawToolkit).meta).not.toHaveProperty('appUrl');
+  });
+
   /**
    * `toEqual` treats a missing property and one holding `undefined` as equal, so
    * these assertions use `toHaveProperty`. Creating the key unconditionally would

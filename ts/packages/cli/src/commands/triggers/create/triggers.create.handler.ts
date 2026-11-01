@@ -1,5 +1,6 @@
 import { Effect, Match, Option, Result } from 'effect';
 import { commandInputError } from 'src/commands/errors';
+import { actingUserOption } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -40,7 +41,8 @@ const invalidTriggerConfig = (error: JsonParsingError) =>
   );
 
 /**
- * Create a trigger instance. A missing `<trigger-name>` or an invalid `--trigger-config` fails
+ * Create a trigger instance as the `dev` group's `--user-id`, else the directory project's test
+ * user, else the global test user; without any, the request omits `user_id`. A missing `<trigger-name>` or an invalid `--trigger-config` fails
  * with a `CommandInputError` before any request; an API failure is reported with a hint and
  * exits 1.
  *
@@ -70,31 +72,30 @@ export const runTriggersCreate = ({
       return yield* invalidTriggerConfig(parsedTriggerConfig.failure);
     }
 
-    const createdOpt = yield* ui
+    // The group rejects --project-name, so this is the directory's project. A defaulted user id
+    // must own the connected account on a 2FA project; `actingUserOption` names it on stderr.
+    const acting = yield* actingUserOption();
+    const resolvedUserId = Option.map(acting, found => found.userId);
+
+    const created = yield* ui
       .withSpinner(
         `Creating trigger "${triggerName.value}"...`,
         repo.createTrigger(triggerName.value, {
           connected_account_id: Option.getOrUndefined(connectedAccountId),
           trigger_config: parsedTriggerConfig.success,
+          user_id: Option.getOrUndefined(resolvedUserId),
         })
       )
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: `Failed to create trigger "${triggerName.value}".`,
             hint: 'List available trigger types with:\n> composio dev triggers list',
-            fallbackValue: Option.none(),
           })
         )
       );
 
-    if (Option.isNone(createdOpt)) {
-      return;
-    }
-
-    const created = createdOpt.value;
     yield* ui.log.success(`Trigger created: ${created.trigger_id}`);
     yield* ui.log.step(
       `To check status:\n> composio dev triggers status --trigger-ids "${created.trigger_id}"`

@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
-import { NodeProcess } from 'src/services/node-process';
+import { printFailure, ReportedFailure } from 'src/effects/report-failure';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -50,10 +50,10 @@ export const runToolkitsSearch = ({ query, limit }: ToolkitsSearchParams) =>
     Effect.catch(error =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
-        const proc = yield* NodeProcess;
-        yield* ui.log.error(extractMessage(error) ?? 'An error occurred while searching toolkits.');
+        const message = extractMessage(error) ?? 'An error occurred while searching toolkits.';
+        yield* printFailure(ui, message);
         yield* ui.output('[]');
-        yield* proc.setExitCode(1);
+        return yield* new ReportedFailure({ message });
       })
     )
   );

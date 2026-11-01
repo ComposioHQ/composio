@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const testLayer = TestLive({
@@ -39,8 +40,12 @@ describe('CLI: composio link over the API client', () => {
               })
           )
         );
-        yield* cli(['link', 'gmail', '--no-wait']).pipe(Effect.provide(stub.layer));
+        const exit = yield* Effect.exit(
+          cli(['link', 'gmail', '--no-wait']).pipe(Effect.provide(stub.layer))
+        );
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(exitCodeOf(exit)).toBe(1);
 
         expect(lines).toEqual([
           'Toolkit gmail is disabled for this project',
@@ -61,17 +66,21 @@ describe('CLI: composio link over the API client', () => {
         const stub = stubClientResources(['link'], () =>
           rejection(404, 'Auth config ac_missing not found', 'AuthConfig_NotFound')
         );
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          '--auth-config',
-          'ac_missing',
-          '--user-id',
-          'user_1',
-          '--no-wait',
-        ]).pipe(Effect.provide(stub.layer));
+        const exit = yield* Effect.exit(
+          cli([
+            'dev',
+            'connected-accounts',
+            'link',
+            '--auth-config',
+            'ac_missing',
+            '--user-id',
+            'user_1',
+            '--no-wait',
+          ]).pipe(Effect.provide(stub.layer))
+        );
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(exitCodeOf(exit)).toBe(1);
 
         expect(lines).toEqual([
           'Auth config ac_missing not found',

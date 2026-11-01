@@ -10,8 +10,42 @@ Use a scheduled collector to pull pages from the [Logs API](/reference/api-refer
 
 ## Fetch a page of logs
 
-Set `COMPOSIO_API_KEY` to the project API key for the project you want to monitor. Run this command in a server environment with Bash and cURL. It saves the first page from the last five minutes to `logs-page.json`:
+Set `COMPOSIO_API_KEY` to the project API key for the project you want to monitor. Run this in a server environment. It saves the first page from the last five minutes to `logs-page.json`:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+import time
+
+from composio import Composio
+
+os.umask(0o077)
+composio = Composio()
+
+to_ms = int(time.time() * 1000)
+from_ms = to_ms - 300_000
+
+page = composio.logs.search(limit=100, time_range={"from": from_ms, "to": to_ms})
+with open("logs-page.json", "w") as f:
+    f.write(page.model_dump_json(indent=2))
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { writeFile } from 'node:fs/promises';
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const toMs = Date.now();
+const fromMs = toMs - 300_000;
+
+const page = await composio.logs.search({ limit: 100, timeRange: { from: fromMs, to: toMs } });
+await writeFile('logs-page.json', JSON.stringify(page, null, 2), { mode: 0o600 });
+```
+</Tab>
+<Tab value="API">
 ```bash
 set -euo pipefail
 : "${COMPOSIO_API_KEY:?Set your Composio project API key}"
@@ -21,12 +55,14 @@ TO_MS=$(( $(date +%s) * 1000 ))
 FROM_MS=$(( TO_MS - 300000 ))
 
 curl --fail-with-body --silent --show-error --max-time 30 \
-	-X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
-	-H "x-api-key: ${COMPOSIO_API_KEY}" \
-	-H "Content-Type: application/json" \
-	-d "{\"limit\":100,\"time_range\":{\"from\":${FROM_MS},\"to\":${TO_MS}}}" \
-	-o logs-page.json
+  -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"limit": 100, "time_range": {"from": '"$FROM_MS"', "to": '"$TO_MS"'}}' \
+  -o logs-page.json
 ```
+</Tab>
+</Tabs>
 
 The response contains `logs` and `next_cursor`. Each log includes an `id`, an ISO 8601 `timestamp`, a `status`, a `level`, `metadata`, and `metrics`. An empty `logs` array means this page contains no matching records.
 

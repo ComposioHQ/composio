@@ -1,0 +1,118 @@
+name: Publish composio-core 0.7.22
+
+run-name: Publish composio-core 0.7.22 (publish=${{ inputs.publish }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Upload the verified artifacts to PyPI
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-composio-core-0.7.22
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build composio-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout locked release tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout reviewed composio-core source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 7a9b0412fbdb33776f4d6c916537d74cb1bf0835 # PR #4270 merged into archive-v2
+          path: legacy-source
+          persist-credentials: false
+
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-python-uv
+        with:
+          uv-version: '0.13.4'
+          enable-caching: 'false'
+
+      - name: Install locked build tools
+        working-directory: python
+        env:
+          UV_PROJECT_ENVIRONMENT: ${{ github.workspace }}/.release-venv
+        run: uv sync --locked --only-group release
+
+      - name: Build composio-core
+        run: .release-venv/bin/python -m build --no-isolation legacy-source/python --outdir dist
+
+      - name: Verify package identity and deprecation description
+        run: |
+          .release-venv/bin/python - <<'PY'
+          from email import message_from_bytes
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          dist = Path("dist")
+          wheel = "composio_core-0.7.22-py3-none-any.whl"
+          sdist = "composio_core-0.7.22.tar.gz"
+          if {p.name for p in dist.iterdir()} != {wheel, sdist}:
+              raise SystemExit("Expected only the composio-core 0.7.22 wheel and sdist")
+          readme = Path("legacy-source/python/README.md").read_text(encoding="utf-8").strip()
+          if not readme.startswith("# DEPRECATED: use `composio`"):
+              raise SystemExit("Missing deprecation notice")
+          with zipfile.ZipFile(dist / wheel) as archive:
+              metadata = archive.read("composio_core-0.7.22.dist-info/METADATA")
+          with tarfile.open(dist / sdist) as archive:
+              package_info = archive.extractfile("composio_core-0.7.22/PKG-INFO").read()
+          for content in (metadata, package_info):
+              message = message_from_bytes(content)
+              if message["Name"].replace("_", "-") != "composio-core" or message["Version"] != "0.7.22":
+                  raise SystemExit("Unexpected package identity")
+              if set(message["Requires-Python"].split(",")) != {">=3.9", "<4"}:
+                  raise SystemExit("Legacy Python compatibility changed")
+              if message.get_payload().strip() != readme:
+                  raise SystemExit("Package description differs from the reviewed README")
+          print("Verified both composio-core 0.7.22 artifacts and their deprecation descriptions")
+          PY
+
+      - name: Store verified artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: composio-core-0.7.22
+          path: |
+            dist/composio_core-0.7.22-py3-none-any.whl
+            dist/composio_core-0.7.22.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  # The composio-core project must trust this workflow and its dedicated environment.
+  # Build steps never receive publishing credentials or an OIDC token.
+  publish:
+    name: Publish composio-core
+    if: inputs.publish
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: pypi-composio-core
+    permissions:
+      id-token: write
+    steps:
+      - name: Download verified artifacts
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: composio-core-0.7.22
+          path: dist/
+
+      - name: Publish composio-core to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/
+          skip-existing: true

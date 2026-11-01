@@ -26,12 +26,31 @@ If the customer has an actual 403 or an error saying Tool Router is not enabled 
 
 Tool Router sessions are long-lived records and do not currently have a time-based expiration. This is separate from temporary workbench files, live sandbox retention, and short response-cache lifetimes.
 
-Reuse an existing TypeScript session with `composio.use(sessionId)`. Delete a session either from the instance or by ID:
+Reuse an existing session with `composio.use(sessionId)` in TypeScript or `composio.use(session_id)` in Python. Delete it with `session.delete()`, or delete by ID:
 
-```ts
-await session.delete();
-await composio.sessions.delete(sessionId);
+### Python
+
+```python
+composio.sessions.delete("trs_1a2b3c4d5e6f")
 ```
+
+### TypeScript
+
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+await composio.sessions.delete("trs_1a2b3c4d5e6f");
+```
+
+### API
+
+```bash
+curl -X DELETE https://backend.composio.dev/api/v3.1/tool_router/session/trs_1a2b3c4d5e6f \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+<!-- end-languages -->
 
 Deletion takes effect immediately. A deleted, missing, or inaccessible session returns 404 when retrieved; deleting a session does not delete its users, auth configs, or connected accounts.
 

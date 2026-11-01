@@ -1,5 +1,12 @@
 # cloudflare-wrangler-example
 
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies [c2bbfa8]
+  - @composio/core@0.27.0
+
 ## 0.0.9
 
 ### Patch Changes
