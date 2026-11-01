@@ -1,3 +1,4 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { Command, Flag } from 'effect/cli';
 import { SHELLS } from 'src/services/shell-config';
 import { runInstall } from './install.handler';
@@ -34,7 +35,7 @@ const shellOpt = Flag.Literals('shell', SHELLS).pipe(
  * COMPOSIO_BIN_DIR=~/.local/bin composio install
  * ```
  */
-export const installCmd = Command.make(
+const installCmdBase = Command.make(
   'install',
   { completions: completionsOpt, noCompletions: noCompletionsOpt, shell: shellOpt },
   runInstall
@@ -42,4 +43,11 @@ export const installCmd = Command.make(
   Command.withDescription(
     'Set up shell integration (PATH and completions). Set COMPOSIO_BIN_DIR to choose the directory added to PATH; it otherwise defaults to ~/.local/bin when that holds this executable, and to the directory of the running binary.'
   )
+);
+
+export const installCmd = withCommandTelemetry(installCmdBase, input =>
+  telemetry.fields({
+    completions: telemetry.flag('--completions', input.completions),
+    no_completions: telemetry.flag('--no-completions', input.noCompletions),
+  })
 );

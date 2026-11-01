@@ -108,6 +108,10 @@ For a selected command, registration begins its identity and runs its enabled in
 
 Explicit help, version, and parse failures follow separate paths and skip selected-command hooks. [command-lifecycle-telemetry.ts](src/services/command-lifecycle-telemetry.ts) defines the lifecycle interface. A command declares shared policy through `withCommandMeta`, rather than adding another argv parser or lifecycle reporter.
 
+Commands that report option properties attach `withCommandTelemetry` to their definition. Its callback receives the command's inferred, parsed input, including defaults from `Flag.withDefault`. [proxy.cmd.ts](src/commands/proxy/proxy.cmd.ts) shows a projection that reports the method, body presence, and header count while excluding the endpoint, body, header values, and account selector from events. [command-input.ts](src/analytics/command-input.ts) builds the safe properties and canonical enabled flag names from that explicit selection. A new flag needs no analytics entry unless it should be measured. Shared definitions carry the same projection into both command trees, and subcommands declare their own projections.
+
+[events.ts](src/analytics/events.ts) constructs events from those safe properties and shared invocation metadata. It does not redeclare command input schemas or parser defaults. Help and parse failures have no parsed input, so their events omit command input properties. Parsed-input projections also summarize private inputs, such as search query length, before event construction.
+
 ## Verify a command change
 
 Commands below run from the repository root after the pinned toolchain and dependencies are installed, as described in the [repository setup](../../../CONTRIBUTING.md#development-setup).

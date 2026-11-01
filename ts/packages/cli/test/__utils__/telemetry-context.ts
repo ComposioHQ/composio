@@ -1,3 +1,5 @@
+import { buildRootCommand } from 'src/commands';
+import { identityAt } from 'src/invocation/command-identity';
 import { Option } from 'effect';
 import { createCliCommandTelemetryContext } from 'src/analytics/events';
 import type { TelemetryFamily } from 'src/analytics/types';
@@ -33,7 +35,13 @@ export const commandTelemetryContext = (
     },
     identity: {
       path: options.path,
-      meta: resolveCommandMeta(undefined, { telemetryFamily: options.family ?? 'command' }),
+      meta: resolveCommandMeta(undefined, {
+        telemetryFamily: options.family ?? 'command',
+        telemetryInput: identityAt(
+          buildRootCommand({ isDevModeEnabled: true, isExperimentalFeatureEnabled: () => true }),
+          ['composio', options.family ?? options.path[0] ?? '']
+        ).meta.telemetryInput,
+      }),
     },
     input: options.input === undefined ? Option.none() : Option.some(options.input),
     startedAt: Date.now(),

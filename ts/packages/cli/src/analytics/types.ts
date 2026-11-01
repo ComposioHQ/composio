@@ -28,6 +28,13 @@ export type TelemetryFamily =
   | 'install'
   | 'setup';
 
+/** Explicit projection of parser-owned input; never the full command input object. */
+export type CommandTelemetryInput = {
+  readonly argument?: string;
+  readonly options: Readonly<Record<string, string | number | boolean | undefined>>;
+  readonly flagNames: ReadonlyArray<string>;
+};
+
 export type CliCommandTelemetryContext = {
   readonly argv: ReadonlyArray<string>;
   readonly cliVersion: string;
@@ -38,12 +45,15 @@ export type CliCommandTelemetryContext = {
   readonly commandPath: string;
   readonly family: TelemetryFamily;
   /**
-   * The input argument the family's events describe, from the input `effect/cli` parsed: the tool
-   * slug of `execute`, the first query of `search`, the toolkit of `link`, the endpoint of
-   * `proxy`. Unset for other families and when nothing was parsed (help, version, parse errors).
+   * The safe argument the family's events describe: the tool slug of `execute` or the toolkit
+   * of `link`, including shared definitions registered under `dev`. Unset when nothing was
+   * parsed (help, version, parse errors) or the command declares no argument projection.
    */
   readonly argument?: string;
+  /** Canonical configured telemetry options, never raw argv tokens. Empty without parsed input. */
   readonly flagNames: ReadonlyArray<string>;
+  /** Safe option properties projected from parsed input. No credentials, bodies, or script source. */
+  readonly options: Readonly<Record<string, string | number | boolean | undefined>>;
   readonly stdoutIsTTY: boolean;
   readonly stderrIsTTY: boolean;
   readonly startedAt: number;
