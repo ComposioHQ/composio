@@ -1,7 +1,7 @@
 /**
  * Keeps `src/commands/COMMANDS.md` in step with the command tree: one row per command
- * registration, with the file that defines it. `pnpm --filter @composio/cli run commands:map`
- * rewrites the file; `pnpm test` fails while it is stale.
+ * registration, with its help summary and the file that defines it.
+ * `pnpm --filter @composio/cli run commands:map` rewrites the file; `pnpm test` fails while it is stale.
  *
  * A registration's source file is the `.cmd.ts` module that exports its definition, so no command
  * declares its own file. A definition is recognised by its name and its `examples` array:
@@ -105,25 +105,35 @@ const visibility = ({ registration, path }: (typeof rows)[number]) =>
 
 const code = (text: string | undefined) => (text ? `\`${text}\`` : '');
 
+/** Quote command help without letting table separators or placeholders change the Markdown. */
+const helpSummary = (command: Command.Command.Any): string => {
+  const summary = (command.shortDescription ?? command.description)?.split('\n')[0]?.trim();
+  return summary
+    ? `“${summary.replace(/\|/g, '\\|').replace(/</g, '&lt;').replace(/>/g, '&gt;')}”`
+    : '';
+};
+
 const COMMANDS_MD = [
   '<!-- Generated from the command tree by `pnpm --filter @composio/cli run commands:map`. Do not edit; `pnpm test` fails while it is stale. -->',
   '',
   '# Commands',
   '',
-  'Every command registration of the CLI and the file that defines it. To find a command, grep this file for its path.',
+  'Every command registration of the CLI, its help summary, and the file that defines it. The help summaries quote the command definitions.',
   '',
-  '- **Tree**: `dev` for commands under `composio dev` (developer mode), `root` otherwise.',
+  '- **Help summary**: the command’s short description, or the first line of its description when no short description exists.',
+  '- **Tree**: `dev` for commands in the dev tree, `root` otherwise.',
   '- **Also at**: other registrations of the same definition, such as a root shortcut.',
   '- **Login**: the command needs a logged-in user (`requiresLogin`, inherited from its group).',
   '- **Visibility**: `unlisted` commands are left out of help but still run; `experimental` ones exist only while their experimental feature is enabled.',
   '- `composio help <command>` mirrors every row and is not listed.',
   '',
-  '| Command | Tree | Source | Alias | Also at | Login | Visibility |',
-  '| --- | --- | --- | --- | --- | --- | --- |',
+  '| Command | Help summary | Tree | Source | Alias | Also at | Login | Visibility |',
+  '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ...rows.map(row => {
     const { registration, path, source } = row;
     const cells = [
       code(path),
+      helpSummary(registration.command),
       registration.identity.path[0] === 'dev' ? 'dev' : 'root',
       code(source),
       code(registration.command.alias),
