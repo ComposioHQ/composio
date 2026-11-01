@@ -16,7 +16,7 @@ Not sure which toolkit covers your use case? Browse the [Toolkits catalog](/tool
 
 ## Basic usage
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 tools = composio.tools.get(
@@ -29,11 +29,19 @@ tools = composio.tools.get(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user-123';
+const userId = 'user_123';
 // ---cut---
 const tools = await composio.tools.get(userId, {
-  toolkits: ["GITHUB"]
+  toolkits: ["GITHUB"],
+  important: false,
 });
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Returns raw tool schemas; the SDKs also format them for your provider
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -44,7 +52,7 @@ Returns up to 20 tools by default. Tools require a `user_id` because they're sco
 
 Inspect tool parameters and types without a user_id:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
@@ -56,6 +64,12 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tools/GMAIL_SEND_EMAIL \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -78,7 +92,7 @@ Get tools from specific apps. Returns up to 20 tools by default.
 When you filter only by toolkit, the TypeScript SDK automatically requests tools marked `important` unless you set `important: false`. Supplying `limit`, `search`, or `tags` disables that automatic filter. To keep the important subset with a limit, pass `important: true` explicitly. The Python SDK does not expose this option.
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Fetch with limit for a specific user
@@ -99,7 +113,7 @@ raw_tools = composio.tools.get_raw_composio_tools(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user-123';
+const userId = 'user_123';
 // ---cut---
 // Fetch with limit for a specific user
 const limitedTools = await composio.tools.get(userId, {
@@ -116,13 +130,20 @@ const rawTools = await composio.tools.getRawComposioTools({
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Return at most 5 tools
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB&limit=5" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 ### By name
 
 Fetch specific tools when you know their names.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Fetch specific tools by name
@@ -141,17 +162,24 @@ raw_tools = composio.tools.get_raw_composio_tools(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user-123';
+const userId = 'user_123';
 // ---cut---
 // Fetch specific tools by name
 const specificTools = await composio.tools.get(userId, {
-  tools: ["GITHUB_LIST_STARGAZERS", "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"]
+  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 });
 
 // Get schemas without userId
 const specificRawTools = await composio.tools.getRawComposioTools({
-  tools: ["GITHUB_LIST_STARGAZERS", "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"]
+  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 });
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Fetch specific tools by name
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_ISSUE,GITHUB_CREATE_PULL_REQUEST" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -160,7 +188,7 @@ const specificRawTools = await composio.tools.getRawComposioTools({
 
 Filter OAuth tools by permission level. Only works with a single toolkit.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Filter by OAuth scopes (single toolkit only)
@@ -175,13 +203,20 @@ tools = composio.tools.get(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user-123';
+const userId = 'user_123';
 // ---cut---
 // Filter by OAuth scopes (single toolkit only)
 const scopedTools = await composio.tools.get(userId, {
   toolkits: ["GITHUB"],
   scopes: ["write:org"]
 });
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Filter by OAuth scopes (single toolkit only)
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB&scopes=write:org" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -192,7 +227,7 @@ Search for tools with the `search` option. Start with short action keywords such
 
 Inspect the returned descriptions and input schemas before selecting a tool. Do not assume the first result is the best match or that a natural-language goal returns every relevant tool. If you get no results, shorten the query or [fetch a known tool by name](#by-name).
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Search tools by action keywords
@@ -226,7 +261,7 @@ raw_tools = composio.tools.get_raw_composio_tools(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user-123';
+const userId = 'user_123';
 // ---cut---
 // Search tools by action keywords
 const searchResults = await composio.tools.get(userId, {
@@ -242,15 +277,26 @@ const searchRawTools = await composio.tools.getRawComposioTools({
 
 // Search within a specific toolkit
 const toolkitSearch = await composio.tools.get(userId, {
-  search: "star a repository",
+  search: "issues",
   toolkits: ["GITHUB"]
 });
 
 // Search toolkit schemas without userId
 const toolkitSearchRaw = await composio.tools.getRawComposioTools({
-  search: "star a repository",
+  search: "issues",
   toolkits: ["GITHUB"]
 });
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Search tools by action keywords
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?query=create%20event&toolkit_slug=googlecalendar" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Search within a specific toolkit
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?query=issues&toolkit_slug=GITHUB" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>

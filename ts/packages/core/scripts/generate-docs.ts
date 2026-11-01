@@ -84,13 +84,19 @@ export async function discoverModelFiles(modelsDir: string = MODELS_DIR): Promis
 // never joined into a shell command line.
 function buildTypeDocArgs(
   entryPoints: readonly string[],
-  outputJson: string = TEMP_JSON
+  outputJson: string = TEMP_JSON,
+  packageDir: string = PACKAGE_DIR
 ): string[] {
   return [
     '--json',
     outputJson,
     '--tsconfig',
     'tsconfig.json',
+    // Without this, TypeDoc reports source paths relative to the common
+    // directory of every file it visited, which moves whenever a model pulls in
+    // a file outside `src/`. Pinning it keeps `sources[].fileName` resolvable.
+    '--displayBasePath',
+    packageDir,
     '--excludePrivate',
     '--excludeProtected',
     '--excludeInternal',
@@ -113,10 +119,14 @@ export function runTypeDocCommand(
     typedocBin = TYPEDOC_BIN,
   }: TypeDocCommandOptions = {}
 ): void {
-  execFileSync(process.execPath, [typedocBin, ...buildTypeDocArgs(entryPoints, outputJson)], {
-    stdio: 'pipe',
-    cwd: packageDir,
-  });
+  execFileSync(
+    process.execPath,
+    [typedocBin, ...buildTypeDocArgs(entryPoints, outputJson, packageDir)],
+    {
+      stdio: 'pipe',
+      cwd: packageDir,
+    }
+  );
 }
 
 // Discover classes to document from TypeDoc output
@@ -350,18 +360,18 @@ function extractTag(comment: TypeDocReflection['comment'] | undefined, tagName: 
   return comment.blockTags.filter(t => t.tag === tagName).map(t => extractText(t.content));
 }
 
-function getSourceFileText(fileName: string): string | undefined {
-  const filePath = join(PACKAGE_DIR, 'src', fileName);
+// TypeDoc source paths are relative to `--displayBasePath`, which is the package
+// directory. A path that does not resolve means the two have drifted apart, and
+// every signature would silently fall back to TypeDoc's expanded types, so the
+// read is left to throw.
+export function getSourceFileText(fileName: string, packageDir: string = PACKAGE_DIR): string {
+  const filePath = resolve(packageDir, fileName);
   const cached = sourceFileCache.get(filePath);
   if (cached !== undefined) return cached;
 
-  try {
-    const text = readFileSync(filePath, 'utf-8');
-    sourceFileCache.set(filePath, text);
-    return text;
-  } catch {
-    return undefined;
-  }
+  const text = readFileSync(filePath, 'utf-8');
+  sourceFileCache.set(filePath, text);
+  return text;
 }
 
 function getLineOffset(text: string, line: number): number {
@@ -665,8 +675,6 @@ function getSourceSignatureTypes(signature: TypeDocSignature): SourceSignatureTy
   if (!source) return undefined;
 
   const text = getSourceFileText(source.fileName);
-  if (!text) return undefined;
-
   return parseSourceSignatureTypesAtLine(text, source.line);
 }
 
@@ -1118,6 +1126,24 @@ function isInlineObjectType(type: string): boolean {
   return type.startsWith('{') || type.includes(': {');
 }
 
+// Shorten a type to at most `maxLength` characters. A union is cut between
+// members, or elided entirely when not even its first member fits, so it never
+// ends inside a string literal.
+function truncateType(type: string, maxLength: number): string {
+  const members = splitTopLevel(type, '|');
+  if (members.length > 1) {
+    const suffix = ' | ...';
+    let kept = members[0];
+    for (const member of members.slice(1)) {
+      const next = `${kept} | ${member}`;
+      if (next.length + suffix.length > maxLength) break;
+      kept = next;
+    }
+    return kept.length + suffix.length <= maxLength ? kept + suffix : '...';
+  }
+  return type.substring(0, maxLength - 3) + '...';
+}
+
 // Simplify complex types for table display while preserving public object shapes.
 export function simplifyTypeForTable(type: string): string {
   // First clean up internal generics
@@ -1144,7 +1170,7 @@ export function simplifyTypeForTable(type: string): string {
 
     // Truncate very long types
     if (cleaned.length > 80) {
-      return cleaned.substring(0, 77) + '...';
+      return truncateType(cleaned, 80);
     }
   }
   return cleaned;
@@ -1184,7 +1210,7 @@ export function simplifyTypeForSignature(type: string): string {
 
   // Truncate very long types
   if (cleaned.length > 100) {
-    return cleaned.substring(0, 97) + '...';
+    return truncateType(cleaned, 100);
   }
 
   return cleaned;

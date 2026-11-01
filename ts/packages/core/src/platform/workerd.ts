@@ -108,4 +108,8 @@ export const platform: Platform = {
         'Use environment variables or external storage services instead.'
     );
   },
+
+  writeFileExclusiveSync(_filePath: string, _content: Uint8Array): never {
+    throw new Error('File system operations are not supported in this runtime environment.');
+  },
 };

@@ -64,6 +64,15 @@ afterEach(() => {
 });
 
 describe('fetchToolkitFromProduction', () => {
+  test('preserves Instant support from the production toolkit response', async () => {
+    useApiKey();
+    globalThis.fetch = Object.assign(
+      mock(async () => Response.json({ ...productionPayload, instant: { supported: true } })),
+      { preconnect: originalFetch.preconnect }
+    );
+    const toolkit = await fetchToolkitFromProduction('instant-example');
+    expect(toolkit?.instant).toEqual({ supported: true });
+  });
   test('maps the single-toolkit response and normalizes auth modes', async () => {
     useApiKey();
     const fetcher = mock(async () => Response.json(productionPayload));

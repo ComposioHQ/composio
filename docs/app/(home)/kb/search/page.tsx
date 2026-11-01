@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: 'Search Composio knowledge',
   description: 'Search all public Composio product knowledge.',
   robots: { index: false, follow: true },
+  alternates: { types: { 'text/markdown': '/kb/search.md' } },
 };
 
 interface KnowledgeSearchPageProps {

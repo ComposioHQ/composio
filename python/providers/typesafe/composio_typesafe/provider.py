@@ -12,6 +12,8 @@ import logging
 import os
 import typing as t
 
+import typing_extensions as te
+
 from composio.core.models._modifiers import Modifier, before_execute
 from composio.core.provider import NonAgenticProvider, ToolCallSession
 from composio.core.provider.base import BaseProviderConfig
@@ -85,7 +87,7 @@ class TypesafeProvider(
         model: t.Optional[str] = None,
         thresholds: t.Optional[TypesafeThresholds] = None,
         context_scope: t.Optional[TypesafeContextScope] = None,
-        **kwargs: t.Unpack[BaseProviderConfig],
+        **kwargs: te.Unpack[BaseProviderConfig],
     ) -> None:
         """
         Constructs offline and without an API key. The TypeSafe client is built on the

@@ -17,7 +17,7 @@ import typing as t
 
 from pydantic import ValidationError as PydanticValidationError
 
-from composio.exceptions import ValidationError
+from composio.exceptions import ToolInputRequiredError, ValidationError
 
 from .custom_tool_types import (
     CustomToolsMap,
@@ -81,6 +81,9 @@ def execute_custom_tool(
 
     Validates input via the Pydantic model, calls the user's execute function,
     and wraps the result into the standard response format.
+
+    :raises ToolInputRequiredError: If a call the tool made through the session
+        context needs user input before it can run.
     """
     handle = entry.handle
 
@@ -103,6 +106,11 @@ def execute_custom_tool(
             "error": None,
             "successful": True,
         }
+    except ToolInputRequiredError:
+        # ``ctx.execute()`` / ``ctx.proxy_execute()`` asked for user input:
+        # nothing ran. Flattening it into a failed result would drop the
+        # questions and the request state the caller needs to answer them.
+        raise
     except Exception as e:
         return {
             "data": {},

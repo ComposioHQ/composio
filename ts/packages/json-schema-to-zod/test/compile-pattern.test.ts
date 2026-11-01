@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { InvalidPatternError, jsonSchemaToZod } from '../src/index';
+import { InvalidPatternError } from '../src/index';
 import { MAX_PATTERN_LENGTH, compilePattern } from '../src/utils/compile-pattern';
+import { builders } from './support/builders';
 
 const invalidPatternAt = (build: () => unknown): InvalidPatternError => {
   try {
@@ -47,10 +48,10 @@ describe('compilePattern', () => {
   });
 });
 
-describe('jsonSchemaToZod pattern guard', () => {
+describe.each(builders)('jsonSchemaToZod pattern guard ($name)', builder => {
   it('reports a malformed property pattern with its path instead of a raw SyntaxError', () => {
     const error = invalidPatternAt(() =>
-      jsonSchemaToZod({
+      builder.convert({
         type: 'object',
         properties: { name: { type: 'string', pattern: '(' } },
       })
@@ -63,7 +64,7 @@ describe('jsonSchemaToZod pattern guard', () => {
 
   it('reports a typeless pattern with the path of the node carrying it', () => {
     const error = invalidPatternAt(() =>
-      jsonSchemaToZod({
+      builder.convert({
         type: 'object',
         properties: { slug: { pattern: '[' } },
       })
@@ -73,7 +74,7 @@ describe('jsonSchemaToZod pattern guard', () => {
 
   it('reports a malformed patternProperties key with its path', () => {
     const error = invalidPatternAt(() =>
-      jsonSchemaToZod({
+      builder.convert({
         type: 'object',
         properties: {
           labels: {
@@ -89,7 +90,7 @@ describe('jsonSchemaToZod pattern guard', () => {
   });
 
   it('keeps compiling quantified groups that backtrack linearly', () => {
-    const schema = jsonSchemaToZod({
+    const schema = builder.convert({
       type: 'object',
       properties: { version: { type: 'string', pattern: '^(\\d+\\.)*\\d+$' } },
       required: ['version'],
@@ -102,7 +103,7 @@ describe('jsonSchemaToZod pattern guard', () => {
   });
 
   it('still enforces valid patterns', () => {
-    const schema = jsonSchemaToZod({
+    const schema = builder.convert({
       type: 'object',
       properties: {
         id: { type: 'string', pattern: '^[a-z]{3}-\\d+$' },

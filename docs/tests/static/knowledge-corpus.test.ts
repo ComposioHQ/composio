@@ -189,7 +189,7 @@ describe('unified public knowledge corpus', () => {
     }
   });
 
-  test('publishes every file in the reconciled public snapshot exactly once', () => {
+  test('accounts for every snapshot file and excludes retired guides from public discovery', async () => {
     const manifest = JSON.parse(
       readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8'),
     ) as KbManifest;
@@ -198,7 +198,16 @@ describe('unified public knowledge corpus', () => {
       manifest.guides.flatMap(guide => guide.sources.map(source => source.sourcePath)),
     )].sort();
 
-    expect(manifest.guides.every(guide => guide.state === 'published')).toBe(true);
+    const records = await getAlgoliaSearchDocuments();
+    const sitemapUrls = (await sitemap()).map(entry => entry.url);
+    const llmsIndex = await (await getLlmsIndex()).text();
+    for (const guide of manifest.guides.filter(guide => guide.state === 'retired')) {
+      const path = `/kb/guide/${guide.slug}`;
+      expect(getPublishedKbGuides().some(published => published.slug === guide.slug)).toBe(false);
+      expect(records.some(record => record.canonical_url.includes(path))).toBe(false);
+      expect(sitemapUrls.some(url => url.includes(path))).toBe(false);
+      expect(llmsIndex).not.toContain(path);
+    }
     expect(guideSourcePaths).toEqual(snapshotFiles);
   });
 });

@@ -20,11 +20,14 @@ async function main() {
   const session = await composio.create(userId, { toolkits: ['gmail'], mcp: true });
 
   const client = new MultiServerMCPClient({
-    composio: {
-      transport: 'http',
-      url: session.mcp.url,
-      headers: session.mcp.headers,
+    servers: {
+      composio: {
+        transport: 'http',
+        url: session.mcp.url,
+        headers: session.mcp.headers,
+      },
     },
+    prefixToolNameWithServerName: false,
   });
 
   const tools = await client.getTools();

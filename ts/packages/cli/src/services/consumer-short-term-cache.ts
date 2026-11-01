@@ -1,16 +1,15 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
+import { ComposioToolkitsRepository, ComposioClientSingleton } from 'src/services/composio-clients';
 import {
-  ComposioToolkitsRepository,
-  ComposioClientSingleton,
   getConsumerConnectedToolkits,
   resolveConsumerProject,
-} from 'src/services/composio-clients';
+} from 'src/services/composio-account';
 import { resolveCommandProject } from 'src/services/command-project';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import { djb2Hash } from 'src/utils/djb2';
@@ -399,7 +398,6 @@ const resolveConsumerScope = (params?: {
       return null;
     }
     const consumerProject = yield* resolveConsumerProject({
-      baseURL: userContext.data.baseURL,
       apiKey,
       orgId,
     }).pipe(Effect.option);
@@ -433,14 +431,13 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     const clientSingleton = yield* ComposioClientSingleton;
     const directToolkits = yield* Effect.gen(function* () {
       const consumerProject = yield* resolveConsumerProject({
-        baseURL: userContext.data.baseURL,
         apiKey,
         orgId: scope.orgId,
       });
       // The nano id, as `resolveCommandProject` hands it to `composio execute`:
-      // `getFor` keys its clients on these params, and the memoized
-      // connected-account list is keyed on the client, so a different project
-      // id here would mean a second `GET /connected_accounts` per execute.
+      // the memoized connected-account list is keyed on the client's org and
+      // project, so a different project id here would mean a second
+      // `GET /connected_accounts` per execute.
       const client = yield* clientSingleton.getFor({
         orgId: scope.orgId,
         projectId: consumerProject.project_nano_id,
@@ -456,7 +453,6 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       Option.isSome(directToolkits) && directToolkits.value.connectedToolkits.length > 0
         ? directToolkits.value.connectedToolkits
         : (yield* getConsumerConnectedToolkits({
-            baseURL: userContext.data.baseURL,
             apiKey,
             orgId: scope.orgId,
             consumerUserId: scope.consumerUserId,
@@ -478,20 +474,18 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         toolRouterAuthConfigs: mergeAuthConfigMappings({
           current: currentEntry?.toolRouterAuthConfigs,
-          next: Option.isSome(directToolkits)
-            ? {
-                authConfigs: directToolkits.value.authConfigs,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ authConfigs }) => ({ authConfigs }))
+          ),
         }),
         toolRouterConnectedAccounts: mergeConnectedAccountMappings({
           current: currentEntry?.toolRouterConnectedAccounts,
-          next: Option.isSome(directToolkits)
-            ? {
-                connectedAccounts: directToolkits.value.connectedAccounts,
-                availableConnectedAccounts: directToolkits.value.availableConnectedAccounts,
-              }
-            : undefined,
+          next: Option.getOrUndefined(
+            Option.map(directToolkits, ({ connectedAccounts, availableConnectedAccounts }) => ({
+              connectedAccounts,
+              availableConnectedAccounts,
+            }))
+          ),
         }),
         ...searchSessionFields,
       },

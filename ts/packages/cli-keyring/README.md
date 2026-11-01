@@ -190,7 +190,7 @@ logout:
 
 ### The `dangerouslySaveApiKeyInUserConfig` escape hatch
 
-Lives in `CliUserConfig` (`~/.composio/config.json`), alongside existing `experimentalFeatures` / `artifactDirectory` / `experimentalSubagent`. **Opt-in, not a CLI flag, not advertised in `--help`** — users who need it edit `config.json` themselves.
+Lives in `CliUserConfig` (`~/.composio/config.json`), alongside existing `experimentalFeatures` / `artifactDirectory`. **Opt-in, not a CLI flag, not advertised in `--help`** — users who need it edit `config.json` themselves.
 
 ```json
 {

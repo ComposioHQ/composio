@@ -1,5 +1,4 @@
 import { Schema } from 'effect';
-import { JSONTransformSchema } from './utils/json-transform-schema';
 
 export const Session = Schema.Struct({
   id: Schema.String,
@@ -8,10 +7,6 @@ export const Session = Schema.Struct({
   status: Schema.Literals(['pending', 'linked']),
 }).annotate({ identifier: 'Session' });
 export type Session = Schema.Schema.Type<typeof Session>;
-
-export const SessionJSON = JSONTransformSchema(Session);
-export const sessionFromJSON = Schema.decodeEffect(SessionJSON);
-export const sessionToJSON = Schema.encodeEffect(SessionJSON);
 
 const SessionAccount = Schema.Struct({
   id: Schema.String,
@@ -30,7 +25,3 @@ export const RetrievedSession = Schema.Union([
   }),
 ]).annotate({ identifier: 'RetrievedSession' });
 export type RetrievedSession = Schema.Schema.Type<typeof RetrievedSession>;
-
-export const RetrievedSessionJSON = JSONTransformSchema(RetrievedSession);
-export const retrievedSessionFromJSON = Schema.decodeEffect(RetrievedSessionJSON);
-export const retrievedSessionToJSON = Schema.encodeEffect(RetrievedSessionJSON);

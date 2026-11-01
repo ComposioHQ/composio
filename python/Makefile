@@ -2,6 +2,10 @@
 
 PROVIDER_DIRS := $(patsubst %/,%,$(sort $(dir $(wildcard providers/*/pyproject.toml))))
 
+# Extra `python -m build` flags. The release workflow sets `--no-isolation` so
+# builds use the locked setuptools instead of fetching one.
+BUILD_ARGS ?=
+
 clean-build:
 	@rm -rf dist/ build/
 	@set -e; for provider in $(PROVIDER_DIRS); do\
@@ -77,10 +81,10 @@ bump: clean-build
 	@uv run python scripts/bump.py
 
 build-core: clean-build
-	@./.venv/bin/python -m build
+	@./.venv/bin/python -m build $(BUILD_ARGS)
 
 build: build-core
 	@set -e; for provider in $(PROVIDER_DIRS); do\
-		./.venv/bin/python -m build $$provider;\
+		./.venv/bin/python -m build $$provider $(BUILD_ARGS);\
 		cp $$provider/dist/* dist/;\
 	done

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import typing as t
 
+import typing_extensions as te
+
 from openai.types.responses.response import Response
 from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
@@ -37,7 +39,7 @@ class OpenAIResponsesProvider(
     """OpenAI Responses API Provider class definition."""
 
     def __init__(
-        self, strict: bool = False, **kwargs: t.Unpack[BaseProviderConfig]
+        self, strict: bool = False, **kwargs: te.Unpack[BaseProviderConfig]
     ) -> None:
         """
         :param strict: Emit wrapped tools with ``strict: true`` and normalize

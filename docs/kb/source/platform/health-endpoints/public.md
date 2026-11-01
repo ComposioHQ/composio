@@ -20,8 +20,23 @@ x-composio-admin-token: <COMPOSIO_ADMIN_TOKEN>
 
 ## Apollo
 
-Basic liveness:
+### Basic liveness
 
+#### Python
+
+> [!NOTE]
+> The Python SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### TypeScript
+
+> [!NOTE]
+> The TypeScript SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### API
+
+<!-- code-example: unchecked-api rule="api-base-url" operation="GET /api/healthz" reason="Apollo health runs at the customer's self-hosted deployment URL, not the public-cloud API." -->
+<!-- code-example: unchecked-api rule="api-legacy-version" operation="GET /api/healthz" reason="Apollo's self-hosted liveness route is unversioned." -->
+<!-- code-example: unchecked-api rule="api-key-header" operation="GET /api/healthz" reason="Self-hosted health uses x-composio-admin-token, not a project API key." -->
 ```bash
 curl -i "$COMPOSIO_BASE_URL/api/healthz" \
   -H "x-composio-admin-token: $COMPOSIO_ADMIN_TOKEN"
@@ -35,14 +50,33 @@ Success:
 }
 ```
 
+<!-- end-languages -->
+
 This only confirms that Apollo can serve the request. It does not check downstream dependencies.
 
-Deep dependency health:
+### Deep dependency health
 
+#### Python
+
+> [!NOTE]
+> The Python SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### TypeScript
+
+> [!NOTE]
+> The TypeScript SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### API
+
+<!-- code-example: unchecked-api rule="api-base-url" operation="GET /api/deep_healthz" reason="Apollo health runs at the customer's self-hosted deployment URL, not the public-cloud API." -->
+<!-- code-example: unchecked-api rule="api-legacy-version" operation="GET /api/deep_healthz" reason="Apollo's self-hosted dependency-health route is unversioned." -->
+<!-- code-example: unchecked-api rule="api-key-header" operation="GET /api/deep_healthz" reason="Self-hosted health uses x-composio-admin-token, not a project API key." -->
 ```bash
 curl -sS "$COMPOSIO_BASE_URL/api/deep_healthz" \
   -H "x-composio-admin-token: $COMPOSIO_ADMIN_TOKEN" | jq
 ```
+
+<!-- end-languages -->
 
 Example:
 
@@ -60,8 +94,23 @@ Important: Apollo deep health returns HTTP `200` for GET requests even when one 
 
 ## Thermos
 
-Basic liveness:
+### Basic liveness
 
+#### Python
+
+> [!NOTE]
+> The Python SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### TypeScript
+
+> [!NOTE]
+> The TypeScript SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### API
+
+<!-- code-example: unchecked-api rule="api-base-url" operation="GET /api" reason="Thermos health runs at the customer's self-hosted deployment URL, not the public-cloud API." -->
+<!-- code-example: unchecked-api rule="api-legacy-version" operation="GET /api" reason="Thermos's self-hosted liveness route is unversioned." -->
+<!-- code-example: unchecked-api rule="api-key-header" operation="GET /api" reason="Self-hosted health uses x-composio-admin-token, not a project API key." -->
 ```bash
 curl -i "$THERMOS_BASE_URL/api" \
   -H "x-composio-admin-token: $COMPOSIO_ADMIN_TOKEN"
@@ -76,12 +125,29 @@ Example:
 }
 ```
 
-Deep dependency health:
+### Deep dependency health
 
+#### Python
+
+> [!NOTE]
+> The Python SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### TypeScript
+
+> [!NOTE]
+> The TypeScript SDK has no resource for self-hosted admin-health endpoints. Use the API option with your deployment URL and admin token.
+
+#### API
+
+<!-- code-example: unchecked-api rule="api-base-url" operation="GET /api/health/deep" reason="Thermos health runs at the customer's self-hosted deployment URL, not the public-cloud API." -->
+<!-- code-example: unchecked-api rule="api-legacy-version" operation="GET /api/health/deep" reason="Thermos's self-hosted dependency-health route is unversioned." -->
+<!-- code-example: unchecked-api rule="api-key-header" operation="GET /api/health/deep" reason="Self-hosted health uses x-composio-admin-token, not a project API key." -->
 ```bash
 curl -sS "$THERMOS_BASE_URL/api/health/deep" \
   -H "x-composio-admin-token: $COMPOSIO_ADMIN_TOKEN" | jq
 ```
+
+<!-- end-languages -->
 
 Example:
 

@@ -19,78 +19,29 @@ export function formatConnectedAccountsTable(items: ReadonlyArray<ConnectedAccou
       18
     );
     const authScheme = truncate(item.auth_config.auth_scheme || '-', 14).padEnd(14);
-    const status = item.status === 'ACTIVE' ? item.status : gray(item.status);
+    const status = formatStatus(item.status);
     return `${id} ${alias} ${wordId} ${userId} ${toolkit} ${authConfig} ${authScheme} ${status}`;
   });
 
   return [header, ...rows].join('\n');
 }
 
-/**
- * Format connected accounts as JSON for piped output.
- */
-export function formatConnectedAccountsJson(items: ReadonlyArray<ConnectedAccountItem>): string {
-  return JSON.stringify(
-    items.map(item => ({
-      id: item.id,
-      alias: item.alias,
-      word_id: item.word_id,
-      user_id: item.user_id,
-      toolkit_slug: item.toolkit.slug,
-      auth_config_id: item.auth_config.id,
-      auth_scheme: item.auth_config.auth_scheme,
-      status: item.status,
-      created_at: item.created_at,
-    })),
-    null,
-    2
-  );
-}
+// --- shared by `info` and `whoami` ------------------------------------------------------------
 
-/**
- * Format a single connected account for interactive display.
- */
-export function formatConnectedAccountInfo(item: ConnectedAccountItem): string {
-  const lines: string[] = [];
+/** The spinner label while `info` or `whoami` fetches one connected account. */
+export const fetchingConnectedAccountMessage = (id: string) =>
+  `Fetching connected account "${id}"...`;
 
-  lines.push(`${bold('Id:')} ${redact({ value: item.id, prefix: 'con_' })}`);
-  lines.push(`${bold('Alias:')} ${item.alias || '-'}`);
-  lines.push(`${bold('Word Id:')} ${item.word_id || '-'}`);
-  lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
+/** The hint after `info` or `whoami` fails to fetch the account. */
+export const BROWSE_CONNECTED_ACCOUNTS_HINT =
+  'Browse available connected accounts:\n> composio dev connected-accounts list';
 
-  if (item.status_reason) {
-    lines.push(`${bold('Status Reason:')} ${item.status_reason}`);
-  }
+/** The warning when `info` or `whoami` is given no id. */
+export const MISSING_ID_MESSAGE = 'Missing required argument: <id>';
 
-  lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
-  lines.push(`${bold('User Id:')} ${item.user_id}`);
-  lines.push(
-    `${bold('Auth Config:')} ${redact({ value: item.auth_config.id, prefix: 'ac_' })} (${item.auth_config.auth_scheme})`
-  );
-  lines.push(`${bold('Composio Managed:')} ${item.auth_config.is_composio_managed ? 'Yes' : 'No'}`);
-  lines.push(`${bold('Disabled:')} ${item.is_disabled ? 'Yes' : 'No'}`);
-  lines.push(`${bold('Created:')} ${item.created_at}`);
-  lines.push(`${bold('Updated:')} ${item.updated_at}`);
+/** The hint after `MISSING_ID_MESSAGE`, naming the subcommand that was run. */
+export const missingIdHint = (subcommand: 'info' | 'whoami') =>
+  `Try specifying a connected account ID, e.g.:\n> composio dev connected-accounts ${subcommand} "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio dev connected-accounts list`;
 
-  if (item.test_request_endpoint) {
-    lines.push(`${bold('Test Endpoint:')} ${item.test_request_endpoint}`);
-  }
-
-  return lines.join('\n');
-}
-
-/**
- * Format a connected account for the whoami display (compact 6-field subset).
- */
-export function formatConnectedAccountWhoami(item: ConnectedAccountItem): string {
-  const lines: string[] = [];
-  lines.push(`${bold('Id:')} ${redact({ value: item.id, prefix: 'con_' })}`);
-  lines.push(`${bold('Alias:')} ${item.alias || '-'}`);
-  lines.push(`${bold('Word Id:')} ${item.word_id || '-'}`);
-  lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
-  lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
-  lines.push(`${bold('User Id:')} ${item.user_id}`);
-  lines.push(`${bold('Auth Config:')} ${redact({ value: item.auth_config.id, prefix: 'ac_' })}`);
-  lines.push(`${bold('Auth Scheme:')} ${item.auth_config.auth_scheme}`);
-  return lines.join('\n');
-}
+/** The `Status:` value: plain when active, gray otherwise. */
+export const formatStatus = (status: string) => (status === 'ACTIVE' ? status : gray(status));

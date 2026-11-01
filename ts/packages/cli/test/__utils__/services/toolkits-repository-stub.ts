@@ -38,21 +38,29 @@ const unusedRepositoryMethods = {
   listAuthConfigs: notUsed('listAuthConfigs'),
   getAuthConfig: notUsed('getAuthConfig'),
   createAuthConfig: notUsed('createAuthConfig'),
-  deleteAuthConfig: notUsed('deleteAuthConfig'),
-  listConnectedAccounts: notUsed('listConnectedAccounts'),
   getConnectedAccount: notUsed('getConnectedAccount'),
-  deleteConnectedAccount: notUsed('deleteConnectedAccount'),
-  createConnectedAccountLink: notUsed('createConnectedAccountLink'),
   listActiveTriggers: notUsed('listActiveTriggers'),
   createTrigger: notUsed('createTrigger'),
   enableTrigger: notUsed('enableTrigger'),
   disableTrigger: notUsed('disableTrigger'),
-  deleteTrigger: notUsed('deleteTrigger'),
 } as const;
 
 export type GetProjectToolkitsError = Effect.Error<
   ReturnType<ComposioToolkitsRepositoryShape['getProjectToolkits']>
 >;
+
+/**
+ * A repository whose every method dies unless the test overrides it.
+ */
+export const makeToolkitsRepositoryStub = (
+  overrides: Partial<ComposioToolkitsRepositoryShape>
+): ComposioToolkitsRepositoryShape =>
+  ComposioToolkitsRepository.of({
+    ...unusedRepositoryMethods,
+    getToolkits: notUsed('getToolkits'),
+    getProjectToolkits: notUsed('getProjectToolkits'),
+    ...overrides,
+  });
 
 /**
  * A `ComposioToolkitsRepository` layer that counts catalog fetches, so a test

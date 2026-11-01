@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LangchainProvider } from '../src';
 import { Tool } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
+import { convertToOpenAITool } from '@langchain/core/utils/function_calling';
 
 describe('LangchainProvider', () => {
   let provider: LangchainProvider;
@@ -153,6 +154,35 @@ describe('LangchainProvider', () => {
       const result = await wrappedTool.func({ query: 'test query' });
       expect(typeof result).toBe('string');
       expect(() => JSON.parse(result as string)).not.toThrow();
+    });
+
+    it('should serialize tool parameters with an object root when a parameter uses anyOf', () => {
+      const wrappedTool = provider.wrapTool(
+        {
+          ...sampleTool,
+          inputParameters: {
+            type: 'object',
+            properties: {
+              query: { type: 'string' },
+              limit: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+            },
+            required: ['query'],
+          },
+        },
+        executeToolFn
+      );
+
+      const parameters = convertToOpenAITool(wrappedTool).function.parameters;
+
+      expect(parameters).toMatchObject({
+        type: 'object',
+        properties: {
+          query: { type: 'string' },
+          limit: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+        },
+        required: ['query'],
+      });
+      expect(parameters).not.toHaveProperty('allOf');
     });
 
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {

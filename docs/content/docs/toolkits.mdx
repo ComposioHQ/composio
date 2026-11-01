@@ -8,7 +8,7 @@ A **toolkit** is a collection of related tools for an app or service, such as Gi
 
 You choose which toolkits a session can access. Your agent discovers the individual tools it needs for the task.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -32,6 +32,18 @@ const session = await composio.create("user_123", {
 });
 
 const tools = await session.tools();
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github", "gmail"]}}' \
+  | jq -r '.session_id')
+
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>

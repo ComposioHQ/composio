@@ -51,10 +51,12 @@ const approvalContext = (
   toolName: string,
   toolInput: Record<string, unknown>
 ): ApprovalContext<Record<string, unknown>> => ({
+  abortSignal: new AbortController().signal,
   approvedTools: new Set<string>(),
   callId: 'call-1',
-  getSandbox: vi.fn<ApprovalContext['getSandbox']>(),
-  getSkill: vi.fn<ApprovalContext['getSkill']>(),
+  getSandbox: async () => {
+    throw new Error('Sandbox access is not expected in approval policy tests');
+  },
   session: {
     id: 'eve-session',
     auth: { current: null, initiator: null },

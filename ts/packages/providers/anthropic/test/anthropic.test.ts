@@ -176,6 +176,42 @@ describe('AnthropicProvider', () => {
       const wrapped = provider.wrapTools([]);
       expect(wrapped).toEqual([]);
     });
+
+    it('should place a single cache_control breakpoint on the last tool when caching is enabled', () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+      const tools: Tool[] = [
+        { ...mockTool, slug: 'tool-a' },
+        { ...mockTool, slug: 'tool-b' },
+        { ...mockTool, slug: 'tool-c' },
+      ];
+
+      const wrapped = cachingProvider.wrapTools(tools);
+
+      expect(wrapped[0]).not.toHaveProperty('cache_control');
+      expect(wrapped[1]).not.toHaveProperty('cache_control');
+      expect(wrapped[2].cache_control).toEqual({ type: 'ephemeral' });
+    });
+
+    it('should still cache a single-tool batch', () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+
+      const wrapped = cachingProvider.wrapTools([mockTool]);
+
+      expect(wrapped[0].cache_control).toEqual({ type: 'ephemeral' });
+    });
+
+    it('should omit cache_control from every tool when caching is disabled', () => {
+      const tools: Tool[] = [
+        { ...mockTool, slug: 'tool-a' },
+        { ...mockTool, slug: 'tool-b' },
+      ];
+
+      const wrapped = provider.wrapTools(tools);
+
+      for (const tool of wrapped) {
+        expect(tool).not.toHaveProperty('cache_control');
+      }
+    });
   });
 
   describe('executeToolCall', () => {
@@ -217,11 +253,13 @@ describe('AnthropicProvider', () => {
             data: { result: 'success' },
             error: null,
             logId: 'log-success',
+            resultType: 'completed',
           })
           .mockResolvedValueOnce({
             data: {},
             error: 'Tool execution failed',
             logId: 'log-failure',
+            resultType: 'failed',
           }),
       };
 
@@ -420,6 +458,37 @@ describe('AnthropicProvider', () => {
       ]);
     });
 
+    it('should not place cache_control on any tool_result when caching is enabled', async () => {
+      const cachingProvider = new AnthropicProvider({ cacheTools: true });
+      cachingProvider._setExecuteToolFn(mockExecuteToolFn);
+      const userId = 'test-user';
+      const message = {
+        id: 'msg_123',
+        content: [
+          { type: 'text', text: 'Hello' },
+          { type: 'tool_use', id: 'tu_123', name: 'test-tool-1', input: {} },
+          { type: 'tool_use', id: 'tu_456', name: 'test-tool-2', input: {} },
+          { type: 'tool_use', id: 'tu_789', name: 'test-tool-3', input: {} },
+        ],
+      } as Anthropic.Message;
+
+      const executeToolCallSpy = vi.spyOn(cachingProvider, 'executeToolCall');
+      executeToolCallSpy
+        .mockResolvedValueOnce(JSON.stringify({ result: 'success-1' }))
+        .mockResolvedValueOnce(JSON.stringify({ result: 'success-2' }))
+        .mockResolvedValueOnce(JSON.stringify({ result: 'success-3' }));
+
+      const results = await cachingProvider.handleToolCalls(userId, message);
+
+      // Results are appended to the message history every turn, so a breakpoint on them would
+      // pile up across turns and exceed Anthropic's 4-breakpoint limit.
+      const outputs = results[0].content as Anthropic.Messages.ToolResultBlockParam[];
+      expect(outputs).toHaveLength(3);
+      for (const output of outputs) {
+        expect(output).not.toHaveProperty('cache_control');
+      }
+    });
+
     it('should handle messages without tool calls', async () => {
       const userId = 'test-user';
       const message = {
@@ -433,42 +502,6 @@ describe('AnthropicProvider', () => {
 
       expect(executeToolCallSpy).not.toHaveBeenCalled();
       expect(results).toEqual([]);
-    });
-  });
-
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'test-tool';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { input: 'test-value' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
     });
   });
 
@@ -511,20 +544,6 @@ describe('AnthropicProvider', () => {
         expect(result).toHaveLength(0);
       });
 
-      it('should handle single item array', () => {
-        const mcpResponse = [{ name: 'single-server', url: 'https://single.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        expect(Array.isArray(result)).toBe(true);
-        expect(result).toHaveLength(1);
-        expect(result[0]).toEqual({
-          url: 'https://single.example.com',
-          name: 'single-server',
-          type: 'url',
-        });
-      });
-
       it('should preserve URL strings exactly', () => {
         const mcpResponse = [
           { name: 'http-server', url: 'http://insecure.example.com' },
@@ -549,33 +568,6 @@ describe('AnthropicProvider', () => {
         result.forEach(item => {
           expect(item.type).toBe('url');
         });
-      });
-    });
-
-    describe('MCP integration with provider', () => {
-      it('should correctly type the MCP response transformation', () => {
-        const mcpResponse = [{ name: 'test-server', url: 'https://test.example.com' }];
-
-        const result = provider.wrapMcpServerResponse(mcpResponse);
-
-        // TypeScript should infer this as AnthropicMcpServerGetResponse
-        expect(result[0]).toHaveProperty('url');
-        expect(result[0]).toHaveProperty('name');
-        expect(result[0]).toHaveProperty('type');
-        expect(result[0].url).toBe('https://test.example.com');
-        expect(result[0].type).toBe('url');
-      });
-
-      it('should work with MCP provider instance', () => {
-        // Verify the provider can transform MCP responses
-        const newProvider = new AnthropicProvider();
-        const testResponse = [{ name: 'test', url: 'https://test.com' }];
-
-        const result = newProvider.wrapMcpServerResponse(testResponse);
-        expect(result).toHaveLength(1);
-        expect(result[0].name).toBe('test');
-        expect(result[0].url).toBe('https://test.com');
-        expect(result[0].type).toBe('url');
       });
     });
   });

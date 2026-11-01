@@ -2,9 +2,6 @@ import { Effect, Schema, SchemaGetter } from 'effect';
 import { OptionFromOptionalNullOr } from 'effect/Schema';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
-export const ExperimentalSubagentTarget = Schema.Literals(['auto', 'claude', 'codex']);
-export type ExperimentalSubagentTarget = Schema.Schema.Type<typeof ExperimentalSubagentTarget>;
-
 /**
  * Where the CLI stores the Composio API key.
  *
@@ -55,12 +52,6 @@ const CliUserConfigStruct = Schema.Struct({
     Schema.withDecodingDefaultType(Effect.succeed({}))
   ),
   artifactDirectory: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
-  experimentalSubagent: OptionFromOptionalNullOr(
-    Schema.Struct({
-      target: ExperimentalSubagentTarget,
-    }),
-    { onNoneEncoding: null }
-  ),
   /**
    * Where the CLI stores the Composio API key. See the
    * `SecurityBackend` type above for semantics. Default: `"auto"`
@@ -76,7 +67,6 @@ const CliUserConfigWithEncodedKeys = CliUserConfigStruct.pipe(
   Schema.encodeKeys({
     experimentalFeatures: 'experimental_features',
     artifactDirectory: 'artifact_directory',
-    experimentalSubagent: 'experimental_subagent',
   })
 );
 
@@ -90,36 +80,20 @@ export const CliUserConfig = Schema.StructWithRest(
     Schema.StructWithRest(CliUserConfigWithEncodedKeys.to, unknownCliUserConfigFields),
     {
       decode: SchemaGetter.transform(
-        ({
-          developer,
-          experimental_features,
-          artifact_directory,
-          experimental_subagent,
-          security,
-          ...rest
-        }) => ({
+        ({ developer, experimental_features, artifact_directory, security, ...rest }) => ({
           ...rest,
           developer,
           experimentalFeatures: experimental_features,
           artifactDirectory: artifact_directory,
-          experimentalSubagent: experimental_subagent,
           security,
         })
       ),
       encode: SchemaGetter.transform(
-        ({
-          developer,
-          experimentalFeatures,
-          artifactDirectory,
-          experimentalSubagent,
-          security,
-          ...rest
-        }) => ({
+        ({ developer, experimentalFeatures, artifactDirectory, security, ...rest }) => ({
           ...rest,
           developer,
           experimental_features: experimentalFeatures,
           artifact_directory: artifactDirectory,
-          experimental_subagent: experimentalSubagent,
           security,
         })
       ),

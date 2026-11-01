@@ -45,7 +45,7 @@ const SESSION_TOKEN_RE =
 // a string-literal first argument, or a whole identifier that names a user ID
 // (`userId`, `user_id`, `uid`) — a session argument never does.
 const DIRECT_HELPER_TOKEN_RE =
-  /(?:handle_tool_calls|execute_tool_call)\s*\((?:[^()]*\([^()]*\))*[^()]*\buser_id\s*=|(?:handleToolCalls|executeToolCall)\s*\(\s*(?:["'`]|(?:user_?[iI]d|uid)\b)/;
+  /(?:handle_tool_calls|handle_response|execute_tool_call)\s*\((?:[^()]*\([^()]*\))*[^()]*\buser_id\s*=|(?:handleToolCalls|handleResponse|executeToolCall)\s*\(\s*(?:["'`]|(?:user_?[iI]d|uid)\b)/;
 const SAMPLE_BOUNDARY_RE = /^\s*(?:<\/?(?:Tab|Step)\b|#{1,6}\s)/;
 const FENCE_OPEN_RE = /^\s*(`{3,}|~{3,})/;
 const FENCE_CLOSE_RE = /^\s*(`{3,}|~{3,})\s*$/;
@@ -216,6 +216,24 @@ const results = await composio.provider.handleToolCalls(userId, response);
 </Tab>`;
 
     expect(hasDirectHelperBoundToSessionTools(source)).toBe(true);
+  });
+
+  test("detects response helpers bound to a user ID", () => {
+    const python = `
+\`\`\`python
+session = composio.create(user_id="user_123")
+tools = session.tools()
+results = composio.provider.handle_response(user_id="user_123", response=response)
+\`\`\``;
+    const typescript = `
+\`\`\`typescript
+const session = await composio.create("user_123");
+const tools = await session.tools();
+const outputs = await composio.provider.handleResponse("user_123", response);
+\`\`\``;
+
+    expect(hasDirectHelperBoundToSessionTools(python)).toBe(true);
+    expect(hasDirectHelperBoundToSessionTools(typescript)).toBe(true);
   });
 
   test("LLM guardrail blocks never bind provider helpers to a user ID", () => {

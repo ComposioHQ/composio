@@ -125,9 +125,14 @@ REVIEWED_JOINS: t.Dict[t.Tuple[str, str], t.Dict[str, t.Any]] = {
         "composio/utils/safe_path.py",
         "PureWindowsPath(name)",
     ): _reviewed_path(
-        "`safe_basename` collapses the value, rejects Windows-invalid forms, checks "
-        "its encoded length, and rejects reserved device names.",
-        "fsencode",
+        "`safe_basename` collapses the value, rejects NUL bytes and invalid "
+        "Unicode, rewrites Windows-invalid forms and reserved device names, fits "
+        "the encoded length, and tags a rewritten name with a digest of the "
+        "original to distinguish ordinary normalization collisions. Download "
+        "writes create files exclusively to preserve existing destinations.",
+        "_encoded_length",
+        "_fit_filename_bytes",
+        "_tag_with_original",
     ),
     (
         "composio/utils/safe_path.py",

@@ -32,7 +32,7 @@ Published packages:
 | [`@composio/experimental`](packages/experimental) | Experimental integrations, currently the Pi provider. |
 | [`@composio/json-schema-to-zod`](packages/json-schema-to-zod) | JSON Schema to Zod conversion. |
 
-Internal (unpublished) packages: `cli-keyring` and `cli-local-tools` support the CLI; `ts-builders` generates TypeScript source.
+Internal (unpublished) packages: `cli-keyring` supports the CLI; `ts-builders` generates TypeScript source.
 
 ## Layout
 
@@ -40,7 +40,7 @@ Internal (unpublished) packages: `cli-keyring` and `cli-local-tools` support the
 ts/
   packages/        Published and internal packages (see above)
   examples/        Runnable examples per feature and framework
-  e2e-tests/       Runtime E2E tests (Node, Deno, Cloudflare Workers, CLI)
+  e2e-tests/       Runtime E2E tests (Node, Cloudflare Workers, CLI)
   docs/            Workspace SDK docs: API notes and internal guides
   scripts/         Build, validation, and scaffolding scripts
   vendor/          Read-only reference submodules; do not edit
@@ -68,7 +68,6 @@ Runtime E2E suites (require credentials):
 
 ```bash
 pnpm test:e2e:node
-pnpm test:e2e:deno
 pnpm test:e2e:cloudflare
 pnpm test:e2e:cli
 ```

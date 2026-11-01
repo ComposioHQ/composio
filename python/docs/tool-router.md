@@ -158,13 +158,13 @@ session = composio.tool_router.create(
 )
 ```
 
-Available tag values (every tool carries at least one of the first four):
-- `'readOnlyHint'`: Tools that only read data
-- `'createHint'`: Tools that create a new resource
-- `'updateHint'`: Tools that modify an existing resource in place
-- `'destructiveHint'`: Tools that irreversibly remove, cancel or revoke data
-- `'idempotentHint'`: Tools that can be safely retried (MCP hint, partial coverage)
-- `'openWorldHint'`: Tools that operate in an open world context (MCP hint, partial coverage)
+Every tool has a tag for the type of action it takes:
+- `'readOnlyHint'`: reads data and changes nothing
+- `'createHint'`: adds something new
+- `'updateHint'`: changes something that already exists
+- `'destructiveHint'`: deletes something
+
+See [Tool tags](https://docs.composio.dev/docs/tool-tags) for how tools get their tags.
 
 ### `auth_configs`
 
@@ -744,7 +744,7 @@ ToolRouterToolsDisableConfig = TypedDict('ToolRouterToolsDisableConfig', {
 })
 
 ToolRouterToolsTagsConfig = TypedDict('ToolRouterToolsTagsConfig', {
-    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'createHint', 'updateHint', 'idempotentHint', 'openWorldHint']]
+    'tags': List[Literal['readOnlyHint', 'destructiveHint', 'createHint', 'updateHint']]
 })
 
 ToolRouterToolsConfig = Union[
@@ -757,7 +757,7 @@ ToolRouterToolsConfig = Union[
 tools: Dict[str, ToolRouterToolsConfig]  # Key is toolkit slug, value is ToolRouterToolsConfig
 
 # Tags configuration (global)
-tags: List[Literal['readOnlyHint', 'destructiveHint', 'createHint', 'updateHint', 'idempotentHint', 'openWorldHint']]
+tags: List[Literal['readOnlyHint', 'destructiveHint', 'createHint', 'updateHint']]
 
 # Manage connections configuration
 ToolRouterManageConnectionsConfig = TypedDict('ToolRouterManageConnectionsConfig', {

@@ -12,13 +12,17 @@ import {
   ExecuteToolFn,
   McpServerGetResponse,
   McpUrlResponse,
+  deduplicateJsonSchemaRequiredArrays,
   dereferenceJsonSchema,
   jsonSchemaToZodSchema,
   normalizeToolArguments,
 } from '@composio/core';
-import { tool as createLlamaindexTool, JSONValue } from 'llamaindex';
+import { FunctionTool, type tool as createLlamaindexTool } from 'llamaindex';
 
 export type LlamaindexTool = ReturnType<typeof createLlamaindexTool>;
+type LlamaindexToolParameters = ConstructorParameters<
+  typeof FunctionTool<Record<string, unknown>, Promise<string>>
+>[1]['parameters'];
 export type LlamaindexToolCollection = Array<LlamaindexTool>;
 
 export class LlamaindexProvider extends BaseAgenticProvider<
@@ -34,20 +38,29 @@ export class LlamaindexProvider extends BaseAgenticProvider<
    * @returns The wrapped tool.
    */
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): LlamaindexTool {
-    const inputParams = tool.inputParameters;
-    const inputParametersSchema = jsonSchemaToZodSchema(
-      dereferenceJsonSchema(inputParams ?? {}, { onUnresolved: 'sentinel' })
+    // The model sees the tool's JSON Schema as is, so keywords a Zod schema
+    // cannot carry (`format`, `contentEncoding`, `contentMediaType`, `default`,
+    // ...) reach it; LlamaIndex validates the arguments with the Zod schema
+    // built from the same JSON Schema. The Zod converter does not follow $ref,
+    // so inline the definitions first, then canonicalize the required arrays
+    // the inlined definitions brought along.
+    const parameters = deduplicateJsonSchemaRequiredArrays(
+      dereferenceJsonSchema(tool.inputParameters ?? {}, { onUnresolved: 'sentinel' })
     );
-    return createLlamaindexTool({
-      name: tool.slug,
-      description: tool.description ?? tool.name ?? '',
-      parameters: inputParametersSchema,
-      execute: async input => {
-        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
-        const result = await executeTool(tool.slug, normalizeToolArguments(input, tool.slug));
-        return JSON.stringify(result);
+    const execute = async (input: Record<string, unknown>) => {
+      // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+      const result = await executeTool(tool.slug, normalizeToolArguments(input, tool.slug));
+      return JSON.stringify(result);
+    };
+    return new FunctionTool(
+      execute,
+      {
+        name: tool.slug,
+        description: tool.description ?? tool.name ?? '',
+        parameters: parameters as LlamaindexToolParameters,
       },
-    });
+      jsonSchemaToZodSchema(parameters)
+    ) as unknown as LlamaindexTool;
   }
 
   /**

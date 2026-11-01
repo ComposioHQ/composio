@@ -4,13 +4,8 @@ OpenAI provider implementation.
 
 from __future__ import annotations
 
-import json
-import time
 import typing as t
 
-from openai import Client
-from openai.types.beta.thread import Thread
-from openai.types.beta.threads.run import Run
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
@@ -157,54 +152,3 @@ class OpenAIProvider(
                 )
                 outputs.append(result)
         return outputs
-
-    def handle_assistant_tool_calls(
-        self,
-        user_id: str,
-        run: Run,
-    ) -> t.List:
-        """Wait and handle assistant function calls"""
-        tool_outputs: list[dict] = []
-        if run.required_action is None:
-            return tool_outputs
-
-        for tool_call in run.required_action.submit_tool_outputs.tool_calls:
-            tool_outputs.append(
-                {
-                    "tool_call_id": tool_call.id,
-                    "output": json.dumps(
-                        self.execute_tool_call(
-                            tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
-                            user_id=user_id,
-                        )
-                    ),
-                }
-            )
-        return tool_outputs
-
-    def wait_and_handle_assistant_tool_calls(
-        self,
-        user_id: str,
-        client: Client,
-        run: Run,
-        thread: Thread,
-    ) -> Run:
-        """Wait and handle assistant function calls"""
-        while run.status in ("queued", "in_progress", "requires_action"):
-            if run.status != "requires_action":
-                run = client.beta.threads.runs.retrieve(
-                    thread_id=thread.id,
-                    run_id=run.id,
-                )
-                time.sleep(0.5)
-                continue
-
-            run = client.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread.id,
-                run_id=run.id,
-                tool_outputs=self.handle_assistant_tool_calls(
-                    run=run,
-                    user_id=user_id,
-                ),
-            )
-        return run

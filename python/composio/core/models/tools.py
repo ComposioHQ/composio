@@ -7,6 +7,20 @@ from pathlib import Path
 
 import typing_extensions as te
 from composio_client import APIStatusError, omit
+from composio_client.types.tool_router.session_execute_meta_response import (
+    SessionExecuteMetaBlockedResponse,
+    SessionExecuteMetaInputRequiredResponse,
+    SessionExecuteMetaResult,
+)
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteBlockedResponse,
+    SessionExecuteInputRequiredResponse,
+    SessionExecuteResponse,
+    SessionExecuteResult,
+)
+from composio_client.types.tool_router.session_proxy_execute_response import (
+    SessionProxyExecuteInputRequiredResponse,
+)
 from pydantic import BaseModel as PydanticBaseModel
 
 from composio.client import HttpClient
@@ -19,19 +33,28 @@ from composio.client.types import (
 )
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
-from composio.core.models.custom_tool_types import InlineCustomToolsWirePayload
+from composio.core.models.custom_tool_types import (
+    InlineCustomToolsWirePayload,
+    ToolRouterHookResult,
+)
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
 from composio.core.provider import TTool, TToolCollection
-from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
+from composio.core.provider.agentic import (
+    AgenticProvider,
+    AgenticProviderExecuteFn,
+    bind_execution_target,
+)
 from composio.core.provider.base import BaseProvider, ExecuteToolFn
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import (
     InvalidParams,
+    ToolInputRequiredError,
     ToolNotFoundError,
     ToolVersionRequiredError,
+    ValidationError,
 )
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
@@ -94,7 +117,7 @@ def _needs_serialization(obj: t.Any) -> bool:
 def _serialize_value(obj: t.Any) -> t.Any:
     """Recursively convert Pydantic models to JSON-safe primitives."""
     if isinstance(obj, PydanticBaseModel):
-        return obj.model_dump(mode="json")
+        return obj.model_dump(mode="json", by_alias=True)
     if isinstance(obj, dict):
         return {k: _serialize_value(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -114,8 +137,181 @@ def _serialize_arguments(arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return {k: _serialize_value(v) for k, v in arguments.items()}
 
 
-class PremiumCharge(te.TypedDict):
-    """Premium usage charge reported for a Session tool execution."""
+_ExecutedT = t.TypeVar("_ExecutedT")
+
+
+def require_executed(
+    response: t.Union[
+        _ExecutedT,
+        SessionExecuteInputRequiredResponse,
+        SessionExecuteMetaInputRequiredResponse,
+        SessionProxyExecuteInputRequiredResponse,
+    ],
+    subject: str,
+) -> _ExecutedT:
+    """Narrow an execute-family response to the variants that carry a result.
+
+    ``input_required`` means the call did not run: it is raised as a
+    :class:`~composio.exceptions.ToolInputRequiredError` instead of being
+    returned as a result it is not.
+    """
+    if not isinstance(
+        response,
+        (
+            SessionExecuteInputRequiredResponse,
+            SessionExecuteMetaInputRequiredResponse,
+            SessionProxyExecuteInputRequiredResponse,
+        ),
+    ):
+        return response
+    raise ToolInputRequiredError(
+        subject,
+        input_requests={
+            request_id: {
+                "type": request.type,
+                "mode": request.mode,
+                "message": request.message,
+                "requested_schema": request.requested_schema,
+            }
+            for request_id, request in response.input_requests.items()
+        },
+        request_state=response.request_state,
+    )
+
+
+class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
+    """Result of a session tool execution.
+
+    The client's model, with ``hook_results`` as the SDK's own
+    :class:`ToolRouterHookResult` dicts, as they were before the client typed
+    them. ``instant_charge`` is present only when the Session sets
+    ``instant.return_instant_charge`` and a charge is available.
+    """
+
+    hook_results: t.Optional[t.List[ToolRouterHookResult]] = None  # type: ignore[assignment]
+
+
+def _session_execute_result(
+    fields: t.Mapping[str, t.Any], fields_set: t.AbstractSet[str]
+) -> ToolRouterSessionExecuteResponse:
+    """The SDK's result over fields the client already parsed, without parsing them again."""
+    return ToolRouterSessionExecuteResponse.model_construct(
+        _fields_set=set(fields_set), **fields
+    )
+
+
+def hook_results_of(
+    hook_results: t.Optional[t.Sequence[PydanticBaseModel]],
+) -> t.Optional[t.List[ToolRouterHookResult]]:
+    """The client's typed ``hook_results`` as the SDK's own plain dicts.
+
+    The SDK returns hook results as :class:`ToolRouterHookResult` dicts, as it
+    did before the client typed them.
+    """
+    if hook_results is None:
+        return None
+    return [
+        t.cast(ToolRouterHookResult, hook_result.model_dump())
+        for hook_result in hook_results
+    ]
+
+
+def _blocked_execute_result(
+    blocked: t.Union[SessionExecuteBlockedResponse, SessionExecuteMetaBlockedResponse],
+) -> ToolRouterSessionExecuteResponse:
+    """A call a session hook blocked, as the session execute model.
+
+    The agent reads ``error``, so a blocked call reaches it as a failed call
+    with the hook's message. The fields are carried over as the client parsed
+    them instead of being validated a second time.
+    """
+    fields: t.Dict[str, t.Any] = {
+        "data": {},
+        "error": blocked.message,
+        "log_id": blocked.log_id or "",
+        "result_type": "blocked",
+        "block_reason": {
+            "type": blocked.reason.type,
+            "hook_id": blocked.reason.hook_id,
+        },
+    }
+    hook_results = hook_results_of(blocked.hook_results)
+    if hook_results is not None:
+        fields["hook_results"] = hook_results
+    if blocked.instant_charge is not None:
+        # The client's model: the provider execute path reads it as one.
+        fields["instant_charge"] = blocked.instant_charge
+    return _session_execute_result(fields, fields.keys())
+
+
+def require_execute_result(
+    response: SessionExecuteResult,
+    slug: str,
+) -> ToolRouterSessionExecuteResponse:
+    """Narrow a session execute response to a tool that ran.
+
+    Every session execute response carries a ``result_type``. A ``blocked``
+    call (a session hook blocked it) is returned as a result with empty
+    ``data``, the hook's message in ``error``, and ``block_reason``. One
+    without a ``result_type``, or with a value this SDK does not know, is
+    neither a success nor a failure, so it is raised instead of being read as
+    one. The TypeScript SDK applies the same rule.
+
+    :raises ToolInputRequiredError: If the tool asked for user input instead of
+        running.
+    :raises ValidationError: If ``result_type`` is missing or unknown.
+    """
+    if isinstance(response, SessionExecuteBlockedResponse):
+        return _blocked_execute_result(response)
+    executed = require_executed(response, f"Tool {slug}")
+    if executed.result_type not in ("completed", "failed"):
+        raise ValidationError(
+            f"Tool {slug} returned an execute response without a known result_type"
+        )
+    return _session_execute_result(
+        {**dict(executed), "hook_results": hook_results_of(executed.hook_results)},
+        executed.model_fields_set,
+    )
+
+
+def require_execute_meta_result(
+    response: SessionExecuteMetaResult,
+    slug: str,
+) -> ToolRouterSessionExecuteResponse:
+    """Narrow a session execute_meta response to a meta tool that ran.
+
+    The meta endpoint answers in the same shape as session execute, so the
+    result is returned as the session execute response and follows the rules of
+    :func:`require_execute_result`.
+
+    :raises ToolInputRequiredError: If the tool asked for user input instead of
+        running.
+    :raises ValidationError: If ``result_type`` is missing or unknown.
+    """
+    if isinstance(response, SessionExecuteMetaBlockedResponse):
+        return _blocked_execute_result(response)
+    executed = require_executed(response, f"Tool {slug}")
+    # Carry the fields over as the client parsed them instead of validating
+    # them a second time.
+    return require_execute_result(
+        SessionExecuteResponse.model_construct(
+            _fields_set=executed.model_fields_set, **dict(executed)
+        ),
+        slug,
+    )
+
+
+def is_execution_successful(result_type: t.Optional[str]) -> bool:
+    """Whether a session tool execution succeeded.
+
+    ``result_type`` decides: a ``failed`` execution is not successful even when
+    its ``error`` is ``None`` or empty. The TypeScript SDK applies the same rule.
+    """
+    return result_type == "completed"
+
+
+class InstantCharge(te.TypedDict):
+    """Instant usage charge reported for a Session tool execution."""
 
     amount: str
     """Exact non-negative USD decimal string, e.g. ``"0.01"``."""
@@ -127,9 +323,9 @@ class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
     error: t.Optional[str]
     successful: bool
-    premium_charge: te.NotRequired[PremiumCharge]
+    instant_charge: te.NotRequired[InstantCharge]
     """Present only when the Session sets
-    ``premium_usage.return_premium_charge`` and a charge is available."""
+    ``instant.return_instant_charge`` and a charge is available."""
 
 
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
@@ -478,7 +674,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         user_id: t.Optional[str] = None,
     ) -> AgenticProviderExecuteFn:
         """Wrap the execute tool function"""
-        return t.cast(
+        execute_tool = t.cast(
             AgenticProviderExecuteFn,
             functools.partial(
                 self.execute,
@@ -489,6 +685,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 dangerously_skip_version_check=True,
             ),
         )
+        if user_id is None:
+            return execute_tool
+        return bind_execution_target(execute_tool, user_id)
 
     def _wrap_execute_tool_for_tool_router(
         self,
@@ -565,27 +764,34 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             # Serialize any Pydantic model instances before sending to the API
             processed_arguments = _serialize_arguments(processed_arguments)
 
-            response = self._client.tool_router.session.execute(
-                session_id=session_id,
-                tool_slug=slug,
-                arguments=processed_arguments,
-                # Provider-wrapped session tools are agentic calls, so they opt into
-                # direct tool offload when the backend session workbench allows it.
-                enable_auto_workbench_offload=True,
-                experimental=inline_custom_tools_execute_experimental(
-                    inline_custom_tools_payload
+            # Disable retries: a session execution is a non-idempotent write, and a
+            # silent retry after a read timeout can duplicate the side effect.
+            response = require_execute_result(
+                self._client.without_retries.tool_router.session.execute(
+                    session_id=session_id,
+                    tool_slug=slug,
+                    arguments=processed_arguments,
+                    # Provider-wrapped session tools are agentic calls, so they opt into
+                    # direct tool offload when the backend session workbench allows it.
+                    enable_auto_workbench_offload=True,
+                    experimental=inline_custom_tools_execute_experimental(
+                        inline_custom_tools_payload
+                    ),
                 ),
+                slug,
             )
 
             # Convert response to standard format
             result: ToolExecutionResponse = {
                 "data": response.data if hasattr(response, "data") else {},
                 "error": response.error if hasattr(response, "error") else None,
-                "successful": not (hasattr(response, "error") and response.error),
+                "successful": is_execution_successful(response.result_type),
             }
-            premium_charge = getattr(response, "premium_charge", None)
-            if isinstance(premium_charge, dict):
-                result["premium_charge"] = t.cast(PremiumCharge, premium_charge)
+            instant_charge = getattr(response, "instant_charge", None)
+            if isinstance(instant_charge, PydanticBaseModel):
+                result["instant_charge"] = t.cast(
+                    InstantCharge, instant_charge.model_dump()
+                )
 
             # Apply after_execute modifiers
             if modifiers is not None:
@@ -678,7 +884,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         :param slug: The slug of the tool to execute.
         :param arguments: The arguments to pass to the tool.
-        :param connected_account_id: The ID of the connected account to use for the tool.
+        :param connected_account_id: The connected account ID, or ``instant_account``
+                                     to explicitly use the Composio Instant account.
         :param custom_auth_params: The custom auth params to use for the tool.
         :param custom_connection_data: The custom connection data to use for the tool, takes priority over custom_auth_params.
         :param user_id: The ID of the user to execute the tool for.
@@ -796,8 +1003,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         custom_connection_data: t.Optional[
             tool_proxy_params.CustomConnectionData
         ] = None,
+        user_id: t.Optional[str] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
-        """Proxy a tool call to the Composio API"""
+        """Proxy a tool call to the Composio API.
+
+        ``user_id`` is the user the connected account belongs to. Projects with
+        2FA enabled check it against the connected account and may require it.
+        """
         # Disable retries: a proxied call is a non-idempotent write, and a silent
         # retry after a read timeout can duplicate the side effect.
         return self._client.without_retries.tools.proxy(
@@ -811,12 +1023,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             custom_connection_data=custom_connection_data
             if custom_connection_data is not None
             else omit,
+            user_id=user_id if user_id is not None else omit,
         )
 
 
 __all__ = [
     "Tools",
-    "PremiumCharge",
+    "InstantCharge",
     "ToolExecuteParams",
     "ToolExecutionResponse",
     "Modifiers",

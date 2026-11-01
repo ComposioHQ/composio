@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import { getReferenceSource, getOgImageUrl } from '@/lib/source';
 import { APIPage } from '@/components/api-page';
 import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
@@ -93,7 +94,7 @@ export async function generateMetadata({
     return {
       title: 'API Reference',
       description: 'REST API and SDK reference for Composio',
-      alternates: { canonical: '/reference' },
+      alternates: markdownAlternates('/reference'),
       openGraph: { images: [ogImage] },
       twitter: { card: 'summary_large_image', images: [ogImage] },
     };
@@ -112,7 +113,7 @@ export async function generateMetadata({
   return {
     title: page.data.title,
     description,
-    alternates: { canonical: page.url },
+    alternates: markdownAlternates(page.url),
     openGraph: { images: [ogImage] },
     twitter: { card: 'summary_large_image', images: [ogImage] },
   };

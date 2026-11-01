@@ -22,7 +22,7 @@ policy. A missing or cross-project id surfaces as the backend's 404.
 Requires Session configs to be enabled for the project.
 
 ```typescript
-async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ archived: boolean; config: { tags?: { disable?: ... | ... | ... | ...[]; enable?: ... | ... | ... | ...[] }; toolkits?: { enable: ...[] } | { disable: ...[] }; tools?: Record<string, { enable: ... } | { disable: ... } | { tags: ... }> }; createdAt: string; description: string | null; id: string; name: string; updatedAt: string }>
+async get(id: string, requestOptions?: ComposioRequestOptions): Promise<SessionConfig>
 ```
 
 **Parameters**
@@ -34,7 +34,7 @@ async get(id: string, requestOptions?: ComposioRequestOptions): Promise<{ archiv
 
 **Returns**
 
-`Promise<\{ archived: boolean; config: \{ tags?: \{ disable?: ... \| ... \| ... \| ...[]; enable?: ... \| ... \| ... \| ...[] \}; toolkits?: \{ enable: ...[] \} \| \{ disable: ...[] \}; tools?: Record<string, \{ enable: ... \} \| \{ disable: ... \} \| \{ tags: ... \}> \}; createdAt: string; description: string \| null; id: string; name: string; updatedAt: string \}>` — The config and its policy
+`Promise<SessionConfig>` — The config and its policy
 
 **Example**
 
@@ -55,19 +55,19 @@ archived ones. The backend defaults `limit` to 20 and caps it at 100.
 Requires Session configs to be enabled for the project.
 
 ```typescript
-async list(params?: { archived?: boolean; cursor?: string; limit?: number; search?: string }, requestOptions?: ComposioRequestOptions): Promise<{ items: { archived: boolean; createdAt: string; id: string; name: string; updatedAt: string }[]; nextCursor: string | null }>
+async list(params?: SessionConfigListParams, requestOptions?: ComposioRequestOptions): Promise<SessionConfigListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params?` | `\{ archived?: boolean; cursor?: string; limit?: number; search?: string \}` | `search`, `archived`, `limit` and `cursor` |
+| `params?` | `SessionConfigListParams` | `search`, `archived`, `limit` and `cursor` |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ items: \{ archived: boolean; createdAt: string; id: string; name: string; updatedAt: string \}[]; nextCursor: string \| null \}>` — Config summaries and the next cursor
+`Promise<SessionConfigListResponse>` — Config summaries and the next cursor
 
 **Example**
 

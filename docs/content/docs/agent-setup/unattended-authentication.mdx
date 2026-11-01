@@ -55,13 +55,41 @@ Use `composio.api_key` for SDK calls and the REST `x-api-key` header. Do not sub
 
 First, verify the project key against a tool that needs no connected account. This example reads the public Hacker News profile for `pg`. In the shell where you exported `COMPOSIO_API_KEY`, run:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+result = composio.client.post(
+    "/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
+    cast_to=object,
+    body={"arguments": {"username": "pg"}},
+)
+print(result)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const result = await composio.getClient().post<unknown>('/api/v3.1/tools/execute/HACKERNEWS_GET_USER', {
+  body: { arguments: { username: 'pg' } },
+});
+console.log(result);
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl --fail-with-body --silent --show-error \
+curl -X POST --fail-with-body --silent --show-error \
   https://backend.composio.dev/api/v3.1/tools/execute/HACKERNEWS_GET_USER \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"arguments":{"username":"pg"}}'
 ```
+</Tab>
+</Tabs>
 
 Check both the HTTP result and the response body. Require `successful: true`, no tool error, and profile data for the requested username. An HTTP 401, a tool schema lookup, or a successful build does not prove tool execution. A local mock verifies only the local code path.
 

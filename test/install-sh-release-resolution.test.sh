@@ -360,7 +360,7 @@ while (($# > 0)); do
 done
 [[ -n $dest ]] || exit 95
 bundle="$dest/composio-$TEST_TARGET"
-mkdir -p "$bundle/services" "$bundle/local-tools-binaries"
+mkdir -p "$bundle/services" "$bundle/acp-adapters"
 cat >"$bundle/composio" <<'BIN'
 #!/bin/sh
 printf '%s|%s|%s|%s\n' "${COMPOSIO_INSTALL_HELP:-}" "${COMPOSIO_CLI_INVOCATION_ORIGIN:-}" "${COMPOSIO_BIN_DIR:-}" "$*" >>"$TEST_COMPOSIO_LOG"

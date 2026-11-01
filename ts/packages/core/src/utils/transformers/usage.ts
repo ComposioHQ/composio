@@ -55,6 +55,7 @@ export const transformUsageSummaryResponse = (
           },
         ])
       ),
+      instantCharge: response.instant_charge,
     }));
 };
 

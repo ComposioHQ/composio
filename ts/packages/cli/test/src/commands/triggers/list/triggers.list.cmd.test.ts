@@ -1,0 +1,220 @@
+import { describe, expect, layer } from '@effect/vitest';
+import { ConfigProvider, Effect } from 'effect';
+import { cli, MockConsole, TestLive } from 'test/__utils__';
+import type { TriggerTypes } from 'src/models/trigger-types';
+import type { TestLiveInput } from 'test/__utils__/services/test-layer';
+import { makeTestToolkits } from 'test/__utils__/models/toolkits';
+
+const testTriggerTypes: TriggerTypes = [
+  {
+    slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+    name: 'NEW_GMAIL_MESSAGE',
+    description: 'Fires when a new message arrives in Gmail',
+    instructions: 'Connect Gmail and subscribe to this trigger',
+    toolkit: { name: 'Gmail', slug: 'gmail' },
+    type: 'webhook',
+    config: { type: 'object', properties: {} },
+    payload: { type: 'object', properties: {} },
+  },
+  {
+    slug: 'GMAIL_NEW_LABEL',
+    name: 'NEW_LABEL',
+    description: 'Fires when a new label is created in Gmail',
+    instructions: 'Connect Gmail and subscribe to this trigger',
+    toolkit: { name: 'Gmail', slug: 'gmail' },
+    type: 'poll',
+    config: { type: 'object', properties: {} },
+    payload: { type: 'object', properties: {} },
+  },
+  {
+    slug: 'SLACK_NEW_MESSAGE',
+    name: 'NEW_MESSAGE',
+    description: 'Fires when a new message is posted in Slack',
+    instructions: 'Connect Slack and subscribe to this trigger',
+    toolkit: { name: 'Slack', slug: 'slack' },
+    type: 'webhook',
+    config: { type: 'object', properties: {} },
+    payload: { type: 'object', properties: {} },
+  },
+];
+
+const testToolkits = makeTestToolkits([
+  { name: 'Gmail', slug: 'gmail' },
+  { name: 'Slack', slug: 'slack' },
+]);
+
+const toolkitsData = {
+  toolkits: testToolkits,
+  triggerTypes: testTriggerTypes,
+} satisfies TestLiveInput['toolkitsData'];
+
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+});
+
+describe('CLI: composio dev triggers list', () => {
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] root triggers list [Then] lists trigger types with root-level hint',
+    it => {
+      it.effect('supports the top-level triggers list entrypoint', () =>
+        Effect.gen(function* () {
+          yield* cli(['triggers', 'list', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('GMAIL_NEW_GMAIL_MESSAGE');
+          expect(output).toContain('Listing 2 trigger types');
+          expect(output).toContain('composio triggers info');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] root triggers list with nonexistent toolkit [Then] points at search',
+    it => {
+      // Toolkits are listed only under `dev`; root users find one through `composio search`.
+      it.effect('names `composio search` in the invalid-toolkit hint', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['triggers', 'list', 'nonexistent']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '<toolkit>',
+            message: expect.stringContaining('not available'),
+          });
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain(
+            'Find the toolkit for a task with:\n> composio search "<what you want to do>"'
+          );
+          expect(output).not.toContain('composio dev');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] no toolkit [Then] parse fails because toolkit is required',
+    it => {
+      it.effect('requires a toolkit positional argument', () =>
+        Effect.gen(function* () {
+          const exit = yield* cli(['triggers', 'list']).pipe(Effect.exit);
+          expect(JSON.stringify(exit)).toContain('toolkit');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] no flags [Then] lists all trigger types',
+    it => {
+      it.effect('lists all trigger types', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'triggers', 'list', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('GMAIL_NEW_GMAIL_MESSAGE');
+          expect(output).not.toContain('SLACK_NEW_MESSAGE');
+          expect(output).toContain('Listing 2 trigger types');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] toolkit "gmail" [Then] lists only gmail trigger types',
+    it => {
+      it.effect('filters by toolkit', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'triggers', 'list', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('GMAIL_NEW_GMAIL_MESSAGE');
+          expect(output).toContain('GMAIL_NEW_LABEL');
+          expect(output).not.toContain('SLACK_NEW_MESSAGE');
+          expect(output).toContain('Listing 2 trigger types');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] --limit 1 [Then] lists one trigger type with singular grammar',
+    it => {
+      it.effect('uses singular form for one result', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'triggers', 'list', 'gmail', '--limit', '1']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Listing 1 trigger type');
+          expect(output).not.toContain('Listing 1 trigger types');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] no flags [Then] shows next step hint',
+    it => {
+      it.effect('shows hint to view trigger details', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'triggers', 'list', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('composio dev triggers info');
+        })
+      );
+    }
+  );
+
+  layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
+    it.effect('warns user to login', () =>
+      Effect.gen(function* () {
+        const error = yield* cli(['dev', 'triggers', 'list', 'gmail']).pipe(Effect.flip);
+        expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: { toolkits: makeTestToolkits([{ name: 'Gmail', slug: 'gmail' }]) },
+    })
+  )('[Given] empty results [Then] shows no trigger types found', it => {
+    it.effect('shows no trigger types found', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'triggers', 'list', 'gmail']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('No trigger types found');
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] toolkit "nonexistent" [Then] shows invalid toolkit error with hint',
+    it => {
+      it.effect('shows hint about verifying toolkit slug', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['dev', 'triggers', 'list', 'nonexistent']).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            option: '<toolkit>',
+            message: expect.stringContaining('not available'),
+          });
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('composio dev toolkits list');
+        })
+      );
+    }
+  );
+});

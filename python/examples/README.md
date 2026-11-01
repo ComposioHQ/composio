@@ -32,3 +32,9 @@ Run `node ../scripts/examples-provision.mjs --gc` to delete what example runs le
 ## A note on connection examples
 
 `connected_accounts.py` demonstrates _creating_ a connection: it calls `initiate()`, prints `Visit this URL to authorize: ...`, then calls `wait_for_connection()`, which returns once the account is active or gives up after its default timeout. That wait needs a person to open the URL, so the example cannot finish on its own and automated runs skip it. Examples that _use_ a connection (calling a tool through Gmail, GitHub, or Slack) rely on the standing connected accounts that the provisioning script already verified are active.
+
+## Session approval examples
+
+Run `uv run --project python python python/examples/approvals.py` from the repository root to approve, deny, decline, or cancel a read-only Hacker News lookup. Add `--multi` to answer a batch of two calls. Set `COMPOSIO_API_KEY` first; no connected account or model API key is needed.
+
+See the [approval examples walkthrough](../../ts/examples/approvals/README.md) for setup, the MCP client, and CI coverage. `verify_approvals.py` runs the same helpers with fixed answers against staging in the scheduled manifest sweep.

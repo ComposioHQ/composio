@@ -46,15 +46,6 @@ export class AuthConfigs {
   }
 
   /**
-   * Protected getter for the client instance.
-   * This is primarily used for testing purposes.
-   * @protected
-   */
-  protected getClient(): ComposioClient {
-    return this.client;
-  }
-
-  /**
    * Lists authentication configurations based on provided filter criteria.
    *
    * This method retrieves auth configs from the Composio API, transforms them to the SDK format,

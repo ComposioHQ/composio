@@ -26,7 +26,9 @@ export function proxy(request: NextRequest) {
   // Handle markdown content negotiation for AI agents
   if (accept.includes('text/markdown') || accept.includes('text/plain')) {
     const mdUrl = new URL(`/llms.mdx${pathname}`, request.nextUrl.origin);
-    return NextResponse.rewrite(mdUrl);
+    const response = NextResponse.rewrite(mdUrl);
+    response.headers.append('Vary', 'Accept');
+    return response;
   }
 
   // Handle old Fern API reference URLs (kebab-case → camelCase)
@@ -51,7 +53,9 @@ export function proxy(request: NextRequest) {
     if (newPathname !== pathname) {
       const url = request.nextUrl.clone();
       url.pathname = newPathname;
-      return NextResponse.redirect(url, 301);
+      const response = NextResponse.redirect(url, 301);
+      response.headers.append('Vary', 'Accept');
+      return response;
     }
   }
 
@@ -64,6 +68,7 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-pathname', pathname);
+  response.headers.append('Vary', 'Accept');
   return response;
 }
 

@@ -1,27 +1,19 @@
+import { cliRequestHeaders } from './client-provenance';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
-// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
+// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
-import { ChildProcess as Command } from 'effect/unstable/process';
+import { ChildProcess as Command } from 'effect/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
-import { JsonRecordSchema } from 'src/effects/json';
-import type { MasterKind } from 'src/services/master-detector';
-import {
-  isAcpInvokeError,
-  parseJson,
-  type HelperDebugLog,
-  type InvokeAgentNormalizedOptions,
-} from 'src/services/run-subagent-shared';
-import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
-import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
 import { collectText } from 'src/services/command-runner';
 import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
+import { toolInputRequiredError } from 'src/utils/tool-input-required';
 
 // One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
 // builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
@@ -44,14 +36,9 @@ export type RunHelperContext = {
   readonly skipConnectionCheck?: boolean;
   readonly skipToolParamsCheck?: boolean;
   readonly skipChecks?: boolean;
-  readonly master?: MasterKind;
   readonly debug?: boolean;
-  readonly acpOnly?: boolean;
-  readonly logsOff?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
-  readonly readAccessRoots?: ReadonlyArray<string>;
-  readonly cliConfigPath?: string;
 };
 
 type RunHelpersInstallParams = {
@@ -61,65 +48,37 @@ type RunHelpersInstallParams = {
 
 type RunCliResult = unknown;
 
-const JsonObject = JsonRecordSchema;
-const ExperimentalSubagentConfig = Schema.Struct({
-  experimental_subagent: Schema.optional(
-    Schema.Struct({ target: Schema.optional(Schema.Unknown) })
-  ),
-});
-const decodeExperimentalSubagentConfig = Schema.decodeUnknownSync(
-  Schema.fromJsonString(ExperimentalSubagentConfig)
-);
+type HelperDebugLog = (step: string, details?: Record<string, unknown>) => void;
+
 const ProxySessionResponse = Schema.Struct({ session_id: Schema.NonEmptyString });
-const ProxyExecuteResponse = Schema.Struct({
+const ProxyExecuteCompletedResponse = Schema.Struct({
+  // Absent when an older server answers; any other value fails the decode
+  // instead of being read as a completed call.
+  result_type: Schema.optional(Schema.Literal('completed')),
   headers: Schema.optional(Schema.Record(Schema.String, Schema.String)),
   binary_data: Schema.optional(Schema.Struct({ url: Schema.optional(Schema.String) })),
   data: Schema.optional(Schema.Unknown),
   status: Schema.optional(Schema.Number),
 });
-type ProxyExecuteResponse = Schema.Schema.Type<typeof ProxyExecuteResponse>;
-
-const experimentalSubAgentSchema = {
-  type: 'function',
-  description:
-    'Experimental helper: prompt a sub-agent from the same agent family as the current main agent (Codex -> Codex, Claude -> Claude) and return its final response.',
-  parameters: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['prompt'],
-    properties: {
-      prompt: { type: 'string', description: 'The prompt to send to the agent CLI.' },
-      target: {
-        type: 'string',
-        enum: ['claude', 'codex', 'user'],
-        description: 'Optional master override. Defaults to the detected current master.',
-      },
-      model: {
-        type: 'string',
-        description: 'Optional model override passed through to the agent CLI.',
-      },
-      schema: {
-        description:
-          'Optional structured-output schema. Accepts a Zod schema or raw JSON Schema object.',
-      },
-      jsonSchema: {
-        description: 'Optional JSON Schema requesting structured output from the agent.',
-      },
-    },
-  },
-  returns: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['master', 'target', 'result'],
-    properties: {
-      master: { type: 'string', enum: ['claude', 'codex', 'user'] },
-      target: { type: 'string', enum: ['claude', 'codex'] },
-      result: { description: 'Final plain-text result when available.' },
-      structuredOutput: { description: 'Structured output when jsonSchema was requested.' },
-      logFilePath: { description: 'Path to the local run log file for helper execution details.' },
-    },
-  },
-};
+type ProxyExecuteCompletedResponse = Schema.Schema.Type<typeof ProxyExecuteCompletedResponse>;
+const ProxyExecuteInputRequiredResponse = Schema.Struct({
+  result_type: Schema.Literal('input_required'),
+  input_requests: Schema.Record(
+    Schema.String,
+    Schema.Struct({
+      type: Schema.Literal('elicitation'),
+      mode: Schema.Literal('form'),
+      message: Schema.String,
+      requested_schema: Schema.Record(Schema.String, Schema.Unknown),
+    })
+  ),
+  request_state: Schema.optional(Schema.String),
+});
+const ProxyExecuteResponse = Schema.Union([
+  ProxyExecuteInputRequiredResponse,
+  ProxyExecuteCompletedResponse,
+]);
+const isProxyInputRequired = Schema.is(ProxyExecuteInputRequiredResponse);
 
 const proxySchema = {
   type: 'function',
@@ -151,6 +110,16 @@ const proxySchema = {
   },
 };
 
+const REMOVED_SUB_AGENT_MESSAGE =
+  'experimental_subAgent() was removed from composio run because its agent transport automatically approved permission requests. Print the tool results and let the calling agent summarize them instead.';
+
+// Rejects instead of throwing synchronously: the removed helper always returned a
+// promise, so scripts that handle its failure with `.catch` or `Promise.allSettled`
+// keep doing so.
+const removedSubAgent = async (): Promise<never> => {
+  throw new Error(REMOVED_SUB_AGENT_MESSAGE);
+};
+
 const encodeBase64 = (bytes: Uint8Array): string => {
   let binary = '';
   for (const byte of bytes) {
@@ -162,6 +131,29 @@ const encodeBase64 = (bytes: Uint8Array): string => {
 // ---------------------------------------------------------------------------
 // Pure helpers — no run-context captures, hoisted to module scope
 // ---------------------------------------------------------------------------
+
+export const parseJson = (text: string): unknown => {
+  const value = text.trim();
+  if (!value) {
+    return undefined;
+  }
+  // Non-JSON output is returned verbatim by design.
+  return Result.getOrElse(
+    Result.try((): unknown => JSON.parse(value)),
+    () => value
+  );
+};
+
+// The most specific text a failed proxy response carries: a bare JSON string,
+// then its `message`, then its `error`, then the raw body.
+const proxyFailureDetail = (parsed: unknown, raw: string): string | undefined => {
+  if (typeof parsed === 'string') return parsed;
+  if (Predicate.isObject(parsed)) {
+    if (typeof parsed.message === 'string') return parsed.message;
+    if (typeof parsed.error === 'string') return parsed.error;
+  }
+  return raw.trim() || undefined;
+};
 
 const executeId = () => crypto.randomUUID().slice(0, 8);
 
@@ -190,58 +182,6 @@ const previewDebugValue = (value: unknown): string => {
 
 const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
   switch (step) {
-    case 'subAgent.target':
-      return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;
-    case 'subAgent.acp.resolve':
-      return `[experimental_subAgent] ACP via ${details.source} (${details.target})`;
-    case 'subAgent.acp.initialized':
-      return `[experimental_subAgent] ACP initialized (${details.target})`;
-    case 'subAgent.acp.session':
-      return `[experimental_subAgent] session ready (${details.target})`;
-    case 'subAgent.acp.model':
-      return details.applied === true
-        ? `[experimental_subAgent] model=${details.model}`
-        : `[experimental_subAgent] model unchanged (${details.model})`;
-    case 'subAgent.acp.message': {
-      const text = previewDebugValue(details.text);
-      return text ? `[experimental_subAgent] ${text}` : null;
-    }
-    case 'subAgent.acp.thought': {
-      const text = previewDebugValue(details.text);
-      return text ? `[experimental_subAgent:thinking] ${text}` : null;
-    }
-    case 'subAgent.acp.tool_call': {
-      const locations = Array.isArray(details.locations) ? details.locations : [];
-      const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
-      return `[experimental_subAgent:tool] ${details.status || 'pending'} ${
-        details.title || details.kind || 'tool'
-      }${where}`;
-    }
-    case 'subAgent.acp.tool_call_update': {
-      const locations = Array.isArray(details.locations) ? details.locations : [];
-      const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
-      const preview = previewDebugValue(details.rawOutput);
-      return `[experimental_subAgent:tool] ${details.status || 'update'} ${
-        details.title || details.toolCallId || details.kind || 'tool'
-      }${where}${preview ? ` -> ${preview}` : ''}`;
-    }
-    case 'subAgent.acp.plan': {
-      const entries = Array.isArray(details.entries)
-        ? details.entries.filter(Predicate.isObject)
-        : [];
-      if (entries.length === 0) return '[experimental_subAgent:plan] updated';
-      const summary = entries
-        .slice(0, 3)
-        .map(entry => {
-          const status = typeof entry.status === 'string' ? entry.status : 'pending';
-          const content = typeof entry.content === 'string' ? entry.content : '';
-          return `${status}:${truncateDebugText(content, 48)}`;
-        })
-        .join(' | ');
-      return `[experimental_subAgent:plan] ${summary}`;
-    }
-    case 'subAgent.acp.fallback':
-      return `[experimental_subAgent] ACP fallback (${details.code})`;
     case 'execute.prepare':
       return `[execute] ${details.slug}`;
     case 'search.prepare':
@@ -289,21 +229,18 @@ const attachPromptMethod = <T>(value: T): T => {
 
 const isPlainObjectForExecute = Predicate.isObject;
 
-const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
-  if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
+// The extension of the name a nameless Blob is uploaded under. Cosmetic: the Blob's
+// type reaches the upload through `COMPOSIO_RUN_STAGED_FILES_FILE`, not through this
+// extension. A subtype that is not a plain token (`vnd.openxmlformats-…`) is `bin`.
+const runFileExtensionFromMimeType = (mimeType: string): string => {
   const normalized = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
   const explicit: Record<string, string> = {
     'text/plain': 'txt',
-    'application/json': 'json',
-    'application/pdf': 'pdf',
     'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/gif': 'gif',
   };
-  if (explicit[normalized]) return explicit[normalized];
-  const subtype = normalized.split('/')[1] || 'bin';
-  return subtype.includes('+') ? (subtype.split('+').pop() ?? 'bin') : subtype;
+  if (Object.hasOwn(explicit, normalized)) return explicit[normalized];
+  const subtype = normalized.split('/')[1]?.split('+').pop() ?? '';
+  return /^[a-z0-9]{1,10}$/.test(subtype) ? subtype : 'bin';
 };
 
 const describeDebugValue = (value: unknown) => {
@@ -323,73 +260,6 @@ const summarizeCliResultPreview = (result: RunCliResult): unknown => {
   if (typeof result.error === 'string' && result.error.trim().length > 0)
     return result.error.trim();
   return result;
-};
-
-const readConfiguredExperimentalSubagentTarget = (
-  cliConfigPath: string | undefined
-): 'auto' | 'claude' | 'codex' => {
-  if (!cliConfigPath) return 'auto';
-
-  return Result.getOrElse(
-    Result.try(() => {
-      const raw = fs.readFileSync(cliConfigPath, 'utf8');
-      const parsed = decodeExperimentalSubagentConfig(raw);
-      const target = parsed.experimental_subagent?.target;
-      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
-    }),
-    () => 'auto' as const
-  );
-};
-
-const normalizeInvokeAgentOptions = (
-  options: Record<string, unknown> = {}
-): InvokeAgentNormalizedOptions => {
-  if (options == null || typeof options !== 'object' || Array.isArray(options)) {
-    throw new Error('experimental_subAgent() options must be an object when provided.');
-  }
-  if (options.schema !== undefined && options.jsonSchema !== undefined) {
-    throw new Error(
-      'experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.'
-    );
-  }
-  const requestedTarget = options.target;
-  if (
-    requestedTarget !== undefined &&
-    requestedTarget !== 'claude' &&
-    requestedTarget !== 'codex' &&
-    requestedTarget !== 'user'
-  ) {
-    throw new Error(
-      'experimental_subAgent() target must be "claude", "codex", or "user" when provided.'
-    );
-  }
-  const inputSchema = options.schema ?? options.jsonSchema;
-  let structuredSchema: Record<string, unknown> | undefined;
-  let zodSchema: z.ZodType | undefined;
-  if (inputSchema !== undefined) {
-    if (inputSchema instanceof z.ZodType) {
-      if (typeof z.toJSONSchema !== 'function') {
-        throw new Error(
-          'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
-        );
-      }
-      zodSchema = inputSchema;
-      const generatedSchema = z.toJSONSchema(inputSchema);
-      structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
-    } else if (Predicate.isObject(inputSchema)) {
-      structuredSchema = inputSchema;
-    } else {
-      throw new Error('experimental_subAgent() schema must be a Zod schema or JSON Schema object.');
-    }
-  }
-  return {
-    ...(requestedTarget === undefined ? {} : { target: requestedTarget }),
-    ...(typeof options.model === 'string' ? { model: options.model } : {}),
-    ...(options.schema === undefined ? {} : { schema: options.schema }),
-    ...(options.jsonSchema === undefined ? {} : { jsonSchema: options.jsonSchema }),
-    ...(structuredSchema === undefined ? {} : { structuredSchema }),
-    ...(zodSchema === undefined ? {} : { zodSchema }),
-  };
 };
 
 const normalizeProxyToolkit = (toolkit: string) => {
@@ -442,7 +312,7 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
   };
 };
 
-const toProxyResponse = async (result: ProxyExecuteResponse) => {
+const toProxyResponse = async (result: ProxyExecuteCompletedResponse) => {
   const headers = new Headers(result?.headers || {});
   if (result?.binary_data?.url) {
     const binaryResponse = await ssrfSafeFetch(
@@ -502,18 +372,12 @@ const createRunHelperLoggers = (params: {
     writeError(`[perf] ${JSON.stringify(payload)}`);
   };
 
-  const shouldStreamHelperLog = (step: string, formattedLine: string | null): boolean => {
-    if (helperContext.logsOff === true) return false;
-    if (helperContext.debug === true) return true;
-    return formattedLine !== null && (step.startsWith('subAgent.') || step.startsWith('agent.'));
-  };
-
   const helperDebugLog: HelperDebugLog = (step, details = {}) => {
     const formattedLine = formatHelperDebugEvent(step, details);
     const elapsedMs = Date.now() - perfDebugStart;
     const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
     appendRunLogLine(line);
-    if (shouldStreamHelperLog(step, formattedLine)) {
+    if (helperContext.debug === true) {
       writeError(line);
     }
   };
@@ -521,47 +385,79 @@ const createRunHelperLoggers = (params: {
   return { perfDebugLog, helperDebugLog };
 };
 
+/**
+ * An `execute()` payload with every File and Blob written to disk: the spawned
+ * `composio execute` takes `--data` JSON, so each one becomes its staged path.
+ */
+/** What the upload reports for a staged file, in place of its staged path's. */
+type StagedFileLabel = { readonly name: string; readonly mimetype?: string };
+
+/**
+ * An `execute()` payload with every File and Blob written to disk: the spawned
+ * `composio execute` takes `--data` JSON, so each one becomes its staged path.
+ */
+type MaterializedExecutePayload = {
+  readonly payload: unknown;
+  /**
+   * Staged path -> the File or Blob's own name and `type`. A path carries
+   * neither, so the child receives these through `COMPOSIO_RUN_STAGED_FILES_FILE`
+   * and uploads the file under them.
+   */
+  readonly stagedFiles: ReadonlyArray<readonly [string, StagedFileLabel]>;
+};
+
 const createExecutePayloadMaterializer = (params: {
   readonly path: Path.Path;
   readonly tmpdir: string;
   readonly sharedRunOutputDir: string | null;
-}): ((value: unknown) => Promise<unknown>) => {
+}): ((value: unknown) => Promise<MaterializedExecutePayload>) => {
   const { path, tmpdir, sharedRunOutputDir } = params;
 
-  const writeTempExecuteFile = async (value: unknown): Promise<unknown> => {
-    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
-    fs.mkdirSync(outputDir, { recursive: true });
-    if (typeof File !== 'undefined' && value instanceof File) {
-      const safeName =
-        typeof value.name === 'string' && value.name.trim().length > 0
-          ? value.name
-          : `file-${executeId()}.${runFileExtensionFromMimeType(value.type)}`;
-      const filePath = path.join(outputDir, `${executeId()}-${safeName}`);
-      fs.writeFileSync(filePath, new Uint8Array(await value.arrayBuffer()));
-      return filePath;
-    }
-    if (typeof Blob !== 'undefined' && value instanceof Blob) {
-      const filePath = path.join(
-        outputDir,
-        `${executeId()}.${runFileExtensionFromMimeType(value.type)}`
-      );
-      fs.writeFileSync(filePath, new Uint8Array(await value.arrayBuffer()));
-      return filePath;
-    }
-    return value;
+  // The name the upload sends: a File's own, without any directory part.
+  const uploadName = (blob: Blob): string => {
+    const baseName = blob instanceof File ? path.basename(blob.name).trim() : '';
+    return baseName.length > 0 && baseName !== '.' && baseName !== '..'
+      ? baseName
+      : `file-${executeId()}.${runFileExtensionFromMimeType(blob.type)}`;
   };
 
-  const materializeExecutePayload = async (value: unknown): Promise<unknown> => {
-    if (typeof File !== 'undefined' && value instanceof File) return writeTempExecuteFile(value);
-    if (typeof Blob !== 'undefined' && value instanceof Blob) return writeTempExecuteFile(value);
+  const writeTempExecuteFile = async (
+    blob: Blob,
+    stagedFiles: Array<readonly [string, StagedFileLabel]>
+  ): Promise<string> => {
+    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
+    fs.mkdirSync(outputDir, { recursive: true });
+    const name = uploadName(blob);
+    // Staged under a generated name, never the File's own: the child still runs
+    // the sensitive-path denylist on this path, and a script-created
+    // `.env.example` or `id_rsa` is not a file of the user's to protect. The
+    // extension is kept only as a fallback for the type.
+    const extension = path.extname(name);
+    const filePath = path.join(
+      outputDir,
+      `file-${executeId()}${/^\.[A-Za-z0-9]{1,10}$/.test(extension) ? extension : ''}`
+    );
+    fs.writeFileSync(filePath, new Uint8Array(await blob.arrayBuffer()));
+    const mimetype = blob.type.trim();
+    stagedFiles.push([filePath, mimetype.length > 0 ? { name, mimetype } : { name }]);
+    return filePath;
+  };
+
+  const materialize = async (
+    value: unknown,
+    stagedFiles: Array<readonly [string, StagedFileLabel]>
+  ): Promise<unknown> => {
+    if (typeof Blob !== 'undefined' && value instanceof Blob) {
+      return writeTempExecuteFile(value, stagedFiles);
+    }
     if (Array.isArray(value)) {
-      return Promise.all(value.map(item => materializeExecutePayload(item)));
+      return Promise.all(value.map(item => materialize(item, stagedFiles)));
     }
     if (isPlainObjectForExecute(value)) {
       const entries = await Promise.all(
         Object.entries(value).map(async ([key, entryValue]) => [
           key,
-          await materializeExecutePayload(entryValue),
+          await materialize(entryValue, stagedFiles),
         ])
       );
       return Object.fromEntries(entries);
@@ -569,8 +465,20 @@ const createExecutePayloadMaterializer = (params: {
     return value;
   };
 
-  return materializeExecutePayload;
+  return async value => {
+    const stagedFiles: Array<readonly [string, StagedFileLabel]> = [];
+    const payload = await materialize(value, stagedFiles);
+    return { payload, stagedFiles };
+  };
 };
+
+const isReportedFailure = (result: RunCliResult): boolean =>
+  Predicate.isObject(result) && result.successful === false;
+
+type RunCliJson = (
+  args: ReadonlyArray<string>,
+  extraEnv?: Readonly<Record<string, string>>
+) => Promise<RunCliResult>;
 
 const createCliRunner = (params: {
   readonly cliPrefix: ReadonlyArray<string>;
@@ -579,7 +487,7 @@ const createCliRunner = (params: {
   readonly perfDebugEnabled: boolean;
   readonly toolDebugEnabled: boolean;
   readonly loggers: RunHelperLoggers;
-}): ((args: ReadonlyArray<string>) => Promise<RunCliResult>) => {
+}): RunCliJson => {
   const { cliPrefix, helperContext, sharedRunOutputDir, perfDebugEnabled, toolDebugEnabled } =
     params;
   const { perfDebugLog, helperDebugLog } = params.loggers;
@@ -646,12 +554,14 @@ const createCliRunner = (params: {
     ...debugFlagsToChildEnv({
       perfDebug: perfDebugEnabled,
       toolDebug: toolDebugEnabled,
-      acpOnly: helperContext.acpOnly === true,
       telemetryDebug: helperContext.telemetryDebug === true,
     }),
   };
 
-  const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
+  const runCliJson = async (
+    args: ReadonlyArray<string>,
+    extraEnv: Readonly<Record<string, string>> = {}
+  ): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
     perfDebugLog('start', requestId, { cmd: args });
@@ -661,7 +571,7 @@ const createCliRunner = (params: {
       Effect.scoped(
         Effect.gen(function* () {
           const child = yield* Command.make(executable, commandArgs, {
-            env,
+            env: { ...env, ...extraEnv },
             extendEnv: true,
             stdin: 'inherit',
             stderr: inheritStderr ? 'inherit' : 'pipe',
@@ -683,7 +593,10 @@ const createCliRunner = (params: {
       )
     );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
-    if (exitCode !== 0) {
+    // A failed execution exits 1 with its `successful: false` result on stdout. That result is
+    // the answer, so it goes back to the caller (`execute()` throws its error message) instead
+    // of a generic exit-code error.
+    if (exitCode !== 0 && !isReportedFailure(result)) {
       perfDebugLog('error', requestId, { exitCode, stderr: stderr.trim() || undefined });
       helperDebugLog('cli.error', {
         requestId,
@@ -726,13 +639,17 @@ const createCliRunner = (params: {
 const createSearchAndExecuteHelpers = (params: {
   readonly helperContext: RunHelperContext;
   readonly sharedRunOutputDir: string | null;
-  readonly runCliJson: (args: ReadonlyArray<string>) => Promise<RunCliResult>;
-  readonly materializeExecutePayload: (value: unknown) => Promise<unknown>;
+  readonly path: Path.Path;
+  readonly tmpdir: string;
+  readonly runCliJson: RunCliJson;
+  readonly materializeExecutePayload: (value: unknown) => Promise<MaterializedExecutePayload>;
   readonly helperDebugLog: HelperDebugLog;
 }) => {
   const {
     helperContext,
     sharedRunOutputDir,
+    path,
+    tmpdir,
     runCliJson,
     materializeExecutePayload,
     helperDebugLog,
@@ -773,8 +690,12 @@ const createSearchAndExecuteHelpers = (params: {
     if (typeof options.account === 'string' && options.account.trim().length > 0) {
       args.push('--account', options.account.trim());
     }
+    // Always set, so a value this process inherited never reaches the child.
+    let stagedFiles: MaterializedExecutePayload['stagedFiles'] = [];
     if (data !== undefined) {
-      const preparedData = await materializeExecutePayload(data);
+      const materialized = await materializeExecutePayload(data);
+      const preparedData = materialized.payload;
+      stagedFiles = materialized.stagedFiles;
       const serialized =
         typeof preparedData === 'string' ? preparedData : JSON.stringify(preparedData);
       if (sharedRunOutputDir) {
@@ -785,109 +706,38 @@ const createSearchAndExecuteHelpers = (params: {
         args.push('--data', serialized);
       }
     }
-    const result = await runCliJson(args);
-    if (Predicate.isObject(result) && result.successful === false) {
-      const message =
-        typeof result.error === 'string' && result.error.trim().length > 0
-          ? result.error.trim()
-          : `composio execute ${slug} failed`;
-      const error = new Error(message);
-      Object.assign(error, { result, slug });
-      throw error;
-    }
-    return result;
+    const metadataDirectory =
+      stagedFiles.length > 0
+        ? fs.mkdtempSync(path.join(tmpdir, 'composio-run-staged-'))
+        : undefined;
+    const metadataFile = metadataDirectory ? path.join(metadataDirectory, 'files.json') : '';
+    const runWithStagedFiles = async (): Promise<RunCliResult> => {
+      if (metadataFile) {
+        fs.writeFileSync(metadataFile, JSON.stringify(Object.fromEntries(stagedFiles)), {
+          encoding: 'utf8',
+          mode: 0o600,
+        });
+      }
+      const result = await runCliJson(args, {
+        COMPOSIO_RUN_STAGED_FILES_FILE: metadataFile,
+      });
+      if (Predicate.isObject(result) && result.successful === false) {
+        const message =
+          typeof result.error === 'string' && result.error.trim().length > 0
+            ? result.error.trim()
+            : `composio execute ${slug} failed`;
+        const error = new Error(message);
+        Object.assign(error, { result, slug });
+        throw error;
+      }
+      return result;
+    };
+    return runWithStagedFiles().finally(() => {
+      if (metadataDirectory) fs.rmSync(metadataDirectory, { recursive: true, force: true });
+    });
   };
 
   return { search, execute };
-};
-
-const createExperimentalSubAgent = (params: {
-  readonly helperContext: RunHelperContext;
-  readonly helperDebugLog: HelperDebugLog;
-}) => {
-  const { helperContext, helperDebugLog } = params;
-
-  // The parent CLI resolves the master via `detectMasterFromHost` and serializes
-  // it into `helperContext` (see run.cmd.ts), so a missing or unrecognized value
-  // deliberately falls back to 'user' instead of re-detecting from this child
-  // process's environment.
-  const detectInvokeAgentMaster = (): MasterKind | 'user' => {
-    if (
-      helperContext.master === 'claude' ||
-      helperContext.master === 'codex' ||
-      helperContext.master === 'user'
-    ) {
-      return helperContext.master;
-    }
-    return 'user';
-  };
-
-  const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
-    if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
-    const configuredTarget = readConfiguredExperimentalSubagentTarget(helperContext.cliConfigPath);
-    if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
-    const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
-    if (detected === 'codex' || detected === 'claude') return detected;
-    if (typeof Bun.which === 'function' && Bun.which('codex')) return 'codex';
-    if (typeof Bun.which === 'function' && Bun.which('claude')) return 'claude';
-    throw new Error(
-      'experimental_subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: "codex" | "claude" }.'
-    );
-  };
-
-  const experimentalSubAgentImpl = async (
-    prompt: string,
-    options: Record<string, unknown> = {}
-  ) => {
-    if (typeof prompt !== 'string' || prompt.trim().length === 0) {
-      throw new Error('experimental_subAgent() requires a non-empty prompt string.');
-    }
-    const logFilePath =
-      typeof helperContext.runLogFilePath === 'string' && helperContext.runLogFilePath.length > 0
-        ? helperContext.runLogFilePath
-        : undefined;
-    const normalizedOptions = normalizeInvokeAgentOptions(options);
-    const target = resolveInvokeAgentTarget(normalizedOptions.target);
-    const master = detectInvokeAgentMaster();
-    helperDebugLog('subAgent.target', {
-      requestedTarget: normalizedOptions.target ?? null,
-      resolvedTarget: target,
-      master,
-    });
-    const response = await invokeAcpSubAgent({
-      prompt: prompt.trim(),
-      options: normalizedOptions,
-      master,
-      target,
-      allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
-        ? helperContext.readAccessRoots
-        : [],
-      helperDebugLog,
-    }).catch(error => {
-      // Only ACP protocol failures fall back to the legacy sub-agent. A damaged
-      // install (MissingAcpAdapterAssetsError) is not one of them: its message
-      // names the repair, and swapping in a different sub-agent implementation
-      // would hide the fact that the install needs fixing.
-      if (!isAcpInvokeError(error)) throw error;
-      if (helperContext.acpOnly === true) throw error;
-      helperDebugLog('subAgent.acp.fallback', {
-        target,
-        code: error.code,
-        message: error.message,
-      });
-      return invokeLegacySubAgent({
-        prompt: prompt.trim(),
-        options: normalizedOptions,
-        master,
-        target,
-        helperDebugLog,
-      });
-    });
-    return logFilePath ? { ...response, logFilePath } : response;
-  };
-
-  Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
-  return experimentalSubAgentImpl;
 };
 
 const createProxyHelper = (params: {
@@ -920,6 +770,7 @@ const createProxyHelper = (params: {
     const response = await fetch(`${composioBaseURL}${pathname}`, {
       method: 'POST',
       headers: {
+        ...cliRequestHeaders(),
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,
@@ -930,16 +781,7 @@ const createProxyHelper = (params: {
     const raw = await response.text();
     const parsed = parseJson(raw);
     if (!response.ok) {
-      const responseMessage = Predicate.isObject(parsed) ? parsed.message : undefined;
-      const responseError = Predicate.isObject(parsed) ? parsed.error : undefined;
-      const detail =
-        typeof parsed === 'string'
-          ? parsed
-          : typeof responseMessage === 'string'
-            ? responseMessage
-            : typeof responseError === 'string'
-              ? responseError
-              : raw.trim() || undefined;
+      const detail = proxyFailureDetail(parsed, raw);
       const error = new Error(
         `Composio proxy request failed with status ${response.status}${detail ? `: ${detail}` : ''}`
       );
@@ -996,6 +838,16 @@ const createProxyHelper = (params: {
             : {}),
         })
       );
+      // An approval request is not a response from the proxied API: converting
+      // it would hand the script an empty 200 for a call that never ran.
+      if (isProxyInputRequired(result)) {
+        // The error is thrown into the user's script, where it is likely to be
+        // logged whole. `request_state` is continuation state the CLI cannot
+        // use yet, so it is left off the error.
+        throw toolInputRequiredError(`${request.method} proxy call via "${normalizedToolkit}"`, {
+          input_requests: result.input_requests,
+        });
+      }
       return toProxyResponse(result);
     };
     Object.defineProperty(proxyFetch, 'toolkit', { value: normalizedToolkit });
@@ -1061,14 +913,15 @@ export const installRunHelpers = async ({
   const { search, execute } = createSearchAndExecuteHelpers({
     helperContext,
     sharedRunOutputDir,
+    path,
+    tmpdir: nodeOs.tmpdir,
     runCliJson,
     materializeExecutePayload,
     helperDebugLog,
   });
 
-  const experimentalSubAgentImpl = createExperimentalSubAgent({ helperContext, helperDebugLog });
-  Reflect.set(globalThis, 'experimental_subAgent', experimentalSubAgentImpl);
-  Reflect.set(globalThis, 'invokeAgent', experimentalSubAgentImpl);
+  Reflect.set(globalThis, 'experimental_subAgent', removedSubAgent);
+  Reflect.set(globalThis, 'invokeAgent', removedSubAgent);
 
   const proxy = createProxyHelper({ helperContext, composioBaseURL, helperDebugLog });
 

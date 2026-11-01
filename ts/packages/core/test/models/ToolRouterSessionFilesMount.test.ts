@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import ComposioClient from '@composio/client';
+import ComposioClient, { Auth } from '@composio/client';
 import { ToolRouterSessionFilesMount } from '../../src/models/ToolRouterSessionFileMount';
 import { ComposioBlockedInternalUrlError, ValidationError } from '../../src/errors';
 import { DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID } from '../../src/utils/constants';
@@ -16,7 +16,7 @@ const mockLookup = vi.mocked(lookup);
 const sessionId = 'trs_session_123';
 
 const createMockClient = () => {
-  const client = new ComposioClient({ apiKey: 'test-api-key' });
+  const client = new ComposioClient({ auth: Auth.project('test-api-key') });
   const files = Object.assign(client.toolRouter.session.files, {
     list: vi.fn<typeof client.toolRouter.session.files.list>(),
     createUploadURL: vi.fn<typeof client.toolRouter.session.files.createUploadURL>(),

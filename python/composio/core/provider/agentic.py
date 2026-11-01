@@ -3,7 +3,12 @@ from __future__ import annotations
 import typing as t
 
 from composio.client.types import Tool
-from composio.core.provider.base import BaseProvider, TTool, TToolCollection
+from composio.core.provider.base import (
+    BaseProvider,
+    ToolCallExecutionTarget,
+    TTool,
+    TToolCollection,
+)
 
 
 class AgenticProviderExecuteFn(t.Protocol):
@@ -20,6 +25,32 @@ class AgenticProviderExecuteFn(t.Protocol):
             - successful: Whether the tool was successful.
         """
         ...
+
+
+_EXECUTION_TARGET_ATTR = "__composio_execution_target__"
+
+TExecuteFn = t.TypeVar("TExecuteFn", bound=t.Callable[..., t.Any])
+
+
+def bind_execution_target(
+    execute_tool: TExecuteFn,
+    target: ToolCallExecutionTarget,
+) -> TExecuteFn:
+    """Record the user ID or Tool Router session ``execute_tool`` runs as.
+
+    A provider that executes calls outside the wrapped tools, such as Gemini's
+    ``handle_response``, reads it back with :func:`get_execution_target` to
+    pick the executor that belongs to a caller's ``user_id`` or ``session``.
+    """
+    setattr(execute_tool, _EXECUTION_TARGET_ATTR, target)
+    return execute_tool
+
+
+def get_execution_target(
+    execute_tool: t.Callable[..., t.Any],
+) -> t.Optional[ToolCallExecutionTarget]:
+    """Return the target recorded by :func:`bind_execution_target`, if any."""
+    return getattr(execute_tool, _EXECUTION_TARGET_ATTR, None)
 
 
 class AgenticProvider(BaseProvider[TTool, TToolCollection]):

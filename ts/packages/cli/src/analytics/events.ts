@@ -1,8 +1,13 @@
-import type { CliCommandTelemetryContext, TrackEvent } from './types';
+import { cliAnalyticsProvenance } from 'src/services/client-provenance';
+import { Option } from 'effect';
+import { CliError } from 'effect/cli';
+import type { CliCommandTelemetryContext, TelemetryFamily, TrackEvent } from './types';
+import { type CommandIdentity, commandPathOf } from 'src/invocation/command-identity';
 import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import type { AgentHost } from 'src/services/agent-host';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
+import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
@@ -106,6 +111,7 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_TOOL_INVOCATION_FAILED: 'execute',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
 
+let cliAnalyticsVersion = APP_VERSION;
 let cliChannel = inferSkillReleaseChannel(APP_VERSION);
 
 /**
@@ -113,6 +119,7 @@ let cliChannel = inferSkillReleaseChannel(APP_VERSION);
  * resolved from release-tag.txt before any command can emit telemetry.
  */
 export const configureCliAnalyticsReleaseVersion = (version: string): void => {
+  cliAnalyticsVersion = version;
   cliChannel = inferSkillReleaseChannel(version);
 };
 
@@ -123,52 +130,31 @@ const buildEvent = (
   name,
   properties: {
     ...properties,
+    ...cliAnalyticsProvenance(
+      typeof properties.cli_version === 'string' ? properties.cli_version : cliAnalyticsVersion
+    ),
+    // Command events can describe offline or mixed work. Do not pretend they
+    // each represent one HTTP request.
+    execution_channel:
+      typeof properties.command_path === 'string' &&
+      [
+        'execute',
+        'search',
+        'link',
+        'proxy',
+        'dev playground-execute',
+        'dev toolkits search',
+        'dev connected-accounts link',
+      ].includes(properties.command_path)
+        ? 'tool_router'
+        : 'unknown',
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
     cli_channel: cliChannel,
   },
 });
 
-const KNOWN_COMMAND_TOKENS = new Set([
-  'version',
-  'upgrade',
-  'whoami',
-  'login',
-  'logout',
-  'run',
-  'install',
-  'setup',
-  'dev',
-  'generate',
-  'tools',
-  'toolkits',
-  'toolkit',
-  'search',
-  'execute',
-  'playground-execute',
-  'link',
-  'proxy',
-  'artifacts',
-  'cwd',
-  'connected-accounts',
-  'auth-configs',
-  'triggers',
-  'logs',
-  'orgs',
-  'projects',
-  'info',
-  'list',
-  'create',
-  'delete',
-  'enable',
-  'disable',
-  'status',
-  'listen',
-  'switch',
-  'py',
-  'ts',
-]);
-
 const TOOL_NOT_FOUND_PATTERN = /\btool\b.*\bnot found\b/i;
+const TOOL_VALIDATION_PATTERN = /\b(?:validation|invalid parameter|invalid argument)\b/i;
 const TOOL_NOT_FOUND_CODES: ReadonlySet<number> = new Set([
   1147, // MCP_ToolNotFound
   1800, // ActionExecute_ToolNotFound
@@ -184,29 +170,6 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
   1607, // Upstream_ValidationError
   3702, // ComposioTools_ValidationError
 ]);
-
-const extractCommandPath = (argv: ReadonlyArray<string>): string => {
-  const commandTokens: string[] = [];
-
-  for (const token of argv.slice(2)) {
-    if (!token || token.startsWith('-') || !KNOWN_COMMAND_TOKENS.has(token)) {
-      break;
-    }
-    commandTokens.push(token);
-  }
-
-  return commandTokens.length > 0 ? commandTokens.join(' ') : 'composio';
-};
-
-const extractFlagNames = (argv: ReadonlyArray<string>): ReadonlyArray<string> =>
-  [
-    ...new Set(
-      argv
-        .slice(2)
-        .filter(token => token.startsWith('-'))
-        .map(token => token.split('=')[0]!)
-    ),
-  ].sort();
 
 const argumentShape = (args: Record<string, unknown>) => {
   const keys = Object.keys(args).sort();
@@ -238,267 +201,98 @@ const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
 
 const failureReasonProperties = (error: unknown) => {
+  // `effect/cli` rejected argv: no command ran, and the event's command path is the one the
+  // parser reached (`CliError.ShowHelp.commandPath`). A bare group's help carries no errors.
+  if (error instanceof CliError.ShowHelp && error.errors.length > 0) {
+    return { failure_reason_code: 'parse_error' };
+  }
   if (error instanceof SetupCommandError) return { failure_reason_code: error.reasonCode };
+  if (error instanceof ChildProcessExited || error instanceof ChildProcessSignaled) {
+    return { failure_reason_code: 'child_exit' };
+  }
   return {};
 };
 
-const isFlagPresent = (argv: ReadonlyArray<string>, ...flags: string[]): boolean =>
-  argv.slice(2).some(token => {
-    if (flags.includes(token)) return true;
-    return flags.some(flag => token.startsWith(`${flag}=`));
-  });
+const commandProperties = (context: CliCommandTelemetryContext) => ({
+  ...context.options,
+  source: 'cli',
+  invocation_origin: context.invocationOrigin,
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+});
 
-const getFlagValue = (argv: ReadonlyArray<string>, ...flags: string[]): string | undefined => {
-  const args = argv.slice(2);
-  for (let index = 0; index < args.length; index += 1) {
-    const token = args[index];
-    if (!token) continue;
-
-    for (const flag of flags) {
-      if (token === flag) {
-        const next = args[index + 1];
-        return next && !next.startsWith('-') ? next : undefined;
-      }
-      if (token.startsWith(`${flag}=`)) {
-        return token.slice(flag.length + 1);
-      }
-    }
-  }
-  return undefined;
-};
-
-const getTrailingPositionals = (context: CliCommandTelemetryContext): ReadonlyArray<string> => {
-  const commandTokenCount =
-    context.commandPath === 'composio' ? 0 : context.commandPath.split(' ').length;
-  const args = context.argv.slice(2 + commandTokenCount);
-  const positionals: string[] = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const token = args[index];
-    if (!token) continue;
-
-    if (token === '--') {
-      break;
-    }
-
-    if (token.startsWith('-')) {
-      const expectsValue = [
-        '--data',
-        '-d',
-        '--toolkits',
-        '--limit',
-        '--user-id',
-        '--project-name',
-        '--auth-config',
-        '--file',
-        '-f',
-      ].includes(token);
-      if (expectsValue) {
-        index += 1;
-      }
-      continue;
-    }
-
-    positionals.push(token);
-  }
-
-  return positionals;
-};
+const parentProperties = (context: CliCommandTelemetryContext) => ({
+  ...commandProperties(context),
+  parent_run_id: context.parentRunId,
+  parent_command: context.parentRunId ? 'run' : undefined,
+});
 
 const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
-  const slug = getTrailingPositionals(context)[0];
+  const slug = context.argument;
   return {
-    source: 'cli',
-    invocation_origin: context.invocationOrigin,
-    parent_run_id: context.parentRunId,
-    parent_command: context.parentRunId ? 'run' : undefined,
-    cli_version: context.cliVersion,
-    command_path: context.commandPath,
-    duration_ms: Date.now() - context.startedAt,
+    ...parentProperties(context),
     surface: context.commandPath === 'execute' ? 'root' : 'dev',
     tool_slug: slug,
     tool_name: slug,
     toolkit_slug:
       context.toolkitSlug ??
       (typeof slug === 'string' ? guessToolkitFromToolSlug(slug) : undefined),
-    dry_run: isFlagPresent(context.argv, '--dry-run'),
-    get_schema: isFlagPresent(context.argv, '--get-schema'),
-    has_data: isFlagPresent(context.argv, '--data', '-d'),
-    skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
-    skip_tool_params_check: isFlagPresent(context.argv, '--skip-tool-params-check'),
-    skip_checks: isFlagPresent(context.argv, '--skip-checks'),
   };
 };
 
-// Search queries are user-authored free text, so only their shape is recorded.
-const getSearchCommandProperties = (context: CliCommandTelemetryContext) => {
-  const query = getTrailingPositionals(context)[0] ?? '';
-  return {
-    source: 'cli',
-    invocation_origin: context.invocationOrigin,
-    parent_run_id: context.parentRunId,
-    parent_command: context.parentRunId ? 'run' : undefined,
-    cli_version: context.cliVersion,
-    command_path: context.commandPath,
-    duration_ms: Date.now() - context.startedAt,
-    query_length: query.length,
-    query_term_count: query.split(/\s+/u).filter(Boolean).length,
-    toolkits: getFlagValue(context.argv, '--toolkits'),
-    limit: getFlagValue(context.argv, '--limit'),
-  };
-};
-
-const getLinkCommandProperties = (context: CliCommandTelemetryContext) => {
-  const firstPositional = getTrailingPositionals(context)[0];
-  return {
-    source: 'cli',
-    invocation_origin: context.invocationOrigin,
-    parent_run_id: context.parentRunId,
-    parent_command: context.parentRunId ? 'run' : undefined,
-    cli_version: context.cliVersion,
-    command_path: context.commandPath,
-    duration_ms: Date.now() - context.startedAt,
-    toolkit: getFlagValue(context.argv, '--toolkit') ?? firstPositional,
-    no_browser: isFlagPresent(context.argv, '--no-browser'),
-    no_wait: isFlagPresent(context.argv, '--no-wait'),
-    has_auth_config: isFlagPresent(context.argv, '--auth-config'),
-  };
-};
-
-const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  run_id: context.runId,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  debug: isFlagPresent(context.argv, '--debug'),
-  dry_run: isFlagPresent(context.argv, '--dry-run'),
-  skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
-  skip_tool_params_check: isFlagPresent(context.argv, '--skip-tool-params-check'),
-  skip_checks: isFlagPresent(context.argv, '--skip-checks'),
-  file_mode: isFlagPresent(context.argv, '--file', '-f'),
-  arg_count: Math.max(0, context.argv.length - 3),
+const getLinkCommandProperties = (context: CliCommandTelemetryContext) => ({
+  ...parentProperties(context),
+  toolkit: context.argument,
 });
 
-const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  completions: isFlagPresent(context.argv, '--completions'),
-  no_completions: isFlagPresent(context.argv, '--no-completions'),
+const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
+  ...commandProperties(context),
+  run_id: context.runId,
 });
 
 const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  operation: isFlagPresent(context.argv, '--uninstall') ? 'uninstall' : 'setup',
-  target: getFlagValue(context.argv, '--target') ?? 'auto',
-  yes: isFlagPresent(context.argv, '--yes', '-y'),
-  if_present: isFlagPresent(context.argv, '--if-present'),
+  ...commandProperties(context),
   stdout_is_tty: context.stdoutIsTTY,
 });
 
-const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  no_browser: isFlagPresent(context.argv, '--no-browser'),
-  no_wait: isFlagPresent(context.argv, '--no-wait'),
-  has_key: isFlagPresent(context.argv, '--key'),
-  skip_org_picker: isFlagPresent(context.argv, '--yes', '-y'),
-});
-
-const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-});
-
-const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
-  source: 'cli',
-  invocation_origin: context.invocationOrigin,
-  cli_version: context.cliVersion,
-  command_path: context.commandPath,
-  duration_ms: Date.now() - context.startedAt,
-  has_endpoint: typeof getTrailingPositionals(context)[0] === 'string',
-  toolkit: getFlagValue(context.argv, '--toolkit', '-t'),
-  method: getFlagValue(context.argv, '--method', '-X') ?? 'GET',
-  has_data: isFlagPresent(context.argv, '--data', '-d'),
-  header_count: context.argv.slice(2).filter(token => token === '--header' || token === '-H')
-    .length,
-  skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
-});
-
-const isExecuteCommand = (commandPath: string): boolean =>
-  commandPath === 'execute' || commandPath === 'dev playground-execute';
-
-const isSearchCommand = (commandPath: string): boolean =>
-  commandPath === 'search' || commandPath === 'dev toolkits search';
-
-const isLinkCommand = (commandPath: string): boolean =>
-  commandPath === 'link' || commandPath === 'dev connected-accounts link';
-
-const isLoginCommand = (commandPath: string): boolean => commandPath === 'login';
-
-const isLogoutCommand = (commandPath: string): boolean => commandPath === 'logout';
-
-const isProxyCommand = (commandPath: string): boolean => commandPath === 'proxy';
-
-const isRunCommand = (commandPath: string): boolean => commandPath === 'run';
-
-const isInstallCommand = (commandPath: string): boolean => commandPath === 'install';
-
-const isSetupCommand = (commandPath: string): boolean => commandPath === 'setup';
-
-const isGenericOnlyCommand = (commandPath: string): boolean =>
-  commandPath === 'composio' || commandPath.startsWith('dev');
-
 /**
- * Tool slug positional of an execute-family invocation, so the CLI bootstrap
- * can resolve the toolkit slug once and stamp it on the telemetry context for
- * the synchronous lifecycle event builders.
- */
-export const getExecuteCommandToolSlug = (
-  context: CliCommandTelemetryContext
-): string | undefined =>
-  isExecuteCommand(context.commandPath) ? getTrailingPositionals(context)[0] : undefined;
-
-/**
- * Builds the telemetry context of the running command.
+ * Builds the telemetry context of the command `identity` names, with the input `effect/cli`
+ * parsed for it (none for help, version, and parse failures).
  *
  * `invocation` is read from config by the caller and stamped here so every synchronous event
  * builder below takes the origin as an input rather than consulting process-wide state.
  */
-export const createCliCommandTelemetryContext = (
-  argv: ReadonlyArray<string>,
-  cliVersion: string,
-  terminal: { readonly stdoutIsTTY: boolean; readonly stderrIsTTY: boolean },
-  invocation: CliInvocationContext
-): CliCommandTelemetryContext => ({
-  argv,
-  cliVersion,
-  invocationOrigin: invocation.invocationOrigin,
-  parentRunId: invocation.parentRunId,
-  commandPath: extractCommandPath(argv),
-  flagNames: extractFlagNames(argv),
-  stdoutIsTTY: terminal.stdoutIsTTY,
-  stderrIsTTY: terminal.stderrIsTTY,
-  startedAt: Date.now(),
-  runId:
-    extractCommandPath(argv) === 'run'
-      ? (invocation.parentRunId ?? crypto.randomUUID())
-      : undefined,
-});
+export const createCliCommandTelemetryContext = (params: {
+  readonly argv: ReadonlyArray<string>;
+  readonly cliVersion: string;
+  readonly terminal: { readonly stdoutIsTTY: boolean; readonly stderrIsTTY: boolean };
+  readonly invocation: CliInvocationContext;
+  readonly identity: CommandIdentity;
+  readonly input: Option.Option<unknown>;
+  readonly startedAt: number;
+}): CliCommandTelemetryContext => {
+  const { argv, invocation, terminal, identity } = params;
+  const family = identity.meta.telemetryFamily;
+  return {
+    argv,
+    cliVersion: params.cliVersion,
+    invocationOrigin: invocation.invocationOrigin,
+    parentRunId: invocation.parentRunId,
+    commandPath: commandPathOf(identity),
+    family,
+    ...Option.getOrElse(
+      Option.flatMap(params.input, input =>
+        Option.map(Option.fromNullishOr(identity.meta.telemetryInput), project => project(input))
+      ),
+      () => ({ options: {}, flagNames: [] })
+    ),
+    stdoutIsTTY: terminal.stdoutIsTTY,
+    stderrIsTTY: terminal.stderrIsTTY,
+    startedAt: params.startedAt,
+    runId: family === 'run' ? (invocation.parentRunId ?? crypto.randomUUID()) : undefined,
+  };
+};
 
 const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent =>
   buildEvent(CLI_ANALYTICS_EVENTS.CLI_COMMAND_INVOKED, {
@@ -534,90 +328,86 @@ const getCliCommandFailedEvent = (
     duration_ms: Date.now() - context.startedAt,
     flag_names: context.flagNames,
     error_name: errorNameOf(error),
+    ...failureReasonProperties(error),
   });
 
 type SpecialLifecycleFamily = {
-  readonly match: (commandPath: string) => boolean;
   readonly invokedEventName: CliAnalyticsEventName;
   readonly succeededEventName: CliAnalyticsEventName;
   readonly failedEventName: CliAnalyticsEventName;
   readonly getProperties: (context: CliCommandTelemetryContext) => Record<string, unknown>;
 };
 
-const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
-  {
-    match: isExecuteCommand,
+const SPECIAL_LIFECYCLE_FAMILIES: Record<
+  Exclude<TelemetryFamily, 'command'>,
+  SpecialLifecycleFamily
+> = {
+  execute: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_FAILED,
     getProperties: getExecuteCommandProperties,
   },
-  {
-    match: isSearchCommand,
+  search: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_FAILED,
-    getProperties: getSearchCommandProperties,
+    getProperties: parentProperties,
   },
-  {
-    match: isLinkCommand,
+  link: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_FAILED,
     getProperties: getLinkCommandProperties,
   },
-  {
-    match: isLoginCommand,
+  login: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_FAILED,
-    getProperties: getLoginCommandProperties,
+    getProperties: commandProperties,
   },
-  {
-    match: isLogoutCommand,
+  logout: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_FAILED,
-    getProperties: getLogoutCommandProperties,
+    getProperties: commandProperties,
   },
-  {
-    match: isProxyCommand,
+  proxy: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_FAILED,
-    getProperties: getProxyCommandProperties,
+    getProperties: commandProperties,
   },
-  {
-    match: isRunCommand,
+  run: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_FAILED,
     getProperties: getRunCommandProperties,
   },
-  {
-    match: isInstallCommand,
+  install: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_FAILED,
-    getProperties: getInstallCommandProperties,
+    getProperties: commandProperties,
   },
-  {
-    match: isSetupCommand,
+  setup: {
     invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_INVOKED,
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED,
     getProperties: getSetupCommandProperties,
   },
-];
+};
 
-const getSpecialLifecycleFamily = (commandPath: string): SpecialLifecycleFamily | undefined =>
-  SPECIAL_LIFECYCLE_FAMILIES.find(family => family.match(commandPath));
+const getSpecialLifecycleFamily = (
+  context: CliCommandTelemetryContext
+): SpecialLifecycleFamily | undefined =>
+  context.family === 'command' ? undefined : SPECIAL_LIFECYCLE_FAMILIES[context.family];
 
 export const getPrimaryLifecycleInvokedEvent = (
   context: CliCommandTelemetryContext
 ): TrackEvent => {
-  const family = getSpecialLifecycleFamily(context.commandPath);
-  if (!family || isGenericOnlyCommand(context.commandPath)) {
+  const family = getSpecialLifecycleFamily(context);
+  if (!family) {
     return getCliCommandInvokedEvent(context);
   }
   return buildEvent(family.invokedEventName, family.getProperties(context));
@@ -626,8 +416,8 @@ export const getPrimaryLifecycleInvokedEvent = (
 export const getPrimaryLifecycleSucceededEvent = (
   context: CliCommandTelemetryContext
 ): TrackEvent => {
-  const family = getSpecialLifecycleFamily(context.commandPath);
-  if (!family || isGenericOnlyCommand(context.commandPath)) {
+  const family = getSpecialLifecycleFamily(context);
+  if (!family) {
     return getCliCommandSucceededEvent(context);
   }
   return buildEvent(family.succeededEventName, family.getProperties(context));
@@ -637,8 +427,8 @@ export const getPrimaryLifecycleFailedEvent = (
   context: CliCommandTelemetryContext,
   error: unknown
 ): TrackEvent => {
-  const family = getSpecialLifecycleFamily(context.commandPath);
-  if (!family || isGenericOnlyCommand(context.commandPath)) {
+  const family = getSpecialLifecycleFamily(context);
+  if (!family) {
     return getCliCommandFailedEvent(context, error);
   }
   return buildEvent(family.failedEventName, {
@@ -799,23 +589,24 @@ export const isMaybeToolNotFoundError = (params: {
   readonly errorSlug?: string;
   readonly status?: number;
   readonly apiCode?: number;
-}): boolean =>
-  (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) ||
-  params.status === 404 ||
-  params.errorSlug?.toLowerCase().includes('notfound') === true ||
-  TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+}): boolean => {
+  if (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) return true;
+  if (params.status === 404) return true;
+  const errorSlug = params.errorSlug?.toLowerCase() ?? '';
+  if (errorSlug.includes('notfound')) return true;
+  return TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+};
 
 export const isMaybeToolValidationError = (params: {
   readonly message?: string;
   readonly errorSlug?: string;
   readonly apiCode?: number;
-}): boolean =>
-  (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) ||
-  params.errorSlug?.toLowerCase().includes('validation') === true ||
-  params.errorSlug?.toLowerCase().includes('invalidparameter') === true ||
-  /\bvalidation\b/i.test(params.message ?? '') ||
-  /\binvalid parameter\b/i.test(params.message ?? '') ||
-  /\binvalid argument\b/i.test(params.message ?? '');
+}): boolean => {
+  if (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) return true;
+  const errorSlug = params.errorSlug?.toLowerCase() ?? '';
+  if (errorSlug.includes('validation') || errorSlug.includes('invalidparameter')) return true;
+  return TOOL_VALIDATION_PATTERN.test(params.message ?? '');
+};
 
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;

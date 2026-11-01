@@ -10,6 +10,7 @@ import {
   ToolExecutionLog,
   ToolExecutionLogDetail,
   ToolExecutionLogDetailSchema,
+  ToolExecutionLogMetadataSchema,
   ToolExecutionLogSchema,
 } from '../../types/logs.types';
 import { transform } from '../transform';
@@ -33,7 +34,7 @@ export const transformToolExecutionLog = (
       status: response.status,
       level: response.level,
       message: response.message,
-      metadata: response.metadata,
+      metadata: ToolExecutionLogMetadataSchema.parse(response.metadata),
       metrics: response.metrics,
       parent: response.parent
         ? { logId: response.parent.log_id, toolSlug: response.parent.tool_slug }
@@ -62,7 +63,7 @@ export const transformToolExecutionLogDetail = (
       status: response.status,
       level: response.level,
       message: response.message,
-      metadata: response.metadata,
+      metadata: ToolExecutionLogMetadataSchema.parse(response.metadata),
       metrics: response.metrics,
       parent: response.parent
         ? { logId: response.parent.log_id, toolSlug: response.parent.tool_slug }

@@ -94,8 +94,10 @@ export class TelemetryTransport {
    */
   instrument<T extends object>(instance: T, fileName?: string) {
     const proto = Object.getPrototypeOf(instance);
-    const methodNames = Object.getOwnPropertyNames(proto).filter(key => {
-      const descriptor = Object.getOwnPropertyDescriptor(proto, key);
+    // Objects returned by factory functions carry their methods as own properties.
+    const methodSource = proto === Object.prototype || proto === null ? instance : proto;
+    const methodNames = Object.getOwnPropertyNames(methodSource).filter(key => {
+      const descriptor = Object.getOwnPropertyDescriptor(methodSource, key);
       return (
         key !== 'constructor' &&
         descriptor &&

@@ -18,7 +18,7 @@ Composio automatically handles token refresh and credential management. This gui
 
 Retrieve all connected accounts with optional filters:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # List all accounts for a user
@@ -51,13 +51,24 @@ const activeAccounts = await composio.connectedAccounts.list({
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# List all accounts for a user
+curl -X GET "https://backend.composio.dev/api/v3.1/connected_accounts?user_ids=user_123" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# Filter by status
+curl -X GET "https://backend.composio.dev/api/v3.1/connected_accounts?user_ids=user_123&statuses=ACTIVE" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+  </Tab>
 </Tabs>
 
 ## Get account details
 
 Retrieve a connected account by ID:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 account = composio.connected_accounts.get(connected_account_id)
@@ -78,6 +89,12 @@ console.log('Status:', account.status);
 console.log('Toolkit:', account.toolkit.slug);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '{status, toolkit: .toolkit.slug}'
+```
+  </Tab>
 </Tabs>
 
 ### Get account credentials
@@ -94,7 +111,7 @@ To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execu
 
 Manually refresh credentials for a connected account:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 try:
@@ -124,6 +141,17 @@ try {
 }
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Deprecated endpoint: returns a redirect URL for re-authentication
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts/ca_123/refresh \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.redirect_url'
+
+# Check whether the connection is ACTIVE again
+curl -X GET https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.status'
+```
+  </Tab>
 </Tabs>
 
 ## Enable and disable accounts
@@ -132,7 +160,7 @@ Change account status without deleting. Set to INACTIVE to pause access, or ACTI
 - Pausing access during subscription lapses
 - Temporary disconnection
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Disable an account
@@ -159,6 +187,21 @@ const enabled = await composio.connectedAccounts.enable(connectedAccountId);
 console.log('Account enabled status:', enabled.success);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Disable an account
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_123/status \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": false}'
+
+# Re-enable when needed
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_123/status \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true}'
+```
+  </Tab>
 </Tabs>
 
 <Callout type="warn">
@@ -179,7 +222,7 @@ Composio checks project ownership and the connection's user ID before completing
 
 Permanently remove a connected account:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Delete a connected account
@@ -196,6 +239,12 @@ const connectedAccountId = 'ca_123';
 // Delete a connected account
 await composio.connectedAccounts.delete(connectedAccountId);
 console.log('Account deleted successfully');
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X DELETE https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
 </Tabs>
@@ -234,7 +283,7 @@ Users can connect multiple accounts for the same toolkit (e.g., personal and wor
 The `initiate()` examples remain accurate for **custom auth configs** (your own OAuth app) and **non-OAuth schemes** (API key, bearer, basic) — those are unaffected.
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # First account
@@ -300,6 +349,16 @@ try {
 }
 ```
   </Tab>
+  <Tab value="API">
+```bash
+# Each call creates a new connection for the same user and auth config.
+# The API does not block duplicates; allow_multiple is an SDK-side check.
+curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"auth_config": {"id": "ac_123"}, "connection": {"user_id": "user_123"}}' | jq -r '.redirect_url'
+```
+  </Tab>
 </Tabs>
 
 <Callout type="info">
@@ -310,7 +369,7 @@ For session-based apps, see [Managing multiple connected accounts](/docs/authent
 
 When you have multiple accounts, specify which one to use with `connected_account_id`:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Execute tool with a specific connected account
@@ -339,6 +398,14 @@ const result = await composio.tools.execute('GMAIL_GET_PROFILE', {
   arguments: {}
 });
 console.log('Tool executed:', result);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GMAIL_GET_PROFILE \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "connected_account_id": "ca_123", "version": "20251111_00", "arguments": {}}'
 ```
   </Tab>
 </Tabs>

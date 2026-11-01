@@ -12,6 +12,7 @@ Covers:
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+import sys
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -46,6 +47,7 @@ from composio.core.models.tool_router_session import (
     ToolRouterSessionExecuteResponse,
 )
 from composio.exceptions import ValidationError
+from tests.conftest import mock_http_client
 
 # ────────────────────────────────────────────────────────────────
 # Fixtures
@@ -311,6 +313,150 @@ def future_tool(input: FutureInput, ctx):
 
         local_tool, local_input = build_tool()
         assert local_tool.input_params is local_input
+
+    def test_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # https://github.com/ComposioHQ/composio/issues/5022
+        with pytest.raises(
+            ValidationError,
+            match=(
+                r"could not resolve the annotation 'LaterInput' .*"
+                r"NameError: name 'LaterInput' is not defined.*"
+                r"Define LaterInput before the tool"
+            ),
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+@exp.tool()
+def later_tool(input: LaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LaterInput(BaseModel):
+    query: str
+""",
+                {"exp": exp},
+            )
+
+    def test_input_model_imported_under_type_checking_names_unresolved_annotation(
+        self,
+    ):
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'GrepInput' .*TYPE_CHECKING",
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tests.test_custom_tools import GrepInput
+
+
+@exp.tool()
+def type_checking_tool(input: GrepInput, ctx):
+    '''Input model only imported for type checkers.'''
+    return {}
+""",
+                {"exp": exp},
+            )
+
+    def test_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        namespace = {"exp": exp}
+        exec(
+            """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class TypedInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def typed_ctx_tool(input: TypedInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            namespace,
+        )
+
+        assert namespace["typed_ctx_tool"].input_params is namespace["TypedInput"]
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # dont_inherit keeps this module's compiler flags out, so the
+        # annotations stay lazy instead of becoming strings.
+        code = compile(
+            """
+from pydantic import BaseModel
+
+
+@exp.tool()
+def lazy_later_tool(input: LazyLaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LazyLaterInput(BaseModel):
+    query: str
+""",
+            "<lazy_later_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'LazyLaterInput' .*NameError",
+        ):
+            exec(code, {"exp": exp})
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        code = compile(
+            """
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class LazyInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def lazy_ctx_tool(input: LazyInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            "<lazy_ctx_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        namespace = {"exp": exp}
+        exec(code, namespace)
+
+        assert namespace["lazy_ctx_tool"].input_params is namespace["LazyInput"]
 
     def test_async_function_rejected(self):
         with pytest.raises(ValidationError, match="async"):
@@ -752,7 +898,10 @@ class TestSessionContextImpl:
     def test_sibling_routing(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
         ctx = SessionContextImpl(
-            client=MagicMock(), user_id="u", session_id="s", custom_tools_map=m
+            client=mock_http_client(MagicMock),
+            user_id="u",
+            session_id="s",
+            custom_tools_map=m,
         )
         result = ctx.execute("GREP", {"pattern": "test"})
         assert isinstance(result, SessionExecuteResponse)
@@ -769,7 +918,7 @@ class TestSessionContextImpl:
         beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
         beta._tools.append(beta_tool)
         m = build_custom_tools_map([], [alpha, beta])
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         ctx = SessionContextImpl(
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
         )
@@ -783,9 +932,9 @@ class TestSessionContextImpl:
 
     def test_remote_fallback(self, grep_tool):
         m = build_custom_tools_map([grep_tool])
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         ctx = SessionContextImpl(
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
@@ -799,9 +948,9 @@ class TestSessionContextImpl:
         )
 
     def test_remote_fallback_passes_inline_custom_tools(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         inline_payload = {
             "custom_tools": [
@@ -828,7 +977,7 @@ class TestSessionContextImpl:
         )
 
     def test_proxy_execute(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200, data={"ok": True}, headers={}, binary_data=None
@@ -838,7 +987,12 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
         assert "binary_data" not in result
 
     def test_proxy_execute_narrows_status_to_int(self):
@@ -847,7 +1001,7 @@ class TestSessionContextImpl:
         Equality alone cannot catch the leak, because ``200 == 200.0``. Only the
         type assertion distinguishes ``200`` from the ``200.0`` a raw read returns.
         """
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200, data=None, headers=None, binary_data=None
@@ -857,11 +1011,17 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
-        assert result == {"status": 200, "data": None, "headers": None}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": None,
+            "headers": None,
+        }
 
     def test_proxy_execute_projects_binary_data(self):
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200,
@@ -880,6 +1040,7 @@ class TestSessionContextImpl:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -894,7 +1055,7 @@ class TestSessionContextImpl:
 
     def test_proxy_execute_binary_data_without_expiry(self):
         """``expires_at`` is optional on the generated model; the key stays present."""
-        mock_client = MagicMock()
+        mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.proxy_execute.return_value = (
             SessionProxyExecuteResponse(
                 status=200,
@@ -927,7 +1088,7 @@ class TestSessionContextImpl:
 @pytest.fixture
 def mock_session_deps(grep_tool, email_tool, role_toolkit):
     return {
-        "client": MagicMock(),
+        "client": mock_http_client(MagicMock),
         "provider": MagicMock(),
         "experimental": MagicMock(),
         "tools_map": build_custom_tools_map([grep_tool, email_tool], [role_toolkit]),
@@ -950,6 +1111,28 @@ def _session(deps, **overrides):
 
 
 class TestToolRouterSessionCustomTools:
+    def test_execute_local_failure_without_message_is_failed(self):
+        @exp.tool()
+        def silent(input: GrepInput, ctx):
+            """Raises an error with no message."""
+            raise RuntimeError("")
+
+        s = ToolRouterSession(
+            client=mock_http_client(MagicMock),
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=True,
+            session_id="s",
+            mcp=MagicMock(),
+            experimental=MagicMock(),
+            custom_tools_map=build_custom_tools_map([silent]),
+            user_id="u",
+        )
+
+        result = s.execute("SILENT", arguments={"pattern": "x"})
+
+        assert result.error == ""
+        assert result.result_type == "failed"
+
     def test_execute_local(self, mock_session_deps):
         s = _session(mock_session_deps)
         result = s.execute("GREP", arguments={"pattern": "x"})
@@ -957,12 +1140,13 @@ class TestToolRouterSessionCustomTools:
         assert isinstance(result, SessionExecuteResponse)
         assert result.error is None
         assert result.log_id == ""
+        assert result.result_type == "completed"
         assert result.data["matches"] == ["x"]
         mock_session_deps["client"].tool_router.session.execute.assert_not_called()
 
     def test_execute_remote(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -981,17 +1165,18 @@ class TestToolRouterSessionCustomTools:
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 
-    def test_execute_remote_exposes_premium_charge(self, mock_session_deps):
+    def test_execute_remote_exposes_instant_charge(self, mock_session_deps):
         charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
         mock_session_deps[
             "client"
         ].tool_router.session.execute.return_value = (
             SessionExecuteResponse.model_validate(
                 {
+                    "result_type": "completed",
                     "data": {"sent": True},
                     "error": None,
                     "log_id": "log_123",
-                    "premium_charge": charge,
+                    "instant_charge": charge,
                 }
             )
         )
@@ -1001,25 +1186,26 @@ class TestToolRouterSessionCustomTools:
 
         assert isinstance(result, ToolRouterSessionExecuteResponse)
         assert isinstance(result, SessionExecuteResponse)
-        assert result.premium_charge == charge
+        assert result.instant_charge is not None
+        assert result.instant_charge.model_dump() == charge
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
 
-    def test_execute_remote_without_premium_charge(self, mock_session_deps):
+    def test_execute_remote_without_instant_charge(self, mock_session_deps):
         mock_session_deps[
             "client"
         ].tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         s = _session(mock_session_deps)
 
         result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
 
-        assert result.premium_charge is None
+        assert result.instant_charge is None
 
     def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -1050,7 +1236,13 @@ class TestToolRouterSessionCustomTools:
         result = s.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
         assert "binary_data" not in result
 
@@ -1073,6 +1265,7 @@ class TestToolRouterSessionCustomTools:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -1109,7 +1302,7 @@ class TestToolRouterSessionCustomTools:
         beta._tools.append(beta_tool)
         custom_tools_map = build_custom_tools_map([], [alpha, beta])
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1148,7 +1341,7 @@ class TestToolRouterSessionCustomTools:
             [], [alpha, beta], mock_exp
         )
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1172,7 +1365,7 @@ class TestToolRouterSessionCustomTools:
         beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
         beta._tools.append(beta_tool)
         custom_tools_map = build_custom_tools_map([], [alpha, beta])
-        client = MagicMock()
+        client = mock_http_client(MagicMock)
         s = ToolRouterSession(
             client=client,
             provider=MagicMock(),
@@ -1195,7 +1388,7 @@ class TestToolRouterSessionCustomTools:
 
     def test_empty_when_no_map(self):
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1214,7 +1407,7 @@ class TestMultiExecuteRouting:
     def _make_session(self, *tools, inline_custom_tools_payload=None):
         m = build_custom_tools_map(list(tools))
         return ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1243,7 +1436,7 @@ class TestMultiExecuteRouting:
         beta = ExperimentalToolkit(slug="BETA", name="Beta", description="Beta tools")
         beta._tools.append(beta_tool)
         s = ToolRouterSession(
-            client=MagicMock(),
+            client=mock_http_client(MagicMock),
             provider=MagicMock(),
             dangerously_allow_auto_upload_download_files=True,
             session_id="s",
@@ -1341,9 +1534,9 @@ class TestMultiExecuteRouting:
         assert result["data"]["total_count"] == 2
         assert result["data"]["success_count"] == 2
         assert result["data"]["error_count"] == 0
-        assert "premium_charge" not in result
+        assert "instant_charge" not in result
 
-    def test_mixed_preserves_remote_premium_charge(self, grep_tool):
+    def test_mixed_preserves_remote_instant_charge(self, grep_tool):
         s = self._make_session(grep_tool)
         tm = MagicMock()
         charge = {"amount": "0.01", "currency": "USD", "charged_by": "composio"}
@@ -1355,7 +1548,7 @@ class TestMultiExecuteRouting:
             },
             "error": None,
             "successful": True,
-            "premium_charge": charge,
+            "instant_charge": charge,
         }
         tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
         result = s._route_multi_execute(
@@ -1368,7 +1561,7 @@ class TestMultiExecuteRouting:
             tm,
         )
 
-        assert result["premium_charge"] == charge
+        assert result["instant_charge"] == charge
 
     def test_failure_propagated(self):
         @exp.tool()
@@ -1470,6 +1663,23 @@ class TestMultiExecuteRouting:
         )
         assert result["successful"] is False
         assert result["data"]["results"][1]["error"] == "Remote tool execution failed"
+
+    def test_failed_remote_batch_without_error_text_is_unsuccessful(self, grep_tool):
+        s = self._make_session(grep_tool)
+        tm = MagicMock()
+        remote = {"data": {}, "error": None, "successful": False}
+        tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
+        result = s._route_multi_execute(
+            {
+                "tools": [
+                    {"tool_slug": "GREP", "arguments": {"pattern": "x"}},
+                    {"tool_slug": "REMOTE", "arguments": {}},
+                ]
+            },
+            tm,
+        )
+        assert result["successful"] is False
+        assert result["error"] is None
 
     def test_remote_batch_error_without_item_errors_uses_batch_message(self, grep_tool):
         s = self._make_session(grep_tool)

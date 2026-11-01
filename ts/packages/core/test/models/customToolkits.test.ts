@@ -184,7 +184,11 @@ describe('Experimental.customToolkits', () => {
 
       const result = await customToolkits.delete('CUSTOM_MY_TOOLKIT');
 
-      expect(mockClient.custom.deleteToolkit).toHaveBeenCalledWith('CUSTOM_MY_TOOLKIT', undefined);
+      expect(mockClient.custom.deleteToolkit).toHaveBeenCalledWith(
+        'CUSTOM_MY_TOOLKIT',
+        {},
+        undefined
+      );
       expect(result).toEqual({
         slug: 'CUSTOM_MY_TOOLKIT',
         deleted: true,

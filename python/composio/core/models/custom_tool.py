@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import sys
 import typing as t
 
 from pydantic import BaseModel
@@ -289,21 +290,52 @@ def _get_caller_locals(depth: int = 2) -> t.Optional[t.Mapping[str, t.Any]]:
         del frame
 
 
-def _resolve_function_annotations(
+def _signature(fn: t.Callable[..., t.Any]) -> inspect.Signature:
+    """Read a signature without evaluating annotations that may not resolve yet."""
+    if sys.version_info >= (3, 14):
+        import annotationlib
+
+        # Python 3.14 evaluates annotations lazily; the default VALUE format
+        # raises NameError for names defined later or only under TYPE_CHECKING.
+        return inspect.signature(fn, annotation_format=annotationlib.Format.FORWARDREF)
+    return inspect.signature(fn)
+
+
+def _resolve_input_annotation(
     fn: t.Callable[..., t.Any],
+    param: inspect.Parameter,
     *,
     localns: t.Optional[t.Mapping[str, t.Any]] = None,
-) -> t.Dict[str, t.Any]:
-    """Resolve annotations, including postponed string annotations when possible."""
+) -> t.Any:
+    """Resolve the input parameter's annotation, including string annotations.
+
+    Only this one annotation is resolved, so an unresolvable ``ctx`` or return
+    annotation (for example one imported under ``TYPE_CHECKING``) does not fail.
+    """
+    annotation = param.annotation
+    if isinstance(annotation, t.ForwardRef):
+        annotation = annotation.__forward_arg__
+    if not isinstance(annotation, str):
+        return annotation
+
+    def holder() -> None: ...
+
+    holder.__annotations__ = {param.name: annotation}
     try:
         return t.get_type_hints(
-            fn,
+            holder,
             globalns=getattr(fn, "__globals__", {}),
             localns=dict(localns) if localns is not None else None,
             include_extras=True,
-        )
-    except Exception:
-        return {}
+        )[param.name]
+    except Exception as exc:
+        missing = exc.name if isinstance(exc, NameError) and exc.name else annotation
+        raise ValidationError(
+            f"experimental.tool: could not resolve the annotation {annotation!r} of "
+            f'the first parameter of "{fn.__name__}" '
+            f"({type(exc).__name__}: {exc}). Define {missing} before the tool, and "
+            f"import it at runtime rather than under `if TYPE_CHECKING:`."
+        ) from exc
 
 
 def _infer_tool_from_function(
@@ -348,12 +380,7 @@ def _infer_tool_from_function(
             f"'def {fn.__name__}(input, ctx)' instead of 'async def'."
         )
 
-    sig = inspect.signature(fn)
-    params = list(sig.parameters.values())
-    resolved_annotations = _resolve_function_annotations(
-        fn,
-        localns=annotation_locals,
-    )
+    params = list(_signature(fn).parameters.values())
 
     if not params:
         raise ValidationError(
@@ -371,7 +398,7 @@ def _infer_tool_from_function(
 
     # First param must be the input model
     first = params[0]
-    first_annotation = resolved_annotations.get(first.name, first.annotation)
+    first_annotation = _resolve_input_annotation(fn, first, localns=annotation_locals)
     if first_annotation is inspect.Parameter.empty or not (
         isinstance(first_annotation, type) and issubclass(first_annotation, BaseModel)
     ):

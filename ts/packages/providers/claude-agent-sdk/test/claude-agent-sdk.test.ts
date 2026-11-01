@@ -340,42 +340,6 @@ describe('ClaudeAgentSDKProvider', () => {
     });
   });
 
-  describe('executeTool', () => {
-    it('should execute a tool using the global execute function', async () => {
-      const toolSlug = 'GMAIL_SEND_EMAIL';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { to: 'test@example.com', subject: 'Test', body: 'Hello' },
-      };
-
-      const result = await provider.executeTool(toolSlug, toolParams);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, undefined);
-      expect(result).toEqual({
-        data: { result: 'success' },
-        error: null,
-        successful: true,
-      });
-    });
-
-    it('should pass modifiers to the global execute function', async () => {
-      const toolSlug = 'GMAIL_SEND_EMAIL';
-      const toolParams = {
-        userId: 'test-user',
-        arguments: { to: 'test@example.com', subject: 'Test', body: 'Hello' },
-      };
-
-      const modifiers = {
-        beforeExecute: vi.fn(({ params }) => params),
-        afterExecute: vi.fn(({ result }) => result),
-      };
-
-      await provider.executeTool(toolSlug, toolParams, modifiers);
-
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolSlug, toolParams, modifiers);
-    });
-  });
-
   describe('JSON Schema to Zod conversion', () => {
     it('should handle various property types', () => {
       const toolWithVariousTypes: Tool = {

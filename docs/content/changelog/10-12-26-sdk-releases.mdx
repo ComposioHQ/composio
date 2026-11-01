@@ -1,0 +1,81 @@
+---
+title: 'Python SDK 0.26.0 and TypeScript SDK 0.23.0 report input requests and stop retrying Session executions'
+description: 'Session tools that need user input raise a typed error, Session executions are sent once, and schema patterns run on a linear-time regex engine.'
+date: '2026-10-12'
+---
+
+Both SDKs move to the `2.0.0-rc.11` API client. A Session tool that needs user input now raises a typed error instead of returning an empty result, Session executions are no longer retried, and tool schema patterns run on a linear-time regex engine.
+
+### Release versions
+
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| Python `composio`           | `0.26.0` |
+| TypeScript `@composio/core` | `0.23.0` |
+| TypeScript `@composio/slim` | `0.23.0` |
+
+This release also publishes `@composio/anthropic` `0.11.4`, `@composio/json-schema-to-zod` `0.3.4`, and `@composio/experimental` `0.2.7`. The Python provider packages are released at `0.26.0`.
+
+### Breaking changes
+
+<Callout type="warn">
+**Breaking Change**
+
+Session config and execution types now come from the API client, and Python's Instant values are models instead of dictionaries.
+</Callout>
+
+**TypeScript**
+
+- `ToolRouterSessionConfig` (`session.config`, the result of `session.update()`) and `ToolRouterSessionConfigHistoryConfig` (`session.listConfigHistory()`) are the client's own types. `instant` is always present, as `false` or the policy object.
+- In those types, `toolkits` and each `tools` entry can be a `{ require_approval }`-only object, so a check for `enabled` or `disabled` no longer covers every case. `tags` can carry `require_approval`, and the config can carry `proxy_execute`.
+- The Session config is returned as the API sent it. The SDK no longer validates `instant` at runtime or removes a `premium_usage` key.
+- `ToolRouterSessionExecuteResponse` requires `resultType`. A custom `ToolCallSession` passed to a provider must return it from `execute()`, because `successful` is no longer derived from `error`.
+- `ToolRouterInstantResponseSchema` and `ToolRouterInstantResponse` are no longer exported. Use `ToolRouterSessionConfig['instant']`.
+
+**Python**
+
+- `session.execute().instant_charge` and `session.config.instant` are models, not dictionaries.
+- `ToolRouterSessionExecuteResponse` and `ToolRouterSessionSearchResponse` alias the client's classes. `ToolRouterInstantResponse`, `ToolRouterInstantResponseEnable`, `ToolRouterInstantResponseDisable`, and `ToolRouterInstantAccount` are gone from `composio.core.models.tool_router_session`. The input types `ToolRouterInstantConfig`, `ToolRouterInstantEnable`, and `ToolRouterInstantDisable` are unchanged.
+- `ToolExecuteParams` no longer has `allow_tracing` and `entity_id`, which were never sent to the API.
+
+**Before:**
+
+```python
+result = session.execute("EXA_SEARCH", arguments={"query": "composio"})
+amount = result.instant_charge["amount"]
+```
+
+**After:**
+
+```python
+result = session.execute("EXA_SEARCH", arguments={"query": "composio"})
+amount = result.instant_charge.amount
+```
+
+To migrate:
+
+1. In Python, replace dictionary access on Instant charges and the Session `instant` policy with attribute access.
+2. In TypeScript, return `resultType` (`'completed'` or `'failed'`) from any custom `ToolCallSession.execute()`.
+3. Where you inspect a Session config, handle `toolkits` and `tools` entries that only carry `require_approval`.
+
+### What's new
+
+- **Input requests.** A Session tool can ask for user input, such as an approval, instead of running. `session.execute()`, `session.proxyExecute()` (`session.proxy_execute()` in Python), provider-wrapped Session tools, and the helpers passed to custom tools raise `ComposioToolInputRequiredError` in TypeScript and `ToolInputRequiredError` in Python. The error carries the questions on `inputRequests` (`input_requests`) and the opaque continuation state on `requestState` (`request_state`), which is kept out of logs and serialized output. Nothing was executed and the call is not retried. The SDKs do not submit answers yet.
+- **Execution result type.** Session executions report `resultType` in TypeScript and `result_type` in Python as `completed` or `failed`. Read it rather than `error` to tell a failure from a success: a failed execution can carry an empty `error`, and it is no longer reported as successful.
+- **`user_id` on direct proxy calls.** `composio.tools.proxyExecute()` accepts `userId` and Python's `composio.tools.proxy()` accepts `user_id`. Projects with 2FA enabled check it against the connected account and may require it.
+- **Python Anthropic tool caching.** `AnthropicProvider(cache_tools=True)` attaches Anthropic's ephemeral `cache_control` to the last tool definition, which caches the whole tool list.
+- **Python OpenAI Agents strict mode.** `OpenAIAgentsProvider(strict=True)` registers tools with schemas normalized for structured outputs. A schema strict mode cannot express falls back to the non-strict path.
+
+### Bug fixes
+
+- **Session executions are sent once.** `session.execute()`, `session.proxyExecute()`, provider-wrapped Session tools, and the custom tool helpers no longer retry after a timeout, a connection error, or a `408`, `409`, `429`, or `5xx` response, so a retry cannot repeat a side effect such as sending the same email twice. This matches `tools.execute()` and `tools.proxyExecute()`. The experimental workbench helper `run_composio_tool` follows the same rule and reports failed and input-required answers as errors.
+- **Linear-time schema patterns.** Tool schema `pattern` and `patternProperties` regexes run on a linear-time engine in both SDKs, so a pattern such as `^(a+)+$` can no longer hang argument validation. A `patternProperties` key that needs lookaround or a backreference fails conversion.
+- **Strict mode with optional enums.** Optional `enum` and `const` parameters, `type` beside `anyOf`, and `$ref` with sibling keywords are wrapped whole in `anyOf` with a `null` branch, so the model can omit them under strict mode.
+- **Portable file names.** Server-provided file names with characters Windows reserves, such as `report_2026-09-29T10:30:00.csv`, are saved with those characters replaced instead of being rejected. Default saves never overwrite an existing file. Python automatic downloads follow validated redirects again.
+- **Object-rooted tool schemas in TypeScript.** Parameters that use `anyOf`, `oneOf`, `allOf`, or `$ref` convert to a `ZodObject` again, so the LangChain, Vercel, LlamaIndex, and Claude Agent SDK providers send a top-level `type: "object"`.
+- **Anthropic cache breakpoints in TypeScript.** `cacheTools: true` places a single breakpoint on the last tool and no longer marks `tool_result` blocks, staying within Anthropic's limit of 4 breakpoints per request.
+- **Gemini automatic function calling in Python.** Tools with optional or constrained arguments run through automatic function calling again.
+
+### Improvements
+
+- Both SDKs send product identity, product version, language, and runtime version with API requests. `@composio/core` and `@composio/slim` are identified separately.

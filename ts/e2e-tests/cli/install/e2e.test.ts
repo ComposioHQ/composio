@@ -235,7 +235,6 @@ test -L "$HOME/.local/bin/composio"
 test "$(readlink -f "$HOME/.local/bin/composio")" = "$HOME/.composio/composio"
 test "$(cat "$HOME/.composio/release-tag.txt")" = "$E2E_RELEASE_TAG"
 test -f "$HOME/.composio/run-helpers-runtime.mjs"
-test -d "$HOME/.composio/local-tools-binaries"
 test "$(grep -Fc '# Composio CLI' "$HOME/.zshrc")" = 1
 test "$(zsh -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
 test "$(zsh -ilc 'composio --version')" = 98.0.0

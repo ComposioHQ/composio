@@ -1,14 +1,9 @@
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, References } from 'effect';
-import { ChildProcess as Command } from 'effect/unstable/process';
+import { ChildProcess as Command } from 'effect/process';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import {
-  buildCompanionModules,
-  copyLocalToolBinaryAssets,
-  posthogBakeArgs,
-  teardown,
-} from './_shared';
+import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
 import { BinaryBuildError } from './build-error';
 import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
 
@@ -88,11 +83,6 @@ export function buildBinary() {
     yield* buildCompanionModules('./dist');
 
     yield* Effect.logDebug('', 'Companion modules built successfully');
-
-    // Copy local-tool executable/library assets next to the standalone CLI so
-    // command and FFI local tools can resolve platform-specific bundled binaries
-    // at runtime.
-    yield* copyLocalToolBinaryAssets('./dist');
   });
 }
 

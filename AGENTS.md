@@ -30,6 +30,7 @@ Use the smallest relevant skill:
 
 - `repo-guidance`: repo layout, branch/PR workflow, changesets, generated files, or cross-repo maintenance.
 - `skill-maintenance`: adding or changing local skills, skill references, compatibility mirrors, or validation.
+- `verify-change`: resumable task records, verification profiles, revision-bound receipts, or carrying work between coding agents.
 - `bug-fixing`: fixing a defect and choosing regression tests.
 - `cross-sdk-parity`: aligning TypeScript and Python behavior, generated client bumps, or API contract drift.
 - `docs-decisions`: docs site work, changelogs, docs decisions, or docs automation.
@@ -61,7 +62,6 @@ docs/decisions/             Neutral docs decisions and ADR-style records
 Do not hand-edit these. They are regenerated or vendored, and edits will be overwritten. They are also marked `linguist-generated`/`linguist-vendored` in `.gitattributes`.
 
 - `ts/vendor/**` — vendored read-only snapshots of Effect and Clack (git submodules); reference only.
-- `ts/packages/cli-local-tools/vendor/**` — vendored local-tool sources (git submodules).
 - `ts/packages/core/generated/**`, `ts/packages/core/pack/generated/**` — generated SDK surfaces produced by `composio generate` / the build pipeline.
 - `pnpm-lock.yaml`, `uv.lock`, `**/bun.lock` — package-manager lockfiles; change them by running the package manager, never by hand.
 
@@ -79,11 +79,13 @@ pnpm typecheck
 pnpm test
 pnpm test:e2e
 pnpm test:e2e:cli
-pnpm validate:agent-skills
-pnpm validate:skill-routing
+bun run validate:agent-skills
+bun run validate:skill-routing
+bun run typecheck:agent-workflow
+bun run test:agent-workflow
 ```
 
-Both validators are dependency-free and deterministic. `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
+Both validators are deterministic Bun TypeScript programs; the guidance validator uses the existing Zod dependency to read package manifests. `.github/workflows/agent-substrate.yml` runs them in CI on every push and pull request — the stale-guidance scan covers the whole repo, so any change can affect the result.
 
 Python commands run from `python/` unless otherwise noted:
 
@@ -100,7 +102,7 @@ make build
 ## Release And Package Notes
 
 - TypeScript package releases use Changesets. Add a changeset only when published TypeScript packages change.
-- `@composio/cli` and `@composio/cli-local-tools` are excluded from Changesets; use `cli-release` for CLI binaries and never target those packages in a changeset while they remain ignored.
+- `@composio/cli` is excluded from Changesets; use `cli-release` for CLI binaries and never target that package in a changeset while it remains ignored.
 - Documentation-only and agent-guidance-only changes do not need a changeset.
 - Python release metadata lives in `python/pyproject.toml`, `python/setup.py`, and `uv.lock`.
 - Bumping generated clients is manual. Verify the package version is published before changing pins.

@@ -1,6 +1,7 @@
 import type { BaseComposioProvider } from '../provider/BaseProvider';
-import { version } from '../../package.json';
-import type { ComposioRequestHeaders } from '../types/composio.types';
+// Resolve against the installed package, including slim's copy of the core build.
+import manifest from '#client_identity' with { type: 'json' };
+import type { ClientIdentity } from '@composio/client';
 
 /**
  * Extended globalThis interface for runtime detection
@@ -91,24 +92,30 @@ function detectRuntime(): string {
 // Detect once at module initialization
 const RUNTIME_ENV = detectRuntime();
 
-export function getSessionHeaders(
+/**
+ * An identity value is sent as a header, so the client accepts only non-empty
+ * printable ASCII with no leading or trailing whitespace.
+ */
+const HEADER_SAFE = /^[\x21-\x7e](?:[\x20-\x7e]*[\x21-\x7e])?$/;
+
+/**
+ * The identity the API client reports for this SDK: its product headers
+ * (`x-client-provenance`, `x-client-version`, `x-sdk-version`) and the legacy
+ * `x-source`, `x-framework` and `x-runtime` labels. The client adds the
+ * library headers and detects the runtime and its version itself.
+ *
+ * A custom provider whose name cannot be sent as a header value is reported
+ * as `unknown` rather than making the SDK fail to construct.
+ */
+export function getClientIdentity(
   provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
-) {
+): ClientIdentity {
+  const framework = provider?.name;
   return {
-    'x-framework': provider?.name || 'unknown',
-    'x-source': 'TYPESCRIPT_SDK',
-    'x-runtime': RUNTIME_ENV,
-    'x-sdk-version': version,
+    product: manifest.name,
+    version: manifest.version,
+    source: 'TYPESCRIPT_SDK',
+    framework: framework && HEADER_SAFE.test(framework) ? framework : 'unknown',
+    runtime: RUNTIME_ENV,
   };
 }
-
-export const getDefaultHeaders = (
-  headers: ComposioRequestHeaders | undefined,
-  provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
-) => {
-  const sessionHeaders = getSessionHeaders(provider);
-  return {
-    ...(headers || {}),
-    ...sessionHeaders,
-  };
-};

@@ -54,7 +54,7 @@ name = "$PACKAGE_NAME"
 version = "0.1.0"
 description = "${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in the Composio SDK"
 readme = "README.md"
-requires-python = ">=3.10,<4"
+requires-python = ">=3.11,<3.16"
 authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]
@@ -82,7 +82,7 @@ setup(
     install_requires=[
         "composio>=0.1.0",
     ],
-    python_requires=">=3.10,<4",
+    python_requires=">=3.11,<3.16",
     author="Your Name",
     author_email="you@example.com",
     description="${IS_AGENTIC:+Agentic }Provider for ${TITLE_CASE_PROVIDER_NAME} in the Composio SDK",
@@ -94,9 +94,11 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
     ],
 )
 EOL

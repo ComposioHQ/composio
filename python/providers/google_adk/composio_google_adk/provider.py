@@ -2,13 +2,50 @@ import types
 import typing as t
 from inspect import Signature
 
+import pydantic
 from google.adk.tools import FunctionTool
 
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.utils.openapi import function_signature_from_jsonschema
-from composio.utils.shared import alias_tool_input_schema, normalize_tool_arguments
+from composio.utils.pydantic import parse_pydantic_error
+from composio.utils.shared import (
+    alias_tool_input_schema,
+    json_schema_to_model,
+    normalize_tool_arguments,
+    validate_and_serialize_tool_arguments,
+)
+
+if t.TYPE_CHECKING:
+    from google.adk.tools.tool_context import ToolContext
+
+
+class _ComposioFunctionTool(FunctionTool):
+    """`FunctionTool` that hands the wrapped function every root argument.
+
+    ADK keeps only the arguments named in the function signature, so root keys
+    the tool schema admits through `additionalProperties` or
+    `patternProperties` never reach the function. The function body validates
+    the full mapping against the tool schema instead.
+
+    ADK reserves its context parameter and `input_stream` for objects it
+    injects. Those names are never forwarded: neither a value the model sent
+    under them nor ADK's own objects reach the tool backend.
+    """
+
+    def _prepare_invocation_args(
+        self,
+        args: t.Dict[str, t.Any],
+        tool_context: "ToolContext",
+    ) -> t.Dict[str, t.Any]:
+        prepared = super()._prepare_invocation_args(args, tool_context)
+        reserved = getattr(self, "_ignore_params", ("tool_context", "input_stream"))
+        return {
+            key: value
+            for key, value in {**args, **prepared}.items()
+            if key not in reserved
+        }
 
 
 class GoogleAdkProvider(
@@ -50,11 +87,25 @@ class GoogleAdkProvider(
         docstring += "\nReturns:"
         docstring += "\n    A dictionary containing response from the action"
 
+        # ADK treats every signature parameter as mandatory, so the model
+        # requires every declared field too.
+        args_schema = json_schema_to_model(
+            aliases.schema, skip_default=self.skip_default
+        )
+
         def _execute(**kwargs: t.Any) -> t.Dict:
-            kwargs = aliases.restore_arguments(kwargs)
-            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
+            try:
+                arguments = validate_and_serialize_tool_arguments(
+                    args_schema, normalize_tool_arguments(kwargs)
+                )
+            except pydantic.ValidationError as e:
+                return {
+                    "successful": False,
+                    "error": parse_pydantic_error(e),
+                    "data": None,
+                }
             return execute_tool(
-                slug=tool.slug, arguments=normalize_tool_arguments(kwargs)
+                slug=tool.slug, arguments=aliases.restore_arguments(arguments)
             )
 
         function = types.FunctionType(
@@ -74,7 +125,7 @@ class GoogleAdkProvider(
             {p.name: p.annotation for p in parameters} | {"return": dict},
         )
         function.__doc__ = docstring
-        return FunctionTool(function)
+        return _ComposioFunctionTool(function)
 
     def wrap_tools(
         self,

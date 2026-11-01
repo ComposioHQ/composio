@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  publish-core:
-    name: Build and release SDK
+  build:
+    name: Build SDK packages
     defaults:
       run:
         working-directory: ./python
@@ -55,20 +55,51 @@ jobs:
           print(f"core_only={'true' if is_prerelease else 'false'}")
           PY
 
+      # Install only the locked build tools. `--locked` fails if uv.lock is
+      # stale instead of resolving fresh versions from PyPI.
+      - name: Install locked build tools
+        env:
+          UV_PROJECT_ENVIRONMENT: python/.venv
+        run: uv sync --locked --only-group release
+
       - name: Build Artifacts
+        env:
+          BUILD_ARGS: --no-isolation
         run: |
-          make env
           if [[ "${{ steps.release_mode.outputs.core_only }}" == "true" ]]; then
             make build-core
           else
             make build
           fi
 
-      - name: Publish Artifacts
-        if: github.event_name == 'push'
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+      - name: Upload distributions
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          packages-dir: ./python/dist
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
+          name: python-dist
+          path: python/dist/
+          if-no-files-found: error
+
+  # Publishing runs in its own job so the OIDC token is never available to the
+  # build steps. PyPI trusts this workflow and environment through trusted
+  # publishing, so no long-lived PyPI token is needed.
+  publish:
+    name: Publish to PyPI
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-dist
+          path: dist/
+
+      - name: Publish Artifacts
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/
           skip-existing: true

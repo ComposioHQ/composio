@@ -1,12 +1,13 @@
+import { cliRequestHeaders } from './client-provenance';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, Predicate, Result, Schema } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
+import { APP_CONFIG } from 'src/config';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 import { ComposioUserContext } from 'src/services/user-context';
-import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 
@@ -154,7 +155,7 @@ export const normalizeAgentIdentity = (
     fallbackAgentKey
   );
 
-type SafeAgentSummary = {
+export type SafeAgentSummary = {
   readonly account_type: 'agent';
   readonly status: AgentStatus;
   readonly slug: string | null;
@@ -177,6 +178,22 @@ export const safeAgentSummary = (identity: AgentIdentity): SafeAgentSummary => (
   claimed_by: identity.claimed_by ?? null,
   claimed_at: identity.claimed_at ?? null,
 });
+
+/** The title both agent summary notes print. */
+export const AGENT_SUMMARY_NOTE_TITLE = 'Composio Agent';
+
+/**
+ * The note lines every agent summary shares, in print order. Callers append their
+ * command-specific last line (whoami: claimed by; signup: where the agent key lives).
+ */
+export const agentSummaryLines = (summary: SafeAgentSummary): readonly string[] => [
+  `Type: agent`,
+  `Status: ${summary.status}`,
+  `Email: ${summary.email ?? 'unknown'}`,
+  `Slug: ${summary.slug ?? 'unknown'}`,
+  `Current Org ID: ${summary.org_id ?? 'pending'}`,
+  `Project ID: ${summary.project_id ?? 'pending'}`,
+];
 
 export const agentConfigPath = Effect.gen(function* () {
   const path = yield* Path.Path;
@@ -228,6 +245,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
           redirect: 'error',
           ...init,
           headers: {
+            ...cliRequestHeaders(),
             Accept: 'application/json',
             ...(init.body ? { 'Content-Type': 'application/json' } : {}),
             ...(init.headers ?? {}),
@@ -458,9 +476,10 @@ export const loginWithAgentIdentity = (identity: AgentIdentity) =>
       });
     }
 
-    yield* ctx.login(userApiKey, orgId);
+    // agents.composio.dev issued this key, not whichever backend an earlier login recorded.
+    yield* ctx.login(userApiKey, orgId, undefined, { issuer: 'environment' });
     // Best-effort analytics stitch after the credential persists; must never break login.
-    yield* getSessionInfoByUserApiKey({ baseURL: ctx.data.baseURL, userApiKey, orgId }).pipe(
+    yield* getSessionInfoByUserApiKey({ userApiKey, orgId }).pipe(
       Effect.flatMap(info => linkApolloIdentityForAnalytics(info.org_member.id, userApiKey)),
       Effect.catchCause(() => Effect.void)
     );

@@ -12,7 +12,9 @@ import datetime
 
 import requests
 import typing_extensions as te
-from composio_client import BaseModel as _ComposioBaseModel
+from composio_client.types.file_create_presigned_url_response import (
+    FileCreatePresignedURLResponse,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from composio.client import HttpClient
@@ -27,7 +29,7 @@ from composio.exceptions import (
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
-from composio.utils.safe_path import secure_basename_join, secure_join
+from composio.utils.safe_path import open_unique_file, secure_basename_join, secure_join
 from composio.utils.url_safety import (
     parse_content_length,
     safe_get,
@@ -46,7 +48,6 @@ if t.TYPE_CHECKING:
     from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
-_FILE_UPLOAD = "/api/v3/files/upload/request"
 _MAX_FILENAME_LENGTH = 100
 """
 Maximum filename length to prevent issues with long URLs from public buckets.
@@ -257,13 +258,6 @@ def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
     return True
 
 
-class _FileUploadResponse(_ComposioBaseModel):
-    id: str
-    key: str
-    type: str
-    new_presigned_url: str
-
-
 def _request_presigned_upload(
     client: HttpClient,
     *,
@@ -272,22 +266,18 @@ def _request_presigned_upload(
     mimetype: str,
     tool: str,
     toolkit: str,
-) -> _FileUploadResponse:
+) -> FileCreatePresignedURLResponse:
     """Request a presigned S3 upload URL from the backend.
 
     Single-sources the presign wire shape so the file and bytes upload paths
     request the same fields they later send.
     """
-    return client.post(
-        path=_FILE_UPLOAD,
-        body={
-            "md5": md5,
-            "filename": filename,
-            "mimetype": mimetype,
-            "tool_slug": tool,
-            "toolkit_slug": toolkit,
-        },
-        cast_to=_FileUploadResponse,
+    return client.files.create_presigned_url(
+        md5=md5,
+        filename=filename,
+        mimetype=mimetype,
+        tool_slug=tool,
+        toolkit_slug=toolkit,
     )
 
 
@@ -301,30 +291,17 @@ def _is_url(value: str) -> bool:
 
 
 def _get_extension_from_mimetype(mimetype: str) -> str:
-    """Get file extension from mimetype."""
-    mime_to_ext = {
-        "image/jpeg": ".jpg",
-        "image/png": ".png",
-        "image/gif": ".gif",
-        "image/webp": ".webp",
-        "image/svg+xml": ".svg",
-        "image/bmp": ".bmp",
-        "image/tiff": ".tiff",
-        "application/pdf": ".pdf",
-        "application/json": ".json",
-        "application/xml": ".xml",
-        "text/plain": ".txt",
-        "text/html": ".html",
-        "text/css": ".css",
-        "text/javascript": ".js",
-        "application/zip": ".zip",
-        "application/gzip": ".gz",
-        "audio/mpeg": ".mp3",
-        "audio/wav": ".wav",
-        "video/mp4": ".mp4",
-        "video/webm": ".webm",
-    }
-    return mime_to_ext.get(mimetype.lower(), "")
+    """Return the dotted extension for a known content type, or ``""``.
+
+    Looks the type up in the table shared with ``get_extension_from_mime_type``
+    but skips that helper's subtype fallback: an unknown or generic binary type
+    leaves the generated name extensionless instead of inventing an extension.
+    """
+    clean = mimetype.lower()
+    if clean == "application/octet-stream":
+        return ""
+    extension = mimetypes._MIME_TO_EXT.get(clean)
+    return f".{extension}" if extension else ""
 
 
 def _generate_timestamped_filename(extension: str) -> str:
@@ -716,8 +693,11 @@ class FileDownloadable(BaseModel):
             outfile = secure_basename_join(outdir, self.name, root=root)
         except UnsafePathComponentError as e:
             raise ErrorDownloadingFile(str(e)) from e
+        # A presigned storage URL can legitimately answer with a redirect (an S3
+        # region redirect, say), so it is followed, with every hop validated.
         try:
-            response = safe_get(
+            response = safe_request(
+                "GET",
                 self.s3url,
                 stream=True,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
@@ -745,12 +725,17 @@ class FileDownloadable(BaseModel):
             )
 
         total_bytes = 0
+        created = False
         try:
             # Only once the fetch is validated and connected, so a blocked URL
             # leaves no directory behind — and inside the `try`, so a failure
             # here still closes the response.
             outdir.mkdir(exist_ok=True, parents=True)
-            with outfile.open("wb") as fd:
+            # A literal server name can equal a digest-tagged name. Claim the
+            # path exclusively, then choose a numbered name if it exists.
+            outfile, fd = open_unique_file(outfile)
+            created = True
+            with fd:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if chunk:
                         total_bytes += len(chunk)
@@ -763,14 +748,16 @@ class FileDownloadable(BaseModel):
         except ResponseTooLargeError:
             # Propagates uncaught — callers must see the limit hit — but the
             # truncated file must not be left behind as if it were the download.
-            _discard_partial_download(outfile)
+            if created:
+                _discard_partial_download(outfile)
             raise
         except OSError as e:
             # `requests.exceptions.RequestException` subclasses `OSError`, so a
             # mid-stream transport failure and a failing `fd.write`/`mkdir`
             # (disk full, permissions) both land here — and both owe the caller
             # the `ErrorDownloadingFile` this method documents.
-            _discard_partial_download(outfile)
+            if created:
+                _discard_partial_download(outfile)
             raise ErrorDownloadingFile(
                 "Error downloading file: "
                 f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"

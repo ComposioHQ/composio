@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
+import { onTestFinished } from 'vitest';
 import {
   extractZipSafely,
   isSymlinkZipEntry,
@@ -10,13 +11,11 @@ import {
 
 const FIXTURES_DIR = path.join(__dirname, 'zip-fixtures');
 
-const withTempDir = async (use: (dir: string) => Promise<void>): Promise<void> => {
+/** A fresh extraction target, removed once the current test finishes. */
+const makeTempDir = (): string => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'extract-zip-safely-'));
-  try {
-    await use(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
+  return dir;
 };
 
 /**
@@ -44,26 +43,26 @@ describe('isSymlinkZipEntry', () => {
 
 describe('extractZipSafely', () => {
   it('extracts an archive of regular files and directories', async () => {
-    await withTempDir(async dir => {
-      await extractZipSafely(path.join(FIXTURES_DIR, 'benign.zip'), dir);
+    const dir = makeTempDir();
 
-      expect(fs.readFileSync(path.join(dir, 'a.txt'), 'utf8').trim()).toBe('hello');
-      expect(fs.readFileSync(path.join(dir, 'sub', 'b.txt'), 'utf8').trim()).toBe('world');
-    });
+    await extractZipSafely(path.join(FIXTURES_DIR, 'benign.zip'), dir);
+
+    expect(fs.readFileSync(path.join(dir, 'a.txt'), 'utf8').trim()).toBe('hello');
+    expect(fs.readFileSync(path.join(dir, 'sub', 'b.txt'), 'utf8').trim()).toBe('world');
   });
 
   it.each([
     ['symlink-absolute.zip', 'escape-abs'],
     ['symlink-relative.zip', 'escape-rel'],
   ])('refuses %s and plants nothing', async (fixture, entryName) => {
-    await withTempDir(async dir => {
-      await expect(extractZipSafely(path.join(FIXTURES_DIR, fixture), dir)).rejects.toThrow(
-        UnsafeZipEntryError
-      );
+    const dir = makeTempDir();
 
-      // The guard runs before the entry is written, so the target stays empty.
-      expect(fs.readdirSync(dir)).toEqual([]);
-      expect(fs.existsSync(path.join(dir, entryName))).toBe(false);
-    });
+    await expect(extractZipSafely(path.join(FIXTURES_DIR, fixture), dir)).rejects.toThrow(
+      UnsafeZipEntryError
+    );
+
+    // The guard runs before the entry is written, so the target stays empty.
+    expect(fs.readdirSync(dir)).toEqual([]);
+    expect(fs.existsSync(path.join(dir, entryName))).toBe(false);
   });
 });

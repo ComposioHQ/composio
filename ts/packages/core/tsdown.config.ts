@@ -48,6 +48,7 @@ export default defineConfig({
      */
     neverBundle: [
       ...baseNeverBundle,
+      '#client_identity',
       '#platform',
       '#files',
       '#file_tool_modifier',

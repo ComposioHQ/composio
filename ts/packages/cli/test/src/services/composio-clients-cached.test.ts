@@ -1,9 +1,9 @@
-import { describe, expect, it } from '@effect/vitest';
+import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
+import { InternalServerError } from '@composio/client/effect';
 import {
   ComposioToolkitsRepository,
-  HttpServerError,
   type ToolkitProjectScope,
 } from 'src/services/composio-clients';
 import * as FileSystem from 'effect/FileSystem';
@@ -16,11 +16,23 @@ import { toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import {
   countingToolkitsRepository,
+  makeToolkitsRepositoryStub,
   type GetProjectToolkitsError,
   type GetToolkitsError,
 } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testToolkits: Toolkits = [makeToolkitFixture('github'), makeToolkitFixture('gmail')];
+
+const serviceUnavailable = (message: string) =>
+  new InternalServerError({
+    message,
+    method: 'GET',
+    url: 'https://backend.composio.dev/api/v3.1/toolkits',
+    status: 503,
+    requestId: undefined,
+    details: undefined,
+    body: undefined,
+  });
 
 /**
  * Cached repository over a counting stub, with the cache directory pointed at a
@@ -110,7 +122,7 @@ describe('ComposioToolkitsRepositoryCached', () => {
 
   it.effect('surfaces a failed fetch once, and does not retry it', () =>
     withCountingRepository(
-      () => Effect.fail(new HttpServerError({ cause: 'network down', status: 503 })),
+      () => Effect.fail(serviceUnavailable('network down')),
       ({ calls }) =>
         Effect.gen(function* () {
           const repository = yield* ComposioToolkitsRepository;
@@ -191,7 +203,7 @@ describe('ComposioToolkitsRepositoryCached', () => {
           expect(projectCalls()).toBe(1);
         }),
       [],
-      () => Effect.fail(new HttpServerError({ cause: 'network down', status: 503 }))
+      () => Effect.fail(serviceUnavailable('network down'))
     )
   );
 
@@ -225,5 +237,85 @@ describe('ComposioToolkitsRepositoryCached', () => {
       [],
       scope => Effect.succeed([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
     )
+  );
+
+  it.effect('shares one in-flight project fetch between concurrent first callers', () =>
+    withCountingRepository(
+      () => Effect.die('the project lookup should not read the catalog'),
+      ({ projectCalls }) =>
+        Effect.gen(function* () {
+          const repository = yield* ComposioToolkitsRepository;
+          const scope = { orgId: 'org_a', projectId: 'pr_a' };
+
+          const results = yield* Effect.all(
+            [
+              repository.getProjectToolkits(scope),
+              repository.getProjectToolkits({ ...scope }),
+              repository.getProjectToolkits(scope),
+            ],
+            { concurrency: 'unbounded' }
+          );
+
+          expect(results.map(toolkits => toolkits.map(t => t.slug))).toEqual([
+            ['custom_pr_a'],
+            ['custom_pr_a'],
+            ['custom_pr_a'],
+          ]);
+          expect(projectCalls()).toBe(1);
+        }),
+      [],
+      // The fetch yields before answering, so every caller is waiting on it.
+      scope =>
+        Effect.yieldNow.pipe(
+          Effect.as([makeToolkitFixture(`custom_${scope?.projectId ?? 'unscoped'}`)])
+        )
+    )
+  );
+
+  it.effect('passes an uncached method straight through to the underlying repository', () =>
+    Effect.gen(function* () {
+      const searchTools = vi.fn(() =>
+        Effect.succeed({
+          items: [],
+          total_items: 0,
+          total_pages: 0,
+          current_page: 1,
+          next_cursor: null,
+        })
+      );
+      const underlying = makeToolkitsRepositoryStub({ searchTools });
+      const params = { search: 'gmail', limit: 3 };
+
+      const repository = yield* ComposioToolkitsRepository.pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioToolkitsRepositoryCached,
+            Layer.succeed(ComposioToolkitsRepository, underlying)
+          )
+        )
+      );
+      yield* repository.searchTools(params);
+
+      expect(searchTools).toHaveBeenCalledOnce();
+      expect(searchTools).toHaveBeenCalledWith(params);
+    })
+  );
+
+  it.effect('exposes an underlying method it does not know about', () =>
+    Effect.gen(function* () {
+      const addedLater = () => Effect.succeed('added later');
+      const underlying = Object.assign(makeToolkitsRepositoryStub({}), { addedLater });
+
+      const repository = yield* ComposioToolkitsRepository.pipe(
+        Effect.provide(
+          Layer.provide(
+            ComposioToolkitsRepositoryCached,
+            Layer.succeed(ComposioToolkitsRepository, underlying)
+          )
+        )
+      );
+
+      expect((repository as typeof underlying).addedLater).toBe(addedLater);
+    })
   );
 });

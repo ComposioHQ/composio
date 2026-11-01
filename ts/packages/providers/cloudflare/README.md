@@ -40,7 +40,7 @@ export default {
 
     const results = [];
     for (const toolCall of response.tool_calls ?? []) {
-      results.push(await composio.provider.executeToolCall('user_123', toolCall, {}));
+      results.push(await composio.provider.executeToolCall(session, toolCall));
     }
 
     return Response.json({ response, results });
@@ -48,7 +48,7 @@ export default {
 };
 ```
 
-`executeToolCall` takes the `{ name, arguments }` tool calls that Workers AI emits, runs the matching Composio tool for that user, and returns the result as a JSON string.
+`executeToolCall` takes the `{ name, arguments }` tool calls that Workers AI emits, runs the matching Composio tool through the session that produced the tools, and returns the result as a JSON string. For tools fetched with `tools.get()`, pass the user ID instead: `executeToolCall(userId, toolCall, options?, modifiers?)`.
 
 ## Links
 

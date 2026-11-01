@@ -14,14 +14,14 @@ const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
 describe('running CLI version authority', () => {
   layer(TestPlatform)(it => {
-    it.effect('uses the compiled version in release builds despite installed tag metadata', () =>
-      Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-        const installDirectory = yield* fs.makeTempDirectoryScoped();
-        const execPath = path.join(installDirectory, 'composio');
-
-        for (const installedTag of ['@composio/cli@9.9.9', '@composio/cli@0.2.31']) {
+    it.effect.each(['@composio/cli@9.9.9', '@composio/cli@0.2.31'])(
+      'uses the compiled version in release builds despite installed tag metadata (%s)',
+      installedTag =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
+          const installDirectory = yield* fs.makeTempDirectoryScoped();
+          const execPath = path.join(installDirectory, 'composio');
           yield* fs.writeFileString(
             path.join(installDirectory, RUN_COMPANION_RELEASE_TAG_FILENAME),
             installedTag
@@ -31,8 +31,7 @@ describe('running CLI version authority', () => {
           expect(yield* resolveRunningCliReleaseTag(execPath, '0.3.0', true)).toBe(
             '@composio/cli@0.3.0'
           );
-        }
-      })
+        })
     );
 
     it.effect('uses the compiled version in a release build without installed metadata', () =>

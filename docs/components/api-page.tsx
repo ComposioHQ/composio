@@ -10,8 +10,10 @@ import {
 import { hideDeprecatedFields } from '@/lib/openapi-deprecated';
 import { generateSchemaData } from './schema-generator';
 import { CustomSchemaUI } from './custom-schema-ui';
+import { apiCodeUsages } from '@/lib/api-code-usages';
 
 export const APIPage = createOpenAPIPage({
+  codeUsages: apiCodeUsages,
   generateTypeScriptDefinitions: false,
   playground: {
     enabled: true,

@@ -14,7 +14,7 @@ To connect trigger setup to a working agent, follow [Run an agent when an email 
 
 Each trigger type declares the config it needs. Check it before you create, so you pass the right fields.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -37,13 +37,19 @@ console.log(triggerType.config);
 // {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/triggers_types/GITHUB_COMMIT_EVENT \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.config'
+```
+  </Tab>
 </Tabs>
 
 ## Create the trigger
 
 Pass the user, the trigger slug, and the config the type requires.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -76,6 +82,14 @@ const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
 console.log(`Trigger created: ${trigger.triggerId}`);
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GITHUB_COMMIT_EVENT/upsert \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-id-123435", "trigger_config": {"owner": "your-repo-owner", "repo": "your-repo-name"}}'
+```
+  </Tab>
 </Tabs>
 
 You only pass a `user_id`. Composio resolves that user's connected account for the toolkit automatically.
@@ -84,10 +98,11 @@ You only pass a `user_id`. Composio resolves that user's connected account for t
 
 If a user has more than one connected account for the toolkit, Composio uses the first active connection for the user and the trigger's toolkit. Pass a connected account ID to pick exactly which account the trigger watches.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
-trigger = composio.triggers.create(
+# The SDK overload omits the supported user_id + connected_account_id combination.
+trigger = composio.triggers.create(  # type: ignore[call-overload]
     slug="GITHUB_COMMIT_EVENT",
     user_id=user_id,
     connected_account_id="ca_def456",
@@ -107,11 +122,19 @@ const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
 });
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GITHUB_COMMIT_EVENT/upsert \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-id-123435", "connected_account_id": "ca_def456", "trigger_config": {"owner": "your-repo-owner", "repo": "your-repo-name"}}'
+```
+  </Tab>
 </Tabs>
 
 Trigger instances default to the `'latest'` toolkit version. If you parse payloads against a fixed schema, [pin a version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version) at SDK initialization.
 
-That's it. The trigger is active. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events).
+The trigger instance is created. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events) and test with a new matching event in the provider. If nothing arrives, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
 
 ## Next
 

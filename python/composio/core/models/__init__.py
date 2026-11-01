@@ -7,19 +7,27 @@ from .custom_tool_types import (
     RegisteredCustomTool,
     RegisteredCustomToolkit,
     SessionContext,
+    ToolRouterSessionProxyExecuteBlocked,
+    ToolRouterSessionProxyExecuteCompleted,
     ToolRouterSessionProxyExecuteResponse,
 )
 from .experimental import (
     ExperimentalAPI,
     ExperimentalCustomToolkits,
     ExperimentalUsage,
+    UsageSummaryResponse,
 )
 from .keyring import Keyring
 from .logs import Logs
 from .mcp import MCP
 from .tool_router import ToolRouter
 from .tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
-from .tool_router_session import ToolRouterSession, ToolRouterSessionExecuteResponse
+from .tool_router_session import (
+    ToolRouterInputResponse,
+    ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionMetaToolSlug,
+)
 from .tool_router_session_delete import ToolRouterSessionDeleteResponse
 from .tool_router_session_files import RemoteFile, ToolRouterSessionFilesMount
 from .toolkits import Toolkits
@@ -54,6 +62,7 @@ __all__ = [
     "ExperimentalCustomToolkits",
     "ExperimentalToolkit",
     "ExperimentalUsage",
+    "UsageSummaryResponse",
     "Keyring",
     "Logs",
     "MCP",
@@ -68,8 +77,12 @@ __all__ = [
     "ToolRouterSession",
     "ToolRouterSessionDeleteResponse",
     "ToolRouterSessionExecuteResponse",
+    "ToolRouterInputResponse",
+    "ToolRouterSessionMetaToolSlug",
     "ToolRouterSessionFilesMount",
     "ToolRouterSessionProxyExecuteResponse",
+    "ToolRouterSessionProxyExecuteCompleted",
+    "ToolRouterSessionProxyExecuteBlocked",
     "Toolkits",
     "Tools",
     "Triggers",

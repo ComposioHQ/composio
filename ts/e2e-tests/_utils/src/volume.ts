@@ -54,15 +54,13 @@ export async function removeVolume(name: string): Promise<void> {
  *
  * @param volumeName - Name of the volume to initialize
  * @param imageTag - Docker image to use for the initialization container
- * @param runtime - Runtime type ('node' or 'deno') to determine the correct user/group
  */
 export async function initializeVolumeOwnership(
   volumeName: string,
-  imageTag: string,
-  runtime: 'node' | 'deno'
+  imageTag: string
 ): Promise<void> {
-  // Node images use node:node, Deno images use deno:deno
-  const user = runtime === 'node' ? 'node:node' : 'deno:deno';
+  // Node images run as node:node
+  const user = 'node:node';
 
   // Run a quick container as root to chown the volume contents
   const result = await $`docker run --rm --user root -v ${volumeName}:/mnt/vol ${imageTag} chown -R ${user} /mnt/vol`.nothrow().quiet();

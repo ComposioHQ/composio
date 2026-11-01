@@ -78,7 +78,7 @@ The manual release process is available for cases where direct control over the 
 
 ### Prerequisites
 
-- Node.js, Bun, Python, Deno, uv, and pnpm from `mise.toml`
+- Node.js, Bun, Python, uv, and pnpm from `mise.toml`
 - Access to npm registry
 - Write access to the repository
 

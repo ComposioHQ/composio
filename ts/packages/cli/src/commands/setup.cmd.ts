@@ -1,4 +1,6 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
+import { setupSkillCmd } from './setup-skill.cmd';
+import { Command, Flag } from 'effect/cli';
 import { Effect, Predicate } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -17,11 +19,14 @@ import {
   SETUP_TARGETS,
   uninstallSetupTargets,
   type AgentHost,
+  type SetupTargetDetection,
+  type SetupUnsupportedReasonCode,
 } from 'src/services/setup';
 import { SetupCommandError, type SetupFailureReasonCode } from 'src/services/setup-command-error';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 const target = Flag.Literals('target', SETUP_TARGETS).pipe(
   Flag.withDefault('auto'),
@@ -63,6 +68,30 @@ const setupCommandError = (
     ...(cause === undefined ? {} : { cause }),
   });
 
+/** Prints why setup failed and closes the session; the command then fails already reported. */
+const renderSetupFailure = (error: SetupCommandError) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const summary =
+      error.operation === 'uninstall'
+        ? 'Composio plugin uninstall was unsuccessful.'
+        : 'Composio setup was unsuccessful.';
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.error(error.message);
+      yield* ui.outro(summary);
+    } else {
+      yield* ui.error(`${summary} ${error.message}`);
+    }
+  });
+
+// Only a host that is present but unsupported has a reason to report.
+const unsupportedReasonCodeOf = (
+  detection: SetupTargetDetection
+): SetupUnsupportedReasonCode | undefined => {
+  if (!detection.available || detection.supported) return undefined;
+  return detection.unsupportedReasonCode ?? 'unknown';
+};
+
 const setupBaseCmd = Command.make(
   'setup',
   { target, yes, ifPresent, uninstall },
@@ -84,10 +113,7 @@ const setupBaseCmd = Command.make(
             available: detection.available,
             supported: detection.supported,
             hostVersion: detection.version,
-            unsupportedReasonCode:
-              detection.available && !detection.supported
-                ? (detection.unsupportedReasonCode ?? 'unknown')
-                : undefined,
+            unsupportedReasonCode: unsupportedReasonCodeOf(detection),
             hostConfigDirPresent: detection.configDirPresent,
             hostBinaryInKnownPaths: detection.binaryInKnownPaths,
             invocationOrigin,
@@ -306,10 +332,36 @@ const setupBaseCmd = Command.make(
           'unknown',
           error
         );
-      })
+      }),
+      Effect.tapError(renderSetupFailure)
     )
 );
 
-export const setupCmd = setupBaseCmd.pipe(
-  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.')
+export const setupCmd = withCommandTelemetry(setupBaseCmd, input =>
+  telemetry.fields({
+    operation: {
+      value: input.uninstall ? 'uninstall' : 'setup',
+      flags: input.uninstall ? ['--uninstall'] : [],
+    },
+    target: telemetry.value(input.target),
+    yes: telemetry.flag('--yes', input.yes),
+    if_present: telemetry.flag('--if-present', input.ifPresent),
+  })
+).pipe(
+  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.'),
+  Command.withExamples([
+    {
+      command: 'composio setup',
+    },
+    {
+      command: 'composio setup --target auto --yes',
+    },
+    {
+      command: 'composio setup --uninstall --target auto --yes',
+    },
+    {
+      command: 'composio setup --target all',
+    },
+  ]),
+  withRegisteredSubcommands([setupSkillCmd], { ownAction: true })
 );

@@ -160,11 +160,10 @@ describe('Cancellation — execute signal forwarding', () => {
       requestOptions
     );
 
-    expect(mockClient.tools.execute).toHaveBeenCalledWith(
-      'COMPOSIO_TOOL',
-      expect.any(Object),
-      requestOptions
-    );
+    expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', expect.any(Object), {
+      ...requestOptions,
+      maxRetries: 0,
+    });
     expect(getRawSpy).toHaveBeenCalledWith('COMPOSIO_TOOL', expect.any(Object), requestOptions);
   });
 

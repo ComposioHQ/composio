@@ -11,6 +11,20 @@ Pick the provider that matches the SDK or agent framework you already use. Each 
 The TypeScript SDK is ESM-only and requires Node.js 22.22.3 or newer. Use `import` instead of CommonJS `require()`.
 </Callout>
 
+## TypeScript client configuration
+
+Use `composio.getConfig()` to read SDK credentials. The client returned by `composio.getClient()` doesn't expose `apiKey`, `userApiKey`, `orgApiKey`, or `logger`. Its `baseURL`, `maxRetries`, `timeout`, and `logLevel` are read-only. To change client options for specific calls, derive a client with `const client = composio.getClient().withOptions({ maxRetries: 0 })` and use that client for those calls.
+
+Pass custom headers through the SDK's `defaultHeaders` option.
+
+<Callout type="warn">
+`COMPOSIO_CUSTOM_HEADERS` is no longer supported. Replace it with `defaultHeaders` when constructing the SDK.
+</Callout>
+
+Credential and scope headers supplied through `defaultHeaders` or `createSession({ headers })` become SDK configuration and don't appear in `getConfig().defaultHeaders`. Supply at most one credential header: `x-api-key`, `x-user-api-key`, or `x-org-api-key`. Supplying multiple credential headers throws an error. Per-call client headers cannot override credentials or scope.
+
+With `apiKey: null` and only an organization API key, API calls, trigger authorization, and `session.mcp.headers` use `x-org-api-key`.
+
 ## AI SDKs
 
 Use these when you call a model SDK directly.
@@ -56,6 +70,7 @@ Use TypeSafe's Jev model to select a Composio tool with a confidence score. The 
 
 Set `COMPOSIO_API_KEY` and `TYPESAFE_API_KEY` in your environment before running decisions.
 
+{/* code-example: no-api reason="TypeSafe provider decides tool calls with the Jev model client-side before execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
@@ -93,7 +108,24 @@ Use `provider.shortlist_tools()` to narrow the tools before deciding, or `provid
 npm install @composio/core @composio/typesafe @typesafe-ai/sdk@0.6.0 zod
 ```
 
-Import `TypesafeProvider` from `@composio/typesafe` and pass an instance as the `provider` option to `new Composio()`. Fetch tools with `composio.tools.get()`, then call `await provider.decide(toolSet, request)` and `await provider.execute(userId, decision, { arguments })`.
+```typescript
+import { Composio } from '@composio/core';
+import { TypesafeProvider } from '@composio/typesafe';
+
+const provider = new TypesafeProvider();
+const composio = new Composio({ provider });
+const toolSet = await composio.tools.get('user_123', {
+  tools: ['GITHUB_LIST_REPOSITORY_ISSUES'],
+});
+const decision = await provider.decide(toolSet, 'List the closed issues of ComposioHQ/composio');
+
+if (decision.kind !== 'abstain') {
+  const result = await provider.execute('user_123', decision, {
+    arguments: { owner: 'ComposioHQ', repo: 'composio' },
+  });
+  console.log(result.data);
+}
+```
 
 Use `provider.shortlistTools()` to narrow the tools before deciding, or `provider.confidenceGate()` to apply a minimum judgement score before execution. Destructive tools require explicit confirmation through `provider.execute(userId, decision, { confirm: true })`.
 

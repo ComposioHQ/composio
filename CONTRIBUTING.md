@@ -72,7 +72,7 @@ To propose a partnership, including a docs listing or integration, contact us th
 
 ### Prerequisites
 
-Tool versions are pinned in [`mise.toml`](mise.toml), which is the source of truth for local development and CI. It pins Node.js, pnpm, Bun, Deno, Python, and uv. Install the toolchain with [mise](https://mise.jdx.dev):
+Tool versions are pinned in [`mise.toml`](mise.toml), which is the source of truth for local development and CI. It pins Node.js, pnpm, Bun, Python, and uv. Install the toolchain with [mise](https://mise.jdx.dev):
 
 ```bash
 mise install
@@ -107,7 +107,6 @@ composio/
 │   │   ├── core/              # Core SDK package (@composio/core)
 │   │   ├── cli/               # CLI binary and command implementations
 │   │   ├── cli-keyring/       # Keyring helper for the CLI
-│   │   ├── cli-local-tools/   # Local tools support for the CLI
 │   │   ├── providers/         # AI framework provider adapters
 │   │   ├── json-schema-to-zod/ # Schema conversion utility
 │   │   └── ts-builders/       # TypeScript build helpers
@@ -145,7 +144,7 @@ pnpm create:example <example-name>                 # New TypeScript example
 
 ### Dead code detection
 
-The `Dead Code` CI workflow reports likely-orphaned code on every PR. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
+The `Dead Code` CI workflow reports likely-orphaned code every Monday, and can be run on demand. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
 
 ```bash
 # TypeScript: unused files, exports, types, and dependencies
@@ -169,13 +168,13 @@ This repository ships its own agent guidance, and CI keeps it accurate. An agent
 Two deterministic checks guard this guidance:
 
 ```bash
-pnpm validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
-pnpm validate:skill-routing   # routing smoke test over skill descriptions
+bun run validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
+bun run validate:skill-routing   # routing smoke test over skill descriptions
 ```
 
 `validate:agent-skills` parses `package.json`, `python/Makefile`, and `python/noxfile.py`, then verifies that every command mentioned in guidance exists. Both checks run in CI through `.github/workflows/agent-substrate.yml`.
 
-If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.mjs`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
+If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.ts`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
 
 Using an agent doesn't change your responsibility: [read the code you submit](#read-the-code-you-submit).
 
@@ -270,7 +269,6 @@ Then add provider tests and run the relevant Python checks.
 pnpm test                   # Unit tests
 pnpm test:e2e               # All end-to-end tests
 pnpm test:e2e:node          # Runtime-specific end-to-end tests
-pnpm test:e2e:deno
 pnpm test:e2e:cli
 pnpm test:e2e:cloudflare
 pnpm test:ui                # Vitest UI

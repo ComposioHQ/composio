@@ -1,31 +1,33 @@
-import { z } from 'zod/v3';
-
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, JsonSchema, Refs } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, JsonSchema } from '../types';
 
-export const parseIfThenElse = (
+export const parseIfThenElse = <S>(
   jsonSchema: JsonSchemaObject & {
     if: JsonSchema;
     then: JsonSchema;
     else: JsonSchema;
   },
-  refs: Refs
-) => {
-  const $if = parseSchema(jsonSchema.if, { ...refs, path: [...refs.path, 'if'] });
+  ctx: ParseContext<S>
+): S => {
+  const { backend } = ctx;
+  const $if = parseSchema(jsonSchema.if, { ...ctx, path: [...ctx.path, 'if'] });
   const $then = parseSchema(jsonSchema.then, {
-    ...refs,
-    path: [...refs.path, 'then'],
+    ...ctx,
+    path: [...ctx.path, 'then'],
   });
   const $else = parseSchema(jsonSchema.else, {
-    ...refs,
-    path: [...refs.path, 'else'],
+    ...ctx,
+    path: [...ctx.path, 'else'],
   });
 
-  return z.union([$then, $else]).superRefine((value, ctx) => {
-    const result = $if.safeParse(value).success ? $then.safeParse(value) : $else.safeParse(value);
+  return backend.superRefine<unknown>(backend.union([$then, $else]), (value, issues) => {
+    const result = backend.run($if, value).success
+      ? backend.run($then, value)
+      : backend.run($else, value);
 
     if (!result.success) {
-      result.error.errors.forEach(error => ctx.addIssue(error));
+      issues.forward(result.failure);
     }
   });
 };

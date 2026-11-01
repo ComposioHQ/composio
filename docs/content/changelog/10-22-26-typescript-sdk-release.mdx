@@ -1,0 +1,43 @@
+---
+title: 'TypeScript SDK 0.26.0: toolkit warnings and provider schema fixes'
+description: 'Get toolkit sunset warnings, preserve tool schemas across TypeScript providers, and migrate direct API client access.'
+date: '2026-10-22'
+---
+
+The TypeScript SDK now warns when the API reports that a toolkit version you use is deprecated. This release also preserves more of your tool schemas and arguments across providers.
+
+### Release versions
+
+| SDK                                       | Version  |
+| ----------------------------------------- | -------- |
+| TypeScript `@composio/core`               | `0.26.0` |
+| TypeScript `@composio/slim`               | `0.26.0` |
+| TypeScript `@composio/json-schema-to-zod` | `0.4.0`  |
+| TypeScript `@composio/claude-agent-sdk`   | `0.13.0` |
+| TypeScript `@composio/vercel`             | `0.13.0` |
+| TypeScript `@composio/llamaindex`         | `0.11.2` |
+
+### What's new
+
+- **Toolkit deprecation warnings.** The SDK warns once per process for each deprecated toolkit version reported through the `Composio-Deprecated-Toolkits` response header. The warning names the version, its sunset date, and how to pin a newer version. See [toolkit versioning](/docs/tools-direct/toolkit-versioning#deprecation-and-sunset).
+- **Zod v4 schema builder.** Import `jsonSchemaToZod` or `jsonSchemaToZodShape` from `@composio/json-schema-to-zod/v4` to build classic Zod v4 schemas. The root entry continues to build Zod v3 schemas. The v4 builder requires Zod `4.1.13` or newer and preserves schema annotations in metadata for `z.toJSONSchema()`.
+- **Provider schema preservation.** The TypeScript Vercel and LlamaIndex providers now give the model the tool's JSON Schema directly, preserving keywords such as `format`, `contentEncoding`, and `contentMediaType`. Claude Agent SDK uses the new Zod v4 builder to preserve those annotations. Existing tool argument validation stays in place.
+
+### Migration notes
+
+<Callout type="warn">
+  This release changes direct API client access, TypeScript Vercel tool schemas, and the Claude
+  Agent SDK provider's minimum Zod version. Apply the relevant steps below before upgrading.
+</Callout>
+
+1. **TypeScript client access.** Read credentials from `composio.getConfig()` instead of `composio.getClient().apiKey`, `.userApiKey`, or `.orgApiKey`. The client also removes `.logger`. Its `baseURL`, `maxRetries`, `timeout`, and `logLevel` are read-only; derive a client with `withOptions()` to change them. For example, replace `composio.getClient().maxRetries = 0` with `const client = composio.getClient().withOptions({ maxRetries: 0 })` and use the derived client for those calls.
+2. **TypeScript custom headers.** Replace `COMPOSIO_CUSTOM_HEADERS` with the SDK's `defaultHeaders` option. Credential and scope headers in `defaultHeaders` or `createSession({ headers })` are folded into SDK configuration and no longer appear under `getConfig().defaultHeaders`. Supply at most one of `x-api-key`, `x-user-api-key`, or `x-org-api-key`; multiple credential headers now throw. Per-call client headers cannot override credentials or scope. With `apiKey: null` and only an organization API key, API calls, trigger authorization, and `session.mcp.headers` now consistently carry `x-org-api-key`.
+3. **Vercel tool schemas.** `tool.inputSchema` is now an AI SDK `Schema`. Replace direct `tool.inputSchema.safeParse(value)` calls with `asSchema(tool.inputSchema).validate(value)`, importing `asSchema` from `ai`.
+4. **Claude Agent SDK and Zod v4.** Upgrade Zod to `4.1.13` or newer before upgrading `@composio/claude-agent-sdk`. Older Zod v4 versions do not provide the shared metadata registry the builder needs.
+5. **Deprecated TypeScript connection data.** For `customConnectionData` with `S2S_OAUTH2`, supply `val.access_token`, which the API requires.
+
+### Bug fixes
+
+- **Strict TypeScript tool schemas.** OpenAPI `nullable` is converted into a nullable type or a null branch. Unsupported string formats, including `uri`, custom formats, and `path`, are removed before strict requests reach the model provider. This prevents a single tool schema from causing the whole request to fail.
+- **String argument validation.** TypeScript checks a string as base64 only when its `contentEncoding` is `base64`. Fields with `format: "binary"` or another encoding, such as `base16`, accept plain strings instead of being rejected as invalid base64.
+- **Zod v3 validation paths.** Errors inside nested object properties report each property name once, including errors from `patternProperties`, `additionalProperties`, and `oneOf`.

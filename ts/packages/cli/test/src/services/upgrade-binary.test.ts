@@ -1,6 +1,9 @@
-import { describe, expect, it, vi } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer, Option } from 'effect';
-import { FetchHttpClient } from 'effect/unstable/http';
+import { afterAll, afterEach, describe, expect, it, vi } from '@effect/vitest';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { ConfigProvider, Effect, Exit, Layer, Option } from 'effect';
+import { FetchHttpClient } from 'effect/http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as PlatformError from 'effect/PlatformError';
@@ -55,10 +58,17 @@ const TerminalUINoop = Layer.succeed(
   })
 );
 
+// A private home directory: stable-channel lookups record the update-check cache under it.
+const testHomedir = mkdtempSync(join(tmpdir(), 'composio-upgrade-home-'));
+const updateCheckDir = join(testHomedir, '.composio');
+const updateCheckFile = join(updateCheckDir, 'update-check.json');
+afterEach(() => rmSync(updateCheckDir, { recursive: true, force: true }));
+afterAll(() => rmSync(testHomedir, { recursive: true, force: true }));
+
 const NodeOsTest = Layer.succeed(
   NodeOs,
   NodeOs.of({
-    homedir: '/tmp',
+    homedir: testHomedir,
     tmpdir: '/tmp',
     platform: 'darwin',
     arch: 'arm64',
@@ -168,6 +178,24 @@ const restoreStubsAndMocks = Effect.sync(() => {
   vi.restoreAllMocks();
 });
 
+/** Write each companion file of a binary package under `sourceDir` with `contents`. */
+const writeCompanionFiles = (
+  sourceDir: string,
+  relativePaths: ReadonlyArray<string>,
+  contents: string
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    yield* Effect.forEach(relativePaths, relativePath =>
+      Effect.gen(function* () {
+        const companionPath = path.join(sourceDir, relativePath);
+        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
+        yield* fs.writeFileString(companionPath, contents);
+      })
+    );
+  });
+
 describe('UpgradeBinary', () => {
   it.effect('wraps non-2xx releases fetch failures with fetch context (no tag branch)', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
@@ -179,15 +207,12 @@ describe('UpgradeBinary', () => {
       });
 
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to fetch releases from GitHub');
       expect(String(error.cause)).toContain('HTTP 500');
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
@@ -203,16 +228,13 @@ describe('UpgradeBinary', () => {
       });
 
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
-        ['GITHUB_TAG', 'v9.9.9'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_TAG', 'v9.9.9'],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to parse GitHub release JSON response');
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
@@ -227,43 +249,37 @@ describe('UpgradeBinary', () => {
       });
 
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
-        ['GITHUB_TAG', 'v9.9.9'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_TAG', 'v9.9.9'],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to parse GitHub release JSON response');
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
   it.effect('URL-encodes slash-containing tags in tagged release request path', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-    let receivedPath = '';
+    let receivedPath: string | undefined;
 
     return Effect.gen(function* () {
       const apiBaseUrl = yield* scopedHttpServer((req, res) => {
-        receivedPath = req.url ?? '';
+        receivedPath = req.url;
         res.writeHead(500, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ message: 'forced failure' }));
       });
 
       const tag = '@composio/cli@0.1.24';
       const error = yield* runUpgrade([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
-        ['GITHUB_TAG', tag],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_TAG', tag],
       ]);
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(receivedPath).toBe(
         `/repos/test-owner/test-repo/releases/tags/${encodeURIComponent(tag)}`
       );
@@ -314,9 +330,9 @@ describe('UpgradeBinary', () => {
       });
 
       const result = yield* runUpgradeSuccess([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(result).toBeUndefined();
@@ -367,9 +383,9 @@ describe('UpgradeBinary', () => {
       });
 
       const result = yield* runUpgradeSuccess([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(result).toBeUndefined();
@@ -435,70 +451,46 @@ describe('UpgradeBinary', () => {
 
       const error = yield* runUpgrade(
         [
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
+          ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+          ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+          ['COMPOSIO_GITHUB_REPO', 'test-repo'],
         ],
         { prerelease: true }
       );
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.effect('copies local-tool bundled binary assets during local-target upgrades', () => {
+  it.effect('replaces the binary during local-target upgrades', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const installDir = yield* fs.makeTempDirectoryScoped({
-        prefix: 'composio-local-tool-upgrade-target-',
+        prefix: 'composio-local-upgrade-target-',
       });
       const sourceDir = yield* fs.makeTempDirectoryScoped({
-        prefix: 'composio-local-tool-upgrade-source-',
+        prefix: 'composio-local-upgrade-source-',
       });
       const fakeExecPath = path.join(installDir, 'composio');
       const sourceBinaryPath = path.join(sourceDir, 'composio');
-      const sourceLocalToolPath = path.join(
-        sourceDir,
-        'local-tools-binaries',
-        'beeper-imessage',
-        'darwin-arm64',
-        'imessage-cli'
-      );
-      const installedLocalToolPath = path.join(
-        installDir,
-        'local-tools-binaries',
-        'beeper-imessage',
-        'darwin-arm64',
-        'imessage-cli'
-      );
-      const staleLocalToolPath = path.join(installDir, 'local-tools-binaries', 'stale-tool');
+      const legacyLocalToolsPath = path.join(installDir, 'local-tools-binaries');
 
       yield* fs.writeFileString(fakeExecPath, 'old-binary');
       yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
-      yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(sourceLocalToolPath, 'imessage-sidecar');
-      yield* fs.makeDirectory(path.dirname(installedLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(installedLocalToolPath, 'old-imessage-sidecar');
-      yield* fs.writeFileString(staleLocalToolPath, 'stale');
+      yield* fs.makeDirectory(path.join(legacyLocalToolsPath, 'peekaboo'), { recursive: true });
+      yield* fs.writeFileString(path.join(legacyLocalToolsPath, 'peekaboo', 'peekaboo'), 'old');
       const originalBinaryInfo = yield* fs.stat(fakeExecPath);
 
       vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
-      for (const relativePath of companionRelativePaths) {
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'support-file');
-      }
+      yield* writeCompanionFiles(sourceDir, companionRelativePaths, 'support-file');
 
       const result = yield* runUpgradeSuccess([
         ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
@@ -512,9 +504,7 @@ describe('UpgradeBinary', () => {
         Option.getOrThrow(originalBinaryInfo.ino)
       );
       expect(replacedBinaryInfo.mode & 0o777).toBe(0o755);
-      expect(yield* fs.exists(installedLocalToolPath)).toBe(true);
-      expect(yield* fs.readFileString(installedLocalToolPath)).toBe('imessage-sidecar');
-      expect(yield* fs.exists(staleLocalToolPath)).toBe(false);
+      expect(yield* fs.exists(legacyLocalToolsPath)).toBe(false);
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
@@ -541,11 +531,7 @@ describe('UpgradeBinary', () => {
 
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
-      for (const relativePath of companionRelativePaths) {
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'new-support-file');
-      }
+      yield* writeCompanionFiles(sourceDir, companionRelativePaths, 'new-support-file');
       const observedCompanionPath = path.join(installDir, companionRelativePaths[0]!);
       yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
       yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
@@ -558,9 +544,6 @@ describe('UpgradeBinary', () => {
       );
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe(
         `Failed to replace binary: Failed to replace file at ${fakeExecPath}`
       );
@@ -600,22 +583,15 @@ describe('UpgradeBinary', () => {
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
       const missingRelativePath = companionRelativePaths.at(-1)!;
-      for (const relativePath of companionRelativePaths) {
-        if (relativePath === missingRelativePath) continue;
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'new-support-file');
-      }
+      yield* writeCompanionFiles(
+        sourceDir,
+        companionRelativePaths.slice(0, -1),
+        'new-support-file'
+      );
       const observedCompanionPath = path.join(installDir, companionRelativePaths[0]!);
       yield* fs.makeDirectory(path.dirname(observedCompanionPath), { recursive: true });
       yield* fs.writeFileString(observedCompanionPath, 'old-support-file');
 
-      const sourceLocalToolPath = path.join(sourceDir, 'local-tools-binaries', 'test-tool');
-      const installedLocalToolPath = path.join(installDir, 'local-tools-binaries', 'test-tool');
-      yield* fs.makeDirectory(path.dirname(sourceLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(sourceLocalToolPath, 'new-local-tool');
-      yield* fs.makeDirectory(path.dirname(installedLocalToolPath), { recursive: true });
-      yield* fs.writeFileString(installedLocalToolPath, 'old-local-tool');
       vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
       const error = yield* runUpgrade([['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]], {
@@ -623,14 +599,10 @@ describe('UpgradeBinary', () => {
       });
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Downloaded binary package is incomplete');
       expect(String(error.cause)).toContain(missingRelativePath);
       expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
       expect(yield* fs.readFileString(observedCompanionPath)).toBe('old-support-file');
-      expect(yield* fs.readFileString(installedLocalToolPath)).toBe('old-local-tool');
       expect(yield* fs.readFileString(releaseTagPath)).toBe('@composio/cli@0.2.31\n');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
@@ -662,11 +634,7 @@ describe('UpgradeBinary', () => {
 
       const companionRelativePaths =
         yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
-      for (const relativePath of companionRelativePaths) {
-        const companionPath = path.join(sourceDir, relativePath);
-        yield* fs.makeDirectory(path.dirname(companionPath), { recursive: true });
-        yield* fs.writeFileString(companionPath, 'support-file');
-      }
+      yield* writeCompanionFiles(sourceDir, companionRelativePaths, 'support-file');
 
       const result = yield* runUpgradeSuccess([
         ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
@@ -716,19 +684,130 @@ describe('UpgradeBinary', () => {
 
       const error = yield* runUpgrade(
         [
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
+          ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+          ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+          ['COMPOSIO_GITHUB_REPO', 'test-repo'],
         ],
         { prerelease: true }
       );
 
       expect(error).toBeInstanceOf(UpgradeBinaryError);
-      if (!(error instanceof UpgradeBinaryError)) {
-        throw error;
-      }
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+});
+
+describe('UpgradeBinary update-check cache', () => {
+  // The cache that misled the user: written before 0.5.0 was released.
+  const staleState = { lastChecked: '2026-10-21T14:31:56.646Z', latestVersion: '0.4.5' };
+
+  const writeStaleState = () => {
+    mkdirSync(updateCheckDir, { recursive: true });
+    writeFileSync(updateCheckFile, JSON.stringify(staleState));
+  };
+
+  const readCachedState = (): unknown => JSON.parse(readFileSync(updateCheckFile, 'utf8'));
+
+  const release = (version: string) => ({
+    tag_name: `@composio/cli@${version}`,
+    draft: false,
+    prerelease: version.includes('-'),
+    assets: [
+      {
+        name: 'composio-darwin-aarch64.zip',
+        browser_download_url: `http://127.0.0.1/${version}.zip`,
+      },
+    ],
+  });
+
+  /** Serves the release list, plus any single release by tag, and installs `currentTag`. */
+  const setUpReleases = (currentTag: string) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({ prefix: 'composio-upgrade-cache-' });
+      yield* fs.writeFileString(path.join(installDir, 'release-tag.txt'), `${currentTag}\n`);
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(path.join(installDir, 'composio'));
+
+      const apiBaseUrl = yield* scopedHttpServer((req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        const taggedPrefix = '/repos/test-owner/test-repo/releases/tags/';
+        res.end(
+          JSON.stringify(
+            req.url?.startsWith(taggedPrefix)
+              ? release(decodeURIComponent(req.url.slice(taggedPrefix.length)).split('@').at(-1)!)
+              : [release('0.5.1-beta.1'), release('0.5.0'), release('0.4.5'), release('0.4.2')]
+          )
+        );
+      });
+
+      return [
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
+      ] as Array<[string, string]>;
+    });
+
+  it.effect('records the live-resolved latest stable release', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    // Only Date is faked: the upgrade awaits a real local HTTP server.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-21T16:20:00.000Z'));
+
+    return Effect.gen(function* () {
+      writeStaleState();
+      const config = yield* setUpReleases('@composio/cli@0.5.0');
+
+      const result = yield* runUpgradeSuccess(config);
+
+      expect(result).toBeUndefined();
+      expect(readCachedState()).toEqual({
+        lastChecked: '2026-10-21T16:20:00.000Z',
+        latestVersion: '0.5.0',
+      });
+    }).pipe(
+      Effect.provide(TestPlatform),
+      Effect.ensuring(Effect.sync(() => vi.useRealTimers())),
+      Effect.ensuring(restoreStubsAndMocks)
+    );
+  });
+
+  it.effect.each([
+    { target: 'a version argument', options: { tag: '@composio/cli@0.4.2' }, env: [] },
+    {
+      target: 'COMPOSIO_GITHUB_TAG',
+      options: {},
+      env: [['COMPOSIO_GITHUB_TAG', '@composio/cli@0.4.2']] as Array<[string, string]>,
+    },
+    { target: '--beta', options: { prerelease: true }, env: [] },
+  ])('leaves the cache alone when $target picks the target', ({ options, env }) => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      writeStaleState();
+      const config = yield* setUpReleases('@composio/cli@0.4.0');
+
+      // The download is unreachable, so only the release lookup could have touched the cache.
+      const exit = yield* Effect.exit(makeUpgradeEffect([...config, ...env], options));
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      expect(readCachedState()).toEqual(staleState);
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect('still upgrades when the cache cannot be written', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      // A file where the cache directory should be makes every cache write fail.
+      writeFileSync(updateCheckDir, 'not a directory');
+      const config = yield* setUpReleases('@composio/cli@0.5.0');
+
+      const result = yield* runUpgradeSuccess(config);
+
+      expect(result).toBeUndefined();
+      expect(readFileSync(updateCheckDir, 'utf8')).toBe('not a directory');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 });

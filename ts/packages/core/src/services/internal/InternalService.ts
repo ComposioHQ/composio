@@ -24,10 +24,9 @@ export class InternalService {
    * @returns {SDKRealtimeCredentialsResponse} The SDK realtime credentials
    */
   async getSDKRealtimeCredentials(): Promise<SDKRealtimeCredentialsResponse> {
-    const response = await this.client.request<ComposioSDKRealtimeCredentialsResponse>({
-      method: 'get',
-      path: SDK_REALTIME_CREDENTIALS_ENDPOINT,
-    });
+    const response = await this.client.get<ComposioSDKRealtimeCredentialsResponse>(
+      SDK_REALTIME_CREDENTIALS_ENDPOINT
+    );
 
     const parsedResponse = SDKRealtimeCredentialsResponseSchema.safeParse({
       pusherKey: response.pusher_key,

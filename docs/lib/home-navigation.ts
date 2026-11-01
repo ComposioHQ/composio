@@ -43,10 +43,12 @@ interface DocsProductConfig {
   home: Omit<HomeIntent, 'productId' | 'product'>;
 }
 
-const SHARED_SIDEBAR_ITEMS = [
+/** A sidebar entry that both products list: one page or one content folder. */
+type SharedSidebarItem = Extract<ProductSidebarItem, { type: 'page' | 'folder' }>;
+
+const SHARED_SIDEBAR_ITEMS: readonly SharedSidebarItem[] = [
   { type: 'page', url: '/docs/using-composio-skill' },
-  { type: 'folder', path: 'security', label: 'Security and data' },
-] as const satisfies readonly ProductSidebarItem[];
+];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
   item.type === 'page' ? item.url : `/docs/${item.path}`
@@ -127,8 +129,12 @@ export const DOCS_PRODUCTS = {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
+      '/docs/session-configs',
+      '/docs/approvals',
+      '/docs/firewall',
       '/docs/instant-tools',
       '/docs/toolkits',
+      '/docs/tool-tags',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -137,7 +143,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
-      '/docs/security/data-retention',
+      '/docs/security',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
       '/docs/auth-configuration',
@@ -162,20 +168,27 @@ export const DOCS_PRODUCTS = {
             links: [
               { url: '/docs/how-composio-works', label: 'What is a Session?' },
               { url: '/docs/configuring-sessions' },
-
+              { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
+              { url: '/docs/approvals' },
             ],
           },
           {
             type: 'group',
             label: 'Toolkits & Tools',
-            links: [{ url: '/docs/toolkits' }, { url: '/docs/instant-tools' }],
+            links: [{ url: '/docs/toolkits' }, { url: '/docs/tool-tags' }, { url: '/docs/instant-tools' }],
+          },
+          {
+            type: 'group',
+            label: 'Governance',
+            links: [{ url: '/docs/firewall' }],
           },
           {
             type: 'group',
             label: 'Authentication',
             links: [
               { url: '/docs/authentication', label: 'Authentication with Composio' },
+              { url: '/docs/authentication/managed-auth-for-custom-tools' },
               {
                 url: '/docs/authentication/managing-multiple-connected-accounts',
                 label: 'Multiple connected accounts',
@@ -216,6 +229,7 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
+          { type: 'folder', path: 'security', label: 'Security and data' },
         ],
       },
       {

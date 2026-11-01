@@ -1,0 +1,26 @@
+{
+  "name": "approvals-example",
+  "private": true,
+  "version": "0.0.2",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "start:multi": "bun src/index.ts --multi",
+    "start:mcp": "bun src/mcp.ts",
+    "verify": "bun src/verify.ts",
+    "verify:mcp": "bun src/verify-mcp.ts",
+    "test": "bun test test/",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint src test"
+  },
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,17 +1,29 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
-import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
-import { afterEach, vi } from 'vitest';
+import { makeSessionInfo } from 'test/__utils__/models/account';
 
 describe('CLI: composio whoami', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
+  layer(TestLive())('without a login', it => {
+    it.effect('[Given] no API key [Then] fails with NotLoggedInError and prints its message', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['whoami']).pipe(Effect.flip);
+
+        expect(failure).toMatchObject({
+          _tag: 'commands/NotLoggedInError',
+          message: 'You are not logged in yet. Please run `composio login`.',
+        });
+        // The invocation prints the message on stderr, and nothing else.
+        assert(isUsageFailure(failure));
+        expect(yield* MockConsole.getLines()).toEqual([failure.message]);
+      })
+    );
   });
 
   const testConfigProvider = ConfigProvider.fromEnv({
     env: { COMPOSIO_USER_API_KEY: 'api_key_from_test_config_provider' },
-  }).pipe(extendConfigProvider);
+  });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with config override', it => {
     it.effect('[Given] `COMPOSIO_USER_API_KEY` [Then] prints global user context JSON', () =>
@@ -47,42 +59,22 @@ describe('CLI: composio whoami', () => {
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))('with session info', it => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      accountData: {
+        sessionInfo: makeSessionInfo({
+          orgId: 'org_123',
+          orgName: 'Acme Org',
+          orgMemberId: 'om_123',
+          email: 'person@example.com',
+          name: 'Test Person',
+        }),
+      },
+    })
+  )('with session info', it => {
     it.effect('[Given] session info is available [Then] prints email and org name', () =>
       Effect.gen(function* () {
-        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-          new Response(
-            JSON.stringify({
-              project: {
-                name: 'Test Project',
-                id: 'proj_123',
-                org_id: 'org_123',
-                nano_id: 'proj_nano_123',
-                email: 'project@example.com',
-                created_at: '2026-03-27T00:00:00.000Z',
-                updated_at: '2026-03-27T00:00:00.000Z',
-                org: {
-                  name: 'Acme Org',
-                  id: 'org_123',
-                  plan: 'enterprise',
-                },
-              },
-              org_member: {
-                id: 'om_123',
-                user_id: 'usr_123',
-                email: 'person@example.com',
-                name: 'Test Person',
-                role: 'admin',
-              },
-              api_key: null,
-            }),
-            {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          )
-        );
-
         yield* cli(['whoami']);
 
         const lines = yield* MockConsole.getLines();

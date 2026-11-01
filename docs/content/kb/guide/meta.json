@@ -20,7 +20,6 @@
     "platform-custom-connection-data-fields",
     "platform-file-storage",
     "platform-google-oauth",
-    "platform-health-endpoints",
     "platform-microsoft-oauth",
     "platform-pagination",
     "platform-production-readiness",

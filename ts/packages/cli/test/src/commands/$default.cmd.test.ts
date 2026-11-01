@@ -11,9 +11,9 @@ describe('CLI: composio', () => {
   });
 
   // v4 migration note: v3's `Command.run` returned a `ValidationError.CommandMismatch` for the
-  // caller to render by hand. `effect/unstable/cli`'s `Command.runWith` renders parse/validation
-  // errors itself (see `src/cli-main.ts` module docs) before re-failing with `CliError.ShowHelp`,
-  // so these tests now assert on the printed `MockConsole` output instead of inspecting the error
+  // caller to render by hand. `effect/cli`'s `Command.runWith` renders parse/validation
+  // errors itself (see `src/invocation/invocation.ts` module docs) before re-failing with
+  // `CliError.ShowHelp`, so these tests now assert on the printed `MockConsole` output instead of inspecting the error
   // value directly.
   layer(TestLive())(it => {
     it.effect('[Given] unknown argument [Then] print error message', () =>
@@ -51,7 +51,7 @@ describe('CLI: composio', () => {
         yield* cli([]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        expect(output).toContain('Usage:');
+        expect(output).toContain('USAGE');
         expect(output).toContain('composio');
         expect(output).not.toContain('composio connections list');
       })
@@ -66,39 +66,8 @@ describe('CLI: composio', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
         expect(output.trim().length).toBeGreaterThan(0);
-        expect(output).toContain('config.json');
+        expect(output).toContain('Documentation:');
         expect(output).not.toContain('connections list');
-      })
-    );
-  });
-
-  layer(TestLive())(it => {
-    it.effect('[Given] --help simple [Then] prints the compact root help mode', () =>
-      Effect.gen(function* () {
-        yield* cli(['--help', 'simple']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('simple help');
-        expect(output).toContain('composio --help [simple|default|full]');
-        expect(output).not.toContain('composio run');
-        expect(output).not.toContain('MORE COMMANDS');
-      })
-    );
-  });
-
-  layer(TestLive())(it => {
-    it.effect('[Given] --help full [Then] prints the expanded root help mode', () =>
-      Effect.gen(function* () {
-        yield* cli(['--help', 'full']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('full help');
-        expect(output).toContain('MORE COMMANDS');
-        expect(output).toContain('dev playground-execute');
-        expect(output).toContain('generate ts');
-        expect(output).toContain('connections list');
       })
     );
   });
@@ -110,7 +79,7 @@ describe('CLI: composio', () => {
         const linesFor = (args: ReadonlyArray<string>) =>
           Effect.gen(function* () {
             yield* cli(args);
-            return yield* MockConsole.getLines();
+            return yield* MockConsole.getLines({ stream: 'stdout' });
           }).pipe(Effect.provide(TestLive()));
 
         const expected = yield* linesFor(['version']);

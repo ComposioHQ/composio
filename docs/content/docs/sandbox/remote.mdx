@@ -76,10 +76,10 @@ Move files between your app and the mount with `session.experimental.files`. Upl
 The files API ships under `session.experimental`, so the surface may change in a future release.
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-session = composio.create("user_123")
+session = composio.create(user_id="user_123")
 
 # Upload a local file; the sandbox sees it at /mnt/files/sales.csv
 uploaded = session.experimental.files.upload("./sales.csv")
@@ -108,6 +108,30 @@ const report = await session.experimental.files.download("/report.pdf");
 await report.save("./report.pdf");
 ```
 </Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+# Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+UPLOAD_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/mounts/files/upload_url \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mount_relative_path": "sales.csv", "mimetype": "application/octet-stream"}' | jq -r '.upload_url')
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @sales.csv
+
+# After the agent writes a result in the sandbox, download it
+DOWNLOAD_URL=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/mounts/files/download_url \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mount_relative_path": "/report.pdf"}' | jq -r '.download_url')
+curl -X GET "$DOWNLOAD_URL" -o report.pdf
+```
+</Tab>
 </Tabs>
 
 The mount exposes four methods:
@@ -120,6 +144,10 @@ The mount exposes four methods:
 | `delete(path, options?)` | Remove a file or directory from the mount. |
 
 A `RemoteFile` carries the file's bytes and a presigned `downloadUrl`. Read it with `text()` or `buffer()`, or write it to disk with `save(path)`. Its `expiresAt` is when that download link expires, not a TTL on the file: the mount itself has no expiry you set.
+
+`save(path)` writes exactly where you point it and overwrites whatever is there. Call `save()` with no path and the file goes to `~/.composio/files/` under its name on the mount — and an existing file there survives: the new copy gets a number before its extension, so a second `report.pdf` saves as `report-1.pdf`. The returned path tells you which name was used.
+
+Mount paths come from the sandbox, so the SDK makes that default name safe to write before using it. Characters Windows reserves (`:`, `?`, `*`, and control characters) become `_`, over-long names are truncated with their extension kept, and trailing dots and spaces are dropped. Any name these rules changed also carries a short digest of the original, so `What is this?.png` and `What is this*.png` don't land on the same file. A name that can't be written at all, one containing a NUL byte or with nothing usable left, such as `..`, raises an error instead of saving.
 
 A `RemoteFile` download through `buffer()`, `blob()`, `text()`, or `save()` stops at 100 MiB, even
 when the server omits or misreports `Content-Length`. Connection failures and streamed-body failures

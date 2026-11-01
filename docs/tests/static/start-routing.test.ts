@@ -35,8 +35,8 @@ describe('getting-started routing policy', () => {
     expect(plugins).toContain('composio search');
     expect(plugins).toContain('composio link');
     expect(plugins).toContain('composio execute');
-    expect(plugins).toContain('composio --install-skill composio-cli claude');
-    expect(plugins).toContain('composio --install-skill composio-cli codex');
+    expect(plugins).toContain('composio setup skill claude');
+    expect(plugins).toContain('composio setup skill codex');
     expect(plugins).toContain('composio setup --target auto --yes');
     expect(plugins).toContain('### Codex');
     expect(plugins).toContain('### Claude Code');

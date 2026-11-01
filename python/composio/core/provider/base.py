@@ -78,7 +78,7 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
     This is automatically injected by the core SDK.
     """
 
-    def __init__(self, **kwargs: t.Unpack[BaseProviderConfig]) -> None:
+    def __init__(self, **kwargs: te.Unpack[BaseProviderConfig]) -> None:
         self.skip_default = kwargs.get("schema_config", {}).get(
             "skip_defaults", self.__schema_skip_defaults__
         )
@@ -121,9 +121,12 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
                 "Direct execution modifiers cannot be used with a Tool Router session"
             )
 
+        # Imported here: the tools module imports this one.
+        from composio.core.models.tools import is_execution_successful
+
         result = target.execute(tool_slug=slug, arguments=arguments)
         return {
             "data": t.cast(t.Dict, result.data),
             "error": result.error,
-            "successful": result.error is None,
+            "successful": is_execution_successful(result.result_type),
         }

@@ -1,6 +1,72 @@
 /**
  * Transforms snake_case Tool Router API responses to camelCase for SDK consumers.
  */
+import type {
+  SessionExecuteResponse,
+  SessionProxyExecuteResponse,
+} from '@composio/client/resources/tool-router/session';
+import z from 'zod/v3';
+import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
+import { ValidationError } from '../../errors/ValidationErrors';
+import type {
+  ToolRouterBlockReason,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionProxyExecuteResponse,
+} from '../../types/toolRouter.types';
+
+/**
+ * The `result_type` values of a call that ran. `input_required` and `blocked`
+ * are handled before this is read.
+ */
+const ExecutedResponseSchema = z.object({
+  result_type: z.enum(['completed', 'failed']),
+});
+
+/** The `reason` of a call a session hook blocked, in camelCase. */
+const toBlockReason = (
+  reason: Extract<SessionExecuteResponse, { result_type: 'blocked' }>['reason']
+): ToolRouterBlockReason => ({ type: reason.type, hookId: reason.hook_id });
+
+/**
+ * Whether a session tool execution succeeded. `resultType` decides: a `failed`
+ * execution is not successful even when its `error` is `null` or empty.
+ */
+export function isExecutionSuccessful(
+  result: Pick<ToolRouterSessionExecuteResponse, 'resultType'>
+): boolean {
+  return result.resultType === 'completed';
+}
+
+type InputRequiredResponse = Extract<
+  SessionExecuteResponse | SessionProxyExecuteResponse,
+  { result_type: 'input_required' }
+>;
+
+/**
+ * Narrows an execute-family response to the variants that carry a result.
+ * `input_required` means the call did not run: it is raised as a
+ * {@link ComposioToolInputRequiredError} instead of being returned as a result
+ * it is not.
+ */
+export function assertNotInputRequired<
+  Response extends SessionExecuteResponse | SessionProxyExecuteResponse,
+>(raw: Response, subject: string): asserts raw is Exclude<Response, InputRequiredResponse> {
+  if (raw.result_type !== 'input_required') return;
+  throw new ComposioToolInputRequiredError(subject, {
+    inputRequests: Object.fromEntries(
+      Object.entries(raw.input_requests).map(([id, request]) => [
+        id,
+        {
+          type: request.type,
+          mode: request.mode,
+          message: request.message,
+          requestedSchema: request.requested_schema,
+        },
+      ])
+    ),
+    requestState: raw.request_state,
+  });
+}
 
 interface RawSearchResult {
   index: number;
@@ -51,7 +117,10 @@ interface RawToolkitConnectionStatus {
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
-  hosted_account?: { allowed_tool_slugs: string[] };
+  instant_account?: {
+    allowed_tool_slugs: string[];
+    prices?: Record<string, { description?: string; discount?: string | null }>;
+  };
 }
 
 interface RawSearchResponse {
@@ -63,13 +132,6 @@ interface RawSearchResponse {
   next_steps_guidance: string[];
   session: RawSearchSession;
   time_info: RawSearchTimeInfo;
-}
-
-interface RawExecuteResponse {
-  data: Record<string, unknown>;
-  error: string | null;
-  log_id: string;
-  premium_charge?: unknown;
 }
 
 function transformSearchResult(raw: RawSearchResult) {
@@ -116,8 +178,11 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     statusMessage: raw.status_message,
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
-    ...(raw.hosted_account !== undefined && {
-      hostedAccount: { allowedToolSlugs: raw.hosted_account.allowed_tool_slugs },
+    ...(raw.instant_account !== undefined && {
+      instantAccount: {
+        allowedToolSlugs: raw.instant_account.allowed_tool_slugs,
+        ...(raw.instant_account.prices !== undefined && { prices: raw.instant_account.prices }),
+      },
     }),
   };
 }
@@ -155,12 +220,76 @@ export function transformSearchResponse(raw: RawSearchResponse) {
 
 /**
  * Transforms a raw session execute API response to camelCase.
+ *
+ * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
+ * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
-export function transformExecuteResponse(raw: RawExecuteResponse) {
+export function transformExecuteResponse(
+  raw: SessionExecuteResponse,
+  toolSlug: string
+): ToolRouterSessionExecuteResponse {
+  assertNotInputRequired(raw, `Tool ${toolSlug}`);
+  if (raw.result_type === 'blocked') {
+    // The agent reads `error`, so a blocked call reaches it as a failed call
+    // with the hook's message.
+    return {
+      data: {},
+      error: raw.message,
+      logId: raw.log_id ?? '',
+      resultType: 'blocked',
+      blockReason: toBlockReason(raw.reason),
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+      ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    };
+  }
+  const executed = ExecutedResponseSchema.safeParse(raw);
+  if (!executed.success) {
+    throw new ValidationError(
+      `Tool ${toolSlug} returned an execute response without a known result_type`,
+      { cause: executed.error }
+    );
+  }
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
-    ...(raw.premium_charge !== undefined && { premiumCharge: raw.premium_charge }),
+    resultType: executed.data.result_type,
+    ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+  };
+}
+
+/**
+ * Projects a session proxy execute response onto the SDK's shape: a request a
+ * session hook blocked comes back as `resultType: 'blocked'` with no HTTP
+ * response.
+ */
+export function transformProxyExecuteResponse(
+  raw: SessionProxyExecuteResponse,
+  subject: string
+): ToolRouterSessionProxyExecuteResponse {
+  assertNotInputRequired(raw, subject);
+  if (raw.result_type === 'blocked') {
+    return {
+      resultType: 'blocked',
+      blockReason: toBlockReason(raw.reason),
+      message: raw.message,
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+    };
+  }
+  return {
+    resultType: 'completed',
+    status: raw.status,
+    data: raw.data,
+    headers: raw.headers,
+    ...(raw.binary_data && {
+      binaryData: {
+        contentType: raw.binary_data.content_type,
+        size: raw.binary_data.size,
+        url: raw.binary_data.url,
+        expiresAt: raw.binary_data.expires_at,
+      },
+    }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
   };
 }

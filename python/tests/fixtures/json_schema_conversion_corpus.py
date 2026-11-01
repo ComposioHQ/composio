@@ -116,7 +116,9 @@ def load_object_cases() -> t.List[CorpusCase]:
     """Decode the shared corpus and enforce its cross-language invariants."""
     global _cached
     if _cached is None:
-        cases = Corpus.model_validate(json.loads(CORPUS_PATH.read_text())).cases
+        cases = Corpus.model_validate(
+            json.loads(CORPUS_PATH.read_text(encoding="utf-8"))
+        ).cases
         assert_corpus_invariants(cases)
         _cached = cases
     return _cached
@@ -187,7 +189,7 @@ def load_strict_cases() -> t.List[StrictCase]:
     global _cached_strict
     if _cached_strict is None:
         cases = StrictCorpus.model_validate(
-            json.loads(STRICT_CORPUS_PATH.read_text())
+            json.loads(STRICT_CORPUS_PATH.read_text(encoding="utf-8"))
         ).cases
         seen: t.Set[str] = set()
         for case in cases:

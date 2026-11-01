@@ -1,16 +1,10 @@
 import { builtinModules } from 'node:module';
-import { chmod, copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import process from 'node:process';
 import { Effect } from 'effect';
-import {
-  codexAcpBinaryTargetFor,
-  RUN_CODEX_ACP_BINARY_TARGETS,
-  RUN_COMPANION_MODULE_BASENAMES,
-  type RunCodexAcpBinaryTarget,
-} from '../src/services/run-companion-modules';
+import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
 import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
-import { materializeAcpAdaptersCache } from './_acp-adapters';
 
 export { teardown } from './_teardown';
 
@@ -31,77 +25,11 @@ const exportStatementPattern =
   /(?:^|[;\n])\s*export\s+(?:\*\s+from\s+|\{[^}\n]+\}\s+from\s+)["']([^"']+)["']/gm;
 const runtimeImportCallPattern = /(?:^|[^\w$.])(?:__require|require|import)\(\s*["']([^"']+)["']/g;
 
-const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Promise<void> => {
-  await mkdir(targetDir, { recursive: true });
-
-  for (const entry of await readdir(sourceDir, { withFileTypes: true })) {
-    const sourcePath = path.join(sourceDir, entry.name);
-    const targetPath = path.join(targetDir, entry.name);
-
-    if (entry.isDirectory()) {
-      await copyDirectoryRecursive(sourcePath, targetPath);
-      continue;
-    }
-
-    await copyFile(sourcePath, targetPath);
-    const mode = (await stat(sourcePath)).mode & 0o777;
-    await chmod(targetPath, mode || 0o755);
-  }
-};
-
-const copyBundledAcpAdapters = async (
-  outputDir: string,
-  codexBinaryTargets: ReadonlyArray<RunCodexAcpBinaryTarget>
-): Promise<void> => {
-  const acpAdaptersCacheDir = await materializeAcpAdaptersCache(codexBinaryTargets);
-  const acpOutputDir = path.join(outputDir, 'acp-adapters');
-  await rm(acpOutputDir, { force: true, recursive: true });
-  await copyDirectoryRecursive(acpAdaptersCacheDir, acpOutputDir);
-};
-
-// The codex-acp binary the building machine can actually execute. Unsupported
-// hosts get an empty list, matching the host requirement set the CLI checks.
-export const hostCodexAcpBinaryTargets = (): ReadonlyArray<RunCodexAcpBinaryTarget> => {
-  const hostTarget = codexAcpBinaryTargetFor({
-    platform: process.platform,
-    arch: process.arch,
-  });
-  return hostTarget ? [hostTarget] : [];
-};
-
-export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
-
 // Kept out of --env: Bun honors only the last --env, which would clobber DEBUG_OVERRIDE_*.
 export const posthogBakeArgs = (): ReadonlyArray<string> => {
   const key = process.env.COMPOSIO_POSTHOG_PROJECT_API_KEY?.trim();
   return key ? ['--define', `COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED=${JSON.stringify(key)}`] : [];
 };
-
-const localToolsBinaryAssetsSourceDir = (): string =>
-  path.resolve(process.cwd(), '../cli-local-tools', LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-
-const copyLocalToolBinaryAssetsDirectory = async (outputDir: string): Promise<boolean> => {
-  const sourceDir = localToolsBinaryAssetsSourceDir();
-  const sourceExists = await stat(sourceDir)
-    .then(stats => stats.isDirectory())
-    .catch(() => false);
-  if (!sourceExists) return false;
-
-  const outputAssetDir = path.join(outputDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
-  await rm(outputAssetDir, { force: true, recursive: true });
-  await copyDirectoryRecursive(sourceDir, outputAssetDir);
-  return true;
-};
-
-export const copyLocalToolBinaryAssets = (outputDir: string) =>
-  Effect.gen(function* () {
-    const copied = yield* Effect.tryPromise(() => copyLocalToolBinaryAssetsDirectory(outputDir));
-    if (copied) {
-      yield* Effect.logDebug(
-        `Copied local tool binary assets into ${path.join(outputDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`
-      );
-    }
-  });
 
 const isAllowedRuntimeSpecifier = (specifier: string): boolean =>
   specifier.startsWith('.') ||
@@ -247,16 +175,12 @@ const collectRuntimeFiles = async (rootDir: string): Promise<ReadonlyArray<strin
     }
   }
 
-  for (const relativeDir of ['services', 'acp-adapters']) {
-    const absoluteDir = path.join(rootDir, relativeDir);
-    const exists = await stat(absoluteDir)
-      .then(stats => stats.isDirectory())
-      .catch(() => false);
-    if (!exists) {
-      continue;
-    }
-
-    for (const filePath of await collectJavaScriptFiles(absoluteDir)) {
+  const servicesDir = path.join(rootDir, 'services');
+  const exists = await stat(servicesDir)
+    .then(stats => stats.isDirectory())
+    .catch(() => false);
+  if (exists) {
+    for (const filePath of await collectJavaScriptFiles(servicesDir)) {
       collected.add(filePath);
     }
   }
@@ -416,12 +340,7 @@ const assertExecutableExcludesCompanionModules = async (): Promise<void> => {
   }
 };
 
-export const buildCompanionModules = (
-  outputDir: string,
-  options: {
-    readonly codexBinaryTargets?: ReadonlyArray<RunCodexAcpBinaryTarget>;
-  } = {}
-) =>
+export const buildCompanionModules = (outputDir: string) =>
   Effect.gen(function* () {
     yield* Effect.tryPromise(() => mkdir(outputDir, { recursive: true }));
 
@@ -433,9 +352,6 @@ export const buildCompanionModules = (
       yield* Effect.tryPromise(() => writeFile(wrapperPath, wrapperSource, 'utf8'));
     }
 
-    yield* Effect.tryPromise(() =>
-      copyBundledAcpAdapters(outputDir, options.codexBinaryTargets ?? RUN_CODEX_ACP_BINARY_TARGETS)
-    );
     yield* Effect.tryPromise(() => assertBundledRuntimeFiles(outputDir));
     yield* Effect.tryPromise(() => assertExecutableExcludesCompanionModules());
   });

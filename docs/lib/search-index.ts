@@ -703,7 +703,7 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
     plugins: [lucideIconsPlugin(), openapiPlugin()],
   });
 
-  const mdxIndexes = [
+  const mdxIndexes = await Promise.all([
     ...docsSource.getPages(),
     ...examplesSource.getPages(),
     ...toolkitsSource.getPages(),
@@ -711,15 +711,29 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
     ...fullReferenceSource.getPages(),
   ].filter((page) =>
     !isExcludedFromSearch(page.url) && !isHiddenApiTagUrl(page.url)
-  ).map((page) => ({
-    id: page.url,
-    title: page.data.title ?? 'Untitled',
-    description: page.data.description,
-    url: page.url,
-    structuredData: page.data.structuredData,
-    keywords: 'keywords' in page.data ? (page.data.keywords as string[]) : undefined,
-  } satisfies SearchIndex));
-
+  ).map(async (page) => {
+    // Keep section-linked prose and add code and custom-component instructions
+    // omitted by structured MDX search data.
+    const content = 'getText' in page.data
+      ? mdxToCleanMarkdown(await page.data.getText('raw'), page.url)
+      : undefined;
+    return {
+      id: page.url,
+      title: page.data.title ?? 'Untitled',
+      description: page.data.description,
+      url: page.url,
+      structuredData: content === undefined
+        ? page.data.structuredData
+        : {
+          ...page.data.structuredData,
+          contents: [
+            ...(page.data.structuredData?.contents ?? []),
+            { heading: undefined, content },
+          ],
+        },
+      keywords: 'keywords' in page.data ? (page.data.keywords as string[]) : undefined,
+    } satisfies SearchIndex;
+  }));
   const oauthIndexes = getAuthGuideSearchRecords().map((record) => ({
     id: record.page_id,
     title: record.title,

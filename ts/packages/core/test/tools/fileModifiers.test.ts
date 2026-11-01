@@ -2095,6 +2095,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
         s3key: 'uploads/file.txt',
       });
       mockClient.toolRouter.session.execute.mockResolvedValue({
+        result_type: 'completed',
         data: { uploaded: true },
         error: null,
         log_id: 'session-log',
@@ -2135,7 +2136,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           arguments: { file: staged },
           enable_auto_workbench_offload: true,
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
   });
@@ -2217,7 +2218,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           user_id: 'test-user',
           version: 'latest',
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 
@@ -2289,6 +2290,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       };
       const beforeExecute = vi.fn(({ params }) => params);
       mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+        result_type: 'completed',
         data: { ok: true },
         error: null,
         log_id: 'session-log',
@@ -2356,6 +2358,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
         next_cursor: null,
       });
       mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+        result_type: 'completed',
         data: { ok: true },
         error: null,
         log_id: 'session-log',
@@ -2394,7 +2397,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
           arguments: { text: 'keep' },
           enable_auto_workbench_offload: true,
         },
-        undefined
+        { maxRetries: 0 }
       );
     });
 

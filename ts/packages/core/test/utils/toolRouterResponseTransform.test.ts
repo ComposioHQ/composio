@@ -3,6 +3,7 @@ import {
   transformSearchResponse,
   transformExecuteResponse,
 } from '../../src/utils/transformers/toolRouterResponseTransform';
+import { ToolRouterSessionSearchResponseSchema } from '../../src/types/toolRouter.types';
 
 describe('toolRouterResponseTransform', () => {
   describe('transformSearchResponse', () => {
@@ -132,7 +133,7 @@ describe('toolRouterResponseTransform', () => {
       });
     });
 
-    it('maps the hosted account allowlist only when the API sends one', () => {
+    it('maps the Instant account allowlist only when the API sends one', () => {
       const raw = {
         success: true,
         error: null,
@@ -143,8 +144,8 @@ describe('toolRouterResponseTransform', () => {
             toolkit: 'exa',
             description: 'Exa',
             has_active_connection: true,
-            status_message: 'Connected via the Composio hosted account.',
-            hosted_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
+            status_message: 'Connected via the Composio Instant account.',
+            instant_account: { allowed_tool_slugs: ['EXA_SEARCH'] },
           },
           {
             toolkit: 'gmail',
@@ -166,21 +167,55 @@ describe('toolRouterResponseTransform', () => {
         },
       };
 
-      const [hosted, notHosted] = transformSearchResponse(raw).toolkitConnectionStatuses;
-      expect(hosted.hostedAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
-      expect(notHosted).not.toHaveProperty('hostedAccount');
+      const [instantAccount, notInstantAccount] =
+        transformSearchResponse(raw).toolkitConnectionStatuses;
+      expect(instantAccount.instantAccount).toEqual({ allowedToolSlugs: ['EXA_SEARCH'] });
+      expect(notInstantAccount).not.toHaveProperty('instantAccount');
+    });
+
+    it('keeps Instant tool prices keyed by the original tool slug', () => {
+      const prices = { EXA_SEARCH: { description: '$0.01 per call', discount: null } };
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'exa',
+            description: 'Exa',
+            has_active_connection: true,
+            status_message: 'Connected via the Composio Instant account.',
+            instant_account: { allowed_tool_slugs: ['EXA_SEARCH'], prices },
+          },
+        ],
+        next_steps_guidance: [],
+        session: { id: 'trs_1', generate_id: false, instructions: 'Use session' },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const parsed = ToolRouterSessionSearchResponseSchema.parse(transformSearchResponse(raw));
+      expect(parsed.toolkitConnectionStatuses[0].instantAccount).toEqual({
+        allowedToolSlugs: ['EXA_SEARCH'],
+        prices,
+      });
     });
   });
 
   describe('transformExecuteResponse', () => {
     it('should transform snake_case execute response to camelCase', () => {
       const raw = {
+        result_type: 'completed' as const,
         data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
         error: null,
         log_id: 'log_abc',
       };
 
-      const result = transformExecuteResponse(raw);
+      const result = transformExecuteResponse(raw, 'GMAIL_SEND_EMAIL');
 
       expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
       expect(result.error).toBeNull();
@@ -189,29 +224,37 @@ describe('toolRouterResponseTransform', () => {
 
     it('should preserve error in execute response', () => {
       const raw = {
+        result_type: 'failed' as const,
         data: {},
         error: 'Connection not found',
         log_id: 'log_err',
       };
 
-      const result = transformExecuteResponse(raw);
+      const result = transformExecuteResponse(raw, 'GMAIL_SEND_EMAIL');
 
       expect(result.error).toBe('Connection not found');
       expect(result.logId).toBe('log_err');
     });
 
-    it('preserves the optional premium charge without inventing one', () => {
+    it('preserves the optional Instant charge without inventing one', () => {
       expect(
-        transformExecuteResponse({
-          data: {},
-          error: null,
-          log_id: 'log_paid',
-          premium_charge: { amount: '0.01', currency: 'USD' },
-        }).premiumCharge
-      ).toEqual({ amount: '0.01', currency: 'USD' });
+        transformExecuteResponse(
+          {
+            result_type: 'completed',
+            data: {},
+            error: null,
+            log_id: 'log_paid',
+            instant_charge: { amount: '0.01', currency: 'USD', charged_by: 'composio' },
+          },
+          'EXA_SEARCH'
+        ).instantCharge
+      ).toEqual({ amount: '0.01', currency: 'USD', charged_by: 'composio' });
       expect(
-        transformExecuteResponse({ data: {}, error: null, log_id: 'log_free' })
-      ).not.toHaveProperty('premiumCharge');
+        transformExecuteResponse(
+          { result_type: 'completed', data: {}, error: null, log_id: 'log_free' },
+          'EXA_SEARCH'
+        )
+      ).not.toHaveProperty('instantCharge');
     });
   });
 });

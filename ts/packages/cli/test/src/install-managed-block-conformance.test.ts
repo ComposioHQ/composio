@@ -5,7 +5,7 @@ import {
   pathBlockForShell,
   reconcileManagedPathBlock,
   type Shell,
-} from 'src/commands/install.cmd';
+} from 'src/services/shell-config';
 
 /**
  * Managed PATH block contract conformance.

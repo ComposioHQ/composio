@@ -8,6 +8,7 @@ import { SessionConfigs } from '../../src/models/SessionConfigs';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
+import logger from '../../src/utils/logger';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
@@ -63,19 +64,27 @@ describe('SessionConfigs', () => {
       expect(result).toEqual({ items: [], nextCursor: null });
     });
 
-    it('forwards search, archived, limit and cursor unchanged', async () => {
+    it('forwards archived, limit and cursor unchanged', async () => {
       mockClient.sessionConfigs.list.mockResolvedValue({ items: [], next_cursor: null });
       const signal = new AbortController().signal;
 
-      await sessionConfigs.list(
-        { search: 'Daily', archived: true, limit: 50, cursor: 'c1' },
-        { signal }
-      );
+      await sessionConfigs.list({ archived: true, limit: 50, cursor: 'c1' }, { signal });
 
       expect(mockClient.sessionConfigs.list).toHaveBeenCalledWith(
-        { search: 'Daily', archived: true, limit: 50, cursor: 'c1' },
+        { archived: true, limit: 50, cursor: 'c1' },
         { signal }
       );
+    });
+
+    it('drops the removed search option and warns', async () => {
+      mockClient.sessionConfigs.list.mockResolvedValue({ items: [], next_cursor: null });
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+      await sessionConfigs.list({ search: 'Daily', limit: 50 });
+
+      expect(mockClient.sessionConfigs.list).toHaveBeenCalledWith({ limit: 50 }, undefined);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('search'));
+      warnSpy.mockRestore();
     });
 
     it('forwards a limit above the backend cap without clamping', async () => {
@@ -188,6 +197,23 @@ describe('SessionConfigs', () => {
       expect(result.config).toEqual({ toolkits: { disable: ['gmail'] } });
       expect('tools' in result.config).toBe(false);
       expect('tags' in result.config).toBe(false);
+    });
+
+    it('keeps the require_approval lists of a stored policy', async () => {
+      const config = {
+        toolkits: { require_approval: ['gmail'] },
+        tools: {
+          github: { enable: ['GITHUB_GET_REPO'], require_approval: ['GITHUB_GET_REPO'] },
+          slack: { require_approval: ['SLACK_SEND_MESSAGE'] },
+          google_calendar: { tags: { require_approval: ['destructiveHint'] } },
+        },
+        tags: { enable: ['readOnlyHint'], require_approval: ['destructiveHint'] },
+      };
+      mockClient.sessionConfigs.retrieve.mockResolvedValue({ ...rawConfig, config });
+
+      const result = await sessionConfigs.get('sc_1');
+
+      expect(result.config).toEqual(config);
     });
 
     it.each(['', '   '])('rejects the id %j with a ValidationError and makes no call', async id => {
