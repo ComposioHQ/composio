@@ -12,3 +12,4 @@ Read the relevant reference:
 - `references/design.md` for command surface, output, errors, interactivity, configuration, and exit codes.
 - `references/implementation.md` for Effect command wiring and service patterns.
 - `references/client-cache-sync.md` when touching toolkit client services.
+- `references/command-example.md` for the repo-linked authoring recipe, behavioral checks, and an unseen-task evaluation protocol.

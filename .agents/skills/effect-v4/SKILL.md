@@ -29,10 +29,9 @@ See [versions.json](versions.json) for the full matrix (also `typescript`, `vite
 - [references/upgrade-workflow.md](references/upgrade-workflow.md) — procedure for
   bumping to a newer release.
 
-Code excerpts in those references are short quotes from real, currently-compiling repo
-files (path cited at each excerpt) — not standalone examples. The compile-checked
-source of truth is always the cited file itself; when it and a reference disagree,
-trust the file and fix the reference.
+References label source excerpts and standalone framework examples separately. Repo-linked
+excerpts name the file checked by `validate:cli-skills`. The cited source remains authoritative
+when an excerpt or explanation disagrees with the implementation.
 
 ## Non-negotiables
 
@@ -60,6 +59,7 @@ trust the file and fix the reference.
 
 ```bash
 pnpm typecheck
+pnpm --filter @composio/cli run lint:effect
 pnpm --filter @composio/cli test
 ```
 
@@ -72,3 +72,5 @@ node .agents/skills/effect-v4/scripts/check-examples.mjs
 ```
 
 Blocks that quote repo files with unresolvable imports carry a `no-check` fence info string.
+
+`bun run validate:cli-skills` also verifies repo-linked command examples, their native Effect client requests, and the selected invocation contracts in Agent Substrate CI. Standalone snippet compilation and routing probes alone do not certify command behavior or agent task performance.

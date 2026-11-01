@@ -59,6 +59,7 @@
     "validate:agent-skills": "bun ts/scripts/validate-agent-skills.ts",
     "validate:changesets": "node ts/scripts/validate-changesets.mjs",
     "validate:skill-routing": "bun ts/scripts/test-skill-routing.ts",
+    "validate:cli-skills": "bun test test/cli-skills.test.ts && bun ts/scripts/check-cli-skills.ts",
     "prepublish": "pnpm run build:packages",
     "changeset": "changeset",
     "changeset:version": "changeset version",

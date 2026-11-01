@@ -11,6 +11,8 @@
   },
   "include": [
     "scripts/agent-task.ts",
+    "ts/scripts/check-cli-skills.ts",
+    "test/cli-skills.test.ts",
     "test/agent-task.test.ts",
     "ts/scripts/validate-agent-skills.ts",
     "ts/scripts/test-skill-routing.ts"
