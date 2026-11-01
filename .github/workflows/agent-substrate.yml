@@ -11,7 +11,10 @@ name: Agent Substrate
 #     skill keeps a probe asserting it is the unique top match for a
 #     representative task, so description edits cannot silently break routing.
 #
-# These checks run nowhere else, so this workflow is their only enforcement
+# `validate:cli-skills` checks repo-linked examples and exercises the selected
+# CLI invocation contracts, including native Effect client requests.
+#
+# These guidance checks run nowhere else, so this workflow is their only enforcement
 # point. It runs on every push and PR with no path filters: the
 # validate:agent-skills stale-guidance walk scans every text file in the
 # repo, so any change can affect the result. Both scripts are
@@ -55,6 +58,9 @@ jobs:
 
       - name: Validate skill routing
         run: bun run validate:skill-routing
+
+      - name: Certify CLI skill examples and invocation contracts
+        run: bun run validate:cli-skills
 
       - name: Typecheck agent tooling
         run: bun run typecheck:agent-workflow

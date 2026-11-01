@@ -1,133 +1,79 @@
-# effect/cli surface, as used in this repo
+# Effect CLI in this repository
 
-`@effect/cli` no longer exists. The CLI framework lives under `effect/cli`:
-`Command`, `Flag` (was `Options`), `Argument` (was `Args`), `GlobalFlag` (was
-`BuiltInOptions`), `CliConfig`, `CliOutput`, `CliError` (was `ValidationError`/
-`HelpDoc`). Ground truth for this reference is
-`ts/packages/cli/src/cli-config.ts`, `ts/packages/cli/src/cli-main.ts`, and
-`ts/packages/cli/src/invocation/invocation.ts` — read their full module docstrings before touching the runner, not just the excerpts below.
+The framework lives in `effect/cli`. The installed `effect@4.0.5` typings determine which interfaces compile. The CLI's registration and invocation modules determine how the repository uses them.
 
-## Command shape
+## Command registration
 
-```ts
+A command definition declares flags, arguments, descriptions, examples, and its imported handler. A handler accepts a plain params type and returns an Effect. The [contributor guide](../../../../ts/packages/cli/CONTRIBUTING.md) follows a filter through this structure.
+
+Every group uses `withRegisteredSubcommands` from `src/commands/registration.ts`. This helper supplies command identity and enforces inherited login metadata and supported shared flags. Calling `Command.withSubcommands` directly bypasses that behavior.
+
+The following is the current connections group.
+
+```ts no-check repo-file=ts/packages/cli/src/commands/connections/connections.cmd.ts
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
+import { connectionsCmd$List } from './list/connections.list.cmd';
+import { connectionsCmd$Remove } from './remove/connections.remove.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
-declare const toolsCmd$List: Command.Command<'list', {}, never, never>;
-declare const toolsCmd$Info: Command.Command<'info', {}, never, never>;
-
-export const rootToolsCmd = Command.make('tools').pipe(
-  Command.withDescription('Browse and inspect tools before executing them.'),
-  Command.withSubcommands([toolsCmd$List, toolsCmd$Info])
+export const rootConnectionsCmd = Command.make('connections').pipe(
+  Command.withDescription('Inspect and remove connected toolkit accounts.'),
+  withRegisteredSubcommands([connectionsCmd$List, connectionsCmd$Remove]),
+  withCommandMeta({ requiresLogin: true })
 );
 ```
 
-(`ts/packages/cli/src/commands/tools/tools.cmd.ts`, unchanged shape from v3 apart from
-the import path — `Command.make`/`.withDescription`/`.withSubcommands` all carried over.)
+The registration supplies its command path after parsing. Root shortcuts can reuse the same definition with different command paths. `withCommandMeta` declares login requirements, invocation hook policy, telemetry family, and unsupported dev shared flags. The selected handler begins after parsing, then runs its enabled hooks, records the invoked event, rejects unsupported flags, and checks login.
 
-Flags/arguments: `Flag.String/Boolean/Int/Literals/Directory(...)` (was
-`Options.text`/`.boolean`/`.integer`/`.choice`/`.directory`), with the same
-`.withDescription`/`.withDefault`/`.withAlias`/`.optional` combinators. `Argument.String(name)`
-takes a bare string name, not `{ name }`. Variadic: `Argument.variadic()` must be called
-with parens when piped — the bare unapplied reference resolves to the wrong overload.
+`CommandSurface` supplies root/dev context and dev shared flags. `actingUser()` resolves the acting user and project together. Handlers use these helpers instead of repeating user or project fallback rules. [ADR 0001](../../../../ts/packages/cli/docs/adr/0001-command-identity-after-parse.md) records the identity decision.
 
-## `CliConfig.builtIns`
+## Flags and arguments
 
-v4's `CliConfig.Service` shrank to one field, `builtIns` — the ordered list of active
-global flags. `ts/packages/cli/src/cli-config.ts`:
+Named options use `Flag.String`, `Flag.Boolean`, `Flag.Int`, `Flag.Literals`, or `Flag.Directory`. Positionals use `Argument.String`. Constructors use capital letters, while combinators use lowercase names. `Argument.variadic()` must be called when it is piped.
+
+This standalone framework example demonstrates an optional flag and a positional argument.
 
 ```ts
-import { GlobalFlag, type CliConfig } from 'effect/cli';
+import { Argument, Flag } from 'effect/cli';
 
+export const toolkit = Argument.String('toolkit');
+export const query = Flag.String('query').pipe(Flag.withDescription('Text search'), Flag.optional);
+```
+
+Optional flags produce `Option` values. Defaults, aliases, and descriptions belong in the declaration so help and parsing agree.
+
+## Builtins, help and version
+
+`src/cli-config.ts` enables the repository's Help and Version actions. Both wrap framework actions to record command identity without running a selected handler.
+
+```ts no-check repo-file=ts/packages/cli/src/cli-config.ts
+import { Help, Version } from 'src/commands/root-help';
+import type { CliConfig } from 'effect/cli';
+
+// Help and version use the framework parser, wrapped to record the command they answer for. The
+// help formatter keeps version output bare.
 export const ComposioCliConfig = {
-  builtIns: [GlobalFlag.Help],
+  builtIns: [Help, Version],
 } satisfies Partial<CliConfig.CliConfig.Service>;
 ```
 
-This drops `--version` (see the next section), `--wizard`, `--completions`, and
-`--log-level` (Composio has its own `--log-level` flag on the default command) — the v4
-equivalent of v3's `showBuiltIns: false`, scoped to exactly the one builtin Composio wants.
+`src/commands/root-help.ts` defines `helpFormatter()`. It starts from `CliOutput.defaultFormatter()`, keeps version output bare, and appends the root overview. `src/commands/index.ts` provides it as `CliOutput.Formatter`. Suggestions remain the framework's own.
 
-v3's `autoCorrectLimit` and `isCaseSensitive` have **no v4 config field**, and Composio no
-longer reproduces either behavior:
+`--version`, `-v`, and `composio version` print the version without a command-name prefix. A subcommand also accepts the version builtin. There is no version-token rewrite. The CLI declares its own log-level flag, while wizard and completion builtins are not enabled.
 
-- The parser always computes "Did you mean?" suggestions internally
-  (`internal/auto-suggest.ts`) and bakes them into `CliError.UnrecognizedOption` /
-  `CliError.UnknownSubcommand`'s `message` getter. There is no parser switch to disable
-  them, and Composio deliberately renders them as-is now — they are useful UX, not a
-  regression to work around.
-- v4's parser performs no case-folding anywhere — flag/subcommand matching is always
-  exact, so case-sensitivity needs no config.
+## Invocation and output
 
-`ComposioCliConfig`'s `builtIns` narrowing is the _only_ `CliConfig` customization
-Composio makes. There is no custom `CliOutput.Formatter` — `InvocationLive` provides no
-`CliOutput.layer(...)` at all, so `Command.runWith` uses v4's own
-`CliOutput.defaultFormatter()` for everything: suggestions render as-is. An earlier revision of this file
-wrapped `defaultFormatter()` to strip suggestions and flatten `formatVersion` back to a
-bare semver; that formatter (`ComposioCliOutputFormatter`, `withoutSuggestions`) was
-deleted as a deliberate PR-review decision — do not reintroduce it.
+`Command.runWith(rootCommand, { version })` receives argv without the executable and script prefix. `runInvocation` receives full argv. `runWithConfig` removes the first two entries immediately before dispatch.
 
-## `--version`, `-v`, and `composio version` print the same bare semver
+Compatibility normalization in `src/commands/argv-compat.ts` handles script tails for `run` and bare `listen --stream`. Effect still owns parsing. New command behavior does not need another argv parser.
 
-`GlobalFlag.Version` is not in `builtIns`. `src/commands/index.ts`'s
-`normalizeVersionFlag` rewrites a leading `--version`/`-v` to the `version` command before
-the parser runs, so all three spellings share `src/commands/version.cmd.ts`'s handler and
-print the bare `pkg.version`/`DEBUG_OVERRIDE_VERSION` via `ui.output()`. v4's
-`CliOutput.defaultFormatter().formatVersion` (`<name> v<version>`) is never reached: keeping
-the built-in active would have let `composio <subcommand> --version` render that banner
-instead, a second rendering of the same value. `composio <subcommand> --version` is therefore
-an unrecognized flag, like any other unknown option.
+`Command.runWith` renders help and parse failures before failing with `CliError.ShowHelp`. Explicit help and version use stdout. Implicit command help and errors use stderr. A parse failure has an exit code of 1 and records the canonical command path with reason `parse_error`. Help, version, parse failures, and groups that only show help skip selected-command hooks.
 
-## `runWith`, `ShowHelp`, and the no-double-print rule
+A reported failure carries `[Runtime.errorReported] = false`, which suppresses another print. `[Runtime.errorExitCode]` supplies its code. `runInvocation` reports an unreported expected failure or defect once and preserves the original cause for tests. `forRunner` marks what was printed before the runner exits through `Runtime.defaultTeardown`.
 
-v4's `Command.runWith` is not a passive parser: it **renders help and parse/validation
-errors itself** (`Console.log`/`Console.error`, via whichever `CliOutput.Formatter` is
-in context — v4's default, per above) for the resolved `commandPath`, then re-fails with
-`CliError.ShowHelp`. By the time that failure reaches this package's runner, the correct
-output has already been printed once, to the correct stream.
+The runner owns signals. Commands cooperate through `ShutdownSignal`. A stopped subscribed listener exits 0. `run` preserves its child's code or signal. Other interrupted commands exit with 128 plus the signal number. Commands do not assign `process.exitCode` or install signal handlers.
 
-`CliError.ShowHelp` is not a plain tagged error — it carries two `effect/Runtime`
-markers set on the class itself (`ts/vendor/.../cli/CliError.ts`):
-`[Runtime.errorExitCode] = errors.length ? 1 : 0` and `[Runtime.errorReported] = false`.
-Those markers _are_ the contract: "I already printed my own output; don't log me again
-(`errorReported`), and here is the process exit code to use (`errorExitCode`)."
-`Runtime.makeRunMain` (which `BunRuntime.runMain`/`NodeRuntime.runMain` build on) reads
-`errorReported` off the squashed cause to decide whether to auto-log, and
-`Runtime.defaultTeardown` reads `errorExitCode` the same way — see
-`ts/vendor/effect/packages/effect/src/Runtime.ts`'s `getErrorReported`/`getErrorExitCode`.
+## Verification
 
-The CLI's own errors use the same contract. A failure a command already printed
-(`ReportedFailure` from `src/effects/report-failure.ts`, `ReportedToolExecutionError`,
-`ShellSetupAbortError`, `SetupCommandError`, …) or that carries a custom code
-(`ChildProcessExited` from `composio run`) declares the markers as getters, and
-the CLI's runner (`ts/packages/cli/src/run-main.ts`, built on `Runtime.makeRunMain`) exits
-through `Runtime.defaultTeardown`: 0 on success, and otherwise with the squashed failure's
-`errorExitCode` (1 when unset). An exit made of interruptions alone after a signal is 128 + the
-signal's number instead (130, 143, 129). Nothing in `src/` assigns `process.exitCode`.
-
-`runInvocation` (`src/invocation/invocation.ts`) skips every failure whose `errorReported`
-is false (`ShowHelp` included); when nothing is left it prints nothing. If you add rendering
-anywhere in this path, you will double-print — this is the single most important rule when
-touching the runner. It prints an expected failure's message, a rejected key's hint, or, for
-whatever else is left, the defect report captured via `effect-errors`, then re-fails with the
-original `Cause`, so tests still match the typed error. `forRunner` (in `cli-main.ts`'s
-pipeline) turns what the invocation printed into a `ReportedFailure` and passes failures
-already on screen untouched, so the markers take over. `Command.runWith` never renders the
-defect path, so appending help text there is not a double-print.
-
-## argv preprocessing and the executable-prefix contract
-
-`Command.runWith(rootCommand, { version })` expects argv **without** the node/bun
-executable and script path prefix — unlike v3's `Command.run`, which stripped that
-prefix internally. `runInvocation` still passes the _full_ `process.argv` into
-`runWithConfig` (from `src/commands`); that module is responsible for slicing
-`argv.slice(2)` immediately before calling `Command.runWith`. Do not change this
-boundary without updating both sides together.
-
-Composio also does argv rewriting _before_ the parser ever sees the tokens, for cases
-`effect/cli`'s lexer cannot express on its own — e.g. `composio run`'s
-passthrough of arbitrary `-`-prefixed tokens to the spawned script (the lexer treats
-every `-`-prefixed token as an option unless a literal `--` precedes it, and that `--`
-split does not propagate into subcommands). Look at `normalizeRunPassthroughArgs` and
-its siblings (`normalizeListenStreamFlag`, `normalizeVersionFlag`,
-`normalizeHiddenDebugFlags`) in `src/commands/index.ts` for the established pattern
-before inventing a new one.
+`bun run validate:cli-skills` checks linked excerpts against source, compiles standalone snippets and the CLI tests, runs the documented command example and existing invocation contracts, then checks Effect diagnostics. Its linked examples and behavior tests are described in the `cli-command` skill's command-example reference. These checks certify the examples and selected contracts, not an agent's ability to solve an unseen task.
