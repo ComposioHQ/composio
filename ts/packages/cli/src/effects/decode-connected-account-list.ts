@@ -66,25 +66,6 @@ export class ConnectedAccountListShapeError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
-const ConnectedAccountPageEnvelope = Schema.Struct({
-  items: Schema.Array(Schema.Unknown),
-  next_cursor: Schema.NullOr(Schema.String).pipe(
-    Schema.withDecodingDefaultType(Effect.succeed(null))
-  ),
-});
-
-/** Validate pagination fields before traversal; callers still decode account items. */
-export const decodeConnectedAccountPage = (response: ApiConnectedAccountListResponse) =>
-  Schema.decodeUnknownEffect(ConnectedAccountPageEnvelope)(response).pipe(
-    Effect.mapError(
-      error =>
-        new ConnectedAccountListShapeError({
-          message: `Mismatched fields: ${formatParseErrorRedacted(error)}`,
-        })
-    ),
-    Effect.as(response)
-  );
-
 /**
  * Decodes a `client.connectedAccounts.list(...)` response into the CLI's
  * `ConnectedAccountListResponse`: the field allowlist that keeps

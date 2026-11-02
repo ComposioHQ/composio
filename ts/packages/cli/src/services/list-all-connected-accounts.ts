@@ -3,11 +3,8 @@ import type {
   ConnectedAccountListParams,
   ConnectedAccountListResponse,
 } from '@composio/client/resources/connected-accounts';
-import { Effect } from 'effect';
-import {
-  decodeConnectedAccountPage,
-  type ConnectedAccountListShapeError,
-} from 'src/effects/decode-connected-account-list';
+import { Effect, Stream } from 'effect';
+import { ConnectedAccountListShapeError } from 'src/effects/decode-connected-account-list';
 import { idempotent } from 'src/services/composio-request';
 
 /**
@@ -23,8 +20,9 @@ export const CONNECTED_ACCOUNTS_MAX_PAGE_SIZE = 50;
  * `connectedAccounts.list` call returns at most
  * {@link CONNECTED_ACCOUNTS_MAX_PAGE_SIZE} accounts, so a caller that needs
  * the whole list (e.g. "is this toolkit connected?") must come through here.
- * Validates each page's container and cursor before reading them. Callers
- * decode the collected accounts and wrap request or shape failures.
+ * The client's stream owns cursor traversal and pagination guards. Callers
+ * decode the collected accounts; pagination failures keep the CLI's redacted
+ * shape-error contract.
  */
 export const listAllConnectedAccounts = (
   client: ComposioClientShape,
@@ -33,17 +31,19 @@ export const listAllConnectedAccounts = (
   ConnectedAccountListResponse['items'],
   ComposioError | ConnectedAccountListShapeError
 > =>
-  Effect.gen(function* () {
-    const items: Array<ConnectedAccountListResponse['items'][number]> = [];
-    let cursor: string | undefined;
-    do {
-      const rawPage = yield* client.connectedAccounts.list(
-        { ...query, limit: CONNECTED_ACCOUNTS_MAX_PAGE_SIZE, cursor },
-        idempotent
-      );
-      const page = yield* decodeConnectedAccountPage(rawPage);
-      items.push(...page.items);
-      cursor = page.next_cursor || undefined;
-    } while (cursor !== undefined);
-    return items;
-  });
+  client.connectedAccounts
+    .listStream({ ...query, limit: CONNECTED_ACCOUNTS_MAX_PAGE_SIZE }, idempotent)
+    .pipe(
+      Stream.runCollect,
+      Effect.catchTag(
+        '@composio/client/ConfigurationError',
+        (error): Effect.Effect<never, ComposioError | ConnectedAccountListShapeError> =>
+          error.message.startsWith('Pagination ')
+            ? Effect.fail(
+                new ConnectedAccountListShapeError({
+                  message: 'Invalid connected-account pagination response.',
+                })
+              )
+            : Effect.fail(error)
+      )
+    );

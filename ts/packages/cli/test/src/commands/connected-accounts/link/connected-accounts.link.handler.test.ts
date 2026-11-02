@@ -2,7 +2,7 @@ import { Auth, make, type ComposioClientShape } from '@composio/client/effect';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
-import { ConfigProvider, Console, Effect, Fiber, Layer, Option } from 'effect';
+import { ConfigProvider, Console, Effect, Fiber, Layer, Option, Stream } from 'effect';
 import { HttpClient } from 'effect/http';
 import { TestClock } from 'effect/testing';
 import * as tempy from 'tempy';
@@ -184,6 +184,9 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
       list: fixture.connectedAccountsListFails
         ? () => Effect.fail(new Error('connectedAccounts.list is down'))
         : connectedAccounts.connectedAccounts.list,
+      listStream: fixture.connectedAccountsListFails
+        ? () => Stream.fail(new Error('connectedAccounts.list is down'))
+        : connectedAccounts.connectedAccounts.listStream,
       retrieve: (nanoid: string) => {
         retrieveAttempts += 1;
         return retrieveAttempts <= (fixture.retrieveFailsFirst ?? 0)

@@ -58,8 +58,8 @@ export const stubComposioClient = (
  * client to `respond`; every other resource keeps the test layer's answers.
  *
  * The test layer's answers do not model request options (`signal`,
- * `maxRetries`, or any header beyond `decode`) and `connectedAccounts.list`
- * never returns a `next_cursor`, so pagination, retries, and abort are
+ * `maxRetries`, or any header beyond `decode`), and its connected-account
+ * shadows serve fixtures without cursor traversal, so pagination, retries, and abort are
  * exercised through {@link stubComposioClient}, the real `make` over a
  * recording transport.
  */

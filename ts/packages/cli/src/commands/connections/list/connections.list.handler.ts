@@ -1,4 +1,4 @@
-import { Effect, Option } from 'effect';
+import { Effect, Match, Option } from 'effect';
 import {
   CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
   decodeAllConnectedAccountPages,
@@ -42,10 +42,13 @@ export const runConnectionsList = ({ toolkit }: ConnectionsListParams) =>
       Effect.mapError(
         cause =>
           new ConnectionsListRequestError({
-            message:
-              cause._tag === 'effects/ConnectedAccountListShapeError'
-                ? CONNECTED_ACCOUNTS_SHAPE_MESSAGE
-                : 'Failed to list connections.',
+            message: Match.value(cause).pipe(
+              Match.tag(
+                'effects/ConnectedAccountListShapeError',
+                () => CONNECTED_ACCOUNTS_SHAPE_MESSAGE
+              ),
+              Match.orElse(() => 'Failed to list connections.')
+            ),
             cause,
           })
       )

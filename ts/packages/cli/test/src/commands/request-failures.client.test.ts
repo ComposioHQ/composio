@@ -119,7 +119,14 @@ describe('CLI: malformed connected-account pages', () => {
           shape: 'object items',
           body: { items: { state: { access_token: 'must-not-leak' } }, next_cursor: null },
         },
-        { shape: 'invalid cursor', body: { items: [], next_cursor: { token: 'must-not-leak' } } },
+        {
+          shape: 'a repeated cursor',
+          body: { items: [], next_cursor: 'page-2' },
+        },
+        {
+          shape: 'a missing nonterminal cursor',
+          body: { items: [], current_page: 2, total_pages: 3 },
+        },
       ])('fails safely when page two has $shape', ({ body }) =>
         Effect.gen(function* () {
           const pages = [{ items: [], next_cursor: 'page-2' }, body];
@@ -267,7 +274,7 @@ describe('CLI: a rejected request the command recovers from', () => {
           pending({ toolkit: 'gmail', project_type: 'CONSUMER' }),
         ]);
         expect(stub.requests.map(request => request.path)).toEqual([
-          `${LISTING}user_ids=consumer-user-org_test&toolkit_slugs=gmail&statuses=ACTIVE&limit=100`,
+          `${LISTING}user_ids=consumer-user-org_test&toolkit_slugs=gmail&statuses=ACTIVE&limit=50`,
           `${LISTING}user_ids=consumer-user-org_test&statuses=ACTIVE&limit=50`,
         ]);
       })
@@ -296,7 +303,7 @@ describe('CLI: a rejected request the command recovers from', () => {
           pending({ project_type: 'DEVELOPER' }),
         ]);
         expect(stub.requests.map(request => request.path)).toEqual([
-          `${LISTING}user_ids=user_1&auth_config_ids=ac_1&statuses=ACTIVE&limit=100`,
+          `${LISTING}user_ids=user_1&auth_config_ids=ac_1&statuses=ACTIVE&limit=50`,
         ]);
       })
     );

@@ -63,6 +63,8 @@
   the first 50, and `composio execute` sessions left out toolkits whose
   accounts were past the first 50 active ones. All three now follow
   `next_cursor` through every page.
+  `composio link --list` and alias-conflict checks when linking also read
+  every page, including accounts filtered by an auth config.
 
 - `composio dev triggers listen --toolkits` now matches toolkits whose slug
   contains an underscore, such as `one_drive`, `launch_darkly` and

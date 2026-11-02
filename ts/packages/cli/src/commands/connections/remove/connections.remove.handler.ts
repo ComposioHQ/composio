@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Effect, Match } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import {
   CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
@@ -114,10 +114,13 @@ export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) 
         Effect.mapError(
           cause =>
             new ConnectionsRemovalRequestError({
-              message:
-                cause._tag === 'effects/ConnectedAccountListShapeError'
-                  ? CONNECTED_ACCOUNTS_SHAPE_MESSAGE
-                  : 'Failed to list connections.',
+              message: Match.value(cause).pipe(
+                Match.tag(
+                  'effects/ConnectedAccountListShapeError',
+                  () => CONNECTED_ACCOUNTS_SHAPE_MESSAGE
+                ),
+                Match.orElse(() => 'Failed to list connections.')
+              ),
               cause,
             })
         )
