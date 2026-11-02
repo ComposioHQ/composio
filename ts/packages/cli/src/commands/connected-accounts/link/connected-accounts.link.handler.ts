@@ -25,6 +25,7 @@ import {
 } from 'src/services/connected-account-selection';
 import { decodeConnectedAccountItems } from 'src/effects/decode-connected-account-list';
 import { idempotent } from 'src/services/composio-request';
+import { listAllConnectedAccounts } from 'src/services/list-all-connected-accounts';
 import {
   BrowserOpenError,
   ConnectedAccountsDecodeError,
@@ -114,23 +115,19 @@ const resolveNormalizedAliasOption = (alias: Option.Option<string>, tree: Comman
     )
   );
 
-/** The user's active accounts in a toolkit or an auth config, up to one page of 100. */
+/** Every active account in the user's toolkit or auth config. */
 const listActiveConnectedAccounts = (params: {
   readonly client: ComposioClientShape;
   readonly userId: string;
   readonly toolkitSlug?: string;
   readonly authConfigId?: string;
 }) =>
-  params.client.connectedAccounts.list(
-    {
-      user_ids: [params.userId],
-      toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
-      auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
-      statuses: ['ACTIVE'],
-      limit: 100,
-    },
-    idempotent
-  );
+  listAllConnectedAccounts(params.client, {
+    user_ids: [params.userId],
+    toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
+    auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
+    statuses: ['ACTIVE'],
+  });
 
 /**
  * The accounts that power the `--alias` hints. This fetch is auxiliary: a transient list
@@ -138,7 +135,6 @@ const listActiveConnectedAccounts = (params: {
  */
 const existingAccountsForHints = (params: Parameters<typeof listActiveConnectedAccounts>[0]) =>
   listActiveConnectedAccounts(params).pipe(
-    Effect.map((response): ReadonlyArray<ExistingAccountLabel> => response.items),
     Effect.catch(() => Effect.succeed<ReadonlyArray<ExistingAccountLabel>>([]))
   );
 
@@ -396,24 +392,18 @@ export const handleListConnectedAccounts = (params: ConnectedAccountsLinkParams)
 
     const accounts = yield* ui.withSpinner(
       `Listing connected accounts for "${toolkitSlug}"...`,
-      client.connectedAccounts
-        .list(
-          {
-            toolkit_slugs: [toolkitSlug],
-            user_ids: [resolvedUserId],
-            statuses: ['ACTIVE'],
-            limit: 100,
-          },
-          idempotent
+      listAllConnectedAccounts(client, {
+        toolkit_slugs: [toolkitSlug],
+        user_ids: [resolvedUserId],
+        statuses: ['ACTIVE'],
+      }).pipe(
+        failedWith(
+          ConnectedAccountsRequestError,
+          `Failed to list connected accounts for "${toolkitSlug}".`
         )
-        .pipe(
-          failedWith(
-            ConnectedAccountsRequestError,
-            `Failed to list connected accounts for "${toolkitSlug}".`
-          )
-        )
+      )
     );
-    const connectedAccounts = yield* decodeConnectedAccountItems(accounts.items).pipe(
+    const connectedAccounts = yield* decodeConnectedAccountItems(accounts).pipe(
       Effect.mapError(
         cause =>
           new ConnectedAccountsDecodeError({
