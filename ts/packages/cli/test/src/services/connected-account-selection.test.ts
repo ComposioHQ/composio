@@ -132,6 +132,26 @@ const toolkitSlugsQuery = (path: string) =>
   new URL(path, 'https://stub.invalid').searchParams.get('toolkit_slugs');
 
 describe('listConnectedAccountsForToolkit', () => {
+  it.effect('stops at an empty terminal cursor without duplicating accounts', () =>
+    Effect.gen(function* () {
+      const { client, requests } = stubComposioClient(
+        pagesInOrder(
+          page([makeAccount({ id: 'con_gmail' })], { total_items: 1, next_cursor: '' }),
+          page([makeAccount({ id: 'con_gmail' })])
+        )
+      );
+
+      const accounts = yield* listConnectedAccountsForToolkit({
+        client,
+        userId: 'default',
+        toolkitSlug: 'gmail',
+      });
+
+      expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
+      expect(requests).toHaveLength(1);
+    })
+  );
+
   it.effect('matches toolkit slugs the way the grouping helpers do, from the shared list', () =>
     Effect.gen(function* () {
       const { client, requests } = stubComposioClient(

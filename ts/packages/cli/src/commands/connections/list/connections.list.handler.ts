@@ -38,7 +38,18 @@ export const runConnectionsList = ({ toolkit }: ConnectionsListParams) =>
     const rawItems = yield* listAllConnectedAccounts(client, {
       toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
       user_ids: [consumerUserId],
-    }).pipe(failedWith(ConnectionsListRequestError, 'Failed to list connections.'));
+    }).pipe(
+      Effect.mapError(
+        cause =>
+          new ConnectionsListRequestError({
+            message:
+              cause._tag === 'effects/ConnectedAccountListShapeError'
+                ? CONNECTED_ACCOUNTS_SHAPE_MESSAGE
+                : 'Failed to list connections.',
+            cause,
+          })
+      )
+    );
     const items = yield* decodeAllConnectedAccountPages(rawItems).pipe(
       failedWith(ConnectionsListRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
     );

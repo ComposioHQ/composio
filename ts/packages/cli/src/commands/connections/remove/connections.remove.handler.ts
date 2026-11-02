@@ -111,7 +111,16 @@ export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) 
     const rawItems = yield* ui.withSpinner(
       'Fetching connections...',
       listAllConnectedAccounts(client, { user_ids: [consumerUserId] }).pipe(
-        failedWith(ConnectionsRemovalRequestError, 'Failed to list connections.')
+        Effect.mapError(
+          cause =>
+            new ConnectionsRemovalRequestError({
+              message:
+                cause._tag === 'effects/ConnectedAccountListShapeError'
+                  ? CONNECTED_ACCOUNTS_SHAPE_MESSAGE
+                  : 'Failed to list connections.',
+              cause,
+            })
+        )
       )
     );
     const accounts = yield* decodeAllConnectedAccountPages(rawItems).pipe(

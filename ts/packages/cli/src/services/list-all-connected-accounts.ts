@@ -4,6 +4,10 @@ import type {
   ConnectedAccountListResponse,
 } from '@composio/client/resources/connected-accounts';
 import { Effect } from 'effect';
+import {
+  decodeConnectedAccountPage,
+  type ConnectedAccountListShapeError,
+} from 'src/effects/decode-connected-account-list';
 import { idempotent } from 'src/services/composio-request';
 
 /**
@@ -19,22 +23,27 @@ export const CONNECTED_ACCOUNTS_MAX_PAGE_SIZE = 50;
  * `connectedAccounts.list` call returns at most
  * {@link CONNECTED_ACCOUNTS_MAX_PAGE_SIZE} accounts, so a caller that needs
  * the whole list (e.g. "is this toolkit connected?") must come through here.
- * Fails with the client's error; each caller wraps it in its own error.
+ * Validates each page's container and cursor before reading them. Callers
+ * decode the collected accounts and wrap request or shape failures.
  */
 export const listAllConnectedAccounts = (
   client: ComposioClientShape,
   query: Omit<ConnectedAccountListParams, 'cursor' | 'limit'>
-): Effect.Effect<ConnectedAccountListResponse['items'], ComposioError> =>
+): Effect.Effect<
+  ConnectedAccountListResponse['items'],
+  ComposioError | ConnectedAccountListShapeError
+> =>
   Effect.gen(function* () {
     const items: Array<ConnectedAccountListResponse['items'][number]> = [];
     let cursor: string | undefined;
     do {
-      const page = yield* client.connectedAccounts.list(
+      const rawPage = yield* client.connectedAccounts.list(
         { ...query, limit: CONNECTED_ACCOUNTS_MAX_PAGE_SIZE, cursor },
         idempotent
       );
+      const page = yield* decodeConnectedAccountPage(rawPage);
       items.push(...page.items);
-      cursor = page.next_cursor ?? undefined;
+      cursor = page.next_cursor || undefined;
     } while (cursor !== undefined);
     return items;
   });
