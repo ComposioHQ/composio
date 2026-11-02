@@ -1274,6 +1274,8 @@ class Triggers(Resource):
         *,
         connected_account_id: str,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+        type: t.Optional[t.Literal["webhook", "poll"]] = None,
+        polling_interval: t.Optional[int] = None,
     ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse: ...
 
     @t.overload
@@ -1283,6 +1285,8 @@ class Triggers(Resource):
         *,
         user_id: str,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+        type: t.Optional[t.Literal["webhook", "poll"]] = None,
+        polling_interval: t.Optional[int] = None,
     ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse: ...
 
     def create(
@@ -1292,6 +1296,8 @@ class Triggers(Resource):
         user_id: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+        type: t.Optional[t.Literal["webhook", "poll"]] = None,
+        polling_interval: t.Optional[int] = None,
     ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse:
         """
         Create a trigger instance
@@ -1302,7 +1308,13 @@ class Triggers(Resource):
             active connection for this user and the trigger's toolkit.
         :param connected_account_id: The ID of the connected account to pin
         :param trigger_config: The configuration of the trigger
-        :return: The trigger instance
+        :param type: ``webhook`` or ``poll``, for a trigger that supports both.
+            Omit it to let Composio choose.
+        :param polling_interval: Minutes between polls, for an instance that polls.
+            Wins over ``trigger_config["interval"]``.
+        :return: The trigger instance, with the ``type`` it uses, the
+            ``fallback_reason`` when it polls after a webhook was unavailable, and
+            its ``polling_interval``
         """
         # Treat blank strings as missing so an empty or whitespace-only
         # `user_id` / `connected_account_id` does not slip past the guard below
@@ -1337,6 +1349,8 @@ class Triggers(Resource):
             connected_account_id=none_to_omit(connected_account_id),
             toolkit_versions=self._toolkit_versions,
             body_trigger_config_1=none_to_omit(trigger_config),
+            type=none_to_omit(type),
+            polling_interval=none_to_omit(polling_interval),
             user_id=none_to_omit(user_id),
         )
 
