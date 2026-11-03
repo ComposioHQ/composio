@@ -386,6 +386,9 @@ export const TestLayer = (input?: TestLiveInput) =>
         createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+            type: 'webhook' as const,
+            fallback_reason: null,
+            polling_interval: null,
           }),
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),

@@ -534,7 +534,7 @@ release = [
 [package.metadata]
 requires-dist = [
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "composio-client", specifier = "==2.0.0rc23" },
+    { name = "composio-client", specifier = "==2.0.0" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11,<1" },
     { name = "jsonschema", specifier = ">=4.23.0,<5" },
     { name = "openai", specifier = ">=2.48.0,<4" },
@@ -586,16 +586,16 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.0.0rc23"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/41/1a6a076f44639f712731300f1b3e4688be8dfc2d61d9576f9803016e18fb/composio_client-2.0.0rc23.tar.gz", hash = "sha256:763d02a48a22aca9d078d9fcbed576fcea2b5df45cf6de237224fbe8e038e4c3", size = 582099, upload-time = "2026-10-30T14:22:14.593Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/7b/be475ecbab35280d6f565b689724d350c06491d3412d65b7f69b4b48c76a/composio_client-2.0.0.tar.gz", hash = "sha256:78d852ace33f6c330bf66628f2e794e8f6a333eeed20f740d162160ec0466944", size = 588293, upload-time = "2026-11-03T08:31:56.577Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/68/016860107362b89ed6772b642011d6264b3394714b3766e4cd29490a03c6/composio_client-2.0.0rc23-py3-none-any.whl", hash = "sha256:0c29e312169e68ba642ebd1e6cb65d9fe43d6372ac901a9a7e2e3ab7d5e1ae60", size = 468192, upload-time = "2026-10-30T14:22:13.124Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/be/2ce8fe148ffaa6ad343a8eea6a4f8558c740fca2308970980e7874f6dbf5/composio_client-2.0.0-py3-none-any.whl", hash = "sha256:4de6ef10ae4b731857dd70b6edbf0fd62c4fd41169e5f8d3f21655637c53cfe6", size = 471648, upload-time = "2026-11-03T08:31:54.624Z" },
 ]
 
 [[package]]
@@ -2307,11 +2307,11 @@ wheels = [
 
 [[package]]
 name = "pyasn1"
-version = "0.6.4"
+version = "0.6.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a4/9a/23310166d960def5897e91fe20e5b724601b02a22e84ba1f94232c0b7f67/pyasn1-0.6.4.tar.gz", hash = "sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", size = 151262, upload-time = "2026-07-09T01:12:33.988Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/7e/3c0da41061a2021cac7cd524fd57092adbe5b515e8bf9005702e366802e2/pyasn1-0.6.5.tar.gz", hash = "sha256:6b11616a6bcf3a40e635f082bb232fa57b5e0dd7f517bd7ddd69ec3794508a47", size = 155152, upload-time = "2026-10-27T06:32:49.125Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/3b/6163796d69c3977d1e4287bea4a6979161cbbdd170ebb430511e8e1999ce/pyasn1-0.6.4-py3-none-any.whl", hash = "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b", size = 84410, upload-time = "2026-07-09T01:12:32.92Z" },
+    { url = "https://files.pythonhosted.org/packages/19/1f/3eefd5c84c35cae44549ce1c7f7e58f7945b34f5a6bce07a135438522073/pyasn1-0.6.5-py3-none-any.whl", hash = "sha256:4017b0fce125096b8573b39c989fdb1a4b19cf761e683398184550fea0e66587", size = 84807, upload-time = "2026-10-27T06:32:48.045Z" },
 ]
 
 [[package]]
