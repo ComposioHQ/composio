@@ -56,6 +56,9 @@ test('only canonical stable versions cross the registry/event boundary', () => {
     '2.0.1+meta',
     '02.0.1',
     '2.0.1\n',
+    ' 2.0.1',
+    '2.0.1 ',
+    '9007199254740993.0.0',
     '$(id)',
     '2.0',
   ]) {

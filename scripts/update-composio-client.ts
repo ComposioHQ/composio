@@ -2,7 +2,7 @@ import { dirname, resolve } from 'node:path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { Data, Effect, FileSystem, Schema } from 'effect';
-import { compare } from 'semver';
+import { compare, valid } from 'semver';
 
 export const branch = 'chore/update-composio-client';
 export const paths = [
@@ -15,10 +15,13 @@ export const paths = [
   'ts/packages/cli/CHANGELOG.md',
 ] as const;
 
+// The pattern admits only X.Y.Z; semver round-trips it, so whitespace and
+// out-of-range components are rejected too.
 export const stableVersion = Schema.String.check(
-  Schema.isPattern(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, {
-    message: 'Expected a canonical stable semver version',
-  })
+  Schema.makeFilter(
+    value => /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value) && valid(value) === value,
+    { message: 'Expected a canonical stable semver version' }
+  )
 );
 const sha = Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/));
 const dispatch = Schema.Struct({
