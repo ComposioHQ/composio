@@ -16,7 +16,7 @@ tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
 # Get response from the LLM
 response = anthropic_client.messages.create(
-    model="claude-3-opus-20240229",
+    model="claude-opus-4-6",
     max_tokens=1024,
     tools=tools,
     messages=[
