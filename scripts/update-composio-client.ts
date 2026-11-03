@@ -1,9 +1,8 @@
 import { dirname, resolve } from 'node:path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { Data, Effect, FileSystem } from 'effect';
-import { compare, valid } from 'semver';
-import { z } from 'zod';
+import { Data, Effect, FileSystem, Schema } from 'effect';
+import { compare } from 'semver';
 
 export const branch = 'chore/update-composio-client';
 export const paths = [
@@ -16,49 +15,54 @@ export const paths = [
   'ts/packages/cli/CHANGELOG.md',
 ] as const;
 
-export const stableVersion = z
-  .string()
-  .refine(
-    value => /^\d+\.\d+\.\d+$/.test(value) && valid(value) === value,
-    'Expected a canonical stable semver version'
-  );
-const sha = z.string().regex(/^[a-f0-9]{40}$/);
-const dispatch = z
-  .object({
-    version: stableVersion,
-    source_sha: sha,
-    source_repository: z.literal('ComposioHQ/composio-client'),
+export const stableVersion = Schema.String.check(
+  Schema.isPattern(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, {
+    message: 'Expected a canonical stable semver version',
   })
-  .strict();
-const pypiFile = z.object({ yanked: z.boolean(), filename: z.string() });
-const npmIndex = z.object({ versions: z.record(z.string(), z.unknown()) });
-const pypiIndex = z.object({ releases: z.record(z.string(), z.array(pypiFile)) });
-const npmRelease = z.object({
-  name: z.literal('@composio/client'),
+);
+const sha = Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/));
+const dispatch = Schema.Struct({
   version: stableVersion,
-  dist: z.object({
-    integrity: z.string().min(1),
-    tarball: z.url().startsWith('https://registry.npmjs.org/'),
+  source_sha: sha,
+  source_repository: Schema.Literal('ComposioHQ/composio-client'),
+});
+const dispatchEvent = Schema.Struct({ client_payload: Schema.Unknown });
+const pypiFile = Schema.Struct({ yanked: Schema.Boolean, filename: Schema.String });
+const npmIndex = Schema.Struct({ versions: Schema.Record(Schema.String, Schema.Unknown) });
+const pypiIndex = Schema.Struct({
+  releases: Schema.Record(Schema.String, Schema.Array(pypiFile)),
+});
+const npmRelease = Schema.Struct({
+  name: Schema.Literal('@composio/client'),
+  version: stableVersion,
+  dist: Schema.Struct({
+    integrity: Schema.NonEmptyString,
+    tarball: Schema.String.check(Schema.isPattern(/^https:\/\/registry\.npmjs\.org\/\S+$/)),
   }),
 });
-const pypiRelease = z.object({
-  info: z.object({ name: z.literal('composio-client'), version: stableVersion }),
-  urls: z.array(pypiFile),
+const pypiRelease = Schema.Struct({
+  info: Schema.Struct({ name: Schema.Literal('composio-client'), version: stableVersion }),
+  urls: Schema.Array(pypiFile),
 });
-const artifactSchema = z
-  .object({
-    version: stableVersion,
-    base_sha: sha,
-    files: z
-      .array(z.object({ path: z.enum(paths), content: z.string() }).strict())
-      .min(1)
-      .max(paths.length),
-  })
-  .strict();
+const artifactSchema = Schema.Struct({
+  version: stableVersion,
+  base_sha: sha,
+  files: Schema.Array(
+    Schema.Struct({ path: Schema.Literals(paths), content: Schema.String })
+  ).check(Schema.isMinLength(1), Schema.isMaxLength(paths.length)),
+});
+
+const decode = <S extends Schema.Codec<unknown, unknown>>(schema: S) =>
+  Schema.decodeUnknownSync(schema);
+// Inputs crossing a trust boundary must not carry fields the updater ignores.
+const decodeExact = <S extends Schema.Codec<unknown, unknown>>(schema: S) =>
+  Schema.decodeUnknownSync(schema, { onExcessProperty: 'error' });
+
+export const isStableVersion = Schema.is(stableVersion);
 
 export function validateEvent(name: string, payload: unknown) {
   if (name === 'repository_dispatch') {
-    return z.object({ client_payload: dispatch }).parse(payload).client_payload;
+    return decodeExact(dispatch)(decode(dispatchEvent)(payload).client_payload);
   }
   if (name !== 'schedule' && name !== 'workflow_dispatch')
     throw new Error(`Unsupported event: ${name}`);
@@ -66,11 +70,10 @@ export function validateEvent(name: string, payload: unknown) {
 }
 
 export function commonStableVersion(npmData: unknown, pypiData: unknown): string {
-  const npm = npmIndex.parse(npmData);
-  const pypi = pypiIndex.parse(pypiData);
+  const npm = decode(npmIndex)(npmData);
+  const pypi = decode(pypiIndex)(pypiData);
   const versions = Object.keys(npm.versions).filter(
-    version =>
-      stableVersion.safeParse(version).success && pypi.releases[version]?.some(file => !file.yanked)
+    version => isStableVersion(version) && pypi.releases[version]?.some(file => !file.yanked)
   );
   versions.sort(compare);
   const latest = versions.at(-1);
@@ -79,8 +82,8 @@ export function commonStableVersion(npmData: unknown, pypiData: unknown): string
 }
 
 export function verifyReleases(version: string, npmData: unknown, pypiData: unknown) {
-  const npm = npmRelease.parse(npmData);
-  const pypi = pypiRelease.parse(pypiData);
+  const npm = decode(npmRelease)(npmData);
+  const pypi = decode(pypiRelease)(pypiData);
   if (
     npm.version !== version ||
     pypi.info.version !== version ||
@@ -90,51 +93,25 @@ export function verifyReleases(version: string, npmData: unknown, pypiData: unkn
   }
 }
 
+export const decodeArtifact = decodeExact(artifactSchema);
+
 const catalogPattern = /^(\s*'@composio\/client':\s*)([^\s#]+)(\s*)$/gm;
 const pythonPattern = /("composio-client==)([^"\s]+)(")/g;
 
 function onePin(content: string, pattern: RegExp, label: string): string {
   const matches = [...content.matchAll(pattern)];
   if (matches.length !== 1) throw new Error(`Expected exactly one ${label} pin`);
-  return stableVersion.parse(matches[0]?.[2]);
+  return decode(stableVersion)(matches[0]?.[2]);
+}
+
+function required(files: Record<string, string>, path: string): string {
+  const content = files[path];
+  if (content === undefined) throw new Error(`Missing ${path}`);
+  return content;
 }
 
 export function catalogVersion(content: string) {
   return onePin(content, catalogPattern, 'catalog');
-}
-
-function exactReleaseAgeExclusion(content: string, target: string) {
-  const policy = z
-    .object({ minimumReleaseAgeExclude: z.array(z.string()) })
-    .parse(Bun.YAML.parse(content));
-  const clientExclusions = policy.minimumReleaseAgeExclude.filter(
-    value => value === '@composio/client' || value.startsWith('@composio/client@')
-  );
-  const pattern = /^([ \t]*-[ \t]*)['"]?@composio\/client(?:@[^'"\r\n]+)?['"]?[ \t]*$/gm;
-  let result: string;
-  if (clientExclusions.length > 0) {
-    let replaced = false;
-    result = content.replace(pattern, (_line, prefix: string) => {
-      if (replaced) return '';
-      replaced = true;
-      return `${prefix}'@composio/client@${target}'`;
-    });
-  } else {
-    result = content.replace(
-      /^minimumReleaseAgeExclude:[ \t]*$/m,
-      `minimumReleaseAgeExclude:\n  - '@composio/client@${target}'`
-    );
-  }
-  const exclusions = z
-    .object({ minimumReleaseAgeExclude: z.array(z.string()) })
-    .parse(Bun.YAML.parse(result))
-    .minimumReleaseAgeExclude.filter(
-      value => value === '@composio/client' || value.startsWith('@composio/client@')
-    );
-  if (exclusions.length !== 1 || exclusions[0] !== `@composio/client@${target}`) {
-    throw new Error('Cannot restrict the client release-age exemption to the exact target');
-  }
-  return result;
 }
 
 export function planUpdates(
@@ -142,16 +119,16 @@ export function planUpdates(
   targetInput: string,
   existingCandidate?: string
 ) {
-  const target = stableVersion.parse(targetInput);
+  const target = decode(stableVersion)(targetInput);
   const current = [
-    catalogVersion(z.string().parse(files['pnpm-workspace.yaml'])),
-    onePin(z.string().parse(files['python/pyproject.toml']), pythonPattern, 'Python pyproject'),
-    onePin(z.string().parse(files['python/setup.py']), pythonPattern, 'Python setup'),
+    catalogVersion(required(files, 'pnpm-workspace.yaml')),
+    onePin(required(files, 'python/pyproject.toml'), pythonPattern, 'Python pyproject'),
+    onePin(required(files, 'python/setup.py'), pythonPattern, 'Python setup'),
   ];
   if (current[1] !== current[2])
     throw new Error('Python client pins disagree; reconcile metadata first');
   if (
-    [...current, ...(existingCandidate ? [stableVersion.parse(existingCandidate)] : [])].some(
+    [...current, ...(existingCandidate ? [decode(stableVersion)(existingCandidate)] : [])].some(
       version => compare(version, target) > 0
     )
   ) {
@@ -159,13 +136,13 @@ export function planUpdates(
   }
   const changed: Record<string, string> = {};
   if (current[0] !== target) {
-    changed['pnpm-workspace.yaml'] = exactReleaseAgeExclusion(
-      files['pnpm-workspace.yaml']!.replace(catalogPattern, `$1${target}$3`),
-      target
+    changed['pnpm-workspace.yaml'] = required(files, 'pnpm-workspace.yaml').replace(
+      catalogPattern,
+      `$1${target}$3`
     );
     changed['.changeset/composio-client-update.md'] =
       `---\n'@composio/core': patch\n---\n\nUpdate @composio/client to ${target} to include the latest API changes.\n`;
-    const changelog = z.string().parse(files['ts/packages/cli/CHANGELOG.md']);
+    const changelog = required(files, 'ts/packages/cli/CHANGELOG.md');
     const header = '# @composio/cli\n\n## Unreleased\n';
     const marker = '### Patch Changes\n';
     if (!changelog.startsWith(header)) {
@@ -182,7 +159,7 @@ export function planUpdates(
   }
   if (current[1] !== target) {
     for (const path of ['python/pyproject.toml', 'python/setup.py']) {
-      changed[path] = files[path]!.replace(pythonPattern, `$1${target}$3`);
+      changed[path] = required(files, path).replace(pythonPattern, `$1${target}$3`);
     }
   }
   return { changed, typescript: current[0] !== target, python: current[1] !== target };
@@ -441,33 +418,13 @@ export const prepare = (
       yield* write(resolve(root, path), content);
     }
     if (plan.typescript) {
-      const catalog = yield* checked(() => z.string().parse(plan.changed['pnpm-workspace.yaml']));
-      // pnpm validates the old lock before resolving the new one. Its current
-      // client may also be less than three days old: exempt both exact versions
-      // during resolution, then retain only the target in the committed policy.
-      const previous = yield* checked(() =>
-        catalogVersion(z.string().parse(files['pnpm-workspace.yaml']))
-      );
-      const exclusion = `'@composio/client@${version}'`;
-      const resolving = catalog.replace(exclusion, `'@composio/client@${previous} || ${version}'`);
-      if (resolving === catalog)
-        return yield* Effect.fail(
-          new ClientUpdateValidationError({
-            message: 'Cannot widen the client release-age exemption for lock resolution',
-          })
-        );
-      yield* Effect.acquireUseRelease(
-        write(resolve(root, 'pnpm-workspace.yaml'), resolving),
-        () =>
-          runCommand(
-            ['pnpm', 'install', '--lockfile-only', '--ignore-scripts', '--no-frozen-lockfile'],
-            root
-          ),
-        () => write(resolve(root, 'pnpm-workspace.yaml'), catalog)
+      yield* runCommand(
+        ['pnpm', 'install', '--lockfile-only', '--ignore-scripts', '--no-frozen-lockfile'],
+        root
       );
     }
     if (plan.python) {
-      const python = yield* checked(() => z.string().min(1).parse(Bun.which('python')));
+      const python = yield* checked(() => decode(Schema.NonEmptyString)(Bun.which('python')));
       yield* runCommand(
         ['uv', 'lock', '--python', python, '--upgrade-package', 'composio-client'],
         root
@@ -483,7 +440,7 @@ export const prepare = (
       );
     }
     const base = yield* git(['rev-parse', 'HEAD'], root);
-    const baseSha = yield* checked(() => sha.parse(base.stdout.trim()));
+    const baseSha = yield* checked(() => decode(sha)(base.stdout.trim()));
     const artifactFiles = yield* Effect.all(
       [...new Set([...diffPaths, ...Object.keys(plan.changed)])].map(path =>
         Effect.gen(function* () {
@@ -493,7 +450,7 @@ export const prepare = (
       { concurrency: 'unbounded' }
     );
     const artifact = yield* checked(() =>
-      artifactSchema.parse({
+      decodeArtifact({
         version,
         base_sha: baseSha,
         files: artifactFiles,
@@ -508,7 +465,7 @@ export const prepare = (
 
 export const applyArtifact = (root: string, data: unknown, baseSha: string) =>
   Effect.gen(function* () {
-    const artifact = yield* checked(() => artifactSchema.parse(data));
+    const artifact = yield* checked(() => decodeArtifact(data));
     if (artifact.base_sha !== baseSha)
       return yield* Effect.fail(
         new ClientUpdateValidationError({

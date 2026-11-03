@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { dirname, join } from 'node:path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { Effect, FileSystem } from 'effect';
+import { Effect, FileSystem, Schema } from 'effect';
 import {
   ClientUpdateCommandError,
   ClientUpdateIoError,
@@ -9,9 +9,9 @@ import {
   applyArtifact,
   catalogVersion,
   commonStableVersion,
+  isStableVersion,
   planUpdates,
   prepare,
-  stableVersion,
   validateEvent,
   verifyReleases,
 } from '../scripts/update-composio-client';
@@ -42,7 +42,7 @@ const removeDirectory = (path: string) =>
 const readText = (path: string) => run(withFs(fs => fs.readFileString(path)));
 const files = {
   'pnpm-workspace.yaml':
-    "catalog:\n  '@composio/client': 2.0.0\n  effect: ^4.1.0\nminimumReleaseAgeExclude:\n  - '@composio/client'\n  - effect@4.0.3\n",
+    "catalog:\n  '@composio/client': 2.0.0\n  effect: ^4.1.0\nminimumReleaseAgeExclude:\n  - '@composio/*'\n  - effect@4.0.3\n",
   'python/pyproject.toml': 'dependencies = [\n  "composio-client==2.0.0",\n]\n',
   'python/setup.py': 'install_requires=["composio-client==2.0.0"],\n',
   'ts/packages/cli/CHANGELOG.md':
@@ -59,7 +59,7 @@ test('only canonical stable versions cross the registry/event boundary', () => {
     '$(id)',
     '2.0',
   ]) {
-    expect(stableVersion.safeParse(version).success).toBe(false);
+    expect(isStableVersion(version)).toBe(false);
   }
   const payload = {
     version: '2.0.1',
@@ -124,9 +124,9 @@ test('planning updates owned pins, SDK changeset and CLI release note once', () 
   expect(plan.typescript).toBe(true);
   expect(plan.python).toBe(true);
   expect(catalogVersion(plan.changed['pnpm-workspace.yaml']!)).toBe('2.0.1');
-  expect(plan.changed['pnpm-workspace.yaml']).toContain("- '@composio/client@2.0.1'");
-  expect(plan.changed['pnpm-workspace.yaml']).not.toContain("- '@composio/client'\n");
-  expect(plan.changed['pnpm-workspace.yaml']).toContain('- effect@4.0.3');
+  expect(plan.changed['pnpm-workspace.yaml']).toBe(
+    files['pnpm-workspace.yaml'].replace("'@composio/client': 2.0.0", "'@composio/client': 2.0.1")
+  );
   expect(plan.changed['python/setup.py']).toContain('composio-client==2.0.1');
   expect(plan.changed['python/pyproject.toml']).toContain('composio-client==2.0.1');
   expect(plan.changed['.changeset/composio-client-update.md']).toContain("'@composio/core': patch");
@@ -136,17 +136,14 @@ test('planning updates owned pins, SDK changeset and CLI release note once', () 
   expect(planUpdates(files, '2.0.1').changed).toEqual(plan.changed);
 });
 
-test('release-age exemption advances exactly the client version and preserves other exclusions', () => {
-  const catalog = files['pnpm-workspace.yaml'].replace(
-    "- '@composio/client'",
-    "- '@composio/client@2.0.0'"
-  );
-  const updated = planUpdates({ ...files, 'pnpm-workspace.yaml': catalog }, '2.0.1').changed[
-    'pnpm-workspace.yaml'
-  ];
-  expect(updated).toContain("'@composio/client@2.0.1'");
-  expect(updated).not.toContain("'@composio/client@2.0.0'");
-  expect(updated).toContain('- effect@4.0.3');
+test('the workspace exempts every first-party package from the release-age wait', async () => {
+  const workspace = Schema.decodeUnknownSync(
+    Schema.Struct({
+      minimumReleaseAge: Schema.Number,
+      minimumReleaseAgeExclude: Schema.Array(Schema.String),
+    })
+  )(Bun.YAML.parse(await readText(new URL('../pnpm-workspace.yaml', import.meta.url).pathname)));
+  expect(workspace.minimumReleaseAgeExclude).toContain('@composio/*');
 });
 
 test('CLI notes create an Unreleased patch section without changing released history', () => {
@@ -280,11 +277,6 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
           runCommand: args =>
             Effect.gen(function* () {
               yield* Effect.sync(() => commands.push(args));
-              if (args[0] === 'pnpm') {
-                expect(
-                  yield* fixtureIo(fs => fs.readFileString(join(root, 'pnpm-workspace.yaml')))
-                ).toContain("'@composio/client@2.0.0 || 2.0.1'");
-              }
               if (failLock)
                 return yield* Effect.fail(
                   new ClientUpdateCommandError({ command: args, message: 'lock resolution failed' })
@@ -319,7 +311,7 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
         ]);
         expect(JSON.parse(await readText(artifactPath)).version).toBe('2.0.1');
       }
-      expect(await readText(join(root, 'pnpm-workspace.yaml'))).not.toContain('||');
+      expect(catalogVersion(await readText(join(root, 'pnpm-workspace.yaml')))).toBe('2.0.1');
     } finally {
       await removeDirectory(root);
     }
@@ -374,25 +366,20 @@ test('workflow keeps dispatched data out of code and scopes App credentials to p
   const workflow = Bun.YAML.parse(
     await readText(new URL('../.github/workflows/client.update.yml', import.meta.url).pathname)
   );
-  const schema = (await import('zod')).z;
-  const parsed = schema
-    .object({
-      on: schema.object({
-        repository_dispatch: schema.object({ types: schema.array(schema.string()) }),
-        schedule: schema.array(schema.object({ cron: schema.string() })),
+  const steps = Schema.Array(Schema.Record(Schema.String, Schema.Unknown));
+  const parsed = Schema.decodeUnknownSync(
+    Schema.Struct({
+      on: Schema.Struct({
+        repository_dispatch: Schema.Struct({ types: Schema.Array(Schema.String) }),
+        schedule: Schema.Array(Schema.Struct({ cron: Schema.String })),
       }),
-      concurrency: schema.object({ 'cancel-in-progress': schema.literal(false) }),
-      jobs: schema.object({
-        prepare: schema.object({
-          if: schema.string(),
-          steps: schema.array(schema.record(schema.string(), schema.unknown())),
-        }),
-        publish: schema.object({
-          steps: schema.array(schema.record(schema.string(), schema.unknown())),
-        }),
+      concurrency: Schema.Struct({ 'cancel-in-progress': Schema.Literal(false) }),
+      jobs: Schema.Struct({
+        prepare: Schema.Struct({ if: Schema.String, steps }),
+        publish: Schema.Struct({ steps }),
       }),
     })
-    .parse(workflow);
+  )(workflow);
   expect(parsed.on.repository_dispatch.types).toContain('composio-client-published');
   expect(parsed.jobs.prepare.if).toContain("github.actor == 'sdkrelease[bot]'");
   expect(JSON.stringify(parsed.jobs.prepare)).not.toContain('RELEASE_BOT_APP_PRIVATE_KEY');
