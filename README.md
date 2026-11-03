@@ -162,7 +162,7 @@ python/            Python SDK and provider packages
 docs/              Documentation site (docs.composio.dev)
 ```
 
-The TypeScript SDK is tested against Node 22+; the Python SDK supports Python 3.10+.
+The TypeScript SDK is tested against Node 22+; the Python SDK supports Python 3.11+.
 
 ## Development
 
