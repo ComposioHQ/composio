@@ -1,11 +1,11 @@
 ---
 title: Custom MCP
 description: Use tools from a remote MCP server in Composio sessions
-keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, experimental, dcr, cimd, discovery, revocation]
+keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, end user mcp, private toolkit, experimental, dcr, cimd, discovery, revocation]
 experimental: true
 ---
 
-Custom MCP lets you use tools from your remote MCP server in the same session as Composio's built-in toolkits. Register the server, connect it if authentication is required, then add its synced `CUSTOM_*` toolkit slug to a session.
+Custom MCP lets you use tools from your remote MCP server in the same session as Composio's built-in toolkits. A Custom MCP is either shared with every user in your project or private to one end user, so your users can bring their own MCP servers. Register the server, connect it if authentication is required, then add its synced `CUSTOM_*` toolkit slug to a session.
 
 <Callout type="warn">
 Custom MCP is experimental. Its setup flow, authentication options, and API contracts may change while we work with early customers.
@@ -18,18 +18,18 @@ This is different from [Custom Tools and Toolkits](/docs/extending-sessions/cust
 A Custom MCP moves through this lifecycle:
 
 1. **Deploy** your MCP server at a public HTTPS URL.
-2. **Register** its URL and authentication scheme. Composio creates a project-scoped `CUSTOM_*` toolkit.
+2. **Register** its URL and authentication scheme. Composio creates a `CUSTOM_*` toolkit, shared or private to one user.
 3. **Connect** an account if the server uses an API key or DCR OAuth. No-auth servers skip this step.
 4. **Sync** its tools. The first sync starts automatically; later tool changes require a manual sync.
 5. **Use** the toolkit in a session.
 
 <Callout type="warn" title="API-only while Custom MCP is experimental">
-Use the lifecycle endpoints below to register, sync, and delete Custom MCP toolkits. You can also use the experimental SDK methods described below. These contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [upsert](/reference/api-reference/toolkits/postCustomToolkitsUpsert), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
+Use the lifecycle endpoints below to create, update, sync, and delete Custom MCP toolkits. You can also use the experimental SDK methods described below. These contracts may change while Custom MCP is experimental. The API reference has the full request and response schemas for [create](/reference/api-reference/toolkits/postCustomToolkits), [update](/reference/api-reference/toolkits/patchCustomToolkitsBySlug), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). Dashboard management is coming soon for customers who prefer a UI.
 </Callout>
 
 ### Manage custom toolkits with the SDK
 
-You can also run this lifecycle through `composio.experimental.custom_toolkits` in Python or `composio.experimental.customToolkits` in TypeScript. Both provide `upsert()` to register a toolkit or update its display metadata, `sync()` to fetch its remote tool definitions, and `delete()` to remove it and its associated auth configs and connections.
+You can also run this lifecycle through `composio.experimental.custom_toolkits` in Python or `composio.experimental.customToolkits` in TypeScript. Both provide `create()` to register a toolkit, `update()` to change its name or logo, `sync()` to fetch its remote tool definitions, and `delete()` to remove it and its associated auth configs and connections. `upsert()` is deprecated; use `create()` and `update()`.
 
 <Callout>
 These project-owned toolkit APIs are experimental. They manage remote toolkits registered in Composio; [local custom toolkits](/docs/extending-sessions/custom-tools-and-toolkits) run in your SDK process.
@@ -37,7 +37,7 @@ These project-owned toolkit APIs are experimental. They manage remote toolkits r
 
 ## Register a Custom MCP
 
-Call `POST /api/v3.1/custom/toolkits/upsert` with your public server URL and authentication scheme. Authenticate the request with your Composio project API key.
+Call `POST /api/v3.1/custom/toolkits` with your public server URL, authentication scheme, and `user_id`. Set `user_id` to `"all"` to share the toolkit with every user in your project, or [to one user's ID](#create-a-toolkit-for-one-end-user). Authenticate the request with your Composio project API key.
 
 <Callout type="warn" title="Serve the registered endpoint directly">
 Use the final HTTPS MCP endpoint as `app_url`, without redirects. Cross-origin redirects strip `Authorization`, but custom credential headers can remain attached. Custom MCP does not expose a redirect policy that guarantees credentials stay on the registered origin. Keep keys out of the URL. If a credential reaches an untrusted destination, revoke or rotate it at its issuer.
@@ -48,13 +48,11 @@ Use the final HTTPS MCP endpoint as `app_url`, without redirects. Cross-origin r
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.upsert(
-    slug="ACME",
-    toolkit_config={
-        "name": "Acme",
-        "app_url": "https://mcp.example.com/mcp",
-        "auth_schemes": [{"mode": "NO_AUTH"}],
-    },
+result = composio.experimental.custom_toolkits.create(
+    name="Acme",
+    app_url="https://mcp.acme.com/mcp",
+    auth_schemes=[{"mode": "NO_AUTH"}],
+    user_id="all",
 )
 
 print(result.slug)  # CUSTOM_ACME
@@ -65,13 +63,11 @@ print(result.slug)  # CUSTOM_ACME
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.upsert({
-  slug: 'ACME',
-  toolkitConfig: {
-    name: 'Acme',
-    appUrl: 'https://mcp.example.com/mcp',
-    authSchemes: [{ mode: 'NO_AUTH' }],
-  },
+const result = await composio.experimental.customToolkits.create({
+  name: 'Acme',
+  appUrl: 'https://mcp.acme.com/mcp',
+  authSchemes: [{ mode: 'NO_AUTH' }],
+  userId: 'all',
 });
 
 console.log(result.slug); // CUSTOM_ACME
@@ -79,16 +75,14 @@ console.log(result.slug); // CUSTOM_ACME
 </Tab>
 <Tab value="API">
 ```bash
-curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
+curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "ACME",
-    "toolkit_config": {
-      "name": "Acme",
-      "app_url": "https://mcp.example.com/mcp",
-      "auth_schemes": [{"mode": "NO_AUTH"}]
-    }
+    "name": "Acme",
+    "app_url": "https://mcp.acme.com/mcp",
+    "auth_schemes": [{"mode": "NO_AUTH"}],
+    "user_id": "all"
   }'
 ```
 </Tab>
@@ -98,18 +92,16 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.upsert(
-    slug="ACME",
-    toolkit_config={
-        "name": "Acme",
-        "app_url": "https://mcp.example.com/mcp",
-        "auth_schemes": [
-            {
-                "mode": "API_KEY",
-                "headers": {"Authorization": "Bearer {{generic_api_key}}"},
-            }
-        ],
-    },
+result = composio.experimental.custom_toolkits.create(
+    name="Acme",
+    app_url="https://mcp.acme.com/mcp",
+    auth_schemes=[
+        {
+            "mode": "API_KEY",
+            "headers": {"Authorization": "Bearer {{generic_api_key}}"},
+        }
+    ],
+    user_id="all",
 )
 
 print(result.slug)  # CUSTOM_ACME
@@ -120,15 +112,13 @@ print(result.slug)  # CUSTOM_ACME
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.upsert({
-  slug: 'ACME',
-  toolkitConfig: {
-    name: 'Acme',
-    appUrl: 'https://mcp.example.com/mcp',
-    authSchemes: [
-      { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
-    ],
-  },
+const result = await composio.experimental.customToolkits.create({
+  name: 'Acme',
+  appUrl: 'https://mcp.acme.com/mcp',
+  authSchemes: [
+    { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
+  ],
+  userId: 'all',
 });
 
 console.log(result.slug); // CUSTOM_ACME
@@ -136,21 +126,19 @@ console.log(result.slug); // CUSTOM_ACME
 </Tab>
 <Tab value="API">
 ```bash
-curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
+curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "ACME",
-    "toolkit_config": {
-      "name": "Acme",
-      "app_url": "https://mcp.example.com/mcp",
-      "auth_schemes": [
-        {
-          "mode": "API_KEY",
-          "headers": {"Authorization": "Bearer {{generic_api_key}}"}
-        }
-      ]
-    }
+    "name": "Acme",
+    "app_url": "https://mcp.acme.com/mcp",
+    "auth_schemes": [
+      {
+        "mode": "API_KEY",
+        "headers": {"Authorization": "Bearer {{generic_api_key}}"}
+      }
+    ],
+    "user_id": "all"
   }'
 ```
 </Tab>
@@ -162,18 +150,16 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.upsert(
-    slug="ACME",
-    toolkit_config={
-        "name": "Acme",
-        "app_url": "https://mcp.example.com/mcp",
-        "auth_schemes": [
-            {
-                "mode": "DCR_OAUTH",
-                "discovery_url": "https://mcp.example.com/.well-known/oauth-authorization-server",
-            }
-        ],
-    },
+result = composio.experimental.custom_toolkits.create(
+    name="Acme",
+    app_url="https://mcp.acme.com/mcp",
+    auth_schemes=[
+        {
+            "mode": "DCR_OAUTH",
+            "discovery_url": "https://mcp.acme.com/.well-known/oauth-authorization-server",
+        }
+    ],
+    user_id="all",
 )
 
 print(result.slug)  # CUSTOM_ACME
@@ -184,18 +170,16 @@ print(result.slug)  # CUSTOM_ACME
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.upsert({
-  slug: 'ACME',
-  toolkitConfig: {
-    name: 'Acme',
-    appUrl: 'https://mcp.example.com/mcp',
-    authSchemes: [
-      {
-        mode: 'DCR_OAUTH',
-        discoveryUrl: 'https://mcp.example.com/.well-known/oauth-authorization-server',
-      },
-    ],
-  },
+const result = await composio.experimental.customToolkits.create({
+  name: 'Acme',
+  appUrl: 'https://mcp.acme.com/mcp',
+  authSchemes: [
+    {
+      mode: 'DCR_OAUTH',
+      discoveryUrl: 'https://mcp.acme.com/.well-known/oauth-authorization-server',
+    },
+  ],
+  userId: 'all',
 });
 
 console.log(result.slug); // CUSTOM_ACME
@@ -203,21 +187,19 @@ console.log(result.slug); // CUSTOM_ACME
 </Tab>
 <Tab value="API">
 ```bash
-curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
+curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "ACME",
-    "toolkit_config": {
-      "name": "Acme",
-      "app_url": "https://mcp.example.com/mcp",
-      "auth_schemes": [
-        {
-          "mode": "DCR_OAUTH",
-          "discovery_url": "https://mcp.example.com/.well-known/oauth-authorization-server"
-        }
-      ]
-    }
+    "name": "Acme",
+    "app_url": "https://mcp.acme.com/mcp",
+    "auth_schemes": [
+      {
+        "mode": "DCR_OAUTH",
+        "discovery_url": "https://mcp.acme.com/.well-known/oauth-authorization-server"
+      }
+    ],
+    "user_id": "all"
   }'
 ```
 </Tab>
@@ -225,23 +207,109 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
 </Tab>
 </Tabs>
 
-Composio adds the `CUSTOM_` prefix and returns the normalized toolkit slug:
+Composio picks the slug from the server's domain and adds a random suffix if that slug is taken. Store it: you need it to sync, update, or delete the toolkit.
 
 ```json
 {
-  "slug": "CUSTOM_ACME"
+  "slug": "CUSTOM_ACME",
+  "connect_link": null
 }
 ```
 
-<Callout type="warn" title="app_url and auth_schemes are immutable">
-Re-registering a slug your project already owns updates the toolkit in place: mutable fields like the name and logo take the new values, and an identical config is a harmless no-op. Two fields can't change after registration: `app_url` and `auth_schemes`. Changing either returns `409 Conflict`; [delete the existing toolkit](#delete-or-replace-a-custom-mcp), then register it again.
+<Callout type="warn" title="app_url, auth_schemes, and user_id are immutable">
+`app_url`, `auth_schemes`, and `user_id` can't change after creation. To change the name, logo, or API key field label, [update the toolkit](#update-a-toolkit). To change anything else, [delete the toolkit](#delete-or-replace-a-custom-mcp) and create it again.
 </Callout>
+
+### Create a toolkit for one end user
+
+Set `user_id` to an end user's ID to make the toolkit private to them: only sessions and API calls for that user can see or run its tools. A private toolkit's slug always has a random suffix, such as `CUSTOM_ACME_K7F2Q`.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+result = composio.experimental.custom_toolkits.create(
+    name="Acme",
+    app_url="https://mcp.acme.com/mcp",
+    auth_schemes=[
+        {
+            "mode": "DCR_OAUTH",
+            "discovery_url": "https://mcp.acme.com/.well-known/oauth-authorization-server",
+        }
+    ],
+    user_id="user_123",
+    callback_url="https://app.example.com/connected",
+)
+
+print(result.slug)  # CUSTOM_ACME_K7F2Q
+if result.connect_link is not None:
+    print(result.connect_link.redirect_url)  # send user_123 here
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+const result = await composio.experimental.customToolkits.create({
+  name: 'Acme',
+  appUrl: 'https://mcp.acme.com/mcp',
+  authSchemes: [
+    {
+      mode: 'DCR_OAUTH',
+      discoveryUrl: 'https://mcp.acme.com/.well-known/oauth-authorization-server',
+    },
+  ],
+  userId: 'user_123',
+  callbackUrl: 'https://app.example.com/connected',
+});
+
+console.log(result.slug); // CUSTOM_ACME_K7F2Q
+if (result.connectLink) {
+  console.log(result.connectLink.redirectUrl); // send user_123 here
+}
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme",
+    "app_url": "https://mcp.acme.com/mcp",
+    "auth_schemes": [
+      {
+        "mode": "DCR_OAUTH",
+        "discovery_url": "https://mcp.acme.com/.well-known/oauth-authorization-server"
+      }
+    ],
+    "user_id": "user_123",
+    "callback_url": "https://app.example.com/connected"
+  }'
+```
+</Tab>
+</Tabs>
+
+```json
+{
+  "slug": "CUSTOM_ACME_K7F2Q",
+  "connect_link": {
+    "redirect_url": "https://connect.composio.dev/link/lk_...",
+    "expires_at": "2026-11-03T12:10:00.000Z",
+    "connected_account_id": "ca_..."
+  }
+}
+```
+
+For a private toolkit that needs authentication, `connect_link` is a hosted connect page for that user. Send them to `redirect_url`; once they connect, the tools sync automatically. `connect_link` is `null` for no-auth and shared toolkits, or if the link couldn't be created. To get a new link, call [`POST /api/v3.1/connected_accounts/link`](/reference/api-reference/connected-accounts/postConnectedAccountsLink).
+
+A second private toolkit for the same user and MCP URL returns `409 Conflict`, as does a second shared toolkit for the same URL. `"default"` and other spellings of `"all"`, such as `"ALL"`, return `400`.
 
 ## Add a toolkit logo
 
-Without a logo, your toolkit shows the Composio logo in the dashboard and on end-user connect screens. To ship your own branding, include `toolkit_config.logo_file` when you register: the image itself, base64-encoded. Composio validates it, stores it on Composio-hosted asset storage, and renders it everywhere the toolkit appears. You don't host anything, and the logo keeps working even if your own site changes or goes down.
+Without a logo, your toolkit shows the Composio logo in the dashboard and on end-user connect screens. To ship your own branding, include `logo_file` when you create the toolkit: the image itself, base64-encoded. Composio validates it, stores it on Composio-hosted asset storage, and renders it everywhere the toolkit appears. You don't host anything, and the logo keeps working even if your own site changes or goes down.
 
-Save your PNG as `logo.png`. This example updates the `NO_AUTH` registration above; preserve the original `app_url` and `auth_schemes` if you selected another auth mode.
+Save your PNG as `logo.png`. This example creates the `NO_AUTH` toolkit above with a logo; use the auth scheme you selected.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -252,17 +320,15 @@ from composio import Composio
 
 composio = Composio()
 logo_content = b64encode(Path("logo.png").read_bytes()).decode("ascii")
-result = composio.experimental.custom_toolkits.upsert(
-    slug="ACME",
-    toolkit_config={
-        "name": "Acme",
-        "app_url": "https://mcp.example.com/mcp",
-        "logo_file": {
-            "content": logo_content,
-            "mime_type": "image/png",
-        },
-        "auth_schemes": [{"mode": "NO_AUTH"}],
+result = composio.experimental.custom_toolkits.create(
+    name="Acme",
+    app_url="https://mcp.acme.com/mcp",
+    logo_file={
+        "content": logo_content,
+        "mime_type": "image/png",
     },
+    auth_schemes=[{"mode": "NO_AUTH"}],
+    user_id="all",
 )
 
 print(result.slug)  # CUSTOM_ACME
@@ -275,17 +341,15 @@ import { readFileSync } from 'node:fs';
 const composio = new Composio();
 // ---cut---
 const logoContent = readFileSync('logo.png').toString('base64');
-const result = await composio.experimental.customToolkits.upsert({
-  slug: 'ACME',
-  toolkitConfig: {
-    name: 'Acme',
-    appUrl: 'https://mcp.example.com/mcp',
-    logoFile: {
-      content: logoContent,
-      mimeType: 'image/png',
-    },
-    authSchemes: [{ mode: 'NO_AUTH' }],
+const result = await composio.experimental.customToolkits.create({
+  name: 'Acme',
+  appUrl: 'https://mcp.acme.com/mcp',
+  logoFile: {
+    content: logoContent,
+    mimeType: 'image/png',
   },
+  authSchemes: [{ mode: 'NO_AUTH' }],
+  userId: 'all',
 });
 
 console.log(result.slug); // CUSTOM_ACME
@@ -295,20 +359,18 @@ console.log(result.slug); // CUSTOM_ACME
 ```bash
 set -euo pipefail
 LOGO_BASE64=$(base64 < logo.png | tr -d '\n')
-curl --fail-with-body -X POST https://backend.composio.dev/api/v3.1/custom/toolkits/upsert \
+curl --fail-with-body -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "ACME",
-    "toolkit_config": {
-      "name": "Acme",
-      "app_url": "https://mcp.example.com/mcp",
-      "logo_file": {
-        "content": "'"$LOGO_BASE64"'",
-        "mime_type": "image/png"
-      },
-      "auth_schemes": [{"mode": "NO_AUTH"}]
-    }
+    "name": "Acme",
+    "app_url": "https://mcp.acme.com/mcp",
+    "logo_file": {
+      "content": "'"$LOGO_BASE64"'",
+      "mime_type": "image/png"
+    },
+    "auth_schemes": [{"mode": "NO_AUTH"}],
+    "user_id": "all"
   }'
 ```
 </Tab>
@@ -320,7 +382,67 @@ Set `content` to your image encoded as base64: a single line, with no line break
 - **Square**, between 256 and 1024 pixels
 - **At most 3MB** before encoding
 
-Omit `logo_file` to keep the Composio default. To change a logo later, re-register the same slug with the new image: the upsert updates the toolkit in place.
+Omit `logo_file` to keep the Composio default.
+
+## Update a toolkit
+
+Call `PATCH /api/v3.1/custom/toolkits/{slug}` to change `name`, `logo_file`, or the API key field's label (`api_key_field`). Omitted fields keep their value. On a project with 2FA enabled, updating a private toolkit requires the `user_id` it is private to.
+
+This example replaces the logo:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from base64 import b64encode
+from pathlib import Path
+from composio import Composio
+
+composio = Composio()
+logo_content = b64encode(Path("logo.png").read_bytes()).decode("ascii")
+result = composio.experimental.custom_toolkits.update(
+    "CUSTOM_ACME",
+    logo_file={
+        "content": logo_content,
+        "mime_type": "image/png",
+    },
+)
+
+print(result.success)  # True
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { readFileSync } from 'node:fs';
+const composio = new Composio();
+// ---cut---
+const logoContent = readFileSync('logo.png').toString('base64');
+const result = await composio.experimental.customToolkits.update('CUSTOM_ACME', {
+  logoFile: {
+    content: logoContent,
+    mimeType: 'image/png',
+  },
+});
+
+console.log(result.success); // true
+```
+</Tab>
+<Tab value="API">
+```bash
+set -euo pipefail
+LOGO_BASE64=$(base64 < logo.png | tr -d '\n')
+curl --fail-with-body -X PATCH https://backend.composio.dev/api/v3.1/custom/toolkits/CUSTOM_ACME \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "logo_file": {
+      "content": "'"$LOGO_BASE64"'",
+      "mime_type": "image/png"
+    }
+  }'
+```
+</Tab>
+</Tabs>
 
 ## Complete setup for your authentication mode
 
@@ -434,7 +556,7 @@ A Custom MCP toolkit can contain at most 500 tools. If the server returns more t
 
 ## Delete or replace a Custom MCP
 
-Re-registering a slug updates mutable fields like the name and logo, but `app_url` and `auth_schemes` can't change after registration. To replace either, delete the toolkit and register it again.
+[Update](#update-a-toolkit) changes the name and logo, but `app_url`, `auth_schemes`, and `user_id` can't change. To replace one, delete the toolkit and create it again.
 
 Call `DELETE /api/v3.1/custom/toolkits/{slug}`:
 
@@ -523,6 +645,8 @@ curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_I
 </Tab>
 </Tabs>
 
+A session only sees the custom toolkits its `user_id` can use. Naming another user's private toolkit in `toolkits` returns `400`, and executing its tools returns `403`.
+
 With the default search-first session, your agent uses `COMPOSIO_SEARCH_TOOLS` to discover the custom tools and the Tool Router to execute them. If a synced tool is missing from search, see [troubleshooting discovery](#troubleshoot-missing-search-results).
 
 ### Use an authenticated server
@@ -586,7 +710,7 @@ The pinned account must belong to the custom toolkit and be active. Explicit sel
 
 ## Technical behavior
 
-List your custom toolkits with `GET /api/v3.1/toolkits?type=custom`.
+List your custom toolkits with `GET /api/v3.1/toolkits?type=custom`. Add `user_id` to include the toolkits private to that user; each toolkit's `access` is `"all"` or `"user"`.
 
 Each registered server becomes a custom toolkit scoped to your project:
 
@@ -656,7 +780,7 @@ Reconnects and repeated syncs do not bypass the search-path limit, and there is 
 
 - **Dashboard coming soon:** Custom MCP management isn't available in the dashboard yet.
 - **Remote servers only:** Composio doesn't host your server. Deploy it at a public HTTPS endpoint; local and STDIO-only servers aren't supported.
-- **Immutable `app_url` and `auth_schemes`:** Re-registering an existing slug updates other fields in place, but changing `app_url` or `auth_schemes` returns `409 Conflict`. Delete the toolkit, then register it again. Deletion also removes its auth configurations and connected accounts.
+- **Immutable `app_url`, `auth_schemes`, and `user_id`:** Update changes only the name, logo, and API key field label. Delete the toolkit and create it again to change anything else. Deletion also removes its auth configurations and connected accounts.
 - **500-tool limit:** Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful version stays available.
 
 </Accordion>
