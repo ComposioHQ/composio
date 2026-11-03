@@ -32,7 +32,7 @@ messages = [
 ]
 
 response = client.messages.create(
-    model="claude-opus-4-6",
+    model="claude-opus-5-5",
     max_tokens=4096,
     tools=tools,
     messages=messages,
@@ -51,7 +51,7 @@ while response.stop_reason == "tool_use":
         ]
     })
     response = client.messages.create(
-        model="claude-opus-4-6",
+        model="claude-opus-5-5",
         max_tokens=4096,
         tools=tools,
         messages=messages,
