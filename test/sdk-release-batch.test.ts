@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { eligibleApproval, validateReleaseDiff } from '../scripts/sdk-release/source';
 import {
   candidateGate,
+  normalizeArtifactDigest,
   reuseCandidate,
   verifyArchive,
   verifyCandidateFiles,
@@ -62,6 +63,13 @@ const artifact = {
   created_at: '2026-11-01T00:00:00Z',
 };
 describe('immutable candidates', () => {
+  test('native upload and REST digests normalize without accepting malformed hashes', () => {
+    const raw = 'a'.repeat(64);
+    expect(normalizeArtifactDigest(raw)).toBe(`sha256:${raw}`);
+    expect(normalizeArtifactDigest(`sha256:${raw}`)).toBe(`sha256:${raw}`);
+    expect(() => normalizeArtifactDigest(`sha256:${raw.slice(1)}`)).toThrow();
+    expect(() => normalizeArtifactDigest(`md5:${raw}`)).toThrow();
+  });
   test('reuses IDs only from the original source and producer', () => {
     expect(reuseCandidate([artifact], artifact.name, 8, head, Date.parse('2026-11-03'))?.id).toBe(
       42
@@ -150,6 +158,7 @@ function fakeController(
     failedCandidate?: boolean;
     pendingMerge?: boolean;
     existingBranch?: boolean;
+    docs?: 'success' | 'failure' | 'pending' | 'missing';
   } = {}
 ) {
   const writes: { path: string; body: unknown }[] = [];
@@ -219,7 +228,7 @@ function fakeController(
     if (path === '/collaborators/reviewer/permission') return response({ permission: 'write' });
     if (path.startsWith(`/commits/${head}/check-runs`))
       return response({
-        total_count: 1,
+        total_count: options.docs === 'missing' ? 1 : 2,
         check_runs: [
           {
             name: 'SDK candidate (typescript)',
@@ -227,6 +236,16 @@ function fakeController(
             app: { slug: 'github-actions' },
             conclusion: options.failedCandidate ? 'failure' : 'success',
           },
+          ...(options.docs === 'missing'
+            ? []
+            : [
+                {
+                  name: 'typescript-check',
+                  head_sha: head,
+                  app: { slug: 'github-actions' },
+                  conclusion: options.docs === 'pending' ? null : (options.docs ?? 'success'),
+                },
+              ]),
         ],
       });
     if (path === `/git/commits/${base}`)
@@ -294,6 +313,17 @@ function fakeController(
 }
 
 describe('controller API contracts', () => {
+  test('failed, pending or absent production docs prevent both merge and tag authorization', async () => {
+    for (const docs of ['failure', 'pending', 'missing'] as const) {
+      for (const pendingMerge of [true, false]) {
+        const { github, writes } = fakeController({ docs, pendingMerge });
+        await expect(
+          pendingMerge ? mergeApprovedRelease(github, 9, 123) : authorizeSourceTag(github, 9, 123)
+        ).rejects.toThrow('docs');
+        expect(writes).toEqual([]);
+      }
+    }
+  });
   test('merge and squash tag the approved head while later next commits remain independent', async () => {
     for (const mergeKind of ['merge', 'squash'] as const) {
       const { github, writes } = fakeController({ mergeKind });

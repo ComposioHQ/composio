@@ -348,6 +348,16 @@ export async function verifyReleaseHead(github: GitHubReleaseClient, number: num
     )
       throw new Error(`Missing green final-head ${language} candidate check`);
   }
+  if (
+    !checks.check_runs.some(
+      check =>
+        check.name === 'typescript-check' &&
+        check.head_sha === pull.head.sha &&
+        check.app?.slug === 'github-actions' &&
+        check.conclusion === 'success'
+    )
+  )
+    throw new Error('Missing green final-head production docs check');
   const diff = await github.request(
     'GET',
     `${repo}/compare/${batch.inputBase}...${pull.head.sha}`,
@@ -452,249 +462,270 @@ export async function executeReleaseRequest(
 }> {
   const request = releaseRequestSchema.parse(value);
   await github.requireActiveMember(context.actor);
-  let result: {
-    message: string;
-    batch?: ReleaseBatch;
-    reusedBatch?: boolean;
-    pullRequest?: string;
-    runUrl?: string;
-  };
-  if (request.action === 'retry' || (request.action === 'status' && request.run_id)) {
-    let original = await github.getRun(request.run_id!);
-    if (
-      original.path !== '.github/workflows/sdk.release.yml' ||
-      original.repository.full_name !== SDK_RELEASE_REPOSITORY ||
-      !(original.head_branch === 'next' || /^sdk-release\/\d+$/.test(original.head_branch ?? ''))
-    )
-      throw new Error('Run does not belong to a guarded SDK release');
-    const latest = await committedBatch(github, 'next');
-    const frozen = /^sdk-release\/\d+$/.test(original.head_branch ?? '')
-      ? original.head_sha
-        ? await committedBatch(github, original.head_sha)
-        : undefined
-      : latest?.originalRunId === String(original.id)
-        ? latest
-        : await batchForPreparation(github, String(original.id));
-    if (frozen) {
-      const publication = await sourceTagRun(github, frozen);
-      if (publication) {
-        if (
-          !publication.head_sha ||
-          JSON.stringify(await committedBatch(github, publication.head_sha)) !==
-            JSON.stringify(frozen)
-        )
-          throw new Error('Original publication source differs from its frozen batch');
-        const state = await publicationState(github, publication);
-        if (state.verified) {
-          if (request.action === 'retry')
-            await github.request(
-              'POST',
-              `${repo}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
-              z.unknown(),
-              { ref: 'next', inputs: { run_id: String(publication.id) } }
-            );
-          result = {
-            message:
-              request.action === 'retry'
-                ? 'Packages are verified; retrying documentation on protected next without registry identity or candidate artifacts.'
-                : 'Packages published; documentation status is tracked separately.',
-            runUrl: publication.html_url,
-          };
-          if (context.issueNumber)
-            await github.commentIssue(context.issueNumber, `${result.message}\n\n${result.runUrl}`);
-          return result;
-        }
-        if (state.terminal)
-          throw new Error(
-            'Original publication recovery ended; a newly approved higher-version corrective release is required'
-          );
-        original = publication;
-      } else if (original.conclusion === 'success') {
-        const pulls = await github.request(
-          'GET',
-          `${repo}/pulls?state=closed&head=ComposioHQ:sdk-release/batch-${frozen.id}&per_page=100`,
-          z.array(pullSchema)
-        );
-        const merged = pulls.find(pull => pull.merged_at || pull.merged || pull.merge_commit_sha);
-        if (merged?.merge_commit_sha) {
-          const runs = await github.request(
-            'GET',
-            `${repo}/actions/workflows/sdk.release.yml/runs?event=pull_request_target&head_sha=${merged.merge_commit_sha}&per_page=100`,
-            z.object({ workflow_runs: z.array((await import('./github')).releaseRunSchema) })
-          );
-          const failed = [];
-          for (const run of runs.workflow_runs)
-            if (
-              (await github.jobs(String(run.id))).some(
-                job => job.name === 'source-tag' && job.conclusion === 'failure'
-              )
-            )
-              failed.push(run);
-          if (failed.length !== 1)
-            throw new Error(
-              'Cannot uniquely identify the original failed source-tag authorization run'
-            );
-          original = failed[0];
-        }
-      }
-    }
-    if (request.action === 'status' || original.status !== 'completed')
-      result = {
-        message: `Original run is ${original.status}${original.conclusion ? ` (${original.conclusion})` : ''}. Retry ignores new bump choices.`,
-        runUrl: original.html_url,
-      };
-    else {
+  try {
+    let result: {
+      message: string;
+      batch?: ReleaseBatch;
+      reusedBatch?: boolean;
+      pullRequest?: string;
+      runUrl?: string;
+    };
+    if (request.action === 'retry' || (request.action === 'status' && request.run_id)) {
+      let original = await github.getRun(request.run_id!);
       if (
-        !['failure', 'cancelled', 'timed_out'].includes(original.conclusion ?? '') ||
-        original.run_attempt >= 50 ||
-        Date.now() - Date.parse(original.created_at) >= 30 * 86400000
+        original.path !== '.github/workflows/sdk.release.yml' ||
+        original.repository.full_name !== SDK_RELEASE_REPOSITORY ||
+        !(original.head_branch === 'next' || /^sdk-release\/\d+$/.test(original.head_branch ?? ''))
       )
-        throw new Error('Original release cannot be retried');
-      await github.rerunFailedJobs(String(original.id));
-      result = {
-        message: 'Retrying the original run. New bump choices are ignored.',
-        runUrl: original.html_url,
-      };
-    }
-  } else {
-    const current = await activeRelease(github);
-    const preparation = await activePreparation(github, context.runId);
-    const publication = await currentPublication(github);
-    if (preparation || publication?.active) {
-      result = {
-        message: 'A release is already active; no competing versions were allocated.',
-        runUrl: preparation?.html_url ?? publication?.run?.html_url ?? publication?.batch.statusUrl,
-        ...(current ? { pullRequest: current.html_url } : {}),
-      };
-      if (context.issueNumber)
-        await github.commentIssue(context.issueNumber, `${result.message}\n\n${result.runUrl}`);
-      return result;
-    }
-    if ((current && request.action !== 'refresh') || request.action === 'status')
-      result = current
-        ? {
-            message: 'A release is already active; no competing versions were allocated.',
-            pullRequest: current.html_url,
-          }
-        : { message: 'No active SDK release.' };
-    else {
-      if ((context.runAttempt ?? 1) > 1) {
-        const artifact = reuseCandidate(
-          await originalCandidates(github, Number(context.runId)),
-          'sdk-authorized-batch',
-          Number(context.runId),
-          context.sourceSha
-        );
-        if (artifact) {
-          const directory = await mkdtemp(join(tmpdir(), 'sdk-retry-plan-'));
-          try {
-            await github.downloadArtifact(artifact, directory);
-            const saved = releaseBatchSchema.parse(
-              await Bun.file(join(directory, 'sdk-release-batch.json')).json()
-            );
-            if (saved.id !== context.runId || saved.inputBase !== context.sourceSha)
-              throw new Error('Original preparation plan identity differs');
-            return {
-              message: 'Reusing the original authorized release plan. New choices are ignored.',
-              batch: saved,
-              reusedBatch: true,
-            };
-          } finally {
-            await rm(directory, { recursive: true, force: true });
-            await rm(`${directory}.zip`, { force: true });
-          }
-        }
-        if (
-          (await github.jobs(context.runId)).some(
-            job =>
-              job.name === 'authorize' &&
-              job.steps.some(
-                step =>
-                  step.name === 'Retain authorized release input' && step.conclusion === 'success'
-              )
+        throw new Error('Run does not belong to a guarded SDK release');
+      const latest = await committedBatch(github, 'next');
+      const frozen = /^sdk-release\/\d+$/.test(original.head_branch ?? '')
+        ? original.head_sha
+          ? await committedBatch(github, original.head_sha)
+          : undefined
+        : latest?.originalRunId === String(original.id)
+          ? latest
+          : await batchForPreparation(github, String(original.id));
+      if (frozen) {
+        const publication = await sourceTagRun(github, frozen);
+        if (publication) {
+          if (
+            !publication.head_sha ||
+            JSON.stringify(await committedBatch(github, publication.head_sha)) !==
+              JSON.stringify(frozen)
           )
-        )
-          throw new Error(
-            'Original authorized release input was deleted; submit a new request instead of reallocating versions in an old run'
+            throw new Error('Original publication source differs from its frozen batch');
+          const state = await publicationState(github, publication);
+          if (state.verified) {
+            if (request.action === 'retry')
+              await github.request(
+                'POST',
+                `${repo}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
+                z.unknown(),
+                { ref: 'next', inputs: { run_id: String(publication.id) } }
+              );
+            result = {
+              message:
+                request.action === 'retry'
+                  ? 'Packages are verified; retrying documentation on protected next without registry identity or candidate artifacts.'
+                  : 'Packages published; documentation status is tracked separately.',
+              runUrl: publication.html_url,
+            };
+            if (context.issueNumber)
+              await github.commentIssue(
+                context.issueNumber,
+                `${result.message}\n\n${result.runUrl}`
+              );
+            return result;
+          }
+          if (state.terminal)
+            throw new Error(
+              'Original publication recovery ended; a newly approved higher-version corrective release is required'
+            );
+          original = publication;
+        } else if (original.conclusion === 'success') {
+          const pulls = await github.request(
+            'GET',
+            `${repo}/pulls?state=closed&head=ComposioHQ:sdk-release/batch-${frozen.id}&per_page=100`,
+            z.array(pullSchema)
           );
+          const merged = pulls.find(pull => pull.merged_at || pull.merged || pull.merge_commit_sha);
+          if (merged?.merge_commit_sha) {
+            const runs = await github.request(
+              'GET',
+              `${repo}/actions/workflows/sdk.release.yml/runs?event=pull_request_target&head_sha=${merged.merge_commit_sha}&per_page=100`,
+              z.object({ workflow_runs: z.array((await import('./github')).releaseRunSchema) })
+            );
+            const failed = [];
+            for (const run of runs.workflow_runs)
+              if (
+                (await github.jobs(String(run.id))).some(
+                  job => job.name === 'source-tag' && job.conclusion === 'failure'
+                )
+              )
+                failed.push(run);
+            if (failed.length !== 1)
+              throw new Error(
+                'Cannot uniquely identify the original failed source-tag authorization run'
+              );
+            original = failed[0];
+          }
+        }
       }
-      let previous: ReleaseBatch | undefined;
-      if (request.action === 'refresh') {
-        if (!current) throw new Error('No active release candidate to refresh');
-        const saved = await content(github, batchPath, current.head.sha);
-        if (!saved) throw new Error('Active release has no frozen plan');
-        previous = releaseBatchSchema.parse(JSON.parse(saved));
-        await verifyOriginalBatch(github, previous);
-      }
-      let corrective: CorrectiveInput | undefined;
-      if (publication?.run?.head_sha) {
-        const unselected =
-          publication.batch.plan.corrective?.releases.filter(
-            release =>
-              !publication.batch.plan.releases.some(selected => selected.name === release.name)
-          ) ?? [];
-        const outstanding = publication.terminal
-          ? [...publication.batch.plan.releases, ...unselected]
-          : unselected;
-        if (outstanding.length)
-          corrective = await (
-            await import('./registry')
-          ).correctiveInventory(
-            process.cwd(),
-            publication.batch,
-            publication.run.head_sha,
-            outstanding
-          );
-      }
-      const selected = await plan(previous?.plan.choices, corrective);
-      if (
-        previous &&
-        selected.releases.some(release => {
-          const original = previous.plan.releases.find(entry => entry.name === release.name);
-          return original && original.oldVersion !== release.oldVersion;
-        })
-      )
-        throw new Error(
-          'Refresh changed the original version baseline; reconcile the active release first'
-        );
-      if (!selected.releases.length)
-        result = { message: 'Nothing to release. Stable registry baselines were reconciled.' };
-      else {
-        const date = new Date().toISOString().slice(0, 10);
-        const statusUrl = `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${context.issueNumber ?? (await createStatusIssue(github, context.runId))}`;
-        const batch = releaseBatchSchema.parse({
-          schemaVersion: 1,
-          id: context.runId,
-          originalRunId: context.runId,
-          inputBase: context.sourceSha,
-          date,
-          statusUrl,
-          plan: selected,
-          ...(previous && current
-            ? { replaces: { number: current.number, headSha: current.head.sha } }
-            : {}),
-          outputs: await outputs(
-            process.cwd(),
-            date,
-            context.runId,
-            new Set(selected.releases.map(release => release.language)),
-            new Set(selected.releases.map(release => release.name))
-          ),
-        });
+      if (request.action === 'status' || original.status !== 'completed')
         result = {
-          message:
-            'Release preparation authorized. The concrete release PR requires final-head approval and green checks.',
-          batch,
+          message: `Original run is ${original.status}${original.conclusion ? ` (${original.conclusion})` : ''}. Retry ignores new bump choices.`,
+          runUrl: original.html_url,
+        };
+      else {
+        if (
+          !['failure', 'cancelled', 'timed_out'].includes(original.conclusion ?? '') ||
+          original.run_attempt >= 50 ||
+          Date.now() - Date.parse(original.created_at) >= 30 * 86400000
+        )
+          throw new Error('Original release cannot be retried');
+        await github.rerunFailedJobs(String(original.id));
+        result = {
+          message: 'Retrying the original run. New bump choices are ignored.',
+          runUrl: original.html_url,
         };
       }
+    } else {
+      const current = await activeRelease(github);
+      const preparation = await activePreparation(github, context.runId);
+      const publication = await currentPublication(github);
+      if (preparation || publication?.active) {
+        result = {
+          message: 'A release is already active; no competing versions were allocated.',
+          runUrl:
+            preparation?.html_url ?? publication?.run?.html_url ?? publication?.batch.statusUrl,
+          ...(current ? { pullRequest: current.html_url } : {}),
+        };
+        if (context.issueNumber)
+          await github.commentIssue(context.issueNumber, `${result.message}\n\n${result.runUrl}`);
+        return result;
+      }
+      if ((current && request.action !== 'refresh') || request.action === 'status')
+        result = current
+          ? {
+              message: 'A release is already active; no competing versions were allocated.',
+              pullRequest: current.html_url,
+            }
+          : { message: 'No active SDK release.' };
+      else {
+        if ((context.runAttempt ?? 1) > 1) {
+          const artifact = reuseCandidate(
+            await originalCandidates(github, Number(context.runId)),
+            'sdk-authorized-batch',
+            Number(context.runId),
+            context.sourceSha
+          );
+          if (artifact) {
+            const directory = await mkdtemp(join(tmpdir(), 'sdk-retry-plan-'));
+            try {
+              await github.downloadArtifact(artifact, directory);
+              const saved = releaseBatchSchema.parse(
+                await Bun.file(join(directory, 'sdk-release-batch.json')).json()
+              );
+              if (saved.id !== context.runId || saved.inputBase !== context.sourceSha)
+                throw new Error('Original preparation plan identity differs');
+              return {
+                message: 'Reusing the original authorized release plan. New choices are ignored.',
+                batch: saved,
+                reusedBatch: true,
+              };
+            } finally {
+              await rm(directory, { recursive: true, force: true });
+              await rm(`${directory}.zip`, { force: true });
+            }
+          }
+          if (
+            (await github.jobs(context.runId)).some(
+              job =>
+                job.name === 'authorize' &&
+                job.steps.some(
+                  step =>
+                    step.name === 'Retain authorized release input' && step.conclusion === 'success'
+                )
+            )
+          )
+            throw new Error(
+              'Original authorized release input was deleted; submit a new request instead of reallocating versions in an old run'
+            );
+        }
+        let previous: ReleaseBatch | undefined;
+        if (request.action === 'refresh') {
+          if (!current) throw new Error('No active release candidate to refresh');
+          const saved = await content(github, batchPath, current.head.sha);
+          if (!saved) throw new Error('Active release has no frozen plan');
+          previous = releaseBatchSchema.parse(JSON.parse(saved));
+          await verifyOriginalBatch(github, previous);
+        }
+        let corrective: CorrectiveInput | undefined;
+        if (publication?.run?.head_sha) {
+          const unselected =
+            publication.batch.plan.corrective?.releases.filter(
+              release =>
+                !publication.batch.plan.releases.some(selected => selected.name === release.name)
+            ) ?? [];
+          const outstanding = publication.terminal
+            ? [...publication.batch.plan.releases, ...unselected]
+            : unselected;
+          if (outstanding.length)
+            corrective = await (
+              await import('./registry')
+            ).correctiveInventory(
+              process.cwd(),
+              publication.batch,
+              publication.run.head_sha,
+              outstanding
+            );
+        }
+        const selected = await plan(previous?.plan.choices, corrective);
+        if (
+          previous &&
+          selected.releases.some(release => {
+            const original = previous.plan.releases.find(entry => entry.name === release.name);
+            return original && original.oldVersion !== release.oldVersion;
+          })
+        )
+          throw new Error(
+            'Refresh changed the original version baseline; reconcile the active release first'
+          );
+        if (!selected.releases.length)
+          result = { message: 'Nothing to release. Stable registry baselines were reconciled.' };
+        else {
+          const date = new Date().toISOString().slice(0, 10);
+          const statusUrl = `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${context.issueNumber ?? (await createStatusIssue(github, context.runId))}`;
+          const batch = releaseBatchSchema.parse({
+            schemaVersion: 1,
+            id: context.runId,
+            originalRunId: context.runId,
+            inputBase: context.sourceSha,
+            date,
+            statusUrl,
+            plan: selected,
+            ...(previous && current
+              ? { replaces: { number: current.number, headSha: current.head.sha } }
+              : {}),
+            outputs: await outputs(
+              process.cwd(),
+              date,
+              context.runId,
+              new Set(selected.releases.map(release => release.language)),
+              new Set(selected.releases.map(release => release.name))
+            ),
+          });
+          result = {
+            message:
+              'Release preparation authorized. The concrete release PR requires final-head approval and green checks.',
+            batch,
+          };
+        }
+      }
     }
+    if (context.issueNumber)
+      await github.commentIssue(
+        context.issueNumber,
+        `${result.message}\n\n${result.pullRequest ?? result.runUrl ?? `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${context.runId}`}`
+      );
+    return result;
+  } catch (error) {
+    if (context.issueNumber) {
+      try {
+        await github.commentIssue(
+          context.issueNumber,
+          `The release request could not complete: ${error instanceof Error ? error.message : 'Release request failed'}\n\nInspect this request run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${context.runId}`
+        );
+      } catch (reportError) {
+        console.error(
+          'Could not report the release request failure:',
+          reportError instanceof Error ? reportError.message : 'GitHub unavailable'
+        );
+      }
+    }
+    throw error;
   }
-  if (context.issueNumber)
-    await github.commentIssue(
-      context.issueNumber,
-      `${result.message}\n\n${result.pullRequest ?? result.runUrl ?? `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${context.runId}`}`
-    );
-  return result;
 }
 
 if (import.meta.main) {

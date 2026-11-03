@@ -20,6 +20,7 @@ export const publicationReportSchema = z.object({
   registryVerified: z.boolean(),
   terminal: z.boolean(),
   docs: z.enum(['pending', 'failed', 'verified']).default('pending'),
+  maintenance: z.enum(['pending', 'success', 'failure', 'cancelled', 'skipped']).optional(),
   detail: z.string().optional(),
   candidates: z.array(
     z.object({ artifact: actionArtifactSchema, manifest: candidateManifestSchema.optional() })
@@ -76,6 +77,9 @@ export async function readPublicationStatus(
   appId: number
 ) {
   const saved = await statusComment(github, issueNumber(batch), batch, appId);
+  return parsePublicationComment(saved);
+}
+function parsePublicationComment(saved: z.infer<typeof commentSchema> | undefined) {
   const data = saved?.body.match(
     /<script type="application\/json" data-sdk-publication>([\s\S]*?)<\/script>/
   )?.[1];
@@ -89,6 +93,13 @@ export async function writePublicationStatus(
   pullNumber?: number
 ) {
   const report = publicationReportSchema.parse(value);
+  const number = issueNumber(batch);
+  const canonical = await statusComment(github, number, batch, appId);
+  const previous = parsePublicationComment(canonical);
+  if (previous?.docs === 'verified' || report.docs === 'pending')
+    report.docs = previous?.docs ?? report.docs;
+  if (report.maintenance === undefined || report.maintenance === 'pending')
+    report.maintenance = previous?.maintenance ?? report.maintenance;
   const status = report.registryVerified
     ? report.docs === 'verified'
       ? 'Packages published; release documentation verified.'
@@ -96,6 +107,9 @@ export async function writePublicationStatus(
     : report.terminal
       ? 'Publication incomplete; recovery ended. Request a newly approved higher-version corrective release.'
       : 'Publication incomplete; retry the original run to reuse the selected versions and original bytes.';
+  const docsDetail = report.registryVerified
+    ? `${report.docs === 'verified' ? 'Live HTML, Markdown, version table and representative SDK references verified.' : report.docs === 'failed' ? 'Current protected docs rebuild/deployment or live verification failed; retry this original run for docs only.' : 'Current protected docs rebuild/deployment and live verification pending.'} Guide/pin maintenance: ${report.maintenance ?? 'pending'}. Search indexing remains the separate Docs - Sync Algolia Search workflow; its failures require maintenance recovery.`
+    : '';
   const rows = report.candidates
     .map(
       candidate =>
@@ -105,9 +119,9 @@ export async function writePublicationStatus(
   const inventory = report.inventory
     .map(file => `- ${file.name}@${file.version}/${file.file}: ${file.state}`)
     .join('\n');
-  const body = `${marker(batch)}\n${status}\n\n${report.detail ?? ''}\n\nOriginal publication: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${report.runId}\nApproved source: ${report.sourceSha}\n\n${rows}\n\nPublic inventory:\n${inventory || 'Not yet reconciled.'}\n\n<details><summary>Publication data</summary>\n<script type="application/json" data-sdk-publication>${JSON.stringify(report).replaceAll('<', '\\u003c')}</script>\n</details>`;
-  for (const number of new Set([issueNumber(batch), ...(pullNumber ? [pullNumber] : [])])) {
-    const saved = await statusComment(github, number, batch, appId);
+  const body = `${marker(batch)}\n${status}\n\n${docsDetail}\n\n${report.detail ?? ''}\n\nOriginal publication: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${report.runId}\nApproved source: ${report.sourceSha}\n\n${rows}\n\nPublic inventory:\n${inventory || 'Not yet reconciled.'}\n\n<details><summary>Publication data</summary>\n<script type="application/json" data-sdk-publication>${JSON.stringify(report).replaceAll('<', '\\u003c')}</script>\n</details>`;
+  for (const target of new Set([number, ...(pullNumber ? [pullNumber] : [])])) {
+    const saved = target === number ? canonical : await statusComment(github, target, batch, appId);
     if (saved)
       await github.request(
         'PATCH',
@@ -115,7 +129,7 @@ export async function writePublicationStatus(
         z.object({ id: z.number() }),
         { body }
       );
-    else await github.commentIssue(number, body);
+    else await github.commentIssue(target, body);
   }
   return report;
 }

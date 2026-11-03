@@ -139,10 +139,11 @@ if (import.meta.main) {
   } else {
     const directory = resolve('sdk-candidate', language);
     const github = new GitHubReleaseClient(env.SDK_READ_TOKEN);
+    const artifacts = await originalCandidates(github, env.GITHUB_RUN_ID);
     let existing;
     try {
       existing = reuseCandidate(
-        await originalCandidates(github, env.GITHUB_RUN_ID),
+        artifacts,
         `sdk-candidate-${language}`,
         env.GITHUB_RUN_ID,
         env.GITHUB_SHA

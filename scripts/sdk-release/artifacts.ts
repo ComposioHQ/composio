@@ -32,6 +32,12 @@ export const actionArtifactSchema = z.object({
   }),
 });
 export type CandidateArtifact = z.infer<typeof actionArtifactSchema>;
+export function normalizeArtifactDigest(value: unknown): string {
+  const digest = z.string().parse(value);
+  return actionArtifactSchema.shape.digest.parse(
+    digest.startsWith('sha256:') ? digest : `sha256:${digest}`
+  );
+}
 export const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 export function reuseCandidate(

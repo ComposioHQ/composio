@@ -211,6 +211,18 @@ function client(
 const request = releaseRequestSchema.parse({ action: 'release' });
 
 describe('SDK release member request', () => {
+  test('an authorized planning failure reports its reason and request run without release writes', async () => {
+    const { github, calls } = client();
+    await expect(
+      executeReleaseRequest(github, request, context, async () => {
+        throw new Error('Public baseline does not match the source');
+      })
+    ).rejects.toThrow('Public baseline');
+    const writes = calls.filter(call => call.method !== 'GET');
+    expect(writes.map(call => call.path)).toEqual(['/repos/ComposioHQ/composio/issues/7/comments']);
+    expect(writes[0].body).toEqual({ body: expect.stringContaining('Public baseline') });
+    expect(writes[0].body).toEqual({ body: expect.stringContaining('/actions/runs/21') });
+  });
   test('issue and dispatch normalize through the same active schema', () => {
     const issue = {
       issue: {
@@ -332,7 +344,12 @@ describe('SDK release member request', () => {
         async () => plan
       )
     ).rejects.toThrow('higher-version corrective');
-    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+    expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
+      '/repos/ComposioHQ/composio/issues/7/comments',
+    ]);
+    expect(calls.at(-1)?.body).toEqual({
+      body: expect.stringContaining('higher-version corrective'),
+    });
   });
   test('lost preparation authorization ends recovery even while publication candidates remain available', async () => {
     const { github, calls } = client({ publication: 'active', authorizationLost: true });
@@ -344,7 +361,12 @@ describe('SDK release member request', () => {
         async () => plan
       )
     ).rejects.toThrow('higher-version corrective');
-    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+    expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
+      '/repos/ComposioHQ/composio/issues/7/comments',
+    ]);
+    expect(calls.at(-1)?.body).toEqual({
+      body: expect.stringContaining('higher-version corrective'),
+    });
   });
   test('explicit refresh prepares a replacement from the original version baseline and choices', async () => {
     const { github, calls } = client({ existing: true });
@@ -412,7 +434,9 @@ describe('SDK release member request', () => {
         async () => plan
       )
     ).rejects.toThrow('guarded');
-    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+    expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
+      '/repos/ComposioHQ/composio/issues/7/comments',
+    ]);
   });
   test('a reconciled no-op creates no branch or source commit', async () => {
     const { github, calls } = client();

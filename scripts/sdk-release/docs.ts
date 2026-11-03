@@ -9,7 +9,12 @@ import {
   releaseRunSchema,
 } from './github';
 import { committedBatch, publicationState } from './coordination';
-import { readPublicationStatus, writePublicationStatus } from './publication';
+import {
+  publicationReportSchema,
+  readPublicationStatus,
+  writePublicationStatus,
+  type PublicationReport,
+} from './publication';
 import { releaseBatchSchema, sourceShaSchema } from './source';
 import { runPreparationCommand } from './commands';
 export { isSdkChangelog } from './changelog-filter';
@@ -479,7 +484,7 @@ async function finishDocs(
   runId: string,
   appId: number,
   successful: boolean | undefined,
-  maintenance: string
+  maintenance: PublicationReport['maintenance']
 ) {
   const run = await github.getRun(runId);
   if (!(await publicationState(github, run)).verified)
@@ -515,9 +520,9 @@ async function finishDocs(
       registryVerified: true,
       terminal: false,
       docs,
+      maintenance,
       candidates: previous?.candidates ?? [],
       inventory: previous?.inventory ?? [],
-      detail: `${docs === 'verified' ? 'Live HTML, Markdown, version table and representative SDK references verified.' : 'Current protected docs rebuild/deployment or live verification failed; retry this original run for docs only.'} Guide/pin maintenance: ${maintenance}. Search indexing remains the separate Docs - Sync Algolia Search workflow; its failures require maintenance recovery.`,
     },
     appId,
     pull.number
@@ -593,7 +598,9 @@ if (import.meta.main) {
         process.env.SDK_DOCS_LIVE_RESULT === 'maintenance'
           ? undefined
           : process.env.SDK_DOCS_LIVE_RESULT === 'success',
-        process.env.SDK_DOCS_MAINTENANCE_RESULT ?? 'pending'
+        publicationReportSchema.shape.maintenance.parse(
+          process.env.SDK_DOCS_MAINTENANCE_RESULT ?? 'pending'
+        )
       );
   }
 }

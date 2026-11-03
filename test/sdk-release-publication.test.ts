@@ -238,7 +238,7 @@ describe('direct publication reconciliation', () => {
   });
 });
 
-test('canonical App-owned publication status preserves receipts and updates request and PR idempotently', async () => {
+async function publicationStatusFixture() {
   const { releaseBatchSchema } = await import('../scripts/sdk-release/source');
   const batch = releaseBatchSchema.parse({
     schemaVersion: 1,
@@ -285,6 +285,11 @@ test('canonical App-owned publication status preserves receipts and updates requ
       { name: 'composio', version: '1.0.1', file: wheel.file, state: 'matching' as const },
     ],
   };
+  return { github, batch, original, comments, writes };
+}
+
+test('canonical App-owned publication status preserves receipts and updates request and PR idempotently', async () => {
+  const { github, batch, original, writes } = await publicationStatusFixture();
   await writePublicationStatus(github, batch, original, 123, 11);
   const saved = await readPublicationStatus(github, batch, 123);
   expect(saved?.registryVerified).toBe(true);
@@ -292,3 +297,36 @@ test('canonical App-owned publication status preserves receipts and updates requ
   expect(writes).toEqual(['POST', 'POST', 'PATCH', 'PATCH']);
   expect((await readPublicationStatus(github, batch, 123))?.inventory).toEqual(original.inventory);
 });
+
+for (const maintenance of ['success', 'failure'] as const) {
+  for (const maintenanceFirst of [true, false]) {
+    test(`docs completion preserves maintenance ${maintenance} with maintenance first: ${maintenanceFirst}`, async () => {
+      const { github, batch, original, comments } = await publicationStatusFixture();
+      await writePublicationStatus(github, batch, original, 123, 11);
+      // Both independent jobs can read the same pending report before either finishes.
+      const pending = (await readPublicationStatus(github, batch, 123))!;
+      const updates = [
+        { ...pending, maintenance },
+        { ...pending, docs: 'verified' as const, maintenance: 'pending' as const },
+      ];
+      if (!maintenanceFirst) updates.reverse();
+      await writePublicationStatus(github, batch, updates[0], 123, 11);
+      if (maintenanceFirst) {
+        expect(comments.get(7)?.body).toContain('docs pending');
+        expect(comments.get(7)?.body).not.toContain('verification failed');
+        expect(comments.get(7)?.body).toContain(`Guide/pin maintenance: ${maintenance}.`);
+      }
+      await writePublicationStatus(github, batch, updates[1], 123, 11);
+      const saved = await readPublicationStatus(github, batch, 123);
+      expect(saved?.docs).toBe('verified');
+      expect(saved?.maintenance).toBe(maintenance);
+      expect(comments.get(7)?.body).toContain('release documentation verified');
+      expect(comments.get(7)?.body).toContain(`Guide/pin maintenance: ${maintenance}.`);
+      expect(comments.get(11)?.body).toBe(comments.get(7)?.body);
+      // A later registry report has no maintenance result of its own.
+      await writePublicationStatus(github, batch, original, 123, 11);
+      expect((await readPublicationStatus(github, batch, 123))?.maintenance).toBe(maintenance);
+      expect((await readPublicationStatus(github, batch, 123))?.docs).toBe('verified');
+    });
+  }
+}
