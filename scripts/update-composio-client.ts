@@ -448,14 +448,16 @@ export const prepare = (
       const previous = yield* checked(() =>
         catalogVersion(z.string().parse(files['pnpm-workspace.yaml']))
       );
+      const exclusion = `'@composio/client@${version}'`;
+      const resolving = catalog.replace(exclusion, `'@composio/client@${previous} || ${version}'`);
+      if (resolving === catalog)
+        return yield* Effect.fail(
+          new ClientUpdateValidationError({
+            message: 'Cannot widen the client release-age exemption for lock resolution',
+          })
+        );
       yield* Effect.acquireUseRelease(
-        write(
-          resolve(root, 'pnpm-workspace.yaml'),
-          catalog.replace(
-            `  - '@composio/client@${version}'`,
-            `  - '@composio/client@${previous} || ${version}'`
-          )
-        ),
+        write(resolve(root, 'pnpm-workspace.yaml'), resolving),
         () =>
           runCommand(
             ['pnpm', 'install', '--lockfile-only', '--ignore-scripts', '--no-frozen-lockfile'],
