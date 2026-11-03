@@ -1,10 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { z } from 'zod';
-import { GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './github';
+import { GitHubReleaseClient, SDK_RELEASE_REPOSITORY, runIdSchema } from './github';
 import { releaseChoiceSchema, type SdkReleasePlan } from './plan';
 import { createPilotPlan } from './preview';
 
-const runIdSchema = z.string().regex(/^[1-9][0-9]*$/);
 export const releaseRequestSchema = z
   .object({
     action: z.enum(['preview', 'status', 'retry']).default('preview'),

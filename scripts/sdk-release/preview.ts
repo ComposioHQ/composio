@@ -4,7 +4,12 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { getPackages } from '@manypkg/get-packages';
 import semver from 'semver';
 import { z } from 'zod';
-import { createSdkReleasePlan, type ReleaseChoice, type SdkReleasePlan } from './plan';
+import {
+  createSdkReleasePlan,
+  PYTHON_RELEASE_MARKER,
+  type ReleaseChoice,
+  type SdkReleasePlan,
+} from './plan';
 import { discoverPythonPackages } from './python-metadata';
 import type { ReleaseFetch } from './github';
 
@@ -113,7 +118,7 @@ export async function createPilotPlan(
     await copy('python/composio/__version__.py');
     await writeFile(
       resolve(temporary, 'python/package.json'),
-      JSON.stringify({ name: '@composio/python-sdk', private: true, version: python[0].version })
+      JSON.stringify({ name: PYTHON_RELEASE_MARKER, private: true, version: python[0].version })
     );
     return await createSdkReleasePlan(temporary, { ...choices, baseline });
   } finally {

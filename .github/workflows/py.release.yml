@@ -93,8 +93,6 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    # The next workflow copy pauses stable publication during cutover. The
-    # prerelease/core-only beta path and main's workflow copy are preserved.
     if: github.event_name == 'push' && (vars.SDK_LEGACY_NEXT_PUBLISH_PAUSED != 'true' || needs.build.outputs.core_only == 'true')
     runs-on: ubuntu-latest
     environment:

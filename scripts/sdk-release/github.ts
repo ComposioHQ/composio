@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const SDK_RELEASE_REPOSITORY = 'ComposioHQ/composio';
+export const runIdSchema = z.string().regex(/^[1-9][0-9]*$/);
 const shaSchema = z.string().regex(/^[a-f0-9]{40}$/);
 const pullSchema = z.object({
   number: z.number().int().positive(),
@@ -99,10 +100,7 @@ export class GitHubReleaseClient {
     sourceSha: string,
     contents: string
   ): Promise<string> {
-    const id = z
-      .string()
-      .regex(/^[1-9][0-9]*$/)
-      .parse(runId);
+    const id = runIdSchema.parse(runId);
     const source = shaSchema.parse(sourceSha);
     const commit = await this.request(
       'GET',
@@ -204,10 +202,7 @@ export class GitHubReleaseClient {
   }
 
   getRun(id: string): Promise<ReleaseRun> {
-    const runId = z
-      .string()
-      .regex(/^[1-9][0-9]*$/)
-      .parse(id);
+    const runId = runIdSchema.parse(id);
     return this.request(
       'GET',
       `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}`,
@@ -216,10 +211,7 @@ export class GitHubReleaseClient {
   }
 
   async rerunFailedJobs(id: string): Promise<void> {
-    const runId = z
-      .string()
-      .regex(/^[1-9][0-9]*$/)
-      .parse(id);
+    const runId = runIdSchema.parse(id);
     await this.request(
       'POST',
       `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}/rerun-failed-jobs`,

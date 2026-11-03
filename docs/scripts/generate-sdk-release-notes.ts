@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { z } from 'zod';
+import { frontmatter as parseFrontmatter } from 'fumadocs-core/content/md/frontmatter';
 const PYTHON_RELEASE_MARKER = '@composio/python-sdk';
 const releaseDocumentationPlanSchema = z.object({
   releases: z.array(
@@ -59,15 +60,19 @@ export async function generateSdkReleaseNotes(
     'docs/content/changelog',
     `${month}-${day}-${year.slice(2)}-sdk-${options.releaseId}.mdx`
   );
-  if (await Bun.file(path).exists()) {
-    const contents = await readFile(path, 'utf8');
-    const frontmatter = contents.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1];
+  let contents: string | undefined;
+  try {
+    contents = await readFile(path, 'utf8');
+  } catch (error) {
+    if (!z.object({ code: z.literal('ENOENT') }).safeParse(error).success) throw error;
+  }
+  if (contents !== undefined) {
     const existing = z
       .object({
         sdkRelease: z.string(),
         sdkReleaseTargets: z.record(z.string(), z.string()),
       })
-      .parse(Bun.YAML.parse(frontmatter ?? ''));
+      .parse(parseFrontmatter(contents).data);
     if (
       existing.sdkRelease !== options.releaseId ||
       JSON.stringify(Object.entries(existing.sdkReleaseTargets).sort()) !==
@@ -78,9 +83,9 @@ export async function generateSdkReleaseNotes(
     return { path: relative(cwd, path), preserved: true };
   }
   const summaries = [...new Set(plan.changesets.map(note => note.summary.trim()).filter(Boolean))];
-  const contents = `---\ntitle: ${JSON.stringify(`SDK release ${options.releaseId}`)}\ndate: ${JSON.stringify(options.date)}\nsdkRelease: ${JSON.stringify(options.releaseId)}\nsdkReleaseTargets: ${JSON.stringify(targets(plan))}\n---\n\nThis entry records the release targets. See [publication status](${options.publicationStatusUrl}) for package availability.\n\n### SDK Versions\n\n${versionTable(plan)}\n\n### Changes\n\n${summaries.join('\n\n')}\n`;
+  const generated = `---\ntitle: ${JSON.stringify(`SDK release ${options.releaseId}`)}\ndate: ${JSON.stringify(options.date)}\nsdkRelease: ${JSON.stringify(options.releaseId)}\nsdkReleaseTargets: ${JSON.stringify(targets(plan))}\n---\n\nThis entry records the release targets. See [publication status](${options.publicationStatusUrl}) for package availability.\n\n### SDK Versions\n\n${versionTable(plan)}\n\n### Changes\n\n${summaries.join('\n\n')}\n`;
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, contents, { flag: 'wx' });
+  await writeFile(path, generated, { flag: 'wx' });
   return { path: relative(cwd, path), preserved: false };
 }
 
@@ -119,7 +124,7 @@ export function generateSdkReleaseReferences(
 
 if (import.meta.main) {
   const { values } = parseArgs({
-    args: Bun.argv.slice(2),
+    args: process.argv.slice(2),
     options: {
       plan: { type: 'string' },
       id: { type: 'string' },
@@ -130,7 +135,9 @@ if (import.meta.main) {
     },
   });
   if (!values.plan) throw new Error('--plan is required');
-  const plan = releaseDocumentationPlanSchema.parse(await Bun.file(values.plan).json());
+  const plan = releaseDocumentationPlanSchema.parse(
+    JSON.parse(await readFile(values.plan, 'utf8'))
+  );
   const options = releaseNoteOptionsSchema.parse({
     releaseId: values.id,
     date: values.date,

@@ -117,7 +117,6 @@ export const docs = defineDocs({
   },
 });
 
-// Historical changelogs and generated references do not depend on current docs SDK pins.
 const historicalMdxOptions = applyMdxPreset({
   // Match the global remark plugins so mermaid diagrams in merged
   // api-overviews render (applyMdxPreset replaces, not merges).
@@ -127,7 +126,6 @@ const historicalMdxOptions = applyMdxPreset({
       light: 'github-light',
       dark: 'github-dark',
     },
-    // Maintained guides and examples retain global Twoslash checking.
   },
 });
 
