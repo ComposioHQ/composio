@@ -50,10 +50,10 @@
   ],
   "license": "ISC",
   "devDependencies": {
-    "@ai-sdk/provider-utils": "^5.0.64",
+    "@ai-sdk/provider-utils": "^5.0.72",
     "@langchain/core": "^1.2.18",
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.6",
     "ajv": "^8.20.0",
     "fast-check": "^4.10.2",
     "tsdown": "catalog:",
