@@ -1,8 +1,7 @@
 import { expect, test } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { Effect } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import { Effect, FileSystem } from 'effect';
 import {
   ClientUpdateCommandError,
   ClientUpdateIoError,
@@ -19,17 +18,28 @@ import {
 
 const wheel = { filename: 'composio_client-2.0.1-py3-none-any.whl', yanked: false };
 const sourceSha = 'a'.repeat(40);
-const fixtureIo = <A>(action: () => Promise<A>) =>
-  Effect.tryPromise({
-    try: action,
-    catch: cause =>
-      new ClientUpdateIoError({
-        operation: 'fixture I/O',
-        path: 'fixture',
-        message: 'Fixture I/O failed',
-        cause,
-      }),
+const run = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem>) =>
+  Effect.runPromise(effect.pipe(Effect.provide(BunFileSystem.layer)));
+const withFs = <A, E>(action: (fs: FileSystem.FileSystem) => Effect.Effect<A, E>) =>
+  Effect.gen(function* () {
+    return yield* action(yield* FileSystem.FileSystem);
   });
+const fixtureIo = <A, E>(action: (fs: FileSystem.FileSystem) => Effect.Effect<A, E>) =>
+  withFs(action).pipe(
+    Effect.mapError(
+      cause =>
+        new ClientUpdateIoError({
+          operation: 'fixture I/O',
+          path: 'fixture',
+          message: 'Fixture I/O failed',
+          cause,
+        })
+    )
+  );
+const tempDirectory = (prefix: string) => run(withFs(fs => fs.makeTempDirectory({ prefix })));
+const removeDirectory = (path: string) =>
+  run(withFs(fs => fs.remove(path, { recursive: true, force: true })));
+const readText = (path: string) => run(withFs(fs => fs.readFileString(path)));
 const files = {
   'pnpm-workspace.yaml':
     "catalog:\n  '@composio/client': 2.0.0\n  effect: ^4.1.0\nminimumReleaseAgeExclude:\n  - '@composio/client'\n  - effect@4.0.3\n",
@@ -184,18 +194,18 @@ test('Python-only catchup does not create a TypeScript release', () => {
 });
 
 test('artifact transfer rejects unexpected paths, duplicates and advancing next before writes', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'client-update-'));
+  const root = await tempDirectory('client-update-');
   const artifact = {
     version: '2.0.1',
     base_sha: sourceSha,
     files: [{ path: 'python/setup.py', content: 'updated' }],
   };
   try {
-    await expect(Effect.runPromise(applyArtifact(root, artifact, 'b'.repeat(40)))).rejects.toThrow(
+    await expect(run(applyArtifact(root, artifact, 'b'.repeat(40)))).rejects.toThrow(
       'next advanced'
     );
     await expect(
-      Effect.runPromise(
+      run(
         applyArtifact(
           root,
           { ...artifact, files: [{ path: '../escape', content: 'bad' }] },
@@ -204,7 +214,7 @@ test('artifact transfer rejects unexpected paths, duplicates and advancing next 
       )
     ).rejects.toThrow();
     await expect(
-      Effect.runPromise(
+      run(
         applyArtifact(
           root,
           { ...artifact, files: [...artifact.files, ...artifact.files] },
@@ -212,21 +222,26 @@ test('artifact transfer rejects unexpected paths, duplicates and advancing next 
         )
       )
     ).rejects.toThrow('Duplicate');
-    expect(await Effect.runPromise(applyArtifact(root, artifact, sourceSha))).toBe('2.0.1');
-    expect(await readFile(join(root, 'python/setup.py'), 'utf8')).toBe('updated');
+    expect(await run(applyArtifact(root, artifact, sourceSha))).toBe('2.0.1');
+    expect(await readText(join(root, 'python/setup.py'))).toBe('updated');
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await removeDirectory(root);
   }
 });
 
 test('offline preparation runs scoped lock commands and publishes no artifact on failure', async () => {
   for (const failLock of [false, true]) {
-    const root = await mkdtemp(join(tmpdir(), 'client-update-prepare-'));
+    const root = await tempDirectory('client-update-prepare-');
     const commands: string[][] = [];
     try {
       for (const [path, content] of Object.entries(files)) {
-        await mkdir(dirname(join(root, path)), { recursive: true });
-        await writeFile(join(root, path), content);
+        await run(
+          withFs(fs =>
+            Effect.andThen(fs.makeDirectory(dirname(join(root, path)), { recursive: true }), () =>
+              fs.writeFileString(join(root, path), content)
+            )
+          )
+        );
       }
       for (const args of [
         ['init', '--quiet'],
@@ -257,7 +272,7 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
           if (new URL(url).hostname === 'pypi.org') return { releases: { '2.0.1': [wheel] } };
           return { versions: { '2.0.1': {} } };
         });
-      const run = Effect.runPromise(
+      const result = run(
         prepare(root, {
           eventName: 'schedule',
           event: {},
@@ -267,15 +282,15 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
               yield* Effect.sync(() => commands.push(args));
               if (args[0] === 'pnpm') {
                 expect(
-                  yield* fixtureIo(() => readFile(join(root, 'pnpm-workspace.yaml'), 'utf8'))
+                  yield* fixtureIo(fs => fs.readFileString(join(root, 'pnpm-workspace.yaml')))
                 ).toContain("'@composio/client@2.0.0 || 2.0.1'");
               }
               if (failLock)
                 return yield* Effect.fail(
                   new ClientUpdateCommandError({ command: args, message: 'lock resolution failed' })
                 );
-              yield* fixtureIo(() =>
-                writeFile(
+              yield* fixtureIo(fs =>
+                fs.writeFileString(
                   join(root, args[0] === 'pnpm' ? 'pnpm-lock.yaml' : 'uv.lock'),
                   'fixture lock'
                 )
@@ -286,11 +301,11 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
       );
       const artifactPath = join(root, '.artifacts/client-update/update.json');
       if (failLock) {
-        await expect(run).rejects.toThrow('lock resolution failed');
-        await expect(run).rejects.toBeInstanceOf(ClientUpdateCommandError);
-        await expect(readFile(artifactPath)).rejects.toThrow();
+        await expect(result).rejects.toThrow('lock resolution failed');
+        await expect(result).rejects.toBeInstanceOf(ClientUpdateCommandError);
+        await expect(readText(artifactPath)).rejects.toThrow();
       } else {
-        await run;
+        await result;
         expect(commands).toEqual([
           ['pnpm', 'install', '--lockfile-only', '--ignore-scripts', '--no-frozen-lockfile'],
           [
@@ -302,20 +317,20 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
             'composio-client',
           ],
         ]);
-        expect(JSON.parse(await readFile(artifactPath, 'utf8')).version).toBe('2.0.1');
+        expect(JSON.parse(await readText(artifactPath)).version).toBe('2.0.1');
       }
-      expect(await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8')).not.toContain('||');
+      expect(await readText(join(root, 'pnpm-workspace.yaml'))).not.toContain('||');
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await removeDirectory(root);
     }
   }
 });
 
 test('registry outages and dispatch/CDN races fail before mutation', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'client-update-registry-'));
+  const root = await tempDirectory('client-update-registry-');
   try {
     await expect(
-      Effect.runPromise(
+      run(
         prepare(root, {
           eventName: 'schedule',
           event: {},
@@ -330,7 +345,7 @@ test('registry outages and dispatch/CDN races fail before mutation', async () =>
       )
     ).rejects.toThrow('Registry request failed');
     await expect(
-      Effect.runPromise(
+      run(
         prepare(root, {
           eventName: 'repository_dispatch',
           event: {
@@ -349,15 +364,15 @@ test('registry outages and dispatch/CDN races fail before mutation', async () =>
         })
       )
     ).rejects.toThrow('not yet available on both registries');
-    await expect(readFile(join(root, '.artifacts/client-update/update.json'))).rejects.toThrow();
+    await expect(readText(join(root, '.artifacts/client-update/update.json'))).rejects.toThrow();
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await removeDirectory(root);
   }
 });
 
 test('workflow keeps dispatched data out of code and scopes App credentials to publishing', async () => {
   const workflow = Bun.YAML.parse(
-    await readFile(new URL('../.github/workflows/client.update.yml', import.meta.url), 'utf8')
+    await readText(new URL('../.github/workflows/client.update.yml', import.meta.url).pathname)
   );
   const schema = (await import('zod')).z;
   const parsed = schema

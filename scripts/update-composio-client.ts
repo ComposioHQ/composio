@@ -1,7 +1,7 @@
-import { appendFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { Data, Effect } from 'effect';
+import { Data, Effect, FileSystem } from 'effect';
 import { compare, valid } from 'semver';
 import { z } from 'zod';
 
@@ -223,17 +223,24 @@ const checked = <A>(operation: () => A) =>
         cause,
       }),
   });
-const file = <A>(operation: string, path: string, action: () => Promise<A>) =>
-  Effect.tryPromise({
-    try: action,
-    catch: cause =>
-      new ClientUpdateIoError({ operation, path, message: `Cannot ${operation}: ${path}`, cause }),
-  });
-const read = (path: string) => file('read file', path, () => readFile(path, 'utf8'));
+const file = <A, E>(
+  operation: string,
+  path: string,
+  action: (fs: FileSystem.FileSystem) => Effect.Effect<A, E>
+) =>
+  Effect.gen(function* () {
+    return yield* action(yield* FileSystem.FileSystem);
+  }).pipe(
+    Effect.mapError(
+      cause =>
+        new ClientUpdateIoError({ operation, path, message: `Cannot ${operation}: ${path}`, cause })
+    )
+  );
+const read = (path: string) => file('read file', path, fs => fs.readFileString(path));
 const write = (path: string, content: string) =>
-  file('write file', path, () => writeFile(path, content));
+  file('write file', path, fs => fs.writeFileString(path, content));
 const directory = (path: string) =>
-  file('create directory', path, () => mkdir(path, { recursive: true }));
+  file('create directory', path, fs => fs.makeDirectory(path, { recursive: true }));
 
 const registryJson = (url: string) =>
   Effect.gen(function* () {
@@ -346,7 +353,9 @@ const output = (name: string, value: string) =>
   Effect.gen(function* () {
     const path = process.env.GITHUB_OUTPUT;
     if (path)
-      yield* file('append workflow output', path, () => appendFile(path, `${name}=${value}\n`));
+      yield* file('append workflow output', path, fs =>
+        fs.writeFileString(path, `${name}=${value}\n`, { flag: 'a' })
+      );
   });
 
 export const prepare = (
@@ -355,8 +364,14 @@ export const prepare = (
     eventName: string;
     event: unknown;
     registry?: (url: string) => Effect.Effect<unknown, ClientUpdateError>;
-    runCommand?: (args: string[], cwd: string) => Effect.Effect<void, ClientUpdateError>;
-    setOutput?: (name: string, value: string) => Effect.Effect<void, ClientUpdateError>;
+    runCommand?: (
+      args: string[],
+      cwd: string
+    ) => Effect.Effect<void, ClientUpdateError, FileSystem.FileSystem>;
+    setOutput?: (
+      name: string,
+      value: string
+    ) => Effect.Effect<void, ClientUpdateError, FileSystem.FileSystem>;
   }
 ) =>
   Effect.gen(function* () {
@@ -365,7 +380,9 @@ export const prepare = (
     const setOutput = options.setOutput ?? output;
     const source = yield* checked(() => validateEvent(options.eventName, options.event));
     const artifactPath = resolve(root, '.artifacts/client-update/update.json');
-    yield* file('remove stale artifact', artifactPath, () => rm(artifactPath, { force: true }));
+    yield* file('remove stale artifact', artifactPath, fs =>
+      fs.remove(artifactPath, { force: true })
+    );
     const [npm, pypi] = yield* Effect.all(
       [
         readRegistry('https://registry.npmjs.org/@composio%2fclient'),
@@ -535,7 +552,10 @@ if (import.meta.main) {
       );
   });
   BunRuntime.runMain(
-    main.pipe(Effect.tapError(error => Effect.sync(() => console.error(error.message)))),
+    main.pipe(
+      Effect.tapError(error => Effect.sync(() => console.error(error.message))),
+      Effect.provide(BunFileSystem.layer)
+    ),
     {
       disableErrorReporting: true,
     }
