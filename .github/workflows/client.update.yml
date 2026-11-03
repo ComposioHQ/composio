@@ -61,7 +61,7 @@ jobs:
 
   publish:
     needs: prepare
-    if: needs.prepare.outputs.changed == 'true'
+    if: needs.prepare.result == 'success' && needs.prepare.outputs.changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout trusted release branch
