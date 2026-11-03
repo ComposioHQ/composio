@@ -103,6 +103,12 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Install documentation generator dependencies
         working-directory: docs
@@ -277,6 +283,12 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
         if: matrix.language == 'python' && needs.select-candidates.outputs.python == 'true'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Build or recover exact immutable candidate
@@ -433,6 +445,12 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
         if: needs.select-candidates.outputs.python == 'true'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Verify every public file, stable tag and native npm provenance

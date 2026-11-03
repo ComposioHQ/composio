@@ -3,24 +3,37 @@ name: Docs - Sync guides on SDK changes
 on:
   push:
     branches: [next]
-    paths:
-      - 'ts/packages/core/src/**'
-      - 'ts/packages/cli/src/**'
-      - 'ts/packages/providers/*/src/**'
-      - 'python/composio/**'
+    paths: ['ts/packages/cli/src/**']
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: Original verified SDK publication run; omit only for CLI guide sync
+        type: string
+        required: false
 
 permissions:
   contents: read
+  actions: read
+
+# One shared maintenance branch, including its freshness check and data-only commit.
+concurrency:
+  group: docs-sdk-maintenance
+  cancel-in-progress: false
+  queue: max
+
+env:
+  SDK_DOCS_RUN_ID: ${{ inputs.run_id }}
+  SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+  SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
 
 jobs:
-  sync-docs:
+  cli-guides:
+    if: github.event_name == 'push' || inputs.run_id == ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
-      id-token: write
 
     steps:
       - name: Generate GitHub App token
@@ -36,7 +49,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
-      - name: Get SDK diff
+      - name: Get CLI diff
         id: diff
         env:
           BEFORE: ${{ github.event.before }}
@@ -52,10 +65,7 @@ jobs:
           fi
 
           git diff "$BEFORE".."$AFTER" -- \
-            ts/packages/core/src/ \
-            ts/packages/cli/src/ \
-            ts/packages/providers/*/src/ \
-            python/composio/ > /tmp/sdk-diff.patch
+            ts/packages/cli/src/ > /tmp/sdk-diff.patch
 
           if [ ! -s /tmp/sdk-diff.patch ]; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
@@ -72,15 +82,15 @@ jobs:
           claude_args: |
             --allowedTools "Read,Write,Edit,Glob,Grep"
           prompt: |
-            SDK source code was just updated. Check if any documentation needs to change.
+            CLI source code was just updated. Check if any documentation needs to change.
 
-            1. Read the SDK diff at /tmp/sdk-diff.patch to understand what changed
+            1. Read the CLI diff at /tmp/sdk-diff.patch to understand what changed
             2. Focus on user-facing changes: new/renamed/removed methods, changed parameters, new features, changed behavior. Skip internal refactors, test changes, and type-only changes.
             3. If there are user-facing changes, search docs/content/docs/ for pages that reference the affected APIs, patterns, or features
             4. Update any docs that would be stale or incorrect after this SDK change — guides, FAQs, examples, quickstart, etc.
             5. Do NOT touch docs/content/reference/ (those are auto-generated separately)
             6. Do NOT touch docs/content/changelog/ (changelogs are written separately)
-            7. Do NOT edit docs/package.json or docs/bun.lock — the `@composio/*` version pins are managed automatically by the dependency-realignment step below, which runs after you and overwrites any changes you make to them
+            7. Do NOT edit docs/package.json or docs/bun.lock. SDK pins are maintained after verified SDK publication.
             8. If no docs changes are needed, make no file changes
             9. Do NOT add type assertions or casts to force a snippet to compile against an API that is missing from the published `@composio/*` package. If a feature isn't released yet, document the released behavior and let the Twoslash build flag the gap.
 
@@ -88,82 +98,22 @@ jobs:
         if: steps.diff.outputs.has_changes == 'true'
         uses: ./.github/actions/setup-node-pnpm-bun
 
-      - name: Align docs SDK deps with latest published releases
-        if: steps.diff.outputs.has_changes == 'true'
-        working-directory: ./docs
-        run: |
-          # Docs is a standalone Bun app outside the pnpm workspace: it pins
-          # published @composio/* versions instead of linking workspace source,
-          # so its Twoslash snippets and example apps only ever demonstrate APIs
-          # that users can actually install. Realign those pins to the latest
-          # released versions on every sync so they never drift behind the SDK
-          # (the drift that previously forced workaround casts into snippets).
-          # This runs AFTER the content pass so the committed pins are always
-          # authoritative — even if that pass edited package.json/bun.lock, this
-          # step resets the @composio/* pins and regenerates the lockfile.
-          # The PR's Twoslash build (docs-typescript-check.yml) gates the result:
-          # if a documented feature isn't published yet, the build fails loudly
-          # instead of the gap being papered over.
-          set -euo pipefail
-          # Discard any edits the content pass made to these managed files so the
-          # realignment is the sole source of truth for the dependency pins.
-          git checkout -- package.json bun.lock
-          changed=0
-          for section in dependencies devDependencies; do
-            pkgs=$(jq -r --arg s "$section" '.[$s] // {} | keys[] | select(startswith("@composio/"))' package.json)
-            for pkg in $pkgs; do
-              latest=$(npm view "$pkg" version 2>/dev/null || true)
-              if [ -z "$latest" ]; then
-                echo "::warning::could not resolve a published version for $pkg; leaving its pin unchanged"
-                continue
-              fi
-              current=$(jq -r --arg s "$section" --arg p "$pkg" '.[$s][$p]' package.json)
-              want="^$latest"
-              if [ "$current" != "$want" ]; then
-                echo "$section.$pkg: $current -> $want"
-                npm pkg set "$section.$pkg=$want"
-                changed=1
-              fi
-            done
-          done
-          if [ "$changed" -eq 1 ]; then
-            bun install
-          else
-            echo "All @composio/* pins already match the latest published releases."
-          fi
-
       - name: Create PR if changed
         id: create-pr
         if: steps.diff.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ steps.app-token.outputs.token }}
-          commit-message: 'docs: update guides for SDK changes'
-          title: 'docs: update guides for SDK changes'
+          commit-message: 'docs: update guides for CLI changes'
+          title: 'docs: update guides for CLI changes'
           body: |
             ## Summary
-            Automated docs update triggered by SDK source changes on `next`.
-
-            - Claude reviewed the SDK diff and updated guides, FAQs, or examples
-              that reference changed APIs or features.
-            - The docs `@composio/*` dependencies were realigned to their latest
-              published releases so Twoslash snippets and example apps validate
-              against versions users can actually install.
-
-            ## Review checklist
-            - [ ] Changes accurately reflect the new SDK behavior
-            - [ ] No unrelated docs were modified
-            - [ ] Code examples are correct and complete
-            - [ ] If a documented feature is not published yet, the Twoslash build
-                  will fail — wait for the release instead of working around it
-
-            Generated by Claude Code via GitHub Actions.
-          branch: docs/auto-sdk-sync
+            Update maintained guides for CLI source changes on `next`.
+            Review the full diff and check examples before merging.
+          branch: docs/auto-cli-sync
           base: next
           add-paths: |
             docs/content/docs/
-            docs/package.json
-            docs/bun.lock
 
       - name: Request review from pusher
         if: steps.create-pr.outputs.pull-request-number
@@ -173,3 +123,235 @@ jobs:
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
           AUTHOR: ${{ github.actor }}
         run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"
+
+  sdk-context:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_id != '' && github.ref == 'refs/heads/next' && github.repository == 'ComposioHQ/composio'
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    outputs:
+      source-sha: ${{ steps.context.outputs.source-sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Bind registry success and newest verified targets to current protected docs
+        id: context
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/docs.ts context
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-docs-input
+          path: /tmp/sdk-docs-input.json
+          if-no-files-found: error
+          retention-days: 30
+
+  sdk-maintenance:
+    needs: sdk-context
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.sdk-context.outputs.source-sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-docs-input
+          path: /tmp
+      - name: Preserve pending guides and apply exact verified SDK pins
+        run: bun scripts/sdk-release/docs.ts prepare
+      - name: Install exact public packages and expose frozen verified API references
+        run: |
+          cd docs
+          bun install
+          cd ..
+          FROZEN_SOURCE=$(jq -r '.verifiedSourceSha' /tmp/sdk-docs-input.json)
+          git fetch origin "$FROZEN_SOURCE"
+          mkdir -p /tmp/sdk-published-contract
+          for LANGUAGE in $(jq -r '.verifiedLanguages[]' /tmp/sdk-docs-input.json); do
+            git archive "$FROZEN_SOURCE" "docs/content/reference/sdk-reference/$LANGUAGE" | tar -x -C /tmp/sdk-published-contract
+          done
+          PYTHON_VERSION=$(jq -r '.targets.composio' /tmp/sdk-docs-input.json)
+          uv venv /tmp/sdk-published-python
+          uv pip install --python /tmp/sdk-published-python/bin/python "composio==$PYTHON_VERSION"
+      - name: Update guides for the published SDK contract
+        uses: anthropics/claude-code-action/base-action@e4a6faad497d33dbc7144135c75e41f82f0bf6c0 # v1.0.255
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep"
+          prompt: |
+            Update docs/content/docs/ guides for the verified SDK release described in
+            /tmp/sdk-docs-input.json. The targets and summaries come from frozen, verified
+            SDK source. Current guides include newer protected source and pending human edits;
+            preserve those edits. Read applicable docs instructions. Update only guides that
+            need changes. Do not edit generated references, changelogs, package.json, bun.lock,
+            workflow code, scripts or other files. Do not introduce type casts to conceal an
+            unavailable API. A delayed request may refer to an older batch; use the newest
+            verified target snapshot and summaries in the input, never mutable registry latest.
+            Read released APIs from /tmp/sdk-published-contract/docs/content/reference/sdk-reference/
+            and exact installed docs/node_modules/@composio/ packages and /tmp/sdk-published-python/.
+            Only selected verified-language references are exposed; an unselected corrective
+            language can retain unverified references in the repository. Use the exact public
+            installed SDK contract for that language. Current next SDK runtime
+            may include unpublished changes; do not describe it as the released API. Review all
+            relevant published references, including changes from earlier verified batches whose
+            guide maintenance may still be pending.
+      - name: Install and verify maintained examples with exact published pins
+        working-directory: docs
+        run: |
+          bun run check:code-examples
+          bun run check:api-snippets
+          bun run check:python-snippets
+          bun run check:typescript-snippets
+          bun run build
+      - name: Capture data-only maintenance patch
+        run: bun scripts/sdk-release/docs.ts capture
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-docs-patch
+          path: /tmp/sdk-docs-patch.json
+          if-no-files-found: error
+          retention-days: 30
+
+  sdk-maintenance-pr:
+    needs: [sdk-context, sdk-maintenance]
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-docs-patch
+          path: /tmp
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Recheck protected source, newest release and pending edits before committing
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/docs.ts commit
+
+  sdk-deploy:
+    needs: sdk-context
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Rebuild current protected next through the existing Vercel Git integration
+        env:
+          VERCEL_DOCS_NEXT_DEPLOY_HOOK: ${{ secrets.VERCEL_DOCS_NEXT_DEPLOY_HOOK }}
+        run: bun scripts/sdk-release/docs.ts deploy
+
+  sdk-live:
+    needs: [sdk-context, sdk-deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-docs-input
+          path: /tmp
+      - name: Verify live changelog HTML, Markdown, exact version rows and references
+        run: bun scripts/sdk-release/docs.ts live
+
+  sdk-completion:
+    needs: [sdk-context, sdk-live]
+    if: always() && needs.sdk-context.result == 'success'
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Update the canonical completion status without an early success announcement
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+          SDK_DOCS_LIVE_RESULT: ${{ needs.sdk-live.result }}
+          SDK_DOCS_MAINTENANCE_RESULT: pending
+        run: bun scripts/sdk-release/docs.ts finish
+
+  sdk-maintenance-status:
+    needs: [sdk-context, sdk-maintenance-pr]
+    if: always() && needs.sdk-context.result == 'success'
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: next
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Report independent guide and pin maintenance result
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+          SDK_DOCS_LIVE_RESULT: maintenance
+          SDK_DOCS_MAINTENANCE_RESULT: ${{ needs.sdk-maintenance-pr.result }}
+        run: bun scripts/sdk-release/docs.ts finish

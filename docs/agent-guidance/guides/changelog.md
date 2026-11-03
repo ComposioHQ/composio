@@ -85,3 +85,5 @@ For any breaking change, include:
 - [ ] Codemod (if applicable) — automated script to transform old code to new
 
 **What's a codemod?** A script that automatically updates user code. Instead of "change X to Y manually", users run the codemod and it transforms their code. See [jscodeshift](https://github.com/facebook/jscodeshift) or [ts-morph](https://github.com/dsherret/ts-morph).
+
+Changesets summaries are authored Markdown that becomes MDX. Put prose type syntax such as `Array<Tool>` in code spans so it does not parse as an unclosed JSX element. The production docs build validates the generated entry before release approval.

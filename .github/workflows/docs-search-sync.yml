@@ -56,6 +56,8 @@ jobs:
         if: env.ALGOLIA_APP_ID != '' && env.ALGOLIA_ADMIN_API_KEY != ''
         run: bun run sync:search
 
-      - name: Skip sync without Algolia secrets
+      - name: Report missing Algolia credentials
         if: env.ALGOLIA_APP_ID == '' || env.ALGOLIA_ADMIN_API_KEY == ''
-        run: echo "Skipping Algolia sync because ALGOLIA_APP_ID or ALGOLIA_ADMIN_API_KEY is not configured."
+        run: |
+          echo "::error::Search indexing did not run because ALGOLIA_APP_ID or ALGOLIA_ADMIN_API_KEY is not configured."
+          exit 1

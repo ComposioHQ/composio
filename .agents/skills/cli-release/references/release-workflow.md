@@ -19,7 +19,7 @@
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
 - `.changeset/config.json` ignores `@composio/cli`.
 
-`ts.release.yml` is the TypeScript SDK/npm release train. It is not the normal CLI binary release path.
+`sdk.release.yml` owns stable Python/TypeScript publication; `ts.release.yml` retains the `main` SDK beta lane. CLI binary releases use their own workflow.
 
 ## Choose The Path
 

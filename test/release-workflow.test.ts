@@ -42,6 +42,36 @@ const pythonReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/py.release.yml', import.meta.url),
   'utf8'
 );
+// Exercise the actual lane conditions after retiring stable legacy publication.
+function workflowCondition(expression, values) {
+  let evaluated = expression;
+  for (const [name, value] of Object.entries(values))
+    evaluated = evaluated.replaceAll(name, JSON.stringify(value));
+  return Function(`return (${evaluated});`)();
+}
+const legacyTs = Bun.YAML.parse(tsReleaseWorkflow);
+const legacyPy = Bun.YAML.parse(pythonReleaseWorkflow);
+for (const [ref, expected] of [
+  ['refs/heads/main', true],
+  ['refs/heads/next', false],
+]) {
+  if (workflowCondition(legacyTs.jobs.release.if, { 'github.ref': ref }) !== expected)
+    throw new Error('Legacy TypeScript publication must be main-only');
+}
+for (const [event, coreOnly, expected] of [
+  ['push', 'false', false],
+  ['push', 'true', true],
+  ['workflow_dispatch', 'true', false],
+]) {
+  if (
+    workflowCondition(legacyPy.jobs.publish.if, {
+      'github.event_name': event,
+      'needs.build.outputs.core_only': coreOnly,
+    }) !== expected
+  )
+    throw new Error('Legacy Python publication must be push-triggered core prereleases only');
+}
+
 const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
 const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.url).pathname;
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);

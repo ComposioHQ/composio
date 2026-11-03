@@ -1,9 +1,9 @@
-name: TS SDK Release
+name: TS SDK beta release
 
 on:
   workflow_dispatch:
   push:
-    branches: [next, main]
+    branches: [main]
 
 permissions:
   contents: read
@@ -14,6 +14,8 @@ env:
 
 jobs:
   release:
+    # Stable next releases are owned by sdk.release.yml.
+    if: github.ref == 'refs/heads/main'
     name: Release Typescript SDK
     runs-on: ubuntu-latest
     permissions:
@@ -61,7 +63,7 @@ jobs:
       - name: Create Release Pull Request & Publish packages
         id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
-        if: github.event_name != 'workflow_dispatch' # only run on master merges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           # SDKs publish to npm. The CLI binary workflow owns GitHub Releases.
@@ -87,7 +89,7 @@ jobs:
             VERSION_LINE="⚡️ $NAME: \`$NEW_VERSION\`"
             PKG_PATH=$(pnpm list --filter "$NAME" --json 2>/dev/null | jq -r '.[0].path // empty' 2>/dev/null || echo "")
             if [ -n "$PKG_PATH" ]; then
-              REL_PKG_JSON_PATH="${PKG_PATH#$GITHUB_WORKSPACE/}/package.json"
+              REL_PKG_JSON_PATH="${PKG_PATH#"$GITHUB_WORKSPACE"/}/package.json"
               OLD_VERSION=$(git show "HEAD^:$REL_PKG_JSON_PATH" 2>/dev/null | jq -r '.version // empty' 2>/dev/null || echo "")
               if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
                 VERSION_LINE="⚡️ $NAME: \`$OLD_VERSION\` -> \`$NEW_VERSION\`"

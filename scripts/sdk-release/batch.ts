@@ -732,6 +732,13 @@ if (import.meta.main) {
     const { report } = await (
       await import('./publication')
     ).reportPublication(github, String(runId), env.SDK_RELEASE_APP_ID);
+    if (report.registryVerified)
+      await github.request(
+        'POST',
+        `${repo}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
+        z.unknown(),
+        { ref: 'next', inputs: { run_id: String(runId) } }
+      );
     await writeFile(
       env.GITHUB_OUTPUT,
       `registry-verified=${report.registryVerified}\noriginal-run-id=${report.runId}\n`,
