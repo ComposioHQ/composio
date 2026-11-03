@@ -1,24 +1,48 @@
 import type {
+  CustomCreateToolkitParams as RawCustomCreateToolkitParams,
+  CustomCreateToolkitResponse as RawCustomCreateToolkitResponse,
   CustomDeleteToolkitResponse as RawCustomDeleteToolkitResponse,
   CustomSyncParams as RawCustomSyncParams,
   CustomSyncResponse as RawCustomSyncResponse,
+  CustomUpdateToolkitsParams as RawCustomUpdateToolkitsParams,
+  CustomUpdateToolkitsResponse as RawCustomUpdateToolkitsResponse,
   CustomUpsertParams as RawCustomUpsertParams,
   CustomUpsertResponse as RawCustomUpsertResponse,
 } from '@composio/client/resources/custom';
 import {
+  CustomToolkitApiKeyField,
   CustomToolkitAuthScheme,
+  CustomToolkitCreateParams,
+  CustomToolkitCreateResponse,
+  CustomToolkitCreateResponseSchema,
   CustomToolkitDeleteResponse,
   CustomToolkitDeleteResponseSchema,
+  CustomToolkitLogoFile,
   CustomToolkitSyncParams,
   CustomToolkitSyncResponse,
   CustomToolkitSyncResponseSchema,
+  CustomToolkitUpdateParams,
+  CustomToolkitUpdateResponse,
+  CustomToolkitUpdateResponseSchema,
   CustomToolkitUpsertParams,
   CustomToolkitUpsertResponse,
   CustomToolkitUpsertResponseSchema,
 } from '../../types/customToolkits.types';
 import { transform } from '../transform';
 
-type RawCustomToolkitAuthScheme = RawCustomUpsertParams['toolkit_config']['auth_schemes'][number];
+type RawCustomToolkitAuthScheme = RawCustomCreateToolkitParams['auth_schemes'][number];
+type RawCustomToolkitLogoFile = NonNullable<RawCustomCreateToolkitParams['logo_file']>;
+
+const transformCustomToolkitLogoFile = (
+  logoFile: CustomToolkitLogoFile | undefined
+): RawCustomToolkitLogoFile | undefined =>
+  logoFile && { content: logoFile.content, mime_type: logoFile.mimeType };
+
+const transformCustomToolkitApiKeyField = (apiKeyField: CustomToolkitApiKeyField | undefined) =>
+  apiKeyField && {
+    display_name: apiKeyField.displayName,
+    description: apiKeyField.description,
+  };
 
 const transformCustomToolkitAuthScheme = (
   scheme: CustomToolkitAuthScheme
@@ -30,14 +54,54 @@ const transformCustomToolkitAuthScheme = (
       return {
         mode: 'API_KEY',
         headers: scheme.headers,
-        api_key_field: scheme.apiKeyField && {
-          display_name: scheme.apiKeyField.displayName,
-          description: scheme.apiKeyField.description,
-        },
+        api_key_field: transformCustomToolkitApiKeyField(scheme.apiKeyField),
       };
     case 'DCR_OAUTH':
       return { mode: 'DCR_OAUTH', discovery_url: scheme.discoveryUrl };
   }
+};
+
+export const transformCustomToolkitCreateParams = (
+  params: CustomToolkitCreateParams
+): RawCustomCreateToolkitParams => ({
+  name: params.name,
+  app_url: params.appUrl,
+  logo_file: transformCustomToolkitLogoFile(params.logoFile),
+  auth_schemes: params.authSchemes.map(transformCustomToolkitAuthScheme),
+  user_id: params.userId,
+  callback_url: params.callbackUrl,
+});
+
+export const transformCustomToolkitCreateResponse = (
+  response: RawCustomCreateToolkitResponse
+): CustomToolkitCreateResponse => {
+  return transform(response)
+    .with(CustomToolkitCreateResponseSchema)
+    .using(response => ({
+      slug: response.slug,
+      connectLink: response.connect_link && {
+        redirectUrl: response.connect_link.redirect_url,
+        expiresAt: response.connect_link.expires_at,
+        connectedAccountId: response.connect_link.connected_account_id,
+      },
+    }));
+};
+
+export const transformCustomToolkitUpdateParams = (
+  params: CustomToolkitUpdateParams
+): RawCustomUpdateToolkitsParams => ({
+  name: params.name,
+  logo_file: transformCustomToolkitLogoFile(params.logoFile),
+  api_key_field: transformCustomToolkitApiKeyField(params.apiKeyField),
+  user_id: params.userId,
+});
+
+export const transformCustomToolkitUpdateResponse = (
+  response: RawCustomUpdateToolkitsResponse
+): CustomToolkitUpdateResponse => {
+  return transform(response)
+    .with(CustomToolkitUpdateResponseSchema)
+    .using(response => ({ success: response.success }));
 };
 
 export const transformCustomToolkitUpsertParams = (
@@ -47,10 +111,7 @@ export const transformCustomToolkitUpsertParams = (
   toolkit_config: {
     name: params.toolkitConfig.name,
     app_url: params.toolkitConfig.appUrl,
-    logo_file: params.toolkitConfig.logoFile && {
-      content: params.toolkitConfig.logoFile.content,
-      mime_type: params.toolkitConfig.logoFile.mimeType,
-    },
+    logo_file: transformCustomToolkitLogoFile(params.toolkitConfig.logoFile),
     auth_schemes: params.toolkitConfig.authSchemes.map(transformCustomToolkitAuthScheme),
   },
 });
