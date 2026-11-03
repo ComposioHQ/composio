@@ -70,7 +70,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
 </Tab>
 </Tabs>
 
-Composio picks the slug from the server's domain, and adds a random suffix if it's taken. Save the slug: you need it to sync, update, or delete the toolkit.
+Save the returned slug: you need it to sync, update, or delete the toolkit.
 
 `app_url`, `auth_schemes`, and `user_id` can't change later. To change them, delete the toolkit and create it again.
 
@@ -88,12 +88,12 @@ Set `auth_schemes` to one of these:
 | API key | Each user brings an API key. | `[{"mode": "API_KEY", "headers": {"Authorization": "Bearer {{generic_api_key}}"}}]` |
 | DCR OAuth | The server supports OAuth Dynamic Client Registration. | `[{"mode": "DCR_OAUTH", "discovery_url": "https://mcp.acme.com/.well-known/oauth-authorization-server"}]` |
 
-- **API key:** Composio replaces `{{generic_api_key}}` with the user's key. Any header name works, but at least one header must contain `{{generic_api_key}}`. Composio only checks that a key was given, so run a safe tool after connecting to test it.
-- **DCR OAuth:** `discovery_url` is the OAuth authorization server's metadata URL. The server must support the authorization-code flow. Client ID Metadata Documents (CIMD) aren't supported. Composio sends a `resource` parameter: the one the server advertises, or else `app_url` without its query string or trailing slash.
+- **API key:** put `{{generic_api_key}}` in the header where the key goes, as in the table. Composio fills in each user's key when it calls your server.
+- **DCR OAuth:** set `discovery_url` to your OAuth server's metadata URL, usually ending in `/.well-known/oauth-authorization-server`. The server must support Dynamic Client Registration and the authorization-code flow.
 
 ### Create a toolkit for one user
 
-Set `user_id` to a user's ID to make the toolkit private: only that user's sessions and API calls can see or run its tools. A private toolkit's slug always has a random suffix, such as `CUSTOM_ACME_K7F2Q`.
+Set `user_id` to a user's ID to make the toolkit private: only that user's sessions and API calls can see or run its tools.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -178,7 +178,7 @@ Creating the same MCP URL twice for one user, or twice as shared, returns `409`.
 
 ### Add a logo
 
-Add `logo_file` to create or update: a square PNG or JPEG, 256 to 1024 pixels, at most 3MB, base64-encoded on one line. Composio hosts it. Without one, the toolkit shows the Composio logo.
+Add `logo_file` to create or update: a square PNG or JPEG, 256 to 1024 pixels, at most 3MB, base64-encoded on one line. Composio hosts it. Without one, the toolkit shows the MCP logo.
 
 ```json
 "logo_file": {"content": "<base64>", "mime_type": "image/png"}
@@ -397,6 +397,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 - Remote servers only: local and STDIO servers aren't supported.
 - `app_url`, `auth_schemes`, and `user_id` can't change after creation.
 - At most 500 tools per toolkit.
+- OAuth servers that only support Client ID Metadata Documents (CIMD) aren't supported.
 - No automatic resync: sync again when the server's tools change.
 
 ## Related guides
