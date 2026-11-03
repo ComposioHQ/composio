@@ -3,15 +3,13 @@
  * registration, with its help summary and the file that defines it.
  * `pnpm --filter @composio/cli run commands:map` rewrites the file; `pnpm test` fails while it is stale.
  *
- * A registration's source file is the `.cmd.ts` module that exports its definition, so no command
- * declares its own file. A definition is recognised by its name and its `examples` array:
- * `effect/cli` 4.0.5 creates that array in `Command.make` and `Command.withExamples` and every
- * other combinator (`withRegisteredSubcommands`, `withCommandMeta`, `Command.provide`, …) carries
- * it over unchanged, so two definitions with the same name and description (`signup` and
- * `agent signup`) stay apart. Should an upgrade copy it, every row fails to match below, loudly.
- * Commands assembled by a function rather than exported are listed in `ASSEMBLED`.
+ * A registration's source file is the `.cmd.ts` module that exports its definition.
+ * Effect 4.1 resolves examples anew when copying a command, so match their values,
+ * the name and description instead of array identity. Ambiguous definitions and
+ * commands assembled by a function are listed explicitly in `ASSEMBLED`.
  */
 import * as path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { describe, expect, it } from '@effect/vitest';
 import { Command } from 'effect/cli';
 import * as prettier from 'prettier';
@@ -30,6 +28,8 @@ const repoPath = (file: string) => path.relative(repoRoot, file).split(path.sep)
 const ASSEMBLED: Readonly<Record<string, string>> = {
   dev: 'dev.cmd.ts',
   help: 'root-help.ts',
+  signup: 'signup/signup.cmd.ts',
+  'agent signup': 'agent/signup/agent.signup.cmd.ts',
 };
 
 const definitions = await Promise.all(
@@ -43,7 +43,7 @@ const definitions = await Promise.all(
 );
 
 const sameDefinition = (a: Command.Command.Any, b: Command.Command.Any) =>
-  a.name === b.name && a.examples === b.examples;
+  a.name === b.name && a.description === b.description && isDeepStrictEqual(a.examples, b.examples);
 
 /** The `.cmd.ts` file that exports `registration`'s definition, or why there is not one. */
 const sourceOf = ({ identity, command }: Registration): string => {
@@ -95,7 +95,10 @@ const rows = registrations
 const alsoAt = (row: (typeof rows)[number]) =>
   rows
     .filter(
-      other => other !== row && sameDefinition(other.registration.command, row.registration.command)
+      other =>
+        other !== row &&
+        other.source === row.source &&
+        sameDefinition(other.registration.command, row.registration.command)
     )
     .map(other => `\`${other.path}\``)
     .join(', ');

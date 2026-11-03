@@ -236,10 +236,14 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Create a new trigger instance for a user
    * If the connected account id is not provided, the first connected account for the user and toolkit will be used
    *
+   * For a trigger that supports both webhook and polling, `body.type` picks one; omit it to let Composio choose.
+   * `body.pollingInterval` sets the minutes between polls and wins over `triggerConfig.interval`.
+   *
    * @param {string} userId - The user id of the trigger instance
    * @param {string} slug - The slug of the trigger instance
    * @param {TriggerInstanceUpsertParams} body - The parameters to create the trigger instance
-   * @returns {Promise<TriggerInstanceUpsertResponse>} The created trigger instance
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The trigger instance, with the type it uses, why it polls
+   * when it fell back from a webhook, and its polling interval
    */
   async create(
     userId: string,
@@ -286,6 +290,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     const upsertParams: ClientTriggerInstanceUpsertParams = {
       connected_account_id: parsedBody.data.connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
+      type: parsedBody.data.type,
+      polling_interval: parsedBody.data.pollingInterval,
       toolkit_versions: this.toolkitVersions,
       user_id: userId,
     };
@@ -296,6 +302,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
     return {
       triggerId: result.trigger_id,
+      type: result.type,
+      fallbackReason: result.fallback_reason,
+      pollingInterval: result.polling_interval,
     };
   }
 
