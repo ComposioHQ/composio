@@ -70,3 +70,6 @@ jobs:
 
       - name: Verify issue triage security boundary
         run: pnpm test:issue-triage
+
+      - name: Verify API client dependency reconciliation
+        run: bun test test/composio-client-update.test.ts

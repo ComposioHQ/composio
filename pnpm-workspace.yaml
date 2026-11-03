@@ -88,7 +88,9 @@ minimumReleaseAgeExclude:
   - '@effect/platform-node-shared@4.0.3'
   - '@effect/vitest@4.0.3'
   - '@mastra/core'
-  - '@composio/client'
+  # First-party packages: the automated client update must resolve a release
+  # the hour it is published, so the release-age wait never applies to them.
+  - '@composio/*'
   - chrome-devtools-mcp
   # temporary: 0.6.0 (2026-09-15) is the first release with the API that
   # @composio/typesafe targets. Publisher, provenance, and the absence of install
