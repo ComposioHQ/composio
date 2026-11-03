@@ -4,8 +4,7 @@
  * `get-session`; the challenge derived from it goes into `create-session`.
  */
 import { Effect } from 'effect';
-import type { PlatformError } from 'effect';
-import * as Crypto from 'effect/Crypto';
+import { Digest, SecureRandom } from 'effect/crypto';
 import { Base64Url } from 'effect/encoding';
 
 /** The only challenge method the API accepts. */
@@ -18,11 +17,12 @@ export interface CliSessionProof {
 
 export const makeCliSessionProof: Effect.Effect<
   CliSessionProof,
-  PlatformError.PlatformError,
-  Crypto.Crypto
+  never,
+  SecureRandom.SecureRandom | Digest.Digest
 > = Effect.gen(function* () {
-  const crypto = yield* Crypto.Crypto;
-  const verifier = Base64Url.encode(yield* crypto.randomBytes(32));
-  const digest = yield* crypto.digest('SHA-256', new TextEncoder().encode(verifier));
+  const random = yield* SecureRandom.SecureRandom;
+  const digestService = yield* Digest.Digest;
+  const verifier = Base64Url.encode(yield* random.randomBytes(32));
+  const digest = yield* digestService.digest(Digest.sha256, new TextEncoder().encode(verifier));
   return { verifier, challenge: Base64Url.encode(digest) };
 });

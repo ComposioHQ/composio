@@ -7,7 +7,7 @@ import {
   make,
   type ComposioClientShape,
 } from '@composio/client/effect';
-import * as BunCrypto from '@effect/platform-bun/BunCrypto';
+import { Digest, SecureRandom } from 'effect/crypto';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
@@ -369,7 +369,8 @@ const loginHandlerTest = (fixture: LoginFixture = {}) => {
         Effect.die(new Error(`unexpected HTTP call from the login handler test: ${request.url}`))
       )
     ),
-    BunCrypto.layer,
+    SecureRandom.layerWebCrypto,
+    Digest.layerWebCrypto,
     BunFileSystem.layer,
     BunPath.layer,
     Layer.succeed(
@@ -580,7 +581,7 @@ describe('handlePollLogin', () => {
       name: 'a rejected proof (401)',
       failure: sessionFailure(401, {
         slug: 'CLI_SessionProofInvalid',
-        code: 2105,
+        code: 2108,
         message: 'Invalid session proof',
       }),
       reason: 'proof-rejected',
@@ -606,7 +607,7 @@ describe('handlePollLogin', () => {
       name: 'a login another account approved (409 link conflict)',
       failure: sessionFailure(409, {
         slug: 'CLI_SessionLinkConflict',
-        code: 2107,
+        code: 2109,
         message: 'Session linked by another account',
       }),
       reason: 'link-conflict',
@@ -616,7 +617,7 @@ describe('handlePollLogin', () => {
       name: 'a CLI past its sunset (410)',
       failure: sessionFailure(410, {
         slug: 'CLI_LoginUpgradeRequired',
-        code: 2106,
+        code: 2120,
         message: 'Run `composio upgrade` to keep logging in.',
       }),
       reason: 'upgrade-required',
@@ -1060,7 +1061,7 @@ describe('handleBrowserLogin', () => {
         session: Effect.fail(
           sessionFailure(409, {
             slug: 'CLI_SessionLinkConflict',
-            code: 2107,
+            code: 2109,
             message: 'Session linked by another account',
           })
         ),

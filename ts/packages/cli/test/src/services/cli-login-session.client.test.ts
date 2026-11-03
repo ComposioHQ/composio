@@ -1,4 +1,4 @@
-import * as BunCrypto from '@effect/platform-bun/BunCrypto';
+import { Digest, SecureRandom } from 'effect/crypto';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, describe, expect, it } from '@effect/vitest';
@@ -96,7 +96,7 @@ const stubApi = () => {
             {
               error: {
                 message: 'Invalid session proof',
-                code: 2105,
+                code: 2108,
                 slug: 'CLI_SessionProofInvalid',
                 status: 401,
               },
@@ -128,7 +128,8 @@ const wireTest = (env: Record<string, string> = {}) => {
   const layer = Layer.mergeAll(
     Layer.provide(ComposioSessionRepository.Default, platform),
     platform,
-    BunCrypto.layer,
+    SecureRandom.layerWebCrypto,
+    Digest.layerWebCrypto,
     Layer.effect(MockConsole.MockConsole, MockConsole.make),
     Layer.succeed(TerminalUI, terminalUITestImpl),
     Layer.succeed(
