@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { applySdkReleasePlan, createSdkReleasePlan } from '../scripts/sdk-release/plan';
@@ -238,6 +238,52 @@ describe('SDK release planning', () => {
     expect(lock).toMatch(/name = "composio"\nversion = "0\.31\.1"/);
     expect(lock).toMatch(/name = "composio-openai"\nversion = "0\.31\.1"/);
     expect((await discoverPythonPackages(cwd)).every(pkg => pkg.version === '0.31.1')).toBe(true);
+  });
+
+  test('retry completes a failed Python lock without repeating versions or release notes', async () => {
+    const { cwd, note } = await fixture();
+    await writeFile(
+      join(cwd, 'pyproject.toml'),
+      '[project]\nname = "release-fixture"\nversion = "0.0.0"\nrequires-python = ">=3.11"\n[tool.uv.workspace]\nmembers = ["python", "python/providers/openai"]\n'
+    );
+    await note(
+      'python-recovery',
+      { '@composio/python-sdk': 'patch' },
+      'Recover this release once.'
+    );
+    const plan = await createSdkReleasePlan(cwd);
+    const bin = join(cwd, 'fake-bin');
+    await mkdir(bin);
+    await writeFile(join(bin, 'uv'), '#!/bin/sh\nexit 78\n');
+    await chmod(join(bin, 'uv'), 0o755);
+    const previous = {
+      PATH: process.env.PATH,
+      UV_OFFLINE: process.env.UV_OFFLINE,
+      UV_PYTHON_DOWNLOADS: process.env.UV_PYTHON_DOWNLOADS,
+    };
+    try {
+      process.env.PATH = `${bin}:${previous.PATH}`;
+      process.env.UV_OFFLINE = '1';
+      process.env.UV_PYTHON_DOWNLOADS = 'never';
+      await expect(applySdkReleasePlan(cwd, plan)).rejects.toThrow('uv lock failed');
+      process.env.PATH = previous.PATH;
+      const retried = await applySdkReleasePlan(cwd, plan);
+      expect(retried.alreadyApplied).toBe(true);
+      expect(await readFile(join(cwd, 'uv.lock'), 'utf8')).toMatch(
+        /name = "composio"\nversion = "0\.31\.1"/
+      );
+      expect((await discoverPythonPackages(cwd)).every(pkg => pkg.version === '0.31.1')).toBe(true);
+      expect(
+        (await readFile(join(cwd, 'python/CHANGELOG.md'), 'utf8')).match(
+          /Recover this release once\./g
+        )
+      ).toHaveLength(1);
+    } finally {
+      for (const [key, value] of Object.entries(previous)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
   });
 
   test('ignored CLI and unrelated private package notes cannot enter SDK releases', async () => {

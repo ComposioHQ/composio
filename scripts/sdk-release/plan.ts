@@ -252,7 +252,14 @@ export async function applySdkReleasePlan(
           )
       )
     );
-  if (applied) return { alreadyApplied: true, changedPaths: [] };
+  const pythonRelease = plan.releases.find(release => release.name === PYTHON_RELEASE_MARKER);
+  if (applied) {
+    const changedPaths =
+      pythonRelease && options.updateLockfile !== false
+        ? await synchronizePythonMetadata(cwd, pythonRelease.newVersion, options)
+        : [];
+    return { alreadyApplied: true, changedPaths };
+  }
   if (inputs.fingerprint !== plan.inputFingerprint)
     throw new Error('Release inputs changed after planning; create a new plan');
   const expected = await createSdkReleasePlan(cwd, plan.choices);
@@ -283,7 +290,6 @@ export async function applySdkReleasePlan(
       await rm(resolve(cwd, '.changeset', `${note.id}.md`), { force: true });
     }
   }
-  const pythonRelease = plan.releases.find(release => release.name === PYTHON_RELEASE_MARKER);
   if (pythonRelease)
     changedPaths.push(...(await synchronizePythonMetadata(cwd, pythonRelease.newVersion, options)));
   return { alreadyApplied: false, changedPaths: [...new Set(changedPaths)].sort() };
