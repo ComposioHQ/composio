@@ -19,6 +19,11 @@ import { ComposioConnectedAccountNotFoundError } from '../errors/ConnectedAccoun
 import { telemetry } from '../telemetry/Telemetry';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 import { ConnectionRequest, ConnectionRequestState } from '../types/connectionRequest.types';
+import { getRetryAfterSeconds, isRateLimitResponse } from '../utils/rateLimit';
+
+const INITIAL_POLL_DELAY_MS = 1000;
+const MAX_POLL_DELAY_MS = 5000;
+const POLL_DELAY_GROWTH = 1.5;
 
 /**
  * Creates a connection request object with methods to manage the connection lifecycle.
@@ -55,8 +60,11 @@ export function createConnectionRequest(
   /**
    * Waits for the connection request to complete and become active.
    *
-   * This method continuously polls the Composio API to check the status of the connection request
-   * until it either becomes active, enters a terminal error state, or times out.
+   * This method polls the Composio API to check the status of the connection request until it
+   * either becomes active, enters a terminal error state, or times out. The delay between polls
+   * grows from 1 second to 5 seconds, so a connection can be up to 5 seconds old when this returns.
+   * A rate-limited poll doesn't fail the wait: it waits as long as the response asks, within the
+   * timeout, and polls again.
    *
    * @param {number} [timeout=60000] - Maximum time to wait in milliseconds before timing out (default: 60 seconds)
    * @returns {Promise<ConnectedAccountRetrieveResponse>} The final connected account response when successful
@@ -104,49 +112,43 @@ export function createConnectionRequest(
       }
     };
 
-    try {
-      const response = await client.connectedAccounts.retrieve(request.id);
-      request.status = response.status;
-      if (response.status === ConnectedAccountStatuses.ACTIVE) {
-        return transformConnectedAccountResponse(response);
-      }
-      failIfTerminal(response);
-    } catch (error) {
-      if (error instanceof ComposioClient.NotFoundError) {
-        throw new ComposioConnectedAccountNotFoundError(
-          `Connected account with id ${request.id} not found`,
-          {
-            meta: {
-              connectedAccountId: request.id,
-            },
-          }
-        );
-      } else {
-        throw error;
-      }
-    }
+    const deadline = Date.now() + timeout;
+    let pollDelay = INITIAL_POLL_DELAY_MS;
 
-    const start = Date.now();
-    const pollInterval = 1000;
-
-    while (Date.now() - start < timeout) {
+    while (true) {
+      let delay = pollDelay;
       try {
         const response = await client.connectedAccounts.retrieve(request.id);
-
         request.status = response.status;
         if (response.status === ConnectedAccountStatuses.ACTIVE) {
           return transformConnectedAccountResponse(response);
         }
-
         failIfTerminal(response);
-
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
       } catch (error) {
-        throw error;
+        if (error instanceof ComposioClient.NotFoundError) {
+          throw new ComposioConnectedAccountNotFoundError(
+            `Connected account with id ${request.id} not found`,
+            {
+              meta: {
+                connectedAccountId: request.id,
+              },
+            }
+          );
+        }
+        if (!isRateLimitResponse(error)) {
+          throw error;
+        }
+        delay = Math.max(delay, (getRetryAfterSeconds(error) ?? 0) * 1000);
       }
-    }
 
-    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
+      }
+      // Stop at the deadline rather than past it, so the last poll happens as the time runs out.
+      await new Promise(resolve => setTimeout(resolve, Math.min(delay, remaining)));
+      pollDelay = Math.min(pollDelay * POLL_DELAY_GROWTH, MAX_POLL_DELAY_MS);
+    }
   }
 
   return request;
