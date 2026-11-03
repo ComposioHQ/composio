@@ -364,6 +364,27 @@ describe('guarded SDK release pilot', () => {
     expect(writes).toEqual([]);
   });
 
+  for (const [name, run] of [
+    ['successful original', { conclusion: 'success' }],
+    ['exhausted attempts', { run_attempt: 50 }],
+    ['expired original', { created_at: new Date(Date.now() - 30 * 86400000).toISOString() }],
+  ] as const) {
+    test(`retry rejects ${name} before any rerun write`, async () => {
+      const { client, writes } = apiFixture({ run });
+      await expect(
+        executePilotRequest(
+          client,
+          parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
+          context,
+          async () => {
+            throw new Error('retry must not plan');
+          }
+        )
+      ).rejects.toThrow('Retry requires a failed original');
+      expect(writes).toEqual([]);
+    });
+  }
+
   test('an arbitrary branch run cannot be retried through the controller', async () => {
     const { client, writes } = apiFixture({ run: { head_branch: 'untrusted' } });
     await expect(
