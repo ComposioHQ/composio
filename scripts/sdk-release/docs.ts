@@ -114,18 +114,30 @@ export async function verifyLiveReleaseDocs(
     const response = await fetcher(`https://docs.composio.dev${path}${suffix}`);
     if (!response.ok) throw new Error(`Release documentation unavailable (${response.status})`);
     const text = (await response.text()).replaceAll('&#x40;', '@').replaceAll('&commat;', '@');
-    const rows = suffix
-      ? text.split('\n').filter(line => line.startsWith('|'))
-      : (text.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) ?? []);
+    const rows = (
+      suffix
+        ? text.split('\n').filter(line => line.startsWith('|'))
+        : (text.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) ?? [])
+    ).map(row => {
+      const cells = suffix
+        ? row.split('|').slice(1, -1)
+        : [...row.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => cell[1]);
+      return cells.map(cell =>
+        cell
+          .replace(/<[^>]*>/g, '')
+          .replaceAll('`', '')
+          .trim()
+          .replace(/\s+/g, ' ')
+      );
+    });
     if (
       !text.includes(batch.statusUrl) ||
       !batch.plan.releases.every(release =>
         rows.some(
-          row =>
-            row.includes(release.name === '@composio/python-sdk' ? 'composio' : release.name) &&
-            new RegExp(
-              `(?:^|[^0-9A-Za-z.+-])${release.newVersion.replaceAll('.', '\\.')}(?:$|[^0-9A-Za-z.+-])`
-            ).test(row)
+          cells =>
+            cells[0] ===
+              (release.language === 'python' ? 'Python composio' : `TypeScript ${release.name}`) &&
+            cells[1] === release.newVersion
         )
       )
     )

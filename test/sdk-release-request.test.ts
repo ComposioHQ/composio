@@ -37,6 +37,7 @@ function client(
     runAttempt?: number;
     createdAt?: string;
     authorizationFailure?: boolean;
+    authorizationLost?: boolean;
   } = {}
 ) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
@@ -179,17 +180,19 @@ function client(
       });
     if (path.includes('/actions/runs/8/artifacts'))
       return respond({
-        artifacts: [
-          {
-            id: 55,
-            name: 'sdk-authorized-batch',
-            digest: `sha256:${'c'.repeat(64)}`,
-            expired: false,
-            created_at: '2026-11-03T00:00:00Z',
-            expires_at: '2099-12-01T00:00:00Z',
-            workflow_run: { id: 8, head_sha: sha },
-          },
-        ],
+        artifacts: options.authorizationLost
+          ? []
+          : [
+              {
+                id: 55,
+                name: 'sdk-authorized-batch',
+                digest: `sha256:${'c'.repeat(64)}`,
+                expired: false,
+                created_at: '2026-11-03T00:00:00Z',
+                expires_at: '2099-12-01T00:00:00Z',
+                workflow_run: { id: 8, head_sha: sha },
+              },
+            ],
       });
     if (path.endsWith('/actions/runs/8')) return respond(nativeRun(8, options.runBranch ?? 'next'));
     if (path.endsWith('/rerun-failed-jobs')) return new Response(null, { status: 201 });
@@ -321,6 +324,18 @@ describe('SDK release member request', () => {
   });
   test('partial upload with deleted candidates stops same-version recovery', async () => {
     const { github, calls } = client({ publication: 'terminal' });
+    await expect(
+      executeReleaseRequest(
+        github,
+        releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+        context,
+        async () => plan
+      )
+    ).rejects.toThrow('higher-version corrective');
+    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+  });
+  test('lost preparation authorization ends recovery even while publication candidates remain available', async () => {
+    const { github, calls } = client({ publication: 'active', authorizationLost: true });
     await expect(
       executeReleaseRequest(
         github,

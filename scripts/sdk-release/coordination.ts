@@ -121,9 +121,27 @@ export async function publicationState(github: GitHubReleaseClient, run: Release
             Date.parse(artifact.expires_at) > Date.now()
         )
     );
+  let lostAuthorization = false;
+  if (!verified && run.status === 'completed') {
+    try {
+      const authorized = (await originalCandidates(github, Number(batch.originalRunId))).filter(
+        artifact => artifact.name === 'sdk-authorized-batch'
+      );
+      lostAuthorization =
+        authorized.length !== 1 ||
+        authorized[0].workflow_run.id !== Number(batch.originalRunId) ||
+        authorized[0].workflow_run.head_sha !== batch.inputBase ||
+        authorized[0].expired ||
+        Date.parse(authorized[0].expires_at) <= Date.now();
+    } catch (error) {
+      if (!(error instanceof GitHubReleaseApiError) || error.status !== 404) throw error;
+      lostAuthorization = true;
+    }
+  }
   const terminal =
     !verified &&
-    (lostCandidate ||
+    (lostAuthorization ||
+      lostCandidate ||
       (run.run_attempt >= 50 && run.status === 'completed') ||
       Date.now() >= Date.parse(run.created_at) + 30 * 86_400_000 ||
       jobs.some(job =>
@@ -131,7 +149,14 @@ export async function publicationState(github: GitHubReleaseClient, run: Release
           step => step.name === 'Registry recovery exhausted' && step.conclusion === 'success'
         )
       ));
-  return { verified, terminal, jobs };
+  return {
+    verified,
+    terminal,
+    jobs,
+    terminalReason: lostAuthorization
+      ? 'Original preparation authorization is unavailable. Request a newly approved higher-version corrective release.'
+      : undefined,
+  };
 }
 /** Called under the shared controller concurrency group, before planning/allocating. */
 export async function activePreparation(github: GitHubReleaseClient, exceptRun: string) {

@@ -80,5 +80,16 @@ describe('released SDK documentation', () => {
     await expect(
       verifyLiveReleaseDocs(release, async () => new Response('<article>Old docs</article>'))
     ).rejects.toThrow('release targets');
+    await expect(
+      verifyLiveReleaseDocs(
+        {
+          ...release,
+          plan: {
+            releases: [{ name: '@composio/python-sdk', newVersion: '0.29.0', language: 'python' }],
+          },
+        },
+        fetcher
+      )
+    ).rejects.toThrow('release targets');
   });
 });

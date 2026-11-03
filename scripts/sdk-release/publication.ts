@@ -215,6 +215,7 @@ export async function reportPublication(github: GitHubReleaseClient, runId: stri
   if (!pull) throw new Error('Status source is not a merged release head');
   const inventory: PublicationReport['inventory'] = [];
   const details: string[] = [];
+  if (state.terminalReason) details.push(state.terminalReason);
   for (const files of Map.groupBy(
     distributions,
     file => `${file.language}:${file.name}`
