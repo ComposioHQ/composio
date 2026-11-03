@@ -32,6 +32,7 @@ import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
 import { HOME_OG_DESCRIPTION } from './toolkit-count';
 import { componentsToMarkdown } from './example-document';
+import { providerListMarkdown } from './providers';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -418,8 +419,8 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = result.replace(/<\/?Cards\b[^>]*>/g, '');
 
   result = result.replace(
-    /<ProviderCard[\s\S]*?name="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?languages=\{\[([^\]]*)\]\}[\s\S]*?\/>/g,
-    (_, name, href, langs) => `- [${name}](${href}) (${langs.replace(/"/g, '')})`
+    /<ProviderList\s+group="(ai-sdks|agent-frameworks|custom)"\s*\/>/g,
+    (_, group: 'ai-sdks' | 'agent-frameworks' | 'custom') => providerListMarkdown(group),
   );
 
   result = result.replace(/^[ \t]+(- \[)/gm, '$1');
@@ -540,7 +541,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = replaceRepoBrowserMarkdown(result);
 
   result = result.replace(
-    /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
+    /<\/?(Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
     ''
   );
 
