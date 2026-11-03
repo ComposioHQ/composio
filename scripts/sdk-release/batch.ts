@@ -5,6 +5,15 @@ import { originalCandidates, reuseCandidate } from './artifacts';
 import { z } from 'zod';
 import { GitHubReleaseApiError, GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './github';
 import { createSdkReleasePlan } from './plan';
+import type { CorrectiveInput } from './plan';
+import {
+  activePreparation,
+  batchForPreparation,
+  committedBatch,
+  currentPublication,
+  publicationState,
+  sourceTagRun,
+} from './coordination';
 import { fetchStableRegistryBaseline } from './registry-baseline';
 import { parseReleaseRequest, releaseRequestSchema, type ReleaseRequest } from './request';
 import {
@@ -30,6 +39,7 @@ const pullSchema = z.object({
   body: z.string().nullable(),
   state: z.string(),
   merged: z.boolean().optional(),
+  merged_at: z.string().nullable().optional(),
   merge_commit_sha: sourceShaSchema.nullable().optional(),
   user: z.object({ login: z.string() }),
   head: z.object({
@@ -356,8 +366,11 @@ export async function verifyReleaseHead(github: GitHubReleaseClient, number: num
 
 export async function mergeApprovedRelease(
   github: GitHubReleaseClient,
-  number: number
+  number: number,
+  appId: number
 ): Promise<string> {
+  if (await activePreparation(github, process.env.GITHUB_RUN_ID ?? '0'))
+    throw new Error('A release refresh is preparing; the previous PR must not merge');
   const { pull } = await verifyReleaseHead(github, number);
   if (!pull.merged) {
     const result = await github.request(
@@ -368,15 +381,23 @@ export async function mergeApprovedRelease(
     );
     if (!result.merged) throw new Error('Protected expected-head merge was not accepted');
   }
-  return authorizeSourceTag(github, number);
+  return authorizeSourceTag(github, number, appId);
 }
 
 export async function authorizeSourceTag(
   github: GitHubReleaseClient,
-  number: number
+  number: number,
+  appId: number
 ): Promise<string> {
   const { pull, batch } = await verifyReleaseHead(github, number);
   if (!pull.merged || !pull.merge_commit_sha) throw new Error('Release PR has not merged');
+  await (
+    await import('./registry')
+  ).verifyPublicationPolicy(
+    github,
+    new Set(batch.plan.releases.map(release => release.language)),
+    appId
+  );
   const merged = await github.request(
     'GET',
     `${repo}/git/commits/${pull.merge_commit_sha}`,
@@ -417,7 +438,10 @@ export async function executeReleaseRequest(
     issueNumber?: number;
     runAttempt?: number;
   },
-  plan: (choices?: ReleaseBatch['plan']['choices']) => Promise<ReleaseBatch['plan']>,
+  plan: (
+    choices?: ReleaseBatch['plan']['choices'],
+    corrective?: CorrectiveInput
+  ) => Promise<ReleaseBatch['plan']>,
   outputs: typeof releaseOutputs = releaseOutputs
 ): Promise<{
   message: string;
@@ -436,13 +460,85 @@ export async function executeReleaseRequest(
     runUrl?: string;
   };
   if (request.action === 'retry' || (request.action === 'status' && request.run_id)) {
-    const original = await github.getRun(request.run_id!);
+    let original = await github.getRun(request.run_id!);
     if (
       original.path !== '.github/workflows/sdk.release.yml' ||
       original.repository.full_name !== SDK_RELEASE_REPOSITORY ||
       !(original.head_branch === 'next' || /^sdk-release\/\d+$/.test(original.head_branch ?? ''))
     )
       throw new Error('Run does not belong to a guarded SDK release');
+    const latest = await committedBatch(github, 'next');
+    const frozen = /^sdk-release\/\d+$/.test(original.head_branch ?? '')
+      ? original.head_sha
+        ? await committedBatch(github, original.head_sha)
+        : undefined
+      : latest?.originalRunId === String(original.id)
+        ? latest
+        : await batchForPreparation(github, String(original.id));
+    if (frozen) {
+      const publication = await sourceTagRun(github, frozen);
+      if (publication) {
+        if (
+          !publication.head_sha ||
+          JSON.stringify(await committedBatch(github, publication.head_sha)) !==
+            JSON.stringify(frozen)
+        )
+          throw new Error('Original publication source differs from its frozen batch');
+        const state = await publicationState(github, publication);
+        if (state.verified) {
+          if (request.action === 'retry')
+            await github.request(
+              'POST',
+              `${repo}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
+              z.unknown(),
+              { ref: 'next', inputs: { run_id: String(publication.id) } }
+            );
+          result = {
+            message:
+              request.action === 'retry'
+                ? 'Packages are verified; retrying documentation on protected next without registry identity or candidate artifacts.'
+                : 'Packages published; documentation status is tracked separately.',
+            runUrl: publication.html_url,
+          };
+          if (context.issueNumber)
+            await github.commentIssue(context.issueNumber, `${result.message}\n\n${result.runUrl}`);
+          return result;
+        }
+        if (state.terminal)
+          throw new Error(
+            'Original publication recovery ended; a newly approved higher-version corrective release is required'
+          );
+        original = publication;
+      } else if (original.conclusion === 'success') {
+        // Tag authorization is a separate protected-next run after the approved PR merges.
+        const pulls = await github.request(
+          'GET',
+          `${repo}/pulls?state=closed&head=ComposioHQ:sdk-release/batch-${frozen.id}&per_page=100`,
+          z.array(pullSchema)
+        );
+        const merged = pulls.find(pull => pull.merged_at || pull.merged || pull.merge_commit_sha);
+        if (merged?.merge_commit_sha) {
+          const runs = await github.request(
+            'GET',
+            `${repo}/actions/workflows/sdk.release.yml/runs?event=pull_request_target&head_sha=${merged.merge_commit_sha}&per_page=100`,
+            z.object({ workflow_runs: z.array((await import('./github')).releaseRunSchema) })
+          );
+          const failed = [];
+          for (const run of runs.workflow_runs)
+            if (
+              (await github.jobs(String(run.id))).some(
+                job => job.name === 'source-tag' && job.conclusion === 'failure'
+              )
+            )
+              failed.push(run);
+          if (failed.length !== 1)
+            throw new Error(
+              'Cannot uniquely identify the original failed source-tag authorization run'
+            );
+          original = failed[0];
+        }
+      }
+    }
     if (request.action === 'status' || original.status !== 'completed')
       result = {
         message: `Original run is ${original.status}${original.conclusion ? ` (${original.conclusion})` : ''}. Retry ignores new bump choices.`,
@@ -455,7 +551,7 @@ export async function executeReleaseRequest(
         Date.now() - Date.parse(original.created_at) >= 30 * 86400000
       )
         throw new Error('Original release cannot be retried');
-      await github.rerunFailedJobs(request.run_id!);
+      await github.rerunFailedJobs(String(original.id));
       result = {
         message: 'Retrying the original run. New bump choices are ignored.',
         runUrl: original.html_url,
@@ -463,6 +559,18 @@ export async function executeReleaseRequest(
     }
   } else {
     const current = await activeRelease(github);
+    const preparation = await activePreparation(github, context.runId);
+    const publication = await currentPublication(github);
+    if (preparation || publication?.active) {
+      result = {
+        message: 'A release is already active; no competing versions were allocated.',
+        runUrl: preparation?.html_url ?? publication?.run?.html_url ?? publication?.batch.statusUrl,
+        ...(current ? { pullRequest: current.html_url } : {}),
+      };
+      if (context.issueNumber)
+        await github.commentIssue(context.issueNumber, `${result.message}\n\n${result.runUrl}`);
+      return result;
+    }
     if ((current && request.action !== 'refresh') || request.action === 'status')
       result = current
         ? {
@@ -497,6 +605,19 @@ export async function executeReleaseRequest(
             await rm(`${directory}.zip`, { force: true });
           }
         }
+        if (
+          (await github.jobs(context.runId)).some(
+            job =>
+              job.name === 'authorize' &&
+              job.steps.some(
+                step =>
+                  step.name === 'Retain authorized release input' && step.conclusion === 'success'
+              )
+          )
+        )
+          throw new Error(
+            'Original authorized release input was deleted; submit a new request instead of reallocating versions in an old run'
+          );
       }
       let previous: ReleaseBatch | undefined;
       if (request.action === 'refresh') {
@@ -506,7 +627,31 @@ export async function executeReleaseRequest(
         previous = releaseBatchSchema.parse(JSON.parse(saved));
         await verifyOriginalBatch(github, previous);
       }
-      const selected = await plan(previous?.plan.choices);
+      let corrective: CorrectiveInput | undefined;
+      if (publication?.run?.head_sha) {
+        const outstanding = publication.terminal
+          ? [
+              ...publication.batch.plan.releases,
+              ...(publication.batch.plan.corrective?.releases.filter(
+                release =>
+                  !publication.batch.plan.releases.some(selected => selected.name === release.name)
+              ) ?? []),
+            ]
+          : (publication.batch.plan.corrective?.releases.filter(
+              release =>
+                !publication.batch.plan.releases.some(selected => selected.name === release.name)
+            ) ?? []);
+        if (outstanding.length)
+          corrective = await (
+            await import('./registry')
+          ).correctiveInventory(
+            process.cwd(),
+            publication.batch,
+            publication.run.head_sha,
+            outstanding
+          );
+      }
+      const selected = await plan(previous?.plan.choices, corrective);
       if (
         previous &&
         selected.releases.some(release => {
@@ -558,7 +703,7 @@ export async function executeReleaseRequest(
 }
 
 if (import.meta.main) {
-  const mode = z.enum(['authorize', 'commit', 'tag', 'merge']).parse(Bun.argv[2]);
+  const mode = z.enum(['authorize', 'commit', 'tag', 'merge', 'report']).parse(Bun.argv[2]);
   const env = z
     .object({
       SDK_RELEASE_TOKEN: z.string().min(1),
@@ -568,6 +713,7 @@ if (import.meta.main) {
       GITHUB_EVENT_NAME: z.string(),
       GITHUB_OUTPUT: z.string(),
       GITHUB_STEP_SUMMARY: z.string(),
+      SDK_RELEASE_APP_ID: z.coerce.number().int().positive(),
     })
     .parse(process.env);
   const github = new GitHubReleaseClient(env.SDK_RELEASE_TOKEN);
@@ -579,13 +725,29 @@ if (import.meta.main) {
       pull_request: z.object({ number: z.number().int().positive() }).optional(),
     })
     .parse(event);
-  if (mode === 'merge') {
+  if (mode === 'report') {
+    const runId = z
+      .object({ workflow_run: z.object({ id: z.number().int().positive() }) })
+      .parse(event).workflow_run.id;
+    const { report } = await (
+      await import('./publication')
+    ).reportPublication(github, String(runId), env.SDK_RELEASE_APP_ID);
+    await writeFile(
+      env.GITHUB_OUTPUT,
+      `registry-verified=${report.registryVerified}\noriginal-run-id=${report.runId}\n`,
+      { flag: 'a' }
+    );
+    await writeFile(
+      env.GITHUB_STEP_SUMMARY,
+      `Publication status updated for original run ${runId}. Registry verified: ${report.registryVerified}; docs: ${report.docs}.\n`
+    );
+  } else if (mode === 'merge') {
     const current = await activeRelease(github);
     if (current) {
       try {
         await writeFile(
           env.GITHUB_STEP_SUMMARY,
-          `Approved publication source: ${await mergeApprovedRelease(github, current.number)}\n`
+          `Approved publication source: ${await mergeApprovedRelease(github, current.number, env.SDK_RELEASE_APP_ID)}\n`
         );
       } catch (error) {
         if (error instanceof GitHubReleaseApiError) throw error;
@@ -599,7 +761,7 @@ if (import.meta.main) {
     if (!envelope.pull_request) throw new Error('Expected merged release PR event');
     await writeFile(
       env.GITHUB_STEP_SUMMARY,
-      `Approved publication source: ${await authorizeSourceTag(github, envelope.pull_request.number)}\n`
+      `Approved publication source: ${await authorizeSourceTag(github, envelope.pull_request.number, env.SDK_RELEASE_APP_ID)}\n`
     );
   } else if (mode === 'commit') {
     const batch = releaseBatchSchema.parse(await Bun.file('/tmp/sdk-authorized/batch.json').json());
@@ -620,10 +782,11 @@ if (import.meta.main) {
         runAttempt: z.coerce.number().int().positive().parse(process.env.GITHUB_RUN_ATTEMPT),
         ...(envelope.issue ? { issueNumber: envelope.issue.number } : {}),
       },
-      async choices =>
+      async (choices, corrective) =>
         createSdkReleasePlan(process.cwd(), {
           ...parseReleaseRequest(env.GITHUB_EVENT_NAME, event),
           ...choices,
+          corrective,
           baseline: await fetchStableRegistryBaseline(process.cwd()),
         })
     );

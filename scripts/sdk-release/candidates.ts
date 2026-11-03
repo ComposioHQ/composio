@@ -144,12 +144,19 @@ if (import.meta.main) {
   } else {
     const directory = resolve('sdk-candidate', language);
     const github = new GitHubReleaseClient(env.SDK_READ_TOKEN);
-    const existing = reuseCandidate(
-      await originalCandidates(github, env.GITHUB_RUN_ID),
-      `sdk-candidate-${language}`,
-      env.GITHUB_RUN_ID,
-      env.GITHUB_SHA
-    );
+    let existing;
+    try {
+      existing = reuseCandidate(
+        await originalCandidates(github, env.GITHUB_RUN_ID),
+        `sdk-candidate-${language}`,
+        env.GITHUB_RUN_ID,
+        env.GITHUB_SHA
+      );
+    } catch (error) {
+      if (env.GITHUB_RUN_ATTEMPT > 1)
+        await writeFile(env.GITHUB_OUTPUT, 'terminal=true\n', { flag: 'a' });
+      throw error;
+    }
     await mkdir(directory, { recursive: true });
     if (existing) {
       await downloadCandidate(env.SDK_READ_TOKEN, existing, directory);
@@ -185,10 +192,12 @@ if (import.meta.main) {
           env.GITHUB_RUN_ID,
           await registryInventoryEmpty(process.cwd())
         ))
-      )
+      ) {
+        await writeFile(env.GITHUB_OUTPUT, 'terminal=true\n', { flag: 'a' });
         throw new Error(
           'Candidate missing after possible publication; a newly approved corrective release is required'
         );
+      }
       const pythonRelease = selected.find(release => release.language === 'python');
       if (
         pythonRelease &&

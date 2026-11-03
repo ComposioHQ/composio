@@ -186,7 +186,27 @@ function fakeController(
       if (path === '/pulls') return response(pull());
       throw new Error(`Unexpected write ${path}`);
     }
+    if (path.includes('/deployment-branch-policies'))
+      return response({
+        total_count: 1,
+        branch_policies: [{ name: 'sdk-release/*', type: 'tag' }],
+      });
+    if (path.startsWith('/environments/'))
+      return response({
+        protection_rules: [{ type: 'branch_policy' }],
+        deployment_branch_policy: { protected_branches: false, custom_branch_policies: true },
+      });
+    if (path.startsWith('/rulesets?'))
+      return response([{ id: 1, target: 'tag', enforcement: 'active' }]);
+    if (path === '/rulesets/1')
+      return response({
+        conditions: { ref_name: { include: ['refs/tags/sdk-release/*'], exclude: [] } },
+        bypass_actors: [{ actor_type: 'Integration', actor_id: 123, bypass_mode: 'always' }],
+        rules: ['creation', 'update', 'deletion'].map(type => ({ type })),
+      });
     if (path.startsWith('/pulls?')) return response([]);
+    if (path.startsWith('/actions/workflows/sdk.release.yml/runs'))
+      return response({ total_count: 0, workflow_runs: [] });
     if (path === '/pulls/9') return response(pull());
     if (path.startsWith('/pulls/9/reviews'))
       return response([
@@ -277,7 +297,7 @@ describe('controller API contracts', () => {
   test('merge and squash tag the approved head while later next commits remain independent', async () => {
     for (const mergeKind of ['merge', 'squash'] as const) {
       const { github, writes } = fakeController({ mergeKind });
-      expect(await authorizeSourceTag(github, 9)).toBe('sdk-release/8');
+      expect(await authorizeSourceTag(github, 9, 123)).toBe('sdk-release/8');
       expect(writes).toEqual([
         { path: '/git/refs', body: { ref: 'refs/tags/sdk-release/8', sha: head } },
       ]);
@@ -285,7 +305,7 @@ describe('controller API contracts', () => {
   });
   test('automatic protected merge supplies the expected final head', async () => {
     const { github, writes } = fakeController({ pendingMerge: true });
-    await mergeApprovedRelease(github, 9);
+    await mergeApprovedRelease(github, 9, 123);
     expect(writes[0]).toEqual({
       path: '/pulls/9/merge',
       body: { sha: head, merge_method: 'squash' },
@@ -294,16 +314,16 @@ describe('controller API contracts', () => {
   test('old reviews, failed candidates and edited frozen plans cause no tag writes', async () => {
     for (const options of [{ oldReview: true }, { failedCandidate: true }, { editedPlan: true }]) {
       const { github, writes } = fakeController(options);
-      await expect(authorizeSourceTag(github, 9)).rejects.toThrow();
+      await expect(authorizeSourceTag(github, 9, 123)).rejects.toThrow();
       expect(writes).toEqual([]);
     }
   });
   test('an existing matching tag is reused and a moved source is refused', async () => {
     const matching = fakeController({ existingTag: head });
-    await authorizeSourceTag(matching.github, 9);
+    await authorizeSourceTag(matching.github, 9, 123);
     expect(matching.writes).toEqual([]);
     const moved = fakeController({ existingTag: merge });
-    await expect(authorizeSourceTag(moved.github, 9)).rejects.toThrow('another source');
+    await expect(authorizeSourceTag(moved.github, 9, 123)).rejects.toThrow('another source');
     expect(moved.writes).toEqual([]);
   });
   test('partial preparation retry reconciles an existing source branch without creating another commit', async () => {

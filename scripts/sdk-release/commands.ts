@@ -12,6 +12,8 @@ export function runPreparationCommand(command: string, args: string[], cwd: stri
     },
   });
   if (result.status !== 0)
-    throw new Error(`${command} failed: ${result.stderr || result.error?.message}`);
+    throw new Error(
+      `${command} failed: ${result.stderr || result.stdout || result.error?.message || result.signal || result.status}`
+    );
   return result.stdout;
 }

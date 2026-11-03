@@ -7,6 +7,9 @@ export const releaseRunSchema = z.object({
   id: z.number().int().positive(),
   path: z.string(),
   head_branch: z.string().nullable(),
+  head_sha: shaSchema.optional(),
+  event: z.string().optional(),
+  actor: z.object({ login: z.string(), type: z.string() }).optional(),
   repository: z.object({ full_name: z.string() }),
   status: z.string(),
   conclusion: z.string().nullable(),
@@ -16,6 +19,14 @@ export const releaseRunSchema = z.object({
 });
 export type ReleaseRun = z.infer<typeof releaseRunSchema>;
 export type ReleaseFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+export const releaseJobSchema = z.object({
+  name: z.string(),
+  status: z.string().optional(),
+  conclusion: z.string().nullable().optional(),
+  steps: z
+    .array(z.object({ name: z.string(), status: z.string(), conclusion: z.string().nullable() }))
+    .default([]),
+});
 
 export class GitHubReleaseApiError extends Error {
   constructor(
@@ -108,5 +119,18 @@ export class GitHubReleaseClient {
       `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}/rerun-failed-jobs`,
       z.unknown()
     );
+  }
+
+  async jobs(id: string) {
+    const jobs: z.infer<typeof releaseJobSchema>[] = [];
+    for (let page = 1; ; page++) {
+      const result = await this.request(
+        'GET',
+        `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}/jobs?filter=all&per_page=100&page=${page}`,
+        z.object({ jobs: z.array(releaseJobSchema) })
+      );
+      jobs.push(...result.jobs);
+      if (result.jobs.length < 100) return jobs;
+    }
   }
 }

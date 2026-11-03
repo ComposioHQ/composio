@@ -43,6 +43,10 @@ permissions:
   contents: read
   actions: read
 
+env:
+  SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+  SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+
 jobs:
   authorize:
     if: >-
@@ -79,7 +83,8 @@ jobs:
         env:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
         run: bun scripts/sdk-release/batch.ts authorize
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: Retain authorized release input
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.authorize.outputs.new-batch == 'true'
         with:
           name: sdk-authorized-batch
@@ -280,6 +285,9 @@ jobs:
           SDK_READ_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
+      - name: Registry recovery exhausted
+        if: failure() && steps.build.outputs.terminal == 'true'
+        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
       - name: Retain original candidate bytes
         if: steps.build.outputs.build == 'true'
         id: upload
@@ -321,3 +329,158 @@ jobs:
           TYPESCRIPT: ${{ needs.select-candidates.outputs.typescript }}
           PYTHON: ${{ needs.select-candidates.outputs.python }}
         run: test "$TYPESCRIPT" = true || test "$PYTHON" = true
+
+  publication-preflight:
+    name: Check direct publication prerequisites
+    needs: [select-candidates, candidates-ready]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')
+    runs-on: ubuntu-latest
+    outputs:
+      candidate-ids: ${{ steps.preflight.outputs.candidate-ids }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify merged approval, tag rules, environments and every original candidate
+        id: preflight
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+        run: bun scripts/sdk-release/registry.ts preflight
+      - name: Registry recovery exhausted
+        if: failure() && steps.preflight.outputs.terminal == 'true'
+        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
+
+  publish-npm:
+    name: Publish original npm candidates
+    needs: [select-candidates, publication-preflight]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') && needs.select-candidates.outputs.typescript == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Pin npm with native dist-tag OIDC support in the publisher only
+        run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
+      - name: Upload original candidates to npm
+        id: upload
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+        run: bun scripts/sdk-release/registry.ts upload-npm
+      - name: Registry recovery exhausted
+        if: failure() && steps.upload.outputs.terminal == 'true'
+        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
+
+  publish-pypi:
+    name: Publish original PyPI candidates
+    needs: [select-candidates, publication-preflight]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') && needs.select-candidates.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi-release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Reconcile all original files and prepare only missing Python distributions
+        id: reconcile
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+        run: bun scripts/sdk-release/registry.ts prepare-pypi
+      - name: Upload original candidates to PyPI
+        if: steps.reconcile.outputs.missing == 'true'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: sdk-publication/missing-python/
+      - name: Registry recovery exhausted
+        if: failure() && steps.reconcile.outputs.terminal == 'true'
+        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
+
+  registry-verification:
+    name: Verify public SDK packages
+    needs: [select-candidates, publication-preflight, publish-npm, publish-pypi]
+    if: >-
+      always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
+      needs.publication-preflight.result == 'success' &&
+      (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped') &&
+      (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped')
+    runs-on: ubuntu-latest
+    outputs:
+      registry-verified: ${{ steps.verified.outputs.registry-verified }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        if: needs.select-candidates.outputs.python == 'true'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify every public file, stable tag and native npm provenance
+        id: registry
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+        run: bun scripts/sdk-release/registry.ts verify
+      - name: Verify fresh public installations, strict TypeScript, Python imports and typing, and dependency health
+        run: bun scripts/sdk-release/consumers.ts
+      - id: verified
+        run: echo 'registry-verified=true' >> "$GITHUB_OUTPUT"
+      - name: Registry recovery exhausted
+        if: failure() && steps.registry.outputs.terminal == 'true'
+        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
+
+  publication-status:
+    if: >-
+      github.repository == 'ComposioHQ/composio' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'sdk-release/') &&
+      github.ref == 'refs/heads/next'
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+      queue: max
+    outputs:
+      registry-verified: ${{ steps.report.outputs.registry-verified }}
+      original-run-id: ${{ steps.report.outputs.original-run-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Update canonical request and PR publication status
+        id: report
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/batch.ts report

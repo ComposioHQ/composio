@@ -32,6 +32,11 @@ function client(
     existing?: boolean;
     runStatus?: string;
     runBranch?: string;
+    preparing?: boolean;
+    publication?: 'active' | 'verified' | 'terminal';
+    runAttempt?: number;
+    createdAt?: string;
+    authorizationFailure?: boolean;
   } = {}
 ) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
@@ -45,6 +50,19 @@ function client(
     outputs: [],
     plan,
   };
+  const nativeRun = (id: number, branch: string) => ({
+    id,
+    path: '.github/workflows/sdk.release.yml',
+    head_branch: branch,
+    head_sha: sha,
+    event: branch === 'next' ? 'workflow_dispatch' : 'push',
+    repository: { full_name: 'ComposioHQ/composio' },
+    status: options.runStatus ?? 'completed',
+    conclusion: options.authorizationFailure && id === 8 ? 'success' : 'failure',
+    created_at: options.createdAt ?? new Date().toISOString(),
+    run_attempt: options.runAttempt ?? 2,
+    html_url: `https://github.com/ComposioHQ/composio/actions/runs/${id}`,
+  });
   const fetcher: ReleaseFetch = async (input, init) => {
     const url = new URL(String(input));
     const method = init?.method ?? 'GET';
@@ -65,6 +83,8 @@ function client(
                 html_url: 'https://github.com/ComposioHQ/composio/pull/9',
                 body: '<!-- sdk-release-batch -->',
                 state: 'open',
+                merged: options.authorizationFailure ?? false,
+                merge_commit_sha: options.authorizationFailure ? 'b'.repeat(40) : null,
                 user: { login: 'bot' },
                 head: {
                   sha,
@@ -76,6 +96,82 @@ function client(
             ]
           : []
       );
+    if (path.includes('/actions/workflows/sdk.release.yml/runs')) {
+      const runs =
+        url.searchParams.get('event') === 'pull_request_target' && options.authorizationFailure
+          ? [{ ...nativeRun(10, 'next'), event: 'pull_request_target' }]
+          : url.searchParams.get('event') === 'push'
+            ? options.publication
+              ? [nativeRun(9, 'sdk-release/8')]
+              : []
+            : options.preparing
+              ? [nativeRun(22, 'next')]
+              : [];
+      return respond({ total_count: runs.length, workflow_runs: runs });
+    }
+    if (path.includes('/actions/runs/10/jobs'))
+      return respond({ jobs: [{ name: 'source-tag', conclusion: 'failure', steps: [] }] });
+    if (path.includes('/git/ref/tags/sdk-release/8'))
+      return respond({ object: { type: 'commit', sha } });
+    if (path.includes('/actions/runs/9/jobs'))
+      return respond({
+        jobs:
+          options.publication === 'verified'
+            ? [{ name: 'Verify public SDK packages', conclusion: 'success', steps: [] }]
+            : [
+                {
+                  name: 'Publish original PyPI candidates',
+                  conclusion: 'failure',
+                  steps: [
+                    {
+                      name: 'Upload original candidates to PyPI',
+                      status: 'completed',
+                      conclusion: 'failure',
+                    },
+                  ],
+                },
+              ],
+      });
+    if (path.includes('/actions/runs/9/artifacts'))
+      return respond({
+        artifacts:
+          options.publication === 'terminal'
+            ? []
+            : [
+                {
+                  id: 56,
+                  name: 'sdk-candidate-python',
+                  digest: `sha256:${'c'.repeat(64)}`,
+                  expired: false,
+                  created_at: new Date().toISOString(),
+                  expires_at: '2099-12-01T00:00:00Z',
+                  workflow_run: { id: 9, head_sha: sha },
+                },
+              ],
+      });
+    if (path.includes('/actions/runs/22/jobs'))
+      return respond({ jobs: [{ name: 'prepare', status: 'in_progress', conclusion: null }] });
+    if (path.includes('/actions/runs/22/artifacts'))
+      return respond({
+        artifacts: [
+          {
+            id: 57,
+            name: 'sdk-authorized-batch',
+            digest: `sha256:${'c'.repeat(64)}`,
+            expired: false,
+            created_at: new Date().toISOString(),
+            expires_at: '2099-12-01T00:00:00Z',
+            workflow_run: { id: 22, head_sha: sha },
+          },
+        ],
+      });
+    if (
+      path.includes('/contents/.github/sdk-release-plan.json') &&
+      !options.publication &&
+      !options.authorizationFailure &&
+      url.searchParams.get('ref') === 'next'
+    )
+      return respond({}, 404);
     if (path.includes('/contents/.github/sdk-release-plan.json'))
       return respond({
         encoding: 'base64',
@@ -95,19 +191,10 @@ function client(
           },
         ],
       });
-    if (path.endsWith('/actions/runs/8'))
-      return respond({
-        id: 8,
-        path: '.github/workflows/sdk.release.yml',
-        head_branch: options.runBranch ?? 'next',
-        repository: { full_name: 'ComposioHQ/composio' },
-        status: options.runStatus ?? 'completed',
-        conclusion: 'failure',
-        created_at: new Date().toISOString(),
-        run_attempt: 2,
-        html_url: 'https://github.com/ComposioHQ/composio/actions/runs/8',
-      });
+    if (path.endsWith('/actions/runs/8')) return respond(nativeRun(8, options.runBranch ?? 'next'));
     if (path.endsWith('/rerun-failed-jobs')) return new Response(null, { status: 201 });
+    if (path.endsWith('/actions/workflows/docs.sdk-change-sync.yml/dispatches'))
+      return new Response(null, { status: 204 });
     if (path.endsWith('/issues/7/comments')) return respond({ id: 99 });
     throw new Error(`Unexpected request: ${method} ${path}`);
   };
@@ -168,6 +255,81 @@ describe('SDK release member request', () => {
       throw new Error('must not plan');
     });
     expect(result.pullRequest).toBe('https://github.com/ComposioHQ/composio/pull/9');
+  });
+  for (const options of [
+    { preparing: true },
+    { publication: 'active' as const },
+    { publication: 'active' as const, runAttempt: 50, runStatus: 'in_progress' },
+  ]) {
+    test(`native ${JSON.stringify(options)} blocks allocation before a PR exists`, async () => {
+      const { github } = client(options);
+      const result = await executeReleaseRequest(github, request, context, async () => {
+        throw new Error('must not allocate');
+      });
+      expect(result.message).toContain('already active');
+      expect(result.runUrl).toContain('/actions/runs/');
+    });
+  }
+  test('retry resolves the actual tag producer instead of rerunning the earlier preparation', async () => {
+    const { github, calls } = client({ publication: 'active' });
+    await executeReleaseRequest(
+      github,
+      releaseRequestSchema.parse({ action: 'retry', run_id: '8', python: 'major' }),
+      context,
+      async () => {
+        throw new Error('must not plan');
+      }
+    );
+    expect(
+      calls.filter(call => call.path.endsWith('/rerun-failed-jobs')).map(call => call.path)
+    ).toEqual(['/repos/ComposioHQ/composio/actions/runs/9/rerun-failed-jobs']);
+  });
+  test('a transient source-tag authorization failure reruns that original failed stage without new allocation', async () => {
+    const { github, calls } = client({ authorizationFailure: true, existing: true });
+    await executeReleaseRequest(
+      github,
+      releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+      context,
+      async () => {
+        throw new Error('must not allocate');
+      }
+    );
+    expect(
+      calls.filter(call => call.path.endsWith('/rerun-failed-jobs')).map(call => call.path)
+    ).toEqual(['/repos/ComposioHQ/composio/actions/runs/10/rerun-failed-jobs']);
+  });
+  test('docs retry after registry success ignores artifact loss, age and exhausted publisher attempts', async () => {
+    const { github, calls } = client({
+      publication: 'verified',
+      runAttempt: 50,
+      createdAt: '2025-01-01T00:00:00Z',
+    });
+    const result = await executeReleaseRequest(
+      github,
+      releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+      context,
+      async () => {
+        throw new Error('must not plan');
+      }
+    );
+    expect(result.message).toContain('without registry identity');
+    expect(calls.filter(call => call.method === 'POST').map(call => call.path)).toEqual([
+      '/repos/ComposioHQ/composio/actions/workflows/docs.sdk-change-sync.yml/dispatches',
+      '/repos/ComposioHQ/composio/issues/7/comments',
+    ]);
+    expect(calls.some(call => call.path.includes('/artifacts'))).toBe(false);
+  });
+  test('partial upload with deleted candidates stops same-version recovery', async () => {
+    const { github, calls } = client({ publication: 'terminal' });
+    await expect(
+      executeReleaseRequest(
+        github,
+        releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+        context,
+        async () => plan
+      )
+    ).rejects.toThrow('higher-version corrective');
+    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
   });
   test('explicit refresh prepares a replacement from the original version baseline and choices', async () => {
     const { github, calls } = client({ existing: true });

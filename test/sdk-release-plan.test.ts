@@ -108,6 +108,73 @@ function versions(plan: SdkReleasePlan) {
 }
 
 describe('SDK release planning', () => {
+  test('a terminal provider-only partial batch recommends a higher patch with no new fragments', async () => {
+    const { cwd, json } = await fixture();
+    await json('packages/provider/package.json', {
+      name: '@composio/provider',
+      version: '0.11.1',
+      peerDependencies: { '@composio/core': '^0.28.0' },
+    });
+    const corrective = {
+      batchId: '8',
+      sourceSha: 'a'.repeat(40),
+      releases: [
+        {
+          name: '@composio/provider',
+          oldVersion: '0.11.0',
+          newVersion: '0.11.1',
+          language: 'typescript' as const,
+        },
+      ],
+      inventory: [{ name: '@composio/provider', version: '0.11.1', files: [] }],
+    };
+    const plan = await createSdkReleasePlan(cwd, { corrective });
+    expect(versions(plan)).toEqual({ '@composio/provider': '0.11.2' });
+    expect(plan.recommended.map(release => release.newVersion)).toEqual(['0.11.2']);
+    const baseline = {
+      '@composio/core': '0.28.0',
+      '@composio/slim': '0.28.0',
+      '@composio/provider': '0.11.0',
+      composio: '0.31.0',
+      'composio-openai': '0.31.0',
+      'composio-outside': '0.31.0',
+    };
+    await expect(createSdkReleasePlan(cwd, { baseline })).rejects.toThrow(
+      'Registry baseline mismatch'
+    );
+    expect(versions(await createSdkReleasePlan(cwd, { corrective, baseline }))).toEqual({
+      '@composio/provider': '0.11.2',
+    });
+    await expect(
+      createSdkReleasePlan(cwd, {
+        corrective,
+        baseline: { ...baseline, '@composio/core': '0.27.0' },
+      })
+    ).rejects.toThrow('Registry baseline mismatch for @composio/core');
+    await applySdkReleasePlan(cwd, plan, { updateLockfile: false });
+    expect(
+      JSON.parse(await readFile(join(cwd, 'packages/provider/package.json'), 'utf8')).version
+    ).toBe('0.11.2');
+    const other = await fixture();
+    await other.json('packages/provider/package.json', {
+      name: '@composio/provider',
+      version: '0.11.1',
+    });
+    expect(
+      versions(await createSdkReleasePlan(other.cwd, { corrective, typescript: 'minor' }))
+    ).toEqual({ '@composio/provider': '0.12.0' });
+    expect(
+      (await createSdkReleasePlan(other.cwd, { corrective, typescript: 'skip' })).releases
+    ).toEqual([]);
+    await expect(
+      createSdkReleasePlan(other.cwd, {
+        corrective: {
+          ...corrective,
+          releases: [{ ...corrective.releases[0], newVersion: '0.11.2' }],
+        },
+      })
+    ).rejects.toThrow('metadata differs');
+  });
   test('Python-only fragments version private marker and every Python mirror without npm targets', async () => {
     const { cwd, note } = await fixture();
     await note('python-fix', { '@composio/python-sdk': 'patch' }, 'Fix connected account updates.');

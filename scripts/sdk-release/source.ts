@@ -178,7 +178,7 @@ export function validateReleaseDiff(files: ReleaseFile[], plan: DiffPlan, output
   }
   for (const note of plan.changesets) {
     if (
-      !/^sdk-maintenance-(typescript|python)$/.test(note.id) &&
+      !/^sdk-maintenance-(typescript|python)$|^sdk-corrective-\d+$/.test(note.id) &&
       !files.some(file => file.path === `.changeset/${note.id}.md`)
     )
       throw new Error(`Selected release note was not consumed: ${note.id}`);
