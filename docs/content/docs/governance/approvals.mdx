@@ -15,7 +15,7 @@ Approvals are experimental. They need `composio` newer than 0.27.0 or `@composio
 
 ## Choosing which tools need approval
 
-You choose which tools need approval with their [tags](/docs/tool-tags) when you create a session. For example, this session asks the user before any tool that creates, updates or deletes something:
+You choose which tools need approval with their [hints](/docs/governance/tool-hints) when you create a session. For example, this session asks the user before any tool that creates, updates or deletes something:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -308,7 +308,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 - **Workbench and bash scripts.** Composio uses a model to find the tools a `COMPOSIO_REMOTE_WORKBENCH` or `COMPOSIO_REMOTE_BASH_TOOL` script calls, so it can miss some. If approval must never be skipped, [disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox).
 - **Proxy execute.** `session.proxy_execute()` is currently disabled for a toolkit when any of its tools need approval.
-- **Tags.** Rules based on [tags](/docs/tool-tags) are only as accurate as the tags, which Composio assigns on a best-effort basis. List tools explicitly for anything you must gate.
+- **Hints.** Rules based on [hints](/docs/governance/tool-hints) are only as accurate as the hints, which Composio assigns on a best-effort basis. List tools explicitly for anything you must gate.
 - **Providers.** The SDK's `handle_tool_calls` and framework providers don't handle approval yet. Run tool calls with `session.execute()`, as in the [full example](#full-example) below.
 
 ## Full example
