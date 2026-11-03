@@ -64,7 +64,7 @@
   "license": "ISC",
   "dependencies": {
     "safe-stable-stringify": "^3.0.0",
-    "typebox": "1.4.2"
+    "typebox": "1.4.3"
   },
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
