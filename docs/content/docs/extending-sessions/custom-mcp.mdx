@@ -15,17 +15,17 @@ This is different from [Custom Tools and Toolkits](/docs/extending-sessions/cust
 
 ## How it works
 
-1. **Deploy** your MCP server at a public HTTPS URL.
+1. **Get** a remote MCP server at a public HTTPS URL: your own, or an existing one.
 2. **Create** a toolkit for it. Composio gives it a `CUSTOM_*` slug.
-3. **Connect** an account if the server needs an API key or OAuth.
+3. **Connect** an account if the server needs an API key or DCR OAuth.
 4. Composio **syncs** the tools automatically.
 5. **Use** the toolkit in a session.
 
-Use the SDK (`composio.experimental.custom_toolkits` in Python, `composio.experimental.customToolkits` in TypeScript) or the API. See the API reference for [create](/reference/api-reference/toolkits/postCustomToolkits), [update](/reference/api-reference/toolkits/patchCustomToolkitsBySlug), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). `upsert()` is deprecated; use `create()` and `update()`.
+Use the SDK (`composio.experimental.custom_toolkits` in Python, `composio.experimental.customToolkits` in TypeScript) or the API. See the API reference for [create](/reference/api-reference/toolkits/postCustomToolkits), [update](/reference/api-reference/toolkits/patchCustomToolkitsBySlug), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). `upsert()` is deprecated; use `create()` and `update()`. See [Move from upsert](#move-from-upsert).
 
 ## Create a toolkit
 
-Pass the server's URL, how to authenticate, and `user_id`. Use `"all"` to share the toolkit with every user in your project:
+Pass your MCP server's URL as `app_url`, how to authenticate, and `user_id`. Use `"all"` to share the toolkit with every user in your project:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -392,12 +392,20 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 - **Tools missing from search:** search can miss custom tools that synced fine. Check with toolkit-filtered tool listing or `COMPOSIO_GET_TOOL_SCHEMAS`, then call the tool by slug with `COMPOSIO_MULTI_EXECUTE_TOOL`. Resyncing doesn't help; send the slug, time (UTC), and log IDs to support.
 - **Empty tool list on v3:** the v3 tools API reads a pinned toolkit version that has no custom tools. Use v3.1, or ask for the latest version: `toolkit_versions=latest` to list tools, `version=latest` to get one, or `"version": "latest"` in the body to execute. See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning).
 
+## Move from upsert
+
+`upsert()` and `POST /api/v3.1/custom/toolkits/upsert` still work but are deprecated. Toolkits you created with upsert keep working and keep their slugs.
+
+- **New toolkit:** call create instead of upsert. Don't pass a slug: create returns one, so save it. Set `user_id` to `"all"` to share the toolkit like upsert did, or to a user's ID to make it private.
+- **Existing toolkit:** call update with its slug to change the name, logo, or API key field label. Don't create it again: a second shared toolkit for the same URL returns `409`.
+- **Request shape:** create takes the fields directly (`name`, `app_url`, `auth_schemes`, ...), not inside `toolkit_config`.
+
 ## Limits
 
 - Remote servers only: local and STDIO servers aren't supported.
 - `app_url`, `auth_schemes`, and `user_id` can't change after creation.
 - At most 500 tools per toolkit.
-- OAuth servers that only support Client ID Metadata Documents (CIMD) aren't supported.
+- OAuth works only through Dynamic Client Registration (DCR). Servers that need a pre-registered OAuth client, or that only support Client ID Metadata Documents (CIMD), aren't supported.
 - No automatic resync: sync again when the server's tools change.
 
 ## Related guides
