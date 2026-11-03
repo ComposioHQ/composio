@@ -55,6 +55,14 @@ const transformCustomToolkitAuthScheme = (
         mode: 'API_KEY',
         headers: scheme.headers,
         api_key_field: transformCustomToolkitApiKeyField(scheme.apiKeyField),
+        ...(scheme.additionalFields && {
+          additional_fields: {
+            generic_id: {
+              display_name: scheme.additionalFields.genericId.displayName,
+              description: scheme.additionalFields.genericId.description,
+            },
+          },
+        }),
       };
     case 'DCR_OAUTH':
       return { mode: 'DCR_OAUTH', discovery_url: scheme.discoveryUrl };

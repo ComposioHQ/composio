@@ -22,6 +22,15 @@ export const CustomToolkitAuthSchemeSchema = z.discriminatedUnion('mode', [
     headers: z.record(z.string(), z.string()),
     /** End-user copy for the API key input on the connect page. */
     apiKeyField: CustomToolkitApiKeyFieldSchema.optional(),
+    /** Additional connect-page input used by `{{generic_id}}` in headers. */
+    additionalFields: z
+      .object({
+        genericId: z.object({
+          displayName: z.string().min(1).max(100),
+          description: z.string().min(1).max(500).optional(),
+        }),
+      })
+      .optional(),
   }),
   z.object({
     mode: z.literal('DCR_OAUTH'),

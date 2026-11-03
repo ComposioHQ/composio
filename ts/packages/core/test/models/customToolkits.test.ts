@@ -56,8 +56,17 @@ describe('Experimental.customToolkits', () => {
           authSchemes: [
             {
               mode: 'API_KEY',
-              headers: { Authorization: 'Bearer {{generic_api_key}}' },
+              headers: {
+                Authorization: 'Bearer {{generic_api_key}}',
+                'X-Org-Id': '{{generic_id}}',
+              },
               apiKeyField: { displayName: 'API key' },
+              additionalFields: {
+                genericId: {
+                  displayName: 'Organization ID',
+                  description: 'From your settings page',
+                },
+              },
             },
           ],
           userId: 'user_123',
@@ -74,8 +83,17 @@ describe('Experimental.customToolkits', () => {
         auth_schemes: [
           {
             mode: 'API_KEY',
-            headers: { Authorization: 'Bearer {{generic_api_key}}' },
+            headers: {
+              Authorization: 'Bearer {{generic_api_key}}',
+              'X-Org-Id': '{{generic_id}}',
+            },
             api_key_field: { display_name: 'API key' },
+            additional_fields: {
+              generic_id: {
+                display_name: 'Organization ID',
+                description: 'From your settings page',
+              },
+            },
           },
         ],
         user_id: 'user_123',
@@ -112,6 +130,18 @@ describe('Experimental.customToolkits', () => {
       ['no user ID', { userId: undefined }],
       ['no auth schemes', { authSchemes: [] }],
       ['an app URL that is not a URL', { appUrl: 'not a url' }],
+      [
+        'an additional API key field without a display name',
+        {
+          authSchemes: [
+            {
+              mode: 'API_KEY',
+              headers: { 'X-Org-Id': '{{generic_id}}' },
+              additionalFields: { genericId: { description: 'From your settings page' } },
+            },
+          ],
+        },
+      ],
     ])('rejects %s before calling the API', async (_label, override) => {
       await expect(
         customToolkits.create({
