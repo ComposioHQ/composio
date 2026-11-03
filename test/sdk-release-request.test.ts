@@ -1,442 +1,251 @@
-import { afterEach, describe, expect, test } from 'bun:test';
-import { Effect } from 'effect';
-import { Base64 } from 'effect/encoding';
+import { describe, expect, test } from 'bun:test';
+import { GitHubReleaseClient, type ReleaseFetch } from '../scripts/sdk-release/github';
+import { executeReleaseRequest } from '../scripts/sdk-release/batch';
+import { parseReleaseRequest, releaseRequestSchema } from '../scripts/sdk-release/request';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { SdkReleasePlan } from '../scripts/sdk-release/plan';
-import { createPilotPlan } from '../scripts/sdk-release/preview';
-import {
-  executePilotRequest,
-  parseReleaseRequest,
-  type PilotContext,
-  type ReleaseRequest,
-} from '../scripts/sdk-release/request';
-import {
-  exists,
-  json,
-  readText,
-  runRelease,
-  temporaryDirectories,
-  writeText,
-  type Fetch,
-} from './sdk-release-harness';
 
-const temporary = temporaryDirectories('sdk-release-request-');
-async function fixture() {
-  const cwd = await temporary.create();
-  const file = (path: string, value: string) => writeText(`${cwd}/${path}`, value);
-  await file(
-    'package.json',
-    JSON.stringify({ name: 'pilot-fixture', private: true, workspaces: ['packages/*'] })
-  );
-  await file('pnpm-workspace.yaml', 'packages:\n  - packages/*\n');
-  await file(
-    'packages/core/package.json',
-    JSON.stringify({ name: '@composio/core', version: '0.28.0' })
-  );
-  await file(
-    'packages/slim/package.json',
-    JSON.stringify({ name: '@composio/slim', version: '0.28.0' })
-  );
-  await file(
-    '.changeset/config.json',
-    JSON.stringify({
-      changelog: false,
-      fixed: [['@composio/core', '@composio/slim']],
-      linked: [],
-      access: 'public',
-      baseBranch: 'next',
-      updateInternalDependencies: 'patch',
-      ignore: [],
-    })
-  );
-  await file(
-    '.changeset/python-note.md',
-    '---\n"@composio/python-sdk": patch\n---\n\nFix account updates.\n'
-  );
-  await file('python/pyproject.toml', '[project]\nname = "composio"\nversion = "0.31.0"\n');
-  await file('python/composio/__version__.py', '__version__ = "0.31.0"\n');
-  return cwd;
-}
-
-afterEach(() => temporary.cleanup());
-
-const execute = (
-  fetch: Fetch,
-  request: ReleaseRequest,
-  context: PilotContext,
-  plan: Effect.Effect<SdkReleasePlan>
-) => runRelease(executePilotRequest(request, context, plan), fetch);
-const planOf = (plan: SdkReleasePlan) => Effect.succeed(plan);
-const unexpectedPlan = (message: string) =>
-  Effect.sync((): SdkReleasePlan => {
-    throw new Error(message);
-  });
-
-function issueBody(
-  typescript = 'auto',
-  python = 'minor',
-  action = 'preview',
-  runId = '_No response_'
-) {
-  return `### Action\n\n${action}\n\n### TypeScript\n\n${typescript}\n\n### Python\n\n${python}\n\n### Original run ID\n\n${runId}\n`;
-}
-
-function apiFixture(
+const sha = 'a'.repeat(40);
+const context = { actor: 'member', runId: '21', sourceSha: sha, issueNumber: 7 };
+const plan: SdkReleasePlan = {
+  schemaVersion: 1,
+  inputFingerprint: 'frozen',
+  choices: { typescript: 'auto', python: 'auto' },
+  recommended: [],
+  changesets: [],
+  retainedChangesets: [],
+  releases: [
+    {
+      name: '@composio/python-sdk',
+      oldVersion: '0.31.0',
+      newVersion: '0.31.1',
+      type: 'patch',
+      changesets: [],
+      language: 'python',
+    },
+  ],
+};
+function client(
   options: {
     membership?: 'active' | 'pending' | 'absent' | 'error';
-    active?: boolean;
-    run?: Record<string, unknown>;
-    failFirstPull?: boolean;
-    tamperTree?: boolean;
+    existing?: boolean;
+    runStatus?: string;
+    runBranch?: string;
   } = {}
 ) {
-  const writes: { path: string; body: unknown }[] = [];
-  const reads: string[] = [];
-  let branchCreated = false;
-  let pullFailed = false;
-  let planContents = '';
-
-  const fetcher: Fetch = async (input, init) => {
+  const calls: { method: string; path: string; body?: unknown }[] = [];
+  const saved = {
+    schemaVersion: 1,
+    id: '8',
+    originalRunId: '8',
+    inputBase: sha,
+    statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
+    date: '2026-11-03',
+    outputs: [],
+    plan,
+  };
+  const fetcher: ReleaseFetch = async (input, init) => {
     const url = new URL(String(input));
     const method = init?.method ?? 'GET';
-    const path = url.pathname;
-    if (method !== 'GET') {
-      writes.push({ path, body: init?.body ? JSON.parse(String(init.body)) : null });
-      if (path.endsWith('/git/trees')) {
-        const body = writes.at(-1)?.body;
-        planContents = JSON.stringify(body);
-        return json({ sha: 'b'.repeat(40) });
-      }
-      if (path.endsWith('/git/commits')) return json({ sha: 'c'.repeat(40) });
-      if (path.endsWith('/git/refs')) {
-        branchCreated = true;
-        return json({ ref: 'refs/heads/sdk-release/preview-123' });
-      }
-      if (path.endsWith('/pulls') && options.failFirstPull && !pullFailed) {
-        pullFailed = true;
-        return json({ message: 'Unavailable' }, 503);
-      }
-      if (path.endsWith('/issues/77/comments')) return json({ id: 1 });
-      if (path.endsWith('/pulls'))
-        return json({
-          number: 91,
-          html_url: 'https://github.com/ComposioHQ/composio/pull/91',
-          draft: true,
-          body: '<!-- sdk-release-preview -->',
-          head: { ref: 'sdk-release/preview-123', repo: { full_name: 'ComposioHQ/composio' } },
-        });
-      if (path.endsWith('/rerun-failed-jobs')) return new Response(null, { status: 201 });
-      throw new Error(`Unexpected write ${method} ${path}`);
+    const path = url.pathname + url.search;
+    calls.push({ method, path, ...(init?.body ? { body: JSON.parse(String(init.body)) } : {}) });
+    const respond = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
+    if (path === '/orgs/ComposioHQ/memberships/member') {
+      if (options.membership === 'absent') return respond({}, 404);
+      if (options.membership === 'error') return respond({}, 503);
+      return respond({ state: options.membership ?? 'active' });
     }
-    reads.push(path);
-    if (path.startsWith('/orgs/ComposioHQ/memberships/')) {
-      if (options.membership === 'absent') return json({ message: 'Not Found' }, 404);
-      if (options.membership === 'error') return json({ message: 'Unavailable' }, 503);
-      return json({ state: options.membership ?? 'active' });
-    }
-    if (path.endsWith('/pulls'))
-      return json(
-        options.active
+    if (path.includes('/pulls?'))
+      return respond(
+        options.existing
           ? [
               {
-                number: 90,
-                html_url: 'https://github.com/ComposioHQ/composio/pull/90',
-                draft: true,
-                body: '<!-- sdk-release-preview -->',
+                number: 9,
+                html_url: 'https://github.com/ComposioHQ/composio/pull/9',
+                body: '<!-- sdk-release-batch -->',
+                state: 'open',
+                user: { login: 'bot' },
                 head: {
-                  ref: 'sdk-release/preview-120',
+                  sha,
+                  ref: 'sdk-release/batch-8',
                   repo: { full_name: 'ComposioHQ/composio' },
                 },
+                base: { ref: 'next' },
               },
             ]
           : []
       );
-    if (path.includes('/compare/'))
-      return json({
-        files: [
-          { filename: '.github/sdk-release-previews/123.json', status: 'added' },
-          ...(options.tamperTree
-            ? [{ filename: 'python/composio/client.py', status: 'modified' }]
-            : []),
+    if (path.includes('/contents/.github/sdk-release-plan.json'))
+      return respond({
+        encoding: 'base64',
+        content: Buffer.from(JSON.stringify(saved)).toString('base64'),
+      });
+    if (path.includes('/actions/runs/8/artifacts'))
+      return respond({
+        artifacts: [
+          {
+            id: 55,
+            name: 'sdk-authorized-batch',
+            digest: `sha256:${'c'.repeat(64)}`,
+            expired: false,
+            created_at: '2026-11-03T00:00:00Z',
+            expires_at: '2099-12-01T00:00:00Z',
+            workflow_run: { id: 8, head_sha: sha },
+          },
         ],
       });
-    if (path.includes('/git/ref/heads/'))
-      return branchCreated
-        ? json({ object: { sha: 'c'.repeat(40) } })
-        : json({ message: 'Not Found' }, 404);
-    if (path.includes('/contents/')) {
-      const body = JSON.parse(planContents);
-      return json({
-        encoding: 'base64',
-        content: Base64.encode(body.tree[0].content),
-      });
-    }
-    if (path.includes('/git/commits/'))
-      return json({
-        sha: path.endsWith('c'.repeat(40)) ? 'c'.repeat(40) : 'a'.repeat(40),
-        tree: { sha: 'd'.repeat(40) },
-        parents: [{ sha: 'a'.repeat(40) }],
-      });
-    if (path.includes('/actions/runs/'))
-      return json({
-        id: 120,
+    if (path.endsWith('/actions/runs/8'))
+      return respond({
+        id: 8,
         path: '.github/workflows/sdk.release.yml',
-        head_branch: 'next',
+        head_branch: options.runBranch ?? 'next',
         repository: { full_name: 'ComposioHQ/composio' },
-        status: 'completed',
+        status: options.runStatus ?? 'completed',
         conclusion: 'failure',
         created_at: new Date().toISOString(),
-        run_attempt: 1,
-        html_url: 'https://github.com/ComposioHQ/composio/actions/runs/120',
-        ...options.run,
+        run_attempt: 2,
+        html_url: 'https://github.com/ComposioHQ/composio/actions/runs/8',
       });
-    throw new Error(`Unexpected read ${path}`);
+    if (path.endsWith('/rerun-failed-jobs')) return new Response(null, { status: 201 });
+    if (path.endsWith('/issues/7/comments')) return respond({ id: 99 });
+    throw new Error(`Unexpected request: ${method} ${path}`);
   };
-  return { client: fetcher, writes, reads };
+  class FixtureClient extends GitHubReleaseClient {
+    override async downloadArtifact(_artifact: { id: number; digest: string }, directory: string) {
+      await writeFile(join(directory, 'sdk-release-batch.json'), JSON.stringify(saved));
+    }
+  }
+  return { github: new FixtureClient('token', fetcher), calls };
 }
+const request = releaseRequestSchema.parse({ action: 'release' });
 
-const context = { actor: 'private-member', runId: '123', sourceSha: 'a'.repeat(40) };
-const emptyPlan = {
-  schemaVersion: 1 as const,
-  inputFingerprint: 'fixture',
-  choices: { typescript: 'auto' as const, python: 'auto' as const },
-  recommended: [],
-  releases: [],
-  changesets: [],
-  retainedChangesets: [],
-};
-
-describe('guarded SDK release pilot', () => {
-  test('issue form and writer dispatch normalize through the same schema', () => {
-    expect(parseReleaseRequest('issues', { issue: { body: issueBody() } })).toEqual(
-      parseReleaseRequest('workflow_dispatch', { inputs: { python: 'minor' } })
+describe('SDK release member request', () => {
+  test('issue and dispatch normalize through the same active schema', () => {
+    const issue = {
+      issue: {
+        body: '### Action\n\nrelease\n\n### TypeScript\n\nauto\n\n### Python\n\npatch\n\n### Original run ID\n\n_No response_\n',
+      },
+    };
+    expect(parseReleaseRequest('issues', issue)).toEqual(
+      parseReleaseRequest('workflow_dispatch', { inputs: { action: 'release', python: 'patch' } })
     );
-    expect(() =>
-      parseReleaseRequest('workflow_dispatch', { inputs: { python: 'minor; echo stolen' } })
-    ).toThrow();
-    expect(() =>
-      parseReleaseRequest('issues', {
-        issue: { body: issueBody('auto', 'minor', 'retry', '../../120') },
-      })
-    ).toThrow();
+    expect(parseReleaseRequest('workflow_dispatch', { inputs: {} }).action).toBe('release');
   });
-
   for (const membership of ['pending', 'absent', 'error'] as const) {
     test(`${membership} membership fails before planning or any release write`, async () => {
-      const { client, writes } = apiFixture({ membership });
+      const { github, calls } = client({ membership });
       let planned = false;
       await expect(
-        execute(
-          client,
-          parseReleaseRequest('workflow_dispatch', { inputs: {} }),
-          { ...context, issueNumber: 77 },
-          Effect.sync(() => {
-            planned = true;
-            return emptyPlan;
-          })
-        )
+        executeReleaseRequest(github, request, context, async () => {
+          planned = true;
+          return plan;
+        })
       ).rejects.toThrow();
       expect(planned).toBe(false);
-      expect(writes).toEqual([]);
+      expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
     });
   }
-
-  test('a private-membership read-only member gets a draft plan-only PR and existing requests return its status', async () => {
-    const { client, writes } = apiFixture();
-    const plan = {
-      ...emptyPlan,
-      releases: [
-        {
-          name: '@composio/python-sdk',
-          language: 'python' as const,
-          oldVersion: '0.31.0',
-          newVersion: '0.31.1',
-          type: 'patch' as const,
-          changesets: ['python-note'],
-        },
-      ],
-    };
-    const result = await execute(
-      client,
-      parseReleaseRequest('workflow_dispatch', { inputs: {} }),
+  test('an active private member with repository Read authorizes preparation and gets issue status', async () => {
+    const { github, calls } = client();
+    const result = await executeReleaseRequest(
+      github,
+      request,
       context,
-      planOf(plan)
+      async () => plan,
+      async () => ['python/CHANGELOG.md']
     );
-    expect(result.state).toBe('preview');
-    expect(result.pullRequest).toBe('https://github.com/ComposioHQ/composio/pull/91');
-    const tree = writes.find(write => write.path.endsWith('/git/trees'))?.body;
-    expect(tree).toMatchObject({ tree: [{ path: '.github/sdk-release-previews/123.json' }] });
-    expect(
-      writes
-        .map(write => write.path)
-        .some(
-          path => path.includes('/merge') || path.includes('/tags') || path.includes('/releases')
-        )
-    ).toBe(false);
-    expect(JSON.stringify(tree)).not.toMatch(/package\.json|pyproject\.toml|CHANGELOG/);
-    const existing = apiFixture({ active: true });
-    const status = await execute(
-      existing.client,
-      parseReleaseRequest('workflow_dispatch', { inputs: { python: 'major' } }),
-      context,
-      unexpectedPlan('must not allocate a second batch')
-    );
-    expect(status.state).toBe('existing');
-    expect(existing.writes).toEqual([]);
+    expect(result.batch?.inputBase).toBe(sha);
+    expect(result.batch?.plan.releases[0].newVersion).toBe('0.31.1');
+    expect(JSON.stringify(result.batch)).not.toContain('approvedHead');
+    expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
+      '/repos/ComposioHQ/composio/issues/7/comments',
+    ]);
   });
-
-  test('an authorized issue request receives the normalized active preview status', async () => {
-    const { client, writes } = apiFixture({ active: true });
-    await execute(
-      client,
-      parseReleaseRequest('workflow_dispatch', { inputs: {} }),
-      { ...context, issueNumber: 77 },
-      planOf(emptyPlan)
-    );
-    expect(writes).toEqual([
-      {
-        path: '/repos/ComposioHQ/composio/issues/77/comments',
-        body: {
-          body: 'A preview is already active; no new versions were allocated.\n\nhttps://github.com/ComposioHQ/composio/pull/90',
-        },
+  test('an active release returns its status without allocating another plan', async () => {
+    const { github } = client({ existing: true });
+    const result = await executeReleaseRequest(github, request, context, async () => {
+      throw new Error('must not plan');
+    });
+    expect(result.pullRequest).toBe('https://github.com/ComposioHQ/composio/pull/9');
+  });
+  test('explicit refresh prepares a replacement from the original version baseline and choices', async () => {
+    const { github, calls } = client({ existing: true });
+    const result = await executeReleaseRequest(
+      github,
+      releaseRequestSchema.parse({ action: 'refresh' }),
+      context,
+      async choices => {
+        expect(choices).toEqual(plan.choices);
+        return plan;
       },
-    ]);
-  });
-
-  test('a retry after branch creation and a transient PR failure reuses the original plan-only branch', async () => {
-    const { client, writes } = apiFixture({ failFirstPull: true });
-    const plan = {
-      ...emptyPlan,
-      releases: [
-        {
-          name: '@composio/python-sdk',
-          language: 'python' as const,
-          oldVersion: '0.31.0',
-          newVersion: '0.31.1',
-          type: 'patch' as const,
-          changesets: ['python-note'],
-        },
-      ],
-    };
-    const request = parseReleaseRequest('workflow_dispatch', { inputs: {} });
-    await expect(execute(client, request, context, planOf(plan))).rejects.toThrow();
-    const result = await execute(client, request, context, planOf(plan));
-    expect(result.state).toBe('preview');
-    expect(writes.filter(write => write.path.endsWith('/git/refs'))).toHaveLength(1);
-  });
-
-  test('a recovered preview branch with additional SDK changes cannot become a pilot PR', async () => {
-    const options = { failFirstPull: true, tamperTree: false };
-    const { client, writes } = apiFixture(options);
-    const plan = {
-      ...emptyPlan,
-      releases: [
-        {
-          name: '@composio/python-sdk',
-          language: 'python' as const,
-          oldVersion: '0.31.0',
-          newVersion: '0.31.1',
-          type: 'patch' as const,
-          changesets: ['python-note'],
-        },
-      ],
-    };
-    const request = parseReleaseRequest('workflow_dispatch', { inputs: {} });
-    await expect(execute(client, request, context, planOf(plan))).rejects.toThrow();
-    options.tamperTree = true;
-    await expect(execute(client, request, context, planOf(plan))).rejects.toThrow(
-      'source and plan'
+      async () => ['python/CHANGELOG.md']
     );
-    expect(writes.filter(write => write.path.endsWith('/pulls'))).toHaveLength(1);
+    expect(result.batch?.replaces).toEqual({ number: 9, headSha: sha });
+    expect(result.batch?.id).toBe('21');
+    expect(calls.some(call => call.method === 'PATCH')).toBe(false);
   });
-
-  test('retry ignores new bump choices and asks GitHub to rerun failed jobs of the original guarded next run', async () => {
-    const { client, writes } = apiFixture();
-    const request = parseReleaseRequest('workflow_dispatch', {
-      inputs: { action: 'retry', run_id: '120', python: 'major' },
-    });
-    const result = await execute(client, request, context, unexpectedPlan('retry must not plan'));
-    expect(result.state).toBe('retrying');
-    expect(writes).toEqual([
-      { path: '/repos/ComposioHQ/composio/actions/runs/120/rerun-failed-jobs', body: null },
-    ]);
-  });
-
-  test('a retry already queued returns the original status without rerunning again', async () => {
-    const { client, writes } = apiFixture({ run: { status: 'queued', conclusion: null } });
-    const result = await execute(
-      client,
-      parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
-      context,
-      planOf(emptyPlan)
-    );
-    expect(result.state).toBe('run-status');
-    expect(result.runUrl).toBe('https://github.com/ComposioHQ/composio/actions/runs/120');
-    expect(writes).toEqual([]);
-  });
-
-  for (const [name, run] of [
-    ['successful original', { conclusion: 'success' }],
-    ['exhausted attempts', { run_attempt: 50 }],
-    ['expired original', { created_at: new Date(Date.now() - 30 * 86400000).toISOString() }],
-  ] as const) {
-    test(`retry rejects ${name} before any rerun write`, async () => {
-      const { client, writes } = apiFixture({ run });
-      await expect(
-        execute(
-          client,
-          parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
-          context,
-          unexpectedPlan('retry must not plan')
-        )
-      ).rejects.toThrow('Retry requires a failed original');
-      expect(writes).toEqual([]);
-    });
-  }
-
-  test('an arbitrary branch run cannot be retried through the controller', async () => {
-    const { client, writes } = apiFixture({ run: { head_branch: 'untrusted' } });
+  test('refresh refuses to silently advance the original version baseline', async () => {
+    const { github } = client({ existing: true });
     await expect(
-      execute(
-        client,
-        parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
+      executeReleaseRequest(
+        github,
+        releaseRequestSchema.parse({ action: 'refresh' }),
         context,
-        planOf(emptyPlan)
+        async () => ({
+          ...plan,
+          releases: plan.releases.map(release => ({ ...release, oldVersion: '0.32.0' })),
+        })
       )
-    ).rejects.toThrow();
-    expect(writes).toEqual([]);
+    ).rejects.toThrow('original version baseline');
   });
-
-  test('pilot audits real registry baselines in a temporary marker workspace without changing source metadata or notes', async () => {
-    const cwd = await fixture();
-    const calls: string[] = [];
-    const registryFetch: Fetch = async input => {
-      const url = String(input);
-      calls.push(url);
-      return new Response(
-        JSON.stringify(
-          new URL(url).hostname === 'pypi.org'
-            ? { releases: { '0.31.0': [{ yanked: false }] } }
-            : { version: '0.28.0' }
-        ),
-        { headers: { 'content-type': 'application/json' } }
-      );
-    };
-    const plan = await runRelease(
-      createPilotPlan(cwd, { typescript: 'auto', python: 'auto' }),
-      registryFetch
+  test('retry takes priority over an open release PR and ignores new bump choices', async () => {
+    const { github, calls } = client({ existing: true });
+    const result = await executeReleaseRequest(
+      github,
+      releaseRequestSchema.parse({ action: 'retry', run_id: '8', python: 'major' }),
+      context,
+      async () => {
+        throw new Error('must not plan');
+      }
     );
-    expect(plan.releases.map(release => [release.name, release.newVersion])).toEqual([
-      ['@composio/python-sdk', '0.31.1'],
-    ]);
-    expect(calls).toHaveLength(3);
-    expect(await exists(`${cwd}/python/package.json`)).toBe(false);
-    expect(await readText(`${cwd}/python/pyproject.toml`)).toContain('0.31.0');
-    expect(await readText(`${cwd}/.changeset/python-note.md`)).toContain('Fix account updates.');
+    expect(result.message).toContain('ignored');
+    expect(
+      calls.filter(call => call.method === 'POST' && call.path.endsWith('/rerun-failed-jobs'))
+    ).toHaveLength(1);
+  });
+  test('queued retry reports the original run without another rerun', async () => {
+    const { github, calls } = client({ runStatus: 'queued' });
+    const result = await executeReleaseRequest(
+      github,
+      releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+      context,
+      async () => plan
+    );
+    expect(result.message).toContain('queued');
+    expect(calls.some(call => call.path.endsWith('/rerun-failed-jobs'))).toBe(false);
+  });
+  test('unrelated source branches cannot be retried', async () => {
+    const { github, calls } = client({ runBranch: 'attacker-branch' });
     await expect(
-      runRelease(
-        createPilotPlan(cwd, { typescript: 'auto', python: 'auto' }),
-        async () => new Response('{}', { status: 503 })
+      executeReleaseRequest(
+        github,
+        releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+        context,
+        async () => plan
       )
-    ).rejects.toThrow();
+    ).rejects.toThrow('guarded');
+    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+  });
+  test('a reconciled no-op creates no branch or source commit', async () => {
+    const { github, calls } = client();
+    const result = await executeReleaseRequest(
+      github,
+      request,
+      { ...context, issueNumber: undefined },
+      async () => ({ ...plan, releases: [] })
+    );
+    expect(result.message).toContain('Nothing to release');
+    expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 name: SDK release
-run-name: SDK release preview (${{ github.actor }})
+run-name: SDK release (${{ github.actor }})
 
 on:
   issues:
@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: Request a preview, inspect status, or retry an original run
+        description: Prepare a release PR, inspect status, or retry the original run
         type: choice
-        options: [preview, status, retry]
-        default: preview
+        options: [release, refresh, status, retry]
+        default: release
       typescript:
         description: TypeScript bump (auto uses Changesets recommendations)
         type: choice
@@ -22,24 +22,104 @@ on:
         options: [auto, patch, minor, major, skip]
         default: auto
       run_id:
-        description: Original run ID for retry/status; retry ignores new bump choices
+        description: Original run ID; retry ignores new bump choices
         type: string
         required: false
+  pull_request:
+    branches: [next]
+    paths: ['.github/sdk-release-plan.json', 'scripts/sdk-release/**']
+  pull_request_review:
+    types: [submitted]
+  workflow_run:
+    workflows: ['SDK release']
+    types: [completed]
+  pull_request_target:
+    branches: [next]
+    types: [closed]
+  push:
+    tags: ['sdk-release/*']
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  preview:
-    # Evaluate before requesting the environment. A branch-dispatched workflow
-    # cannot obtain the controller credential. The environment must also restrict
-    # deployments to protected next; no repository-level copy of the key is used.
+  authorize:
     if: >-
       github.repository == 'ComposioHQ/composio' &&
       github.event.repository.default_branch == 'next' &&
       github.ref == 'refs/heads/next' &&
       (github.event_name == 'workflow_dispatch' ||
-       startsWith(github.event.issue.title, '[SDK release]'))
+       (github.event_name == 'issues' && startsWith(github.event.issue.title, '[SDK release]')))
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+      queue: max
+    outputs:
+      prepare: ${{ steps.authorize.outputs.prepare }}
+      reuse-patch: ${{ steps.authorize.outputs.reuse-patch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Authorize member and freeze protected input
+        id: authorize
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/batch.ts authorize
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.authorize.outputs.new-batch == 'true'
+        with:
+          name: sdk-authorized-batch
+          path: sdk-release-batch.json
+          retention-days: 30
+          if-no-files-found: error
+
+  prepare:
+    needs: authorize
+    if: needs.authorize.outputs.prepare == 'true' && needs.authorize.outputs.reuse-patch != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install documentation generator dependencies
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-authorized-batch
+          path: /tmp/sdk-authorized-input
+      - name: Apply versions, locks and ordinary release documentation
+        env:
+          SDK_RELEASE_PATCH_PATH: /tmp/sdk-release-patch.json
+        run: bun scripts/sdk-release/prepare.ts /tmp/sdk-authorized-input/sdk-release-batch.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-prepared-patch
+          path: /tmp/sdk-release-patch.json
+          retention-days: 30
+          if-no-files-found: error
+
+  release-pr:
+    needs: [authorize, prepare]
+    if: always() && needs.authorize.outputs.prepare == 'true' && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
     runs-on: ubuntu-latest
     environment: sdk-release-control
     concurrency:
@@ -47,36 +127,197 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - name: Checkout trusted next event source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-
-      - name: Setup Node.js, pnpm, Bun
-        uses: ./.github/actions/setup-node-pnpm-bun
-
-      - name: Install locked controller dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Generate dedicated SDK controller token
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-authorized-batch
+          path: /tmp/sdk-authorized
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-prepared-patch
+          path: /tmp/sdk-prepared
+      - run: mv /tmp/sdk-authorized/sdk-release-batch.json /tmp/sdk-authorized/batch.json && mv /tmp/sdk-prepared/sdk-release-patch.json /tmp/sdk-prepared/patch.json
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: sdk-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
           owner: ComposioHQ
           repositories: composio
-
-      - name: Authorize member and prepare plan-only preview
+      - name: Validate release-only diff and commit through the App API
         env:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
-        run: bun scripts/sdk-release/request.ts
+        run: bun scripts/sdk-release/batch.ts commit
 
-      - name: Retain preview and normalized status
+  review-signal:
+    if: github.event_name == 'pull_request_review' && startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Review changed; trusted-next controller will inspect current API state.'
+
+  approve-and-merge:
+    # workflow_run uses the protected default-branch workflow and environment.
+    # This runs after candidate completion or the unprivileged review signal.
+    if: >-
+      github.repository == 'ComposioHQ/composio' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event != 'workflow_run' &&
+      github.event.workflow_run.event != 'pull_request_target' &&
+      github.ref == 'refs/heads/next'
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Merge approved green head through normal branch protection
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/batch.ts merge
+
+  source-tag:
+    # pull_request_target executes protected-next code, never the PR checkout.
+    if: >-
+      github.repository == 'ComposioHQ/composio' &&
+      github.event_name == 'pull_request_target' &&
+      github.ref == 'refs/heads/next' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: sdk-token
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Verify final approval, checks and merge; create immutable source tag
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/batch.ts tag
+
+  select-candidates:
+    if: >-
+      github.repository == 'ComposioHQ/composio' &&
+      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')) ||
+       (github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')))
+    runs-on: ubuntu-latest
+    outputs:
+      typescript: ${{ steps.select.outputs.typescript }}
+      python: ${{ steps.select.outputs.python }}
+      languages: ${{ steps.select.outputs.languages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Select planned language lanes
+        id: select
+        env:
+          SOURCE_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const batch = JSON.parse(readFileSync('.github/sdk-release-plan.json', 'utf8'));
+          if (process.env.SOURCE_TAG && process.env.SOURCE_TAG !== `sdk-release/${batch.id}`) throw new Error('Tag does not identify the committed release');
+          const languages = [...new Set(batch.plan.releases.map(release => release.language))];
+          appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\n`);
+          for (const language of ['typescript', 'python']) appendFileSync(process.env.GITHUB_OUTPUT, `${language}=${languages.includes(language)}\n`);
+          JS
+
+  candidate:
+    name: SDK candidate (${{ matrix.language }})
+    needs: select-candidates
+    if: needs.select-candidates.outputs.typescript == 'true' || needs.select-candidates.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.select-candidates.outputs.languages) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        if: matrix.language == 'python' && needs.select-candidates.outputs.python == 'true'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build or recover exact immutable candidate
+        id: build
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          GITHUB_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
+      - name: Retain original candidate bytes
+        if: steps.build.outputs.build == 'true'
+        id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: sdk-release-preview-${{ github.run_id }}-${{ github.run_attempt }}
-          path: sdk-release-preview.json
+          name: sdk-candidate-${{ matrix.language }}
+          path: sdk-candidate/${{ matrix.language }}/
           retention-days: 30
           if-no-files-found: error
+      - name: Report immutable candidate identity
+        if: steps.build.outputs.selected == 'true'
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id || steps.build.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest || steps.build.outputs.artifact-digest }}
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          LANGUAGE: ${{ matrix.language }}
+          SDK_READ_TOKEN: ${{ github.token }}
+        run: |
+          bun - <<'JS'
+          import { appendFile } from 'node:fs/promises';
+          import { actionArtifactSchema, candidateManifestSchema, reuseCandidate } from './scripts/sdk-release/artifacts';
+          import { GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './scripts/sdk-release/github';
+          const github = new GitHubReleaseClient(process.env.SDK_READ_TOKEN);
+          const artifact = await github.request('GET', `/repos/${SDK_RELEASE_REPOSITORY}/actions/artifacts/${process.env.ARTIFACT_ID}`, actionArtifactSchema);
+          reuseCandidate([artifact], `sdk-candidate-${process.env.LANGUAGE}`, Number(process.env.GITHUB_RUN_ID), process.env.SOURCE_SHA);
+          if (artifact.digest !== process.env.ARTIFACT_DIGEST) throw new Error('Uploaded artifact digest differs');
+          const manifest = candidateManifestSchema.parse(await Bun.file(`sdk-candidate/${process.env.LANGUAGE}/candidate.json`).json());
+          const files = manifest.files.map(file => `- ${file.name}: ${file.sha256} (${file.size} bytes)`).join('\n');
+          await appendFile(process.env.GITHUB_STEP_SUMMARY, `${process.env.LANGUAGE} candidate ID=${artifact.id} digest=${artifact.digest} producer=${process.env.GITHUB_RUN_ID} source=${process.env.SOURCE_SHA} expires=${artifact.expires_at}\n\n${files}\n`);
+          JS
+
+  candidates-ready:
+    needs: [select-candidates, candidate]
+    if: always() && needs.select-candidates.result == 'success' && needs.candidate.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every selected candidate before registry upload
+        env:
+          TYPESCRIPT: ${{ needs.select-candidates.outputs.typescript }}
+          PYTHON: ${{ needs.select-candidates.outputs.python }}
+        run: test "$TYPESCRIPT" = true || test "$PYTHON" = true

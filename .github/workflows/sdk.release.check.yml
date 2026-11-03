@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [next]
     paths:
+      - '.changeset/**'
+      - 'python/**'
+      - 'ts/packages/**'
+      - 'ts/scripts/validate-changesets.*'
       - 'scripts/sdk-release/**'
       - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
@@ -14,6 +18,10 @@ on:
   push:
     branches: [next]
     paths:
+      - '.changeset/**'
+      - 'python/**'
+      - 'ts/packages/**'
+      - 'ts/scripts/validate-changesets.*'
       - 'scripts/sdk-release/**'
       - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
@@ -30,6 +38,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-note:
+    if: github.event_name == 'pull_request'
+    name: SDK release note
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Require incremental notes for published behavior
+        env:
+          SDK_RELEASE_NOTE_BASE: ${{ github.event.pull_request.base.sha }}
+          SDK_RELEASE_PR_BODY: ${{ github.event.pull_request.body }}
+        run: pnpm validate:changesets
   check:
     name: Check SDK release tooling
     runs-on: ubuntu-latest

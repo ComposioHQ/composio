@@ -115,6 +115,7 @@ export type CompatibilityLane = {
 export type CliOptions = {
   lanes: Set<'current' | 'minimum' | 'beta'>;
   planOnly: boolean;
+  candidateDirectory?: string;
 };
 
 async function readJsonFile<T>(filePath: string, schema: z.ZodType<T>): Promise<T> {
@@ -239,10 +240,16 @@ export function buildCompatibilityPlan(
 export function parseCliOptions(args: string[]): CliOptions {
   const lanes = new Set<'current' | 'minimum' | 'beta'>();
   let planOnly = false;
+  let candidateDirectory: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === '--') {
+      continue;
+    }
+    if (argument === '--candidate-dir') {
+      candidateDirectory = args[++index];
+      if (!candidateDirectory) throw new Error('--candidate-dir requires a directory');
       continue;
     }
     if (argument === '--plan') {
@@ -267,7 +274,9 @@ export function parseCliOptions(args: string[]): CliOptions {
     lanes.add('beta');
   }
 
-  return { lanes, planOnly };
+  if (candidateDirectory && (lanes.size !== 1 || !lanes.has('current')))
+    throw new Error('Exact candidates support the current lane only');
+  return { lanes, planOnly, ...(candidateDirectory ? { candidateDirectory } : {}) };
 }
 
 function laneCategory(lane: CompatibilityLane): 'current' | 'minimum' | 'beta' {
@@ -469,7 +478,8 @@ async function writeConsumerFixture(
   fixtureDirectory: string,
   lane: CompatibilityLane,
   providers: ProviderCompatibilityCase[],
-  tarballs: Map<string, string>
+  tarballs: Map<string, string>,
+  exactCandidates = false
 ): Promise<void> {
   const dependencies: Record<string, string> = {
     ...mergeExternalPeers(providers),
@@ -480,6 +490,11 @@ async function writeConsumerFixture(
       )
     ).version,
   };
+
+  for (const [name, tarball] of exactCandidates ? tarballs : []) {
+    if (!name.endsWith('@prerelease') && name !== '@composio/core')
+      dependencies[name] = `file:${tarball}`;
+  }
 
   for (const provider of providers) {
     const tarball = tarballs.get(provider.name);
@@ -554,7 +569,8 @@ async function runLane(
   lane: CompatibilityLane,
   allProviders: ProviderCompatibilityCase[],
   tarballs: Map<string, string>,
-  runDirectory: string
+  runDirectory: string,
+  exactCandidates = false
 ): Promise<void> {
   const providers = lane.providerNames.map(name => {
     const provider = allProviders.find(candidate => candidate.name === name);
@@ -563,7 +579,7 @@ async function runLane(
   });
   const fixtureDirectory = path.join(runDirectory, lane.id);
   await mkdir(fixtureDirectory, { recursive: true });
-  await writeConsumerFixture(fixtureDirectory, lane, providers, tarballs);
+  await writeConsumerFixture(fixtureDirectory, lane, providers, tarballs, exactCandidates);
 
   const installArgs = [
     'install',
@@ -579,6 +595,21 @@ async function runLane(
   run(path.join(fixtureDirectory, 'node_modules/.bin/tsc'), ['--noEmit'], fixtureDirectory);
   const result = run(process.execPath, ['index.mjs'], fixtureDirectory);
   console.log(result);
+}
+
+export async function readExactCandidateTarballs(directory: string): Promise<Map<string, string>> {
+  const tarballs = new Map<string, string>();
+  for (const name of await readdir(directory)) {
+    if (!name.endsWith('.tgz')) continue;
+    const tarball = path.join(directory, name);
+    const manifest = PackageManifestSchema.parse(
+      JSON.parse(run('tar', ['-xOf', tarball, 'package/package.json']))
+    );
+    if (tarballs.has(manifest.name)) throw new Error(`Duplicate candidate for ${manifest.name}`);
+    tarballs.set(manifest.name, tarball);
+  }
+  if (!tarballs.has('@composio/core')) throw new Error('Exact candidates require the packed core');
+  return tarballs;
 }
 
 async function main(): Promise<void> {
@@ -616,7 +647,9 @@ async function main(): Promise<void> {
   try {
     const artifactDirectory = path.join(runDirectory, 'artifacts');
     await mkdir(artifactDirectory, { recursive: true });
-    const tarballs = await packWorkspaceArtifacts(providers, artifactDirectory, prereleaseVersion);
+    const tarballs = options.candidateDirectory
+      ? await readExactCandidateTarballs(path.resolve(options.candidateDirectory))
+      : await packWorkspaceArtifacts(providers, artifactDirectory, prereleaseVersion);
 
     console.log(
       `Checking ${providers.length} providers across ${plan.length} compatibility lanes...`
@@ -624,7 +657,7 @@ async function main(): Promise<void> {
     const failures: string[] = [];
     for (const lane of plan) {
       try {
-        await runLane(lane, providers, tarballs, runDirectory);
+        await runLane(lane, providers, tarballs, runDirectory, Boolean(options.candidateDirectory));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`${lane.id}: failed\n${message}`);

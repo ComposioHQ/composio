@@ -229,6 +229,8 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
 
+  python: {}
+
   ts/e2e-tests/_utils:
     devDependencies:
       typescript:
