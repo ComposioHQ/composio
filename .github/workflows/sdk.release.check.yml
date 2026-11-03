@@ -12,6 +12,13 @@ on:
       - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
       - '.github/workflows/sdk.release*.yml'
+      - '.github/workflows/docs.sdk-change-sync.yml'
+      - '.github/workflows/docs.changelog*.yml'
+      - '.github/workflows/docs-search-sync.yml'
+      - '.github/workflows/ts.release.yml'
+      - '.github/workflows/py.release.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - 'test/release-workflow.test.ts'
       - '.github/ISSUE_TEMPLATE/sdk-release.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -26,6 +33,13 @@ on:
       - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
       - '.github/workflows/sdk.release*.yml'
+      - '.github/workflows/docs.sdk-change-sync.yml'
+      - '.github/workflows/docs.changelog*.yml'
+      - '.github/workflows/docs-search-sync.yml'
+      - '.github/workflows/ts.release.yml'
+      - '.github/workflows/py.release.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - 'test/release-workflow.test.ts'
       - '.github/ISSUE_TEMPLATE/sdk-release.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -64,5 +78,6 @@ jobs:
           enable-caching: 'false'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run test:sdk-release
+      - run: pnpm run test:release-workflow
       - run: pnpm run typecheck:sdk-release
       - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.ts
