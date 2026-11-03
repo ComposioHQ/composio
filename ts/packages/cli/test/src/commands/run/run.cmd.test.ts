@@ -17,6 +17,7 @@ import {
   Layer,
   Option,
   PlatformError,
+  Redacted,
   Runtime,
   Sink,
   Stream,
@@ -125,8 +126,16 @@ const inspectRunCommand = (command: ChildProcess.Command) => {
     throw new Error('Expected the run command to be a standard (non-piped) command.');
   }
   return {
-    cmd: [command.command, ...command.args],
-    env: command.options.env ?? {},
+    cmd: [
+      command.command,
+      ...command.args.map(arg => (Redacted.isRedacted(arg) ? Redacted.value(arg) : arg)),
+    ],
+    env: Object.fromEntries(
+      Object.entries(command.options.env ?? {}).map(([key, value]) => [
+        key,
+        Redacted.isRedacted(value) ? Redacted.value(value) : value,
+      ])
+    ),
     extendEnv: command.options.extendEnv,
     stdio: [command.options.stdin, command.options.stdout, command.options.stderr],
   };

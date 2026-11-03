@@ -1,6 +1,6 @@
 # Effect CLI in this repository
 
-The framework lives in `effect/cli`. The installed `effect@4.0.5` typings determine which interfaces compile. The CLI's registration and invocation modules determine how the repository uses them.
+The framework lives in `effect/cli`. The installed `effect@^4.1.0` typings determine which interfaces compile. The CLI's registration and invocation modules determine how the repository uses them.
 
 ## Command registration
 

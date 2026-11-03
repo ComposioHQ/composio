@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Patch Changes
+
+- Update Effect and its Bun and Vitest integrations to `^4.1.0`.
+
 ### Minor Changes
 
 - A signal now ends each command the way its work ends. A one-shot command,

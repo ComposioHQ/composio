@@ -1,4 +1,5 @@
 import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
+import { Array } from 'effect';
 import { Argument, Command, Flag } from 'effect/cli';
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { runToolsExecuteCommand } from './tools.execute.handler';
@@ -20,7 +21,8 @@ const parallel = Flag.Boolean('parallel').pipe(
 const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('JSON arguments, @file, or - for stdin'),
-  Flag.optional
+  Flag.atLeast(0),
+  Flag.map(Array.head)
 );
 const file = Flag.String('file').pipe(
   Flag.withDescription('Inject a local file path into the single file_uploadable input'),
@@ -30,7 +32,8 @@ const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
-  Flag.optional
+  Flag.atLeast(0),
+  Flag.map(Array.head)
 );
 
 const getSchema = Flag.Boolean('get-schema').pipe(
