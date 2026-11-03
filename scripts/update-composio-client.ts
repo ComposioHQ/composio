@@ -1,5 +1,7 @@
 import { appendFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
+import { Data, Effect } from 'effect';
 import { compare, valid } from 'semver';
 import { z } from 'zod';
 
@@ -164,17 +166,19 @@ export function planUpdates(
     changed['.changeset/composio-client-update.md'] =
       `---\n'@composio/core': patch\n---\n\nUpdate @composio/client to ${target} to include the latest API changes.\n`;
     const changelog = z.string().parse(files['ts/packages/cli/CHANGELOG.md']);
+    const header = '# @composio/cli\n\n## Unreleased\n';
     const marker = '### Patch Changes\n';
-    if (
-      !changelog.startsWith('# @composio/cli\n\n## Unreleased\n') ||
-      !changelog.includes(marker)
-    ) {
-      throw new Error('CLI changelog is missing its Unreleased patch section');
+    if (!changelog.startsWith(header)) {
+      throw new Error('CLI changelog is missing its Unreleased section');
     }
-    changed['ts/packages/cli/CHANGELOG.md'] = changelog.replace(
-      marker,
-      `${marker}\n- Update @composio/client to ${target} to include the latest API changes.\n`
-    );
+    const nextRelease = changelog.indexOf('\n## ', header.length);
+    const end = nextRelease === -1 ? changelog.length : nextRelease;
+    const unreleased = changelog.slice(header.length, end);
+    const note = `- Update @composio/client to ${target} to include the latest API changes.\n`;
+    const updated = unreleased.includes(marker)
+      ? unreleased.replace(marker, `${marker}\n${note}`)
+      : `\n${marker}\n${note}${unreleased}`;
+    changed['ts/packages/cli/CHANGELOG.md'] = `${header}${updated}${changelog.slice(end)}`;
   }
   if (current[1] !== target) {
     for (const path of ['python/pyproject.toml', 'python/setup.py']) {
@@ -184,170 +188,356 @@ export function planUpdates(
   return { changed, typescript: current[0] !== target, python: current[1] !== target };
 }
 
-async function registryJson(url: string) {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(60_000),
-    headers: { accept: 'application/json' },
+export class ClientUpdateIoError extends Data.TaggedError('ClientUpdateIoError')<{
+  readonly operation: string;
+  readonly path: string;
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+export class ClientUpdateRegistryError extends Data.TaggedError('ClientUpdateRegistryError')<{
+  readonly url: string;
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+export class ClientUpdateCommandError extends Data.TaggedError('ClientUpdateCommandError')<{
+  readonly command: readonly string[];
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+export class ClientUpdateValidationError extends Data.TaggedError('ClientUpdateValidationError')<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+type ClientUpdateError =
+  | ClientUpdateIoError
+  | ClientUpdateRegistryError
+  | ClientUpdateCommandError
+  | ClientUpdateValidationError;
+
+const checked = <A>(operation: () => A) =>
+  Effect.try({
+    try: operation,
+    catch: cause =>
+      new ClientUpdateValidationError({
+        message: cause instanceof Error ? cause.message : 'Client update validation failed',
+        cause,
+      }),
   });
-  if (!response.ok) throw new Error(`Registry request failed: ${url} (${response.status})`);
-  return response.json();
-}
+const file = <A>(operation: string, path: string, action: () => Promise<A>) =>
+  Effect.tryPromise({
+    try: action,
+    catch: cause =>
+      new ClientUpdateIoError({ operation, path, message: `Cannot ${operation}: ${path}`, cause }),
+  });
+const read = (path: string) => file('read file', path, () => readFile(path, 'utf8'));
+const write = (path: string, content: string) =>
+  file('write file', path, () => writeFile(path, content));
+const directory = (path: string) =>
+  file('create directory', path, () => mkdir(path, { recursive: true }));
 
-async function command(args: string[], cwd: string) {
-  const child = Bun.spawn(args, { cwd, stdout: 'inherit', stderr: 'inherit' });
-  if ((await child.exited) !== 0) throw new Error(`Command failed: ${args.join(' ')}`);
-}
+const registryJson = (url: string) =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: signal =>
+        fetch(url, {
+          signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
+          headers: { accept: 'application/json' },
+          redirect: 'error',
+        }),
+      catch: cause =>
+        new ClientUpdateRegistryError({ url, message: `Registry request failed: ${url}`, cause }),
+    });
+    if (!response.ok)
+      return yield* Effect.fail(
+        new ClientUpdateRegistryError({
+          url,
+          message: `Registry request failed: ${url} (${response.status})`,
+        })
+      );
+    return yield* Effect.tryPromise({
+      try: () => response.json(),
+      catch: cause =>
+        new ClientUpdateRegistryError({ url, message: `Invalid registry JSON: ${url}`, cause }),
+    });
+  });
 
-async function output(name: string, value: string) {
-  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
-}
+const processResult = (args: string[], cwd: string, capture = false) =>
+  Effect.acquireUseRelease(
+    Effect.try({
+      try: () =>
+        Bun.spawn(args, {
+          cwd,
+          stdout: capture ? 'pipe' : 'inherit',
+          stderr: capture ? 'ignore' : 'inherit',
+        }),
+      catch: cause =>
+        new ClientUpdateCommandError({
+          command: args,
+          message: `Cannot start command: ${args.join(' ')}`,
+          cause,
+        }),
+    }),
+    child =>
+      Effect.gen(function* () {
+        const [stdout, exitCode] = yield* Effect.all(
+          [
+            capture
+              ? Effect.tryPromise({
+                  try: () => new Response(child.stdout).text(),
+                  catch: cause =>
+                    new ClientUpdateCommandError({
+                      command: args,
+                      message: `Cannot read command output: ${args.join(' ')}`,
+                      cause,
+                    }),
+                })
+              : Effect.succeed(''),
+            Effect.tryPromise({
+              try: () => child.exited,
+              catch: cause =>
+                new ClientUpdateCommandError({
+                  command: args,
+                  message: `Cannot await command: ${args.join(' ')}`,
+                  cause,
+                }),
+            }),
+          ],
+          { concurrency: 'unbounded' }
+        );
+        return { stdout, exitCode };
+      }),
+    child =>
+      Effect.try({
+        try: () => {
+          if (child.exitCode === null) child.kill();
+        },
+        catch: cause =>
+          new ClientUpdateCommandError({
+            command: args,
+            message: 'Cannot stop interrupted command',
+            cause,
+          }),
+      }).pipe(Effect.ignore)
+  );
+const command = (args: string[], cwd: string) =>
+  Effect.gen(function* () {
+    const result = yield* processResult(args, cwd);
+    if (result.exitCode !== 0)
+      return yield* Effect.fail(
+        new ClientUpdateCommandError({
+          command: args,
+          message: `Command failed: ${args.join(' ')}`,
+        })
+      );
+  });
+const git = (args: string[], root: string, allowFailure = false) =>
+  Effect.gen(function* () {
+    const result = yield* processResult(['git', ...args], root, true);
+    if (!allowFailure && result.exitCode !== 0)
+      return yield* Effect.fail(
+        new ClientUpdateCommandError({
+          command: ['git', ...args],
+          message: `Git command failed: ${args[0]}`,
+        })
+      );
+    return result;
+  });
+const output = (name: string, value: string) =>
+  Effect.gen(function* () {
+    const path = process.env.GITHUB_OUTPUT;
+    if (path)
+      yield* file('append workflow output', path, () => appendFile(path, `${name}=${value}\n`));
+  });
 
-export async function prepare(
+export const prepare = (
   root: string,
   options: {
     eventName: string;
     event: unknown;
-    registry?: typeof registryJson;
-    runCommand?: typeof command;
-    setOutput?: typeof output;
+    registry?: (url: string) => Effect.Effect<unknown, ClientUpdateError>;
+    runCommand?: (args: string[], cwd: string) => Effect.Effect<void, ClientUpdateError>;
+    setOutput?: (name: string, value: string) => Effect.Effect<void, ClientUpdateError>;
   }
-) {
-  const readRegistry = options.registry ?? registryJson;
-  const runCommand = options.runCommand ?? command;
-  const setOutput = options.setOutput ?? output;
-  const source = validateEvent(options.eventName, options.event);
-  await rm(resolve(root, '.artifacts/client-update/update.json'), { force: true });
-  const [npm, pypi] = await Promise.all([
-    readRegistry('https://registry.npmjs.org/@composio%2fclient'),
-    readRegistry('https://pypi.org/pypi/composio-client/json'),
-  ]);
-  const version = commonStableVersion(npm, pypi);
-  // A dispatch may race the registry CDN. Retry next hour rather than silently acknowledging an older release.
-  if (source && compare(version, source.version) < 0)
-    throw new Error(`Dispatched ${source.version} is not yet available on both registries`);
-  const [npmExact, pypiExact] = await Promise.all([
-    readRegistry(`https://registry.npmjs.org/@composio%2fclient/${version}`),
-    readRegistry(`https://pypi.org/pypi/composio-client/${version}/json`),
-  ]);
-  verifyReleases(version, npmExact, pypiExact);
-  const files = Object.fromEntries(
-    await Promise.all(
+) =>
+  Effect.gen(function* () {
+    const readRegistry = options.registry ?? registryJson;
+    const runCommand = options.runCommand ?? command;
+    const setOutput = options.setOutput ?? output;
+    const source = yield* checked(() => validateEvent(options.eventName, options.event));
+    const artifactPath = resolve(root, '.artifacts/client-update/update.json');
+    yield* file('remove stale artifact', artifactPath, () => rm(artifactPath, { force: true }));
+    const [npm, pypi] = yield* Effect.all(
       [
-        'pnpm-workspace.yaml',
-        'python/pyproject.toml',
-        'python/setup.py',
-        'ts/packages/cli/CHANGELOG.md',
-      ].map(async path => [path, await readFile(resolve(root, path), 'utf8')])
-    )
-  );
-  const candidate = Bun.spawn(
-    ['git', 'show', `refs/remotes/origin/${branch}:pnpm-workspace.yaml`],
-    { cwd: root, stdout: 'pipe', stderr: 'ignore' }
-  );
-  const candidateText = await new Response(candidate.stdout).text();
-  const existing = (await candidate.exited) === 0 ? catalogVersion(candidateText) : undefined;
-  const plan = planUpdates(files, version, existing);
-  const changed = Object.keys(plan.changed).length > 0;
-  await setOutput('changed', String(changed));
-  await setOutput('version', version);
-  if (!changed) {
-    console.log(`All client pins already use ${version}`);
-    return;
-  }
-  for (const [path, content] of Object.entries(plan.changed)) {
-    await mkdir(dirname(resolve(root, path)), { recursive: true });
-    await writeFile(resolve(root, path), content);
-  }
-  if (plan.typescript) {
-    const catalog = z.string().parse(plan.changed['pnpm-workspace.yaml']);
-    // pnpm validates the old lock before resolving the new one. Its current
-    // client may also be less than three days old: exempt both exact versions
-    // during resolution, then retain only the target in the committed policy.
-    const previous = catalogVersion(z.string().parse(files['pnpm-workspace.yaml']));
-    await writeFile(
-      resolve(root, 'pnpm-workspace.yaml'),
-      catalog.replace(
-        `  - '@composio/client@${version}'`,
-        `  - '@composio/client@${previous} || ${version}'`
+        readRegistry('https://registry.npmjs.org/@composio%2fclient'),
+        readRegistry('https://pypi.org/pypi/composio-client/json'),
+      ],
+      { concurrency: 'unbounded' }
+    );
+    const version = yield* checked(() => commonStableVersion(npm, pypi));
+    // A dispatch may race the registry CDN. Retry next hour rather than silently acknowledging an older release.
+    if (source && compare(version, source.version) < 0)
+      return yield* Effect.fail(
+        new ClientUpdateValidationError({
+          message: `Dispatched ${source.version} is not yet available on both registries`,
+        })
+      );
+    const [npmExact, pypiExact] = yield* Effect.all(
+      [
+        readRegistry(`https://registry.npmjs.org/@composio%2fclient/${version}`),
+        readRegistry(`https://pypi.org/pypi/composio-client/${version}/json`),
+      ],
+      { concurrency: 'unbounded' }
+    );
+    yield* checked(() => verifyReleases(version, npmExact, pypiExact));
+    const files = Object.fromEntries(
+      yield* Effect.all(
+        [
+          'pnpm-workspace.yaml',
+          'python/pyproject.toml',
+          'python/setup.py',
+          'ts/packages/cli/CHANGELOG.md',
+        ].map(path =>
+          Effect.gen(function* () {
+            return [path, yield* read(resolve(root, path))];
+          })
+        ),
+        { concurrency: 'unbounded' }
       )
     );
-    try {
-      await runCommand(
-        ['pnpm', 'install', '--lockfile-only', '--ignore-scripts', '--no-frozen-lockfile'],
+    const candidate = yield* git(
+      ['show', `refs/remotes/origin/${branch}:pnpm-workspace.yaml`],
+      root,
+      true
+    );
+    const existing =
+      candidate.exitCode === 0 ? yield* checked(() => catalogVersion(candidate.stdout)) : undefined;
+    const plan = yield* checked(() => planUpdates(files, version, existing));
+    const changed = Object.keys(plan.changed).length > 0;
+    yield* setOutput('changed', String(changed));
+    yield* setOutput('version', version);
+    if (!changed) {
+      yield* Effect.sync(() => console.log(`All client pins already use ${version}`));
+      return;
+    }
+    for (const [path, content] of Object.entries(plan.changed)) {
+      yield* directory(dirname(resolve(root, path)));
+      yield* write(resolve(root, path), content);
+    }
+    if (plan.typescript) {
+      const catalog = yield* checked(() => z.string().parse(plan.changed['pnpm-workspace.yaml']));
+      // pnpm validates the old lock before resolving the new one. Its current
+      // client may also be less than three days old: exempt both exact versions
+      // during resolution, then retain only the target in the committed policy.
+      const previous = yield* checked(() =>
+        catalogVersion(z.string().parse(files['pnpm-workspace.yaml']))
+      );
+      yield* Effect.acquireUseRelease(
+        write(
+          resolve(root, 'pnpm-workspace.yaml'),
+          catalog.replace(
+            `  - '@composio/client@${version}'`,
+            `  - '@composio/client@${previous} || ${version}'`
+          )
+        ),
+        () =>
+          runCommand(
+            ['pnpm', 'install', '--lockfile-only', '--ignore-scripts', '--no-frozen-lockfile'],
+            root
+          ),
+        () => write(resolve(root, 'pnpm-workspace.yaml'), catalog)
+      );
+    }
+    if (plan.python) {
+      const python = yield* checked(() => z.string().min(1).parse(Bun.which('python')));
+      yield* runCommand(
+        ['uv', 'lock', '--python', python, '--upgrade-package', 'composio-client'],
         root
       );
-    } finally {
-      await writeFile(resolve(root, 'pnpm-workspace.yaml'), catalog);
     }
-  }
-  if (plan.python) {
-    const python = z.string().min(1).parse(Bun.which('python'));
-    await runCommand(
-      ['uv', 'lock', '--python', python, '--upgrade-package', 'composio-client'],
-      root
+    const diff = yield* git(['diff', '--name-only'], root);
+    const diffPaths = diff.stdout.trim().split('\n').filter(Boolean);
+    if (diffPaths.some(path => !paths.some(allowed => allowed === path))) {
+      return yield* Effect.fail(
+        new ClientUpdateValidationError({
+          message: 'Lock generation changed files outside the client update allowlist',
+        })
+      );
+    }
+    const base = yield* git(['rev-parse', 'HEAD'], root);
+    const baseSha = yield* checked(() => sha.parse(base.stdout.trim()));
+    const artifactFiles = yield* Effect.all(
+      [...new Set([...diffPaths, ...Object.keys(plan.changed)])].map(path =>
+        Effect.gen(function* () {
+          return { path, content: yield* read(resolve(root, path)) };
+        })
+      ),
+      { concurrency: 'unbounded' }
     );
-  }
-  const diff = Bun.spawn(['git', 'diff', '--name-only'], { cwd: root, stdout: 'pipe' });
-  const diffPaths = (await new Response(diff.stdout).text()).trim().split('\n').filter(Boolean);
-  if (
-    (await diff.exited) !== 0 ||
-    diffPaths.some(path => !paths.some(allowed => allowed === path))
-  ) {
-    throw new Error('Lock generation changed files outside the client update allowlist');
-  }
-  const base = Bun.spawn(['git', 'rev-parse', 'HEAD'], { cwd: root, stdout: 'pipe' });
-  const baseSha = sha.parse((await new Response(base.stdout).text()).trim());
-  if ((await base.exited) !== 0) throw new Error('Cannot determine trusted checkout revision');
-  const artifact = artifactSchema.parse({
-    version,
-    base_sha: baseSha,
-    files: await Promise.all(
-      [...new Set([...diffPaths, ...Object.keys(plan.changed)])].map(async path => ({
-        path,
-        content: await readFile(resolve(root, path), 'utf8'),
-      }))
-    ),
+    const artifact = yield* checked(() =>
+      artifactSchema.parse({
+        version,
+        base_sha: baseSha,
+        files: artifactFiles,
+      })
+    );
+    yield* directory(resolve(root, '.artifacts/client-update'));
+    yield* write(artifactPath, JSON.stringify(artifact));
+    yield* Effect.sync(() =>
+      console.log(`Prepared client ${version}; npm and PyPI exact distributions verified`)
+    );
   });
-  await mkdir(resolve(root, '.artifacts/client-update'), { recursive: true });
-  await writeFile(resolve(root, '.artifacts/client-update/update.json'), JSON.stringify(artifact));
-  console.log(`Prepared client ${version}; npm and PyPI exact distributions verified`);
-}
 
-export async function applyArtifact(root: string, data: unknown, baseSha: string) {
-  const artifact = artifactSchema.parse(data);
-  if (artifact.base_sha !== baseSha)
-    throw new Error('next advanced after preparation; retry against its current revision');
-  if (new Set(artifact.files.map(file => file.path)).size !== artifact.files.length)
-    throw new Error('Duplicate artifact path');
-  for (const file of artifact.files) {
-    await mkdir(dirname(resolve(root, file.path)), { recursive: true });
-    await writeFile(resolve(root, file.path), file.content);
-  }
-  return artifact.version;
-}
+export const applyArtifact = (root: string, data: unknown, baseSha: string) =>
+  Effect.gen(function* () {
+    const artifact = yield* checked(() => artifactSchema.parse(data));
+    if (artifact.base_sha !== baseSha)
+      return yield* Effect.fail(
+        new ClientUpdateValidationError({
+          message: 'next advanced after preparation; retry against its current revision',
+        })
+      );
+    if (new Set(artifact.files.map(file => file.path)).size !== artifact.files.length)
+      return yield* Effect.fail(
+        new ClientUpdateValidationError({ message: 'Duplicate artifact path' })
+      );
+    for (const file of artifact.files) {
+      yield* directory(dirname(resolve(root, file.path)));
+      yield* write(resolve(root, file.path), file.content);
+    }
+    return artifact.version;
+  });
 
 if (import.meta.main) {
-  try {
+  const main = Effect.gen(function* () {
     const root = process.cwd();
-    if (process.argv[2] === 'prepare')
-      await prepare(root, {
+    if (process.argv[2] === 'prepare') {
+      const eventText = process.env.GITHUB_EVENT_PATH
+        ? yield* read(process.env.GITHUB_EVENT_PATH)
+        : '{}';
+      yield* prepare(root, {
         eventName: process.env.GITHUB_EVENT_NAME ?? 'workflow_dispatch',
-        event: process.env.GITHUB_EVENT_PATH
-          ? JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'))
-          : {},
+        event: yield* checked(() => JSON.parse(eventText)),
       });
-    else if (process.argv[2] === 'apply') {
-      const head = Bun.spawnSync(['git', 'rev-parse', 'HEAD'], { cwd: root });
-      if (head.exitCode !== 0) throw new Error('Cannot read checkout revision');
-      const version = await applyArtifact(
+    } else if (process.argv[2] === 'apply') {
+      const head = yield* git(['rev-parse', 'HEAD'], root);
+      const artifactText = yield* read(resolve(root, '.artifacts/client-update/update.json'));
+      const version = yield* applyArtifact(
         root,
-        JSON.parse(await readFile(resolve(root, '.artifacts/client-update/update.json'), 'utf8')),
-        head.stdout.toString().trim()
+        yield* checked(() => JSON.parse(artifactText)),
+        head.stdout.trim()
       );
-      await output('version', version);
-    } else throw new Error('Usage: bun scripts/update-composio-client.ts prepare|apply');
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : 'Client update failed');
-    process.exitCode = 1;
-  }
+      yield* output('version', version);
+    } else
+      return yield* Effect.fail(
+        new ClientUpdateValidationError({
+          message: 'Usage: bun scripts/update-composio-client.ts prepare|apply',
+        })
+      );
+  });
+  BunRuntime.runMain(
+    main.pipe(Effect.tapError(error => Effect.sync(() => console.error(error.message)))),
+    {
+      disableErrorReporting: true,
+    }
+  );
 }

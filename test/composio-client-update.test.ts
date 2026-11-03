@@ -2,7 +2,11 @@ import { expect, test } from 'bun:test';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { Effect } from 'effect';
 import {
+  ClientUpdateCommandError,
+  ClientUpdateIoError,
+  ClientUpdateRegistryError,
   applyArtifact,
   catalogVersion,
   commonStableVersion,
@@ -15,6 +19,17 @@ import {
 
 const wheel = { filename: 'composio_client-2.0.1-py3-none-any.whl', yanked: false };
 const sourceSha = 'a'.repeat(40);
+const fixtureIo = <A>(action: () => Promise<A>) =>
+  Effect.tryPromise({
+    try: action,
+    catch: cause =>
+      new ClientUpdateIoError({
+        operation: 'fixture I/O',
+        path: 'fixture',
+        message: 'Fixture I/O failed',
+        cause,
+      }),
+  });
 const files = {
   'pnpm-workspace.yaml':
     "catalog:\n  '@composio/client': 2.0.0\n  effect: ^4.1.0\nminimumReleaseAgeExclude:\n  - '@composio/client'\n  - effect@4.0.3\n",
@@ -124,6 +139,26 @@ test('release-age exemption advances exactly the client version and preserves ot
   expect(updated).toContain('- effect@4.0.3');
 });
 
+test('CLI notes create an Unreleased patch section without changing released history', () => {
+  const history = '\n## 0.3.0\n\n### Patch Changes\n\n- A published fix.\n';
+  for (const unreleased of ['\n', '\n### Minor Changes\n\n- An upcoming feature.\n']) {
+    const header = '# @composio/cli\n\n## Unreleased\n';
+    const updated = planUpdates(
+      {
+        ...files,
+        'ts/packages/cli/CHANGELOG.md': `${header}${unreleased}${history}`,
+      },
+      '2.0.1'
+    ).changed['ts/packages/cli/CHANGELOG.md']!;
+    const boundary = updated.indexOf('\n## 0.3.0');
+    expect(updated.slice(boundary)).toBe(history);
+    expect(updated.slice(0, boundary)).toContain(
+      '### Patch Changes\n\n- Update @composio/client to 2.0.1'
+    );
+    expect(updated.slice(0, boundary)).toContain(unreleased);
+  }
+});
+
 test('never lowers current or pending versions, and rejects inconsistent Python metadata', () => {
   expect(() => planUpdates(files, '1.9.9')).toThrow('downgrade');
   expect(() => planUpdates(files, '2.0.1', '2.0.2')).toThrow('downgrade');
@@ -156,18 +191,28 @@ test('artifact transfer rejects unexpected paths, duplicates and advancing next 
     files: [{ path: 'python/setup.py', content: 'updated' }],
   };
   try {
-    await expect(applyArtifact(root, artifact, 'b'.repeat(40))).rejects.toThrow('next advanced');
+    await expect(Effect.runPromise(applyArtifact(root, artifact, 'b'.repeat(40)))).rejects.toThrow(
+      'next advanced'
+    );
     await expect(
-      applyArtifact(
-        root,
-        { ...artifact, files: [{ path: '../escape', content: 'bad' }] },
-        sourceSha
+      Effect.runPromise(
+        applyArtifact(
+          root,
+          { ...artifact, files: [{ path: '../escape', content: 'bad' }] },
+          sourceSha
+        )
       )
     ).rejects.toThrow();
     await expect(
-      applyArtifact(root, { ...artifact, files: [...artifact.files, ...artifact.files] }, sourceSha)
+      Effect.runPromise(
+        applyArtifact(
+          root,
+          { ...artifact, files: [...artifact.files, ...artifact.files] },
+          sourceSha
+        )
+      )
     ).rejects.toThrow('Duplicate');
-    expect(await applyArtifact(root, artifact, sourceSha)).toBe('2.0.1');
+    expect(await Effect.runPromise(applyArtifact(root, artifact, sourceSha))).toBe('2.0.1');
     expect(await readFile(join(root, 'python/setup.py'), 'utf8')).toBe('updated');
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -199,40 +244,50 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
       ]) {
         expect(Bun.spawnSync(['git', ...args], { cwd: root }).exitCode).toBe(0);
       }
-      const registry = async (url: string): Promise<unknown> => {
-        if (url.endsWith('/2.0.1'))
-          return {
-            name: '@composio/client',
-            version: '2.0.1',
-            dist: { integrity: 'sha512-value', tarball: 'https://registry.npmjs.org/client.tgz' },
-          };
-        if (url.endsWith('/2.0.1/json'))
-          return { info: { name: 'composio-client', version: '2.0.1' }, urls: [wheel] };
-        if (url.includes('pypi.org')) return { releases: { '2.0.1': [wheel] } };
-        return { versions: { '2.0.1': {} } };
-      };
-      const run = prepare(root, {
-        eventName: 'schedule',
-        event: {},
-        registry,
-        runCommand: async args => {
-          commands.push(args);
-          if (args[0] === 'pnpm') {
-            expect(await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8')).toContain(
-              "'@composio/client@2.0.0 || 2.0.1'"
-            );
-          }
-          if (failLock) throw new Error('lock resolution failed');
-          await writeFile(
-            join(root, args[0] === 'pnpm' ? 'pnpm-lock.yaml' : 'uv.lock'),
-            'fixture lock'
-          );
-        },
-        setOutput: async () => {},
-      });
+      const registry = (url: string) =>
+        Effect.sync(() => {
+          if (url.endsWith('/2.0.1'))
+            return {
+              name: '@composio/client',
+              version: '2.0.1',
+              dist: { integrity: 'sha512-value', tarball: 'https://registry.npmjs.org/client.tgz' },
+            };
+          if (url.endsWith('/2.0.1/json'))
+            return { info: { name: 'composio-client', version: '2.0.1' }, urls: [wheel] };
+          if (new URL(url).hostname === 'pypi.org') return { releases: { '2.0.1': [wheel] } };
+          return { versions: { '2.0.1': {} } };
+        });
+      const run = Effect.runPromise(
+        prepare(root, {
+          eventName: 'schedule',
+          event: {},
+          registry,
+          runCommand: args =>
+            Effect.gen(function* () {
+              yield* Effect.sync(() => commands.push(args));
+              if (args[0] === 'pnpm') {
+                expect(
+                  yield* fixtureIo(() => readFile(join(root, 'pnpm-workspace.yaml'), 'utf8'))
+                ).toContain("'@composio/client@2.0.0 || 2.0.1'");
+              }
+              if (failLock)
+                return yield* Effect.fail(
+                  new ClientUpdateCommandError({ command: args, message: 'lock resolution failed' })
+                );
+              yield* fixtureIo(() =>
+                writeFile(
+                  join(root, args[0] === 'pnpm' ? 'pnpm-lock.yaml' : 'uv.lock'),
+                  'fixture lock'
+                )
+              );
+            }),
+          setOutput: () => Effect.succeed(undefined),
+        })
+      );
       const artifactPath = join(root, '.artifacts/client-update/update.json');
       if (failLock) {
         await expect(run).rejects.toThrow('lock resolution failed');
+        await expect(run).rejects.toBeInstanceOf(ClientUpdateCommandError);
         await expect(readFile(artifactPath)).rejects.toThrow();
       } else {
         await run;
@@ -248,8 +303,8 @@ test('offline preparation runs scoped lock commands and publishes no artifact on
           ],
         ]);
         expect(JSON.parse(await readFile(artifactPath, 'utf8')).version).toBe('2.0.1');
-        expect(await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8')).not.toContain('||');
       }
+      expect(await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8')).not.toContain('||');
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -260,29 +315,39 @@ test('registry outages and dispatch/CDN races fail before mutation', async () =>
   const root = await mkdtemp(join(tmpdir(), 'client-update-registry-'));
   try {
     await expect(
-      prepare(root, {
-        eventName: 'schedule',
-        event: {},
-        registry: async () => {
-          throw new Error('Registry request failed (503)');
-        },
-      })
+      Effect.runPromise(
+        prepare(root, {
+          eventName: 'schedule',
+          event: {},
+          registry: () =>
+            Effect.fail(
+              new ClientUpdateRegistryError({
+                url: 'https://pypi.org',
+                message: 'Registry request failed (503)',
+              })
+            ),
+        })
+      )
     ).rejects.toThrow('Registry request failed');
     await expect(
-      prepare(root, {
-        eventName: 'repository_dispatch',
-        event: {
-          client_payload: {
-            version: '2.0.2',
-            source_sha: sourceSha,
-            source_repository: 'ComposioHQ/composio-client',
+      Effect.runPromise(
+        prepare(root, {
+          eventName: 'repository_dispatch',
+          event: {
+            client_payload: {
+              version: '2.0.2',
+              source_sha: sourceSha,
+              source_repository: 'ComposioHQ/composio-client',
+            },
           },
-        },
-        registry: async url =>
-          url.includes('pypi.org')
-            ? { releases: { '2.0.1': [wheel] } }
-            : { versions: { '2.0.1': {} } },
-      })
+          registry: url =>
+            Effect.succeed(
+              new URL(url).hostname === 'pypi.org'
+                ? { releases: { '2.0.1': [wheel] } }
+                : { versions: { '2.0.1': {} } }
+            ),
+        })
+      )
     ).rejects.toThrow('not yet available on both registries');
     await expect(readFile(join(root, '.artifacts/client-update/update.json'))).rejects.toThrow();
   } finally {
@@ -321,5 +386,20 @@ test('workflow keeps dispatched data out of code and scopes App credentials to p
   expect(text).not.toContain('auto-merge');
   expect(text.indexOf('update-composio-client.ts apply')).toBeLessThan(
     text.indexOf('RELEASE_BOT_APP_PRIVATE_KEY')
+  );
+});
+
+test('CLI reports a failed command once without dumping structured causes', () => {
+  const result = Bun.spawnSync(
+    [
+      process.execPath,
+      new URL('../scripts/update-composio-client.ts', import.meta.url).pathname,
+      'invalid-command',
+    ],
+    { stdout: 'pipe', stderr: 'pipe' }
+  );
+  expect(result.exitCode).toBe(1);
+  expect(result.stderr.toString().trim()).toBe(
+    'Usage: bun scripts/update-composio-client.ts prepare|apply'
   );
 });
