@@ -412,9 +412,24 @@ export async function ensureCliImage(
   const imageTag = imageTagForCliVersion(cliVersion);
   const nodeVersion = await getMiseVersion('node', repoRoot);
 
-  const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
-  if (inspect.exitCode === 0) {
-    return imageTag;
+  const revision = await exec('git', ['rev-parse', 'HEAD'], { cwd: repoRoot });
+  if (revision.exitCode !== 0) throw new Error('Cannot identify the CLI checkout revision');
+  const sourceRevision = revision.stdout.trim();
+  // CI prebuilds this image from the checkout. Locally, always let Docker compare COPY
+  // inputs, including dirty and ignored build outputs, against its content cache.
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    const inspect = await exec(
+      'docker',
+      [
+        'image',
+        'inspect',
+        '--format',
+        '{{index .Config.Labels "org.opencontainers.image.revision"}}',
+        imageTag,
+      ],
+      { cwd: repoRoot }
+    );
+    if (inspect.exitCode === 0 && inspect.stdout.trim() === sourceRevision) return imageTag;
   }
 
   const buildArgs = [
@@ -427,7 +442,10 @@ export async function ensureCliImage(
     `NODE_VERSION=${nodeVersion}`,
     '--build-arg',
     `NODE_VERSION_DIGEST=${nodeDigestFor(nodeVersion)}`,
-    ...labelsToArgs(defaultCliLabels(cliVersion)),
+    ...labelsToArgs({
+      ...defaultCliLabels(cliVersion),
+      'org.opencontainers.image.revision': sourceRevision,
+    }),
     '-t',
     imageTag,
     repoRoot,
@@ -436,12 +454,6 @@ export async function ensureCliImage(
   const built = await exec('docker', buildArgs, { cwd: repoRoot });
   if (built.exitCode !== 0) {
     const output = built.stderr || built.stdout;
-    if (output.includes('already exists')) {
-      const recheck = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
-      if (recheck.exitCode === 0) {
-        return imageTag;
-      }
-    }
 
     const err = new Error(`Failed to build Docker image ${imageTag}`);
     (err as Error & { cause: Error }).cause = new Error(output);

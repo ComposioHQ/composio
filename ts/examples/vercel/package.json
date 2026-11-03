@@ -1,7 +1,7 @@
 {
   "name": "vercel-example",
   "private": true,
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "",
   "main": "src/ai.ts",
   "scripts": {

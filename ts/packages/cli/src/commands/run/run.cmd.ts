@@ -1,3 +1,4 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { Argument, Command, Flag } from 'effect/cli';
 import { CLI_DEBUG_FLAG_NAMES } from 'src/services/runtime-flags';
 import { runScript } from './run.handler';
@@ -66,7 +67,7 @@ const args = Argument.String('arg').pipe(
   Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')
 );
 
-export const runCmd = Command.make(
+const runCmdBase = Command.make(
   'run',
   {
     ...runFlags,
@@ -114,4 +115,16 @@ export const runCmd = Command.make(
       description: 'Run from a file',
     },
   ])
+);
+
+export const runCmd = withCommandTelemetry(runCmdBase, input =>
+  telemetry.fields({
+    debug: telemetry.flag('--debug', input.debug),
+    dry_run: telemetry.flag('--dry-run', input.dryRun),
+    skip_connection_check: telemetry.flag('--skip-connection-check', input.skipConnectionCheck),
+    skip_tool_params_check: telemetry.flag('--skip-tool-params-check', input.skipToolParamsCheck),
+    skip_checks: telemetry.flag('--skip-checks', input.skipChecks),
+    file_mode: telemetry.flag('--file', telemetry.present(input.file)),
+    arg_count: telemetry.value(input.args?.length ?? 0),
+  })
 );

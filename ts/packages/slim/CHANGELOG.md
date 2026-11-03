@@ -1,5 +1,24 @@
 # @composio/slim
 
+## 0.28.0
+
+### Minor Changes
+
+- d2d4148: Requires `@composio/client` `2.0.0`. POST and PATCH requests, including tool execution and trigger creation, are now sent once instead of being retried on a lost response or a retryable status, because a write can complete on the server after its response is lost. Other requests keep their retries. On the client returned by `getClient()`, a write retries only when that call sets `maxRetries`.
+- e87ed85: Requires `@composio/client` `2.0.0-rc.20`. The SDK imports the client's types from the one `@composio/client/resources/*` spelling rc.20 publishes and reaches nested types by indexed access; every type the SDK exports keeps its shape. With rc.20, the resources of the client returned by `getClient()` are plain objects typed by interfaces: the resource classes, `Composio.Tools`-style statics and namespace-member types such as `SessionCreateParams.Experimental` are gone, and the `.js`/`.mjs` subpath spellings no longer resolve.
+- 3f3df9a: Requires `@composio/client` `2.0.0-rc.21`. The SDK's behaviour is unchanged. With rc.21, the client returned by `getClient()` no longer has `request()`, `Composio.Composio` or `Composio.DEFAULT_TIMEOUT`: call the raw verb for the method (`get`, `post`, `patch`, `put`, `delete`), which takes the same `query`, `body` and request options.
+- 54a935f: Requires `@composio/client` `2.0.0-rc.23`. `composio.sessionConfigs.list()` no longer sends `search`, which the Composio API removed: the option is deprecated, ignored, and logs a warning when set; filter `items` by name instead. With rc.23, the client returned by `getClient()` no longer has `cli.createCodactFailure` (now under `client._internal`, typed through `@composio/client/internal`) or `org.clanker.createClaim`, and its `sessionConfigs.list()` no longer accepts `search`.
+- 7434e02: Requires `@composio/client` `2.0.0-rc.22`. `composio.toolkits.get(slug)` now returns `meta.appUrl` when the API sends the toolkit's app URL; it was always left out before. `composio.sessionConfigs.get()` keeps the `require_approval` lists of a stored policy, and no longer fails validation on a policy entry that only sets `require_approval`; `SessionConfigPolicy` gains the matching optional `require_approval` fields and the approval-only entry. Session hooks, blocked calls and hook results are read from the API types of `@composio/client` instead of SDK copies, with the same results and errors for well-formed responses; a malformed `hook_results` or blocked response is no longer re-validated by the SDK, matching every other API response.
+- a5a1fc8: Requires `@composio/client` `2.0.1`. Adds `composio.experimental.customToolkits.create()` and `update()`, which call the v3.1 custom toolkit create and update endpoints. `create()` takes `userId` (`'all'` to share the toolkit, or the user it is private to), generates the slug, and returns a `connectLink` for a private toolkit. `upsert()` is deprecated and logs a warning once per process; it keeps working.
+
+  API-key auth schemes accept `additionalFields.genericId` with a required `displayName` and optional `description` to collect the value used by `{{generic_id}}` headers.
+
+- d2d4148: `composio.triggers.create()` accepts `type` (`'webhook'` or `'poll'`, for a trigger that supports both) and `pollingInterval` (minutes between polls, which wins over `triggerConfig.interval`), and returns the instance's `type`, `fallbackReason` and `pollingInterval` along with `triggerId`. `composio.triggers.listActive()` items carry the same three fields, and `getType()` / `listTypes()` return each trigger type's `type`, `types` and `requiresWebhookEndpointSetup`.
+
+### Patch Changes
+
+- 30f8ca1: `getExtensionFromMimeType` now maps `text/csv` to `csv` from its table, matching the Python SDK. The returned extension is unchanged.
+
 ## 0.27.0
 
 ### Minor Changes

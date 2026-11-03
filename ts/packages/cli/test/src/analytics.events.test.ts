@@ -211,12 +211,60 @@ describe('CLI analytics execute failure events', () => {
   });
 });
 
+describe('parsed telemetry options', () => {
+  it('records canonical option names without retaining flag values', () => {
+    const secret = '--customer-private';
+    const context = commandContext(['execute', 'GMAIL_SEND_EMAIL', '-d', secret], {
+      path: ['execute'],
+      family: 'execute',
+      input: { slug: 'GMAIL_SEND_EMAIL', data: Option.some(secret), dryRun: true },
+    });
+    expect(context.flagNames).toEqual(['--data', '--dry-run']);
+    const event = getPrimaryLifecycleInvokedEvent(context);
+    expect(event?.properties).toMatchObject({ has_data: true, dry_run: true });
+    expect(JSON.stringify(event)).not.toContain(secret);
+    expect(JSON.stringify(context.options)).not.toContain(secret);
+  });
+  it('uses parsed proxy values and counts repeated headers without collecting their content', () => {
+    const context = commandContext(
+      ['proxy', '/path', '-t', 'gmail', '-H', 'Authorization: secret'],
+      {
+        path: ['proxy'],
+        family: 'proxy',
+        input: {
+          endpoint: '/path',
+          toolkit: 'gmail',
+          method: 'POST',
+          headers: ['a: b', 'c: d'],
+          data: Option.none(),
+        },
+      }
+    );
+    const event = getPrimaryLifecycleInvokedEvent(context);
+    expect(event?.properties).toMatchObject({
+      toolkit: 'gmail',
+      method: 'POST',
+      header_count: 2,
+      has_data: false,
+    });
+    expect(JSON.stringify(event)).not.toContain('secret');
+  });
+  it('honors a parsed false boolean even when its flag is present', () => {
+    const context = commandContext(['run', '--dry-run=false', 'code'], {
+      path: ['run'],
+      family: 'run',
+      input: { args: ['code'], dryRun: false },
+    });
+    expect(getPrimaryLifecycleInvokedEvent(context)?.properties).toMatchObject({ dry_run: false });
+  });
+});
+
 describe('CLI analytics setup and install lifecycle events', () => {
   it('tracks setup as a dedicated lifecycle with safe option properties', () => {
     const context = commandContext(['setup', '--target', 'codex', '--uninstall', '--yes'], {
       path: ['setup'],
       family: 'setup',
-      input: {},
+      input: { target: 'codex', uninstall: true, yes: true, ifPresent: false },
     });
 
     const invoked = getPrimaryLifecycleInvokedEvent(context);
@@ -240,7 +288,7 @@ describe('CLI analytics setup and install lifecycle events', () => {
     const context = commandContext(['install', '--completions'], {
       path: ['install'],
       family: 'install',
-      input: {},
+      input: { completions: true, noCompletions: false },
     });
 
     expect(getPrimaryLifecycleInvokedEvent(context)).toMatchObject({
@@ -555,7 +603,6 @@ describe('CLI analytics journey taxonomy', () => {
     return commandContext(argv, {
       path: [name],
       family: name === 'version' ? 'command' : (name as TelemetryFamily),
-      input: {},
       invocation,
     });
   };

@@ -33,10 +33,10 @@ catalog:
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
   '@cloudflare/workers-types': ^5.20261019.1
-  '@composio/client': 2.0.0-rc.23
+  '@composio/client': 2.0.1
   '@effect/language-service': ^0.87.5
-  '@effect/platform-bun': 4.0.5
-  '@effect/vitest': 4.0.5
+  '@effect/platform-bun': ^4.1.0
+  '@effect/vitest': ^4.1.0
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
@@ -46,7 +46,7 @@ catalog:
   '@types/bun': ^1.4.3
   ai: ^7.0.146
   dotenv: ^18.0.8
-  effect: 4.0.5
+  effect: ^4.1.0
   hono: ^4.13.13
   openai: ^7.39.0
   picocolors: ^1.1.1
@@ -88,7 +88,9 @@ minimumReleaseAgeExclude:
   - '@effect/platform-node-shared@4.0.3'
   - '@effect/vitest@4.0.3'
   - '@mastra/core'
-  - '@composio/client'
+  # First-party packages: the automated client update must resolve a release
+  # the hour it is published, so the release-age wait never applies to them.
+  - '@composio/*'
   - chrome-devtools-mcp
   # temporary: 0.6.0 (2026-09-15) is the first release with the API that
   # @composio/typesafe targets. Publisher, provenance, and the absence of install

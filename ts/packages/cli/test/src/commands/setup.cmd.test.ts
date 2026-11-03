@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Exit, Fiber, Latch } from 'effect';
+import { Effect, Exit, Fiber, Latch, Redacted } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, vi } from 'vitest';
@@ -71,7 +71,10 @@ const commandParts = (command: ChildProcess.Command): ReadonlyArray<string> => {
   if (!ChildProcess.isStandardCommand(command)) {
     throw new Error('Expected a standard command');
   }
-  return [command.command, ...command.args];
+  return [
+    command.command,
+    ...command.args.map(arg => (Redacted.isRedacted(arg) ? Redacted.value(arg) : arg)),
+  ];
 };
 
 const makeRunner = (

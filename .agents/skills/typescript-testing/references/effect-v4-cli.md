@@ -1,7 +1,7 @@
 # Effect v4 CLI testing
 
-The CLI test suite (`ts/packages/cli/test/`) runs on `effect@4.0.5` and
-`@effect/vitest@4.0.5` (pinned exactly, matching `ts/packages/cli/package.json` and the
+The CLI test suite (`ts/packages/cli/test/`) runs on `effect@^4.1.0` and
+`@effect/vitest@^4.1.0` (matching range, matching `ts/packages/cli/package.json` and the
 workspace catalog in `pnpm-workspace.yaml`). `@effect/cli` and `@effect/platform` no longer exist
 as dependencies — their functionality moved into `effect`/`effect/*`. Read
 `ts/packages/cli/test/__utils__/services/test-layer.ts` before writing a new test suite; it is the
@@ -123,3 +123,9 @@ Port tests by contract, not file count:
 - shared service layers, config providers, filesystem/process adapters, interruption, time, and
   cleanup;
 - direct binary smoke tests and Docker CLI E2E after unit and package checks pass.
+
+## Authoring-skill examples
+
+`bun run validate:cli-skills` compiles the skill snippets, checks linked excerpts against current source, and runs the documented teaching command through `cliExit()` over `TestLive`. Its request assertions use the native `@composio/client/effect` implementation over the recording HTTP transport from `test/__utils__/services/stub-composio-client.ts`. The same command also runs the existing registration and invocation contracts and Effect diagnostics.
+
+This is recipe and contract verification. It does not measure agent performance on an unseen authoring task. The separate trial protocol lives in the `cli-command` command-example reference.

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Patch Changes
+
+- Update Effect and its Bun and Vitest integrations to `^4.1.0`.
+
 ### Minor Changes
 
 - A signal now ends each command the way its work ends. A one-shot command,
@@ -48,6 +52,23 @@
   `--account <id|alias>`, or alias one account `default`.
 
 ### Patch Changes
+
+- Command telemetry now derives option types and effective defaults from each
+  command's parser. Commands explicitly select safe properties to measure, and
+  shared root and `dev` definitions reuse that selection. Help and parse failures
+  omit command input properties instead of reporting synthetic defaults, false
+  booleans, or zero counts for input that was never parsed.
+
+- `composio connections list` now prints every connection. The server serves
+  at most 50 connected accounts per request and the CLI read only the first
+  page, so a user with more than 50 saw a partial list with no sign it was cut
+  off, and a connected toolkit (such as an active Slack account) looked
+  disconnected. `composio connections remove` could not find an account past
+  the first 50, and `composio execute` sessions left out toolkits whose
+  accounts were past the first 50 active ones. All three now follow
+  `next_cursor` through every page.
+  `composio link --list` and alias-conflict checks when linking also read
+  every page, including accounts filtered by an auth config.
 
 - `composio dev triggers listen --toolkits` now matches toolkits whose slug
   contains an underscore, such as `one_drive`, `launch_darkly` and
