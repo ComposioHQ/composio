@@ -50,6 +50,14 @@ new_code()
 
 Use the released version in the final table column. The Python release guard reads that column from rows labelled `Python \`composio\``.
 
+## SDK release entries
+
+The SDK release workflow generates entries at `docs/content/changelog/` from its selected release plan. Each entry has `sdkRelease` identification, a `sdkReleaseTargets` version map, the selected-version table, and a neutral publication-status link. The table records release targets; package availability comes from the linked request or PR status.
+
+Edit release summaries and migration guidance in the release PR before approving its final head. Repeated generation preserves an existing entry when its selected targets match. Changed targets require an explicit refresh and another approval, so retries cannot silently overwrite reviewed prose.
+
+Generate SDK symbol references from the same frozen SDK checkout with the existing TypeScript and Python reference generators. Commit their ordinary `docs/content/reference/sdk-reference/` outputs in the release PR. Historical changelog fences render independently of current docs SDK pins; maintained guides and examples keep their normal checks and merge after compatible packages are published.
+
 ## Rules
 
 1. **Frontmatter required** — `title` and `date` (YYYY-MM-DD format)
