@@ -159,7 +159,6 @@ function normalizePnpmContexts(contents: string, plan: DiffPlan): string {
   return result;
 }
 
-/** Validate data only. No candidate executable runs in the credentialed controller. */
 export function validateReleaseDiff(files: ReleaseFile[], plan: DiffPlan, outputs: string[]): void {
   for (const release of plan.releases) {
     const changed = files.some(file => {

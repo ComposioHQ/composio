@@ -93,7 +93,6 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    # This legacy identity remains available for core prereleases only.
     if: github.event_name == 'push' && needs.build.outputs.core_only == 'true'
     runs-on: ubuntu-latest
     environment:

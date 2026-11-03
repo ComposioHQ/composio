@@ -81,7 +81,6 @@ export async function readPublicationStatus(
   )?.[1];
   return data ? publicationReportSchema.parse(JSON.parse(data)) : undefined;
 }
-/** The controller and docs completion update the same App-owned request/PR comment. */
 export async function writePublicationStatus(
   github: GitHubReleaseClient,
   batch: ReleaseBatch,

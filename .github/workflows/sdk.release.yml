@@ -65,13 +65,13 @@ jobs:
       prepare: ${{ steps.authorize.outputs.prepare }}
       reuse-patch: ${{ steps.authorize.outputs.reuse-patch }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         id: sdk-token
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -84,7 +84,7 @@ jobs:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
         run: bun scripts/sdk-release/batch.ts authorize
       - name: Retain authorized release input
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: steps.authorize.outputs.new-batch == 'true'
         with:
           name: sdk-authorized-batch
@@ -97,7 +97,7 @@ jobs:
     if: needs.authorize.outputs.prepare == 'true' && needs.authorize.outputs.reuse-patch != 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -113,7 +113,7 @@ jobs:
       - name: Install documentation generator dependencies
         working-directory: docs
         run: bun install --frozen-lockfile --ignore-scripts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: sdk-authorized-batch
           path: /tmp/sdk-authorized-input
@@ -121,7 +121,7 @@ jobs:
         env:
           SDK_RELEASE_PATCH_PATH: /tmp/sdk-release-patch.json
         run: bun scripts/sdk-release/prepare.ts /tmp/sdk-authorized-input/sdk-release-batch.json
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: sdk-prepared-patch
           path: /tmp/sdk-release-patch.json
@@ -138,22 +138,22 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: sdk-authorized-batch
           path: /tmp/sdk-authorized
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: sdk-prepared-patch
           path: /tmp/sdk-prepared
       - run: mv /tmp/sdk-authorized/sdk-release-batch.json /tmp/sdk-authorized/batch.json && mv /tmp/sdk-prepared/sdk-release-patch.json /tmp/sdk-prepared/patch.json
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         id: sdk-token
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -173,7 +173,6 @@ jobs:
 
   approve-and-merge:
     # workflow_run uses the protected default-branch workflow and environment.
-    # This runs after candidate completion or the unprivileged review signal.
     if: >-
       github.repository == 'ComposioHQ/composio' &&
       github.event_name == 'workflow_run' &&
@@ -187,13 +186,13 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         id: sdk-token
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -220,13 +219,13 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         id: sdk-token
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -249,7 +248,7 @@ jobs:
       python: ${{ steps.select.outputs.python }}
       languages: ${{ steps.select.outputs.languages }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -277,7 +276,7 @@ jobs:
       matrix:
         language: ${{ fromJSON(needs.select-candidates.outputs.languages) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -350,7 +349,7 @@ jobs:
     outputs:
       candidate-ids: ${{ steps.preflight.outputs.candidate-ids }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -377,7 +376,7 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -406,7 +405,7 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -420,7 +419,7 @@ jobs:
         run: bun scripts/sdk-release/registry.ts prepare-pypi
       - name: Upload original candidates to PyPI
         if: steps.reconcile.outputs.missing == 'true'
-        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
         with:
           packages-dir: sdk-publication/missing-python/
       - name: Registry recovery exhausted
@@ -439,7 +438,7 @@ jobs:
     outputs:
       registry-verified: ${{ steps.verified.outputs.registry-verified }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -484,13 +483,13 @@ jobs:
       registry-verified: ${{ steps.report.outputs.registry-verified }}
       original-run-id: ${{ steps.report.outputs.original-run-id }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         id: sdk-token
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}

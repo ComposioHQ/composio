@@ -94,7 +94,6 @@ export async function publicationState(github: GitHubReleaseClient, run: Release
   if (tag.object.type !== 'commit' || tag.object.sha !== run.head_sha)
     throw new Error('Original immutable publication tag moved');
   const jobs = await github.jobs(String(run.id));
-  // Success remains authoritative if a later docs-only attempt fails or candidates expire.
   const verified = jobs.some(
     job => job.name === 'Verify public SDK packages' && job.conclusion === 'success'
   );
@@ -179,9 +178,7 @@ export async function activePreparation(github: GitHubReleaseClient, exceptRun: 
       const jobs = await github.jobs(String(run.id));
       const prepared = jobs.some(job => job.name === 'release-pr' && job.conclusion === 'success');
       if (prepared) continue;
-      // A PR created before a later status write failed is already represented by the PR/publication lock.
       if (await batchForPreparation(github, String(run.id))) continue;
-      // The native authorized input artifact distinguishes allocations from status/retry/no-op requests.
       if (
         (await originalCandidates(github, run.id)).some(
           artifact => artifact.name === 'sdk-authorized-batch'

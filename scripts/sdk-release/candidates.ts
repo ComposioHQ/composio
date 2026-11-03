@@ -52,12 +52,7 @@ export async function buildTypescript(cwd: string, directory: string, names: Set
   );
   const compatibility = resolve(cwd, '.artifacts/sdk-compatibility');
   await mkdir(compatibility, { recursive: true });
-  for (const pkg of packages.filter(
-    pkg =>
-      !pkg.packageJson.private &&
-      pkg.packageJson.name.startsWith('@composio/') &&
-      pkg.packageJson.name !== '@composio/cli'
-  )) {
+  for (const pkg of sdk) {
     runPreparationCommand(
       'pnpm',
       [

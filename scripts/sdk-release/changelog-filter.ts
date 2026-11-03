@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 
-/** SDK publication owns completion; ordinary changelogs keep their existing automation. */
 export function isSdkChangelog(contents: string): boolean {
   const frontmatter = contents.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1];
   if (!frontmatter) return false;

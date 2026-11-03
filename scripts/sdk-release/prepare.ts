@@ -16,7 +16,6 @@ import {
   generateSdkReleaseReferences,
 } from '../../docs/scripts/generate-sdk-release-notes';
 
-/** Runs in a fresh source checkout without a controller token or registry identity. */
 export async function prepareRelease(
   cwd: string,
   input: ReleaseBatch

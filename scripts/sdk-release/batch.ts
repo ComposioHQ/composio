@@ -510,7 +510,6 @@ export async function executeReleaseRequest(
           );
         original = publication;
       } else if (original.conclusion === 'success') {
-        // Tag authorization is a separate protected-next run after the approved PR merges.
         const pulls = await github.request(
           'GET',
           `${repo}/pulls?state=closed&head=ComposioHQ:sdk-release/batch-${frozen.id}&per_page=100`,
@@ -629,18 +628,14 @@ export async function executeReleaseRequest(
       }
       let corrective: CorrectiveInput | undefined;
       if (publication?.run?.head_sha) {
+        const unselected =
+          publication.batch.plan.corrective?.releases.filter(
+            release =>
+              !publication.batch.plan.releases.some(selected => selected.name === release.name)
+          ) ?? [];
         const outstanding = publication.terminal
-          ? [
-              ...publication.batch.plan.releases,
-              ...(publication.batch.plan.corrective?.releases.filter(
-                release =>
-                  !publication.batch.plan.releases.some(selected => selected.name === release.name)
-              ) ?? []),
-            ]
-          : (publication.batch.plan.corrective?.releases.filter(
-              release =>
-                !publication.batch.plan.releases.some(selected => selected.name === release.name)
-            ) ?? []);
+          ? [...publication.batch.plan.releases, ...unselected]
+          : unselected;
         if (outstanding.length)
           corrective = await (
             await import('./registry')

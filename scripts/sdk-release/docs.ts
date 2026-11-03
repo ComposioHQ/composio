@@ -287,7 +287,6 @@ async function prepareDocs(cwd: string, input: DocsInput) {
     throw new Error('Docs generation must not receive controller credentials');
   if (runPreparationCommand('git', ['rev-parse', 'HEAD'], cwd).trim() !== input.sourceSha)
     throw new Error('Docs source differs from current protected input');
-  // Keep pending human guide edits, but regenerate managed pins from protected package scripts.
   for (const file of input.pendingFiles) {
     if (!allowedDocsPath(file.path)) throw new Error('Invalid pending docs path');
     if (file.path.startsWith('docs/content/docs/')) {
@@ -436,7 +435,6 @@ export async function commitDocsPatch(github: GitHubReleaseClient, value: unknow
       parents: [latest.sourceSha, ...(latest.branchHead ? [latest.branchHead] : [])],
     }
   );
-  // Recheck after data preparation; no stale generation may replace newer guide edits.
   requireFreshDocsInput(latest, await selectDocsInput(github, String(patch.input.runId)));
   if (latest.branchHead)
     await github.request(

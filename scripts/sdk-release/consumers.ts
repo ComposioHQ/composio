@@ -8,7 +8,6 @@ import { discoverPythonPackages } from './python-metadata';
 import { batchPath, releaseBatchSchema, type ReleaseBatch } from './source';
 import { discoverProviderCases } from '../../ts/scripts/check-provider-compatibility';
 
-/** Installs from public registries in fresh, independent directories, never from build artifacts. */
 export async function verifyPublicConsumers(cwd: string, batch: ReleaseBatch) {
   const directory = await mkdtemp(join(tmpdir(), 'sdk-public-consumer-'));
   try {
@@ -64,7 +63,6 @@ export async function verifyPublicConsumers(cwd: string, batch: ReleaseBatch) {
         ],
         directory
       );
-      // npm verifies native registry signatures and Sigstore provenance, independently of source inspection.
       runPreparationCommand(
         'npm',
         ['audit', 'signatures', '--registry=https://registry.npmjs.org'],

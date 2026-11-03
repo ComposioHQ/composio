@@ -14,7 +14,6 @@ env:
 
 jobs:
   release:
-    # Stable next releases are owned by sdk.release.yml.
     if: github.ref == 'refs/heads/main'
     name: Release Typescript SDK
     runs-on: ubuntu-latest

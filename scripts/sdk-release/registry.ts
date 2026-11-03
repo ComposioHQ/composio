@@ -249,7 +249,6 @@ export function requireThirtyDayArtifact(artifact: CandidateArtifact, run: { cre
     );
 }
 
-/** Record current partial inventory in the next approved plan, without recreating unavailable candidates. */
 export async function correctiveInventory(
   cwd: string,
   batch: ReleaseBatch,
