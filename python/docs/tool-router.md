@@ -459,7 +459,7 @@ session = composio.tool_router.create(
 tools = session.tools()
 
 response = client.messages.create(
-    model="claude-opus-4-6",
+    model="claude-opus-5-5",
     max_tokens=1024,
     messages=[{"role": "user", "content": "Find my last email from gmail"}],
     tools=tools,

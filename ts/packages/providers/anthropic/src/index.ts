@@ -345,7 +345,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * const anthropic = new Anthropic({ apiKey: 'your-anthropic-api-key' });
    *
    * const message = await anthropic.messages.create({
-   *   model: 'claude-opus-4-6',
+   *   model: 'claude-opus-5-5',
    *   max_tokens: 1024,
    *   tools: provider.wrapTools(composioTools),
    *   messages: [

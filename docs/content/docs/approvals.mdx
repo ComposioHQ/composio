@@ -391,7 +391,7 @@ messages = [
     {"role": "user", "content": "Email priya@acme.com with the subject 'Q3 numbers' and say the report is ready."}
 ]
 response = client.messages.create(
-    model="claude-opus-4-6", max_tokens=4096, tools=tools, messages=messages
+    model="claude-opus-5-5", max_tokens=4096, tools=tools, messages=messages
 )
 
 # Run the tools Claude calls until it has a final answer
@@ -402,7 +402,7 @@ while response.stop_reason == "tool_use":
         "content": [run_tool(block) for block in response.content if block.type == "tool_use"],
     })
     response = client.messages.create(
-        model="claude-opus-4-6", max_tokens=4096, tools=tools, messages=messages
+        model="claude-opus-5-5", max_tokens=4096, tools=tools, messages=messages
     )
 
 for block in response.content:
@@ -487,7 +487,7 @@ const messages: Anthropic.MessageParam[] = [
   { role: 'user', content: "Email priya@acme.com with the subject 'Q3 numbers' and say the report is ready." },
 ];
 let response = await client.messages.create({
-  model: 'claude-opus-4-6',
+  model: 'claude-opus-5-5',
   max_tokens: 4096,
   tools,
   messages,
@@ -502,7 +502,7 @@ while (response.stop_reason === 'tool_use') {
   }
   messages.push({ role: 'user', content: results });
   response = await client.messages.create({
-    model: 'claude-opus-4-6',
+    model: 'claude-opus-5-5',
     max_tokens: 4096,
     tools,
     messages,
