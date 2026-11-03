@@ -1,0 +1,42 @@
+name: SDK release
+description: Request, inspect, or retry a TypeScript and Python SDK release preview
+title: '[SDK release] Request'
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Any active ComposioHQ member can use this form, including members with repository Read access.
+        This pilot only prepares a draft plan. Publication is unavailable until the guarded rollout completes.
+        A retry uses the original run, versions, and inputs; new language choices are ignored.
+  - type: dropdown
+    id: action
+    attributes:
+      label: Action
+      options: [preview, status, retry]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: typescript
+    attributes:
+      label: TypeScript
+      description: auto uses Changesets recommendations; an explicit bump without notes selects core and slim.
+      options: [auto, patch, minor, major, skip]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: python
+    attributes:
+      label: Python
+      description: auto uses Changesets recommendations; an explicit bump selects the synchronized Python train.
+      options: [auto, patch, minor, major, skip]
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: run_id
+    attributes:
+      label: Original run ID
+      description: Required for retry; optional for status. Copy the number from the original Actions run URL.
+      placeholder: '123456789'

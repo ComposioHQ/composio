@@ -1,0 +1,45 @@
+name: SDK release tooling checks
+
+on:
+  pull_request:
+    branches: [next]
+    paths:
+      - 'scripts/sdk-release/**'
+      - 'test/sdk-release-*.test.ts'
+      - 'tsconfig.sdk-release.json'
+      - '.github/workflows/sdk.release*.yml'
+      - '.github/ISSUE_TEMPLATE/sdk-release.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  push:
+    branches: [next]
+    paths:
+      - 'scripts/sdk-release/**'
+      - 'test/sdk-release-*.test.ts'
+      - 'tsconfig.sdk-release.json'
+      - '.github/workflows/sdk.release*.yml'
+      - '.github/ISSUE_TEMPLATE/sdk-release.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check SDK release tooling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:sdk-release
+      - run: pnpm run typecheck:sdk-release
+      - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.test.ts

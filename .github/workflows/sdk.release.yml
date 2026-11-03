@@ -1,0 +1,81 @@
+name: SDK release
+run-name: SDK release preview (${{ github.actor }})
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Request a preview, inspect status, or retry an original run
+        type: choice
+        options: [preview, status, retry]
+        default: preview
+      typescript:
+        description: TypeScript bump (auto uses Changesets recommendations)
+        type: choice
+        options: [auto, patch, minor, major, skip]
+        default: auto
+      python:
+        description: Python bump (auto uses Changesets recommendations)
+        type: choice
+        options: [auto, patch, minor, major, skip]
+        default: auto
+      run_id:
+        description: Original run ID for retry/status; retry ignores new bump choices
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    # Evaluate before requesting the environment. A branch-dispatched workflow
+    # cannot obtain the controller credential. The environment must also restrict
+    # deployments to protected next; no repository-level copy of the key is used.
+    if: >-
+      github.repository == 'ComposioHQ/composio' &&
+      github.event.repository.default_branch == 'next' &&
+      github.ref == 'refs/heads/next' &&
+      (github.event_name == 'workflow_dispatch' ||
+       startsWith(github.event.issue.title, '[SDK release]'))
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-controller
+      cancel-in-progress: false
+    steps:
+      - name: Checkout trusted next event source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install locked controller dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Generate dedicated SDK controller token
+        id: sdk-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+
+      - name: Authorize member and prepare plan-only preview
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: bun scripts/sdk-release/request.ts
+
+      - name: Retain preview and normalized status
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-release-preview-${{ github.run_id }}-${{ github.run_attempt }}
+          path: sdk-release-preview.json
+          retention-days: 30
+          if-no-files-found: error
