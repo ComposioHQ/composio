@@ -27,7 +27,7 @@ import {
   type CandidateArtifact,
   type CandidateFile,
 } from './artifacts';
-import { verifyReleaseHead } from './batch';
+import { verifyReleaseHead } from './approval';
 import { GitHub, REPOSITORY_PATH, SDK_RELEASE_REPOSITORY, Sha, getRun, request } from './github';
 import { REGISTRY_LANES, type Language } from './lanes';
 import { CorrectiveInput } from './plan';

@@ -6,6 +6,8 @@ import { ensure } from './runtime';
 export const SDK_RELEASE_REPOSITORY = 'ComposioHQ/composio';
 export const REPOSITORY_PATH = `/repos/${SDK_RELEASE_REPOSITORY}`;
 const PAGE_SIZE = 100;
+/** Bounded so large release diffs stay under GitHub's secondary rate limit. */
+export const CONTENT_CONCURRENCY = 8;
 
 export const RunId = Schema.String.check(Schema.isPattern(/^[1-9][0-9]*$/));
 export const Sha = Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/));
@@ -193,6 +195,22 @@ export const rerunFailedJobs = (id: string) =>
 
 export const decodeBase64Content = (content: string) =>
   Effect.fromResult(Base64.decodeString(content.replace(/\s/g, '')));
+
+const FileContent = Schema.Struct({ encoding: Schema.Literal('base64'), content: Schema.String });
+
+/** A file's UTF-8 contents at `sha`, or `None` when it does not exist there. */
+export const fileAt = (path: string, sha: string) =>
+  Effect.gen(function* () {
+    const file = yield* requestOptional(
+      `${REPOSITORY_PATH}/contents/${path}?ref=${sha}`,
+      FileContent
+    );
+    return Option.isNone(file)
+      ? Option.none<string>()
+      : Option.some(yield* decodeBase64Content(file.value.content));
+  });
+export const fileAtOrNull = (path: string, sha: string) =>
+  Effect.map(fileAt(path, sha), Option.getOrNull);
 
 /** Every job of a run, across pages. */
 export const jobs = (id: string) =>

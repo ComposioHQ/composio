@@ -6,13 +6,24 @@ import {
   FileSystem,
   Option,
   Path,
-  Predicate,
   Schema,
   Stdio,
   Stream,
 } from 'effect';
 import { Base64 } from 'effect/encoding';
-import { downloadCandidate, originalCandidates, reuseCandidate } from './artifacts';
+import {
+  AUTHORIZED_BATCH_ARTIFACT,
+  Compare,
+  Pull,
+  WORKFLOW_PATH,
+  downloadAuthorizedBatch,
+  isReleasePull,
+  readReleasePull,
+  releaseBranch,
+  verifyOriginalBatch,
+  verifyReleaseGate,
+} from './approval';
+import { originalCandidates, reuseCandidate } from './artifacts';
 import {
   currentPublication,
   activePreparation,
@@ -22,6 +33,7 @@ import {
   sourceTagRun,
 } from './coordination';
 import {
+  CONTENT_CONCURRENCY,
   GitHub,
   REPOSITORY_PATH,
   ReleaseRun,
@@ -29,7 +41,8 @@ import {
   SDK_RELEASE_REPOSITORY,
   Sha,
   commentIssue,
-  decodeBase64Content,
+  fileAt,
+  fileAtOrNull,
   getRun,
   jobs,
   paginateArray,
@@ -39,74 +52,35 @@ import {
   rerunFailedJobs,
 } from './github';
 import { createSdkReleasePlan, type CorrectiveInput, type SdkReleasePlan } from './plan';
+import { correctiveInventory, verifyPublicationPolicy } from './registry';
 import { fetchStableRegistryBaseline } from './registry-baseline';
-import { RELEASE_PR_MARKER, releasePullBody } from './release-pr';
+import { releasePullBody } from './release-pr';
 import { ReleaseRequest, parseReleaseRequest } from './request';
 import { ensure, fail, formatJson, readJson, runMain, type ReleaseServices } from './runtime';
 import {
   BATCH_PATH,
   ReleaseBatch,
   ReleasePatch,
-  eligibleApproval,
   releaseOutputs,
   validateReleaseDiff,
-  type ReleaseFile,
-  type Review,
 } from './source';
 
-const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
-const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
 const PUBLICATION_TAG = /^sdk-release\/\d+$/;
-const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
-const AUTHORIZED_BATCH_FILE = 'sdk-release-batch.json';
 const RETRYABLE_CONCLUSIONS = new Set(['failure', 'cancelled', 'timed_out']);
-const REVIEW_STATES = new Set(['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED']);
 const MAX_RUN_ATTEMPTS = 50;
 const RECOVERY_WINDOW_MS = 30 * 86_400_000;
-/** Bounded so large release diffs stay under GitHub's secondary rate limit. */
-const CONTENT_CONCURRENCY = 8;
 const runUrl = (id: string | number) =>
   `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}`;
-const releaseBranch = (id: string) => `sdk-release/batch-${id}`;
-
 const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
 const Commit = Schema.Struct({
   sha: Sha,
   tree: Schema.Struct({ sha: Sha }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),
 });
-const Pull = Schema.Struct({
-  number: PositiveInt,
-  html_url: Schema.String,
-  body: Schema.NullOr(Schema.String),
-  state: Schema.String,
-  merged: Schema.optionalKey(Schema.Boolean),
-  merged_at: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  merge_commit_sha: Schema.optionalKey(Schema.NullOr(Sha)),
-  user: Schema.Struct({ login: Schema.String }),
-  head: Schema.Struct({
-    sha: Sha,
-    ref: Schema.String,
-    repo: Schema.NullOr(Schema.Struct({ full_name: Schema.String })),
-  }),
-  base: Schema.Struct({ ref: Schema.String }),
-});
-type Pull = typeof Pull.Type;
-const FileContent = Schema.Struct({ encoding: Schema.Literal('base64'), content: Schema.String });
-const Compare = Schema.Struct({
-  files: Schema.Array(
-    Schema.Struct({ filename: Schema.String, status: Schema.String, sha: Sha })
-  ).check(Schema.isMaxLength(299)),
-});
 const CreatedSha = Schema.Struct({ sha: Sha });
 const ShaRef = Schema.Struct({ object: Schema.Struct({ sha: Sha }) });
 const TagRef = Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Sha }) });
 const CreatedRef = Schema.Struct({ ref: Schema.String });
-
-const isReleasePull = (pull: Pull) =>
-  pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY &&
-  RELEASE_BRANCH.test(pull.head.ref) &&
-  pull.body?.includes(RELEASE_PR_MARKER) === true;
 
 /** The open release PR into next, optionally for one batch. */
 export const activeRelease = (batchId?: string) =>
@@ -118,22 +92,8 @@ export const activeRelease = (batchId?: string) =>
     Stream.runHead
   );
 
-/** A file's UTF-8 contents at `sha`, or `None` when it does not exist there. */
-const content = (path: string, sha: string) =>
-  Effect.gen(function* () {
-    const file = yield* requestOptional(
-      `${REPOSITORY_PATH}/contents/${path}?ref=${sha}`,
-      FileContent
-    );
-    return Option.isNone(file)
-      ? Option.none<string>()
-      : Option.some(yield* decodeBase64Content(file.value.content));
-  });
-const contentOrNull = (path: string, sha: string) =>
-  Effect.map(content(path, sha), Option.getOrNull);
-
 const contentsAt = (paths: ReadonlyArray<string>, sha: string) =>
-  Effect.forEach(paths, path => contentOrNull(path, sha), { concurrency: CONTENT_CONCURRENCY });
+  Effect.forEach(paths, path => fileAtOrNull(path, sha), { concurrency: CONTENT_CONCURRENCY });
 
 const sameJson = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
 
@@ -295,174 +255,28 @@ const closeReplacedPull = (batch: ReleaseBatch, replacementUrl: string) =>
     );
   });
 
-/** Downloads a retained authorized-batch artifact into a scoped directory and decodes its plan. */
-const downloadAuthorizedBatch = (artifact: Parameters<typeof downloadCandidate>[0]) =>
-  Effect.scoped(
-    Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem;
-      const root = yield* fs.makeTempDirectoryScoped({ prefix: 'sdk-authorized-plan-' });
-      const directory = `${root}/plan`;
-      yield* downloadCandidate(artifact, directory);
-      return yield* readJson(ReleaseBatch, `${directory}/${AUTHORIZED_BATCH_FILE}`);
-    })
+const causeMessage = (cause: Cause.Cause<unknown>) => {
+  const error = Cause.squash(cause);
+  return error instanceof Error ? error.message : 'Release request failed';
+};
+
+/** Explains a merged release that failed its gate on the PR and its request issue. */
+const reportRefusedRelease = (pull: Pull, batch: ReleaseBatch, cause: Cause.Cause<unknown>) => {
+  const body = [
+    `Release PR #${pull.number} merged, but it failed the release gate, so no publication tag was created and nothing was published.`,
+    `Reason: ${causeMessage(cause)}`,
+    'Revert this release PR on next, then request the release again.',
+  ].join('\n\n');
+  const issue = /\/issues\/(\d+)$/.exec(batch.statusUrl)?.[1];
+  return Effect.gen(function* () {
+    yield* commentIssue(pull.number, body);
+    if (issue !== undefined) yield* commentIssue(Number(issue), body);
+  }).pipe(
+    Effect.catchCause(reportCause =>
+      Console.error('Could not report the refused release:', causeMessage(reportCause))
+    )
   );
-
-/** The committed plan must equal the plan the protected controller authorized and retained. */
-export const verifyOriginalBatch = (batch: ReleaseBatch) =>
-  Effect.gen(function* () {
-    const original = yield* getRun(batch.originalRunId);
-    yield* ensure(
-      original.path === WORKFLOW_PATH &&
-        original.repository.full_name === SDK_RELEASE_REPOSITORY &&
-        original.head_branch === 'next',
-      'Release preparation was not produced by the protected controller'
-    );
-    const artifact = yield* reuseCandidate(
-      yield* originalCandidates(Number(batch.originalRunId)),
-      AUTHORIZED_BATCH_ARTIFACT,
-      Number(batch.originalRunId),
-      batch.inputBase
-    );
-    if (Option.isNone(artifact))
-      return yield* fail('Original authorized release plan is unavailable; prepare a new release');
-    const saved = yield* downloadAuthorizedBatch(artifact.value);
-    yield* ensure(
-      sameJson(saved, batch),
-      'Committed release plan differs from the original authorized plan'
-    );
-  });
-
-const PullReview = Schema.Struct({
-  user: Schema.Struct({ login: Schema.String }),
-  state: Schema.String,
-  commit_id: Sha,
-});
-const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
-const CheckRuns = Schema.Struct({
-  total_count: Schema.Number.check(Schema.isLessThanOrEqualTo(100)),
-  check_runs: Schema.Array(
-    Schema.Struct({
-      name: Schema.String,
-      head_sha: Sha,
-      app: Schema.NullOr(Schema.Struct({ slug: Schema.String })),
-      conclusion: Schema.NullOr(Schema.String),
-    })
-  ),
-});
-
-/** Review decisions with each reviewer's repository permission, looked up once per login. */
-const reviewsWithPermissions = (number: number) =>
-  Effect.gen(function* () {
-    const decisions = (yield* Stream.runCollect(
-      paginateArray(`${REPOSITORY_PATH}/pulls/${number}/reviews`, PullReview)
-    )).filter(review => REVIEW_STATES.has(review.state));
-    const logins = [...new Set(decisions.map(review => review.user.login))];
-    const permissions = new Map(
-      yield* Effect.forEach(
-        logins,
-        login =>
-          Effect.map(
-            request(
-              'GET',
-              `${REPOSITORY_PATH}/collaborators/${encodeURIComponent(login)}/permission`,
-              CollaboratorPermission
-            ),
-            result => [login, result.permission] as const
-          ),
-        { concurrency: CONTENT_CONCURRENCY }
-      )
-    );
-    return decisions.map(
-      review =>
-        ({
-          user: review.user.login,
-          state: review.state,
-          commitId: review.commit_id,
-          permission: permissions.get(review.user.login) ?? '',
-        }) satisfies Review
-    );
-  });
-
-/** Checks a release PR's identity, plan, approval, final-head checks and diff; returns them. */
-export const verifyReleaseHead = (number: number) =>
-  Effect.gen(function* () {
-    const pull = yield* request('GET', `${REPOSITORY_PATH}/pulls/${number}`, Pull);
-    yield* ensure(
-      pull.base.ref === 'next' && isReleasePull(pull),
-      'Expected an SDK release PR into protected next'
-    );
-    const raw = yield* content(BATCH_PATH, pull.head.sha);
-    if (Option.isNone(raw)) return yield* fail('Missing committed release plan');
-    const batch = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(raw.value);
-    yield* verifyOriginalBatch(batch);
-    yield* ensure(
-      pull.head.ref === releaseBranch(batch.id),
-      'Release branch and batch do not agree'
-    );
-    const reviews = yield* reviewsWithPermissions(number);
-    yield* ensure(
-      eligibleApproval(reviews, [pull.user.login, ...batch.requestedBy], pull.head.sha),
-      'Final release head lacks an approval from a writer other than the author and requesters'
-    );
-    const checks = yield* request(
-      'GET',
-      `${REPOSITORY_PATH}/commits/${pull.head.sha}/check-runs?per_page=100`,
-      CheckRuns
-    );
-    const passed = (name: string) =>
-      checks.check_runs.some(
-        check =>
-          check.name === name &&
-          check.head_sha === pull.head.sha &&
-          check.app?.slug === 'github-actions' &&
-          check.conclusion === 'success'
-      );
-    for (const language of new Set(batch.plan.releases.map(release => release.language)))
-      yield* ensure(
-        passed(`SDK candidate (${language})`),
-        `Missing green final-head ${language} candidate check`
-      );
-    yield* ensure(passed('typescript-check'), 'Missing green final-head production docs check');
-    const diff = yield* request(
-      'GET',
-      `${REPOSITORY_PATH}/compare/${batch.inputBase}...${pull.head.sha}`,
-      Compare
-    );
-    const files = yield* Effect.forEach(
-      diff.files,
-      file =>
-        Effect.map(
-          Effect.all([
-            contentOrNull(file.filename, batch.inputBase),
-            contentOrNull(file.filename, pull.head.sha),
-          ]),
-          ([before, after]) => ({ path: file.filename, before, after }) satisfies ReleaseFile
-        ),
-      { concurrency: CONTENT_CONCURRENCY }
-    );
-    yield* validateReleaseDiff(files, batch.plan, batch.outputs);
-    return { pull, batch, diff };
-  });
-
-/** Merges the verified release PR at its approved head, then authorizes its publication tag. */
-export const mergeApprovedRelease = (number: number, appId: number, runId: string) =>
-  Effect.gen(function* () {
-    yield* ensure(
-      Option.isNone(yield* activePreparation(runId)),
-      'A release refresh is preparing; the previous PR must not merge'
-    );
-    const { pull } = yield* verifyReleaseHead(number);
-    if (!pull.merged) {
-      const result = yield* request(
-        'PUT',
-        `${REPOSITORY_PATH}/pulls/${number}/merge`,
-        Schema.Struct({ merged: Schema.Boolean, sha: Sha }),
-        { sha: pull.head.sha, merge_method: 'squash' }
-      );
-      yield* ensure(result.merged, 'Protected expected-head merge was not accepted');
-    }
-    return yield* authorizeSourceTag(number, appId);
-  });
+};
 
 /**
  * Creates the immutable publication tag on the reviewed head. GitHub records that head and the
@@ -470,10 +284,12 @@ export const mergeApprovedRelease = (number: number, appId: number, runId: strin
  */
 export const authorizeSourceTag = (number: number, appId: number) =>
   Effect.gen(function* () {
-    const { pull, batch } = yield* verifyReleaseHead(number);
+    const { pull, batch } = yield* readReleasePull(number);
     if (!pull.merged || !pull.merge_commit_sha) return yield* fail('Release PR has not merged');
-    const registry = yield* Effect.promise(() => import('./registry'));
-    yield* registry.verifyPublicationPolicy(
+    yield* verifyReleaseGate(pull, batch).pipe(
+      Effect.tapCause(cause => reportRefusedRelease(pull, batch, cause))
+    );
+    yield* verifyPublicationPolicy(
       new Set(batch.plan.releases.map(release => release.language)),
       appId
     );
@@ -714,8 +530,7 @@ const correctiveFor = (cwd: string, publication: Publication | undefined) =>
       ) ?? [];
     const outstanding = publication.terminal ? [...plan.releases, ...unselected] : unselected;
     if (!outstanding.length) return undefined;
-    const registry = yield* Effect.promise(() => import('./registry'));
-    return yield* registry.correctiveInventory(cwd, publication.batch, headSha, outstanding);
+    return yield* correctiveInventory(cwd, publication.batch, headSha, outstanding);
   });
 
 const createStatusIssue = (run: string) =>
@@ -772,7 +587,7 @@ const prepareRelease = <PE, PR, OE, OR>(
     let previous: ReleaseBatch | undefined;
     if (request.action === 'refresh') {
       if (Option.isNone(current)) return yield* fail('No active release candidate to refresh');
-      const saved = yield* content(BATCH_PATH, current.value.head.sha);
+      const saved = yield* fileAt(BATCH_PATH, current.value.head.sha);
       if (Option.isNone(saved)) return yield* fail('Active release has no frozen plan');
       previous = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(
         saved.value
@@ -833,11 +648,6 @@ const replyText = (outcome: Outcome, runId: string) => {
   }
 };
 
-const causeMessage = (cause: Cause.Cause<unknown>) => {
-  const error = Cause.squash(cause);
-  return error instanceof Error ? error.message : 'Release request failed';
-};
-
 /** Authorizes the requester, then serves a release, refresh, status or retry request. */
 export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
   value: ReleaseRequest,
@@ -875,7 +685,7 @@ export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
     return outcome.result;
   });
 
-const Mode = Schema.Literals(['authorize', 'commit', 'tag', 'merge', 'report']);
+const Mode = Schema.Literals(['authorize', 'commit', 'tag', 'report']);
 type Mode = typeof Mode.Type;
 
 const Environment = Config.all({
@@ -928,24 +738,6 @@ const reportMode = ({ env, event }: ModeInput) =>
     yield* writeSummary(
       env,
       `Publication status updated for original run ${runId}. Registry verified: ${report.registryVerified}; docs: ${report.docs}.\n`
-    );
-  });
-
-/** Merging waits quietly for approval and checks; only GitHub API failures fail the step. */
-const mergeMode = ({ env }: ModeInput) =>
-  Effect.gen(function* () {
-    const current = yield* activeRelease();
-    if (Option.isNone(current)) return;
-    yield* mergeApprovedRelease(current.value.number, env.appId, env.runId).pipe(
-      Effect.flatMap(tag => writeSummary(env, `Approved publication source: ${tag}\n`)),
-      Effect.catch((error): Effect.Effect<void, unknown, FileSystem.FileSystem> =>
-        Predicate.isTagged(error, 'GitHubApiError')
-          ? Effect.fail(error)
-          : writeSummary(
-              env,
-              `Release awaits current-head approval or successful candidate checks: ${current.value.html_url}\n${error instanceof Error ? error.message : 'not eligible'}\n`
-            )
-      )
     );
   });
 
@@ -1024,7 +816,6 @@ const MODES: Record<
   authorize: authorizeMode,
   commit: commitMode,
   tag: tagMode,
-  merge: mergeMode,
   report: reportMode,
 };
 

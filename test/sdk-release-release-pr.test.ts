@@ -82,7 +82,9 @@ test('the release PR names every package, consumed changeset and edited changelo
     'https://github.com/ComposioHQ/composio/tree/sdk-release/batch-8/docs/content/reference/sdk-reference/typescript/'
   );
   expect(body).toContain('Approval must come from a writer other than the requester (@requester).');
-  expect(body).toContain('tags it `sdk-release/8`');
+  expect(body).toContain('merge this PR');
+  expect(body).toContain('tags this exact head `sdk-release/8`');
+  expect(body).toContain('revert this PR and request the release again');
 });
 
 test('changeset text cannot hide or add content in the release PR', () => {

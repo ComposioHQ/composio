@@ -27,35 +27,6 @@ export const ReleaseBatch = Schema.Struct({
 export type ReleaseBatch = typeof ReleaseBatch.Type;
 export const BATCH_PATH = '.github/sdk-release-plan.json';
 
-const WRITE_PERMISSIONS = new Set(['write', 'maintain', 'admin']);
-
-export interface Review {
-  readonly user: string;
-  readonly state: string;
-  readonly commitId: string;
-  readonly permission: string;
-}
-
-/**
- * A writer who is not excluded (the PR author and the release requesters) approved this exact
- * head, and no writer's latest review requests changes.
- */
-export function eligibleApproval(
-  reviews: ReadonlyArray<Review>,
-  excluded: ReadonlyArray<string>,
-  head: string
-) {
-  const latest = [...new Map(reviews.map(review => [review.user, review])).values()];
-  const writers = latest.filter(review => WRITE_PERMISSIONS.has(review.permission));
-  return (
-    !writers.some(review => review.state === 'CHANGES_REQUESTED') &&
-    writers.some(
-      review =>
-        !excluded.includes(review.user) && review.state === 'APPROVED' && review.commitId === head
-    )
-  );
-}
-
 export const ReleaseFile = Schema.Struct({
   path: Schema.String,
   before: Schema.NullOr(Schema.String),

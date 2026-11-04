@@ -25,10 +25,9 @@ on:
         description: Original run ID; retry ignores new bump choices
         type: string
         required: false
-  pull_request_review:
-    types: [submitted]
+  # Only publication-status listens: it reports each finished tag run.
   workflow_run:
-    workflows: ['SDK release', 'SDK release candidates', 'Docs - Lint and TypeScript Validation']
+    workflows: ['SDK release']
     types: [completed]
   pull_request_target:
     branches: [next]
@@ -162,45 +161,6 @@ jobs:
         env:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
         run: bun scripts/sdk-release/batch.ts commit
-
-  review-signal:
-    if: github.event_name == 'pull_request_review' && startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo 'Review changed; trusted-next controller will inspect current API state.'
-
-  approve-and-merge:
-    # workflow_run uses the protected default-branch workflow and environment.
-    if: >-
-      github.repository == 'ComposioHQ/composio' &&
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.event != 'workflow_run' &&
-      github.event.workflow_run.event != 'pull_request_target' &&
-      github.ref == 'refs/heads/next'
-    runs-on: ubuntu-latest
-    environment: sdk-release-control
-    concurrency:
-      group: sdk-release-controller
-      cancel-in-progress: false
-      queue: max
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: ./.github/actions/setup-node-pnpm-bun
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
-        id: sdk-token
-        with:
-          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
-          owner: ComposioHQ
-          repositories: composio
-      - name: Merge approved green head through normal branch protection
-        env:
-          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
-        run: bun scripts/sdk-release/batch.ts merge
 
   source-tag:
     # pull_request_target executes protected-next code, never the PR checkout.

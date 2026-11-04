@@ -96,7 +96,7 @@ export const releasePullBody = (batch: ReleaseBatch, branch: string) => {
     [
       `1. Release source is frozen at ${batch.inputBase}. Later \`next\` commits and their changesets wait for the next release.`,
       `2. Review the full diff and approve the final head. Approval must come from a writer other than the requester (${batch.requestedBy.map(login => `@${login}`).join(', ')}). Any new commit needs a new approval.`,
-      `3. After checks pass, the controller merges this exact head and tags it \`sdk-release/${batch.id}\`.`,
+      `3. After approval and green checks, merge this PR. The release workflow rechecks the approval and tags this exact head \`sdk-release/${batch.id}\`; if the check fails, it creates no tag and asks you to revert this PR and request the release again.`,
       '4. The tag run publishes the exact files the `SDK candidate` checks built on this PR, then verifies the public packages and the live docs changelog.',
       '5. A follow-up docs PR updates guides and version pins for the released packages.',
     ].join('\n'),
