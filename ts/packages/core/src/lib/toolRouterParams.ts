@@ -158,21 +158,25 @@ export type LocalToolsOptions = {
 
 /**
  * Resolves local tools and toolkits from `localTools` / `localToolkits` or
- * their deprecated `customTools` / `customToolkits` aliases. `pathPrefix`
- * names where the options were passed (e.g. `experimental.`) in the error.
+ * their deprecated `customTools` / `customToolkits` aliases. `source` picks
+ * the option path named in the error: `experimental.*` on create, bare on use.
  */
 export const resolveLocalToolsOptions = (
   options: LocalToolsOptions | undefined,
-  pathPrefix = ''
+  source: 'create' | 'use'
 ): { tools?: LocalTool[]; toolkits?: LocalToolkit[] } => {
   if (options?.localTools !== undefined && options.customTools !== undefined) {
     throw new ValidationError(
-      `Pass either ${pathPrefix}localTools or ${pathPrefix}customTools, not both. ${pathPrefix}customTools is a deprecated alias for ${pathPrefix}localTools.`
+      source === 'create'
+        ? 'Pass either experimental.localTools or experimental.customTools, not both. experimental.customTools is a deprecated alias for experimental.localTools.'
+        : 'Pass either localTools or customTools, not both. customTools is a deprecated alias for localTools.'
     );
   }
   if (options?.localToolkits !== undefined && options.customToolkits !== undefined) {
     throw new ValidationError(
-      `Pass either ${pathPrefix}localToolkits or ${pathPrefix}customToolkits, not both. ${pathPrefix}customToolkits is a deprecated alias for ${pathPrefix}localToolkits.`
+      source === 'create'
+        ? 'Pass either experimental.localToolkits or experimental.customToolkits, not both. experimental.customToolkits is a deprecated alias for experimental.localToolkits.'
+        : 'Pass either localToolkits or customToolkits, not both. customToolkits is a deprecated alias for localToolkits.'
     );
   }
   return {

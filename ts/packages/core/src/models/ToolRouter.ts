@@ -230,7 +230,7 @@ export class ToolRouter<
 
     const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(
       routerConfig.experimental,
-      'experimental.'
+      'create'
     );
     const defaultCustomPreload = preloadsAllCustomTools(routerConfig.preload);
     const inlineCustomToolsPayload = prepareInlineCustomTools({
@@ -391,7 +391,10 @@ export class ToolRouter<
     options?: LocalToolsOptions & { mcp?: boolean },
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(options);
+    const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(
+      options,
+      'use'
+    );
     const hasCustoms = !!(customTools?.length || customToolkits?.length);
 
     let session: SessionRetrieveResponse | SessionAttachResponse;
