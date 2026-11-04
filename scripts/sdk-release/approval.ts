@@ -209,10 +209,8 @@ export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch) =>
           check.conclusion === 'success'
       );
     for (const language of new Set(batch.plan.releases.map(release => release.language)))
-      yield* ensure(
-        passed(`SDK candidate (${language})`),
-        `Missing green final-head ${language} candidate check`
-      );
+      for (const check of [`SDK candidate (${language})`, `SDK candidate smoke (${language})`])
+        yield* ensure(passed(check), `Missing green final-head check: ${check}`);
     yield* ensure(passed('typescript-check'), 'Missing green final-head production docs check');
     const diff = yield* request(
       'GET',

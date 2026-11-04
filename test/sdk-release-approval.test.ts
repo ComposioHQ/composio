@@ -78,6 +78,7 @@ describe('source tag', () => {
     const failing: ReadonlyArray<ControllerOptions> = [
       { oldReview: true },
       { failedCandidate: true },
+      { failedSmoke: true },
       { editedPlan: true },
       { docs: 'failure' },
       { docs: 'pending' },

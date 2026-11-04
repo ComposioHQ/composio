@@ -46,7 +46,7 @@ const command =
   (executable: string, args: ReadonlyArray<string>) =>
     run(executable, args, { cwd, env: { ...withoutReleaseTokens, ...extraEnv } });
 
-const tarballName = (name: string, version: string) =>
+export const tarballName = (name: string, version: string) =>
   `${name.replace(/^@/, '').replaceAll('/', '-')}-${version}.tgz`;
 
 /** Builds and packs every public SDK package, keeps the selected tarballs, and checks provider compatibility. */
@@ -191,7 +191,7 @@ const isSourceTag = (ref: string) => ref.startsWith('refs/tags/sdk-release/');
 const CANDIDATES_WORKFLOW = 'sdk.release.candidates.yml';
 const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
 
-const readCandidateFiles = (directory: string) =>
+export const readCandidateFiles = (directory: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);

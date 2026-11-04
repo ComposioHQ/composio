@@ -83,6 +83,7 @@ export interface ControllerOptions {
   readonly editedPlan?: boolean;
   readonly existingTag?: string;
   readonly failedCandidate?: boolean;
+  readonly failedSmoke?: boolean;
   readonly closedUnmerged?: boolean;
   readonly existingBranch?: boolean;
   readonly docs?: 'success' | 'failure' | 'pending' | 'missing';
@@ -157,13 +158,19 @@ export async function fakeController(options: ControllerOptions = {}) {
       return response({ permission: 'write' });
     if (path.startsWith(`/commits/${head}/check-runs`))
       return response({
-        total_count: options.docs === 'missing' ? 1 : 2,
+        total_count: options.docs === 'missing' ? 2 : 3,
         check_runs: [
           {
             name: 'SDK candidate (typescript)',
             head_sha: head,
             app: { slug: 'github-actions' },
             conclusion: options.failedCandidate ? 'failure' : 'success',
+          },
+          {
+            name: 'SDK candidate smoke (typescript)',
+            head_sha: head,
+            app: { slug: 'github-actions' },
+            conclusion: options.failedSmoke ? 'failure' : 'success',
           },
           ...(options.docs === 'missing'
             ? []
