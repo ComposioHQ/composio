@@ -17,6 +17,8 @@ repo-local `effect-v4` skill.
   under test sleeps outside Effect's clock; a retry, timeout, or `Effect.sleep` inside the code
   under test is driven on `it.effect` by forking the effect, looping `Effect.yieldNow` and `TestClock.adjust`
   until `fiber.pollUnsafe()` is set, and `Fiber.join` (see "Time in tests" in the `effect-v4` skill's core-patterns reference).
+  The exception is a test that answers the API client itself with a retryable response. It answers
+  with `retry-after-ms: 0` and runs on the live clock, as that section describes.
 - Reusable service layers go through `layer(...)`, not manual `Effect.provide` scattered per test:
 
 ```ts no-check
