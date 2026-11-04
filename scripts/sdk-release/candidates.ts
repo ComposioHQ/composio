@@ -184,7 +184,9 @@ const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
  * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
  * Every successful release-PR run on the head passed the candidate checks the merge requires;
  * the newest one is used. Later jobs in that run hold its runtime token and could replace the
- * artifact, so an artifact created after the build job finished is refused.
+ * artifact, so it must have been created while the newest successful build job ran. Jobs from
+ * every attempt are read because re-running only a failed smoke job leaves the build job out of
+ * the latest attempt.
  */
 export const adoptApprovedCandidate = (sha: string, language: Language, directory: string) =>
   Effect.gen(function* () {
@@ -218,14 +220,21 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
         `Approved ${language} candidate was deleted from ${run.html_url}; request a new release with supersede`
       );
     const buildJob = `SDK candidate (${language})`;
-    const build = (yield* jobs(String(run.id), 'latest')).find(job => job.name === buildJob);
-    if (build?.conclusion !== 'success' || !build.completed_at)
+    const [build] = (yield* jobs(String(run.id), 'all'))
+      .flatMap(job =>
+        job.name === buildJob && job.conclusion === 'success' && job.started_at && job.completed_at
+          ? [{ startedAt: job.started_at, completedAt: job.completed_at }]
+          : []
+      )
+      .toSorted((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt));
+    if (!build)
       return yield* fail(
         `The ${buildJob} job did not succeed in ${run.html_url}; request a new release with supersede`
       );
+    const created = Date.parse(artifact.value.created_at);
     yield* ensure(
-      Date.parse(artifact.value.created_at) <= Date.parse(build.completed_at),
-      `Approved ${language} candidate artifact was created at ${artifact.value.created_at}, after its build job finished at ${build.completed_at}; request a new release with supersede`
+      Date.parse(build.startedAt) <= created && created <= Date.parse(build.completedAt),
+      `Approved ${language} candidate artifact was created at ${artifact.value.created_at}, outside its build job, which ran from ${build.startedAt} to ${build.completedAt}; request a new release with supersede`
     );
     yield* downloadCandidate(artifact.value, directory);
     const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
@@ -243,6 +252,40 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
       artifactId: artifact.value.id,
       digest: artifact.value.digest,
     } satisfies ApprovedCandidate;
+  });
+
+/**
+ * The candidate a source-tag run publishes. A retried tag run reuses the artifact an earlier
+ * attempt of the same run uploaded, so it keeps the first adopted bytes even if the release-PR
+ * candidate workflow ran again later; only a run without one copies from the release PR.
+ */
+export const tagRunCandidate = (
+  runId: number,
+  sha: string,
+  language: Language,
+  directory: string
+) =>
+  Effect.gen(function* () {
+    const own = yield* reuseCandidate(
+      yield* originalCandidates(runId),
+      candidateArtifactName(language),
+      runId,
+      sha
+    );
+    if (Option.isNone(own)) return yield* adoptApprovedCandidate(sha, language, directory);
+    yield* downloadCandidate(own.value, directory);
+    const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
+    const manifest = yield* readJson(CandidateManifest, manifestPath);
+    yield* ensure(
+      manifest.sourceSha === sha &&
+        manifest.producerRun === runId &&
+        manifest.language === language &&
+        manifest.approvedFrom !== undefined,
+      'Earlier tag-run candidate manifest producer/source mismatch'
+    );
+    yield* verifyCandidateFiles(yield* readCandidateFiles(directory), manifest.files);
+    yield* (yield* FileSystem.FileSystem).remove(manifestPath);
+    return manifest.approvedFrom;
   });
 
 /** Builds a release-PR candidate, or copies the approved one on a source-tag push. */
@@ -268,7 +311,7 @@ const buildCandidate = (
       );
     }
     const approvedFrom = isSourceTag(env.ref)
-      ? yield* adoptApprovedCandidate(env.sha, language, directory)
+      ? yield* tagRunCandidate(env.runId, env.sha, language, directory)
       : yield* Effect.as(lane.build(cwd, directory, selected), undefined);
     const files = yield* Effect.forEach(yield* fs.readDirectory(directory), name =>
       Effect.gen(function* () {

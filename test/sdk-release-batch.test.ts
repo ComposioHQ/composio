@@ -8,7 +8,11 @@ import {
 } from '../scripts/sdk-release/artifacts';
 import { commitPreparedRelease } from '../scripts/sdk-release/batch';
 import { run, sha256Hex } from '../scripts/sdk-release/runtime';
-import { validateReleaseDiff, type ReleaseFile } from '../scripts/sdk-release/source';
+import {
+  requestIssueNumber,
+  validateReleaseDiff,
+  type ReleaseFile,
+} from '../scripts/sdk-release/source';
 import { readExactCandidateTarballs } from '../ts/scripts/check-provider-compatibility';
 import { missingReleaseNotes } from '../ts/scripts/validate-changesets.mjs';
 import {
@@ -98,11 +102,46 @@ describe('immutable candidates', () => {
   });
 });
 
+describe('request issue', () => {
+  test('only an issue URL in this repository names a request issue', () => {
+    const issueOf = (statusUrl: string) => requestIssueNumber({ ...batch, statusUrl });
+    expect(issueOf('https://github.com/ComposioHQ/composio/issues/31')).toBe(31);
+    for (const statusUrl of [
+      'https://github.com/ComposioHQ/composio/actions/runs/31',
+      'https://github.com/ComposioHQ/other/issues/31',
+      'https://github.com.evil.test/ComposioHQ/composio/issues/31',
+      'http://github.com/ComposioHQ/composio/issues/31',
+      'https://github.com/ComposioHQ/composio/issues/0',
+      'https://github.com/ComposioHQ/composio/issues/31/',
+      'https://github.com/ComposioHQ/composio/issues/31?x=1',
+      'https://github.com/ComposioHQ/composio/issues/31#top',
+      'https://user@github.com/ComposioHQ/composio/issues/31',
+    ])
+      expect(issueOf(statusUrl)).toBeUndefined();
+  });
+});
+
 describe('release PR commit', () => {
   test('partial preparation retry reconciles an existing source branch without creating another commit', async () => {
     const { fetcher, writes } = await fakeController({ existingBranch: true });
     await runRelease(commitPreparedRelease({ batch, files: releaseFiles }, batch), fetcher);
     expect(writes.map(write => write.path)).toEqual(['/pulls']);
+  });
+  test('another open release PR refuses the request and reports it on the request issue', async () => {
+    const { fetcher, writes } = await fakeController({ openRelease: 'sdk-release/batch-7' });
+    const message =
+      'Another SDK release is in progress: https://github.com/ComposioHQ/composio/pull/5. This request did not open a release PR; request it again after that release finishes.';
+    await expect(
+      runRelease(commitPreparedRelease({ batch, files: releaseFiles }, batch), fetcher)
+    ).rejects.toThrow(message);
+    expect(writes).toEqual([{ path: '/issues/8/comments', body: { body: message } }]);
+  });
+  test('a retry after this request opened its release PR returns that PR', async () => {
+    const { fetcher, writes } = await fakeController({ openRelease: 'sdk-release/batch-8' });
+    expect(
+      await runRelease(commitPreparedRelease({ batch, files: releaseFiles }, batch), fetcher)
+    ).toBe('https://github.com/ComposioHQ/composio/pull/5');
+    expect(writes).toEqual([]);
   });
   test('major targets allow normal Changesets peer-range updates without changing unrelated fields', async () => {
     const plan = {

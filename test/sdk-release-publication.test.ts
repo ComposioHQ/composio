@@ -15,7 +15,7 @@ import {
 } from '../scripts/sdk-release/registry';
 import { sha256Hex } from '../scripts/sdk-release/runtime';
 import { ReleaseBatch } from '../scripts/sdk-release/source';
-import { reportFailure, reportRelease } from '../scripts/sdk-release/tag-run';
+import { reportDocsNotStarted, reportFailure, reportRelease } from '../scripts/sdk-release/tag-run';
 import {
   base,
   batch as controllerBatch,
@@ -435,7 +435,14 @@ const releaseWorkflow = async () =>
         needs?: string | string[];
         if?: string;
         permissions?: Record<string, string>;
-        steps?: { name?: string; run?: string; env?: Record<string, string> }[];
+        steps?: {
+          id?: string;
+          name?: string;
+          if?: string;
+          run?: string;
+          env?: Record<string, string>;
+          'continue-on-error'?: boolean;
+        }[];
       }
     >;
   };
@@ -493,6 +500,16 @@ describe('release run reporting', () => {
       'https://github.com/ComposioHQ/composio/actions/runs/77'
     );
   });
+  test('a docs dispatch that did not start names the packages as published and the exact re-run', async () => {
+    const run = reportingRun();
+    await runRelease(reportDocsNotStarted(head, '77'), run.fetch);
+    expect(run.comments).toEqual([
+      {
+        issue: 8,
+        body: 'The packages are published, but docs maintenance did not start.\n\nStart it with:\n\n```sh\ngh workflow run docs.sdk-change-sync.yml --ref next -f run_id=77\n```',
+      },
+    ]);
+  });
   test('after verification succeeds, the release is reported and docs maintenance dispatched once with its run ID', async () => {
     const workflow = await releaseWorkflow();
     const verification = workflow.jobs['registry-verification'];
@@ -510,6 +527,11 @@ describe('release run reporting', () => {
     expect(steps).toContain(dispatches[0]);
     expect(dispatches[0].env?.RUN_ID).toBe('${{ github.run_id }}');
     expect(dispatches[0].run).toContain('-f run_id="$RUN_ID"');
+    const announcement = steps.find(step => step.run?.includes('tag-run.ts released'));
+    expect(announcement?.['continue-on-error']).toBe(true);
+    expect(dispatches[0]['continue-on-error']).toBe(true);
+    const fallback = steps.find(step => step.run?.includes('tag-run.ts docs-not-started'));
+    expect(fallback?.if).toBe(`steps.${dispatches[0].id}.outcome == 'failure'`);
   });
   test('a failure in any publish or verification job reaches the failure report', async () => {
     const workflow = await releaseWorkflow();
@@ -527,9 +549,9 @@ describe('release run reporting', () => {
       'publish-npm',
       'publish-pypi',
       'registry-verification',
-      'announce-release',
     ];
     expect(report.needs).toEqual(expect.arrayContaining(tagRunJobs));
+    expect(report.needs).not.toContain('announce-release');
     expect(workflow.on).not.toHaveProperty('workflow_run');
   });
 });

@@ -100,10 +100,12 @@ const copyAttempt = async (archive: { zip: string; digest: string }, attempt: nu
           name: 'SDK candidate (typescript)',
           status: 'completed',
           conclusion: 'success',
+          started_at: '2026-11-03T00:01:00Z',
           completed_at: '2026-11-03T00:10:00Z',
         },
       ],
     },
+    '/actions/runs/9/artifacts': { artifacts: [] },
     '/actions/runs/41/artifacts': {
       artifacts: [
         {
@@ -111,7 +113,7 @@ const copyAttempt = async (archive: { zip: string; digest: string }, attempt: nu
           name: 'sdk-candidate-typescript',
           digest: archive.digest,
           expired: false,
-          created_at: '2026-11-03T00:00:00Z',
+          created_at: '2026-11-03T00:05:00Z',
           expires_at: '2099-12-01T00:00:00Z',
           workflow_run: { id: 41, head_sha: head },
         },

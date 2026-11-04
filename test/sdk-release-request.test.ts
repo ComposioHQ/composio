@@ -207,9 +207,13 @@ const typescriptRelease = (name: string, oldVersion: string, newVersion: string)
   ({ name, oldVersion, newVersion, language: 'typescript' }) as const;
 const pythonRelease = { name: '@composio/python-sdk', oldVersion: '0.31.0', newVersion: '0.31.1' };
 const PYTHON_PACKAGES = ['composio', 'composio-openai'];
+const AUTO = { typescript: 'auto', python: 'auto' } as const;
 
-/** Tags sdk-release/9 and sdk-release/12; only batch 12 carries the given releases. */
-function tagged(releases: ReadonlyArray<TaggedRelease & { language: 'typescript' | 'python' }>) {
+/** Tags sdk-release/9 and sdk-release/12; batch 12 carries `releases`, batch 9 `older`. */
+function tagged(
+  releases: ReadonlyArray<TaggedRelease & { language: 'typescript' | 'python' }>,
+  older: typeof releases = [typescriptRelease('@composio/core', '0.27.0', '0.28.0')]
+) {
   const batch = (id: string, value: typeof releases) => ({
     schemaVersion: 1,
     id,
@@ -225,7 +229,7 @@ function tagged(releases: ReadonlyArray<TaggedRelease & { language: 'typescript'
     outputs: [],
   });
   const batches: Record<string, unknown> = {
-    ['9'.repeat(40)]: batch('9', [typescriptRelease('@composio/core', '0.27.0', '0.28.0')]),
+    ['9'.repeat(40)]: batch('9', older),
     ['c'.repeat(40)]: batch('12', releases),
   };
   const fetcher: Fetch = async input => {
@@ -263,7 +267,7 @@ describe('SDK release supersede', () => {
       composio: '0.31.0',
       'composio-openai': '0.31.0',
     };
-    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES), fetcher)).toEqual({
+    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES, AUTO), fetcher)).toEqual({
       batchId: '12',
       releases: [typescriptRelease('@composio/provider', '0.11.0', '0.11.1')],
     });
@@ -275,7 +279,7 @@ describe('SDK release supersede', () => {
       composio: '0.31.1',
       'composio-openai': '0.31.0',
     };
-    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES), fetcher)).toEqual({
+    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES, AUTO), fetcher)).toEqual({
       batchId: '12',
       releases: [{ ...pythonRelease, language: 'python' }],
     });
@@ -290,8 +294,35 @@ describe('SDK release supersede', () => {
       composio: '0.31.1',
       'composio-openai': '0.31.1',
     };
-    await expect(runRelease(supersededRelease(baseline, PYTHON_PACKAGES), fetcher)).rejects.toThrow(
-      'Nothing to supersede: every version planned by sdk-release/12 is published'
-    );
+    await expect(
+      runRelease(supersededRelease(baseline, PYTHON_PACKAGES, AUTO), fetcher)
+    ).rejects.toThrow('Nothing to supersede: every version planned by sdk-release/12 is published');
+  });
+  test('a stranded language is found in the newest release that included it', async () => {
+    const fetcher = tagged([{ ...pythonRelease, language: 'python' }]);
+    const baseline = {
+      '@composio/core': '0.27.0',
+      composio: '0.31.1',
+      'composio-openai': '0.31.1',
+    };
+    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES, AUTO), fetcher)).toEqual({
+      batchId: '9',
+      releases: [typescriptRelease('@composio/core', '0.27.0', '0.28.0')],
+    });
+  });
+  test('superseding refuses to skip a language with stranded packages', async () => {
+    const fetcher = tagged([typescriptRelease('@composio/provider', '0.11.0', '0.11.1')]);
+    const baseline = {
+      '@composio/core': '0.28.0',
+      '@composio/provider': '0.11.0',
+      composio: '0.31.0',
+      'composio-openai': '0.31.0',
+    };
+    await expect(
+      runRelease(
+        supersededRelease(baseline, PYTHON_PACKAGES, { ...AUTO, typescript: 'skip' }),
+        fetcher
+      )
+    ).rejects.toThrow('typescript has stranded packages; do not skip it when superseding');
   });
 });

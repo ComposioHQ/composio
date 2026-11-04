@@ -901,7 +901,7 @@ export const checkTrustedPublisher = (
       const idToken = yield* actionsIdToken(idTokenRequest, audience);
       yield* exchange(
         HttpClientRequest.post(
-          `${NPM_REGISTRY}/-/npm/v1/oidc/token/exchange/package/${name.replace('/', '%2f')}`,
+          `${NPM_REGISTRY}/-/npm/v1/oidc/token/exchange/package/${name.replaceAll('/', '%2f')}`,
           { headers: { authorization: `Bearer ${Redacted.value(idToken)}` } }
         ),
         `npm trusted publisher check for ${name}`,

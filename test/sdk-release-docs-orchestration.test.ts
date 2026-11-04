@@ -361,3 +361,46 @@ describe('docs maintenance release selection', () => {
     expect((await runRelease(newestVerifiedRelease(app), github)).run.id).toBe(51);
   });
 });
+
+describe('docs maintenance workflow', () => {
+  test('a failed release docs run reports once on the request issue with the docs run link', async () => {
+    const workflow = Bun.YAML.parse(
+      await Bun.file('.github/workflows/docs.sdk-change-sync.yml').text()
+    ) as {
+      jobs: Record<
+        string,
+        {
+          needs?: string[];
+          if?: string;
+          permissions?: Record<string, string>;
+          outputs?: Record<string, string>;
+          steps?: { run?: string; env?: Record<string, string> }[];
+        }
+      >;
+    };
+    expect(workflow.jobs['sdk-context'].outputs?.['request-issue']).toBe(
+      '${{ steps.context.outputs.request-issue }}'
+    );
+    const report = workflow.jobs['sdk-report-failure'];
+    expect(report.needs).toEqual([
+      'sdk-context',
+      'sdk-maintenance',
+      'sdk-maintenance-pr',
+      'sdk-deploy',
+      'sdk-live',
+    ]);
+    expect(report.if).toContain('failure()');
+    expect(report.if).toContain("needs.sdk-context.outputs.request-issue != ''");
+    expect(report.if).toContain("needs.sdk-live.result != 'failure'");
+    expect(report.permissions).toEqual({ issues: 'write' });
+    const steps = report.steps ?? [];
+    expect(steps).toHaveLength(1);
+    expect(steps[0].env).toMatchObject({
+      GH_TOKEN: '${{ github.token }}',
+      ISSUE: '${{ needs.sdk-context.outputs.request-issue }}',
+    });
+    expect(steps[0].run).toContain('gh issue comment "$ISSUE"');
+    expect(steps[0].run).toContain('were not deployed or checked');
+    expect(steps[0].run).toContain('$GITHUB_RUN_ID');
+  });
+});

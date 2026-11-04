@@ -129,6 +129,7 @@ jobs:
     environment: sdk-release-control
     outputs:
       source-sha: ${{ steps.context.outputs.source-sha }}
+      request-issue: ${{ steps.context.outputs.request-issue }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -313,3 +314,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: bun scripts/sdk-release/docs.ts live
+
+  sdk-report-failure:
+    needs: [sdk-context, sdk-maintenance, sdk-maintenance-pr, sdk-deploy, sdk-live]
+    # A failed live check posts its own warning, so only earlier failures are reported here.
+    if: failure() && needs.sdk-context.outputs.request-issue != '' && needs.sdk-live.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Report undeployed or unchecked release docs on the request issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ needs.sdk-context.outputs.request-issue }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body "The packages are published, but the release docs were not deployed or checked. Docs run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

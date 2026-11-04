@@ -34,14 +34,23 @@ export const committedBatch = (ref: string) =>
     );
   });
 
-const REQUEST_ISSUE = new RegExp(
-  `^https://github\\.com/${SDK_RELEASE_REPOSITORY}/issues/([1-9][0-9]*)$`
-);
+const ISSUE_PATH = `/${SDK_RELEASE_REPOSITORY}/issues/`;
 
 /** The number of the request issue named by `statusUrl`, if it names one in this repository. */
 export const requestIssueNumber = (batch: ReleaseBatch) => {
-  const match = REQUEST_ISSUE.exec(batch.statusUrl);
-  return match ? Number(match[1]) : undefined;
+  const url = URL.parse(batch.statusUrl);
+  if (
+    url?.protocol !== 'https:' ||
+    url.host !== 'github.com' ||
+    url.username !== '' ||
+    url.password !== '' ||
+    url.search !== '' ||
+    url.hash !== '' ||
+    !url.pathname.startsWith(ISSUE_PATH)
+  )
+    return undefined;
+  const issue = url.pathname.slice(ISSUE_PATH.length);
+  return /^[1-9][0-9]*$/.test(issue) ? Number(issue) : undefined;
 };
 
 export const batchLanguages = (batch: {

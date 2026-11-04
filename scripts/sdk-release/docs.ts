@@ -50,7 +50,13 @@ import {
   withoutReleaseTokens,
   writeFile,
 } from './runtime';
-import { ReleaseBatch, ReleaseFile, batchLanguages, committedBatch } from './source';
+import {
+  ReleaseBatch,
+  ReleaseFile,
+  batchLanguages,
+  committedBatch,
+  requestIssueNumber,
+} from './source';
 import { RELEASE_WORKFLOW_FILE, tagRunProblem, type ReleaseApp } from './tag-run';
 
 const BRANCH = 'docs/auto-sdk-sync';
@@ -790,7 +796,10 @@ const MODES = {
       const runId = yield* Config.schema(RunId, 'SDK_DOCS_RUN_ID');
       const input = yield* selectDocsInput(runId, app);
       yield* writeFile(yield* inputPath, JSON.stringify(input));
-      yield* appendFile(yield* Config.String('GITHUB_OUTPUT'), `source-sha=${input.sourceSha}\n`);
+      const output = yield* Config.String('GITHUB_OUTPUT');
+      yield* appendFile(output, `source-sha=${input.sourceSha}\n`);
+      const issue = requestIssueNumber(input.batch);
+      if (issue !== undefined) yield* appendFile(output, `request-issue=${issue}\n`);
     })
   ),
   commit: asController(

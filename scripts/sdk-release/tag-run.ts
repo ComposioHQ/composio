@@ -105,11 +105,30 @@ export const reportFailure = (sha: string, runId: string) =>
     return body;
   });
 
-const REPORTS = { released: reportRelease, failed: reportFailure } as const;
+/** Tells the request issue that docs maintenance did not start for a published release. */
+export const reportDocsNotStarted = (sha: string, runId: string) =>
+  Effect.gen(function* () {
+    const { issue } = yield* requestIssueAt(sha);
+    const body = [
+      'The packages are published, but docs maintenance did not start.',
+      'Start it with:',
+      `\`\`\`sh\ngh workflow run docs.sdk-change-sync.yml --ref next -f run_id=${runId}\n\`\`\``,
+    ].join('\n\n');
+    yield* commentIssue(issue, body);
+    return body;
+  });
+
+const REPORTS = {
+  released: reportRelease,
+  failed: reportFailure,
+  'docs-not-started': reportDocsNotStarted,
+} as const;
 
 const main = Effect.gen(function* () {
   const [argument] = yield* (yield* Stdio.Stdio).args;
-  const mode = yield* Schema.decodeUnknownEffect(Schema.Literals(['released', 'failed']))(argument);
+  const mode = yield* Schema.decodeUnknownEffect(
+    Schema.Literals(['released', 'failed', 'docs-not-started'])
+  )(argument);
   const env = yield* Config.all({
     token: Config.schema(Schema.NonEmptyString, 'GITHUB_TOKEN'),
     runId: Config.schema(RunId, 'GITHUB_RUN_ID'),

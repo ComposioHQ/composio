@@ -86,6 +86,8 @@ export interface ControllerOptions {
   readonly failedSmoke?: boolean;
   readonly closedUnmerged?: boolean;
   readonly existingBranch?: boolean;
+  /** Head branch of a release PR that is already open into next. */
+  readonly openRelease?: string;
   readonly docs?: 'success' | 'failure' | 'pending' | 'missing';
 }
 
@@ -142,7 +144,22 @@ export async function fakeController(options: ControllerOptions = {}) {
         bypass_actors: [{ actor_type: 'Integration', actor_id: 123, bypass_mode: 'always' }],
         rules: ['creation', 'update', 'deletion'].map(type => ({ type })),
       });
-    if (path.startsWith('/pulls?')) return response([]);
+    if (path.startsWith('/pulls?'))
+      return response(
+        options.openRelease
+          ? [
+              {
+                ...pull(),
+                number: 5,
+                html_url: 'https://github.com/ComposioHQ/composio/pull/5',
+                state: 'open',
+                merged: false,
+                merge_commit_sha: null,
+                head: { ...pull().head, ref: options.openRelease },
+              },
+            ]
+          : []
+      );
     if (path.startsWith('/actions/workflows/sdk.release.yml/runs'))
       return response({ total_count: 0, workflow_runs: [] });
     if (path === '/pulls/9') return response(pull());

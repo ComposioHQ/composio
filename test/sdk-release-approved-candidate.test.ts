@@ -1,5 +1,5 @@
 import { afterAll, expect, test } from 'bun:test';
-import { adoptApprovedCandidate } from '../scripts/sdk-release/candidates';
+import { adoptApprovedCandidate, tagRunCandidate } from '../scripts/sdk-release/candidates';
 import { formatJson, run, sha256Hex } from '../scripts/sdk-release/runtime';
 import {
   json,
@@ -18,7 +18,10 @@ const wheel = 'composio-1.0.1-py3-none-any.whl';
 const wheelText = 'approved wheel bytes';
 
 /** A real candidate archive as the release-PR run uploaded it; `listed` is the manifest's text. */
-const approvedArchive = async (listed = wheelText) => {
+const approvedArchive = async (
+  listed = wheelText,
+  identity: Record<string, unknown> = { producerRun: 41 }
+) => {
   const directory = await directories.create();
   const listedBytes = new TextEncoder().encode(listed);
   await writeText(`${directory}/${wheel}`, wheelText);
@@ -26,8 +29,8 @@ const approvedArchive = async (listed = wheelText) => {
     `${directory}/candidate.json`,
     formatJson({
       sourceSha: head,
-      producerRun: 41,
       language: 'python',
+      ...identity,
       files: [
         { name: wheel, sha256: await runRelease(sha256Hex(listedBytes)), size: listedBytes.length },
       ],
@@ -60,7 +63,12 @@ const fakeGitHub =
     archive: { bytes: Uint8Array<ArrayBuffer>; digest: string },
     runs: unknown[],
     expired = false,
-    build: { createdAt?: string; conclusion?: string; completedAt?: string } = {}
+    build: {
+      createdAt?: string;
+      conclusion?: string;
+      completedAt?: string;
+      smokeOnlyRerun?: boolean;
+    } = {}
   ): Fetch =>
   async input => {
     const url = new URL(String(input));
@@ -68,23 +76,38 @@ const fakeGitHub =
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '');
     if (path === '/actions/workflows/sdk.release.candidates.yml/runs')
       return json({ workflow_runs: runs });
-    if (path === '/actions/runs/41/jobs')
-      return json({
-        jobs: [
-          {
-            name: 'SDK candidate (python)',
-            status: 'completed',
-            conclusion: build.conclusion ?? 'success',
-            completed_at: build.completedAt ?? '2026-11-03T00:10:00Z',
-          },
-          {
-            name: 'SDK candidate smoke (python)',
-            status: 'completed',
-            conclusion: 'success',
-            completed_at: '2026-11-03T00:20:00Z',
-          },
-        ],
+    if (path === '/actions/runs/41/jobs') {
+      const buildJob = {
+        name: 'SDK candidate (python)',
+        status: 'completed',
+        conclusion: build.conclusion ?? 'success',
+        started_at: '2026-11-03T00:01:00Z',
+        completed_at: build.completedAt ?? '2026-11-03T00:10:00Z',
+      };
+      const smoke = (conclusion: string, startedAt: string, completedAt: string) => ({
+        name: 'SDK candidate smoke (python)',
+        status: 'completed',
+        conclusion,
+        started_at: startedAt,
+        completed_at: completedAt,
       });
+      if (!build.smokeOnlyRerun)
+        return json({
+          jobs: [buildJob, smoke('success', '2026-11-03T00:11:00Z', '2026-11-03T00:20:00Z')],
+        });
+      // "Re-run failed jobs" on the smoke job: the latest attempt holds only the smoke job.
+      const latest = [smoke('success', '2026-11-03T01:00:00Z', '2026-11-03T01:10:00Z')];
+      return json({
+        jobs:
+          url.searchParams.get('filter') === 'latest'
+            ? latest
+            : [
+                buildJob,
+                smoke('failure', '2026-11-03T00:11:00Z', '2026-11-03T00:20:00Z'),
+                ...latest,
+              ],
+      });
+    }
     if (path === '/actions/runs/41/artifacts')
       return json({
         artifacts: [
@@ -154,7 +177,7 @@ test('an expired approved candidate points the operator to supersede', async () 
   ).rejects.toThrow('Original candidate unavailable; request a new release with supersede');
 });
 
-test('a candidate artifact created after its build job finished is refused', async () => {
+test('a candidate artifact created after the latest successful build job is refused', async () => {
   const archive = await approvedArchive();
   const target = `${await directories.create()}/python`;
   await expect(
@@ -163,9 +186,20 @@ test('a candidate artifact created after its build job finished is refused', asy
       fakeGitHub(archive, [releaseRun(41)], false, { createdAt: '2026-11-03T00:15:00Z' })
     )
   ).rejects.toThrow(
-    'Approved python candidate artifact was created at 2026-11-03T00:15:00Z, after its build job finished at 2026-11-03T00:10:00Z; request a new release with supersede'
+    'Approved python candidate artifact was created at 2026-11-03T00:15:00Z, outside its build job, which ran from 2026-11-03T00:01:00Z to 2026-11-03T00:10:00Z; request a new release with supersede'
   );
   expect(await Bun.file(`${target}/${wheel}`).exists()).toBe(false);
+});
+
+test('a smoke-only re-run attempt still adopts the candidate its first attempt built', async () => {
+  const archive = await approvedArchive();
+  const target = `${await directories.create()}/python`;
+  const approved = await runRelease(
+    adoptApprovedCandidate(head, 'python', target),
+    fakeGitHub(archive, [{ ...releaseRun(41), run_attempt: 2 }], false, { smokeOnlyRerun: true })
+  );
+  expect(approved).toEqual({ run: 41, artifactId: 77, digest: archive.digest });
+  expect(await readText(`${target}/${wheel}`)).toBe(wheelText);
 });
 
 test('a release-PR run whose candidate build job did not succeed is refused', async () => {
@@ -179,4 +213,56 @@ test('a release-PR run whose candidate build job did not succeed is refused', as
   ).rejects.toThrow(
     'The SDK candidate (python) job did not succeed in https://github.com/ComposioHQ/composio/actions/runs/41; request a new release with supersede'
   );
+});
+
+test('a retried tag run keeps the candidate it already adopted', async () => {
+  const approvedFrom = { run: 41, artifactId: 77, digest: `sha256:${'c'.repeat(64)}` };
+  const archive = await approvedArchive(wheelText, { producerRun: 9, approvedFrom });
+  const target = `${await directories.create()}/python`;
+  const reads: string[] = [];
+  const adopted = await runRelease(tagRunCandidate(9, head, 'python', target), async input => {
+    const url = new URL(String(input));
+    reads.push(url.pathname);
+    if (url.hostname === 'artifacts.test') return new Response(archive.bytes);
+    const path = url.pathname.replace('/repos/ComposioHQ/composio', '');
+    if (path === '/actions/runs/9/artifacts')
+      return json({
+        artifacts: [
+          {
+            id: 90,
+            name: 'sdk-candidate-python',
+            digest: archive.digest,
+            expired: false,
+            created_at: '2026-11-04T00:05:00Z',
+            expires_at: '2099-12-01T00:00:00Z',
+            workflow_run: { id: 9, head_sha: head },
+          },
+        ],
+      });
+    if (path === '/actions/artifacts/90/zip')
+      return new Response(null, {
+        status: 302,
+        headers: { location: 'https://artifacts.test/90.zip' },
+      });
+    throw new Error(`Unexpected read ${path}`);
+  });
+  expect(adopted).toEqual(approvedFrom);
+  expect(await readText(`${target}/${wheel}`)).toBe(wheelText);
+  expect(await Bun.file(`${target}/candidate.json`).exists()).toBe(false);
+  expect(reads.some(path => path.includes('/runs/41') || path.includes('/workflows/'))).toBe(false);
+});
+
+test('a tag run without its own candidate copies the approved release-PR candidate', async () => {
+  const archive = await approvedArchive();
+  const target = `${await directories.create()}/python`;
+  const github = fakeGitHub(archive, [releaseRun(41)]);
+  const adopted = await runRelease(
+    tagRunCandidate(9, head, 'python', target),
+    async (input, init) =>
+      new URL(String(input)).pathname.endsWith('/actions/runs/9/artifacts')
+        ? json({ artifacts: [] })
+        : github(input, init)
+  );
+  expect(adopted).toEqual({ run: 41, artifactId: 77, digest: archive.digest });
+  expect(await readText(`${target}/${wheel}`)).toBe(wheelText);
 });

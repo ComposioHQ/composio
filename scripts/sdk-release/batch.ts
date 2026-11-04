@@ -39,7 +39,13 @@ import {
   requireActiveMember,
   runUrl,
 } from './github';
-import { createSdkReleasePlan, type SdkReleasePlan, type SupersedeInput } from './plan';
+import { LANGUAGES, type Language } from './lanes';
+import {
+  createSdkReleasePlan,
+  type ReleaseChoice,
+  type SdkReleasePlan,
+  type SupersedeInput,
+} from './plan';
 import { discoverPythonPackages } from './python-metadata';
 import { verifyPublicationPolicy } from './registry';
 import { fetchStableRegistryBaseline } from './registry-baseline';
@@ -166,7 +172,13 @@ export const commitPreparedRelease = (value: unknown, authorizedValue: ReleaseBa
       'Prepared batch differs from the authorized request'
     );
     const current = yield* activeRelease();
-    if (Option.isSome(current)) return current.value.html_url;
+    if (Option.isSome(current)) {
+      if (current.value.head.ref === releaseBranch(authorized.id)) return current.value.html_url;
+      const message = `Another SDK release is in progress: ${current.value.html_url}. This request did not open a release PR; request it again after that release finishes.`;
+      const issue = requestIssueNumber(authorized);
+      if (issue !== undefined) yield* commentIssue(issue, message);
+      return yield* fail(message);
+    }
     const source = yield* request(
       'GET',
       `${REPOSITORY_PATH}/git/commits/${authorized.inputBase}`,
@@ -358,44 +370,64 @@ const ReleaseTag = Schema.Struct({
 const RELEASE_TAG = /^refs\/tags\/sdk-release\/([1-9][0-9]*)$/;
 
 /**
- * The newest tagged release's planned versions the registry baseline does not serve. Any lagging
- * Python package strands the whole Python lane, which shares one version.
+ * The planned versions the registry baseline does not serve, per language from the newest tagged
+ * release that included that language. Any lagging Python package strands the whole Python lane,
+ * which shares one version. A language with stranded packages cannot be skipped.
  */
 export const supersededRelease = (
   baseline: Record<string, string>,
-  pythonPackages: ReadonlyArray<string>
+  pythonPackages: ReadonlyArray<string>,
+  choices: Record<Language, ReleaseChoice>
 ) =>
   Effect.gen(function* () {
-    const tags = yield* Stream.runCollect(
+    const tags = (yield* Stream.runCollect(
       paginateArray(`${REPOSITORY_PATH}/git/matching-refs/tags/sdk-release/`, ReleaseTag)
-    );
-    const [newest] = tags
+    ))
       .flatMap(tag => {
         const id = RELEASE_TAG.exec(tag.ref)?.[1];
         return id === undefined ? [] : [{ id, sha: tag.object.sha }];
       })
       .sort((a, b) => Number(b.id) - Number(a.id));
-    if (newest === undefined) return yield* fail('No tagged SDK release to supersede');
-    const batch = yield* committedBatch(newest.sha);
-    if (Option.isNone(batch))
-      return yield* fail(`sdk-release/${newest.id} has no committed release plan`);
-    const stranded = batch.value.plan.releases
-      .filter(release =>
-        release.language === 'python'
-          ? pythonPackages.some(name => baseline[name] !== release.newVersion)
-          : baseline[release.name] !== release.newVersion
-      )
-      .map(({ name, oldVersion, newVersion, language }) => ({
-        name,
-        oldVersion,
-        newVersion,
-        language,
-      }));
-    if (!stranded.length)
+    if (!tags.length) return yield* fail('No tagged SDK release to supersede');
+    const newest = new Map<Language, { id: string; releases: ReleaseBatch['plan']['releases'] }>();
+    for (const tag of tags) {
+      if (newest.size === LANGUAGES.length) break;
+      const batch = yield* committedBatch(tag.sha);
+      if (Option.isNone(batch))
+        return yield* fail(`sdk-release/${tag.id} has no committed release plan`);
+      for (const language of LANGUAGES) {
+        const releases = batch.value.plan.releases.filter(release => release.language === language);
+        if (releases.length && !newest.has(language))
+          newest.set(language, { id: tag.id, releases });
+      }
+    }
+    const stranded = [...newest.values()].flatMap(({ id, releases }) =>
+      releases
+        .filter(release =>
+          release.language === 'python'
+            ? pythonPackages.some(name => baseline[name] !== release.newVersion)
+            : baseline[release.name] !== release.newVersion
+        )
+        .map(({ name, oldVersion, newVersion, language }) => ({
+          id,
+          release: { name, oldVersion, newVersion, language },
+        }))
+    );
+    if (!stranded.length) {
+      const checked = [...new Set([...newest.values()].map(({ id }) => `sdk-release/${id}`))];
       return yield* fail(
-        `Nothing to supersede: every version planned by sdk-release/${newest.id} is published. Request the release without supersede.`
+        `Nothing to supersede: every version planned by ${checked.join(', ') || `sdk-release/${tags[0].id}`} is published. Request the release without supersede.`
       );
-    return { batchId: newest.id, releases: stranded } satisfies SupersedeInput;
+    }
+    for (const language of new Set(stranded.map(({ release }) => release.language)))
+      yield* ensure(
+        choices[language] !== 'skip',
+        `${language} has stranded packages; do not skip it when superseding`
+      );
+    return {
+      batchId: String(Math.max(...stranded.map(({ id }) => Number(id)))),
+      releases: stranded.map(({ release }) => release),
+    } satisfies SupersedeInput;
   });
 
 export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
@@ -494,7 +526,8 @@ const authorizeMode = ({ env, event, envelope }: ModeInput) =>
           const supersede = request.supersede
             ? yield* supersededRelease(
                 baseline,
-                (yield* discoverPythonPackages(cwd)).map(pkg => pkg.name)
+                (yield* discoverPythonPackages(cwd)).map(pkg => pkg.name),
+                request
               )
             : undefined;
           return yield* createSdkReleasePlan(cwd, {
