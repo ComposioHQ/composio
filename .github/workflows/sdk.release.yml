@@ -243,16 +243,14 @@ jobs:
         with:
           enable-caching: 'false'
       - run: pnpm install --frozen-lockfile --ignore-scripts
+      # A re-run copies the same approved bytes again and replaces this run's artifact.
       - name: Copy the approved release-PR candidate
         id: build
         env:
           SDK_READ_TOKEN: ${{ github.token }}
         run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
-      - name: Registry recovery exhausted
-        if: failure() && steps.build.outputs.terminal == 'true'
-        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
-      - name: Retain candidate bytes for publication and retries
-        if: steps.build.outputs.build == 'true'
+      - name: Retain candidate bytes for publication
+        if: steps.build.outputs.selected == 'true'
         id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -260,11 +258,12 @@ jobs:
           path: sdk-candidate/${{ matrix.language }}/
           retention-days: 30
           if-no-files-found: error
-      - name: Report immutable candidate identity
+          overwrite: true
+      - name: Report candidate identity
         if: steps.build.outputs.selected == 'true'
         env:
-          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id || steps.build.outputs.artifact-id }}
-          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest || steps.build.outputs.artifact-digest }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
           SOURCE_SHA: ${{ github.sha }}
           SDK_READ_TOKEN: ${{ github.token }}
         run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}

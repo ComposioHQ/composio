@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test';
-import { spawn } from '../scripts/sdk-release/runtime';
+import { formatJson, run, sha256Hex, spawn } from '../scripts/sdk-release/runtime';
 import {
   readText,
   resolvePath,
@@ -8,68 +8,36 @@ import {
   writeText,
 } from './sdk-release-harness';
 
-const directories = temporaryDirectories('sdk-candidate-retry-');
+const directories = temporaryDirectories('sdk-candidate-copy-');
 afterEach(() => directories.cleanup());
 
-test('a transient artifact-list failure leaves the original candidate retryable', async () => {
-  const directory = await directories.create();
-  await writeText(
-    `${directory}/.github/sdk-release-plan.json`,
-    JSON.stringify({
-      schemaVersion: 1,
-      id: '8',
-      originalRunId: '8',
-      requestedBy: ['requester'],
-      inputBase: 'a'.repeat(40),
-      statusUrl: 'https://github.com/ComposioHQ/composio/issues/8',
-      date: '2026-11-03',
-      outputs: [],
-      plan: {
-        schemaVersion: 1,
-        inputFingerprint: 'frozen',
-        choices: { typescript: 'auto', python: 'skip' },
-        recommended: [],
-        changesets: [],
-        retainedChangesets: [],
-        releases: [
-          {
-            name: '@composio/core',
-            oldVersion: '1.0.0',
-            newVersion: '1.0.1',
-            type: 'patch',
-            changesets: [],
-            language: 'typescript',
-          },
-        ],
-      },
-    })
-  );
-  const preload = `${directory}/fetch.ts`;
-  await writeText(preload, 'globalThis.fetch = async () => new Response("{}", { status: 502 });\n');
-  const output = `${directory}/output`;
-  await writeText(output, '');
-  const script = await resolvePath('scripts/sdk-release/candidates.ts');
-  const result = await runRelease(
-    spawn('bun', ['--preload', preload, script, 'typescript'], {
-      cwd: directory,
-      env: {
-        GITHUB_RUN_ID: '9',
-        GITHUB_RUN_ATTEMPT: '2',
-        GITHUB_SHA: 'b'.repeat(40),
-        GITHUB_REF: 'refs/pull/9/merge',
-        GITHUB_OUTPUT: output,
-        SDK_READ_TOKEN: 'fixture',
-        SDK_RELEASE_TOKEN: '',
-      },
-    })
-  );
-  expect(result.exitCode).not.toBe(0);
-  expect(`${result.stdout}${result.stderr}`).toContain('failed (502)');
-  expect(await readText(output)).not.toContain('terminal=true');
-});
+const head = 'b'.repeat(40);
+const tarball = 'composio-core-1.0.1.tgz';
 
-/** A source-tag run for one TypeScript package, answering GitHub reads from `routes`. */
-const sourceTagRun = async (routes: string) => {
+/** The archive release-PR run 41 uploaded for `@composio/core@1.0.1`. */
+const approvedArchive = async () => {
+  const directory = await directories.create();
+  const bytes = new TextEncoder().encode('approved tarball bytes');
+  await writeText(`${directory}/${tarball}`, 'approved tarball bytes');
+  await writeText(
+    `${directory}/candidate.json`,
+    formatJson({
+      sourceSha: head,
+      producerRun: 41,
+      language: 'typescript',
+      files: [{ name: tarball, sha256: await runRelease(sha256Hex(bytes)), size: bytes.length }],
+    })
+  );
+  const zip = `${directory}/candidate.zip`;
+  await runRelease(
+    run('zip', ['-j', '-q', zip, `${directory}/${tarball}`, `${directory}/candidate.json`])
+  );
+  const archive = new Uint8Array(await Bun.file(zip).arrayBuffer());
+  return { zip, digest: `sha256:${await runRelease(sha256Hex(archive))}` };
+};
+
+/** One attempt of the tag run's copy job, on a fresh runner, for tag run 9. */
+const copyAttempt = async (archive: { zip: string; digest: string }, attempt: number) => {
   const directory = await directories.create();
   await writeText(`${directory}/package.json`, JSON.stringify({ name: 'root', private: true }));
   await writeText(`${directory}/pnpm-workspace.yaml`, "packages: ['core']\n");
@@ -108,10 +76,51 @@ const sourceTagRun = async (routes: string) => {
       },
     })
   );
+  const routes = {
+    '/actions/workflows/sdk.release.candidates.yml/runs': {
+      workflow_runs: [
+        {
+          id: 41,
+          path: '.github/workflows/sdk.release.candidates.yml',
+          head_branch: 'sdk-release/batch-8',
+          head_sha: head,
+          event: 'pull_request',
+          repository: { full_name: 'ComposioHQ/composio' },
+          status: 'completed',
+          conclusion: 'success',
+          created_at: '2026-11-03T00:00:00Z',
+          run_attempt: 1,
+          html_url: 'https://github.com/ComposioHQ/composio/actions/runs/41',
+        },
+      ],
+    },
+    '/actions/runs/41/artifacts': {
+      artifacts: [
+        {
+          id: 77,
+          name: 'sdk-candidate-typescript',
+          digest: archive.digest,
+          expired: false,
+          created_at: '2026-11-03T00:00:00Z',
+          expires_at: '2099-12-01T00:00:00Z',
+          workflow_run: { id: 41, head_sha: head },
+        },
+      ],
+    },
+  };
   const preload = `${directory}/fetch.ts`;
   await writeText(
     preload,
-    `const routes = ${routes};\nglobalThis.fetch = async input => {\n  const path = new URL(String(input)).pathname;\n  const route = Object.keys(routes).find(key => path.endsWith(key));\n  return route ? new Response(JSON.stringify(routes[route]), { status: 200 }) : new Response('{}', { status: 502 });\n};\n`
+    `const routes = ${JSON.stringify(routes)};
+globalThis.fetch = async input => {
+  const url = new URL(String(input));
+  if (url.hostname === 'artifacts.test') return new Response(Bun.file(${JSON.stringify(archive.zip)}));
+  if (url.pathname.endsWith('/actions/artifacts/77/zip'))
+    return new Response(null, { status: 302, headers: { location: 'https://artifacts.test/77.zip' } });
+  const route = Object.keys(routes).find(key => url.pathname.endsWith(key));
+  return route ? Response.json(routes[route]) : new Response('{}', { status: 502 });
+};
+`
   );
   const output = `${directory}/output`;
   await writeText(output, '');
@@ -123,8 +132,8 @@ const sourceTagRun = async (routes: string) => {
         cwd: directory,
         env: {
           GITHUB_RUN_ID: '9',
-          GITHUB_RUN_ATTEMPT: '1',
-          GITHUB_SHA: 'b'.repeat(40),
+          GITHUB_RUN_ATTEMPT: String(attempt),
+          GITHUB_SHA: head,
           GITHUB_REF: 'refs/tags/sdk-release/8',
           GITHUB_OUTPUT: output,
           SDK_READ_TOKEN: 'fixture',
@@ -133,25 +142,23 @@ const sourceTagRun = async (routes: string) => {
       }
     )
   );
-  return { result, output: await readText(output) };
+  expect({ exitCode: result.exitCode, stderr: result.stderr }).toMatchObject({ exitCode: 0 });
+  return {
+    manifest: await readText(`${directory}/sdk-candidate/typescript/candidate.json`),
+    tarball: await readText(`${directory}/sdk-candidate/typescript/${tarball}`),
+  };
 };
 
-test('a deleted approved candidate ends recovery so a corrective release can start', async () => {
-  const { result, output } = await sourceTagRun(
-    `{ '/actions/runs/9/artifacts': { total_count: 0, artifacts: [] }, '/actions/workflows/sdk.release.candidates.yml/runs': { workflow_runs: [] } }`
-  );
-  expect(result.exitCode).not.toBe(0);
-  expect(`${result.stdout}${result.stderr}`).toContain(
-    'No successful release-PR run built the approved typescript candidate'
-  );
-  expect(output).toContain('terminal=true');
-});
-
-test('a failed approved-candidate lookup stays retryable', async () => {
-  const { result, output } = await sourceTagRun(
-    `{ '/actions/runs/9/artifacts': { total_count: 0, artifacts: [] } }`
-  );
-  expect(result.exitCode).not.toBe(0);
-  expect(`${result.stdout}${result.stderr}`).toContain('failed (502)');
-  expect(output).not.toContain('terminal=true');
+test('a re-run of the tag-run copy produces an identical manifest', async () => {
+  const archive = await approvedArchive();
+  const first = await copyAttempt(archive, 1);
+  const rerun = await copyAttempt(archive, 2);
+  expect(first.tarball).toBe('approved tarball bytes');
+  expect(JSON.parse(first.manifest)).toMatchObject({
+    sourceSha: head,
+    producerRun: 9,
+    language: 'typescript',
+    approvedFrom: { run: 41, artifactId: 77, digest: archive.digest },
+  });
+  expect(rerun.manifest).toBe(first.manifest);
 });

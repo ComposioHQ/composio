@@ -1,5 +1,4 @@
-import { Config, Data, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/http';
+import { Config, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
 import {
   ActionArtifact,
@@ -8,13 +7,10 @@ import {
   CandidateManifest,
   candidateArtifactName,
   downloadCandidate,
-  isRetained,
-  mayRebuildMissingCandidate,
   normalizeArtifactDigest,
   originalCandidates,
   reuseCandidate,
   verifyCandidateFiles,
-  type CandidateArtifact,
 } from './artifacts';
 import {
   GitHub,
@@ -24,9 +20,9 @@ import {
   Sha,
   request,
 } from './github';
-import { Language, REGISTRY_LANES } from './lanes';
+import { Language } from './lanes';
 import type { SdkRelease } from './plan';
-import { discoverPythonPackages, type PythonReleasePackage } from './python-metadata';
+import { discoverPythonPackages } from './python-metadata';
 import {
   ensure,
   fail,
@@ -40,42 +36,6 @@ import {
   type ReleaseServices,
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch } from './source';
-
-/** Package versions whose public presence means a lane may already have published. */
-const REGISTRY_TARGETS: Record<
-  Language,
-  (release: SdkRelease, python: ReadonlyArray<PythonReleasePackage>) => ReadonlyArray<string>
-> = {
-  typescript: release => [release.name],
-  python: (_release, python) => python.map(pkg => pkg.name),
-};
-
-const registryStatus = (url: string) =>
-  Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient;
-    const response = yield* client.get(url);
-    return response.status;
-  }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }));
-
-/** True when no planned version is public yet; any other registry answer than 404 is an error. */
-export const registryInventoryEmpty = (cwd: string) =>
-  Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const batch = yield* readJson(ReleaseBatch, path.resolve(cwd, BATCH_PATH));
-    const python = yield* discoverPythonPackages(cwd);
-    const urls = batch.plan.releases.flatMap(release =>
-      REGISTRY_TARGETS[release.language](release, python).map(name =>
-        REGISTRY_LANES[release.language].versionUrl(name, release.newVersion)
-      )
-    );
-    const statuses = yield* Effect.forEach(urls, registryStatus, { concurrency: 8 });
-    for (const status of statuses) {
-      if (status >= 200 && status < 300) return false;
-      if (status !== 404)
-        return yield* fail(`Cannot establish public registry inventory (${status})`);
-    }
-    return true;
-  });
 
 const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
@@ -216,7 +176,6 @@ const PositiveIntFromString = Schema.NumberFromString.check(
 
 const BuildEnvironment = Config.all({
   runId: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ID'),
-  runAttempt: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ATTEMPT'),
   sha: Config.schema(Sha, 'GITHUB_SHA'),
   ref: Config.String('GITHUB_REF'),
   outputPath: Config.String('GITHUB_OUTPUT'),
@@ -243,11 +202,6 @@ const readCandidateFiles = (directory: string) =>
     );
   });
 
-/** The approved release-PR candidate no longer exists; only a corrective release can publish. */
-export class ApprovedCandidateLost extends Data.TaggedError('ApprovedCandidateLost')<{
-  readonly message: string;
-}> {}
-
 /**
  * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
  * Every successful release-PR run on the head passed the candidate checks the merge requires;
@@ -271,29 +225,19 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
       )
       .toSorted((a, b) => b.id - a.id);
     if (!run)
-      return yield* new ApprovedCandidateLost({
-        message: `No successful release-PR run built the approved ${language} candidate`,
-      });
-    const artifacts = yield* originalCandidates(run.id);
-    const now = Date.now();
-    if (
-      !artifacts.some(
-        candidate =>
-          candidate.name === candidateArtifactName(language) && isRetained(candidate, now)
-      )
-    )
-      return yield* new ApprovedCandidateLost({
-        message: `Approved ${language} candidate was deleted or expired in ${run.html_url}`,
-      });
+      return yield* fail(
+        `No successful release-PR run built the approved ${language} candidate; request a new release with supersede`
+      );
     const artifact = yield* reuseCandidate(
-      artifacts,
+      yield* originalCandidates(run.id),
       candidateArtifactName(language),
       run.id,
-      sha,
-      now
+      sha
     );
     if (Option.isNone(artifact))
-      return yield* fail(`Approved ${language} candidate is missing from ${run.html_url}`);
+      return yield* fail(
+        `Approved ${language} candidate was deleted from ${run.html_url}; request a new release with supersede`
+      );
     yield* downloadCandidate(artifact.value, directory);
     const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
     const manifest = yield* readJson(CandidateManifest, manifestPath);
@@ -312,51 +256,18 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
     } satisfies ApprovedCandidate;
   });
 
-/** A retained candidate is reused only when its manifest and bytes match this run's source. */
-const recoverCandidate = (
-  env: BuildEnvironment,
-  language: Language,
-  directory: string,
-  existing: CandidateArtifact
-) =>
-  Effect.gen(function* () {
-    yield* downloadCandidate(existing, directory);
-    const manifest = yield* readJson(CandidateManifest, `${directory}/${CANDIDATE_MANIFEST}`);
-    yield* ensure(
-      manifest.sourceSha === env.sha &&
-        manifest.producerRun === env.runId &&
-        manifest.language === language,
-      'Candidate manifest producer/source mismatch'
-    );
-    yield* verifyCandidateFiles(yield* readCandidateFiles(directory), manifest.files);
-    yield* appendOutput(
-      env.outputPath,
-      `selected=true\nbuild=false\nartifact-id=${existing.id}\nartifact-digest=${existing.digest}\nartifact-expires=${existing.expires_at}\n`
-    );
-  });
-
-/**
- * Builds a release-PR candidate, or copies the approved one on a source-tag push, unless a rerun
- * may already have published the missing one.
- */
+/** Builds a release-PR candidate, or copies the approved one on a source-tag push. */
 const buildCandidate = (
   env: BuildEnvironment,
   language: Language,
-  directory: string,
   selected: ReadonlyArray<SdkRelease>
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const cwd = (yield* Path.Path).resolve('.');
-    if (
-      env.runAttempt > 1 &&
-      !(yield* mayRebuildMissingCandidate(env.runId, yield* registryInventoryEmpty(cwd)))
-    ) {
-      yield* appendOutput(env.outputPath, 'terminal=true\n');
-      return yield* fail(
-        'Candidate missing after possible publication; a newly approved corrective release is required'
-      );
-    }
+    const path = yield* Path.Path;
+    const cwd = path.resolve('.');
+    const directory = path.resolve('sdk-candidate', language);
+    yield* fs.makeDirectory(directory, { recursive: true });
     const lane = LANE_BUILDS[language];
     yield* lane.verifyTrain(cwd, selected);
     const { packages } = yield* fromPromise(() => getPackages(cwd));
@@ -368,14 +279,7 @@ const buildCandidate = (
       );
     }
     const approvedFrom = isSourceTag(env.ref)
-      ? yield* adoptApprovedCandidate(env.sha, language, directory).pipe(
-          // A confirmed loss ends recovery; lookup errors stay retryable.
-          Effect.tapError(error =>
-            error instanceof ApprovedCandidateLost
-              ? appendOutput(env.outputPath, 'terminal=true\n')
-              : Effect.void
-          )
-        )
+      ? yield* adoptApprovedCandidate(env.sha, language, directory)
       : yield* Effect.as(lane.build(cwd, directory, selected), undefined);
     const files = yield* Effect.forEach(yield* fs.readDirectory(directory), name =>
       Effect.gen(function* () {
@@ -391,10 +295,10 @@ const buildCandidate = (
       ...(approvedFrom && { approvedFrom }),
     });
     yield* fs.writeFileString(`${directory}/${CANDIDATE_MANIFEST}`, formatJson(manifest));
-    yield* appendOutput(env.outputPath, 'selected=true\nbuild=true\n');
+    yield* appendOutput(env.outputPath, 'selected=true\n');
   });
 
-/** Builds or recovers the exact immutable candidate for one language lane. */
+/** Builds or copies the candidate for one language lane. */
 const buildMode = (language: Language) =>
   Effect.gen(function* () {
     const env = yield* BuildEnvironment;
@@ -404,35 +308,8 @@ const buildMode = (language: Language) =>
     );
     const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
     const selected = batch.plan.releases.filter(release => release.language === language);
-    if (!selected.length)
-      return yield* appendOutput(env.outputPath, 'selected=false\nbuild=false\n');
-    yield* laneCandidate(env, language, selected).pipe(Effect.provide(GitHub.layer(env.token)));
-  });
-
-const laneCandidate = (
-  env: BuildEnvironment,
-  language: Language,
-  selected: ReadonlyArray<SdkRelease>
-) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const directory = (yield* Path.Path).resolve('sdk-candidate', language);
-    const artifacts = yield* originalCandidates(env.runId);
-    const existing = yield* reuseCandidate(
-      artifacts,
-      candidateArtifactName(language),
-      env.runId,
-      env.sha
-    ).pipe(
-      Effect.tapError(() =>
-        env.runAttempt > 1 ? appendOutput(env.outputPath, 'terminal=true\n') : Effect.void
-      )
-    );
-    yield* fs.makeDirectory(directory, { recursive: true });
-    yield* Option.match(existing, {
-      onSome: artifact => recoverCandidate(env, language, directory, artifact),
-      onNone: () => buildCandidate(env, language, directory, selected),
-    });
+    if (!selected.length) return yield* appendOutput(env.outputPath, 'selected=false\n');
+    yield* buildCandidate(env, language, selected).pipe(Effect.provide(GitHub.layer(env.token)));
   });
 
 const ReportEnvironment = Config.all({
@@ -444,7 +321,7 @@ const ReportEnvironment = Config.all({
   token: Config.schema(Schema.NonEmptyString, 'SDK_READ_TOKEN'),
 });
 
-/** Confirms the uploaded or recovered artifact is this run's candidate and records its identity. */
+/** Confirms the uploaded artifact is this run's candidate and records its identity. */
 const reportMode = (language: Language) =>
   Effect.gen(function* () {
     const env = yield* ReportEnvironment;
@@ -474,7 +351,7 @@ const reportMode = (language: Language) =>
     );
   });
 
-/** `candidates.ts <language>` builds or recovers; `candidates.ts report <language>` records identity. */
+/** `candidates.ts <language>` builds or copies; `candidates.ts report <language>` records identity. */
 const Arguments = Schema.Union([
   Schema.Tuple([Language]),
   Schema.Tuple([Schema.Literal('report'), Language]),

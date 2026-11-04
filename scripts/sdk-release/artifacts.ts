@@ -1,6 +1,6 @@
 import { Effect, FileSystem, Option, Schema, Stream } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
-import { GitHub, REPOSITORY_PATH, Sha, jobs, paginate } from './github';
+import { GitHub, REPOSITORY_PATH, Sha, paginate } from './github';
 import { Language } from './lanes';
 import { ensure, fail, run, sha256Hex, withoutReleaseTokens } from './runtime';
 
@@ -87,7 +87,7 @@ export const reuseCandidate = (
     );
     yield* ensure(
       isRetained(artifact, now),
-      'Original candidate unavailable; a corrective release is required'
+      'Original candidate unavailable; request a new release with supersede'
     );
     return Option.some(yield* Schema.decodeUnknownEffect(ActionArtifact)(artifact));
   });
@@ -140,10 +140,6 @@ export const publisherStarted = (
         PUBLISHER_STEP.test(step.name) && step.status !== 'queued' && step.conclusion !== 'skipped'
     )
   );
-
-/** A rebuild needs both an empty public inventory and proof that no publisher ran; a 404 alone is not enough. */
-export const mayRebuildMissingCandidate = (run: number, publicInventoryEmpty: boolean) =>
-  Effect.map(jobs(String(run)), runJobs => publicInventoryEmpty && !publisherStarted(runJobs));
 
 /** Downloads an original Actions artifact, checks its digest and archive paths, and unpacks it into `directory`. */
 export const downloadCandidate = (artifact: { id: number; digest: string }, directory: string) =>

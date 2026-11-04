@@ -56,7 +56,11 @@ const releaseRun = (id: number, conclusion = 'success') => ({
 });
 
 const fakeGitHub =
-  (archive: { bytes: Uint8Array<ArrayBuffer>; digest: string }, runs: unknown[]): Fetch =>
+  (
+    archive: { bytes: Uint8Array<ArrayBuffer>; digest: string },
+    runs: unknown[],
+    expired = false
+  ): Fetch =>
   async input => {
     const url = new URL(String(input));
     if (url.hostname === 'artifacts.test') return new Response(archive.bytes);
@@ -70,7 +74,7 @@ const fakeGitHub =
             id: 77,
             name: 'sdk-candidate-python',
             digest: archive.digest,
-            expired: false,
+            expired,
             created_at: '2026-11-03T00:00:00Z',
             expires_at: '2099-12-01T00:00:00Z',
             workflow_run: { id: 41, head_sha: head },
@@ -108,7 +112,7 @@ test('approved files that differ from their recorded checksums are not adopted',
   ).rejects.toThrow(`Candidate checksum mismatch: ${wheel}`);
 });
 
-test('a head without a successful release-PR run has nothing to publish', async () => {
+test('a head without a successful release-PR run points the operator to supersede', async () => {
   const archive = await approvedArchive();
   const target = `${await directories.create()}/python`;
   await expect(
@@ -116,5 +120,18 @@ test('a head without a successful release-PR run has nothing to publish', async 
       adoptApprovedCandidate(head, 'python', target),
       fakeGitHub(archive, [releaseRun(41, 'failure')])
     )
-  ).rejects.toThrow('No successful release-PR run built the approved python candidate');
+  ).rejects.toThrow(
+    'No successful release-PR run built the approved python candidate; request a new release with supersede'
+  );
+});
+
+test('an expired approved candidate points the operator to supersede', async () => {
+  const archive = await approvedArchive();
+  const target = `${await directories.create()}/python`;
+  await expect(
+    runRelease(
+      adoptApprovedCandidate(head, 'python', target),
+      fakeGitHub(archive, [releaseRun(41)], true)
+    )
+  ).rejects.toThrow('Original candidate unavailable; request a new release with supersede');
 });

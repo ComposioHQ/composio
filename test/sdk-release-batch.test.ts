@@ -1,7 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test';
 import { Effect, FileSystem, Option } from 'effect';
 import {
-  mayRebuildMissingCandidate,
   normalizeArtifactDigest,
   reuseCandidate,
   verifyArchive,
@@ -21,7 +20,7 @@ import {
   oldManifest,
   releaseFiles,
 } from './sdk-release-controller-fixture';
-import { runRelease, temporaryDirectories, writeText, type Fetch } from './sdk-release-harness';
+import { runRelease, temporaryDirectories, writeText } from './sdk-release-harness';
 
 const directories = temporaryDirectories('sdk-release-batch-');
 afterAll(() => directories.cleanup());
@@ -225,29 +224,6 @@ describe('SDK fragment policy', () => {
       )
     ).toEqual(['@composio/python-sdk']);
   });
-});
-
-test('missing candidates cannot rebuild after any original-run upload step may have executed', async () => {
-  const fixture =
-    (status: string, conclusion: string | null): Fetch =>
-    async () =>
-      new Response(
-        JSON.stringify({
-          jobs: [
-            {
-              name: 'npm',
-              steps: [{ name: 'Upload original candidates to npm', status, conclusion }],
-            },
-          ],
-        })
-      );
-  expect(
-    await runRelease(mayRebuildMissingCandidate(8, true), fixture('completed', 'failure'))
-  ).toBe(false);
-  expect(await runRelease(mayRebuildMissingCandidate(8, false), fixture('queued', null))).toBe(
-    false
-  );
-  expect(await runRelease(mayRebuildMissingCandidate(8, true), fixture('queued', null))).toBe(true);
 });
 
 test('exact candidate compatibility keeps the original packed dependency and tarball bytes', async () => {
