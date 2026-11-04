@@ -1,5 +1,6 @@
 """Test SDK functionality."""
 
+import inspect
 import os
 import typing as t
 from unittest.mock import patch
@@ -10,13 +11,58 @@ import pytest
 from composio_client import AutoAuth, ProjectAuth, Scope, UserAuth
 from composio_client import ComposioError as ClientComposioError
 
-from composio import Composio, exceptions
+from composio import (
+    Composio,
+    ToolRouter,
+    ToolRouterSession,
+    exceptions,
+)
 from composio.client import HttpClient
 from composio.core.provider._openai import OpenAIProvider
+from composio.types import (
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionSearchResponse,
+    ToolRouterToolsConfig,
+)
 
 
 class TestComposioSDK:
     """Test cases for Composio SDK."""
+
+    def test_session_signatures_are_inspectable_without_client(self):
+        """Offline help must expose required arguments and toolkit-keyed tools."""
+        with patch.dict(os.environ, {}, clear=True):
+            signature = inspect.signature(Composio.create)
+            assert (
+                signature.parameters["user_id"].kind == inspect.Parameter.KEYWORD_ONLY
+            )
+            assert signature.parameters["user_id"].default is inspect.Parameter.empty
+            signature.bind(
+                None,
+                user_id="user_123",
+                tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS"]}},
+                preload={"tools": ["GMAIL_FETCH_EMAILS"]},
+                manage_connections={"enable": True},
+            )
+            with pytest.raises(TypeError):
+                signature.bind(None)
+            assert (
+                t.get_type_hints(Composio.create)["tools"]
+                == t.Optional[t.Dict[str, ToolRouterToolsConfig]]
+            )
+            assert (
+                t.get_type_hints(ToolRouter.create)["tools"]
+                == t.Optional[t.Dict[str, ToolRouterToolsConfig]]
+            )
+            inspect.signature(Composio.use).bind(None, "session_123", mcp=True)
+            assert (
+                t.get_type_hints(ToolRouterSession.execute)["return"]
+                is ToolRouterSessionExecuteResponse
+            )
+            assert (
+                t.get_type_hints(ToolRouterSession.search)["return"]
+                is ToolRouterSessionSearchResponse
+            )
 
     def test_sdk_requires_api_key(self):
         """Test that SDK requires an API key."""

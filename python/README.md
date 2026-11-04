@@ -45,6 +45,41 @@ session = composio.use(session_id)
 
 See [how Composio works](https://docs.composio.dev/docs/how-composio-works) for sessions and meta tools, and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting `toolkits`, `tools`, `auth_configs`, and `connected_accounts` on `composio.create()`.
 
+## Inspect sessions without credentials
+
+You can inspect session signatures, configuration types, and response models without creating a client or making a request:
+
+```python
+import inspect
+from typing import get_type_hints
+from composio import Composio, ToolRouter, ToolRouterSession
+from composio.types import ToolRouterSessionExecuteResponse
+
+print(inspect.signature(Composio.create))
+print(inspect.signature(Composio.use))
+help(ToolRouter.create)  # full keyword/configuration reference
+print(inspect.signature(ToolRouterSession.tools))
+print(inspect.signature(ToolRouterSession.authorize))
+print(get_type_hints(ToolRouterSession.execute))
+print(ToolRouterSessionExecuteResponse.model_fields)
+```
+
+`Composio.create` has the same keyword arguments as `composio.sessions.create`. `toolkits` accepts a list or an enable/disable policy; `tools` is a **toolkit-keyed map**, for example `{"gmail": {"enable": ["GMAIL_FETCH_EMAILS"]}}`. `preload={"tools": [...]}` exposes selected tools directly. `session_preset=SESSION_PRESET_DIRECT_TOOLS` exposes allowed tools directly and disables meta tools by default.
+
+Import configuration shapes from `composio.types`, including `ToolRouterToolsConfig`, `ToolRouterPreloadConfig`, `ToolRouterManageConnectionsConfig`, and `ToolRouterExperimentalConfig`. Inspect their annotations with `typing.get_type_hints()`. `ToolRouterSessionConfig` describes the returned `session.config`; it is not a create-options dictionary.
+
+`ToolRouterSessionExecuteResponse` and `ToolRouterSessionSearchResponse` are Pydantic models exported from `composio.types`. Inspect `model_fields` without executing tools. For a returned model, use `model_dump()` or `model_dump_json()` to serialize it. `ToolExecutionResponse` describes the separate direct-tool execution response.
+
+The wheel contains readable Python modules at `composio/sdk.py`, `composio/core/models/tool_router.py`, and `composio/core/models/tool_router_session.py`. Locate them with `inspect.getfile(Composio)` or `inspect.getfile(ToolRouterSession)`. This README is also included in the installed distribution's metadata:
+
+```python
+from importlib.metadata import metadata
+
+print(metadata("composio").get_payload())
+```
+
+Only inspection is credential-free. Constructing `Composio()` still validates credentials; creating, retrieving, or executing a session needs authentication.
+
 ## Use with an agent framework
 
 Provider packages adapt `session.tools()` to your framework's native tool format. With [OpenAI Agents](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai_agents):

@@ -41,6 +41,32 @@ console.log(result.finalOutput);
 
 For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
 
+## Inspect the installed packages
+
+You don't need API keys to read types. This provider ships `README.md`, `dist/index.mjs`, and `dist/index.d.mts`; it does **not** ship `src/index.ts`. Import `OpenAIAgentsProvider` from `@composio/openai-agents`, and read `dist/index.d.mts` for its declaration.
+
+Session creation and configuration belong to the separately installed `@composio/core` package:
+
+```typescript
+import type {
+  Composio,
+  ToolRouterCreateSessionConfig,
+  ToolRouterSessionExecuteResponse,
+} from '@composio/core';
+import type { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+type Client = Composio<OpenAIAgentsProvider>;
+type Create = Client['create'];
+type Session = Awaited<ReturnType<Create>>;
+type Tools = Awaited<ReturnType<Session['tools']>>;
+type Options = ToolRouterCreateSessionConfig;
+type ExecuteResult = ToolRouterSessionExecuteResponse;
+```
+
+Read `node_modules/@composio/core/docs/sessions.md` for the local session reference and `node_modules/@composio/core/src/types/toolRouter.types.ts` for readable configuration and response definitions. The public core declaration entry point is `node_modules/@composio/core/dist/index.d.mts`. `tools` in create options is a toolkit-keyed map, such as `{ gmail: { enable: ['GMAIL_FETCH_EMAILS'] } }`, not an array.
+
+Only inspection is credential-free. Running the quickstart still needs the credentials listed above.
+
 ## Strict mode
 
 Pass `strict: true` to register tools with strict JSON schema validation (see the [Agents SDK options reference](https://openai.github.io/openai-agents-js/guides/tools/#options-reference)). Each tool's input schema is normalized for OpenAI structured outputs: every object lists all of its properties in `required` and is closed, and optional properties stay available but accept `null`. A `null` is dropped before the tool runs unless the tool's own schema accepts `null` for that parameter, so nullable fields still receive an explicit `null`. Tools whose schema cannot be expressed in strict mode, such as objects that accept arbitrary keys, `allOf`, `prefixItems`, or unresolved `$ref`s, are registered without strict mode and log a warning:

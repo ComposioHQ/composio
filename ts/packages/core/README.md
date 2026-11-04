@@ -34,6 +34,44 @@ const session = await composio.use(sessionId);
 
 See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
 
+## Inspect sessions without credentials
+
+Import session types from `@composio/core` without constructing a client:
+
+```typescript
+import type {
+  Composio,
+  ToolRouterCreateSessionConfig,
+  ToolRouterSessionConfig,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionSearchResponse,
+} from '@composio/core';
+
+const config = {
+  toolkits: ['gmail'],
+  tools: { gmail: { enable: ['GMAIL_FETCH_EMAILS'] } },
+  preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+  manageConnections: { enable: true },
+} satisfies ToolRouterCreateSessionConfig;
+
+type Create = Composio['create'];
+type Session = Awaited<ReturnType<Create>>;
+type ReturnedConfig = ToolRouterSessionConfig;
+type ExecuteResult = ToolRouterSessionExecuteResponse;
+type SearchResult = ToolRouterSessionSearchResponse;
+```
+
+`tools` is a **toolkit-keyed map**, not an array. `SessionPreset` is a named export from `@composio/core`; `SessionPreset.DIRECT_TOOLS` exposes allowed tools directly and disables meta tools by default. `ToolRouterUpdateSessionConfig` describes updates; `ToolRouterSessionConfig` describes the server's returned configuration, not create input.
+
+For a compact offline reference, read [`docs/sessions.md`](./docs/sessions.md) in this package. The package ships:
+
+- `dist/index.d.mts`: the public declaration entry point (also selected by the export map). Follow its declaration imports rather than guessing hashed filenames.
+- `src/types/toolRouter.types.ts`: readable session configuration, options, and response types.
+- `src/composio.ts`: `Composio.create` and `Composio.use` signatures.
+- `src/models/ToolRouterSession.ts`: session methods, including `tools`, `authorize`, `search`, and `execute`.
+
+These source paths are for reading, not deep imports. Use the public `@composio/core` entry point in your code. Type inspection requires no credentials; client construction and backend operations still require authentication.
+
 ## Providers
 
 A provider formats session tools for your agent framework and wires up execution:

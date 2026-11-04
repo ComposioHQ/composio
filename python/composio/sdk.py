@@ -23,7 +23,30 @@ from composio.core.models import (
     Webhooks,
 )
 from composio.core.models.base import allow_tracking
+from composio.core.models.custom_tool import ExperimentalToolkit, LocalToolkit
+from composio.core.models.custom_tool_types import CustomTool, LocalTool
 from composio.core.models.mcp import MCP
+from composio.core.models.tool_router import (
+    SessionPreset,
+    ToolRouterConfigTags,
+    ToolRouterExperimentalConfig,
+    ToolRouterManageConnectionsConfig,
+    ToolRouterMultiAccountConfig,
+    ToolRouterPreloadConfig,
+    ToolRouterSandboxConfig,
+    ToolRouterToolkitsDisableConfig,
+    ToolRouterToolkitsEnableConfig,
+    ToolRouterToolkitsRequireApprovalConfig,
+    ToolRouterToolsConfig,
+    ToolRouterWorkbenchConfig,
+)
+from composio.core.models.tool_router_session import (
+    ToolRouterHook,
+    ToolRouterInstantConfig,
+    ToolRouterProxyExecuteConfig,
+    ToolRouterSession,
+    ToolRouterSessionWithMcp,
+)
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider._openai import (
     OpenAIProvider,
@@ -343,8 +366,208 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             file_upload_path_deny_segments=file_upload_path_deny_segments,
             file_upload_dirs=file_upload_dirs,
         )
-        self.create = self._sessions.create
-        self.use = self._sessions.use
+
+    @t.overload
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        sandbox: t.Optional[ToolRouterSandboxConfig] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+        mcp: t.Literal[True],
+    ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
+
+    @t.overload
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        sandbox: t.Optional[ToolRouterSandboxConfig] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+        mcp: t.Literal[False] = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]: ...
+
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        sandbox: t.Optional[ToolRouterSandboxConfig] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+        mcp: bool = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]:
+        """Create a session for a user.
+
+        This is the shortcut for :meth:`ToolRouter.create`, with the same
+        keyword arguments and return types. Inspect either method on its
+        class without constructing a client. ``tools`` is a toolkit-keyed map;
+        ``toolkits`` accepts a list or an enable/disable policy.
+
+        See ``help(ToolRouter.create)`` for the full configuration reference.
+        Creating a session requires credentials and makes a backend request.
+        """
+        # Split the literal flag to retain the MCP-specific overloads.
+        if mcp:
+            return self.sessions.create(
+                user_id=user_id,
+                toolkits=toolkits,
+                tools=tools,
+                tags=tags,
+                manage_connections=manage_connections,
+                auth_configs=auth_configs,
+                connected_accounts=connected_accounts,
+                sandbox=sandbox,
+                workbench=workbench,
+                multi_account=multi_account,
+                proxy_execute=proxy_execute,
+                hooks=hooks,
+                preload=preload,
+                session_preset=session_preset,
+                experimental=experimental,
+                instant=instant,
+                mcp=True,
+            )
+        return self.sessions.create(
+            user_id=user_id,
+            toolkits=toolkits,
+            tools=tools,
+            tags=tags,
+            manage_connections=manage_connections,
+            auth_configs=auth_configs,
+            connected_accounts=connected_accounts,
+            sandbox=sandbox,
+            workbench=workbench,
+            multi_account=multi_account,
+            proxy_execute=proxy_execute,
+            hooks=hooks,
+            preload=preload,
+            session_preset=session_preset,
+            experimental=experimental,
+            instant=instant,
+            mcp=False,
+        )
+
+    @t.overload
+    def use(
+        self,
+        session_id: str,
+        *,
+        local_tools: t.Optional[t.List[LocalTool]] = None,
+        local_toolkits: t.Optional[t.List[LocalToolkit]] = None,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: t.Literal[True],
+    ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
+
+    @t.overload
+    def use(
+        self,
+        session_id: str,
+        *,
+        local_tools: t.Optional[t.List[LocalTool]] = None,
+        local_toolkits: t.Optional[t.List[LocalToolkit]] = None,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: t.Literal[False] = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]: ...
+
+    def use(
+        self,
+        session_id: str,
+        *,
+        local_tools: t.Optional[t.List[LocalTool]] = None,
+        local_toolkits: t.Optional[t.List[LocalToolkit]] = None,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: bool = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]:
+        """Retrieve a session by ID. See ``help(ToolRouter.use)`` for options.
+
+        Inspect this signature without constructing a client. Retrieving a
+        session requires credentials and makes a backend request.
+        """
+        if mcp:
+            return self.sessions.use(
+                session_id,
+                local_tools=local_tools,
+                local_toolkits=local_toolkits,
+                custom_tools=custom_tools,
+                custom_toolkits=custom_toolkits,
+                mcp=True,
+            )
+        return self.sessions.use(
+            session_id,
+            local_tools=local_tools,
+            local_toolkits=local_toolkits,
+            custom_tools=custom_tools,
+            custom_toolkits=custom_toolkits,
+            mcp=False,
+        )
 
     @property
     def sessions(self) -> ToolRouter[TTool, TToolCollection]:

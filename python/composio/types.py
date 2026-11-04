@@ -7,6 +7,19 @@ from composio.core.models.custom_tool_types import (
     ToolRouterSessionProxyExecuteCompleted,
 )
 from composio.core.models.experimental import UsageSummaryResponse
+from composio.core.models.tool_router import (
+    SessionPreset,
+    ToolRouterConfigTags,
+    ToolRouterExperimentalConfig,
+    ToolRouterManageConnectionsConfig,
+    ToolRouterMultiAccountConfig,
+    ToolRouterPreloadConfig,
+    ToolRouterSandboxConfig,
+    ToolRouterToolkitsDisableConfig,
+    ToolRouterToolkitsEnableConfig,
+    ToolRouterToolkitsRequireApprovalConfig,
+    ToolRouterToolsConfig,
+)
 from composio.core.models.tool_router_session import (
     ToolRouterAfterExecuteHook,
     ToolRouterBeforeExecuteHook,
@@ -21,6 +34,7 @@ from composio.core.models.tools import (
     Modifiers,
     ToolExecuteParams,
     ToolExecutionResponse,
+    ToolRouterSessionExecuteResponse,
 )
 from composio.core.models.triggers import TriggerEvent
 from composio.core.provider.base import TTool, TToolCollection
@@ -37,6 +51,18 @@ __all__ = [
     "TTool",
     "TToolCollection",
     "InstantCharge",
+    "SessionPreset",
+    "ToolRouterConfigTags",
+    "ToolRouterExperimentalConfig",
+    "ToolRouterManageConnectionsConfig",
+    "ToolRouterMultiAccountConfig",
+    "ToolRouterPreloadConfig",
+    "ToolRouterSandboxConfig",
+    "ToolRouterToolkitsDisableConfig",
+    "ToolRouterToolkitsEnableConfig",
+    "ToolRouterToolkitsRequireApprovalConfig",
+    "ToolRouterToolsConfig",
+    "ToolRouterSessionExecuteResponse",
     "ToolRouterInstantConfig",
     "ToolRouterProxyExecuteConfig",
     "ToolRouterHook",
