@@ -159,6 +159,7 @@ export const downloadCandidate = (artifact: { id: number; digest: string }, dire
     const bytes = new Uint8Array(yield* archive.arrayBuffer);
     yield* verifyArchive(bytes, artifact.digest);
     const zip = `${directory}.zip`;
+    yield* fs.makeDirectory(directory, { recursive: true });
     yield* fs.writeFile(zip, bytes);
     const paths = (yield* run('unzip', ['-Z1', zip], { env: withoutReleaseTokens }))
       .trim()
@@ -167,7 +168,6 @@ export const downloadCandidate = (artifact: { id: number; digest: string }, dire
       new Set(paths).size === paths.length && paths.every(path => ArchiveEntry.test(path)),
       'Unexpected artifact archive path'
     );
-    yield* fs.makeDirectory(directory, { recursive: true });
     yield* run('unzip', ['-q', zip, '-d', directory], { env: withoutReleaseTokens });
   });
 

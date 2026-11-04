@@ -41,6 +41,9 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
 
+      - name: Install changelog filter dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: Detect new changelog files
         id: detect
         run: |

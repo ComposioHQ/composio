@@ -110,31 +110,53 @@ export const pinDocsSdkVersions = (
     return manifest;
   });
 
-/** Converts Bun's JSONC lockfile text to JSON by dropping comments and trailing commas outside strings. */
-const jsoncToJson = (text: string) => {
+/** Index of the closing quote of the JSON string that starts at `start`. */
+const stringEnd = (text: string, start: number) => {
+  let index = start + 1;
+  while (index < text.length && text[index] !== '"') index += text[index] === '\\' ? 2 : 1;
+  return index;
+};
+
+const stripComments = (text: string) => {
   let output = '';
   for (let index = 0; index < text.length; index++) {
-    const char = text[index];
-    if (char === '"') {
-      const start = index;
-      for (index++; index < text.length && text[index] !== '"'; index++)
-        if (text[index] === '\\') index++;
-      output += text.slice(start, index + 1);
-    } else if (char === '/' && text[index + 1] === '/') {
-      while (index < text.length && text[index] !== '\n') index++;
+    if (text[index] === '"') {
+      const end = stringEnd(text, index);
+      output += text.slice(index, end + 1);
+      index = end;
+    } else if (text.startsWith('//', index)) {
+      index = text.indexOf('\n', index);
+      if (index === -1) break;
       output += '\n';
-    } else if (char === '/' && text[index + 1] === '*') {
-      index = text.indexOf('*/', index + 2);
-      index = index === -1 ? text.length : index + 1;
-    } else if (
-      char === ',' &&
-      /^\s*(?:\/\/[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*[}\]]/.test(text.slice(index + 1))
-    ) {
-      continue;
-    } else output += char;
+    } else if (text.startsWith('/*', index)) {
+      const end = text.indexOf('*/', index + 2);
+      index = end === -1 ? text.length : end + 1;
+    } else output += text[index];
   }
   return output;
 };
+
+const stripTrailingCommas = (text: string) => {
+  let output = '';
+  for (let index = 0; index < text.length; index++) {
+    if (text[index] === '"') {
+      const end = stringEnd(text, index);
+      output += text.slice(index, end + 1);
+      index = end;
+      continue;
+    }
+    if (text[index] === ',') {
+      let next = index + 1;
+      while (next < text.length && /\s/.test(text[next])) next++;
+      if (text[next] === '}' || text[next] === ']') continue;
+    }
+    output += text[index];
+  }
+  return output;
+};
+
+/** Converts Bun's JSONC lockfile text to JSON by dropping comments and trailing commas outside strings. */
+const jsoncToJson = (text: string) => stripTrailingCommas(stripComments(text));
 
 const BunLock = Schema.Struct({
   packages: Schema.Record(Schema.String, Schema.Array(Schema.Unknown)),
