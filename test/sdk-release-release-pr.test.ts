@@ -21,6 +21,7 @@ const batch: ReleaseBatch = {
   id: '8',
   inputBase: 'a'.repeat(40),
   originalRunId: '8',
+  requestedBy: ['requester'],
   statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
   date: '2026-11-04',
   outputs: [
@@ -80,6 +81,7 @@ test('the release PR names every package, consumed changeset and edited changelo
   expect(body).toContain(
     'https://github.com/ComposioHQ/composio/tree/sdk-release/batch-8/docs/content/reference/sdk-reference/typescript/'
   );
+  expect(body).toContain('Approval must come from a writer other than the requester (@requester).');
   expect(body).toContain('tags it `sdk-release/8`');
 });
 

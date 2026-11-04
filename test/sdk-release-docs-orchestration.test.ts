@@ -25,6 +25,7 @@ const batch: ReleaseBatch = {
   schemaVersion: 1,
   id: '8',
   originalRunId: '8',
+  requestedBy: ['requester'],
   inputBase: source,
   statusUrl: 'https://github.com/ComposioHQ/composio/issues/8',
   date: '2026-11-03',

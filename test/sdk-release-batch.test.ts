@@ -44,21 +44,23 @@ const head = 'b'.repeat(40);
 const merge = 'c'.repeat(40);
 
 describe('approved release source', () => {
-  test('requires a non-author, eligible current-head review', () => {
+  test('requires a current-head review from a writer who is neither author nor requester', () => {
+    const excluded = ['author', 'requester'];
     const review = { user: 'reviewer', state: 'APPROVED', commitId: head, permission: 'write' };
-    expect(eligibleApproval([review], 'author', head)).toBe(true);
+    expect(eligibleApproval([review], excluded, head)).toBe(true);
     expect(
       eligibleApproval(
         [review, { ...review, user: 'observer', state: 'CHANGES_REQUESTED', permission: 'read' }],
-        'author',
+        excluded,
         head
       )
     ).toBe(true);
-    expect(eligibleApproval([{ ...review, commitId: base }], 'author', head)).toBe(false);
-    expect(eligibleApproval([{ ...review, permission: 'read' }], 'author', head)).toBe(false);
-    expect(eligibleApproval([{ ...review, user: 'author' }], 'author', head)).toBe(false);
+    expect(eligibleApproval([{ ...review, commitId: base }], excluded, head)).toBe(false);
+    expect(eligibleApproval([{ ...review, permission: 'read' }], excluded, head)).toBe(false);
+    expect(eligibleApproval([{ ...review, user: 'author' }], excluded, head)).toBe(false);
+    expect(eligibleApproval([{ ...review, user: 'requester' }], excluded, head)).toBe(false);
     expect(
-      eligibleApproval([review, { ...review, state: 'CHANGES_REQUESTED' }], 'author', head)
+      eligibleApproval([review, { ...review, state: 'CHANGES_REQUESTED' }], excluded, head)
     ).toBe(false);
   });
   test('source edits and lock dependency changes fail release-only validation', async () => {
@@ -126,6 +128,7 @@ const batch: ReleaseBatch = {
   schemaVersion: 1,
   id: '8',
   originalRunId: '8',
+  requestedBy: ['requester'],
   inputBase: base,
   statusUrl: 'https://github.com/ComposioHQ/composio/issues/8',
   date: '2026-11-03',
@@ -182,6 +185,7 @@ beforeAll(async () => {
 function fakeController(
   options: {
     oldReview?: boolean;
+    reviewer?: string;
     mergeKind?: 'squash' | 'merge';
     editedPlan?: boolean;
     existingTag?: string;
@@ -251,12 +255,13 @@ function fakeController(
     if (path.startsWith('/pulls/9/reviews'))
       return response([
         {
-          user: { login: 'reviewer' },
+          user: { login: options.reviewer ?? 'reviewer' },
           state: 'APPROVED',
           commit_id: options.oldReview ? base : head,
         },
       ]);
-    if (path === '/collaborators/reviewer/permission') return response({ permission: 'write' });
+    if (path === `/collaborators/${options.reviewer ?? 'reviewer'}/permission`)
+      return response({ permission: 'write' });
     if (path.startsWith(`/commits/${head}/check-runs`))
       return response({
         total_count: options.docs === 'missing' ? 1 : 2,
@@ -376,12 +381,24 @@ describe('controller API contracts', () => {
       body: { sha: head, merge_method: 'squash' },
     });
   });
-  test('old reviews, failed candidates and edited frozen plans cause no tag writes', async () => {
-    for (const options of [{ oldReview: true }, { failedCandidate: true }, { editedPlan: true }]) {
+  test('old reviews, requester approvals, failed candidates and edited frozen plans cause no tag writes', async () => {
+    for (const options of [
+      { oldReview: true },
+      { reviewer: 'requester' },
+      { failedCandidate: true },
+      { editedPlan: true },
+    ]) {
       const { fetcher, writes } = fakeController(options);
       await expect(runRelease(authorizeSourceTag(9, 123), fetcher)).rejects.toThrow();
       expect(writes).toEqual([]);
     }
+  });
+  test('the release requester cannot approve their own release', async () => {
+    const { fetcher, writes } = fakeController({ reviewer: 'requester' });
+    await expect(runRelease(mergeApprovedRelease(9, 123, '10'), fetcher)).rejects.toThrow(
+      'lacks an approval from a writer other than the author and requesters'
+    );
+    expect(writes).toEqual([]);
   });
   test('an existing matching tag is reused and a moved source is refused', async () => {
     const matching = fakeController({ existingTag: head });

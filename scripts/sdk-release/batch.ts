@@ -401,8 +401,8 @@ export const verifyReleaseHead = (number: number) =>
     );
     const reviews = yield* reviewsWithPermissions(number);
     yield* ensure(
-      eligibleApproval(reviews, pull.user.login, pull.head.sha),
-      'Final release head lacks an eligible non-author approval'
+      eligibleApproval(reviews, [pull.user.login, ...batch.requestedBy], pull.head.sha),
+      'Final release head lacks an approval from a writer other than the author and requesters'
     );
     const checks = yield* request(
       'GET',
@@ -799,6 +799,7 @@ const prepareRelease = <PE, PR, OE, OR>(
       schemaVersion: 1,
       id: context.runId,
       originalRunId: context.runId,
+      requestedBy: [...new Set([...(previous?.requestedBy ?? []), context.actor])],
       inputBase: context.sourceSha,
       date,
       statusUrl: `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${issue}`,

@@ -274,6 +274,7 @@ async function publicationStatusFixture() {
     schemaVersion: 1,
     id: '8',
     originalRunId: '8',
+    requestedBy: ['requester'],
     inputBase: source.sha,
     statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
     date: '2026-11-03',

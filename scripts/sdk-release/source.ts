@@ -12,6 +12,8 @@ export const ReleaseBatch = Schema.Struct({
   id: RunId,
   inputBase: Sha,
   originalRunId: RunId,
+  /** Members who requested or refreshed this release; none of them may approve it. */
+  requestedBy: Schema.Array(Schema.String).check(Schema.isMinLength(1)),
   statusUrl: Schema.String.check(
     Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
   ),
@@ -34,14 +36,22 @@ export interface Review {
   readonly permission: string;
 }
 
-/** A writer other than the author approved this exact head, and no writer's latest review requests changes. */
-export function eligibleApproval(reviews: ReadonlyArray<Review>, author: string, head: string) {
+/**
+ * A writer who is not excluded (the PR author and the release requesters) approved this exact
+ * head, and no writer's latest review requests changes.
+ */
+export function eligibleApproval(
+  reviews: ReadonlyArray<Review>,
+  excluded: ReadonlyArray<string>,
+  head: string
+) {
   const latest = [...new Map(reviews.map(review => [review.user, review])).values()];
   const writers = latest.filter(review => WRITE_PERMISSIONS.has(review.permission));
   return (
     !writers.some(review => review.state === 'CHANGES_REQUESTED') &&
     writers.some(
-      review => review.user !== author && review.state === 'APPROVED' && review.commitId === head
+      review =>
+        !excluded.includes(review.user) && review.state === 'APPROVED' && review.commitId === head
     )
   );
 }
