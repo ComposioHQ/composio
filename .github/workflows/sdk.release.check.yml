@@ -39,7 +39,7 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
         with:
           enable-caching: 'false'
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run test:sdk-release
       - run: pnpm run typecheck:sdk-release
       - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.test.ts
