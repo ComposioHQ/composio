@@ -1009,6 +1009,10 @@ const authorizeMode = ({ env, event, envelope }: ModeInput) =>
         env.outputPath,
         `prepare=true\nnew-batch=${!result.reusedBatch}\nreuse-patch=${Option.isSome(prepared)}\n`
       );
+      // The prepare job reads the batch from this output; release-pr re-checks it against the artifact.
+      const compact = JSON.stringify(result.batch);
+      yield* ensure(compact.length < 900_000, 'Release batch exceeds the job output limit');
+      yield* appendFile(env.outputPath, `batch=${compact}\n`);
     }
     yield* writeSummary(env, `${result.message}\n${result.pullRequest ?? result.runUrl ?? ''}\n`);
   });

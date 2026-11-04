@@ -218,13 +218,19 @@ const LIVE_PAGE_FORMATS: ReadonlyArray<{
   },
 ];
 
-const cellText = (cell: string) =>
-  cell
-    .replace(/<[^>]*>/g, '')
-    .replace(/[<>]/g, '')
-    .replaceAll('`', '')
-    .trim()
-    .replace(/\s+/g, ' ');
+/** Drops every `<...>` tag and stray angle bracket in one pass. */
+const stripTags = (text: string) => {
+  let output = '';
+  let inTag = false;
+  for (const char of text) {
+    if (char === '<') inTag = true;
+    else if (char === '>') inTag = false;
+    else if (!inTag) output += char;
+  }
+  return output;
+};
+
+const cellText = (cell: string) => stripTags(cell).replaceAll('`', '').trim().replace(/\s+/g, ' ');
 
 const fetchLive = (url: string) =>
   Effect.gen(function* () {

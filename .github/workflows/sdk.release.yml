@@ -61,6 +61,7 @@ jobs:
     outputs:
       prepare: ${{ steps.authorize.outputs.prepare }}
       reuse-patch: ${{ steps.authorize.outputs.reuse-patch }}
+      batch: ${{ steps.authorize.outputs.batch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -98,21 +99,22 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      # This job reads a downloaded artifact, so it uses no caches.
       - uses: ./.github/actions/setup-node-pnpm-bun
-        with:
-          enable-caching: 'false'
       - uses: ./.github/actions/setup-python-uv
         with:
-          enable-caching: 'false'
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Install documentation generator dependencies
         working-directory: docs
         run: bun install --frozen-lockfile --ignore-scripts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: sdk-authorized-batch
-          path: /tmp/sdk-authorized-input
+      - name: Read the authorized release input
+        env:
+          AUTHORIZED_BATCH: ${{ needs.authorize.outputs.batch }}
+        run: mkdir -p /tmp/sdk-authorized-input && printenv AUTHORIZED_BATCH > /tmp/sdk-authorized-input/sdk-release-batch.json
       - name: Apply versions, locks and ordinary release documentation
         env:
           SDK_RELEASE_PATCH_PATH: /tmp/sdk-release-patch.json
