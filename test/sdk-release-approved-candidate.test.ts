@@ -186,7 +186,7 @@ test('a candidate artifact created after the latest successful build job is refu
       fakeGitHub(archive, [releaseRun(41)], false, { createdAt: '2026-11-03T00:15:00Z' })
     )
   ).rejects.toThrow(
-    'Approved python candidate artifact was created at 2026-11-03T00:15:00Z, outside its build job, which ran from 2026-11-03T00:01:00Z to 2026-11-03T00:10:00Z; request a new release with supersede'
+    'sdk-candidate-python was created at 2026-11-03T00:15:00Z, outside its SDK candidate (python) job, which ran from 2026-11-03T00:01:00Z to 2026-11-03T00:10:00Z; request a new release with supersede'
   );
   expect(await Bun.file(`${target}/${wheel}`).exists()).toBe(false);
 });
@@ -215,12 +215,13 @@ test('a release-PR run whose candidate build job did not succeed is refused', as
   );
 });
 
-test('a retried tag run keeps the candidate it already adopted', async () => {
+/** A tag run (id 9) whose earlier copy job uploaded its own candidate artifact at `createdAt`. */
+const ownCandidateRun = async (createdAt: string) => {
   const approvedFrom = { run: 41, artifactId: 77, digest: `sha256:${'c'.repeat(64)}` };
   const archive = await approvedArchive(wheelText, { producerRun: 9, approvedFrom });
   const target = `${await directories.create()}/python`;
   const reads: string[] = [];
-  const adopted = await runRelease(tagRunCandidate(9, head, 'python', target), async input => {
+  const result = runRelease(tagRunCandidate(9, head, 'python', target), async input => {
     const url = new URL(String(input));
     reads.push(url.pathname);
     if (url.hostname === 'artifacts.test') return new Response(archive.bytes);
@@ -233,9 +234,31 @@ test('a retried tag run keeps the candidate it already adopted', async () => {
             name: 'sdk-candidate-python',
             digest: archive.digest,
             expired: false,
-            created_at: '2026-11-04T00:05:00Z',
+            created_at: createdAt,
             expires_at: '2099-12-01T00:00:00Z',
             workflow_run: { id: 9, head_sha: head },
+          },
+        ],
+      });
+    if (path === '/actions/runs/9/jobs')
+      return json({
+        total_count: 2,
+        jobs: [
+          {
+            name: 'Approved candidate (python)',
+            status: 'completed',
+            conclusion: 'success',
+            started_at: '2026-11-04T00:00:00Z',
+            completed_at: '2026-11-04T00:10:00Z',
+            steps: [],
+          },
+          {
+            name: 'Publish original PyPI candidates',
+            status: 'completed',
+            conclusion: 'failure',
+            started_at: '2026-11-04T00:11:00Z',
+            completed_at: '2026-11-04T00:30:00Z',
+            steps: [],
           },
         ],
       });
@@ -246,10 +269,20 @@ test('a retried tag run keeps the candidate it already adopted', async () => {
       });
     throw new Error(`Unexpected read ${path}`);
   });
-  expect(adopted).toEqual(approvedFrom);
+  return { result, target, reads, approvedFrom };
+};
+
+test('a retried tag run keeps the candidate it already adopted', async () => {
+  const { result, target, reads, approvedFrom } = await ownCandidateRun('2026-11-04T00:05:00Z');
+  expect(await result).toEqual(approvedFrom);
   expect(await readText(`${target}/${wheel}`)).toBe(wheelText);
   expect(await Bun.file(`${target}/candidate.json`).exists()).toBe(false);
   expect(reads.some(path => path.includes('/runs/41') || path.includes('/workflows/'))).toBe(false);
+});
+
+test('a retried tag run refuses its own candidate when a later job replaced it', async () => {
+  const { result } = await ownCandidateRun('2026-11-04T00:20:00Z');
+  await expect(result).rejects.toThrow('outside its Approved candidate (python) job');
 });
 
 test('a tag run without its own candidate copies the approved release-PR candidate', async () => {

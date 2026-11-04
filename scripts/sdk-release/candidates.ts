@@ -12,6 +12,7 @@ import {
   readCandidateFiles,
   reuseCandidate,
   verifyCandidateFiles,
+  type CandidateArtifact,
 } from './artifacts';
 import {
   GitHub,
@@ -181,12 +182,39 @@ const CANDIDATES_WORKFLOW = 'sdk.release.candidates.yml';
 const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
 
 /**
+ * Requires `artifact` to have been created while the newest successful `jobName` job of `runId`
+ * ran. Later jobs in a run hold its runtime token and could replace the artifact. Jobs from every
+ * attempt are read because a partial re-run leaves earlier jobs out of the latest attempt.
+ */
+const requireCreatedDuring = (
+  runId: number,
+  jobName: string,
+  artifact: CandidateArtifact,
+  where: string
+) =>
+  Effect.gen(function* () {
+    const [job] = (yield* jobs(String(runId), 'all'))
+      .flatMap(job =>
+        job.name === jobName && job.conclusion === 'success' && job.started_at && job.completed_at
+          ? [{ startedAt: job.started_at, completedAt: job.completed_at }]
+          : []
+      )
+      .toSorted((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt));
+    if (!job)
+      return yield* fail(
+        `The ${jobName} job did not succeed in ${where}; request a new release with supersede`
+      );
+    const created = Date.parse(artifact.created_at);
+    yield* ensure(
+      Date.parse(job.startedAt) <= created && created <= Date.parse(job.completedAt),
+      `${artifact.name} was created at ${artifact.created_at}, outside its ${jobName} job, which ran from ${job.startedAt} to ${job.completedAt}; request a new release with supersede`
+    );
+  });
+
+/**
  * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
  * Every successful release-PR run on the head passed the candidate checks the merge requires;
- * the newest one is used. Later jobs in that run hold its runtime token and could replace the
- * artifact, so it must have been created while the newest successful build job ran. Jobs from
- * every attempt are read because re-running only a failed smoke job leaves the build job out of
- * the latest attempt.
+ * the newest one is used, and its artifact must come from that run's build job.
  */
 export const adoptApprovedCandidate = (sha: string, language: Language, directory: string) =>
   Effect.gen(function* () {
@@ -219,22 +247,11 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
       return yield* fail(
         `Approved ${language} candidate was deleted from ${run.html_url}; request a new release with supersede`
       );
-    const buildJob = `SDK candidate (${language})`;
-    const [build] = (yield* jobs(String(run.id), 'all'))
-      .flatMap(job =>
-        job.name === buildJob && job.conclusion === 'success' && job.started_at && job.completed_at
-          ? [{ startedAt: job.started_at, completedAt: job.completed_at }]
-          : []
-      )
-      .toSorted((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt));
-    if (!build)
-      return yield* fail(
-        `The ${buildJob} job did not succeed in ${run.html_url}; request a new release with supersede`
-      );
-    const created = Date.parse(artifact.value.created_at);
-    yield* ensure(
-      Date.parse(build.startedAt) <= created && created <= Date.parse(build.completedAt),
-      `Approved ${language} candidate artifact was created at ${artifact.value.created_at}, outside its build job, which ran from ${build.startedAt} to ${build.completedAt}; request a new release with supersede`
+    yield* requireCreatedDuring(
+      run.id,
+      `SDK candidate (${language})`,
+      artifact.value,
+      run.html_url
     );
     yield* downloadCandidate(artifact.value, directory);
     const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
@@ -257,7 +274,8 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
 /**
  * The candidate a source-tag run publishes. A retried tag run reuses the artifact an earlier
  * attempt of the same run uploaded, so it keeps the first adopted bytes even if the release-PR
- * candidate workflow ran again later; only a run without one copies from the release PR.
+ * candidate workflow ran again later, provided an earlier copy job of this run created it; only
+ * a run without one copies from the release PR.
  */
 export const tagRunCandidate = (
   runId: number,
@@ -273,6 +291,12 @@ export const tagRunCandidate = (
       sha
     );
     if (Option.isNone(own)) return yield* adoptApprovedCandidate(sha, language, directory);
+    yield* requireCreatedDuring(
+      runId,
+      `Approved candidate (${language})`,
+      own.value,
+      'this tag run'
+    );
     yield* downloadCandidate(own.value, directory);
     const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
     const manifest = yield* readJson(CandidateManifest, manifestPath);
