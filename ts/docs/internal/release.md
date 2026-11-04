@@ -37,7 +37,7 @@ Choose a patch, minor, or major recommendation for each entry. Put prose types s
 
 ## Recovery limits
 
-The `sdk-release/<id>` tag run does not rebuild. It copies the candidate files built on the approved release PR head, checks them against that run's checksums, and publishes those bytes. Publisher retries reuse the original selected versions and exact candidate bytes. Before accepting an existing npm tarball or Python wheel/sdist, the workflow checks its downloaded bytes against the original candidate. Missing files are uploaded; conflicting files end recovery. npm provenance, stable tags, Python metadata, and fresh installs are verified separately.
+Release PRs build their candidates in `sdk.release.candidates.yml`, which runs only on `pull_request` with no secrets. The `sdk-release/<id>` tag run in `sdk.release.yml` does not rebuild. It copies the candidate files built on the approved release PR head, checks them against that run's checksums, and publishes those bytes. Publisher retries reuse the original selected versions and exact candidate bytes. Before accepting an existing npm tarball or Python wheel/sdist, the workflow checks its downloaded bytes against the original candidate. Missing files are uploaded; conflicting files end recovery. npm provenance, stable tags, Python metadata, and fresh installs are verified separately.
 
 Recovery ends at the earliest of 30 days from the original publication run, original artifact deletion/expiry, or GitHub's 50-attempt limit. A possible earlier upload prevents rebuilding a missing candidate for the same version. Request a new higher-version corrective release with normal approval when recovery ends. Its plan reconciles the recorded partial inventory; published files are never removed or replaced.
 

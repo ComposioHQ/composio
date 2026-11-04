@@ -43,7 +43,7 @@ const approvedArchive = async (listed = wheelText) => {
 
 const releaseRun = (id: number, conclusion = 'success') => ({
   id,
-  path: '.github/workflows/sdk.release.yml',
+  path: '.github/workflows/sdk.release.candidates.yml',
   head_branch: 'sdk-release/batch-8',
   head_sha: head,
   event: 'pull_request',
@@ -61,7 +61,8 @@ const fakeGitHub =
     const url = new URL(String(input));
     if (url.hostname === 'artifacts.test') return new Response(archive.bytes);
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '');
-    if (path === '/actions/workflows/sdk.release.yml/runs') return json({ workflow_runs: runs });
+    if (path === '/actions/workflows/sdk.release.candidates.yml/runs')
+      return json({ workflow_runs: runs });
     if (path === '/actions/runs/41/artifacts')
       return json({
         artifacts: [

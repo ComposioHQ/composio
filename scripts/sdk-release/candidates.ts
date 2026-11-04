@@ -228,7 +228,9 @@ type BuildEnvironment = Config.Success<typeof BuildEnvironment>;
 /** Release-PR runs build candidates; source-tag runs publish the approved release-PR bytes. */
 const isSourceTag = (ref: string) => ref.startsWith('refs/tags/sdk-release/');
 
-const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
+/** The pull_request-only workflow that builds release-PR candidates. */
+const CANDIDATES_WORKFLOW = 'sdk.release.candidates.yml';
+const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
 
 const readCandidateFiles = (directory: string) =>
   Effect.gen(function* () {
@@ -255,13 +257,13 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
   Effect.gen(function* () {
     const { workflow_runs } = yield* request(
       'GET',
-      `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=pull_request&head_sha=${sha}&status=success&per_page=100`,
+      `${REPOSITORY_PATH}/actions/workflows/${CANDIDATES_WORKFLOW}/runs?event=pull_request&head_sha=${sha}&status=success&per_page=100`,
       Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) })
     );
     const [run] = workflow_runs
       .filter(
         candidate =>
-          candidate.path === WORKFLOW_PATH &&
+          candidate.path === CANDIDATES_WORKFLOW_PATH &&
           candidate.repository.full_name === SDK_RELEASE_REPOSITORY &&
           candidate.event === 'pull_request' &&
           candidate.head_sha === sha &&

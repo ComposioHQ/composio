@@ -138,7 +138,7 @@ const sourceTagRun = async (routes: string) => {
 
 test('a deleted approved candidate ends recovery so a corrective release can start', async () => {
   const { result, output } = await sourceTagRun(
-    `{ '/actions/runs/9/artifacts': { total_count: 0, artifacts: [] }, '/actions/workflows/sdk.release.yml/runs': { workflow_runs: [] } }`
+    `{ '/actions/runs/9/artifacts': { total_count: 0, artifacts: [] }, '/actions/workflows/sdk.release.candidates.yml/runs': { workflow_runs: [] } }`
   );
   expect(result.exitCode).not.toBe(0);
   expect(`${result.stdout}${result.stderr}`).toContain(

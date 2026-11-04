@@ -25,13 +25,10 @@ on:
         description: Original run ID; retry ignores new bump choices
         type: string
         required: false
-  pull_request:
-    branches: [next]
-    paths: ['.github/sdk-release-plan.json', 'scripts/sdk-release/**']
   pull_request_review:
     types: [submitted]
   workflow_run:
-    workflows: ['SDK release', 'Docs - Lint and TypeScript Validation']
+    workflows: ['SDK release', 'SDK release candidates', 'Docs - Lint and TypeScript Validation']
     types: [completed]
   pull_request_target:
     branches: [next]
@@ -101,10 +98,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      # This job reads a downloaded artifact, so it restores caches but never saves them.
+      # This job reads a downloaded artifact, so it uses no caches.
       - uses: ./.github/actions/setup-node-pnpm-bun
         with:
-          cache-save: 'false'
+          enable-caching: 'false'
       - uses: ./.github/actions/setup-python-uv
         with:
           enable-caching: 'false'
@@ -236,14 +233,12 @@ jobs:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
         run: bun scripts/sdk-release/batch.ts tag
 
-  # Candidate jobs run only for release-PR pull_request events and sdk-release/* tag pushes,
-  # never for pull_request_target or workflow_run. They get a read-only token and no secrets,
-  # and use no caches, so the published files never depend on cached state.
+  # The tag run publishes the files the approved release PR built in sdk.release.candidates.yml.
+  # These jobs check out only the protected tag and copy those files; they never build.
   select-candidates:
     if: >-
       github.repository == 'ComposioHQ/composio' &&
-      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')) ||
-       (github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')))
+      github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest
     outputs:
       typescript: ${{ steps.select.outputs.typescript }}
@@ -252,24 +247,24 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Select planned language lanes
         id: select
         env:
-          SOURCE_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
+          SOURCE_TAG: ${{ github.ref_name }}
         run: |
           node --input-type=module <<'JS'
           import { readFileSync, appendFileSync } from 'node:fs';
           const batch = JSON.parse(readFileSync('.github/sdk-release-plan.json', 'utf8'));
-          if (process.env.SOURCE_TAG && process.env.SOURCE_TAG !== `sdk-release/${batch.id}`) throw new Error('Tag does not identify the committed release');
+          if (process.env.SOURCE_TAG !== `sdk-release/${batch.id}`) throw new Error('Tag does not identify the committed release');
           const languages = [...new Set(batch.plan.releases.map(release => release.language))];
           appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\n`);
           for (const language of ['typescript', 'python']) appendFileSync(process.env.GITHUB_OUTPUT, `${language}=${languages.includes(language)}\n`);
           JS
 
   candidate:
-    name: SDK candidate (${{ matrix.language }})
+    name: Approved candidate (${{ matrix.language }})
     needs: select-candidates
     if: needs.select-candidates.outputs.typescript == 'true' || needs.select-candidates.outputs.python == 'true'
     runs-on: ubuntu-latest
@@ -280,21 +275,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
         with:
           enable-caching: 'false'
-      - uses: ./.github/actions/setup-python-uv
-        with:
-          enable-caching: 'false'
-        if: matrix.language == 'python' && needs.select-candidates.outputs.python == 'true'
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Build or recover exact immutable candidate
+      - name: Copy the approved release-PR candidate
         id: build
         env:
           SDK_READ_TOKEN: ${{ github.token }}
-          GITHUB_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
       - name: Registry recovery exhausted
         if: failure() && steps.build.outputs.terminal == 'true'
@@ -313,7 +303,7 @@ jobs:
         env:
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id || steps.build.outputs.artifact-id }}
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest || steps.build.outputs.artifact-digest }}
-          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          SOURCE_SHA: ${{ github.sha }}
           SDK_READ_TOKEN: ${{ github.token }}
         run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}
 
