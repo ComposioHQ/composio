@@ -307,7 +307,7 @@ bun run lint:links
 
 ## Release Process
 
-Any active ComposioHQ member can request, inspect, and retry a stable SDK release through the SDK release issue form. Repository writers can also run **SDK release** on `next`. A repository writer other than the requester approves the final release PR; automation publishes the approved candidates. See the shared runbook below. CLI binaries and `main` beta releases keep their separate workflows.
+Any active ComposioHQ member can request a stable SDK release through the SDK release issue form. Repository writers can also run **SDK release** on `next`. A repository writer who did not request the release approves the final release PR, a person merges it, and automation publishes the candidates the PR built and checked. See the shared runbook below. CLI binaries and `main` beta releases keep their separate workflows.
 
 - TypeScript packages and the CLI: [`ts/docs/internal/release.md`](ts/docs/internal/release.md)
 - Python packages: [`python/docs/release.md`](python/docs/release.md)

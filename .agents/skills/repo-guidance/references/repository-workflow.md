@@ -50,7 +50,7 @@ make build
 - Public SDK behavior changes need a Changesets note for each affected TypeScript package and/or the private `@composio/python-sdk` marker. Python core and supported providers share one stable release train.
 - `@composio/cli` is ignored by Changesets. Never target it in a changeset while it remains ignored; use the `cli-release` skill for beta builds and stable promotion.
 - Repo guidance, docs-only, tests-only, internal validation and CLI-only changes do not require an SDK note. Explicit behavior exemptions need a meaningful `<!-- sdk-release-note-exempt: meaningful reason of at least 20 characters -->` comment in the PR body.
-- Stable SDKs use **SDK release** on protected `next`, with member issue requests, one approved release PR, original candidates and docs-only recovery. Read `ts/docs/internal/release.md` before operating it.
+- Stable SDKs use **SDK release** on protected `next`: a member issue request, one release PR that a non-requester approves and a person merges, and a tag run that publishes the PR-built candidates. Recover with **Re-run failed jobs**. Read `ts/docs/internal/release.md` before operating it.
 
 ## Generated And Vendor Files
 
