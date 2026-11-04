@@ -43,6 +43,7 @@ import {
   withoutReleaseTokens,
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch } from './source';
+import { RELEASE_WORKFLOW_PATH, tagRunProblem, type ReleaseApp } from './tag-run';
 
 export interface PublicationSource {
   readonly sha: string;
@@ -82,7 +83,6 @@ const ensureTerminal = (condition: boolean, message: string) =>
 const isTerminal = (error: unknown) => Predicate.isTagged(error, 'TerminalPublicationError');
 
 const NPM_REGISTRY = 'https://registry.npmjs.org';
-const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
 const SLSA_PROVENANCE = 'https://slsa.dev/provenance/v1';
 const REGISTRY_TIMEOUT = '30 seconds';
 const RECOVERY_WINDOW_MS = 30 * 86_400_000;
@@ -201,7 +201,7 @@ export const inspectNpmProvenanceSubject = (
     const repository = `https://github.com/${SDK_RELEASE_REPOSITORY}`;
     yield* ensureTerminal(
       workflow.repository === repository &&
-        workflow.path === WORKFLOW_PATH &&
+        workflow.path === RELEASE_WORKFLOW_PATH &&
         workflow.ref === `refs/tags/${source.tag}` &&
         buildDefinition.resolvedDependencies.some(
           item =>
@@ -595,7 +595,6 @@ export const correctiveInventory = (
     });
   });
 
-const App = Schema.Struct({ id: Schema.Number, slug: Schema.String });
 const MergedPull = Schema.Struct({
   number: Schema.Number,
   head: Schema.Struct({ sha: Sha }),
@@ -606,7 +605,7 @@ const MergedPull = Schema.Struct({
 export const verifyPublicationSource = (
   batch: ReleaseBatch,
   source: PublicationSource,
-  expectedApp: { readonly id: number; readonly slug: string }
+  expectedApp: ReleaseApp
 ) =>
   Effect.gen(function* () {
     yield* ensure(
@@ -615,31 +614,12 @@ export const verifyPublicationSource = (
     );
     const tagRun = yield* getRun(String(source.runId));
     yield* ensure(
-      tagRun.path === WORKFLOW_PATH &&
-        tagRun.head_branch === source.tag &&
-        tagRun.repository.full_name === SDK_RELEASE_REPOSITORY &&
-        tagRun.head_sha === source.sha &&
-        tagRun.event === 'push',
+      tagRun.head_branch === source.tag && tagRun.head_sha === source.sha,
       'Publication requires the original protected source-tag push'
     );
+    const problem = yield* tagRunProblem(tagRun, expectedApp);
+    if (problem !== undefined) return yield* fail(problem);
     yield* requireRecoveryWindow(tagRun);
-    const app = yield* request('GET', `/apps/${encodeURIComponent(expectedApp.slug)}`, App);
-    yield* ensure(
-      app.id === expectedApp.id &&
-        app.slug === expectedApp.slug &&
-        tagRun.actor?.type === 'Bot' &&
-        tagRun.actor.login === `${app.slug}[bot]`,
-      'Publication source tag was not pushed by the dedicated SDK release App'
-    );
-    const tag = yield* request(
-      'GET',
-      `${REPOSITORY_PATH}/git/ref/tags/${source.tag}`,
-      Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Sha }) })
-    );
-    yield* ensure(
-      tag.object.type === 'commit' && tag.object.sha === source.sha,
-      'Publication tag source changed'
-    );
     const pulls = yield* request(
       'GET',
       `${REPOSITORY_PATH}/commits/${source.sha}/pulls?per_page=100`,

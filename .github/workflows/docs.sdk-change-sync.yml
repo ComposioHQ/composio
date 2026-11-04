@@ -223,9 +223,8 @@ jobs:
             verified target snapshot and summaries in the input, never mutable registry latest.
             Read released APIs from /tmp/sdk-published-contract/docs/content/reference/sdk-reference/
             and exact installed docs/node_modules/@composio/ packages and /tmp/sdk-published-python/.
-            Only selected verified-language references are exposed; an unselected corrective
-            language can retain unverified references in the repository. Use the exact public
-            installed SDK contract for that language. Current next SDK runtime
+            Only selected verified-language references are exposed; for other languages use
+            the exact public installed SDK contract. Current next SDK runtime
             may include unpublished changes; do not describe it as the released API. Review all
             relevant published references, including changes from earlier verified batches whose
             guide maintenance may still be pending.
@@ -291,10 +290,15 @@ jobs:
           VERCEL_DOCS_NEXT_DEPLOY_HOOK: ${{ secrets.VERCEL_DOCS_NEXT_DEPLOY_HOOK }}
         run: bun scripts/sdk-release/docs.ts deploy
 
+  # Reports a mismatch on the release request; the published release is unaffected.
   sdk-live:
     needs: [sdk-context, sdk-deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -307,64 +311,6 @@ jobs:
           name: sdk-docs-input
           path: /tmp
       - name: Verify live changelog HTML, Markdown, exact version rows and references
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: bun scripts/sdk-release/docs.ts live
-
-  sdk-completion:
-    needs: [sdk-context, sdk-live]
-    if: always() && needs.sdk-context.result == 'success'
-    runs-on: ubuntu-latest
-    environment: sdk-release-control
-    concurrency:
-      group: sdk-release-controller
-      cancel-in-progress: false
-      queue: max
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: next
-          persist-credentials: false
-      - uses: ./.github/actions/setup-node-pnpm-bun
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
-        id: sdk-token
-        with:
-          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
-          owner: ComposioHQ
-          repositories: composio
-      - name: Update the canonical completion status without an early success announcement
-        env:
-          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
-          SDK_DOCS_LIVE_RESULT: ${{ needs.sdk-live.result }}
-          SDK_DOCS_MAINTENANCE_RESULT: pending
-        run: bun scripts/sdk-release/docs.ts finish
-
-  sdk-maintenance-status:
-    needs: [sdk-context, sdk-maintenance-pr]
-    if: always() && needs.sdk-context.result == 'success'
-    runs-on: ubuntu-latest
-    environment: sdk-release-control
-    concurrency:
-      group: sdk-release-controller
-      cancel-in-progress: false
-      queue: max
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: next
-          persist-credentials: false
-      - uses: ./.github/actions/setup-node-pnpm-bun
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
-        id: sdk-token
-        with:
-          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
-          owner: ComposioHQ
-          repositories: composio
-      - name: Report independent guide and pin maintenance result
-        env:
-          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
-          SDK_DOCS_LIVE_RESULT: maintenance
-          SDK_DOCS_MAINTENANCE_RESULT: ${{ needs.sdk-maintenance-pr.result }}
-        run: bun scripts/sdk-release/docs.ts finish

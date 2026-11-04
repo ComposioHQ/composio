@@ -373,6 +373,9 @@ jobs:
       (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped') &&
       (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     outputs:
       registry-verified: ${{ steps.verified.outputs.registry-verified }}
     steps:
@@ -400,6 +403,11 @@ jobs:
         run: bun scripts/sdk-release/consumers.ts
       - id: verified
         run: echo 'registry-verified=true' >> "$GITHUB_OUTPUT"
+      - name: Start docs maintenance for this release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh workflow run docs.sdk-change-sync.yml --repo "$GITHUB_REPOSITORY" --ref next -f run_id="$RUN_ID"
       - name: Registry recovery exhausted
         if: failure() && steps.registry.outputs.terminal == 'true'
         run: echo 'Recovery ended; request a newly approved higher-version corrective release.'

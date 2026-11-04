@@ -14,7 +14,6 @@ import {
 import { Toml } from 'effect/encoding';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import semver from 'semver';
-import { committedBatch, publicationState } from './coordination';
 import {
   GitHub,
   REPOSITORY_PATH,
@@ -22,15 +21,17 @@ import {
   RunId,
   SDK_RELEASE_REPOSITORY,
   Sha,
+  commentIssue,
   decodeBase64Content,
+  fileAt,
   getRun,
+  jobs,
   paginate,
   request,
   requestOptional,
   requireActiveMember,
 } from './github';
 import { Language, REGISTRY_LANES } from './lanes';
-import { readPublicationStatus, writePublicationStatus } from './publication';
 import {
   ensure,
   fail,
@@ -43,7 +44,8 @@ import {
   withoutReleaseTokens,
   writeFile,
 } from './runtime';
-import { ReleaseBatch, ReleaseFile } from './source';
+import { BATCH_PATH, ReleaseBatch, ReleaseFile } from './source';
+import { tagRunProblem, type ReleaseApp } from './tag-run';
 
 const BRANCH = 'docs/auto-sdk-sync';
 const MARKER = '<!-- sdk-release-docs -->';
@@ -76,8 +78,6 @@ export const DocsInput = Schema.Struct({
 });
 export type DocsInput = typeof DocsInput.Type;
 const DocsPatch = Schema.Struct({ input: DocsInput, files: Schema.Array(ReleaseFile) });
-const Maintenance = Schema.Literals(['pending', 'success', 'failure', 'cancelled', 'skipped']);
-type Maintenance = typeof Maintenance.Type;
 
 /** Pins every existing `@composio/*` dependency to its exact verified version, never below the installed one. */
 export const pinDocsSdkVersions = (
@@ -296,31 +296,45 @@ const refSha = (name: string) =>
     ref => Option.map(ref, found => found.object.sha)
   );
 
-const PUBLICATION_TAG = /^sdk-release\/\d+$/;
+const VERIFY_JOB = 'Verify public SDK packages';
 
-const batchAt = (sha: string) =>
-  Effect.flatMap(
-    committedBatch(sha),
-    Option.match({
-      onNone: () => fail('Publication run and frozen batch differ'),
-      onSome: Effect.succeed,
-    })
-  );
+/** A release App tag run whose tag has not moved and whose public package verification succeeded. */
+const isVerifiedRelease = (run: ReleaseRun, app: ReleaseApp) =>
+  Effect.gen(function* () {
+    if ((yield* tagRunProblem(run, app)) !== undefined) return false;
+    const runJobs = yield* jobs(String(run.id));
+    return runJobs.some(job => job.name === VERIFY_JOB && job.conclusion === 'success');
+  });
+
+/** The batch a tag run published, read from its tagged commit. */
+const batchAt = (run: ReleaseRun) =>
+  Effect.gen(function* () {
+    const file = yield* fileAt(BATCH_PATH, run.head_sha ?? '');
+    if (Option.isNone(file)) return yield* fail('Publication run and frozen batch differ');
+    const batch = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(
+      file.value
+    );
+    yield* ensure(
+      run.head_branch === `sdk-release/${batch.id}`,
+      'Publication run and frozen batch differ'
+    );
+    return batch;
+  });
 
 /** The newest publication run whose packages were verified, and the batch it published. */
-export const newestVerifiedRelease = Effect.gen(function* () {
-  const latest = yield* paginate(
-    `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=push`,
-    Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) }),
-    body => body.workflow_runs
-  ).pipe(
-    Stream.filter(run => PUBLICATION_TAG.test(run.head_branch ?? '') && run.head_sha !== undefined),
-    Stream.filterEffect(run => Effect.map(publicationState(run), state => state.verified)),
-    Stream.runHead
-  );
-  if (Option.isNone(latest)) return yield* fail('No verified SDK release is available');
-  return { run: latest.value, batch: yield* batchAt(latest.value.head_sha ?? '') };
-});
+export const newestVerifiedRelease = (app: ReleaseApp) =>
+  Effect.gen(function* () {
+    const latest = yield* paginate(
+      `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=push`,
+      Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) }),
+      body => body.workflow_runs
+    ).pipe(
+      Stream.filterEffect(run => isVerifiedRelease(run, app)),
+      Stream.runHead
+    );
+    if (Option.isNone(latest)) return yield* fail('No verified SDK release is available');
+    return { run: latest.value, batch: yield* batchAt(latest.value) };
+  });
 
 const allowedDocsPath = (path: string) =>
   /^docs\/content\/docs\/(?!.*(?:^|\/)\.\.\/)[a-zA-Z0-9_./-]+\.mdx$/.test(path) ||
@@ -361,17 +375,8 @@ const TARGET_MANIFESTS: ReadonlyArray<{
   },
 ];
 
-/** Packages an outstanding corrective release leaves at its old version, by language. */
-const OUTSTANDING_NAMES: Record<
-  Language,
-  (name: string, targets: Record<string, string>) => ReadonlyArray<string>
-> = {
-  typescript: name => [name],
-  python: (_name, targets) => Object.keys(targets).filter(target => !target.startsWith('@')),
-};
-
 const verifiedTargets = (
-  latest: Effect.Success<typeof newestVerifiedRelease>,
+  latest: Effect.Success<ReturnType<typeof newestVerifiedRelease>>,
   tree: ReadonlyArray<{ path: string; type: string }>
 ) =>
   Effect.gen(function* () {
@@ -386,14 +391,7 @@ const verifiedTargets = (
         Effect.flatMap(contents(path, ref), text => manifest.target(text ?? 'null')),
       { concurrency: CONTENTS_CONCURRENCY }
     );
-    const targets: Record<string, string> = Object.fromEntries(found.flatMap(Option.toArray));
-    const released = new Set(latest.batch.plan.releases.map(release => release.name));
-    for (const outstanding of latest.batch.plan.corrective?.releases ?? []) {
-      if (released.has(outstanding.name)) continue;
-      for (const name of OUTSTANDING_NAMES[outstanding.language](outstanding.name, targets))
-        targets[name] = outstanding.oldVersion;
-    }
-    return targets;
+    return Object.fromEntries(found.flatMap(Option.toArray));
   });
 
 const pendingDocsFiles = (sourceSha: string, branchHead: string) =>
@@ -423,15 +421,15 @@ const pendingDocsFiles = (sourceSha: string, branchHead: string) =>
   });
 
 /** Everything docs maintenance needs, captured once from the verified release and the current protected docs. */
-export const selectDocsInput = (runId: string) =>
+export const selectDocsInput = (runId: string, app: ReleaseApp) =>
   Effect.gen(function* () {
     const target = yield* getRun(runId);
     yield* ensure(
-      (yield* publicationState(target)).verified,
+      yield* isVerifiedRelease(target, app),
       'Public registry verification must succeed before SDK docs maintenance'
     );
-    const batch = yield* batchAt(target.head_sha ?? '');
-    const latest = yield* newestVerifiedRelease;
+    const batch = yield* batchAt(target);
+    const latest = yield* newestVerifiedRelease(app);
     const sourceSha = yield* Effect.flatMap(
       refSha('next'),
       Option.match({
@@ -658,10 +656,10 @@ const upsertMaintenancePull = (latest: DocsInput) =>
   });
 
 /** Commits a captured docs patch onto current protected docs if neither the inputs nor the pending branch moved. */
-export const commitDocsPatch = (value: unknown) =>
+export const commitDocsPatch = (value: unknown, app: ReleaseApp) =>
   Effect.gen(function* () {
     const patch = yield* Schema.decodeUnknownEffect(DocsPatch)(value);
-    const latest = yield* selectDocsInput(String(patch.input.runId));
+    const latest = yield* selectDocsInput(String(patch.input.runId), app);
     yield* requireFreshDocsInput(patch.input, latest);
     for (const file of patch.files) {
       yield* ensure(
@@ -691,77 +689,13 @@ export const commitDocsPatch = (value: unknown) =>
       tree: tree.sha,
       parents: [latest.sourceSha, ...(latest.branchHead ? [latest.branchHead] : [])],
     });
-    yield* requireFreshDocsInput(latest, yield* selectDocsInput(String(patch.input.runId)));
+    yield* requireFreshDocsInput(latest, yield* selectDocsInput(String(patch.input.runId), app));
     yield* publishMaintenanceBranch(latest, next.sha);
     yield* upsertMaintenancePull(latest);
     return { changed: true };
   });
 
-type DocsState = 'pending' | 'failed' | 'verified';
-
-/** Verified docs stay verified; otherwise a live result replaces the previous state. `undefined` reports maintenance only. */
-const nextDocsState = (live: boolean | undefined, previous: DocsState | undefined): DocsState =>
-  live === true || previous === 'verified'
-    ? 'verified'
-    : live === false
-      ? 'failed'
-      : (previous ?? 'pending');
-
-const MergedPull = Schema.Struct({
-  number: Schema.Number,
-  merged_at: Schema.NullOr(Schema.String),
-  head: Schema.Struct({ sha: Schema.String }),
-});
-
-const finishDocs = (
-  runId: string,
-  appId: number,
-  live: boolean | undefined,
-  maintenance: Maintenance
-) =>
-  Effect.gen(function* () {
-    const target = yield* getRun(runId);
-    yield* ensure(
-      (yield* publicationState(target)).verified,
-      'Cannot report docs completion before registry verification'
-    );
-    const headSha = target.head_sha ?? '';
-    const batch = yield* batchAt(headSha);
-    const previous = Option.getOrUndefined(yield* readPublicationStatus(batch, appId));
-    const pulls = yield* request(
-      'GET',
-      `${REPOSITORY_PATH}/commits/${target.head_sha}/pulls?per_page=100`,
-      Schema.Array(MergedPull)
-    );
-    const pull = pulls.find(candidate => candidate.merged_at && candidate.head.sha === headSha);
-    if (!pull) return yield* fail('Docs status source is not a merged release head');
-    yield* writePublicationStatus(
-      batch,
-      {
-        ...previous,
-        runId: target.id,
-        sourceSha: headSha,
-        registryVerified: true,
-        terminal: false,
-        docs: nextDocsState(live, previous?.docs),
-        maintenance,
-        candidates: previous?.candidates ?? [],
-        inventory: previous?.inventory ?? [],
-      },
-      appId,
-      pull.number
-    );
-  });
-
-const Mode = Schema.Literals([
-  'context',
-  'prepare',
-  'capture',
-  'commit',
-  'live',
-  'finish',
-  'deploy',
-]);
+const Mode = Schema.Literals(['context', 'prepare', 'capture', 'commit', 'live', 'deploy']);
 type Mode = typeof Mode.Type;
 
 const inputPath = Config.String('SDK_DOCS_INPUT').pipe(
@@ -769,6 +703,13 @@ const inputPath = Config.String('SDK_DOCS_INPUT').pipe(
 );
 const controllerToken = Config.schema(Schema.NonEmptyString, 'SDK_RELEASE_TOKEN');
 const NonEmpty = Schema.NonEmptyString;
+const releaseApp = Config.all({
+  id: Config.schema(
+    Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
+    'SDK_RELEASE_APP_ID'
+  ),
+  slug: Config.schema(NonEmpty, 'SDK_RELEASE_APP_SLUG'),
+});
 
 const withInput = <A, E, R>(use: (input: DocsInput, cwd: string) => Effect.Effect<A, E, R>) =>
   Effect.gen(function* () {
@@ -780,11 +721,34 @@ const asController = <A, E, R>(program: Effect.Effect<A, E, R>) =>
   Effect.flatMap(controllerToken, token => program.pipe(Effect.provide(GitHub.layer(token))));
 
 /** The live-docs check retries while the docs deployment rolls out: 20 attempts, 30 seconds apart. */
-const LIVE_DOCS_RETRY = { schedule: Schedule.spaced('30 seconds'), times: 19 } as const;
+const LIVE_DOCS_RETRY = { schedule: Schedule.spaced('30 seconds'), times: 19 };
 
-/** A live result of `maintenance` reports maintenance only; any other result is pass or fail. */
-const liveResult = (value: Option.Option<string>) =>
-  Option.contains(value, 'maintenance') ? undefined : Option.contains(value, 'success');
+/**
+ * Checks the live docs and, on a mismatch, warns on the release request issue. The packages are
+ * already published, so this only reports; it never changes the publication.
+ */
+export const checkLiveDocs = (
+  batch: LiveRelease,
+  runUrl: string,
+  retry: { readonly times: number } = LIVE_DOCS_RETRY
+) =>
+  verifyLiveReleaseDocs(batch).pipe(
+    Effect.retry(retry),
+    Effect.tapError(error =>
+      Effect.gen(function* () {
+        const issue = /\/issues\/(\d+)$/.exec(batch.statusUrl)?.[1];
+        if (issue === undefined) return yield* fail('Release request must be a repository issue');
+        yield* commentIssue(
+          Number(issue),
+          [
+            'Warning: the live docs check failed after this release was published. The packages are published; only the docs are affected.',
+            `Reason: ${error.message}`,
+            `Docs run: ${runUrl}`,
+          ].join('\n\n')
+        );
+      })
+    )
+  );
 
 const deploy = Effect.gen(function* () {
   const hook = yield* Config.option(Config.String('VERCEL_DOCS_NEXT_DEPLOY_HOOK'));
@@ -816,15 +780,26 @@ const MODES = {
       writeFile(PATCH_PATH, JSON.stringify(patch))
     )
   ),
-  live: withInput(input => verifyLiveReleaseDocs(input.batch).pipe(Effect.retry(LIVE_DOCS_RETRY))),
+  live: withInput(input =>
+    Effect.gen(function* () {
+      const token = yield* Config.schema(Schema.NonEmptyString, 'GITHUB_TOKEN');
+      const runId = yield* Config.schema(RunId, 'GITHUB_RUN_ID');
+      yield* checkLiveDocs(
+        input.batch,
+        `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}`
+      ).pipe(Effect.provide(GitHub.layer(token)));
+    })
+  ),
   deploy,
   context: asController(
     Effect.gen(function* () {
       const actor = yield* Config.schema(NonEmpty, 'GITHUB_ACTOR');
-      const app = yield* Config.schema(NonEmpty, 'SDK_RELEASE_APP_SLUG');
-      if (actor !== `${app}[bot]`) yield* requireActiveMember(actor);
+      const app = yield* releaseApp;
+      // The tag run dispatches this workflow with its GITHUB_TOKEN.
+      if (actor !== `${app.slug}[bot]` && actor !== 'github-actions[bot]')
+        yield* requireActiveMember(actor);
       const runId = yield* Config.schema(RunId, 'SDK_DOCS_RUN_ID');
-      const input = yield* selectDocsInput(runId);
+      const input = yield* selectDocsInput(runId, app);
       yield* writeFile(yield* inputPath, JSON.stringify(input));
       const fs = yield* FileSystem.FileSystem;
       yield* fs.writeFileString(
@@ -836,19 +811,10 @@ const MODES = {
       );
     })
   ),
-  commit: asController(Effect.flatMap(readJson(Schema.Unknown, PATCH_PATH), commitDocsPatch)),
-  finish: asController(
+  commit: asController(
     Effect.gen(function* () {
-      const runId = yield* Config.String('SDK_DOCS_RUN_ID');
-      const appId = yield* Config.schema(
-        Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
-        'SDK_RELEASE_APP_ID'
-      );
-      const live = liveResult(yield* Config.option(Config.String('SDK_DOCS_LIVE_RESULT')));
-      const maintenance = yield* Config.schema(Maintenance, 'SDK_DOCS_MAINTENANCE_RESULT').pipe(
-        Config.withDefault('pending' as const)
-      );
-      yield* finishDocs(runId, appId, live, maintenance);
+      const patch = yield* readJson(Schema.Unknown, PATCH_PATH);
+      yield* commitDocsPatch(patch, yield* releaseApp);
     })
   ),
 };

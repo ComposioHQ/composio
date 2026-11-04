@@ -730,7 +730,6 @@ const reportMode = ({ env, event }: ModeInput) =>
     const runId = (yield* Schema.decodeUnknownEffect(WorkflowRunEvent)(event)).workflow_run.id;
     const publication = yield* Effect.promise(() => import('./publication'));
     const { report } = yield* publication.reportPublication(String(runId), env.appId);
-    if (report.registryVerified) yield* dispatchDocs(runId);
     yield* appendFile(
       env.outputPath,
       `registry-verified=${report.registryVerified}\noriginal-run-id=${report.runId}\n`

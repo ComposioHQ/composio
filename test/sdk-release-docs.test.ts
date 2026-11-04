@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { isSdkChangelog } from '../scripts/sdk-release/changelog-filter';
 import {
+  checkLiveDocs,
   pinDocsSdkVersions as pinEffect,
   requireFreshDocsInput as freshnessEffect,
   verifyLiveReleaseDocs as verifyLiveEffect,
@@ -100,5 +101,45 @@ describe('released SDK documentation', () => {
         fetcher
       )
     ).rejects.toThrow('release targets');
+  });
+  test('a live docs mismatch warns on the request issue and makes no other GitHub write', async () => {
+    const release = {
+      date: '2026-11-03',
+      statusUrl: 'https://github.com/ComposioHQ/composio/issues/51',
+      plan: {
+        releases: [
+          { name: '@composio/core', newVersion: '0.29.0', language: 'typescript' as const },
+        ],
+      },
+    };
+    const writes: { method: string; url: string; body: unknown }[] = [];
+    const fetcher: Fetch = async (input, init) => {
+      const url = String(input);
+      if (url.startsWith('https://api.github.com/')) {
+        writes.push({
+          method: init?.method ?? 'GET',
+          url,
+          body: JSON.parse(String(init?.body ?? 'null')),
+        });
+        return Response.json({ id: 1 });
+      }
+      return new Response('<article>Old docs</article>');
+    };
+    await expect(
+      runRelease(
+        checkLiveDocs(release, 'https://github.com/ComposioHQ/composio/actions/runs/77', {
+          times: 0,
+        }),
+        fetcher
+      )
+    ).rejects.toThrow('release targets');
+    expect(writes).toEqual([
+      {
+        method: 'POST',
+        url: 'https://api.github.com/repos/ComposioHQ/composio/issues/51/comments',
+        body: { body: expect.stringContaining('live docs check failed') },
+      },
+    ]);
+    expect(String((writes[0].body as { body: string }).body)).toContain('actions/runs/77');
   });
 });

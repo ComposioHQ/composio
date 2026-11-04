@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { Schema } from 'effect';
 import { Base64 } from 'effect/encoding';
-import { DocsInput, commitDocsPatch } from '../scripts/sdk-release/docs';
+import { DocsInput, commitDocsPatch, newestVerifiedRelease } from '../scripts/sdk-release/docs';
 import { run, spawn, withoutReleaseTokens } from '../scripts/sdk-release/runtime';
 import { BATCH_PATH, type ReleaseBatch } from '../scripts/sdk-release/source';
 import {
@@ -21,6 +21,7 @@ const created = 'd'.repeat(40);
 const moved = 'e'.repeat(40);
 const guide = 'docs/content/docs/guide.mdx';
 const maintenanceBranch = 'docs/auto-sdk-sync';
+const app = { id: 123, slug: 'sdk-release' };
 const batch: ReleaseBatch = {
   schemaVersion: 1,
   id: '8',
@@ -172,6 +173,7 @@ function commitFixture(movement?: 'next' | 'pending') {
     head_branch: 'sdk-release/8',
     head_sha: released,
     event: 'push',
+    actor: { login: 'sdk-release[bot]', type: 'Bot' },
     repository: { full_name: 'ComposioHQ/composio' },
     status: 'completed',
     conclusion: 'success',
@@ -190,6 +192,7 @@ function commitFixture(movement?: 'next' | 'pending') {
     const currentSource = wroteCommit && movement === 'next' ? moved : source;
     const currentPending = wroteCommit && movement === 'pending' ? moved : pending;
     if (method === 'GET') {
+      if (path === '/apps/sdk-release') return respond(app);
       if (path === '/actions/runs/51') return respond(run);
       if (path === '/actions/runs/51/jobs?filter=all&per_page=100&page=1')
         return respond({ jobs: [{ name: 'Verify public SDK packages', conclusion: 'success' }] });
@@ -248,7 +251,7 @@ describe('docs commit controller', () => {
   for (const movement of ['next', 'pending'] as const) {
     test(`${movement} movement during commit preparation prevents a branch update`, async () => {
       const { github, patch, calls } = commitFixture(movement);
-      await expect(runRelease(commitDocsPatch(patch), github)).rejects.toThrow(
+      await expect(runRelease(commitDocsPatch(patch, app), github)).rejects.toThrow(
         'Protected docs, verified release or pending guide edits changed'
       );
       expect(
@@ -269,7 +272,7 @@ describe('docs commit controller', () => {
 
   test('unchanged inputs update the existing branch without force and create one PR', async () => {
     const { github, patch, calls } = commitFixture();
-    expect(await runRelease(commitDocsPatch(patch), github)).toEqual({ changed: true });
+    expect(await runRelease(commitDocsPatch(patch, app), github)).toEqual({ changed: true });
     expect(calls.filter(call => call.path === `/git/refs/heads/${maintenanceBranch}`)).toEqual([
       {
         method: 'PATCH',
@@ -285,5 +288,76 @@ describe('docs commit controller', () => {
     ).toMatchObject({
       parents: [source, pending],
     });
+  });
+});
+
+interface TagRunFixture {
+  readonly id: number;
+  readonly actor?: string;
+  readonly verified?: boolean;
+}
+
+/** Tag runs newest first; each run's tag points at its own commit. */
+function tagRunsFixture(runs: ReadonlyArray<TagRunFixture>) {
+  const shaOf = (id: number) => String(id % 10).repeat(40);
+  const github: Fetch = async url => {
+    const { pathname, search } = new URL(String(url));
+    const path = `${pathname}${search}`.replace('/repos/ComposioHQ/composio', '');
+    if (path === '/apps/sdk-release') return Response.json(app);
+    if (path === '/actions/workflows/sdk.release.yml/runs?event=push&per_page=100&page=1')
+      return Response.json({
+        workflow_runs: runs.map(run => ({
+          id: run.id,
+          path: '.github/workflows/sdk.release.yml',
+          head_branch: `sdk-release/${run.id}`,
+          head_sha: shaOf(run.id),
+          event: 'push',
+          actor: { login: run.actor ?? 'sdk-release[bot]', type: 'Bot' },
+          repository: { full_name: 'ComposioHQ/composio' },
+          status: 'completed',
+          conclusion: run.verified === false ? 'failure' : 'success',
+          created_at: '2026-11-03T00:00:00Z',
+          run_attempt: 1,
+          html_url: `https://github.com/ComposioHQ/composio/actions/runs/${run.id}`,
+        })),
+      });
+    const tag = /^\/git\/ref\/tags\/sdk-release\/(\d+)$/.exec(path);
+    if (tag) return Response.json({ object: { type: 'commit', sha: shaOf(Number(tag[1])) } });
+    const jobs = /^\/actions\/runs\/(\d+)\/jobs\?/.exec(path);
+    if (jobs) {
+      const run = runs.find(candidate => candidate.id === Number(jobs[1]));
+      return Response.json({
+        jobs: [
+          {
+            name: 'Verify public SDK packages',
+            conclusion: run?.verified === false ? 'failure' : 'success',
+          },
+        ],
+      });
+    }
+    const content = /^\/contents\/(.+)\?ref=([a-f0-9]{40})$/.exec(path);
+    if (content?.[1] === BATCH_PATH) {
+      const run = runs.find(candidate => shaOf(candidate.id) === content[2]);
+      return Response.json({
+        encoding: 'base64',
+        content: Base64.encode(JSON.stringify({ ...batch, id: String(run?.id) })),
+      });
+    }
+    throw new Error(`Unexpected GitHub fixture request: ${path}`);
+  };
+  return github;
+}
+
+describe('docs maintenance release selection', () => {
+  test('picks the newest verified tag run and skips a newer one whose verification failed', async () => {
+    const github = tagRunsFixture([{ id: 53, verified: false }, { id: 51 }]);
+    const latest = await runRelease(newestVerifiedRelease(app), github);
+    expect(latest.run.id).toBe(51);
+    expect(latest.batch.id).toBe('51');
+  });
+
+  test('ignores a verified-looking tag run pushed by an actor other than the release App', async () => {
+    const github = tagRunsFixture([{ id: 52, actor: 'mallory' }, { id: 51 }]);
+    expect((await runRelease(newestVerifiedRelease(app), github)).run.id).toBe(51);
   });
 });
