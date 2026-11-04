@@ -284,8 +284,6 @@ jobs:
     needs: [select-candidates, candidates-ready]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest
-    outputs:
-      candidate-ids: ${{ steps.preflight.outputs.candidate-ids }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -294,19 +292,60 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Verify merged approval, tag rules, environments and every original candidate
-        id: preflight
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
         run: bun scripts/sdk-release/registry.ts preflight
-      - name: Registry recovery exhausted
-        if: failure() && steps.preflight.outputs.terminal == 'true'
-        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
+
+  # Each check exchanges an ID token for a publish token and discards it. Both publish jobs need
+  # both checks, so a broken registration on either registry stops every upload.
+  npm-publisher-preflight:
+    name: Check npm trusted publisher
+    needs: select-candidates
+    if: needs.select-candidates.outputs.typescript == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Exchange an ID token for each planned npm package
+        run: bun scripts/sdk-release/registry.ts check-publisher typescript
+
+  pypi-publisher-preflight:
+    name: Check PyPI trusted publisher
+    needs: select-candidates
+    if: needs.select-candidates.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Exchange an ID token with PyPI
+        run: bun scripts/sdk-release/registry.ts check-publisher python
 
   publish-npm:
     name: Publish original npm candidates
-    needs: [select-candidates, publication-preflight]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') && needs.select-candidates.outputs.typescript == 'true'
+    needs: [select-candidates, publication-preflight, npm-publisher-preflight, pypi-publisher-preflight]
+    # A check skipped because its language is not in this release does not block the other.
+    if: >-
+      always() && needs.select-candidates.outputs.typescript == 'true' &&
+      needs.publication-preflight.result == 'success' &&
+      needs.npm-publisher-preflight.result == 'success' &&
+      (needs.pypi-publisher-preflight.result == 'success' || (needs.pypi-publisher-preflight.result == 'skipped' && needs.select-candidates.outputs.python != 'true'))
     runs-on: ubuntu-latest
     environment: npm-release
     permissions:
@@ -323,19 +362,19 @@ jobs:
       - name: Pin npm with native dist-tag OIDC support in the publisher only
         run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
       - name: Upload original candidates to npm
-        id: upload
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
         run: bun scripts/sdk-release/registry.ts upload-npm
-      - name: Registry recovery exhausted
-        if: failure() && steps.upload.outputs.terminal == 'true'
-        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
 
   publish-pypi:
     name: Publish original PyPI candidates
-    needs: [select-candidates, publication-preflight]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') && needs.select-candidates.outputs.python == 'true'
+    needs: [select-candidates, publication-preflight, npm-publisher-preflight, pypi-publisher-preflight]
+    if: >-
+      always() && needs.select-candidates.outputs.python == 'true' &&
+      needs.publication-preflight.result == 'success' &&
+      needs.pypi-publisher-preflight.result == 'success' &&
+      (needs.npm-publisher-preflight.result == 'success' || (needs.npm-publisher-preflight.result == 'skipped' && needs.select-candidates.outputs.typescript != 'true'))
     runs-on: ubuntu-latest
     environment: pypi-release
     permissions:
@@ -360,9 +399,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
         with:
           packages-dir: sdk-publication/missing-python/
-      - name: Registry recovery exhausted
-        if: failure() && steps.reconcile.outputs.terminal == 'true'
-        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
 
   registry-verification:
     name: Verify public SDK packages
@@ -370,8 +406,8 @@ jobs:
     if: >-
       always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
       needs.publication-preflight.result == 'success' &&
-      (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped') &&
-      (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped')
+      (needs.publish-npm.result == 'success' || needs.select-candidates.outputs.typescript != 'true') &&
+      (needs.publish-pypi.result == 'success' || needs.select-candidates.outputs.python != 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -394,7 +430,6 @@ jobs:
         if: needs.select-candidates.outputs.python == 'true'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Verify every public file, stable tag and native npm provenance
-        id: registry
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
@@ -408,9 +443,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.run_id }}
         run: gh workflow run docs.sdk-change-sync.yml --repo "$GITHUB_REPOSITORY" --ref next -f run_id="$RUN_ID"
-      - name: Registry recovery exhausted
-        if: failure() && steps.registry.outputs.terminal == 'true'
-        run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
 
   publication-status:
     if: >-

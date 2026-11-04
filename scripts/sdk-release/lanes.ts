@@ -20,6 +20,8 @@ export const PRIMARY_TARGETS: Record<Language, ReadonlyArray<string>> = {
 export interface RegistryLane {
   /** GitHub environment that holds the lane's trusted-publisher permission. */
   readonly environment: string;
+  /** Audience of the GitHub Actions ID token the registry exchanges for a publish token. */
+  readonly oidcAudience: string;
   /** Host that serves the lane's public distribution files. */
   readonly downloadHost: string;
   /** Public metadata URL for one package version. */
@@ -31,6 +33,7 @@ export interface RegistryLane {
 export const REGISTRY_LANES: Record<Language, RegistryLane> = {
   typescript: {
     environment: 'npm-release',
+    oidcAudience: 'npm:registry.npmjs.org',
     downloadHost: 'registry.npmjs.org',
     versionUrl: (name, version) =>
       `https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`,
@@ -38,6 +41,7 @@ export const REGISTRY_LANES: Record<Language, RegistryLane> = {
   },
   python: {
     environment: 'pypi-release',
+    oidcAudience: 'pypi',
     downloadHost: 'files.pythonhosted.org',
     versionUrl: (name, version) => `https://pypi.org/pypi/${name}/${version}/json`,
     docsLabel: () => 'Python composio',

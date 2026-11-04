@@ -6,7 +6,7 @@ import {
   FileSystem,
   Option,
   Path,
-  Predicate,
+  Redacted,
   Schedule,
   Schema,
   Stdio,
@@ -14,7 +14,7 @@ import {
 import type { Duration } from 'effect';
 import { Digest } from 'effect/crypto';
 import { Base64 } from 'effect/encoding';
-import { FetchHttpClient, HttpClient } from 'effect/http';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import semver from 'semver';
 import {
   CANDIDATE_MANIFEST,
@@ -29,10 +29,11 @@ import {
 } from './artifacts';
 import { verifyReleaseHead } from './approval';
 import { GitHub, REPOSITORY_PATH, SDK_RELEASE_REPOSITORY, Sha, getRun, request } from './github';
-import { REGISTRY_LANES, type Language } from './lanes';
+import { REGISTRY_LANES, Language as LanguageSchema, type Language } from './lanes';
 import { CorrectiveInput } from './plan';
 import { discoverPythonPackages } from './python-metadata';
 import {
+  ReleaseError,
   ensure,
   fail,
   parseJson,
@@ -72,21 +73,9 @@ export interface RegistryState {
   readonly tagsToRepair: ReadonlyArray<StableTag>;
 }
 
-/** A failure that retrying the original run cannot fix; recovery needs a corrective release. */
-export class TerminalPublicationError extends Data.TaggedError('TerminalPublicationError')<{
-  readonly message: string;
-}> {}
-
-const terminal = (message: string) => Effect.fail(new TerminalPublicationError({ message }));
-const ensureTerminal = (condition: boolean, message: string) =>
-  condition ? Effect.void : terminal(message);
-const isTerminal = (error: unknown) => Predicate.isTagged(error, 'TerminalPublicationError');
-
 const NPM_REGISTRY = 'https://registry.npmjs.org';
 const SLSA_PROVENANCE = 'https://slsa.dev/provenance/v1';
 const REGISTRY_TIMEOUT = '30 seconds';
-const RECOVERY_WINDOW_MS = 30 * 86_400_000;
-const MAX_PUBLISHER_ATTEMPTS = 50;
 
 const Url = Schema.String.check(
   Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
@@ -131,17 +120,14 @@ const servedBy = (language: Language, url: string) =>
 /** The registry must serve exactly the original candidate bytes. */
 const verifyOriginalBytes = (url: string, file: Distribution) =>
   Effect.gen(function* () {
-    yield* ensureTerminal(
-      servedBy(file.language, url),
-      `Unexpected registry download host: ${file.file}`
-    );
+    yield* ensure(servedBy(file.language, url), `Unexpected registry download host: ${file.file}`);
     const bytes = yield* registryBytes(
       url,
       status => `Registry download incomplete: ${file.file} (${status})`
     );
-    yield* ensureTerminal(
+    yield* ensure(
       bytes.length === file.bytes.length && (yield* sha256Hex(bytes)) === file.sha256,
-      `Registry content conflict: ${file.name}@${file.version}/${file.file}. A newly approved higher-version corrective release is required.`
+      `Registry content conflict: ${file.name}@${file.version}/${file.file} differs from the approved candidate. Published files are never replaced; request a new release.`
     );
   });
 
@@ -192,14 +178,14 @@ export const inspectNpmProvenanceSubject = (
     const digest = yield* Digest.Digest;
     const sha512 = yield* digest.digestHex(Digest.sha512, file.bytes);
     const subject = `pkg:npm/${file.name.replace(/^@/, '%40')}@${file.version}`;
-    yield* ensureTerminal(
+    yield* ensure(
       statement.subject.some(item => item.name === subject && item.digest.sha512 === sha512),
       `Native npm provenance subject conflict: ${file.name}`
     );
     const { buildDefinition, runDetails } = statement.predicate;
     const workflow = buildDefinition.externalParameters.workflow;
     const repository = `https://github.com/${SDK_RELEASE_REPOSITORY}`;
-    yield* ensureTerminal(
+    yield* ensure(
       workflow.repository === repository &&
         workflow.path === RELEASE_WORKFLOW_PATH &&
         workflow.ref === `refs/tags/${source.tag}` &&
@@ -289,7 +275,7 @@ const PackageIdentity = Schema.Struct({ name: Schema.String, version: Schema.Str
 const npmAdapter = {
   reconcileGroup: (group: ReadonlyArray<Distribution>, source: PublicationSource) =>
     Effect.gen(function* () {
-      yield* ensureTerminal(group.length === 1, 'Expected exactly one npm tarball per package');
+      yield* ensure(group.length === 1, 'Expected exactly one npm tarball per package');
       const [file] = group;
       const metadata = yield* registryJson(
         versionUrl('typescript', file.name, file.version),
@@ -297,7 +283,7 @@ const npmAdapter = {
       );
       if (Option.isSome(metadata)) {
         const { name, version, dist } = metadata.value;
-        yield* ensureTerminal(
+        yield* ensure(
           name === file.name && version === file.version,
           'Registry npm identity conflict'
         );
@@ -362,7 +348,7 @@ const npmAdapter = {
             }
           )
         );
-        yield* ensureTerminal(
+        yield* ensure(
           releases.some(
             release => release.name === manifest.name && release.newVersion === manifest.version
           ),
@@ -370,7 +356,7 @@ const npmAdapter = {
         );
         files.push(distributionOf('typescript', manifest, entry, candidate.bytes));
       }
-      yield* ensureTerminal(
+      yield* ensure(
         candidate.manifest.files.length === releases.length,
         'Candidate npm package inventory differs'
       );
@@ -399,10 +385,10 @@ const pythonAdapter = {
         PypiVersion
       );
       const published = Option.match(metadata, { onNone: () => [], onSome: value => value.urls });
-      yield* ensureTerminal(
+      yield* ensure(
         new Set(published.map(file => file.filename)).size === published.length &&
           published.every(file => group.some(candidate => candidate.file === file.filename)),
-        `Unreviewed PyPI file for ${first.name}@${first.version}; corrective release required`
+        `Unreviewed PyPI file for ${first.name}@${first.version}; request a new release`
       );
       const existing: Distribution[] = [];
       const missing: Distribution[] = [];
@@ -412,7 +398,7 @@ const pythonAdapter = {
           missing.push(file);
           continue;
         }
-        yield* ensureTerminal(
+        yield* ensure(
           match.digests.sha256 === file.sha256,
           `Registry content conflict: ${file.file}`
         );
@@ -447,10 +433,10 @@ const pythonAdapter = {
       for (const pkg of yield* discoverPythonPackages(candidate.cwd))
         for (const name of pythonDistributionNames(pkg.name, version)) {
           const entry = candidate.manifest.files.find(file => file.name === name);
-          if (!entry) return yield* terminal(`Original Python distribution missing: ${name}`);
+          if (!entry) return yield* fail(`Original Python distribution missing: ${name}`);
           files.push(distributionOf('python', { name: pkg.name, version }, entry, candidate.bytes));
         }
-      yield* ensureTerminal(
+      yield* ensure(
         candidate.manifest.files.length === files.length,
         'Candidate Python file inventory differs'
       );
@@ -503,7 +489,7 @@ const incompleteInventory = (state: RegistryState) =>
     ...state.tagsToRepair.map(tag => `${tag.name}@${tag.version} stable tag`),
   ].join(', ');
 
-/** Polls the registries until every file and stable tag is visible; terminal conflicts stop at once. */
+/** Polls the registries until every file and stable tag is visible. */
 export const waitForRegistry = (
   files: ReadonlyArray<Distribution>,
   source: PublicationSource,
@@ -520,36 +506,15 @@ export const waitForRegistry = (
     Effect.retry({
       schedule: Schedule.spaced(options.spacing ?? '10 seconds'),
       times: attempts - 1,
-      while: error => !isTerminal(error),
     }),
-    Effect.mapError(error =>
-      isTerminal(error)
-        ? error
-        : new RegistryIncomplete({
-            message: `Registry verification incomplete after ${attempts} attempts: ${error instanceof Error ? error.message : 'Registry unavailable'}`,
-          })
+    Effect.mapError(
+      error =>
+        new RegistryIncomplete({
+          message: `Registry verification incomplete after ${attempts} attempts: ${error instanceof Error ? error.message : 'Registry unavailable'}`,
+        })
     )
   );
 };
-
-export const requireRecoveryWindow = (
-  run: { readonly created_at: string; readonly run_attempt: number },
-  now = Date.now()
-) =>
-  ensureTerminal(
-    run.run_attempt <= MAX_PUBLISHER_ATTEMPTS &&
-      now < Date.parse(run.created_at) + RECOVERY_WINDOW_MS,
-    'Original recovery window exhausted; a newly approved higher-version corrective release is required'
-  );
-
-export const requireThirtyDayArtifact = (
-  artifact: CandidateArtifact,
-  run: { readonly created_at: string }
-) =>
-  ensureTerminal(
-    Date.parse(artifact.expires_at) >= Date.parse(run.created_at) + RECOVERY_WINDOW_MS,
-    `Actions policy cannot retain candidate ${artifact.id} for the required 30 days`
-  );
 
 /** Hashes every file a partial batch already published, as the basis of a corrective release. */
 export const correctiveInventory = (
@@ -619,7 +584,6 @@ export const verifyPublicationSource = (
     );
     const problem = yield* tagRunProblem(tagRun, expectedApp);
     if (problem !== undefined) return yield* fail(problem);
-    yield* requireRecoveryWindow(tagRun);
     const pulls = yield* request(
       'GET',
       `${REPOSITORY_PATH}/commits/${source.sha}/pulls?per_page=100`,
@@ -700,17 +664,16 @@ const verifyEnvironment = (language: Language) =>
     );
   });
 
-/** Without listed bypass actors only the publisher can vouch for it; the controller needs the App as sole bypass. */
-const protectsReleaseTags = (
-  details: typeof RulesetDetails.Type,
-  appId: number,
-  controller: boolean
-) =>
+/**
+ * GitHub hides bypass actors from tokens without ruleset write access, so publish jobs accept a
+ * hidden list; the owner check requires it to be visible and to name only the release App.
+ */
+const protectsReleaseTags = (details: typeof RulesetDetails.Type, appId: number, owner: boolean) =>
   details.conditions.ref_name.include.includes(`refs/tags/${RELEASE_TAG_PATTERN}`) &&
   details.conditions.ref_name.exclude.length === 0 &&
   PROTECTED_TAG_OPERATIONS.every(type => details.rules.some(rule => rule.type === type)) &&
   (details.bypass_actors === undefined
-    ? !controller
+    ? !owner
     : details.bypass_actors.length === 1 &&
       details.bypass_actors[0].actor_type === 'Integration' &&
       details.bypass_actors[0].actor_id === appId &&
@@ -719,7 +682,7 @@ const protectsReleaseTags = (
 export const verifyPublicationPolicy = (
   languages: ReadonlySet<Language>,
   appId: number,
-  controller = false
+  owner = false
 ) =>
   Effect.gen(function* () {
     yield* Effect.forEach(languages, verifyEnvironment, { discard: true });
@@ -735,7 +698,7 @@ export const verifyPublicationPolicy = (
       rule => request('GET', `${REPOSITORY_PATH}/rulesets/${rule.id}`, RulesetDetails)
     );
     yield* ensure(
-      details.some(ruleset => protectsReleaseTags(ruleset, appId, controller)),
+      details.some(ruleset => protectsReleaseTags(ruleset, appId, owner)),
       'sdk-release/* requires an active tag ruleset restricting creation, update and deletion to the dedicated release App'
     );
   });
@@ -749,7 +712,7 @@ const readCandidateDirectory = (directory: string, source: PublicationSource, la
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const manifest = yield* readJson(CandidateManifest, path.join(directory, CANDIDATE_MANIFEST));
-    yield* ensureTerminal(
+    yield* ensure(
       manifest.sourceSha === source.sha &&
         manifest.producerRun === source.runId &&
         manifest.language === language,
@@ -779,7 +742,6 @@ export const loadOriginalDistributions = (
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const artifacts = yield* originalCandidates(source.runId);
-    const tagRun = yield* getRun(String(source.runId));
     const files: Distribution[] = [];
     const identities: CandidateArtifact[] = [];
     for (const language of batchLanguages(batch)) {
@@ -790,11 +752,10 @@ export const loadOriginalDistributions = (
         source.sha
       );
       if (Option.isNone(reused))
-        return yield* terminal(
-          `Original ${language} candidate deleted; corrective release required`
+        return yield* fail(
+          `The ${language} candidate artifact of this run expired or was deleted; request a new release`
         );
       const artifact = reused.value;
-      yield* requireThirtyDayArtifact(artifact, tagRun);
       identities.push(artifact);
       const directory = path.resolve(cwd, 'sdk-publication', language);
       yield* fs.remove(directory, { recursive: true, force: true });
@@ -853,10 +814,6 @@ const reportCandidates = (
         .join('\n'),
     ];
     yield* appendTo(actions.summary, `${lines.join('\n')}\n`);
-    yield* appendTo(
-      actions.output,
-      `candidate-ids=${JSON.stringify(identities.map(artifact => artifact.id))}\n`
-    );
   });
 
 interface PublicationContext {
@@ -918,7 +875,6 @@ const uploadMissingNpm = (context: PublicationContext) =>
 
 const PUBLICATION_MODES = {
   preflight: { reconcile: reconcileRegistry, finish: (_: PublicationContext) => Effect.void },
-  'prepare-npm': { reconcile: reconcileRegistry, finish: (_: PublicationContext) => Effect.void },
   'prepare-pypi': { reconcile: reconcileRegistry, finish: stageMissingPython },
   'upload-npm': { reconcile: reconcileRegistry, finish: uploadMissingNpm },
   verify: {
@@ -970,12 +926,7 @@ const publish = (mode: PublicationMode) =>
       yield* reportCandidates(actions, identities, files, source);
       const state = yield* reconcile(files, source);
       yield* finish({ cwd, batch, source, files, state, actions });
-    }).pipe(
-      Effect.tapError(error =>
-        isTerminal(error) ? appendTo(actions.output, 'terminal=true\n') : Effect.void
-      ),
-      Effect.provide(GitHub.layer(env.token))
-    );
+    }).pipe(Effect.provide(GitHub.layer(env.token)));
   });
 
 /** Owner preflight: the policy token checks tag restrictions and tag-only registry environments. */
@@ -988,23 +939,138 @@ const checkPolicy = Effect.gen(function* () {
     Effect.provide(GitHub.layer(owner.token))
   );
   yield* Console.log(
-    'Owner preflight verified dedicated-App tag restrictions and tag-only registry environments. Registry trusted-publisher registrations and negative writer/legacy-App checks remain hosted acceptance requirements.'
+    'Owner preflight verified dedicated-App tag restrictions and tag-only registry environments. Each tag run checks the registry trusted-publisher registrations; negative writer/legacy-App checks remain hosted acceptance requirements.'
   );
 });
 
+export interface IdTokenRequest {
+  readonly url: string;
+  readonly token: Redacted.Redacted<string>;
+}
+
+/** Replaces any failure with `message`, so a request or response holding a credential is never printed. */
+const opaque =
+  (message: string) =>
+  <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.mapError(effect, () => new ReleaseError({ message }));
+
+/** A fresh GitHub Actions ID token for `audience`; the job needs `id-token: write`. */
+const actionsIdToken = (idTokenRequest: IdTokenRequest, audience: string) =>
+  Effect.gen(function* () {
+    const url = new URL(idTokenRequest.url);
+    url.searchParams.set('audience', audience);
+    const response = yield* (yield* HttpClient.HttpClient).get(url, {
+      headers: {
+        accept: 'application/json',
+        authorization: `Bearer ${Redacted.value(idTokenRequest.token)}`,
+      },
+    });
+    yield* ensure(isSuccess(response.status), 'ID token request refused');
+    const { value } = yield* parseJson(
+      Schema.Struct({ value: Schema.String }),
+      yield* response.text
+    );
+    return Redacted.make(value);
+  }).pipe(opaque(`GitHub Actions issued no ID token for audience ${audience}`));
+
+/** POSTs a credential-bearing exchange; the body is read only when the registry refuses. */
+const exchange = <S extends Schema.Top>(
+  request: HttpClientRequest.HttpClientRequest,
+  label: string,
+  refusal: S,
+  detail: (value: S['Type']) => string
+) =>
+  Effect.gen(function* () {
+    const response = yield* (yield* HttpClient.HttpClient)
+      .execute(request)
+      .pipe(opaque(`${label} could not reach the registry`));
+    if (isSuccess(response.status)) return;
+    const reason = yield* response.text.pipe(
+      Effect.flatMap(body => parseJson(refusal, body)),
+      Effect.map(value => `: ${detail(value)}`),
+      Effect.orElseSucceed(() => '')
+    );
+    return yield* fail(`${label} failed (${response.status})${reason}`);
+  });
+
+const NpmRefusal = Schema.Struct({ message: Schema.String });
+const PypiRefusal = Schema.Struct({
+  errors: Schema.Array(Schema.Struct({ code: Schema.String, description: Schema.String })),
+});
+
+/**
+ * Proves the registry accepts this job's identity as a trusted publisher by exchanging an Actions
+ * ID token for a short-lived publish token. The minted token stays unread in the response body.
+ */
+export const checkTrustedPublisher = (
+  language: Language,
+  npmPackages: ReadonlyArray<string>,
+  idTokenRequest: IdTokenRequest
+) =>
+  Effect.gen(function* () {
+    const audience = REGISTRY_LANES[language].oidcAudience;
+    if (language === 'python') {
+      const idToken = yield* actionsIdToken(idTokenRequest, audience);
+      return yield* exchange(
+        HttpClientRequest.bodyJsonUnsafe(
+          HttpClientRequest.post('https://pypi.org/_/oidc/mint-token'),
+          { token: Redacted.value(idToken) }
+        ),
+        'PyPI trusted publisher check',
+        PypiRefusal,
+        value => value.errors.map(error => `${error.code}: ${error.description}`).join('; ')
+      );
+    }
+    // npm exchanges per package, and a package without this publisher registered is refused.
+    for (const name of npmPackages) {
+      const idToken = yield* actionsIdToken(idTokenRequest, audience);
+      yield* exchange(
+        HttpClientRequest.post(
+          `${NPM_REGISTRY}/-/npm/v1/oidc/token/exchange/package/${name.replace('/', '%2f')}`,
+          { headers: { authorization: `Bearer ${Redacted.value(idToken)}` } }
+        ),
+        `npm trusted publisher check for ${name}`,
+        NpmRefusal,
+        value => value.message
+      );
+    }
+  }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }));
+
+const checkPublisher = (language: Language) =>
+  Effect.gen(function* () {
+    const env = yield* Config.all({
+      ref: Config.String('GITHUB_REF'),
+      url: Config.String('ACTIONS_ID_TOKEN_REQUEST_URL'),
+      token: Config.Redacted('ACTIONS_ID_TOKEN_REQUEST_TOKEN'),
+    });
+    yield* ensure(
+      env.ref.startsWith('refs/tags/sdk-release/'),
+      'Publisher checks require the protected source-tag event'
+    );
+    const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+    const npmPackages = batch.plan.releases
+      .filter(release => release.language === 'typescript')
+      .map(release => release.name);
+    yield* checkTrustedPublisher(language, npmPackages, env);
+    yield* Console.log(`${REGISTRY_LANES[language].environment} trusted publisher accepted`);
+  });
+
 const Mode = Schema.Literals([
   'check-policy',
+  'check-publisher',
   'preflight',
-  'prepare-npm',
   'prepare-pypi',
   'upload-npm',
   'verify',
 ]);
 
 const main = Effect.gen(function* () {
-  const [argument] = yield* (yield* Stdio.Stdio).args;
+  const [argument, language] = yield* (yield* Stdio.Stdio).args;
   const mode = yield* Schema.decodeUnknownEffect(Mode)(argument);
-  yield* mode === 'check-policy' ? checkPolicy : publish(mode);
+  if (mode === 'check-policy') return yield* checkPolicy;
+  if (mode === 'check-publisher')
+    return yield* checkPublisher(yield* Schema.decodeUnknownEffect(LanguageSchema)(language));
+  yield* publish(mode);
 });
 
 if (import.meta.main) runMain(main);
