@@ -6,7 +6,6 @@ Mirrors the TypeScript types in ts/packages/core/src/types/customTool.types.ts
 from __future__ import annotations
 
 import typing as t
-import warnings
 from dataclasses import dataclass, field
 
 import typing_extensions as te
@@ -16,7 +15,6 @@ from composio_client.types.tool_router.session_execute_response import (
 )
 from pydantic import BaseModel
 
-from composio.exceptions import ComposioDeprecationWarning
 from composio.utils.safe_path import SAFE_COMPONENT_REGEX
 
 # ────────────────────────────────────────────────────────────────
@@ -281,28 +279,3 @@ RegisteredLocalTool = RegisteredCustomTool
 
 RegisteredLocalToolkit = RegisteredCustomToolkit
 """A toolkit of the session's local tools, as returned by ``session.local_toolkits()``."""
-
-
-_DEPRECATED_EXPORTS = {
-    "CustomTool": "LocalTool",
-    "RegisteredCustomTool": "RegisteredLocalTool",
-    "RegisteredCustomToolkit": "RegisteredLocalToolkit",
-}
-
-
-def get_deprecated_export(module: str, name: str) -> t.Any:
-    """Resolve a deprecated ``Custom*`` name for a package-level ``__getattr__``.
-
-    The old names stay importable from the public packages but warn, because
-    "custom toolkits" also names the server-side Custom MCP toolkits.
-    """
-    replacement = _DEPRECATED_EXPORTS.get(name)
-    if replacement is None:
-        raise AttributeError(f"module {module!r} has no attribute {name!r}")
-    warnings.warn(
-        f"`{name}` is deprecated; use `{replacement}`",
-        ComposioDeprecationWarning,
-        # Point at the caller's import, past the package __getattr__.
-        stacklevel=3,
-    )
-    return globals()[name]

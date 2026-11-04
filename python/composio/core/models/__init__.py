@@ -1,11 +1,12 @@
-import typing as t
-
 from .auth_configs import AuthConfigs
 from .connected_accounts import ConnectedAccounts
 from .custom_tool import ExperimentalToolkit, LocalToolkit
 from .custom_tool_types import (
+    CustomTool,
     LocalTool,
     ProxyExecuteBinaryData,
+    RegisteredCustomTool,
+    RegisteredCustomToolkit,
     RegisteredLocalTool,
     RegisteredLocalToolkit,
     SessionContext,
@@ -102,16 +103,3 @@ __all__ = [
     "Webhooks",
     "is_connection_expired_event",
 ]
-
-# The deprecated names are served by __getattr__ so importing them warns;
-# type checkers still resolve them through this block.
-if t.TYPE_CHECKING:
-    from .custom_tool_types import CustomTool as CustomTool
-    from .custom_tool_types import RegisteredCustomTool as RegisteredCustomTool
-    from .custom_tool_types import RegisteredCustomToolkit as RegisteredCustomToolkit
-
-
-def __getattr__(name: str) -> t.Any:
-    from .custom_tool_types import get_deprecated_export
-
-    return get_deprecated_export(__name__, name)

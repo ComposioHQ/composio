@@ -12,7 +12,6 @@ Covers:
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
-import importlib
 import sys
 import warnings
 from dataclasses import replace
@@ -1446,38 +1445,18 @@ class TestLocalToolTypeNames:
         assert RegisteredLocalTool is RegisteredCustomTool
         assert RegisteredLocalToolkit is RegisteredCustomToolkit
 
-    @pytest.mark.parametrize(
-        ("module_name", "old_name", "new_name"),
-        [
-            ("composio", "CustomTool", "LocalTool"),
-            ("composio.core.models", "CustomTool", "LocalTool"),
-            ("composio.core.models", "RegisteredCustomTool", "RegisteredLocalTool"),
-            (
-                "composio.core.models",
-                "RegisteredCustomToolkit",
-                "RegisteredLocalToolkit",
-            ),
-        ],
-    )
-    def test_deprecated_names_warn_and_alias_new_names(
-        self, module_name, old_name, new_name
-    ):
-        module = importlib.import_module(module_name)
+    def test_deprecated_type_names_stay_plain_aliases(self):
+        # Type names don't warn, so `from composio import *` stays quiet;
+        # the deprecated options and session methods carry the warning.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            import composio
+            from composio.core import models
 
-        with pytest.warns(
-            ComposioDeprecationWarning,
-            match=f"^`{old_name}` is deprecated; use `{new_name}`$",
-        ) as record:
-            old = getattr(module, old_name)
-
-        assert record[0].filename == __file__
-        assert old is getattr(module, new_name)
-
-    def test_unknown_name_still_raises_attribute_error(self):
-        import composio
-
-        with pytest.raises(AttributeError, match="has no attribute 'NotAThing'"):
-            composio.NotAThing  # noqa: B018
+        assert composio.CustomTool is composio.LocalTool
+        assert models.CustomTool is models.LocalTool
+        assert models.RegisteredCustomTool is models.RegisteredLocalTool
+        assert models.RegisteredCustomToolkit is models.RegisteredLocalToolkit
 
 
 # ────────────────────────────────────────────────────────────────
