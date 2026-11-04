@@ -1,7 +1,7 @@
 """Compile docs snippets and attribute mypy diagnostics to resolved SDK symbols.
 
 The TypeScript driver passes a request file containing workDir, sdkPython,
-syntaxOnly, and snippets ({id, code, typeCheck}). No snippet is executed. Results
+sdkFromSource, syntaxOnly, and snippets ({id, code, typeCheck}). No snippet is executed. Results
 separate SDK API diagnostics from other mypy diagnostics; line numbers are
 snippet-relative, with the prelude removed. The pinned mypy build API supplies
 resolved expression types, so local aliases, nested scopes, and same-named
@@ -118,9 +118,13 @@ def run_mypy(files: list[str], request: dict, trees: dict[str, ast.Module], prel
             return sdk_type(typ.fallback)
         return False
 
-    # Editable installs use an import hook mypy cannot follow. Resolve the SDK
-    # and ALL local provider packages from source, not a published SDK wheel.
-    os.environ["MYPYPATH"] = os.pathsep.join([str(PYTHON_ROOT), *(str(path.parent) for path in provider_packages())])
+    if request.get("sdkFromSource", True):
+        # Editable installs use an import hook mypy cannot follow. Resolve the SDK
+        # and ALL local provider packages from source, not a published SDK wheel.
+        os.environ["MYPYPATH"] = os.pathsep.join([str(PYTHON_ROOT), *(str(path.parent) for path in provider_packages())])
+    else:
+        # Released packages resolve from sdkPython's site-packages only.
+        os.environ.pop("MYPYPATH", None)
     sources, options = process_options([
         "--config-file=",
         "--python-version=3.12",

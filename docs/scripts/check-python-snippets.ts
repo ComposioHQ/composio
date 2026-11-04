@@ -1,6 +1,7 @@
 /**
  * Compile every rendered Python fence (including exempted/legacy examples) and
- * type-check current SDK examples against the local Python SDK and providers.
+ * type-check current SDK examples against the local Python SDK and providers,
+ * or against the packages installed in PYTHON_SNIPPETS_SDK_PYTHON when set.
  *
  * The Python helper attributes diagnostics using mypy's resolved AST symbols
  * and fully qualified types, not error-message class names. SDK call,
@@ -99,7 +100,11 @@ const PYTHON_ROOT = join(DOCS_ROOT, '../python');
 // The SDK is a uv workspace member; keep its env in the gitignored python/.venv
 // rather than an env at the workspace root.
 const SDK_ENV = join(PYTHON_ROOT, '.venv');
-const SDK_PYTHON = join(SDK_ENV, process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+// Set to an interpreter with released SDK packages installed to check snippets
+// against what users can install instead of the local source.
+const PUBLISHED_SDK_PYTHON = process.env.PYTHON_SNIPPETS_SDK_PYTHON || undefined;
+const SDK_PYTHON =
+  PUBLISHED_SDK_PYTHON ?? join(SDK_ENV, process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
 const HELPER = join(DOCS_ROOT, 'scripts/python-snippets/check_snippets.py');
 
 /** Runs the Python helper in the SDK env; exits 2 when `uv` is unavailable or the helper fails. */
@@ -112,6 +117,7 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
       JSON.stringify({
         workDir,
         sdkPython: SDK_PYTHON,
+        sdkFromSource: PUBLISHED_SDK_PYTHON === undefined,
         syntaxOnly,
         snippets: snippets.map(({ id, code, typeCheck }) => ({ id, code, typeCheck })),
       }),

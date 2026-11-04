@@ -194,6 +194,15 @@ jobs:
           PYTHON_VERSION=$(jq -r '.targets.composio' /tmp/sdk-docs-input.json)
           uv venv /tmp/sdk-published-python
           uv pip install --python /tmp/sdk-published-python/bin/python "composio==$PYTHON_VERSION"
+          # Python snippets type-check against these released providers, which share the
+          # core version. --no-deps matches the source check and avoids framework conflicts.
+          # A provider added after this release has no published version, so its snippets fail.
+          for MANIFEST in python/providers/*/pyproject.toml; do
+            NAME=$(sed -n 's/^name = "\(.*\)"$/\1/p' "$MANIFEST" | head -1)
+            if curl -fsS -o /dev/null "https://pypi.org/pypi/$NAME/$PYTHON_VERSION/json"; then
+              uv pip install --python /tmp/sdk-published-python/bin/python --no-deps "$NAME==$PYTHON_VERSION"
+            fi
+          done
       - name: Update guides for the published SDK contract
         uses: anthropics/claude-code-action/base-action@e4a6faad497d33dbc7144135c75e41f82f0bf6c0
         with:
@@ -219,6 +228,8 @@ jobs:
             guide maintenance may still be pending.
       - name: Install and verify maintained examples with exact published pins
         working-directory: docs
+        env:
+          PYTHON_SNIPPETS_SDK_PYTHON: /tmp/sdk-published-python/bin/python
         run: |
           bun run check:code-examples
           bun run check:api-snippets
