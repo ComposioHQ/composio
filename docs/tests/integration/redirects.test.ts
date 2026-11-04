@@ -32,6 +32,10 @@ const REDIRECTS = [
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
   { from: "/docs/getting-started", to: "/docs/quickstart" },
+  { from: "/docs/tool-tags", to: "/docs/governance/tool-hints" },
+  { from: "/docs/tool-tags.md", to: "/docs/governance/tool-hints.md" },
+  { from: "/docs/approvals", to: "/docs/governance/approvals" },
+  { from: "/docs/approvals.md", to: "/docs/governance/approvals.md" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox/remote" },
@@ -79,5 +83,26 @@ describe("Redirects - destinations are valid", () => {
     }
 
     expect(failures).toEqual([]);
+  });
+});
+
+describe("Redirects - saved tool tag section links", () => {
+  test("legacy anchors survive the redirect alongside the renamed headings", async () => {
+    const res = await fetchPage("/docs/tool-tags", { timeout: 30_000 });
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(new URL(res.url).pathname).toBe("/docs/governance/tool-hints");
+
+    for (const id of [
+      "tags",
+      "how-tools-are-tagged",
+      "using-tags-in-a-session",
+      "hints",
+      "how-tools-get-hints",
+      "using-hints-in-a-session",
+    ]) {
+      expect(html).toContain(`id="${id}"`);
+    }
   });
 });
