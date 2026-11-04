@@ -101,14 +101,13 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      # This job reads a downloaded artifact, so it restores caches but never saves them.
       - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: 'false'
       - uses: ./.github/actions/setup-python-uv
         with:
-          cache-dependency-glob: |
-            uv.lock
-            pyproject.toml
-            mise.lock
-            python/pyproject.toml
+          enable-caching: 'false'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Install documentation generator dependencies
         working-directory: docs
@@ -237,6 +236,9 @@ jobs:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
         run: bun scripts/sdk-release/batch.ts tag
 
+  # Candidate jobs run only for release-PR pull_request events and sdk-release/* tag pushes,
+  # never for pull_request_target or workflow_run. They get a read-only token and no secrets,
+  # and use no caches, so the published files never depend on cached state.
   select-candidates:
     if: >-
       github.repository == 'ComposioHQ/composio' &&
@@ -281,13 +283,11 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
       - uses: ./.github/actions/setup-python-uv
         with:
-          cache-dependency-glob: |
-            uv.lock
-            pyproject.toml
-            mise.lock
-            python/pyproject.toml
+          enable-caching: 'false'
         if: matrix.language == 'python' && needs.select-candidates.outputs.python == 'true'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Build or recover exact immutable candidate

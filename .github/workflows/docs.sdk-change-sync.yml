@@ -183,7 +183,10 @@ jobs:
       - name: Install exact public packages and expose frozen verified API references
         run: |
           cd docs
-          bun install
+          # Pins changed above, so the lockfile updates. Dependency lifecycle scripts stay off;
+          # only the docs package's own postinstall runs.
+          bun install --ignore-scripts
+          bun run postinstall
           cd ..
           FROZEN_SOURCE=$(jq -r '.verifiedSourceSha' /tmp/sdk-docs-input.json)
           git fetch origin "$FROZEN_SOURCE"

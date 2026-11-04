@@ -221,6 +221,7 @@ const LIVE_PAGE_FORMATS: ReadonlyArray<{
 const cellText = (cell: string) =>
   cell
     .replace(/<[^>]*>/g, '')
+    .replace(/[<>]/g, '')
     .replaceAll('`', '')
     .trim()
     .replace(/\s+/g, ' ');

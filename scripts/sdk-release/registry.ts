@@ -191,7 +191,7 @@ export const inspectNpmProvenanceSubject = (
     );
     const digest = yield* Digest.Digest;
     const sha512 = yield* digest.digestHex(Digest.sha512, file.bytes);
-    const subject = `pkg:npm/${file.name.replace('@', '%40')}@${file.version}`;
+    const subject = `pkg:npm/${file.name.replace(/^@/, '%40')}@${file.version}`;
     yield* ensureTerminal(
       statement.subject.some(item => item.name === subject && item.digest.sha512 === sha512),
       `Native npm provenance subject conflict: ${file.name}`
