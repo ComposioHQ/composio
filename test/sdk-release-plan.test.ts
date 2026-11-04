@@ -362,6 +362,26 @@ describe('SDK release planning', () => {
     ).rejects.toThrow('baseline');
   });
 
+  test('a never-published npm package blocks only a release that targets it', async () => {
+    const { cwd, note } = await fixture();
+    const baseline = {
+      '@composio/core': '0.28.0',
+      '@composio/slim': '0.28.0',
+      '@composio/provider': null,
+      composio: '0.31.0',
+      'composio-openai': '0.31.0',
+      'composio-outside': '0.31.0',
+    };
+    await note('python', { '@composio/python-sdk': 'patch' });
+    expect(versions(await createSdkReleasePlan(cwd, { baseline, typescript: 'skip' }))).toEqual({
+      '@composio/python-sdk': '0.31.1',
+    });
+    await note('provider', { '@composio/provider': 'patch' });
+    await expect(createSdkReleasePlan(cwd, { baseline })).rejects.toThrow(
+      '@composio/provider has never been published to npm'
+    );
+  });
+
   test.each([
     ['python/composio/__version__.py', '__version__ = "0.30.0"\n'],
     ['python/providers/outside/setup.py', 'setup(version="0.30.0")\n'],

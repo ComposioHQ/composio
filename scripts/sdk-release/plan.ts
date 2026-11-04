@@ -43,7 +43,8 @@ export const autoByDefault = ReleaseChoice.pipe(
 export const ReleaseOptions = Schema.Struct({
   typescript: autoByDefault,
   python: autoByDefault,
-  baseline: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+  /** Published version per package; `null` marks an npm package that was never published. */
+  baseline: Schema.optionalKey(Schema.Record(Schema.String, Schema.NullOr(Schema.String))),
   supersede: Schema.optionalKey(SupersedeInput),
 });
 export type SdkReleaseOptions = typeof ReleaseOptions.Encoded;
@@ -192,7 +193,7 @@ const assertStableBaselines = (
   packages: Packages,
   python: ReadonlyArray<PythonReleasePackage>,
   allowed: Set<string>,
-  baseline: Record<string, string> | undefined,
+  baseline: Readonly<Record<string, string | null>> | undefined,
   supersede: SupersedeInput | undefined
 ) =>
   Effect.gen(function* () {
@@ -206,6 +207,7 @@ const assertStableBaselines = (
       const published = baseline[pkg.name];
       yield* ensure(
         published === undefined ||
+          published === null ||
           published === pkg.version ||
           (supersede !== undefined && strandedBySupersede(supersede, python, published, pkg)),
         `Registry baseline mismatch for ${pkg.name}: source ${pkg.version}, published ${published}. ` +
@@ -310,6 +312,11 @@ export const createSdkReleasePlan = (cwd: string, options: SdkReleaseOptions = {
       yield* ensure(
         inputs.allowed.has(release.name),
         `Unexpected SDK release target ${release.name}`
+      );
+    for (const release of releases)
+      yield* ensure(
+        choices.baseline?.[release.name] !== null,
+        `${release.name} has never been published to npm. Publish its first version by hand and register sdk.release.yml as its npm trusted publisher, then request the release again.`
       );
     return yield* decodePlan({
       schemaVersion: 1,

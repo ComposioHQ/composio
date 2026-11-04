@@ -375,7 +375,7 @@ const RELEASE_TAG = /^refs\/tags\/sdk-release\/([1-9][0-9]*)$/;
  * which shares one version. A language with stranded packages cannot be skipped.
  */
 export const supersededRelease = (
-  baseline: Record<string, string>,
+  baseline: Readonly<Record<string, string | null>>,
   pythonPackages: ReadonlyArray<string>,
   choices: Record<Language, ReleaseChoice>
 ) =>

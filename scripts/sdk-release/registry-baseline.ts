@@ -1,8 +1,8 @@
-import { Effect, Path, Schema } from 'effect';
+import { Effect, Option, Path, Schema } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
 import semver from 'semver';
 import { discoverPythonPackages } from './python-metadata';
-import { ensure, fromPromise, getJson, readJson } from './runtime';
+import { HttpStatusError, ensure, fromPromise, getJson, readJson } from './runtime';
 
 const ChangesetConfig = Schema.StructWithRest(
   Schema.Struct({
@@ -26,13 +26,22 @@ const isStable = (version: string) =>
   semver.valid(version) !== null && semver.prerelease(version) === null;
 const BASELINE_FAILURE = 'Registry baseline lookup failed';
 
+/** The npm `latest` version, or `null` for a package that was never published. */
 const npmBaseline = (name: string) =>
   Effect.gen(function* () {
-    const { version } = yield* getJson(
+    const latest = yield* getJson(
       `https://registry.npmjs.org/${encodeURIComponent(name)}/latest`,
       NpmLatest,
       BASELINE_FAILURE
+    ).pipe(
+      Effect.map(Option.some),
+      Effect.catchIf(
+        error => error instanceof HttpStatusError && error.status === 404,
+        () => Effect.succeed(Option.none<typeof NpmLatest.Type>())
+      )
     );
+    if (Option.isNone(latest)) return [name, null] as const;
+    const { version } = latest.value;
     yield* ensure(isStable(version), `Expected a stable npm baseline for ${name}`);
     return [name, version] as const;
   });
