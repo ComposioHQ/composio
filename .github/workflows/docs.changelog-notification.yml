@@ -19,12 +19,6 @@ jobs:
         with:
           fetch-depth: 0 # Fetch full history to detect changes across all commits in push
 
-      - name: Setup Node.js, pnpm, Bun
-        uses: ./.github/actions/setup-node-pnpm-bun
-
-      - name: Install changelog filter dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
       - name: Get Changed Changelog Files
         id: changed-files
         run: |
@@ -47,7 +41,7 @@ jobs:
             CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
           fi
 
-          CHANGED_FILES=$(printf '%s\n' "$CHANGED_FILES" | bun scripts/sdk-release/changelog-filter.ts)
+          CHANGED_FILES=$(printf '%s\n' "$CHANGED_FILES" | bash scripts/sdk-release/changelog-filter.sh)
 
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changelog files changed in this push"

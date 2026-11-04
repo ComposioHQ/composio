@@ -99,7 +99,7 @@ export const inDirectory =
   (command: string, args: ReadonlyArray<string>) =>
     run(command, args, { cwd, env: { ...withoutReleaseTokens, ...extraEnv } });
 
-/** Reads a file, or `None` when it does not exist. */
+/** Reads a file as text; fails when it does not exist (see `readOptionalFile`). */
 export const readFile = (path: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
