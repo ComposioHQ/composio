@@ -1,4 +1,4 @@
-import { Config, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
+import { Config, Data, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import { getPackages } from '@manypkg/get-packages';
 import {
@@ -8,6 +8,7 @@ import {
   CandidateManifest,
   candidateArtifactName,
   downloadCandidate,
+  isRetained,
   mayRebuildMissingCandidate,
   normalizeArtifactDigest,
   originalCandidates,
@@ -240,6 +241,11 @@ const readCandidateFiles = (directory: string) =>
     );
   });
 
+/** The approved release-PR candidate no longer exists; only a corrective release can publish. */
+export class ApprovedCandidateLost extends Data.TaggedError('ApprovedCandidateLost')<{
+  readonly message: string;
+}> {}
+
 /**
  * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
  * Every successful release-PR run on the head passed the candidate checks the merge requires;
@@ -263,12 +269,26 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
       )
       .toSorted((a, b) => b.id - a.id);
     if (!run)
-      return yield* fail(`No successful release-PR run built the approved ${language} candidate`);
+      return yield* new ApprovedCandidateLost({
+        message: `No successful release-PR run built the approved ${language} candidate`,
+      });
+    const artifacts = yield* originalCandidates(run.id);
+    const now = Date.now();
+    if (
+      !artifacts.some(
+        candidate =>
+          candidate.name === candidateArtifactName(language) && isRetained(candidate, now)
+      )
+    )
+      return yield* new ApprovedCandidateLost({
+        message: `Approved ${language} candidate was deleted or expired in ${run.html_url}`,
+      });
     const artifact = yield* reuseCandidate(
-      yield* originalCandidates(run.id),
+      artifacts,
       candidateArtifactName(language),
       run.id,
-      sha
+      sha,
+      now
     );
     if (Option.isNone(artifact))
       return yield* fail(`Approved ${language} candidate is missing from ${run.html_url}`);
@@ -346,7 +366,14 @@ const buildCandidate = (
       );
     }
     const approvedFrom = isSourceTag(env.ref)
-      ? yield* adoptApprovedCandidate(env.sha, language, directory)
+      ? yield* adoptApprovedCandidate(env.sha, language, directory).pipe(
+          // A confirmed loss ends recovery; lookup errors stay retryable.
+          Effect.tapError(error =>
+            error instanceof ApprovedCandidateLost
+              ? appendOutput(env.outputPath, 'terminal=true\n')
+              : Effect.void
+          )
+        )
       : yield* Effect.as(lane.build(cwd, directory, selected), undefined);
     const files = yield* Effect.forEach(yield* fs.readDirectory(directory), name =>
       Effect.gen(function* () {

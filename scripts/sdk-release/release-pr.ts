@@ -19,10 +19,20 @@ const fileUrl = (branch: string, path: string) =>
 const packageLabel = (name: string) =>
   name === PYTHON_RELEASE_MARKER ? 'Python SDK (`composio` and every provider)' : `\`${name}\``;
 
+/** Shows contributor text literally, so it cannot hide or add content in the reviewed body. */
+const escapeMarkdown = (text: string) =>
+  text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replace(/[\\`*_[\]()|#!]/g, '\\$&');
+
 /** First line of a changeset summary, short enough for one list item. */
 const headline = (summary: string) => {
   const line = summary.trim().split('\n')[0]?.trim() || '(no summary)';
-  return line.length > SUMMARY_LIMIT ? `${line.slice(0, SUMMARY_LIMIT - 1)}…` : line;
+  return escapeMarkdown(
+    line.length > SUMMARY_LIMIT ? `${line.slice(0, SUMMARY_LIMIT - 1)}…` : line
+  );
 };
 
 const changesetLine = (note: Changeset) => {

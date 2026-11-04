@@ -66,3 +66,90 @@ test('a transient artifact-list failure leaves the original candidate retryable'
   expect(`${result.stdout}${result.stderr}`).toContain('failed (502)');
   expect(await readText(output)).not.toContain('terminal=true');
 });
+
+/** A source-tag run for one TypeScript package, answering GitHub reads from `routes`. */
+const sourceTagRun = async (routes: string) => {
+  const directory = await directories.create();
+  await writeText(`${directory}/package.json`, JSON.stringify({ name: 'root', private: true }));
+  await writeText(`${directory}/pnpm-workspace.yaml`, "packages: ['core']\n");
+  await writeText(
+    `${directory}/core/package.json`,
+    JSON.stringify({ name: '@composio/core', version: '1.0.1' })
+  );
+  await writeText(
+    `${directory}/.github/sdk-release-plan.json`,
+    JSON.stringify({
+      schemaVersion: 1,
+      id: '8',
+      originalRunId: '8',
+      inputBase: 'a'.repeat(40),
+      statusUrl: 'https://github.com/ComposioHQ/composio/issues/8',
+      date: '2026-11-03',
+      outputs: [],
+      plan: {
+        schemaVersion: 1,
+        inputFingerprint: 'frozen',
+        choices: { typescript: 'auto', python: 'skip' },
+        recommended: [],
+        changesets: [],
+        retainedChangesets: [],
+        releases: [
+          {
+            name: '@composio/core',
+            oldVersion: '1.0.0',
+            newVersion: '1.0.1',
+            type: 'patch',
+            changesets: [],
+            language: 'typescript',
+          },
+        ],
+      },
+    })
+  );
+  const preload = `${directory}/fetch.ts`;
+  await writeText(
+    preload,
+    `const routes = ${routes};\nglobalThis.fetch = async input => {\n  const path = new URL(String(input)).pathname;\n  const route = Object.keys(routes).find(key => path.endsWith(key));\n  return route ? new Response(JSON.stringify(routes[route]), { status: 200 }) : new Response('{}', { status: 502 });\n};\n`
+  );
+  const output = `${directory}/output`;
+  await writeText(output, '');
+  const result = await runRelease(
+    spawn(
+      'bun',
+      ['--preload', preload, await resolvePath('scripts/sdk-release/candidates.ts'), 'typescript'],
+      {
+        cwd: directory,
+        env: {
+          GITHUB_RUN_ID: '9',
+          GITHUB_RUN_ATTEMPT: '1',
+          GITHUB_SHA: 'b'.repeat(40),
+          GITHUB_REF: 'refs/tags/sdk-release/8',
+          GITHUB_OUTPUT: output,
+          SDK_READ_TOKEN: 'fixture',
+          SDK_RELEASE_TOKEN: '',
+        },
+      }
+    )
+  );
+  return { result, output: await readText(output) };
+};
+
+test('a deleted approved candidate ends recovery so a corrective release can start', async () => {
+  const { result, output } = await sourceTagRun(
+    `{ '/actions/runs/9/artifacts': { total_count: 0, artifacts: [] }, '/actions/workflows/sdk.release.yml/runs': { workflow_runs: [] } }`
+  );
+  expect(result.exitCode).not.toBe(0);
+  expect(`${result.stdout}${result.stderr}`).toContain(
+    'No successful release-PR run built the approved typescript candidate'
+  );
+  expect(output).toContain('terminal=true');
+});
+
+test('a failed approved-candidate lookup stays retryable', async () => {
+  const { result, output } = await sourceTagRun(
+    `{ '/actions/runs/9/artifacts': { total_count: 0, artifacts: [] } }`
+  );
+  expect(result.exitCode).not.toBe(0);
+  expect(`${result.stdout}${result.stderr}`).toContain('failed (502)');
+  expect(output).not.toContain('terminal=true');
+});

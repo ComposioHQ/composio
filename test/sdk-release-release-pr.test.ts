@@ -82,3 +82,24 @@ test('the release PR names every package, consumed changeset and edited changelo
   );
   expect(body).toContain('tags it `sdk-release/8`');
 });
+
+test('changeset text cannot hide or add content in the release PR', () => {
+  const body = releasePullBody(
+    {
+      ...batch,
+      plan: {
+        ...batch.plan,
+        changesets: [
+          {
+            id: 'sneaky',
+            summary: 'Fix crash <!-- [click](https://evil.test) | `x`',
+            releases: [{ name: '@composio/core', type: 'patch' }],
+          },
+        ],
+      },
+    },
+    'sdk-release/batch-8'
+  );
+  expect(body).toContain('Fix crash &lt;\\!-- \\[click\\]\\(https://evil.test\\) \\| \\`x\\`');
+  expect(body).not.toContain('<!-- [click]');
+});
