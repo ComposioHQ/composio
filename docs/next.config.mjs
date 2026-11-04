@@ -193,6 +193,27 @@ const config = {
         permanent: true,
       },
       // === end docs v3 reorganization redirects ===
+      // Governance guides moved to a shared route namespace.
+      {
+        source: '/docs/tool-tags',
+        destination: '/docs/governance/tool-hints',
+        permanent: true,
+      },
+      {
+        source: '/docs/tool-tags.:format(md|mdx)',
+        destination: '/docs/governance/tool-hints.md',
+        permanent: true,
+      },
+      {
+        source: '/docs/approvals',
+        destination: '/docs/governance/approvals',
+        permanent: true,
+      },
+      {
+        source: '/docs/approvals.:format(md|mdx)',
+        destination: '/docs/governance/approvals.md',
+        permanent: true,
+      },
       {
         source: '/',
         destination: '/docs',

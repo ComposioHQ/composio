@@ -91,7 +91,7 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@composio/anthropic": "^0.11.6",
     "@composio/claude-agent-sdk": "^0.13.0",
-    "@composio/core": "^0.27.0",
+    "@composio/core": "^0.28.0",
     "@composio/google": "^0.12.0",
     "@composio/langchain": "^0.11.2",
     "@composio/llamaindex": "^0.11.2",

@@ -71,7 +71,14 @@ async function updateContract(): Promise<void> {
   await session.update({ expectedConfigVersion: true });
 }
 
+// `authorize()` accepts the `experimental` block for SHARED connections (#4286).
+async function authorizeExperimental(): Promise<void> {
+  const session = await composio.create('user_123');
+  await session.authorize('slackbot', { experimental: { accountType: 'SHARED' } });
+}
+
 void createGating;
 void useGating;
 void requestOptionsArg;
 void updateContract;
+void authorizeExperimental;

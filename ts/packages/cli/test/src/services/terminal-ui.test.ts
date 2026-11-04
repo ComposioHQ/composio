@@ -2,6 +2,7 @@ import { Writable } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
+import { CANCEL_SYMBOL } from '@clack/core';
 import stringWidth from 'fast-string-width';
 import { Data, Effect } from 'effect';
 import {
@@ -71,6 +72,21 @@ describe('TerminalUI', () => {
       vi.mocked(p.confirm).mockReset();
       vi.mocked(p.select).mockReset();
     });
+
+    it.effect('maps prompt cancellation to false for confirmation and the first selection', () =>
+      Effect.gen(function* () {
+        const { ui } = makeStreamedUi({ stdin: true, stdout: true, stderr: true });
+        vi.mocked(p.confirm).mockResolvedValue(CANCEL_SYMBOL);
+        vi.mocked(p.select).mockResolvedValue(CANCEL_SYMBOL);
+        expect(yield* ui.confirm('proceed?', { defaultValue: true })).toBe(false);
+        expect(
+          yield* ui.select('pick', [
+            { value: 'first', label: 'First' },
+            { value: 'second', label: 'Second' },
+          ])
+        ).toBe('first');
+      })
+    );
 
     it.effect(
       'stdin redirected, stdout+stderr TTY: prompts fall back, stdout stays clean, decoration renders',

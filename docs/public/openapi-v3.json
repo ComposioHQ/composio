@@ -204,6 +204,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "credentials": {
@@ -296,6 +297,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "authScheme": {
@@ -438,6 +440,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "credentials": {
@@ -564,6 +567,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "scopes": {
@@ -650,6 +654,7 @@
         "properties": {
           "alias": {
             "type": "string",
+            "maxLength": 255,
             "description": "A human-readable alias for this connected account. Pass an empty string to clear the alias. Must be unique per entity and toolkit within the project."
           },
           "connection": {
@@ -2555,6 +2560,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -4423,6 +4429,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -4610,6 +4617,7 @@
                       },
                       "alias": {
                         "type": "string",
+                        "maxLength": 255,
                         "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                       },
                       "callback_url": {
@@ -5786,6 +5794,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -6099,6 +6108,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -7031,7 +7041,8 @@
                         "type": "string"
                       },
                       "display_name": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 75
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -13157,7 +13168,7 @@
     "/api/v3/trigger_instances/{slug}/upsert": {
       "post": {
         "summary": "Create or update a trigger",
-        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Provide either a connected_account_id to pin a specific user connection, or a user_id to auto-resolve the first active connection for that user and the trigger's toolkit.",
+        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Provide either a connected_account_id to pin a specific user connection, or a user_id to auto-resolve the first active connection for that user and the trigger's toolkit. For a trigger that supports both webhooks and polling, Composio chooses the best way for the instance to receive events unless type sets one. When the instance polls because a webhook could not be set up, fallback_reason says why. An existing instance keeps its type, so an upsert asking for the other type returns 409.",
         "tags": [
           "Triggers"
         ],
@@ -13221,6 +13232,20 @@
                     "additionalProperties": {},
                     "description": "Trigger configuration"
                   },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "poll",
+                      "webhook"
+                    ],
+                    "description": "Whether this instance receives events by webhook or by polling, for a trigger that supports both. Omit it to let Composio choose the best one."
+                  },
+                  "polling_interval": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10080,
+                    "description": "Minutes between polls, for an instance that polls for its events. It is checked whenever the instance could poll, even when Composio tries a webhook first, so an interval outside the toolkit's allowed range fails the request."
+                  },
                   "version": {
                     "type": "string",
                     "description": "DEPRECATED: This parameter will be removed in a future version. Please use toolkit_versions instead.",
@@ -13262,10 +13287,34 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "webhook",
+                        "poll"
+                      ],
+                      "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                      "example": "webhook"
+                    },
+                    "fallback_reason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                      "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                    },
+                    "polling_interval": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Minutes between scheduled polls for a poll instance.",
+                      "example": 15
                     }
                   },
                   "required": [
-                    "trigger_id"
+                    "trigger_id",
+                    "type",
+                    "fallback_reason",
+                    "polling_interval"
                   ]
                 }
               }
@@ -13281,10 +13330,34 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "webhook",
+                        "poll"
+                      ],
+                      "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                      "example": "webhook"
+                    },
+                    "fallback_reason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                      "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                    },
+                    "polling_interval": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Minutes between scheduled polls for a poll instance.",
+                      "example": 15
                     }
                   },
                   "required": [
-                    "trigger_id"
+                    "trigger_id",
+                    "type",
+                    "fallback_reason",
+                    "polling_interval"
                   ]
                 }
               }
@@ -13690,6 +13763,27 @@
                             "additionalProperties": {},
                             "description": "Configuration for the trigger"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "webhook",
+                              "poll"
+                            ],
+                            "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                            "example": "webhook"
+                          },
+                          "fallback_reason": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                            "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                          },
+                          "polling_interval": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "Minutes between scheduled polls for a poll instance.",
+                            "example": 15
+                          },
                           "egress_url": {
                             "type": "string",
                             "nullable": true,
@@ -13760,6 +13854,9 @@
                           "user_id",
                           "version",
                           "trigger_config",
+                          "type",
+                          "fallback_reason",
+                          "polling_interval",
                           "egress_url",
                           "state",
                           "updated_at",
@@ -23758,6 +23855,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {

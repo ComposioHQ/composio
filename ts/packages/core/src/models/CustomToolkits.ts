@@ -7,10 +7,16 @@
  */
 import ComposioClient from '@composio/client';
 import {
+  CustomToolkitCreateParams,
+  CustomToolkitCreateParamsSchema,
+  CustomToolkitCreateResponse,
   CustomToolkitDeleteResponse,
   CustomToolkitSyncParams,
   CustomToolkitSyncParamsSchema,
   CustomToolkitSyncResponse,
+  CustomToolkitUpdateParams,
+  CustomToolkitUpdateParamsSchema,
+  CustomToolkitUpdateResponse,
   CustomToolkitUpsertParams,
   CustomToolkitUpsertParamsSchema,
   CustomToolkitUpsertResponse,
@@ -19,13 +25,23 @@ import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { withCancellation } from '../utils/cancellation';
+import logger from '../utils/logger';
 import {
+  transformCustomToolkitCreateParams,
+  transformCustomToolkitCreateResponse,
   transformCustomToolkitDeleteResponse,
   transformCustomToolkitSyncParams,
   transformCustomToolkitSyncResponse,
+  transformCustomToolkitUpdateParams,
+  transformCustomToolkitUpdateResponse,
   transformCustomToolkitUpsertParams,
   transformCustomToolkitUpsertResponse,
 } from '../utils/transformers/customToolkits';
+
+const UPSERT_DEPRECATION =
+  '[Deprecation] composio.experimental.customToolkits.upsert() is deprecated. ' +
+  'Use create() for a new toolkit and update(slug, ...) to change its name, logo or API key field.';
+let _upsertDeprecationWarned = false;
 
 /**
  * `composio.experimental.customToolkits` — toolkits your project registers
@@ -38,15 +54,13 @@ import {
  *
  * @example
  * ```typescript
- * const { slug } = await composio.experimental.customToolkits.upsert({
- *   slug: 'MY_TOOLKIT',
- *   toolkitConfig: {
- *     name: 'My Toolkit',
- *     appUrl: 'https://mcp.example.com/mcp',
- *     authSchemes: [{ mode: 'DCR_OAUTH', discoveryUrl: 'https://mcp.example.com/.well-known/oauth-authorization-server' }],
- *   },
+ * const { slug } = await composio.experimental.customToolkits.create({
+ *   name: 'My Toolkit',
+ *   appUrl: 'https://mcp.example.com/mcp',
+ *   authSchemes: [{ mode: 'DCR_OAUTH', discoveryUrl: 'https://mcp.example.com/.well-known/oauth-authorization-server' }],
+ *   userId: 'all',
  * });
- * await composio.experimental.customToolkits.sync(slug);
+ * await composio.experimental.customToolkits.update(slug, { name: 'My Renamed Toolkit' });
  * ```
  */
 export class CustomToolkits {
@@ -55,6 +69,90 @@ export class CustomToolkits {
   constructor(client: ComposioClient) {
     this.client = client;
     telemetry.instrument(this, 'CustomToolkits');
+  }
+
+  /**
+   * Creates a custom MCP toolkit and returns its generated slug.
+   * **Experimental — custom toolkits are in pilot; shape may change.**
+   *
+   * Set `userId` to `'all'` to share the toolkit with every user in the
+   * project, or to a user ID to make it private to that user. `appUrl`,
+   * `authSchemes` and `userId` cannot change later: delete and re-create the
+   * toolkit instead. For a private toolkit, `connectLink` is where to send
+   * that user to connect.
+   *
+   * @param {CustomToolkitCreateParams} params - The toolkit to create
+   * @returns {Promise<CustomToolkitCreateResponse>} The toolkit's slug and, for a private toolkit, a connect link
+   * @throws {ValidationError} If the params fail validation
+   *
+   * @example
+   * ```typescript
+   * const { slug, connectLink } = await composio.experimental.customToolkits.create({
+   *   name: 'Internal API',
+   *   appUrl: 'https://mcp.internal.example.com/mcp',
+   *   authSchemes: [
+   *     { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
+   *   ],
+   *   userId: 'user_123',
+   * });
+   * ```
+   */
+  async create(
+    params: CustomToolkitCreateParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<CustomToolkitCreateResponse> {
+    const parsedParams = CustomToolkitCreateParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse custom toolkit create params', {
+        cause: parsedParams.error,
+      });
+    }
+    const body = transformCustomToolkitCreateParams(parsedParams.data);
+    const result = await withCancellation(
+      () => this.client.custom.createToolkit(body, requestOptions),
+      requestOptions?.signal
+    );
+    return transformCustomToolkitCreateResponse(result);
+  }
+
+  /**
+   * Updates a custom toolkit's name, logo or API key field copy. Omitted
+   * fields keep their current value.
+   * **Experimental — custom toolkits are in pilot; shape may change.**
+   *
+   * On a project with 2FA enabled, updating a private toolkit requires the
+   * `userId` it is private to.
+   *
+   * @param {string} slug - The custom toolkit slug returned by `create()`
+   * @param {CustomToolkitUpdateParams} params - At least one of `name`, `logoFile`, `apiKeyField`
+   * @returns {Promise<CustomToolkitUpdateResponse>} `{ success: true }`
+   * @throws {ValidationError} If the params fail validation
+   *
+   * @example
+   * ```typescript
+   * await composio.experimental.customToolkits.update('CUSTOM_INTERNAL_API_K7F2Q', {
+   *   name: 'Internal API (prod)',
+   *   userId: 'user_123',
+   * });
+   * ```
+   */
+  async update(
+    slug: string,
+    params: CustomToolkitUpdateParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<CustomToolkitUpdateResponse> {
+    const parsedParams = CustomToolkitUpdateParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse custom toolkit update params', {
+        cause: parsedParams.error,
+      });
+    }
+    const body = transformCustomToolkitUpdateParams(parsedParams.data);
+    const result = await withCancellation(
+      () => this.client.custom.updateToolkits(slug, body, requestOptions),
+      requestOptions?.signal
+    );
+    return transformCustomToolkitUpdateResponse(result);
   }
 
   /**
@@ -83,11 +181,19 @@ export class CustomToolkits {
    *   },
    * });
    * ```
+   *
+   * @deprecated Use `create()` for a new toolkit and `update(slug, ...)` to change
+   *   its name, logo or API key field. `create()` generates the slug, so store the
+   *   slug it returns.
    */
   async upsert(
     params: CustomToolkitUpsertParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<CustomToolkitUpsertResponse> {
+    if (!_upsertDeprecationWarned) {
+      _upsertDeprecationWarned = true;
+      logger.warn(UPSERT_DEPRECATION);
+    }
     const parsedParams = CustomToolkitUpsertParamsSchema.safeParse(params);
     if (!parsedParams.success) {
       throw new ValidationError('Failed to parse custom toolkit upsert params', {

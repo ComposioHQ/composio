@@ -98,7 +98,12 @@ describe('CLI: composio dev triggers create', () => {
                 createTrigger: (slug, params) =>
                   Effect.sync(() => {
                     calls.push({ slug, params });
-                    return { trigger_id: 'trg_new' };
+                    return {
+                      trigger_id: 'trg_new',
+                      type: 'webhook' as const,
+                      fallback_reason: null,
+                      polling_interval: null,
+                    };
                   }),
               })
             );
@@ -149,7 +154,16 @@ describe('CLI: composio dev triggers create', () => {
           expect(output).toContain('Trigger created');
           expect(output).toContain('trg_gmail_new_gmail_message_con_123');
           expect(lines.at(-1)).toBe(
-            JSON.stringify({ trigger_id: 'trg_gmail_new_gmail_message_con_123' }, null, 2)
+            JSON.stringify(
+              {
+                trigger_id: 'trg_gmail_new_gmail_message_con_123',
+                type: 'webhook',
+                fallback_reason: null,
+                polling_interval: null,
+              },
+              null,
+              2
+            )
           );
         })
       );
@@ -168,7 +182,12 @@ describe('CLI: composio dev triggers create', () => {
               createTrigger: (slug, params) =>
                 Effect.sync(() => {
                   calls.push({ slug, params });
-                  return { trigger_id: 'trg_new' };
+                  return {
+                    trigger_id: 'trg_new',
+                    type: 'webhook' as const,
+                    fallback_reason: null,
+                    polling_interval: null,
+                  };
                 }),
             })
           );

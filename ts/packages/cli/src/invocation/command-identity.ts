@@ -11,7 +11,7 @@
  */
 import { Array as Arr, Context, Effect, Option, Predicate, Record as EffectRecord } from 'effect';
 import { Command } from 'effect/cli';
-import type { TelemetryFamily } from 'src/analytics/types';
+import type { CommandTelemetryInput, TelemetryFamily } from 'src/analytics/types';
 
 /**
  * The hooks the invocation runs for the selected command (`src/invocation/invocation.ts`), in
@@ -48,6 +48,8 @@ export interface CommandMetaShape {
    * Not inherited: a subcommand reports its own family, the generic `command` by default.
    */
   readonly telemetryFamily?: TelemetryFamily;
+  /** Command-specific privacy projection. Not inherited: child input has a different type. */
+  readonly telemetryInput?: (input: unknown) => CommandTelemetryInput;
   /**
    * Whether the command needs a logged-in user. Inherited: a group's subcommands need one too.
    * The selected command checks it right after it began (`src/commands/registration.ts`), so
@@ -76,6 +78,7 @@ export const CommandMeta = Context.Reference<CommandMetaShape>('commands/Command
 /** `CommandMetaShape` with every field decided for one registration. */
 export interface ResolvedCommandMeta {
   readonly telemetryFamily: TelemetryFamily;
+  readonly telemetryInput?: (input: unknown) => CommandTelemetryInput;
   readonly requiresLogin: boolean;
   readonly hooks: Readonly<Record<InvocationHookName, HookPolicy>>;
   /** The shared flags the command cannot honor, declared on itself or on a group above it. */
@@ -101,6 +104,7 @@ export const resolveCommandMeta = (
   own: CommandMetaShape
 ): ResolvedCommandMeta => ({
   telemetryFamily: own.telemetryFamily ?? 'command',
+  telemetryInput: own.telemetryInput,
   requiresLogin: own.requiresLogin ?? parent?.requiresLogin ?? false,
   hooks: { ...(parent === undefined ? EVERY_HOOK : inheritedHooks(parent.hooks)), ...own.hooks },
   unsupportedSharedFlags: SHARED_FLAG_NAMES.filter(flag => {

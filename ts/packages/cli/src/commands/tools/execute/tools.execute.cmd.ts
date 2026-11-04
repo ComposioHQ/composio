@@ -1,3 +1,5 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
+import { Array } from 'effect';
 import { Argument, Command, Flag } from 'effect/cli';
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { runToolsExecuteCommand } from './tools.execute.handler';
@@ -19,7 +21,8 @@ const parallel = Flag.Boolean('parallel').pipe(
 const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
   Flag.withDescription('JSON arguments, @file, or - for stdin'),
-  Flag.optional
+  Flag.atLeast(0),
+  Flag.map(Array.head)
 );
 const file = Flag.String('file').pipe(
   Flag.withDescription('Inject a local file path into the single file_uploadable input'),
@@ -29,7 +32,8 @@ const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
-  Flag.optional
+  Flag.atLeast(0),
+  Flag.map(Array.head)
 );
 
 const getSchema = Flag.Boolean('get-schema').pipe(
@@ -84,23 +88,34 @@ const executeExamples = [
   },
 ];
 
-export const rootToolsCmd$Execute = Command.make(
-  'execute',
-  {
-    slug,
-    additionalSlugs,
-    parallel,
-    data,
-    file,
-    account: accountOption,
-    getSchema,
-    dryRun,
-    skipConnectionCheck,
-    skipToolParamsCheck,
-    skipChecks,
-  },
-  runToolsExecuteCommand
-).pipe(
+const executeFlags = {
+  slug,
+  additionalSlugs,
+  parallel,
+  data,
+  file,
+  account: accountOption,
+  getSchema,
+  dryRun,
+  skipConnectionCheck,
+  skipToolParamsCheck,
+  skipChecks,
+};
+
+const executeTelemetry = (input: Command.Command.Config.Infer<typeof executeFlags>) =>
+  telemetry.fields(
+    {
+      dry_run: telemetry.flag('--dry-run', input.dryRun),
+      get_schema: telemetry.flag('--get-schema', input.getSchema),
+      has_data: telemetry.flag('--data', telemetry.present(input.data)),
+      skip_connection_check: telemetry.flag('--skip-connection-check', input.skipConnectionCheck),
+      skip_tool_params_check: telemetry.flag('--skip-tool-params-check', input.skipToolParamsCheck),
+      skip_checks: telemetry.flag('--skip-checks', input.skipChecks),
+    },
+    input.slug
+  );
+
+const rootToolsCmd$ExecuteBase = Command.make('execute', executeFlags, runToolsExecuteCommand).pipe(
   Command.withDescription(
     'Execute a tool by slug. Validates inputs against cached schemas and checks connections\nautomatically — just try it and it will tell you what to fix.'
   ),
@@ -111,21 +126,9 @@ export const rootToolsCmd$Execute = Command.make(
   withCommandMeta({ requiresLogin: true })
 );
 
-export const devToolsCmd$Execute = Command.make(
+const devToolsCmd$ExecuteBase = Command.make(
   'playground-execute',
-  {
-    slug,
-    additionalSlugs,
-    parallel,
-    data,
-    file,
-    account: accountOption,
-    getSchema,
-    dryRun,
-    skipConnectionCheck,
-    skipToolParamsCheck,
-    skipChecks,
-  },
+  executeFlags,
   runToolsExecuteCommand
 ).pipe(
   Command.withDescription(
@@ -142,3 +145,10 @@ export const devToolsCmd$Execute = Command.make(
   ),
   withCommandMeta({ requiresLogin: true })
 );
+
+export const rootToolsCmd$Execute = withCommandTelemetry(
+  rootToolsCmd$ExecuteBase,
+  executeTelemetry
+);
+
+export const devToolsCmd$Execute = withCommandTelemetry(devToolsCmd$ExecuteBase, executeTelemetry);

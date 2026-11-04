@@ -1,7 +1,11 @@
 import { describe, expect, it, layer } from '@effect/vitest';
 import { Cause, Data, Effect, Option, Ref } from 'effect';
 import type { Command } from 'effect/cli';
-import { getPrimaryLifecycleFailedEvent } from 'src/analytics/events';
+import {
+  getPrimaryLifecycleFailedEvent,
+  getPrimaryLifecycleInvokedEvent,
+  getPrimaryLifecycleSucceededEvent,
+} from 'src/analytics/events';
 import type { TelemetryFamily } from 'src/analytics/types';
 import { buildRootCommand, runWithConfig } from 'src/commands';
 import {
@@ -205,6 +209,205 @@ describe('lifecycle telemetry from the command identity', () => {
         failure_reason_code: 'parse_error',
       });
       expect(JSON.stringify(properties)).not.toContain('dve');
+    })
+  );
+
+  it.effect('uses the displayed command identity for redundant help', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(['help', 'execute', '--help']);
+      expect(events.map(({ event, path, family }) => ({ event, path, family }))).toEqual([
+        { event: 'invoked', path: 'execute', family: 'execute' },
+        { event: 'succeeded', path: 'execute', family: 'execute' },
+      ]);
+    })
+  );
+
+  it.effect('does not collect a rejected flag name', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(['--customer-secret']);
+      expect(events.map(({ call }) => call.context.flagNames)).toEqual([[], []]);
+    })
+  );
+
+  it.effect('does not interpret run script operands as CLI options', () =>
+    Effect.gen(function* () {
+      // The missing source stops before execution. Parsing and lifecycle telemetry still run.
+      const events = yield* lifecycleOf([
+        'run',
+        '--file',
+        '/missing/cli-telemetry-test.ts',
+        '--',
+        '--dry-run',
+      ]);
+      const invoked = events[0]!;
+      expect(invoked.path).toBe('run');
+      expect(getPrimaryLifecycleInvokedEvent(invoked.call.context)?.properties).toMatchObject({
+        dry_run: false,
+        file_mode: true,
+        arg_count: 1,
+      });
+      expect(invoked.call.context.flagNames).toEqual(['--file']);
+    })
+  );
+
+  it.effect.each([
+    { args: ['search', 'send email'], properties: { limit: '10' } },
+    { args: ['search', 'send email', '--limit', '7'], properties: { limit: '7' } },
+    {
+      args: ['proxy', '/private-path', '--toolkit', 'gmail'],
+      properties: { method: 'GET', toolkit: 'gmail', header_count: 0 },
+    },
+    {
+      args: ['proxy', '/private-path', '--toolkit', 'gmail', '-X', 'POST'],
+      properties: { method: 'POST', toolkit: 'gmail', header_count: 0 },
+    },
+    { args: ['setup', '--if-present'], properties: { target: 'auto', if_present: true } },
+  ])('uses effective parser values for `$args`', ({ args, properties }) =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(args);
+      expect(events).toHaveLength(2);
+      events.forEach(({ call }) => {
+        expect(getPrimaryLifecycleInvokedEvent(call.context)?.properties).toMatchObject(properties);
+      });
+    })
+  );
+
+  it.effect.each(
+    [
+      {
+        command: 'execute',
+        invalid: [],
+        fields: [
+          'dry_run',
+          'get_schema',
+          'has_data',
+          'skip_connection_check',
+          'skip_tool_params_check',
+          'skip_checks',
+        ],
+      },
+      {
+        command: 'search',
+        invalid: ['--limit', 'invalid'],
+        fields: ['limit', 'toolkits', 'query_length', 'query_term_count'],
+      },
+      {
+        command: 'link',
+        invalid: ['--no-wait=invalid'],
+        fields: ['no_browser', 'no_wait', 'has_auth_config'],
+      },
+      {
+        command: 'login',
+        invalid: ['--no-wait=invalid'],
+        fields: ['no_browser', 'no_wait', 'has_key', 'skip_org_picker'],
+      },
+      {
+        command: 'install',
+        invalid: ['--completions=invalid'],
+        fields: ['completions', 'no_completions'],
+      },
+      {
+        command: 'setup',
+        invalid: ['--target', 'invalid'],
+        fields: ['operation', 'target', 'yes', 'if_present'],
+      },
+      {
+        command: 'proxy',
+        invalid: [],
+        fields: [
+          'method',
+          'toolkit',
+          'has_endpoint',
+          'has_data',
+          'header_count',
+          'skip_connection_check',
+        ],
+      },
+      {
+        command: 'run',
+        invalid: ['--file'],
+        fields: [
+          'debug',
+          'dry_run',
+          'skip_connection_check',
+          'skip_tool_params_check',
+          'skip_checks',
+          'file_mode',
+          'arg_count',
+        ],
+      },
+    ].flatMap(({ command, invalid, fields }) => [
+      { command, fields, args: [command, '--help'], outcome: 'succeeded' },
+      { command, fields, args: [command, ...invalid], outcome: 'failed' },
+    ])
+  )('omits unparsed input for `$args` ($outcome)', ({ command, fields, args, outcome }) =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf(args);
+      expect(events.map(({ event }) => event)).toEqual(['invoked', outcome]);
+      events.forEach(({ call }) => {
+        const event =
+          call.event === 'failed'
+            ? getPrimaryLifecycleFailedEvent(call.context, Cause.squash(call.cause))
+            : call.event === 'succeeded'
+              ? getPrimaryLifecycleSucceededEvent(call.context)
+              : getPrimaryLifecycleInvokedEvent(call.context);
+        expect(event?.properties).toMatchObject({ source: 'cli', command_path: command });
+        fields.forEach(field => expect(event?.properties).not.toHaveProperty(field));
+        expect(call.context.options).toEqual({});
+        expect(call.context.flagNames).toEqual([]);
+        if (call.event === 'failed') {
+          expect(event?.properties).toHaveProperty('failure_reason_code', 'parse_error');
+        }
+      });
+    })
+  );
+
+  it.effect('keeps the projection when a shared command is registered under dev', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf([
+        'dev',
+        'connected-accounts',
+        'link',
+        'gmail',
+        '--no-browser',
+      ]);
+      expect(events).toHaveLength(2);
+      events.forEach(({ call }) => {
+        expect(call.context.family).toBe('command');
+        expect(call.context.flagNames).toEqual(['--no-browser']);
+        expect(getPrimaryLifecycleInvokedEvent(call.context)?.properties).toMatchObject({
+          flag_names: ['--no-browser'],
+        });
+      });
+    })
+  );
+
+  it.effect('projects only measured fields from parsed proxy input', () =>
+    Effect.gen(function* () {
+      const events = yield* lifecycleOf([
+        'proxy',
+        '/private-path',
+        '--toolkit',
+        'gmail',
+        '--account',
+        'private-account',
+        '-H',
+        'Authorization: private-header',
+        '-d',
+        'private-body',
+      ]);
+      const context = events[0]!.call.context;
+      expect(context.options).toEqual({
+        toolkit: 'gmail',
+        method: 'GET',
+        has_endpoint: true,
+        has_data: true,
+        header_count: 1,
+        skip_connection_check: false,
+      });
+      expect(context.argument).toBeUndefined();
+      expect(context.flagNames).toEqual(['--data', '--header']);
+      expect(JSON.stringify(getPrimaryLifecycleInvokedEvent(context))).not.toContain('private-');
     })
   );
 

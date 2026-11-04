@@ -194,6 +194,12 @@ The following versions are pre-defined in `const.ts`:
 - `26.12.1`
 - `current` (resolves to `mise.toml` version)
 
+### CLI image freshness
+
+Local CLI suites run `docker build` before using an image. Docker checks the current build inputs against its content cache, including uncommitted source and local build outputs. The CLI version tag alone does not establish freshness.
+
+GitHub Actions can reuse its prebuilt image when the `org.opencontainers.image.revision` label matches the checkout's commit. A missing or different label triggers a rebuild. A failed rebuild fails the test setup instead of accepting an existing tag.
+
 ### CLI Version Resolution
 
 CLI versions to test are resolved in this order:

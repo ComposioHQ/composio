@@ -25,6 +25,7 @@ import {
   Path,
   References,
   Schedule,
+  Stream,
 } from 'effect';
 import { CliConfig, type Command as CliCommand } from 'effect/cli';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
@@ -385,6 +386,9 @@ export const TestLayer = (input?: TestLiveInput) =>
         createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+            type: 'webhook' as const,
+            fallback_reason: null,
+            polling_interval: null,
           }),
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),
@@ -647,6 +651,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+            type: 'webhook' as const,
+            fallback_reason: null,
+            polling_interval: null,
           });
         },
         manage: {
@@ -766,20 +773,23 @@ export const TestLayer = (input?: TestLiveInput) =>
       Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
     );
 
-    // Each shadow answers with an Effect, built when the call runs. A shadow
+    // Each shadow builds its Effect or Stream when consumed. A shadow
     // ignores the request options
     // (`signal`, `maxRetries`, headers beyond `decode`), and the
-    // `connectedAccounts.list` shadow never pages (`next_cursor` is null):
+    // connected-account shadows serve fixture data without cursor traversal:
     // pagination, retries, and abort are covered by `stubComposioClient`,
     // the real `make` over a recording transport.
     const withShadows = <Resources extends object>(base: Resources, shadows: object): Resources => {
       const shadowed = { ...base } as Record<string, unknown>;
       for (const [key, shadow] of Object.entries(shadows) as Array<[string, unknown]>) {
         shadowed[key] =
-          typeof shadow === 'function'
+          typeof shadow === 'function' && key === 'listStream'
             ? (...args: ReadonlyArray<unknown>) =>
-                Effect.suspend(() => shadow(...args) as Effect.Effect<unknown, unknown>)
-            : withShadows((shadowed[key] ?? {}) as object, shadow as object);
+                Stream.suspend(() => shadow(...args) as Stream.Stream<unknown, unknown>)
+            : typeof shadow === 'function'
+              ? (...args: ReadonlyArray<unknown>) =>
+                  Effect.suspend(() => shadow(...args) as Effect.Effect<unknown, unknown>)
+              : withShadows((shadowed[key] ?? {}) as object, shadow as object);
       }
       return shadowed as Resources;
     };
