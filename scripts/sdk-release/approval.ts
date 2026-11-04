@@ -9,6 +9,7 @@ import {
   fileAt,
   fileAtOrNull,
   getRun,
+  paginate,
   paginateArray,
   request,
 } from './github';
@@ -129,7 +130,6 @@ const PullReview = Schema.Struct({
 });
 const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
 const CheckRuns = Schema.Struct({
-  total_count: Schema.Number.check(Schema.isLessThanOrEqualTo(100)),
   check_runs: Schema.Array(
     Schema.Struct({
       name: Schema.String,
@@ -200,13 +200,16 @@ export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch) =>
       eligibleApproval(reviews, [pull.user.login, ...batch.requestedBy], pull.head.sha),
       'Final release head lacks an approval from a writer other than the author and requesters'
     );
-    const checks = yield* request(
-      'GET',
-      `${REPOSITORY_PATH}/commits/${pull.head.sha}/check-runs?per_page=100`,
-      CheckRuns
+    // A release head that touches every SDK runs more than one page of checks.
+    const checks = yield* Stream.runCollect(
+      paginate(
+        `${REPOSITORY_PATH}/commits/${pull.head.sha}/check-runs`,
+        CheckRuns,
+        body => body.check_runs
+      )
     );
     const passed = (name: string) =>
-      checks.check_runs.some(
+      checks.some(
         check =>
           check.name === name &&
           check.head_sha === pull.head.sha &&

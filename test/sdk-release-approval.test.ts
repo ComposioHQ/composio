@@ -60,6 +60,27 @@ describe('source tag', () => {
     }
   });
 
+  test('required checks on a later page of more than 100 check runs still tag the head', async () => {
+    const { fetcher, writes } = await fakeController();
+    const unrelated = Array.from({ length: 100 }, (_, index) => ({
+      name: `matrix job ${index}`,
+      head_sha: head,
+      app: { slug: 'github-actions' },
+      conclusion: 'success',
+    }));
+    const paged: typeof fetcher = (input, init) => {
+      const url = new URL(String(input));
+      if (!url.pathname.endsWith('/check-runs')) return fetcher(input, init);
+      return (url.searchParams.get('page') ?? '1') === '1'
+        ? Promise.resolve(Response.json({ total_count: 103, check_runs: unrelated }))
+        : fetcher(input, init);
+    };
+    expect(await runRelease(authorizeSourceTag(9, 123), paged)).toBe('sdk-release/8');
+    expect(writes).toEqual([
+      { path: '/git/refs', body: { ref: 'refs/tags/sdk-release/8', sha: head } },
+    ]);
+  });
+
   test('a release PR closed without merging creates no tag, even with a valid approval', async () => {
     const { fetcher, writes } = await fakeController({ closedUnmerged: true });
     await expect(runRelease(authorizeSourceTag(9, 123), fetcher)).rejects.toThrow(
