@@ -40,6 +40,7 @@ import {
 } from './github';
 import { createSdkReleasePlan, type CorrectiveInput, type SdkReleasePlan } from './plan';
 import { fetchStableRegistryBaseline } from './registry-baseline';
+import { RELEASE_PR_MARKER, releasePullBody } from './release-pr';
 import { ReleaseRequest, parseReleaseRequest } from './request';
 import { ensure, fail, formatJson, readJson, runMain, type ReleaseServices } from './runtime';
 import {
@@ -54,7 +55,6 @@ import {
 } from './source';
 
 const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
-const RELEASE_PR_MARKER = '<!-- sdk-release-batch -->';
 const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
 const PUBLICATION_TAG = /^sdk-release\/\d+$/;
 const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
@@ -206,18 +206,6 @@ const createPreparationBranch = (
     });
   });
 
-const releasePullBody = (batch: ReleaseBatch) => {
-  const rows = batch.plan.releases
-    .map(release => {
-      const recommended =
-        batch.plan.recommended.find(candidate => candidate.name === release.name)?.newVersion ??
-        'none';
-      return `| ${release.name} | ${recommended} | ${release.newVersion} |`;
-    })
-    .join('\n');
-  return `${RELEASE_PR_MARKER}\n<!-- sdk-release-note-exempt: This release PR applies previously reviewed SDK changes and only updates release metadata and generated documentation. -->\nRelease source is frozen at input ${batch.inputBase}. Later next commits remain pending. Review the full diff and approve the final head. The controller merges that exact head after required checks pass.\n\n${batch.statusUrl}\n\n| Package | Recommended | Selected |\n| --- | --- | --- |\n${rows}\n\nOriginal preparation run: ${runUrl(batch.originalRunId)}`;
-};
-
 /** Commits the prepared patch to its release branch and opens (or recovers) the release PR. */
 export const commitPreparedRelease = (value: unknown, authorizedValue: ReleaseBatch) =>
   Effect.gen(function* () {
@@ -279,7 +267,7 @@ export const commitPreparedRelease = (value: unknown, authorizedValue: ReleaseBa
       title: 'chore(release): publish SDK packages',
       head: branch,
       base: 'next',
-      body: releasePullBody(authorized),
+      body: releasePullBody(authorized, branch),
     });
     yield* closeReplacedPull(authorized, pull.html_url);
     return pull.html_url;

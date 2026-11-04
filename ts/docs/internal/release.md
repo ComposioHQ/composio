@@ -6,7 +6,7 @@ You can request a Python release, a TypeScript release, or both through one proc
 
 1. Open a GitHub issue using **SDK release request**. Every active ComposioHQ member can use the form, including members with repository Read access and private organization membership. Repository writers can instead run **SDK release** on `next` in Actions.
 2. Leave each language at `auto` to use its Changesets recommendations. Choose `patch`, `minor`, `major`, or `skip` independently when you need an override. The release PR shows recommendations and selected versions. An explicit bump with no notes creates a maintenance release; empty `auto` returns “Nothing to release.”
-3. Review the release PR's versions, notes, generated references, and candidate checks. One eligible non-author reviewer approves its final head. Editing or refreshing it requires fresh approval. The bot merges only the approved, green head under normal `next` protection.
+3. Review the release PR. Its description lists each package's old and new version, the changesets it consumes or leaves for later, and the package changelogs, docs changelog entry, and API references it edits. Edit the docs changelog narrative on the PR before approving. Check the `SDK candidate` checks: they build the exact files that will be published. One eligible non-author reviewer approves its final head. Editing or refreshing it requires fresh approval. The bot merges only the approved, green head under normal `next` protection.
 4. Inspect the request and release PR's publication status. It links the original run, approved source, candidate receipts, and partial registry inventory. Completion means exact package versions and live release docs have verified.
 5. To recover, submit the same form with `retry` and the original run ID. New bump choices are ignored. After package verification, the same action retries docs only, without uploading packages or accessing registry OIDC.
 
@@ -37,7 +37,7 @@ Choose a patch, minor, or major recommendation for each entry. Put prose types s
 
 ## Recovery limits
 
-Publisher retries reuse the original selected versions and exact candidate bytes. Before accepting an existing npm tarball or Python wheel/sdist, the workflow checks its downloaded bytes against the original candidate. Missing files are uploaded; conflicting files end recovery. npm provenance, stable tags, Python metadata, and fresh installs are verified separately.
+The `sdk-release/<id>` tag run does not rebuild. It copies the candidate files built on the approved release PR head, checks them against that run's checksums, and publishes those bytes. Publisher retries reuse the original selected versions and exact candidate bytes. Before accepting an existing npm tarball or Python wheel/sdist, the workflow checks its downloaded bytes against the original candidate. Missing files are uploaded; conflicting files end recovery. npm provenance, stable tags, Python metadata, and fresh installs are verified separately.
 
 Recovery ends at the earliest of 30 days from the original publication run, original artifact deletion/expiry, or GitHub's 50-attempt limit. A possible earlier upload prevents rebuilding a missing candidate for the same version. Request a new higher-version corrective release with normal approval when recovery ends. Its plan reconciles the recorded partial inventory; published files are never removed or replaced.
 
