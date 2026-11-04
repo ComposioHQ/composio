@@ -20,6 +20,7 @@ import {
   ReleaseRun,
   SDK_RELEASE_REPOSITORY,
   Sha,
+  jobs,
   request,
 } from './github';
 import { Language } from './lanes';
@@ -182,7 +183,8 @@ const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
 /**
  * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
  * Every successful release-PR run on the head passed the candidate checks the merge requires;
- * the newest one is used.
+ * the newest one is used. Later jobs in that run hold its runtime token and could replace the
+ * artifact, so an artifact created after the build job finished is refused.
  */
 export const adoptApprovedCandidate = (sha: string, language: Language, directory: string) =>
   Effect.gen(function* () {
@@ -215,6 +217,16 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
       return yield* fail(
         `Approved ${language} candidate was deleted from ${run.html_url}; request a new release with supersede`
       );
+    const buildJob = `SDK candidate (${language})`;
+    const build = (yield* jobs(String(run.id), 'latest')).find(job => job.name === buildJob);
+    if (build?.conclusion !== 'success' || !build.completed_at)
+      return yield* fail(
+        `The ${buildJob} job did not succeed in ${run.html_url}; request a new release with supersede`
+      );
+    yield* ensure(
+      Date.parse(artifact.value.created_at) <= Date.parse(build.completed_at),
+      `Approved ${language} candidate artifact was created at ${artifact.value.created_at}, after its build job finished at ${build.completed_at}; request a new release with supersede`
+    );
     yield* downloadCandidate(artifact.value, directory);
     const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
     const manifest = yield* readJson(CandidateManifest, manifestPath);

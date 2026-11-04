@@ -43,6 +43,7 @@ const ReleaseJob = Schema.Struct({
   name: Schema.String,
   status: Schema.optionalKey(Schema.String),
   conclusion: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  completed_at: Schema.optionalKey(Schema.NullOr(Schema.String)),
   steps: Schema.Array(
     Schema.Struct({
       name: Schema.String,

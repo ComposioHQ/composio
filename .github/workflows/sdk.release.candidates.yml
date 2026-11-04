@@ -88,7 +88,8 @@ jobs:
         run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}
 
   # Installs third-party packages from the registries, so it runs apart from the build job and
-  # has no upload step: nothing it runs can replace the candidate that will be published.
+  # has no upload step. Code it runs still holds this run's runtime token, so the tag run refuses
+  # any candidate artifact created after the build job finished.
   smoke:
     # The release merge requires this check name to pass on the approved head.
     name: SDK candidate smoke (${{ matrix.language }})

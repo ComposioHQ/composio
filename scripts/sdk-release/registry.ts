@@ -99,12 +99,19 @@ const registryGet = (url: string) =>
     return yield* client.get(url);
   }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }));
 
+/** A registry that does not yet serve something it should; propagation may still fix it. */
+class RegistryIncomplete extends Data.TaggedError('RegistryIncomplete')<{
+  readonly message: string;
+}> {}
+const incomplete = (condition: boolean, message: string) =>
+  condition ? Effect.void : Effect.fail(new RegistryIncomplete({ message }));
+
 /** Registry metadata at `url`, or `None` when the registry answers 404. */
 const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
     if (response.status === 404) return Option.none<S['Type']>();
-    yield* ensure(
+    yield* incomplete(
       isSuccess(response.status),
       `Registry lookup incomplete: ${url} (${response.status})`
     );
@@ -114,7 +121,7 @@ const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
 const registryBytes = (url: string, failure: (status: number) => string) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
-    yield* ensure(isSuccess(response.status), failure(response.status));
+    yield* incomplete(isSuccess(response.status), failure(response.status));
     return new Uint8Array(yield* response.arrayBuffer);
   }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
 
@@ -176,7 +183,9 @@ export const inspectNpmProvenanceSubject = (
     const { attestations } = yield* Schema.decodeUnknownEffect(Attestations)(value);
     const entry = attestations.find(candidate => candidate.predicateType === SLSA_PROVENANCE);
     if (!entry)
-      return yield* fail(`Native npm provenance incomplete: ${file.name}@${file.version}`);
+      return yield* new RegistryIncomplete({
+        message: `Native npm provenance incomplete: ${file.name}@${file.version}`,
+      });
     const statement = yield* parseJson(
       ProvenanceStatement,
       yield* Effect.fromResult(Base64.decodeString(entry.bundle.dsseEnvelope.payload))
@@ -275,10 +284,14 @@ const npmAdapter = {
           'Registry npm identity conflict'
         );
         yield* verifyOriginalBytes(dist.tarball, file);
+        const provenanceIncomplete = new RegistryIncomplete({
+          message: `Native npm provenance incomplete: ${file.name}@${file.version}`,
+        });
         if (!dist.attestations || new URL(dist.attestations.url).origin !== NPM_REGISTRY)
-          return yield* fail(`Native npm provenance incomplete: ${file.name}@${file.version}`);
+          return yield* provenanceIncomplete;
         const provenance = yield* registryJson(dist.attestations.url, Schema.Unknown);
-        yield* inspectNpmProvenanceSubject(Option.getOrUndefined(provenance), file, source);
+        if (Option.isNone(provenance)) return yield* provenanceIncomplete;
+        yield* inspectNpmProvenanceSubject(provenance.value, file, source);
       }
       const latest = yield* registryJson(
         `${NPM_REGISTRY}/${encodeURIComponent(file.name)}/latest`,
@@ -400,10 +413,6 @@ export const reconcileRegistry = (files: ReadonlyArray<Distribution>, source: Pu
     } satisfies RegistryState;
   });
 
-class RegistryIncomplete extends Data.TaggedError('RegistryIncomplete')<{
-  readonly message: string;
-}> {}
-
 const incompleteInventory = (state: RegistryState) =>
   [
     ...state.missing.map(file => `${file.name}@${file.version}/${file.file}`),
@@ -427,12 +436,14 @@ export const waitForRegistry = (
     Effect.retry({
       schedule: Schedule.spaced(options.spacing ?? '10 seconds'),
       times: attempts - 1,
+      while: error => error instanceof RegistryIncomplete,
     }),
-    Effect.mapError(
-      error =>
+    Effect.catchTag('RegistryIncomplete', error =>
+      Effect.fail(
         new RegistryIncomplete({
-          message: `Registry verification incomplete after ${attempts} attempts: ${error instanceof Error ? error.message : 'Registry unavailable'}`,
+          message: `Registry verification incomplete after ${attempts} attempts: ${error.message}`,
         })
+      )
     )
   );
 };

@@ -94,6 +94,16 @@ const copyAttempt = async (archive: { zip: string; digest: string }, attempt: nu
         },
       ],
     },
+    '/actions/runs/41/jobs': {
+      jobs: [
+        {
+          name: 'SDK candidate (typescript)',
+          status: 'completed',
+          conclusion: 'success',
+          completed_at: '2026-11-03T00:10:00Z',
+        },
+      ],
+    },
     '/actions/runs/41/artifacts': {
       artifacts: [
         {

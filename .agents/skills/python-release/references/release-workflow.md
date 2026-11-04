@@ -12,6 +12,8 @@ make build
 
 Stable Python releases use the unified `sdk.release.yml` member request and one approved release PR. Author Changesets notes for the private `@composio/python-sdk` marker; the coordinator synchronizes core and all supported provider metadata. Read `ts/docs/internal/release.md` for request, approval, merge, re-run, supersede and owner bootstrap steps.
 
+Recovery mapping: re-run a failed tag run with `gh run rerun <tag-run-id> --failed`; there is no refresh, status or retry request anymore. Use supersede only when the approved candidate expired. Agents stop at "release PR ready for approval" and never merge it.
+
 Candidate builds install only the `release` dependency group from `uv.lock` with `uv sync --locked --only-group release` and use `BUILD_ARGS=--no-isolation`. Bump `build` or `setuptools` in that group, then run `uv lock`. Direct stable publication uses the new tag-only `pypi-release` OIDC environment. The legacy `py.release.yml` retains build-only dispatch and core-prerelease publication through `pypi`; it cannot publish stable Python from the new workflow copy. Preserve `main` beta metadata and its existing trusted identity.
 
 ## Dependency Bounds

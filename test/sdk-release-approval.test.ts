@@ -34,6 +34,16 @@ describe('release approval rule', () => {
       eligibleApproval([review, { ...review, state: 'CHANGES_REQUESTED' }], excluded, head)
     ).toBe(false);
   });
+
+  test('changes requested by another writer block an otherwise valid approval', () => {
+    expect(
+      eligibleApproval(
+        [review, { ...review, user: 'maintainer', state: 'CHANGES_REQUESTED' }],
+        excluded,
+        head
+      )
+    ).toBe(false);
+  });
 });
 
 const tagWrites = (writes: ReadonlyArray<{ path: string }>) =>
@@ -88,6 +98,21 @@ describe('source tag', () => {
       const { fetcher, writes } = await fakeController(options);
       await expect(runRelease(authorizeSourceTag(9, 123), fetcher)).rejects.toThrow();
       expect(writes.map(write => write.path)).toEqual(['/issues/9/comments', '/issues/8/comments']);
+    }
+  });
+
+  test('a GitHub error during the gate asks for a re-run, never a revert, and creates no tag', async () => {
+    const { fetcher, writes } = await fakeController();
+    const unavailable: typeof fetcher = (input, init) =>
+      new URL(String(input)).pathname.includes('/check-runs')
+        ? Promise.resolve(new Response('Bad Gateway', { status: 502 }))
+        : fetcher(input, init);
+    await expect(runRelease(authorizeSourceTag(9, 123), unavailable)).rejects.toThrow('(502)');
+    expect(writes.map(write => write.path)).toEqual(['/issues/9/comments', '/issues/8/comments']);
+    for (const write of writes) {
+      const { body } = write.body as { body: string };
+      expect(body).not.toContain('Revert');
+      expect(body).toContain('Re-run failed jobs');
     }
   });
 

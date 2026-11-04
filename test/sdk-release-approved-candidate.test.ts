@@ -59,7 +59,8 @@ const fakeGitHub =
   (
     archive: { bytes: Uint8Array<ArrayBuffer>; digest: string },
     runs: unknown[],
-    expired = false
+    expired = false,
+    build: { createdAt?: string; conclusion?: string; completedAt?: string } = {}
   ): Fetch =>
   async input => {
     const url = new URL(String(input));
@@ -67,6 +68,23 @@ const fakeGitHub =
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '');
     if (path === '/actions/workflows/sdk.release.candidates.yml/runs')
       return json({ workflow_runs: runs });
+    if (path === '/actions/runs/41/jobs')
+      return json({
+        jobs: [
+          {
+            name: 'SDK candidate (python)',
+            status: 'completed',
+            conclusion: build.conclusion ?? 'success',
+            completed_at: build.completedAt ?? '2026-11-03T00:10:00Z',
+          },
+          {
+            name: 'SDK candidate smoke (python)',
+            status: 'completed',
+            conclusion: 'success',
+            completed_at: '2026-11-03T00:20:00Z',
+          },
+        ],
+      });
     if (path === '/actions/runs/41/artifacts')
       return json({
         artifacts: [
@@ -75,7 +93,7 @@ const fakeGitHub =
             name: 'sdk-candidate-python',
             digest: archive.digest,
             expired,
-            created_at: '2026-11-03T00:00:00Z',
+            created_at: build.createdAt ?? '2026-11-03T00:05:00Z',
             expires_at: '2099-12-01T00:00:00Z',
             workflow_run: { id: 41, head_sha: head },
           },
@@ -134,4 +152,31 @@ test('an expired approved candidate points the operator to supersede', async () 
       fakeGitHub(archive, [releaseRun(41)], true)
     )
   ).rejects.toThrow('Original candidate unavailable; request a new release with supersede');
+});
+
+test('a candidate artifact created after its build job finished is refused', async () => {
+  const archive = await approvedArchive();
+  const target = `${await directories.create()}/python`;
+  await expect(
+    runRelease(
+      adoptApprovedCandidate(head, 'python', target),
+      fakeGitHub(archive, [releaseRun(41)], false, { createdAt: '2026-11-03T00:15:00Z' })
+    )
+  ).rejects.toThrow(
+    'Approved python candidate artifact was created at 2026-11-03T00:15:00Z, after its build job finished at 2026-11-03T00:10:00Z; request a new release with supersede'
+  );
+  expect(await Bun.file(`${target}/${wheel}`).exists()).toBe(false);
+});
+
+test('a release-PR run whose candidate build job did not succeed is refused', async () => {
+  const archive = await approvedArchive();
+  const target = `${await directories.create()}/python`;
+  await expect(
+    runRelease(
+      adoptApprovedCandidate(head, 'python', target),
+      fakeGitHub(archive, [releaseRun(41)], false, { conclusion: 'skipped' })
+    )
+  ).rejects.toThrow(
+    'The SDK candidate (python) job did not succeed in https://github.com/ComposioHQ/composio/actions/runs/41; request a new release with supersede'
+  );
 });

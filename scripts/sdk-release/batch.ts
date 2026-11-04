@@ -51,6 +51,7 @@ import {
   fail,
   formatJson,
   readJson,
+  ReleaseError,
   runMain,
   sameJson,
   type ReleaseServices,
@@ -209,13 +210,24 @@ const causeMessage = (cause: Cause.Cause<unknown>) => {
   return error instanceof Error ? error.message : 'Release request failed';
 };
 
-/** Explains a merged release that failed its gate on the PR and its request issue. */
+/**
+ * Explains a merged release that did not pass its gate on the PR and its request issue. Only a
+ * gate verdict asks for a revert; a GitHub or transport error asks for a re-run instead.
+ */
 const reportRefusedRelease = (pull: Pull, batch: ReleaseBatch, cause: Cause.Cause<unknown>) => {
-  const body = [
-    `Release PR #${pull.number} merged, but it failed the release gate, so no publication tag was created and nothing was published.`,
-    `Reason: ${causeMessage(cause)}`,
-    'Revert this release PR on next, then request the release again.',
-  ].join('\n\n');
+  const body = (
+    Cause.squash(cause) instanceof ReleaseError
+      ? [
+          `Release PR #${pull.number} merged, but it failed the release gate, so no publication tag was created and nothing was published.`,
+          `Reason: ${causeMessage(cause)}`,
+          'Revert this release PR on next, then request the release again.',
+        ]
+      : [
+          `Release PR #${pull.number} merged, but the release gate could not complete, so no publication tag was created and nothing was published.`,
+          `Error: ${causeMessage(cause)}`,
+          'Use "Re-run failed jobs" on the source-tag job; creating the tag is safe to repeat.',
+        ]
+  ).join('\n\n');
   const issue = requestIssueNumber(batch);
   return Effect.gen(function* () {
     yield* commentIssue(pull.number, body);

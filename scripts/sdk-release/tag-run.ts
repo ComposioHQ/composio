@@ -99,6 +99,7 @@ export const reportFailure = (sha: string, runId: string) =>
     const body = [
       `The release run failed in: ${failed.join(', ')}.`,
       `Open ${runUrl(runId)} and choose "Re-run failed jobs". A re-run uploads only the files the registries are missing.`,
+      'If a re-run fails again with a registry content conflict or a missing or expired approved candidate, request a new release with supersede.',
     ].join('\n\n');
     yield* commentIssue(issue, body);
     return body;

@@ -396,10 +396,6 @@ jobs:
       (needs.publish-npm.result == 'success' || needs.select-candidates.outputs.typescript != 'true') &&
       (needs.publish-pypi.result == 'success' || needs.select-candidates.outputs.python != 'true')
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: write
-      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -422,16 +418,37 @@ jobs:
         run: bun scripts/sdk-release/registry.ts verify
       - name: Verify fresh public installations, strict TypeScript, Python imports and typing, and dependency health
         run: bun scripts/sdk-release/consumers.ts
-      - name: Start docs maintenance for this release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh workflow run docs.sdk-change-sync.yml --repo "$GITHUB_REPOSITORY" --ref next -f run_id="$RUN_ID"
+
+  # Runs after verification has concluded, so docs maintenance sees it succeeded, and keeps the
+  # write token away from the job that installs third-party packages.
+  announce-release:
+    name: Announce the verified release
+    needs: [registry-verification]
+    if: >-
+      always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
+      needs.registry-verification.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Report the published versions on the request issue
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: bun scripts/sdk-release/tag-run.ts released
+      - name: Start docs maintenance for this release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh workflow run docs.sdk-change-sync.yml --repo "$GITHUB_REPOSITORY" --ref next -f run_id="$RUN_ID"
 
   report-failure:
     name: Report a failed release run
@@ -445,6 +462,7 @@ jobs:
       - publish-npm
       - publish-pypi
       - registry-verification
+      - announce-release
     if: >-
       failure() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest

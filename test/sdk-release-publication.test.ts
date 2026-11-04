@@ -244,6 +244,29 @@ describe('direct publication reconciliation', () => {
     ).rejects.toThrow(`after 3 attempts: composio@1.0.1/${sdist.file}`);
     expect(fake.reads.filter(url => url.startsWith('https://pypi.org/'))).toHaveLength(3);
   });
+  test('a content conflict fails at once instead of waiting for propagation', async () => {
+    const fake = registry([wheel], { conflict: true });
+    await expect(
+      runRelease(
+        waitForRegistry([wheel, sdist], source, { attempts: 3, spacing: '0 millis' }),
+        fake.fetcher
+      )
+    ).rejects.toThrow(`Registry content conflict: composio@1.0.1/${wheel.file}`);
+    expect(fake.reads.filter(url => url.startsWith('https://pypi.org/'))).toHaveLength(1);
+  });
+  test('published bytes of the same length but different content are a conflict', async () => {
+    const fake = registry([wheel, sdist]);
+    const sameLength: Fetch = async input => {
+      const response = await fake.fetcher(input);
+      if (!String(input).endsWith(wheel.file)) return response;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      bytes[0] ^= 0xff;
+      return new Response(bytes);
+    };
+    await expect(reconcileRegistry([wheel, sdist], sameLength)).rejects.toThrow(
+      `Registry content conflict: composio@1.0.1/${wheel.file}`
+    );
+  });
 });
 
 const tagSource: PublicationSource = { sha: head, tag: 'sdk-release/8', runId: 77 };
@@ -464,16 +487,21 @@ describe('release run reporting', () => {
     expect(run.comments[0].body).toContain('failed in: Publish original PyPI candidates.');
     expect(run.comments[0].body).toContain('"Re-run failed jobs"');
     expect(run.comments[0].body).toContain(
+      'If a re-run fails again with a registry content conflict or a missing or expired approved candidate, request a new release with supersede.'
+    );
+    expect(run.comments[0].body).toContain(
       'https://github.com/ComposioHQ/composio/actions/runs/77'
     );
   });
-  test('verification reports the release and dispatches docs maintenance once with its run ID', async () => {
+  test('after verification succeeds, the release is reported and docs maintenance dispatched once with its run ID', async () => {
     const workflow = await releaseWorkflow();
     const verification = workflow.jobs['registry-verification'];
-    expect(verification.permissions).toEqual(
-      expect.objectContaining({ actions: 'write', issues: 'write' })
-    );
-    const steps = verification.steps ?? [];
+    expect(verification.permissions).toBeUndefined();
+    const announce = workflow.jobs['announce-release'];
+    expect(announce.needs).toEqual(['registry-verification']);
+    expect(announce.if).toContain("needs.registry-verification.result == 'success'");
+    expect(announce.permissions).toEqual({ contents: 'read', actions: 'write', issues: 'write' });
+    const steps = announce.steps ?? [];
     expect(steps.filter(step => step.run?.includes('tag-run.ts released'))).toHaveLength(1);
     const dispatches = Object.values(workflow.jobs).flatMap(job =>
       (job.steps ?? []).filter(step => step.run?.includes('docs.sdk-change-sync.yml'))
@@ -499,6 +527,7 @@ describe('release run reporting', () => {
       'publish-npm',
       'publish-pypi',
       'registry-verification',
+      'announce-release',
     ];
     expect(report.needs).toEqual(expect.arrayContaining(tagRunJobs));
     expect(workflow.on).not.toHaveProperty('workflow_run');
