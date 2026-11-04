@@ -414,22 +414,29 @@ export const reconcileRegistry = (files: ReadonlyArray<Distribution>, source: Pu
     } satisfies RegistryState;
   });
 
-const incompleteInventory = (state: RegistryState) =>
+const incompleteInventory = (state: RegistryState, stableTags: boolean) =>
   [
     ...state.missing.map(file => `${file.name}@${file.version}/${file.file}`),
-    ...state.tagsToRepair.map(tag => `${tag.name}@${tag.version} stable tag`),
+    ...(stableTags ? state.tagsToRepair : []).map(tag => `${tag.name}@${tag.version} stable tag`),
   ].join(', ');
 
-/** Polls the registries until every file and stable tag is visible. */
+/**
+ * Polls the registries until every file is visible, and every stable tag too unless
+ * `stableTags` is false (right after an upload, before `latest` moves).
+ */
 export const waitForRegistry = (
   files: ReadonlyArray<Distribution>,
   source: PublicationSource,
-  options: { readonly attempts?: number; readonly spacing?: Duration.Input } = {}
+  options: {
+    readonly attempts?: number;
+    readonly spacing?: Duration.Input;
+    readonly stableTags?: boolean;
+  } = {}
 ) => {
   const attempts = options.attempts ?? 6;
   return reconcileRegistry(files, source).pipe(
     Effect.flatMap(state => {
-      const incomplete = incompleteInventory(state);
+      const incomplete = incompleteInventory(state, options.stableTags ?? true);
       return incomplete
         ? Effect.fail(new RegistryIncomplete({ message: incomplete }))
         : Effect.succeed(state);
@@ -755,15 +762,11 @@ const uploadMissingNpm = (context: PublicationContext) =>
         '--access=public',
         `--tag=sdk-release-${context.batch.id}`,
       ]);
-    for (const file of filesOf(context.files, 'typescript')) {
-      const current = yield* reconcileRegistry([file], context.source);
-      yield* ensure(
-        current.missing.length === 0,
-        `npm upload not yet visible: ${file.name}@${file.version}`
-      );
-      if (current.tagsToRepair.length)
-        yield* npm(['dist-tag', 'add', `${file.name}@${file.version}`, 'latest']);
-    }
+    const visible = yield* waitForRegistry(filesOf(context.files, 'typescript'), context.source, {
+      stableTags: false,
+    });
+    for (const tag of visible.tagsToRepair)
+      yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, 'latest']);
   });
 
 const PUBLICATION_MODES = {

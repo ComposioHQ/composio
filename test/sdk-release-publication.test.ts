@@ -244,6 +244,23 @@ describe('direct publication reconciliation', () => {
     ).rejects.toThrow(`after 3 attempts: composio@1.0.1/${sdist.file}`);
     expect(fake.reads.filter(url => url.startsWith('https://pypi.org/'))).toHaveLength(3);
   });
+  test('a fresh npm upload is polled until visible, then its stable tag is left to move', async () => {
+    const fake = registry([tarball]);
+    let lookups = 0;
+    const lagging: Fetch = async input => {
+      const url = String(input);
+      if (url.endsWith('/latest')) return new Response(JSON.stringify({ version: '1.0.0' }));
+      if (url.startsWith('https://registry.npmjs.org/') && lookups++ === 0)
+        return new Response('{}', { status: 404 });
+      return fake.fetcher(input);
+    };
+    const state = await runRelease(
+      waitForRegistry([tarball], source, { attempts: 3, spacing: '0 millis', stableTags: false }),
+      lagging
+    );
+    expect(state.missing).toEqual([]);
+    expect(state.tagsToRepair).toEqual([{ name: tarball.name, version: tarball.version }]);
+  });
   test('a content conflict fails at once instead of waiting for propagation', async () => {
     const fake = registry([wheel], { conflict: true });
     await expect(
