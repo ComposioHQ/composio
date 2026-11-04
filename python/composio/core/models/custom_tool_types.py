@@ -6,6 +6,7 @@ Mirrors the TypeScript types in ts/packages/core/src/types/customTool.types.ts
 from __future__ import annotations
 
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 import typing_extensions as te
@@ -15,6 +16,7 @@ from composio_client.types.tool_router.session_execute_response import (
 )
 from pydantic import BaseModel
 
+from composio.exceptions import ComposioDeprecationWarning
 from composio.utils.safe_path import SAFE_COMPONENT_REGEX
 
 # ────────────────────────────────────────────────────────────────
@@ -188,7 +190,7 @@ class SessionContext(te.Protocol):
 class CustomTool:
     """Custom tool definition returned from ``@composio.experimental.tool()``.
 
-    Pass to ``composio.create(user_id, experimental={"custom_tools": [...]})``
+    Pass to ``composio.create(user_id, experimental={"local_tools": [...]})``
     to bind to a session.
     """
 
@@ -201,6 +203,10 @@ class CustomTool:
     extends_toolkit: t.Optional[str] = None
     output_schema: t.Optional[t.Dict[str, t.Any]] = None
     preload: t.Optional[bool] = None
+
+
+LocalTool = CustomTool
+"""Definition of one of the SDK's local tools, returned from ``@composio.experimental.tool()``."""
 
 
 CustomToolWireDefinition = session_create_params.ExperimentalCustomTool
@@ -244,7 +250,7 @@ class CustomToolsMap:
 
 
 # ────────────────────────────────────────────────────────────────
-# Registered types (returned by session.custom_tools() / .custom_toolkits())
+# Registered types (returned by session.local_tools() / .local_toolkits())
 # ────────────────────────────────────────────────────────────────
 
 
@@ -268,3 +274,35 @@ class RegisteredCustomToolkit:
     name: str
     description: str
     tools: t.List[RegisteredCustomTool]
+
+
+RegisteredLocalTool = RegisteredCustomTool
+"""One of the session's local tools, as returned by ``session.local_tools()``."""
+
+RegisteredLocalToolkit = RegisteredCustomToolkit
+"""A toolkit of the session's local tools, as returned by ``session.local_toolkits()``."""
+
+
+_DEPRECATED_EXPORTS = {
+    "CustomTool": "LocalTool",
+    "RegisteredCustomTool": "RegisteredLocalTool",
+    "RegisteredCustomToolkit": "RegisteredLocalToolkit",
+}
+
+
+def get_deprecated_export(module: str, name: str) -> t.Any:
+    """Resolve a deprecated ``Custom*`` name for a package-level ``__getattr__``.
+
+    The old names stay importable from the public packages but warn, because
+    "custom toolkits" also names the server-side Custom MCP toolkits.
+    """
+    replacement = _DEPRECATED_EXPORTS.get(name)
+    if replacement is None:
+        raise AttributeError(f"module {module!r} has no attribute {name!r}")
+    warnings.warn(
+        f"`{name}` is deprecated; use `{replacement}`",
+        ComposioDeprecationWarning,
+        # Point at the caller's import, past the package __getattr__.
+        stacklevel=3,
+    )
+    return globals()[name]

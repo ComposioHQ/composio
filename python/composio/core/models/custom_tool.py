@@ -32,8 +32,8 @@ Usage::
     session = composio.create(
         user_id="default",
         experimental={
-            "custom_tools": [grep],
-            "custom_toolkits": [dev_tools],
+            "local_tools": [grep],
+            "local_toolkits": [dev_tools],
         },
     )
 """
@@ -438,7 +438,7 @@ class ExperimentalToolkit:
     """Custom toolkit that groups related tools under one namespace.
 
     Use ``@toolkit.tool()`` to add tools. Pass the toolkit to
-    ``composio.create(experimental={"custom_toolkits": [toolkit]})``.
+    ``composio.create(experimental={"local_toolkits": [toolkit]})``.
 
     Tools added to a toolkit must NOT use ``extends_toolkit`` — they
     inherit the toolkit identity instead.
@@ -548,6 +548,10 @@ class ExperimentalToolkit:
             self._tools.append(custom_tool)
             return custom_tool
         return decorator
+
+
+LocalToolkit = ExperimentalToolkit
+"""Toolkit that groups local tools, created with ``composio.experimental.Toolkit()``."""
 
 
 # ────────────────────────────────────────────────────────────────

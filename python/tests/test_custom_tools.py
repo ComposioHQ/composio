@@ -8,11 +8,13 @@ Covers:
 - Custom tool execution (validation, defaults, errors)
 - Routing map building and lookup
 - SessionContextImpl sibling routing
-- ToolRouterSession integration (execute routing, custom_tools(), custom_toolkits())
+- ToolRouterSession integration (execute routing, local_tools(), local_toolkits())
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+import importlib
 import sys
+import warnings
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -40,13 +42,18 @@ from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
 )
+from composio.core.models.custom_tool_types import (
+    CustomTool,
+    RegisteredCustomTool,
+    RegisteredCustomToolkit,
+)
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionExecuteResponse,
 )
-from composio.exceptions import ValidationError
+from composio.exceptions import ComposioDeprecationWarning, ValidationError
 from tests.conftest import mock_http_client
 
 # ────────────────────────────────────────────────────────────────
@@ -1280,15 +1287,15 @@ class TestToolRouterSessionCustomTools:
 
     def test_custom_tools_list(self, mock_session_deps):
         s = _session(mock_session_deps)
-        assert len(s.custom_tools()) == 3
+        assert len(s.local_tools()) == 3
 
     def test_custom_tools_filter(self, mock_session_deps):
         s = _session(mock_session_deps)
-        assert len(s.custom_tools(toolkit="gmail")) == 1
+        assert len(s.local_tools(toolkit="gmail")) == 1
 
     def test_custom_toolkits_list(self, mock_session_deps):
         s = _session(mock_session_deps)
-        tks = s.custom_toolkits()
+        tks = s.local_toolkits()
         assert len(tks) == 1
         assert tks[0].slug == "ROLE_MANAGER"
 
@@ -1312,7 +1319,7 @@ class TestToolRouterSessionCustomTools:
             user_id="u",
         )
 
-        toolkits = s.custom_toolkits()
+        toolkits = s.local_toolkits()
 
         assert [tk.tools[0].slug for tk in toolkits] == [
             "LOCAL_ALPHA_GREP",
@@ -1351,7 +1358,7 @@ class TestToolRouterSessionCustomTools:
             user_id="u",
         )
 
-        assert [tk.tools[0].slug for tk in s.custom_toolkits()] == [
+        assert [tk.tools[0].slug for tk in s.local_toolkits()] == [
             "LOCAL_ALPHA_GREP",
             "GREP",
         ]
@@ -1395,7 +1402,82 @@ class TestToolRouterSessionCustomTools:
             mcp=MagicMock(),
             experimental=MagicMock(),
         )
-        assert s.custom_tools() == []
+        assert s.local_tools() == []
+
+    def test_deprecated_custom_tools_matches_local_tools(self, mock_session_deps):
+        s = _session(mock_session_deps)
+
+        with pytest.warns(
+            ComposioDeprecationWarning,
+            match=r"^`session\.custom_tools\(\)` is deprecated; use `session\.local_tools\(\)`$",
+        ) as record:
+            deprecated = s.custom_tools(toolkit="gmail")
+
+        assert record[0].filename == __file__
+        assert deprecated == s.local_tools(toolkit="gmail")
+        assert len(deprecated) == 1
+
+    def test_deprecated_custom_toolkits_matches_local_toolkits(self, mock_session_deps):
+        s = _session(mock_session_deps)
+
+        with pytest.warns(
+            ComposioDeprecationWarning,
+            match=r"^`session\.custom_toolkits\(\)` is deprecated; use `session\.local_toolkits\(\)`$",
+        ) as record:
+            deprecated = s.custom_toolkits()
+
+        assert record[0].filename == __file__
+        assert deprecated == s.local_toolkits()
+        assert [tk.slug for tk in deprecated] == ["ROLE_MANAGER"]
+
+
+class TestLocalToolTypeNames:
+    def test_new_names_import_without_warning(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            from composio import LocalTool, LocalToolkit
+            from composio.core.models import (
+                RegisteredLocalTool,
+                RegisteredLocalToolkit,
+            )
+
+        assert LocalTool is CustomTool
+        assert LocalToolkit is ExperimentalToolkit
+        assert RegisteredLocalTool is RegisteredCustomTool
+        assert RegisteredLocalToolkit is RegisteredCustomToolkit
+
+    @pytest.mark.parametrize(
+        ("module_name", "old_name", "new_name"),
+        [
+            ("composio", "CustomTool", "LocalTool"),
+            ("composio.core.models", "CustomTool", "LocalTool"),
+            ("composio.core.models", "RegisteredCustomTool", "RegisteredLocalTool"),
+            (
+                "composio.core.models",
+                "RegisteredCustomToolkit",
+                "RegisteredLocalToolkit",
+            ),
+        ],
+    )
+    def test_deprecated_names_warn_and_alias_new_names(
+        self, module_name, old_name, new_name
+    ):
+        module = importlib.import_module(module_name)
+
+        with pytest.warns(
+            ComposioDeprecationWarning,
+            match=f"^`{old_name}` is deprecated; use `{new_name}`$",
+        ) as record:
+            old = getattr(module, old_name)
+
+        assert record[0].filename == __file__
+        assert old is getattr(module, new_name)
+
+    def test_unknown_name_still_raises_attribute_error(self):
+        import composio
+
+        with pytest.raises(AttributeError, match="has no attribute 'NotAThing'"):
+            composio.NotAThing  # noqa: B018
 
 
 # ────────────────────────────────────────────────────────────────

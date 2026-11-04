@@ -1,7 +1,9 @@
+import typing as t
+
 from .__version__ import __version__
-from .core.models.custom_tool import ExperimentalToolkit
+from .core.models.custom_tool import ExperimentalToolkit, LocalToolkit
 from .core.models.custom_tool_types import (
-    CustomTool,
+    LocalTool,
     SessionContext,
 )
 from .core.models.tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
@@ -36,6 +38,8 @@ __all__ = (
     "ComposioDeprecationWarning",
     "CustomTool",
     "ExperimentalToolkit",
+    "LocalTool",
+    "LocalToolkit",
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",
@@ -57,3 +61,14 @@ __all__ = (
     "ToolkitVersions",
     "ToolkitVersionParam",
 )
+
+# The deprecated names are served by __getattr__ so importing them warns;
+# type checkers still resolve them through this block.
+if t.TYPE_CHECKING:
+    from .core.models.custom_tool_types import CustomTool as CustomTool
+
+
+def __getattr__(name: str) -> t.Any:
+    from .core.models.custom_tool_types import get_deprecated_export
+
+    return get_deprecated_export(__name__, name)
