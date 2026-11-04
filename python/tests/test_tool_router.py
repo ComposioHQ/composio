@@ -1948,14 +1948,16 @@ class TestLocalToolsOptions:
         self, tool_router, mock_client
     ):
         _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             session = tool_router.create(
                 user_id="user_123",
                 experimental={
-                    "local_tools": [_local_grep_tool()],
-                    "local_toolkits": [_local_role_toolkit()],
+                    "local_tools": [tool],
+                    "local_toolkits": [toolkit],
                 },
             )
 
@@ -1973,13 +1975,15 @@ class TestLocalToolsOptions:
 
     def test_create_with_deprecated_custom_names_warns(self, tool_router, mock_client):
         _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
 
         with pytest.warns(ComposioDeprecationWarning) as record:
             session = tool_router.create(
                 user_id="user_123",
                 experimental={
-                    "custom_tools": [_local_grep_tool()],
-                    "custom_toolkits": [_local_role_toolkit()],
+                    "custom_tools": [tool],
+                    "custom_toolkits": [toolkit],
                 },
             )
 
@@ -2023,13 +2027,15 @@ class TestLocalToolsOptions:
         self, tool_router, mock_client
     ):
         _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             session = tool_router.use(
                 "session_123",
-                local_tools=[_local_grep_tool()],
-                local_toolkits=[_local_role_toolkit()],
+                local_tools=[tool],
+                local_toolkits=[toolkit],
             )
 
         experimental = mock_client.tool_router.session.attach.call_args.kwargs[
@@ -2043,12 +2049,14 @@ class TestLocalToolsOptions:
 
     def test_use_with_deprecated_custom_names_warns(self, tool_router, mock_client):
         _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
 
         with pytest.warns(ComposioDeprecationWarning) as record:
             session = tool_router.use(
                 "session_123",
-                custom_tools=[_local_grep_tool()],
-                custom_toolkits=[_local_role_toolkit()],
+                custom_tools=[tool],
+                custom_toolkits=[toolkit],
             )
 
         assert [str(w.message) for w in record] == [
