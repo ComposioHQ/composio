@@ -17,11 +17,12 @@ import { Base64 } from 'effect/encoding';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import semver from 'semver';
 import {
+  ActionArtifact,
+  ApprovedCandidates,
   CANDIDATE_MANIFEST,
   CandidateManifest,
   candidateArtifactName,
   downloadCandidate,
-  originalCandidates,
   readCandidateFiles,
   reuseCandidate,
   verifyCandidateFiles,
@@ -592,54 +593,71 @@ export const verifyPublicationPolicy = (
   });
 
 /** Reads and checks an already downloaded original candidate directory. */
-const readCandidateDirectory = (directory: string, source: PublicationSource, language: Language) =>
+const readCandidateDirectory = (
+  directory: string,
+  source: PublicationSource,
+  producerRun: number,
+  language: Language
+) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const manifest = yield* readJson(CandidateManifest, path.join(directory, CANDIDATE_MANIFEST));
     yield* ensure(
       manifest.sourceSha === source.sha &&
-        manifest.producerRun === source.runId &&
+        manifest.producerRun === producerRun &&
         manifest.language === language,
       'Original candidate producer/source conflict'
-    );
-    yield* ensure(
-      manifest.approvedFrom !== undefined,
-      'Publication candidate was not copied from the approved release PR'
     );
     const bytes = yield* readCandidateFiles(directory);
     yield* verifyCandidateFiles(bytes, manifest.files);
     return { manifest, bytes };
   });
 
-/** Resolves every selected language's original files before either registry receives bytes. */
+/**
+ * Downloads the approved release-PR artifact pinned for every selected language, and checks its
+ * files, before either registry receives bytes.
+ */
 export const loadOriginalDistributions = (
   cwd: string,
   batch: ReleaseBatch,
-  source: PublicationSource
+  source: PublicationSource,
+  approved: ApprovedCandidates
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const artifacts = yield* originalCandidates(source.runId);
     const files: Distribution[] = [];
     const identities: CandidateArtifact[] = [];
     for (const language of batchLanguages(batch)) {
+      const pinned = approved[language];
+      if (pinned === undefined)
+        return yield* fail(`No approved ${language} candidate was pinned for this run`);
+      const listed = yield* request(
+        'GET',
+        `${REPOSITORY_PATH}/actions/artifacts/${pinned.artifactId}`,
+        ActionArtifact
+      );
       const reused = yield* reuseCandidate(
-        artifacts,
+        [listed],
         candidateArtifactName(language),
-        source.runId,
+        pinned.run,
         source.sha
       );
-      if (Option.isNone(reused))
+      if (Option.isNone(reused) || reused.value.digest !== pinned.digest)
         return yield* fail(
-          `The ${language} candidate artifact of this run expired or was deleted; request a new release`
+          `The approved ${language} candidate artifact ${pinned.artifactId} changed; request a new release with supersede`
         );
       const artifact = reused.value;
       identities.push(artifact);
       const directory = path.resolve(cwd, 'sdk-publication', language);
       yield* fs.remove(directory, { recursive: true, force: true });
       yield* downloadCandidate(artifact, directory);
-      const { manifest, bytes } = yield* readCandidateDirectory(directory, source, language);
+      const { manifest, bytes } = yield* readCandidateDirectory(
+        directory,
+        source,
+        pinned.run,
+        language
+      );
       files.push(
         ...(yield* REGISTRY_ADAPTERS[language].candidateDistributions({
           cwd,
@@ -673,7 +691,7 @@ const reportCandidates = (
 ) =>
   Effect.gen(function* () {
     const lines = [
-      `Original producer: ${runUrl(source.runId)}`,
+      `Tag run: ${runUrl(source.runId)}`,
       `Source: ${source.sha}`,
       identities
         .map(
@@ -776,6 +794,7 @@ const PublicationEnvironment = Config.all({
     'SDK_RELEASE_APP_SLUG'
   ),
   controllerToken: Config.option(Config.String('SDK_RELEASE_TOKEN')),
+  approved: Config.schema(Schema.fromJsonString(ApprovedCandidates), 'APPROVED_CANDIDATES'),
 });
 
 const publish = (mode: PublicationMode) =>
@@ -797,7 +816,12 @@ const publish = (mode: PublicationMode) =>
     yield* Effect.gen(function* () {
       yield* verifyPublicationSource(batch, source, { id: env.appId, slug: env.appSlug });
       yield* verifyPublicationPolicy(batchLanguages(batch), env.appId);
-      const { files, identities } = yield* loadOriginalDistributions(cwd, batch, source);
+      const { files, identities } = yield* loadOriginalDistributions(
+        cwd,
+        batch,
+        source,
+        env.approved
+      );
       yield* reportCandidates(actions, identities, files, source);
       const state = yield* reconcile(files, source);
       yield* finish({ cwd, batch, source, files, state, actions });

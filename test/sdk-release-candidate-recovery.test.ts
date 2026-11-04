@@ -8,7 +8,7 @@ import {
   writeText,
 } from './sdk-release-harness';
 
-const directories = temporaryDirectories('sdk-candidate-copy-');
+const directories = temporaryDirectories('sdk-candidate-pin-');
 afterEach(() => directories.cleanup());
 
 const head = 'b'.repeat(40);
@@ -36,8 +36,8 @@ const approvedArchive = async () => {
   return { zip, digest: `sha256:${await runRelease(sha256Hex(archive))}` };
 };
 
-/** One attempt of the tag run's copy job, on a fresh runner, for tag run 9. */
-const copyAttempt = async (archive: { zip: string; digest: string }, attempt: number) => {
+/** One attempt of the tag run's pinning job, on a fresh runner, for tag run 9. */
+const pinAttempt = async (archive: { zip: string; digest: string }, attempt: number) => {
   const directory = await directories.create();
   await writeText(`${directory}/package.json`, JSON.stringify({ name: 'root', private: true }));
   await writeText(`${directory}/pnpm-workspace.yaml`, "packages: ['core']\n");
@@ -105,7 +105,6 @@ const copyAttempt = async (archive: { zip: string; digest: string }, attempt: nu
         },
       ],
     },
-    '/actions/runs/9/artifacts': { artifacts: [] },
     '/actions/runs/41/artifacts': {
       artifacts: [
         {
@@ -136,10 +135,12 @@ globalThis.fetch = async input => {
   );
   const output = `${directory}/output`;
   await writeText(output, '');
+  const summary = `${directory}/summary`;
+  await writeText(summary, '');
   const result = await runRelease(
     spawn(
       'bun',
-      ['--preload', preload, await resolvePath('scripts/sdk-release/candidates.ts'), 'typescript'],
+      ['--preload', preload, await resolvePath('scripts/sdk-release/candidates.ts'), 'approve'],
       {
         cwd: directory,
         env: {
@@ -148,6 +149,7 @@ globalThis.fetch = async input => {
           GITHUB_SHA: head,
           GITHUB_REF: 'refs/tags/sdk-release/8',
           GITHUB_OUTPUT: output,
+          GITHUB_STEP_SUMMARY: summary,
           SDK_READ_TOKEN: 'fixture',
           SDK_RELEASE_TOKEN: '',
         },
@@ -156,21 +158,18 @@ globalThis.fetch = async input => {
   );
   expect({ exitCode: result.exitCode, stderr: result.stderr }).toMatchObject({ exitCode: 0 });
   return {
-    manifest: await readText(`${directory}/sdk-candidate/typescript/candidate.json`),
+    output: await readText(output),
     tarball: await readText(`${directory}/sdk-candidate/typescript/${tarball}`),
   };
 };
 
-test('a re-run of the tag-run copy produces an identical manifest', async () => {
+test('every attempt of the tag run pins the same approved release-PR artifact', async () => {
   const archive = await approvedArchive();
-  const first = await copyAttempt(archive, 1);
-  const rerun = await copyAttempt(archive, 2);
+  const first = await pinAttempt(archive, 1);
+  const rerun = await pinAttempt(archive, 2);
   expect(first.tarball).toBe('approved tarball bytes');
-  expect(JSON.parse(first.manifest)).toMatchObject({
-    sourceSha: head,
-    producerRun: 9,
-    language: 'typescript',
-    approvedFrom: { run: 41, artifactId: 77, digest: archive.digest },
-  });
-  expect(rerun.manifest).toBe(first.manifest);
+  expect(first.output).toBe(
+    `approved=${JSON.stringify({ typescript: { run: 41, artifactId: 77, digest: archive.digest } })}\n`
+  );
+  expect(rerun.output).toBe(first.output);
 });

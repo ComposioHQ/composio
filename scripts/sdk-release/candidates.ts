@@ -2,6 +2,7 @@ import { Config, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect'
 import { getPackages } from '@manypkg/get-packages';
 import {
   ActionArtifact,
+  ApprovedCandidates,
   CANDIDATE_MANIFEST,
   type ApprovedCandidate,
   CandidateManifest,
@@ -39,7 +40,7 @@ import {
   sha256Hex,
   type ReleaseServices,
 } from './runtime';
-import { BATCH_PATH, ReleaseBatch } from './source';
+import { BATCH_PATH, ReleaseBatch, batchLanguages } from './source';
 
 const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
@@ -271,48 +272,7 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
     } satisfies ApprovedCandidate;
   });
 
-/**
- * The candidate a source-tag run publishes. A retried tag run reuses the artifact an earlier
- * attempt of the same run uploaded, so it keeps the first adopted bytes even if the release-PR
- * candidate workflow ran again later, provided an earlier copy job of this run created it; only
- * a run without one copies from the release PR.
- */
-export const tagRunCandidate = (
-  runId: number,
-  sha: string,
-  language: Language,
-  directory: string
-) =>
-  Effect.gen(function* () {
-    const own = yield* reuseCandidate(
-      yield* originalCandidates(runId),
-      candidateArtifactName(language),
-      runId,
-      sha
-    );
-    if (Option.isNone(own)) return yield* adoptApprovedCandidate(sha, language, directory);
-    yield* requireCreatedDuring(
-      runId,
-      `Approved candidate (${language})`,
-      own.value,
-      'this tag run'
-    );
-    yield* downloadCandidate(own.value, directory);
-    const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
-    const manifest = yield* readJson(CandidateManifest, manifestPath);
-    yield* ensure(
-      manifest.sourceSha === sha &&
-        manifest.producerRun === runId &&
-        manifest.language === language &&
-        manifest.approvedFrom !== undefined,
-      'Earlier tag-run candidate manifest producer/source mismatch'
-    );
-    yield* verifyCandidateFiles(yield* readCandidateFiles(directory), manifest.files);
-    yield* (yield* FileSystem.FileSystem).remove(manifestPath);
-    return manifest.approvedFrom;
-  });
-
-/** Builds a release-PR candidate, or copies the approved one on a source-tag push. */
+/** Builds a release-PR candidate. */
 const buildCandidate = (
   env: BuildEnvironment,
   language: Language,
@@ -334,9 +294,7 @@ const buildCandidate = (
         `Candidate version differs from approved target: ${release.name}`
       );
     }
-    const approvedFrom = isSourceTag(env.ref)
-      ? yield* tagRunCandidate(env.runId, env.sha, language, directory)
-      : yield* Effect.as(lane.build(cwd, directory, selected), undefined);
+    yield* lane.build(cwd, directory, selected);
     const files = yield* Effect.forEach(yield* fs.readDirectory(directory), name =>
       Effect.gen(function* () {
         const bytes = yield* fs.readFile(`${directory}/${name}`);
@@ -348,7 +306,6 @@ const buildCandidate = (
       producerRun: env.runId,
       language,
       files,
-      ...(approvedFrom && { approvedFrom }),
     });
     yield* fs.writeFileString(`${directory}/${CANDIDATE_MANIFEST}`, formatJson(manifest));
     yield* appendFile(env.outputPath, 'selected=true\n');
@@ -360,6 +317,10 @@ const buildMode = (language: Language) =>
     yield* ensure(
       !Option.exists(env.controllerToken, token => token !== ''),
       'Candidate jobs must not receive the controller credential'
+    );
+    yield* ensure(
+      !isSourceTag(env.ref),
+      'Source-tag runs publish approved candidates, never builds'
     );
     const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
     const selected = batch.plan.releases.filter(release => release.language === language);
@@ -397,23 +358,67 @@ const reportMode = (language: Language) =>
     const files = manifest.files
       .map(file => `- ${file.name}: ${file.sha256} (${file.size} bytes)`)
       .join('\n');
-    const approved = manifest.approvedFrom
-      ? `Copied from approved release-PR run ${manifest.approvedFrom.run} (artifact ${manifest.approvedFrom.artifactId}, ${manifest.approvedFrom.digest}).\n\n`
-      : '';
     yield* appendFile(
       env.summaryPath,
-      `${language} candidate ID=${artifact.id} digest=${artifact.digest} producer=${env.runId} source=${env.sourceSha} expires=${artifact.expires_at}\n\n${approved}${files}\n`
+      `${language} candidate ID=${artifact.id} digest=${artifact.digest} producer=${env.runId} source=${env.sourceSha} expires=${artifact.expires_at}\n\n${files}\n`
     );
   });
 
-/** `candidates.ts <language>` builds or copies; `candidates.ts report <language>` records identity. */
+const ApproveEnvironment = Config.all({
+  sha: Config.schema(Sha, 'GITHUB_SHA'),
+  ref: Config.String('GITHUB_REF'),
+  outputPath: Config.String('GITHUB_OUTPUT'),
+  summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
+  token: Config.schema(Schema.NonEmptyString, 'SDK_READ_TOKEN'),
+  controllerToken: Config.option(Config.String('SDK_RELEASE_TOKEN')),
+});
+
+/**
+ * Checks the approved release-PR candidate of every selected language once and pins its artifact
+ * ID and digest as a job output. Publish jobs download exactly that artifact, and a retried job
+ * reuses the output, so every attempt publishes the same bytes.
+ */
+const approveMode = Effect.gen(function* () {
+  const env = yield* ApproveEnvironment;
+  yield* ensure(
+    !Option.exists(env.controllerToken, token => token !== ''),
+    'Candidate jobs must not receive the controller credential'
+  );
+  yield* ensure(isSourceTag(env.ref), 'Approved candidates are pinned only by a source-tag run');
+  const path = yield* Path.Path;
+  const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+  const approved: Record<string, ApprovedCandidate> = {};
+  yield* Effect.gen(function* () {
+    for (const language of batchLanguages(batch)) {
+      const candidate = yield* adoptApprovedCandidate(
+        env.sha,
+        language,
+        path.resolve('sdk-candidate', language)
+      );
+      approved[language] = candidate;
+      yield* appendFile(
+        env.summaryPath,
+        `${language}: approved release-PR run ${candidate.run}, artifact ${candidate.artifactId} (${candidate.digest})\n`
+      );
+    }
+  }).pipe(Effect.provide(GitHub.layer(env.token)));
+  const pinned = yield* Schema.decodeUnknownEffect(ApprovedCandidates)(approved);
+  yield* appendFile(env.outputPath, `approved=${JSON.stringify(pinned)}\n`);
+});
+
+/**
+ * `candidates.ts <language>` builds a release-PR candidate, `candidates.ts report <language>`
+ * records its identity, and `candidates.ts approve` pins the approved candidates in a tag run.
+ */
 const Arguments = Schema.Union([
+  Schema.Tuple([Schema.Literal('approve')]),
   Schema.Tuple([Language]),
   Schema.Tuple([Schema.Literal('report'), Language]),
 ]);
 
 const main = Effect.gen(function* () {
   const args = yield* Schema.decodeUnknownEffect(Arguments)(yield* (yield* Stdio.Stdio).args);
+  if (args[0] === 'approve') return yield* approveMode;
   return yield* args.length === 1 ? buildMode(args[0]) : reportMode(args[1]);
 });
 

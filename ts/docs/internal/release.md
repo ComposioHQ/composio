@@ -28,7 +28,7 @@ On merge, the `source-tag` job rechecks the approval rule and the green `SDK can
 
 The tag run in `sdk.release.yml`:
 
-1. Copies the candidate files built on the approved PR head and checks them against that build's checksums. It never rebuilds.
+1. Checks the candidate files built on the approved PR head against that build's checksums and pins those artifacts. Each publish job downloads exactly the pinned artifacts. It never rebuilds.
 2. Checks the tag came from the release App at the run's commit, belongs to exactly one merged release PR with that head, and that the approval rule still holds.
 3. Checks the npm and PyPI trusted publishers. Both must pass before either registry receives files.
 4. Uploads only files the registries are missing. An existing file with identical bytes is accepted; different bytes stop the run with a conflict.
@@ -38,7 +38,7 @@ If any job fails, the run comments on the request issue with the failed jobs and
 
 ## Re-run failed jobs
 
-Open the tag run and choose **Re-run failed jobs**. A re-run copies the same approved files again, skips files already published, and uploads the rest. It works while the approved candidate artifacts exist: 30 days from the candidate build on the PR, not from the merge.
+Open the tag run and choose **Re-run failed jobs**. A re-run publishes the same pinned files, skips files already published, and uploads the rest. It works while the approved candidate artifacts exist: 30 days from the candidate build on the PR, not from the merge.
 
 ## Stranded release
 

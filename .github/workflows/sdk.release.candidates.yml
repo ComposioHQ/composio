@@ -3,7 +3,8 @@ run-name: SDK release candidates (${{ github.head_ref }})
 
 # Builds and checks the package files a release PR will publish. This workflow only runs on
 # pull_request, with a read-only token, no secrets and no caches. The privileged SDK release
-# workflow never checks out PR code; its tag run copies these files after approval and merge.
+# workflow never checks out PR code; after approval and merge, its tag run publishes these exact
+# artifacts.
 on:
   pull_request:
     branches: [next]

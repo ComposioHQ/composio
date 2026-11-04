@@ -23,12 +23,17 @@ export const ApprovedCandidate = Schema.Struct({
 });
 export type ApprovedCandidate = typeof ApprovedCandidate.Type;
 
+/** The approved candidate of each selected language, pinned once per tag run. */
+export const ApprovedCandidates = Schema.Struct({
+  typescript: Schema.optionalKey(ApprovedCandidate),
+  python: Schema.optionalKey(ApprovedCandidate),
+});
+export type ApprovedCandidates = typeof ApprovedCandidates.Type;
+
 export const CandidateManifest = Schema.Struct({
   sourceSha: Sha,
   producerRun: PositiveInt,
   language: Language,
-  /** Present on source-tag candidates, which copy the approved release-PR files. */
-  approvedFrom: Schema.optionalKey(ApprovedCandidate),
   files: Schema.Array(CandidateFile).check(
     Schema.isMinLength(1),
     Schema.makeFilter(files =>

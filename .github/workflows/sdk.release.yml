@@ -213,15 +213,15 @@ jobs:
           for (const language of ['typescript', 'python']) appendFileSync(process.env.GITHUB_OUTPUT, `${language}=${languages.includes(language)}\n`);
           JS
 
+  # Checks the approved release-PR candidates once and pins their artifact IDs and digests. Each
+  # publish job downloads exactly those artifacts; "Re-run failed jobs" keeps this job's output.
   candidate:
-    name: Approved candidate (${{ matrix.language }})
+    name: Approved candidates
     needs: select-candidates
     if: needs.select-candidates.outputs.typescript == 'true' || needs.select-candidates.outputs.python == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ${{ fromJSON(needs.select-candidates.outputs.languages) }}
+    outputs:
+      approved: ${{ steps.approve.outputs.approved }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -231,30 +231,11 @@ jobs:
         with:
           enable-caching: 'false'
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      # A re-run copies the same approved bytes again and replaces this run's artifact.
-      - name: Copy the approved release-PR candidate
-        id: build
+      - name: Pin the approved release-PR candidates
+        id: approve
         env:
           SDK_READ_TOKEN: ${{ github.token }}
-        run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
-      - name: Retain candidate bytes for publication
-        if: steps.build.outputs.selected == 'true'
-        id: upload
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: sdk-candidate-${{ matrix.language }}
-          path: sdk-candidate/${{ matrix.language }}/
-          retention-days: 30
-          if-no-files-found: error
-          overwrite: true
-      - name: Report candidate identity
-        if: steps.build.outputs.selected == 'true'
-        env:
-          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
-          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
-          SOURCE_SHA: ${{ github.sha }}
-          SDK_READ_TOKEN: ${{ github.token }}
-        run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}
+        run: bun scripts/sdk-release/candidates.ts approve
 
   candidates-ready:
     needs: [select-candidates, candidate]
@@ -269,7 +250,7 @@ jobs:
 
   publication-preflight:
     name: Check direct publication prerequisites
-    needs: [select-candidates, candidates-ready]
+    needs: [select-candidates, candidate, candidates-ready]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest
     steps:
@@ -283,6 +264,7 @@ jobs:
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+          APPROVED_CANDIDATES: ${{ needs.candidate.outputs.approved }}
         run: bun scripts/sdk-release/registry.ts preflight
 
   # Each check exchanges an ID token for a publish token and discards it. Both publish jobs need
@@ -327,7 +309,12 @@ jobs:
 
   publish-npm:
     name: Publish original npm candidates
-    needs: [select-candidates, publication-preflight, npm-publisher-preflight, pypi-publisher-preflight]
+    needs:
+      - select-candidates
+      - candidate
+      - publication-preflight
+      - npm-publisher-preflight
+      - pypi-publisher-preflight
     if: >-
       always() && needs.select-candidates.outputs.typescript == 'true' &&
       needs.publication-preflight.result == 'success' &&
@@ -352,11 +339,17 @@ jobs:
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+          APPROVED_CANDIDATES: ${{ needs.candidate.outputs.approved }}
         run: bun scripts/sdk-release/registry.ts upload-npm
 
   publish-pypi:
     name: Publish original PyPI candidates
-    needs: [select-candidates, publication-preflight, npm-publisher-preflight, pypi-publisher-preflight]
+    needs:
+      - select-candidates
+      - candidate
+      - publication-preflight
+      - npm-publisher-preflight
+      - pypi-publisher-preflight
     if: >-
       always() && needs.select-candidates.outputs.python == 'true' &&
       needs.publication-preflight.result == 'success' &&
@@ -380,6 +373,7 @@ jobs:
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+          APPROVED_CANDIDATES: ${{ needs.candidate.outputs.approved }}
         run: bun scripts/sdk-release/registry.ts prepare-pypi
       - name: Upload original candidates to PyPI
         if: steps.reconcile.outputs.missing == 'true'
@@ -389,7 +383,7 @@ jobs:
 
   registry-verification:
     name: Verify public SDK packages
-    needs: [select-candidates, publication-preflight, publish-npm, publish-pypi]
+    needs: [select-candidates, candidate, publication-preflight, publish-npm, publish-pypi]
     if: >-
       always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
       needs.publication-preflight.result == 'success' &&
@@ -415,6 +409,7 @@ jobs:
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           SDK_RELEASE_APP_ID: ${{ vars.SDK_RELEASE_APP_ID }}
+          APPROVED_CANDIDATES: ${{ needs.candidate.outputs.approved }}
         run: bun scripts/sdk-release/registry.ts verify
       - name: Verify fresh public installations, strict TypeScript, Python imports and typing, and dependency health
         run: bun scripts/sdk-release/consumers.ts
