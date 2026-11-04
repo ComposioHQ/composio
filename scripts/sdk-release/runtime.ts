@@ -1,6 +1,6 @@
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Data, Effect, FileSystem, Layer, Option, Schema, Stream } from 'effect';
+import { Cause, Console, Data, Effect, FileSystem, Layer, Option, Schema, Stream } from 'effect';
 import { Digest } from 'effect/crypto';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
@@ -75,7 +75,7 @@ export const spawn = (command: string, args: ReadonlyArray<string>, options: Com
         [text(handle.stdout), text(handle.stderr), handle.exitCode],
         { concurrency: 'unbounded' }
       );
-      return { exitCode, stdout, stderr } satisfies CommandResult;
+      return { exitCode: Number(exitCode), stdout, stderr } satisfies CommandResult;
     })
   );
 
@@ -159,5 +159,12 @@ export const ReleaseServices = Layer.mergeAll(
 export type ReleaseServices = Layer.Success<typeof ReleaseServices>;
 
 /** Runs a release entry point with the platform services it needs. */
+/** Runs a release entry point; failures go to stderr and exit non-zero, like a thrown error. */
 export const runMain = <A, E>(program: Effect.Effect<A, E, ReleaseServices>) =>
-  BunRuntime.runMain(program.pipe(Effect.provide(ReleaseServices)));
+  BunRuntime.runMain(
+    program.pipe(
+      Effect.tapCause(cause => Console.error(Cause.pretty(cause))),
+      Effect.provide(ReleaseServices)
+    ),
+    { disableErrorReporting: true }
+  );
