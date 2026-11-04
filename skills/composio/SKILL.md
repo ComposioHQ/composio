@@ -1,6 +1,6 @@
 ---
 name: composio
-description: Route and complete Composio work across Composio For You and Composio Platform. Use when the user mentions Composio; wants an agent to use apps such as Gmail, Slack, GitHub, Notion, Calendar, or Linear; needs first-time setup, an SDK or MCP integration, CLI operation, migration guidance, current documentation, or help diagnosing a connection or tool call.
+description: Route and complete Composio work across Composio For You and Composio Platform. Use when the user mentions Composio; wants an agent to use apps such as Gmail, Slack, GitHub, Notion, Calendar, or Linear; needs first-time setup, an SDK or MCP integration, CLI operation, tool approvals, Firewall hooks, a custom MCP server, migration guidance, current documentation, or help diagnosing a connection or tool call.
 ---
 
 # Composio
@@ -39,8 +39,8 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 ## 3. Load only the relevant guidance
 
 - For You: read [Composio For You](references/for-you.md).
-- Platform: read [Composio Platform](references/platform.md).
-- Provider, connection, or execution failure: also read [Errors and provider gotchas](references/errors.md).
+- Platform: read [Composio Platform](references/platform.md). It also covers Approvals, Firewall, and Custom MCP.
+- Provider, connection, or execution failure, including a call paused for approval or blocked by Firewall: also read [Errors and provider gotchas](references/errors.md).
 
 ## Complete the selected job
 
@@ -59,7 +59,7 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 6. Use sessions for new Platform integrations. Preserve the application's existing user identity and agent architecture.
 7. Keep credentials out of source control, URLs, logs, chat, and command output.
 8. Get the log or request ID before diagnosing a failed tool call.
-9. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them.
+9. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, approvals, Firewall hooks, Custom MCP toolkits, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them. When the request does ask for one, such as "ask before sending" or "block prompt injection", use the documented feature instead of building a substitute in prompts or application code.
 10. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
 11. In SDK or API examples, use exact identifiers and call shapes from a current public page or schema. Copy the documented shape for the requested language instead of translating names between TypeScript and Python; if a required detail is not documented, explain the behavior without inventing code.
 
