@@ -272,6 +272,26 @@ describe('SDK release planning', () => {
     await expect(createSdkReleasePlan(cwd)).rejects.toThrow('prerelease');
   });
 
+  test('a request while a merged release is unpublished is refused by the registry baseline', async () => {
+    const { cwd, note } = await fixture();
+    await note('next', { '@composio/provider': 'patch' });
+    // Source carries the merged release's 0.28.0; the registry still serves 0.27.0.
+    const baseline = {
+      '@composio/core': '0.27.0',
+      '@composio/slim': '0.27.0',
+      '@composio/provider': '0.11.0',
+      composio: '0.31.0',
+      'composio-openai': '0.31.0',
+      'composio-outside': '0.31.0',
+    };
+    await expect(createSdkReleasePlan(cwd, { baseline })).rejects.toThrow(
+      'Registry baseline mismatch for @composio/core: source 0.28.0, published 0.27.0'
+    );
+    const published = { ...baseline, '@composio/core': '0.28.0', '@composio/slim': '0.28.0' };
+    expect(versions(await createSdkReleasePlan(cwd, { baseline: published }))).toEqual({
+      '@composio/provider': '0.11.1',
+    });
+  });
   test('a supplied registry baseline must cover every published target', async () => {
     const { cwd } = await fixture();
     await expect(

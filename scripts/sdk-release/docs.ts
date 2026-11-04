@@ -23,7 +23,6 @@ import {
   Sha,
   commentIssue,
   decodeBase64Content,
-  fileAt,
   getRun,
   jobs,
   paginate,
@@ -44,7 +43,7 @@ import {
   withoutReleaseTokens,
   writeFile,
 } from './runtime';
-import { BATCH_PATH, ReleaseBatch, ReleaseFile } from './source';
+import { ReleaseBatch, ReleaseFile, committedBatch } from './source';
 import { tagRunProblem, type ReleaseApp } from './tag-run';
 
 const BRANCH = 'docs/auto-sdk-sync';
@@ -309,11 +308,9 @@ const isVerifiedRelease = (run: ReleaseRun, app: ReleaseApp) =>
 /** The batch a tag run published, read from its tagged commit. */
 const batchAt = (run: ReleaseRun) =>
   Effect.gen(function* () {
-    const file = yield* fileAt(BATCH_PATH, run.head_sha ?? '');
-    if (Option.isNone(file)) return yield* fail('Publication run and frozen batch differ');
-    const batch = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(
-      file.value
-    );
+    const committed = yield* committedBatch(run.head_sha ?? '');
+    if (Option.isNone(committed)) return yield* fail('Publication run and frozen batch differ');
+    const batch = committed.value;
     yield* ensure(
       run.head_branch === `sdk-release/${batch.id}`,
       'Publication run and frozen batch differ'

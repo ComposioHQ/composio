@@ -65,7 +65,7 @@ export const normalizeArtifactDigest = (value: unknown) =>
   });
 
 /** An artifact is usable while GitHub still retains it. */
-export const isRetained = (artifact: CandidateArtifact, now: number) =>
+const isRetained = (artifact: CandidateArtifact, now: number) =>
   !artifact.expired && Date.parse(artifact.expires_at) > now;
 
 /** The run's single artifact with this name, if it was produced from this source and is still retained. */
@@ -126,21 +126,6 @@ export const originalCandidates = (run: number) =>
     )
   );
 
-const PUBLISHER_STEP = /upload.*(?:npm|pypi)|publish.*(?:npm|pypi)/i;
-
-/** Whether any registry upload or publish step of these jobs may have run. */
-export const publisherStarted = (
-  runJobs: ReadonlyArray<{
-    steps: ReadonlyArray<{ name: string; status: string; conclusion: string | null }>;
-  }>
-) =>
-  runJobs.some(job =>
-    job.steps.some(
-      step =>
-        PUBLISHER_STEP.test(step.name) && step.status !== 'queued' && step.conclusion !== 'skipped'
-    )
-  );
-
 /** Downloads an original Actions artifact, checks its digest and archive paths, and unpacks it into `directory`. */
 export const downloadCandidate = (artifact: { id: number; digest: string }, directory: string) =>
   Effect.gen(function* () {
@@ -175,34 +160,4 @@ export const downloadCandidate = (artifact: { id: number; digest: string }, dire
       'Unexpected artifact archive path'
     );
     yield* run('unzip', ['-q', zip, '-d', directory], { env: withoutReleaseTokens });
-  });
-
-/** Downloads a candidate into a scoped temporary directory and returns its verified manifest and file bytes. */
-export const readVerifiedCandidate = (
-  artifact: CandidateArtifact,
-  expected: { sourceSha: string; producerRun: number; language: Language },
-  mismatch: string
-) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const root = yield* fs.makeTempDirectoryScoped({ prefix: 'sdk-candidate-' });
-    const directory = `${root}/${expected.language}`;
-    yield* downloadCandidate(artifact, directory);
-    const manifest = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(CandidateManifest))(
-      yield* fs.readFileString(`${directory}/${CANDIDATE_MANIFEST}`)
-    );
-    yield* ensure(
-      manifest.sourceSha === expected.sourceSha &&
-        manifest.producerRun === expected.producerRun &&
-        manifest.language === expected.language,
-      mismatch
-    );
-    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
-    const files = new Map(
-      yield* Effect.forEach(names, name =>
-        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
-      )
-    );
-    yield* verifyCandidateFiles(files, manifest.files);
-    return { manifest, files };
   });

@@ -30,7 +30,6 @@ import {
 import { verifyReleaseHead } from './approval';
 import { GitHub, REPOSITORY_PATH, SDK_RELEASE_REPOSITORY, Sha, getRun, request } from './github';
 import { REGISTRY_LANES, Language as LanguageSchema, type Language } from './lanes';
-import { CorrectiveInput } from './plan';
 import { discoverPythonPackages } from './python-metadata';
 import {
   ReleaseError,
@@ -220,32 +219,13 @@ const NpmVersion = Schema.Struct({
 });
 const NpmLatest = Schema.Struct({ version: Schema.String });
 
-export const npmTarballName = (name: string, version: string) =>
-  `${name.replace(/^@/, '').replaceAll('/', '-')}-${version}.tgz`;
 const pythonDistributionNames = (name: string, version: string) => {
   const prefix = `${name.replaceAll('-', '_')}-${version}`;
   return [`${prefix}-py3-none-any.whl`, `${prefix}.tar.gz`];
 };
-const pythonPackageOfFile = (file: string, version: string) =>
-  file.split(`-${version}`)[0].replaceAll('_', '-');
 
 const versionUrl = (language: Language, name: string, version: string) =>
   REGISTRY_LANES[language].versionUrl(name, version);
-
-interface InventoryTarget {
-  readonly name: string;
-  readonly version: string;
-  readonly language: Language;
-}
-
-interface PublishedFile {
-  readonly name: string;
-  readonly url: string;
-  /** Registry-reported SHA-256, when the registry publishes one. */
-  readonly sha256?: string;
-}
-
-type PlannedRelease = ReleaseBatch['plan']['releases'][number];
 
 interface LoadedCandidate {
   readonly cwd: string;
@@ -311,24 +291,6 @@ const npmAdapter = {
             : [],
       } satisfies RegistryState;
     }),
-  inventoryTargets: (release: CorrectiveInput['releases'][number], _cwd: string) =>
-    Effect.succeed<ReadonlyArray<InventoryTarget>>([
-      { name: release.name, version: release.newVersion, language: release.language },
-    ]),
-  publishedFiles: (target: InventoryTarget) =>
-    registryJson(
-      versionUrl('typescript', target.name, target.version),
-      Schema.Struct({ dist: Schema.Struct({ tarball: Url }) })
-    ).pipe(
-      Effect.map(metadata =>
-        Option.match(metadata, {
-          onNone: () => [],
-          onSome: (value): ReadonlyArray<PublishedFile> => [
-            { name: npmTarballName(target.name, target.version), url: value.dist.tarball },
-          ],
-        })
-      )
-    ),
   candidateDistributions: (candidate: LoadedCandidate) =>
     Effect.gen(function* () {
       const path = yield* Path.Path;
@@ -362,17 +324,6 @@ const npmAdapter = {
       );
       return files;
     }),
-  statusTarget: (file: string, releases: ReadonlyArray<PlannedRelease>) =>
-    Option.map(
-      Option.fromNullishOr(
-        releases.find(
-          release =>
-            release.language === 'typescript' &&
-            file === npmTarballName(release.name, release.newVersion)
-        )
-      ),
-      release => ({ name: release.name, version: release.newVersion })
-    ),
 };
 
 /** PyPI: a wheel and sdist for every package of the synchronized Python train. */
@@ -407,24 +358,6 @@ const pythonAdapter = {
       }
       return { existing, missing, tagsToRepair: [] } satisfies RegistryState;
     }),
-  inventoryTargets: (release: CorrectiveInput['releases'][number], cwd: string) =>
-    Effect.map(discoverPythonPackages(cwd), (packages): ReadonlyArray<InventoryTarget> =>
-      packages.map(pkg => ({ name: pkg.name, version: release.newVersion, language: 'python' }))
-    ),
-  publishedFiles: (target: InventoryTarget) =>
-    registryJson(versionUrl('python', target.name, target.version), PypiVersion).pipe(
-      Effect.map(metadata =>
-        Option.match(metadata, {
-          onNone: () => [],
-          onSome: (value): ReadonlyArray<PublishedFile> =>
-            value.urls.map(file => ({
-              name: file.filename,
-              url: file.url,
-              sha256: file.digests.sha256,
-            })),
-        })
-      )
-    ),
   candidateDistributions: (candidate: LoadedCandidate) =>
     Effect.gen(function* () {
       const release = candidate.batch.plan.releases.find(entry => entry.language === 'python');
@@ -442,28 +375,9 @@ const pythonAdapter = {
       );
       return files;
     }),
-  statusTarget: (file: string, releases: ReadonlyArray<PlannedRelease>) =>
-    Option.map(
-      Option.fromNullishOr(releases.find(release => release.language === 'python')),
-      release => ({
-        name: pythonPackageOfFile(file, release.newVersion),
-        version: release.newVersion,
-      })
-    ),
 };
 
 const REGISTRY_ADAPTERS = { typescript: npmAdapter, python: pythonAdapter } as const;
-
-/** Maps a candidate file reported in a status run to the selected release it belongs to. */
-export const statusDistribution = (
-  language: Language,
-  file: CandidateFile,
-  bytes: ReadonlyMap<string, Uint8Array>,
-  releases: ReadonlyArray<PlannedRelease>
-) =>
-  Option.map(REGISTRY_ADAPTERS[language].statusTarget(file.name, releases), identity =>
-    distributionOf(language, identity, file, bytes)
-  );
 
 /** Splits original files into those the registry already serves and those still missing. */
 export const reconcileRegistry = (files: ReadonlyArray<Distribution>, source: PublicationSource) =>
@@ -515,50 +429,6 @@ export const waitForRegistry = (
     )
   );
 };
-
-/** Hashes every file a partial batch already published, as the basis of a corrective release. */
-export const correctiveInventory = (
-  cwd: string,
-  batch: ReleaseBatch,
-  sourceSha: string,
-  releases: CorrectiveInput['releases'] = batch.plan.releases
-) =>
-  Effect.gen(function* () {
-    const targets = (yield* Effect.forEach(releases, release =>
-      REGISTRY_ADAPTERS[release.language].inventoryTargets(release, cwd)
-    )).flat();
-    const inventory = yield* Effect.forEach(targets, target =>
-      Effect.gen(function* () {
-        const published = yield* REGISTRY_ADAPTERS[target.language].publishedFiles(target);
-        const files = yield* Effect.forEach(published, file =>
-          Effect.gen(function* () {
-            yield* ensure(
-              servedBy(target.language, file.url),
-              'Partial inventory download host differs'
-            );
-            const digest = yield* sha256Hex(
-              yield* registryBytes(
-                file.url,
-                () => `Partial inventory unavailable: ${target.name}/${file.name}`
-              )
-            );
-            yield* ensure(
-              file.sha256 === undefined || digest === file.sha256,
-              `Partial inventory registry hash differs: ${file.name}`
-            );
-            return { name: file.name, sha256: digest };
-          })
-        );
-        return { name: target.name, version: target.version, files };
-      })
-    );
-    return yield* Schema.decodeUnknownEffect(CorrectiveInput)({
-      batchId: batch.id,
-      sourceSha,
-      releases,
-      inventory,
-    });
-  });
 
 const MergedPull = Schema.Struct({
   number: Schema.Number,

@@ -15,11 +15,7 @@ import {
 } from '../scripts/sdk-release/registry';
 import { sha256Hex } from '../scripts/sdk-release/runtime';
 import { ReleaseBatch } from '../scripts/sdk-release/source';
-import {
-  readPublicationStatus as readPublicationStatusEffect,
-  writePublicationStatus as writePublicationStatusEffect,
-  type PublicationReport,
-} from '../scripts/sdk-release/publication';
+import { reportFailure, reportRelease } from '../scripts/sdk-release/tag-run';
 import {
   base,
   batch as controllerBatch,
@@ -407,101 +403,104 @@ describe('trusted-publisher preflight', () => {
   });
 });
 
-async function publicationStatusFixture() {
-  const batch = Schema.decodeUnknownSync(ReleaseBatch)({
-    schemaVersion: 1,
-    id: '8',
-    originalRunId: '8',
-    requestedBy: ['requester'],
-    inputBase: source.sha,
-    statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
-    date: '2026-11-03',
-    outputs: [],
-    plan: {
-      schemaVersion: 1,
-      inputFingerprint: 'frozen',
-      choices: { typescript: 'auto', python: 'auto' },
-      releases: [],
-      recommended: [],
-      changesets: [],
-      retainedChangesets: [],
-    },
-  });
-  const comments = new Map<
-    number,
-    { id: number; body: string; performed_via_github_app: { id: number } }
-  >();
-  const writes: string[] = [];
-  const fetch: Fetch = async (input, init) => {
-    const url = new URL(String(input)),
-      method = init?.method ?? 'GET';
-    const number = Number(url.pathname.match(/\/(\d+)(?:\/comments)?$/)?.[1]);
-    if (method === 'GET')
-      return new Response(JSON.stringify(comments.has(number) ? [comments.get(number)] : []));
-    writes.push(method);
-    const body = JSON.parse(String(init?.body)).body;
-    comments.set(number, { id: number, body, performed_via_github_app: { id: 123 } });
-    return new Response(JSON.stringify({ id: number }));
-  };
-  const writePublicationStatus = (report: PublicationReport, pullNumber?: number) =>
-    runRelease(writePublicationStatusEffect(batch, report, 123, pullNumber), fetch);
-  const readPublicationStatus = () =>
-    runRelease(readPublicationStatusEffect(batch, 123), fetch).then(saved =>
-      saved._tag === 'Some' ? saved.value : undefined
-    );
-  const original: PublicationReport = {
-    runId: 9,
-    sourceSha: source.sha,
-    registryVerified: true,
-    terminal: false,
-    docs: 'pending' as const,
-    candidates: [],
-    inventory: [
-      { name: 'composio', version: '1.0.1', file: wheel.file, state: 'matching' as const },
-    ],
-  };
-  return { writePublicationStatus, readPublicationStatus, original, comments, writes };
-}
-
-test('canonical App-owned publication status preserves receipts and updates request and PR idempotently', async () => {
-  const { writePublicationStatus, readPublicationStatus, original, writes } =
-    await publicationStatusFixture();
-  await writePublicationStatus(original, 11);
-  const saved = await readPublicationStatus();
-  expect(saved?.registryVerified).toBe(true);
-  await writePublicationStatus({ ...saved!, docs: 'verified' }, 11);
-  expect(writes).toEqual(['POST', 'POST', 'PATCH', 'PATCH']);
-  expect((await readPublicationStatus())?.inventory).toEqual(original.inventory);
-});
-
-for (const maintenance of ['success', 'failure'] as const) {
-  for (const maintenanceFirst of [true, false]) {
-    test(`docs completion preserves maintenance ${maintenance} with maintenance first: ${maintenanceFirst}`, async () => {
-      const { writePublicationStatus, readPublicationStatus, original, comments } =
-        await publicationStatusFixture();
-      await writePublicationStatus(original, 11);
-      const pending = (await readPublicationStatus())!;
-      const updates = [
-        { ...pending, maintenance },
-        { ...pending, docs: 'verified' as const, maintenance: 'pending' as const },
-      ];
-      if (!maintenanceFirst) updates.reverse();
-      await writePublicationStatus(updates[0], 11);
-      if (maintenanceFirst) {
-        expect(comments.get(7)?.body).toContain('docs pending');
-        expect(comments.get(7)?.body).not.toContain('verification failed');
-        expect(comments.get(7)?.body).toContain(`Guide/pin maintenance: ${maintenance}.`);
+const releaseWorkflow = async () =>
+  Bun.YAML.parse(await Bun.file('.github/workflows/sdk.release.yml').text()) as {
+    on: Record<string, unknown>;
+    jobs: Record<
+      string,
+      {
+        needs?: string | string[];
+        if?: string;
+        permissions?: Record<string, string>;
+        steps?: { name?: string; run?: string; env?: Record<string, string> }[];
       }
-      await writePublicationStatus(updates[1], 11);
-      const saved = await readPublicationStatus();
-      expect(saved?.docs).toBe('verified');
-      expect(saved?.maintenance).toBe(maintenance);
-      expect(comments.get(7)?.body).toContain('release documentation verified');
-      expect(comments.get(7)?.body).toContain(`Guide/pin maintenance: ${maintenance}.`);
-      expect(comments.get(11)?.body).toBe(comments.get(7)?.body);
-      await writePublicationStatus(original, 11);
-      expect((await readPublicationStatus())?.maintenance).toBe(maintenance);
-      expect((await readPublicationStatus())?.docs).toBe('verified');
-    });
-  }
+    >;
+  };
+
+/** A tag run whose committed batch reports to issue 8; records every issue comment. */
+function reportingRun(jobs: ReadonlyArray<{ name: string; conclusion: string | null }> = []) {
+  const comments: { issue: number; body: string }[] = [];
+  const fetch: Fetch = async (input, init) => {
+    const url = new URL(String(input));
+    const path = url.pathname.replace('/repos/ComposioHQ/composio', '') + url.search;
+    const respond = (data: unknown) => new Response(JSON.stringify(data));
+    if (path === `/contents/.github/sdk-release-plan.json?ref=${head}`)
+      return respond({
+        encoding: 'base64',
+        content: Base64.encode(JSON.stringify(committedBatch)),
+      });
+    if (path === '/actions/runs/77/jobs?filter=latest&per_page=100&page=1')
+      return respond({ jobs: jobs.map(job => ({ ...job, steps: [] })) });
+    const comment = /^\/issues\/(\d+)\/comments$/.exec(path);
+    if (comment && init?.method === 'POST') {
+      comments.push({ issue: Number(comment[1]), body: JSON.parse(String(init.body)).body });
+      return respond({ id: comments.length });
+    }
+    throw new Error(`Unexpected request: ${init?.method ?? 'GET'} ${path}`);
+  };
+  return { fetch, comments };
 }
+
+describe('release run reporting', () => {
+  test('a verified publication posts one release comment with the versions and run URL', async () => {
+    const run = reportingRun();
+    await runRelease(reportRelease(head, '77'), run.fetch);
+    expect(run.comments).toHaveLength(1);
+    expect(run.comments[0].issue).toBe(8);
+    expect(run.comments[0].body).toContain(
+      'https://github.com/ComposioHQ/composio/actions/runs/77'
+    );
+    expect(run.comments[0].body).toContain('`@composio/core` 1.0.1');
+  });
+  test('a failed run posts one failure comment naming the failed job and the re-run', async () => {
+    const run = reportingRun([
+      { name: 'Check npm trusted publisher', conclusion: 'success' },
+      { name: 'Publish original PyPI candidates', conclusion: 'failure' },
+      { name: 'Verify public SDK packages', conclusion: 'skipped' },
+    ]);
+    await runRelease(reportFailure(head, '77'), run.fetch);
+    expect(run.comments).toHaveLength(1);
+    expect(run.comments[0].issue).toBe(8);
+    expect(run.comments[0].body).toContain('failed in: Publish original PyPI candidates.');
+    expect(run.comments[0].body).toContain('"Re-run failed jobs"');
+    expect(run.comments[0].body).toContain(
+      'https://github.com/ComposioHQ/composio/actions/runs/77'
+    );
+  });
+  test('verification reports the release and dispatches docs maintenance once with its run ID', async () => {
+    const workflow = await releaseWorkflow();
+    const verification = workflow.jobs['registry-verification'];
+    expect(verification.permissions).toEqual(
+      expect.objectContaining({ actions: 'write', issues: 'write' })
+    );
+    const steps = verification.steps ?? [];
+    expect(steps.filter(step => step.run?.includes('tag-run.ts released'))).toHaveLength(1);
+    const dispatches = Object.values(workflow.jobs).flatMap(job =>
+      (job.steps ?? []).filter(step => step.run?.includes('docs.sdk-change-sync.yml'))
+    );
+    expect(dispatches).toHaveLength(1);
+    expect(steps).toContain(dispatches[0]);
+    expect(dispatches[0].env?.RUN_ID).toBe('${{ github.run_id }}');
+    expect(dispatches[0].run).toContain('-f run_id="$RUN_ID"');
+  });
+  test('a failure in any publish or verification job reaches the failure report', async () => {
+    const workflow = await releaseWorkflow();
+    const report = workflow.jobs['report-failure'];
+    expect(report.if).toContain('failure()');
+    expect(report.permissions?.issues).toBe('write');
+    expect(report.steps?.some(step => step.run?.includes('tag-run.ts failed'))).toBe(true);
+    const tagRunJobs = [
+      'select-candidates',
+      'candidate',
+      'candidates-ready',
+      'publication-preflight',
+      'npm-publisher-preflight',
+      'pypi-publisher-preflight',
+      'publish-npm',
+      'publish-pypi',
+      'registry-verification',
+    ];
+    expect(report.needs).toEqual(expect.arrayContaining(tagRunJobs));
+    expect(workflow.on).not.toHaveProperty('workflow_run');
+  });
+});

@@ -26,7 +26,7 @@ const escapeMarkdown = (text: string) =>
 
 /** npm-valid names render as code; anything else renders as escaped text. */
 const SAFE_PACKAGE_NAME = /^@composio\/[a-z0-9][a-z0-9._-]*$/;
-const packageLabel = (name: string) =>
+export const packageLabel = (name: string) =>
   name === PYTHON_RELEASE_MARKER
     ? 'Python SDK (`composio` and every provider)'
     : SAFE_PACKAGE_NAME.test(name)

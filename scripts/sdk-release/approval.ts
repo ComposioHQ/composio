@@ -15,8 +15,8 @@ import { RELEASE_PR_MARKER } from './release-pr';
 import { ensure, fail, readJson } from './runtime';
 import { BATCH_PATH, ReleaseBatch, validateReleaseDiff, type ReleaseFile } from './source';
 
-export const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
-export const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
+const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
+const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
 const AUTHORIZED_BATCH_FILE = 'sdk-release-batch.json';
 const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
 const WRITE_PERMISSIONS = new Set(['write', 'maintain', 'admin']);
@@ -81,7 +81,7 @@ export function eligibleApproval(
 }
 
 /** Downloads a retained authorized-batch artifact into a scoped directory and decodes its plan. */
-export const downloadAuthorizedBatch = (artifact: Parameters<typeof downloadCandidate>[0]) =>
+const downloadAuthorizedBatch = (artifact: Parameters<typeof downloadCandidate>[0]) =>
   Effect.scoped(
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
@@ -93,7 +93,7 @@ export const downloadAuthorizedBatch = (artifact: Parameters<typeof downloadCand
   );
 
 /** The committed plan must equal the plan the protected controller authorized and retained. */
-export const verifyOriginalBatch = (batch: ReleaseBatch) =>
+const verifyOriginalBatch = (batch: ReleaseBatch) =>
   Effect.gen(function* () {
     const original = yield* getRun(batch.originalRunId);
     yield* ensure(

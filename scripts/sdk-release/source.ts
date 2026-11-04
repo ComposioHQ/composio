@@ -1,7 +1,7 @@
-import { Effect, Schema } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
 import semver from 'semver';
-import { RunId, Sha } from './github';
+import { RunId, SDK_RELEASE_REPOSITORY, Sha, fileAt } from './github';
 import { PYTHON_RELEASE_MARKER, type Language } from './lanes';
 import { SdkReleasePlan } from './plan';
 import { PROJECT_VERSION, RUNTIME_VERSION, SETUP_VERSION } from './python-metadata';
@@ -12,7 +12,7 @@ export const ReleaseBatch = Schema.Struct({
   id: RunId,
   inputBase: Sha,
   originalRunId: RunId,
-  /** Members who requested or refreshed this release; none of them may approve it. */
+  /** Members who requested this release; none of them may approve it. */
   requestedBy: Schema.Array(Schema.String).check(Schema.isMinLength(1)),
   statusUrl: Schema.String.check(
     Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
@@ -20,12 +20,29 @@ export const ReleaseBatch = Schema.Struct({
   date: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/)),
   plan: SdkReleasePlan,
   outputs: Schema.Array(Schema.String),
-  replaces: Schema.optionalKey(
-    Schema.Struct({ number: Schema.Int.check(Schema.isGreaterThan(0)), headSha: Sha })
-  ),
 });
 export type ReleaseBatch = typeof ReleaseBatch.Type;
 export const BATCH_PATH = '.github/sdk-release-plan.json';
+
+/** The release batch committed at `ref`, or `None` when that ref has no batch file. */
+export const committedBatch = (ref: string) =>
+  Effect.gen(function* () {
+    const file = yield* fileAt(BATCH_PATH, ref);
+    if (Option.isNone(file)) return Option.none<ReleaseBatch>();
+    return Option.some(
+      yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(file.value)
+    );
+  });
+
+const REQUEST_ISSUE = new RegExp(
+  `^https://github\\.com/${SDK_RELEASE_REPOSITORY}/issues/([1-9][0-9]*)$`
+);
+
+/** The number of the request issue named by `statusUrl`, if it names one in this repository. */
+export const requestIssueNumber = (batch: ReleaseBatch) => {
+  const match = REQUEST_ISSUE.exec(batch.statusUrl);
+  return match ? Number(match[1]) : undefined;
+};
 
 export const ReleaseFile = Schema.Struct({
   path: Schema.String,

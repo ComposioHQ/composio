@@ -30,7 +30,7 @@ export const ReleaseRun = Schema.Struct({
 });
 export type ReleaseRun = typeof ReleaseRun.Type;
 
-export const ReleaseJob = Schema.Struct({
+const ReleaseJob = Schema.Struct({
   name: Schema.String,
   status: Schema.optionalKey(Schema.String),
   conclusion: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -42,7 +42,6 @@ export const ReleaseJob = Schema.Struct({
     })
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
 });
-export type ReleaseJob = typeof ReleaseJob.Type;
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
@@ -183,16 +182,6 @@ export const getRun = (id: string) =>
     return yield* request('GET', `${REPOSITORY_PATH}/actions/runs/${runId}`, ReleaseRun);
   });
 
-export const rerunFailedJobs = (id: string) =>
-  Effect.gen(function* () {
-    const runId = yield* Schema.decodeUnknownEffect(RunId)(id);
-    yield* request(
-      'POST',
-      `${REPOSITORY_PATH}/actions/runs/${runId}/rerun-failed-jobs`,
-      Schema.Unknown
-    );
-  });
-
 export const decodeBase64Content = (content: string) =>
   Effect.fromResult(Base64.decodeString(content.replace(/\s/g, '')));
 
@@ -212,11 +201,11 @@ export const fileAt = (path: string, sha: string) =>
 export const fileAtOrNull = (path: string, sha: string) =>
   Effect.map(fileAt(path, sha), Option.getOrNull);
 
-/** Every job of a run, across pages. */
-export const jobs = (id: string) =>
+/** A run's jobs across pages: from every attempt, or only from the latest one. */
+export const jobs = (id: string, filter: 'all' | 'latest' = 'all') =>
   Stream.runCollect(
     paginate(
-      `${REPOSITORY_PATH}/actions/runs/${id}/jobs?filter=all`,
+      `${REPOSITORY_PATH}/actions/runs/${id}/jobs?filter=${filter}`,
       Schema.Struct({ jobs: Schema.Array(ReleaseJob) }),
       body => body.jobs
     )

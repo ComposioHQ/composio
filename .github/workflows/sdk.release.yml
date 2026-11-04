@@ -25,10 +25,6 @@ on:
         description: Original run ID; retry ignores new bump choices
         type: string
         required: false
-  # Only publication-status listens: it reports each finished tag run.
-  workflow_run:
-    workflows: ['SDK release']
-    types: [completed]
   pull_request_target:
     branches: [next]
     types: [closed]
@@ -59,7 +55,6 @@ jobs:
       queue: max
     outputs:
       prepare: ${{ steps.authorize.outputs.prepare }}
-      reuse-patch: ${{ steps.authorize.outputs.reuse-patch }}
       batch: ${{ steps.authorize.outputs.batch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -82,7 +77,7 @@ jobs:
         run: bun scripts/sdk-release/batch.ts authorize
       - name: Retain authorized release input
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: steps.authorize.outputs.new-batch == 'true'
+        if: steps.authorize.outputs.prepare == 'true'
         with:
           name: sdk-authorized-batch
           path: sdk-release-batch.json
@@ -91,7 +86,7 @@ jobs:
 
   prepare:
     needs: authorize
-    if: needs.authorize.outputs.prepare == 'true' && needs.authorize.outputs.reuse-patch != 'true'
+    if: needs.authorize.outputs.prepare == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -127,7 +122,7 @@ jobs:
 
   release-pr:
     needs: [authorize, prepare]
-    if: always() && needs.authorize.outputs.prepare == 'true' && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
+    if: needs.authorize.outputs.prepare == 'true'
     runs-on: ubuntu-latest
     environment: sdk-release-control
     concurrency:
@@ -412,8 +407,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    outputs:
-      registry-verified: ${{ steps.verified.outputs.registry-verified }}
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -436,30 +430,37 @@ jobs:
         run: bun scripts/sdk-release/registry.ts verify
       - name: Verify fresh public installations, strict TypeScript, Python imports and typing, and dependency health
         run: bun scripts/sdk-release/consumers.ts
-      - id: verified
-        run: echo 'registry-verified=true' >> "$GITHUB_OUTPUT"
       - name: Start docs maintenance for this release
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.run_id }}
         run: gh workflow run docs.sdk-change-sync.yml --repo "$GITHUB_REPOSITORY" --ref next -f run_id="$RUN_ID"
+      # A failed comment must not fail this job: docs maintenance trusts its conclusion.
+      - name: Report the published versions on the request issue
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/sdk-release/tag-run.ts released
 
-  publication-status:
+  report-failure:
+    name: Report a failed release run
+    needs:
+      - select-candidates
+      - candidate
+      - candidates-ready
+      - publication-preflight
+      - npm-publisher-preflight
+      - pypi-publisher-preflight
+      - publish-npm
+      - publish-pypi
+      - registry-verification
     if: >-
-      github.repository == 'ComposioHQ/composio' &&
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.event == 'push' &&
-      startsWith(github.event.workflow_run.head_branch, 'sdk-release/') &&
-      github.ref == 'refs/heads/next'
+      failure() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest
-    environment: sdk-release-control
-    concurrency:
-      group: sdk-release-controller
-      cancel-in-progress: false
-      queue: max
-    outputs:
-      registry-verified: ${{ steps.report.outputs.registry-verified }}
-      original-run-id: ${{ steps.report.outputs.original-run-id }}
+    permissions:
+      contents: read
+      actions: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -467,15 +468,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
-        id: sdk-token
-        with:
-          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
-          owner: ComposioHQ
-          repositories: composio
-      - name: Update canonical request and PR publication status
-        id: report
+      - name: Name the failed jobs and the re-run on the request issue
         env:
-          SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
-        run: bun scripts/sdk-release/batch.ts report
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/sdk-release/tag-run.ts failed
