@@ -1,7 +1,7 @@
 ---
-title: Custom Tools and Toolkits
+title: Local Tools and Toolkits
 description: Define local tools that run in-process alongside remote Composio tools
-keywords: [custom tools, custom toolkits, experimental, local tools, proxy execute]
+keywords: [local tools, local toolkits, custom tools, custom toolkits, experimental, proxy execute]
 experimental: true
 ---
 
@@ -9,16 +9,18 @@ For a complete agent that combines an internal lookup with a public API, follow 
 
 If you already have your own tool definitions, start with [Managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). You can call the authenticated proxy from your code without adopting the experimental session-extension API below.
 
-Custom tools let you define tools that run in-process alongside remote Composio tools within a session. You have three patterns:
+Local tools let you define tools that run in-process alongside remote Composio tools within a session. You have three patterns:
 
 - **Standalone tools**: internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules).
 - **Extension tools**: wrap a Composio toolkit's API with custom business logic via `extendsToolkit` / `extends_toolkit`, using `ctx.proxyExecute()` / `ctx.proxy_execute()` for authenticated requests.
-- **Custom toolkits**: group related standalone tools under a namespace.
+- **Local toolkits**: group related standalone tools under a namespace.
+
+Local tools were previously called custom tools. The SDK options keep their names: `customTools` / `custom_tools` and `customToolkits` / `custom_toolkits`.
 
 <IntegrationTabs tabs={[
   { value: "standalone", label: "Standalone Tool" },
   { value: "extension", label: "Extension Tool" },
-  { value: "toolkit", label: "Custom Toolkit" },
+  { value: "toolkit", label: "Local Toolkit" },
 ]}>
 
 <IntegrationContent value="standalone">
@@ -122,7 +124,7 @@ const getUserProfile = experimental_createTool("GET_USER_PROFILE", {
 <Step>
 **Bind to a session**
 
-Pass custom tools via the `experimental` option. `session.tools()` returns both remote Composio tools and your custom tools.
+Pass local tools via the `experimental` option. `session.tools()` returns both remote Composio tools and your local tools.
 
 {/* code-example: no-api reason="binding custom tools needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -292,7 +294,7 @@ const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
 <Step>
 **Bind to a session**
 
-Pass custom tools via the `experimental` option. Extension tools inherit auth from the toolkit specified in `extendsToolkit`.
+Pass local tools via the `experimental` option. Extension tools inherit auth from the toolkit specified in `extendsToolkit`.
 
 {/* code-example: no-api reason="binding custom tools needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -377,7 +379,7 @@ const composio = new Composio({ apiKey: "your_api_key" });
 <Step>
 **Create the toolkit**
 
-A custom toolkit groups related standalone tools under a namespace. Tools inside a toolkit cannot use `extendsToolkit`.
+A local toolkit groups related standalone tools under a namespace. Tools inside a toolkit cannot use `extendsToolkit`.
 
 {/* code-example: no-api reason="custom toolkits and their tool handlers are defined in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -442,7 +444,7 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
 <Step>
 **Bind to a session**
 
-Pass custom toolkits via the `experimental` option. `session.tools()` returns both remote Composio tools and your custom toolkit's tools.
+Pass local toolkits via the `experimental` option. `session.tools()` returns both remote Composio tools and your local toolkit's tools.
 
 {/* code-example: no-api reason="binding custom toolkits needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -487,10 +489,10 @@ const tools = await session.tools();
 
 </IntegrationTabs>
 
-## Preloading custom tools
+## Preloading local tools
 
-Custom tools are searchable by default. Set `preload: true` / `preload=True` on a
-custom tool when it should be returned directly from `session.tools()`. Toolkit
+Local tools are searchable by default. Set `preload: true` / `preload=True` on a
+local tool when it should be returned directly from `session.tools()`. Toolkit
 preload applies to all tools in that toolkit; set `preload: false` /
 `preload=False` on one tool to opt it out.
 
@@ -571,22 +573,22 @@ console.log(tools.map((tool) => tool.name));
 
 ## Meta tools integration
 
-Custom tools work automatically with Composio's meta tools:
+Local tools work automatically with Composio's meta tools:
 
 | Meta tool | Behavior |
 |-----------|----------|
-| `COMPOSIO_SEARCH_TOOLS` | Includes custom tools in search results, with slight priority for tools that don't require auth |
-| `COMPOSIO_GET_TOOL_SCHEMAS` | Returns schemas for custom tools alongside remote tools |
-| `COMPOSIO_MULTI_EXECUTE_TOOL` | Runs custom tools in-process while remote tools go to the backend, merging results transparently |
+| `COMPOSIO_SEARCH_TOOLS` | Includes local tools in search results, with slight priority for tools that don't require auth |
+| `COMPOSIO_GET_TOOL_SCHEMAS` | Returns schemas for local tools alongside remote tools |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | Runs local tools in-process while remote tools go to the backend, merging results transparently |
 | `COMPOSIO_MANAGE_CONNECTIONS` | Handles auth for extension tools. If a tool extends `gmail`, the agent can prompt the user to connect Gmail |
 
 <Callout type="info">
-Custom tools are not supported in the sandbox.
+Local tools are not supported in the sandbox.
 </Callout>
 
 ## Context object (`ctx`)
 
-Every custom tool's `execute` function receives `(input, ctx)`. Use `ctx` to access the current user, make authenticated API requests, or call other Composio tools.
+Every local tool's `execute` function receives `(input, ctx)`. Use `ctx` to access the current user, make authenticated API requests, or call other Composio tools.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -595,7 +597,7 @@ Every custom tool's `execute` function receives `(input, ctx)`. Use `ctx` to acc
 |-------------------|-------------|
 | `ctx.user_id` | The userID for the current session |
 | `ctx.proxy_execute(toolkit, endpoint, method, body=None, parameters=[])` | Make an authenticated HTTP request via Composio's auth layer |
-| `ctx.execute(tool_slug, arguments)` | Execute any Composio native tool from within your custom tool |
+| `ctx.execute(tool_slug, arguments)` | Execute any Composio native tool from within your local tool |
 
 </Tab>
 <Tab value="TypeScript">
@@ -604,7 +606,7 @@ Every custom tool's `execute` function receives `(input, ctx)`. Use `ctx` to acc
 |-------------------|-------------|
 | `ctx.userId` | The userID for the current session |
 | `ctx.proxyExecute({ toolkit, endpoint, method, body?, parameters? })` | Make an authenticated HTTP request via Composio's auth layer |
-| `ctx.execute(toolSlug, args)` | Execute any Composio native tool from within your custom tool |
+| `ctx.execute(toolSlug, args)` | Execute any Composio native tool from within your local tool |
 
 </Tab>
 </Tabs>
@@ -635,9 +637,9 @@ const customToolkits = session.customToolkits();
 </Tab>
 </Tabs>
 
-## Reusing a session with custom tools
+## Reusing a session with local tools
 
-When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `composio.use()`, you can attach custom tools at the same time:
+When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `composio.use()`, you can attach local tools at the same time:
 
 {/* code-example: no-api reason="attaching custom tools on use() needs the SDK to run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -671,7 +673,7 @@ const session = await composio.use("session_id", {
 
 ## Programmatic execution
 
-Use `session.execute()` to run custom tools directly, outside of an agent loop. Custom tools execute in-process; remote tools are sent to the backend automatically.
+Use `session.execute()` to run local tools directly, outside of an agent loop. Local tools execute in-process; remote tools are sent to the backend automatically.
 
 {/* code-example: no-api reason="custom tools execute in-process in the SDK, not on the backend" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -716,8 +718,8 @@ Slugs exposed to the agent are automatically prefixed with `LOCAL_` and the tool
 
 Your slugs cannot start with `LOCAL_`. This prefix is reserved.
 
-Use the final `LOCAL_*` slug when you call a custom tool directly. The original slug still works
-when it identifies exactly one local tool. If two custom toolkits both define `SEARCH`, call
+Use the final `LOCAL_*` slug when you call a local tool directly. The original slug still works
+when it identifies exactly one local tool. If two local toolkits both define `SEARCH`, call
 `LOCAL_CATALOG_SEARCH` or `LOCAL_SUPPORT_SEARCH`. Calling `SEARCH` directly raises an error with the
 qualified slugs instead of choosing one toolkit silently.
 

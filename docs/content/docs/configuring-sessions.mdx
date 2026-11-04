@@ -32,7 +32,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 By default, a session has access to every toolkit in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
 
-You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
+You can also attach local tools and local toolkits that run in-process alongside Composio tools. See [Local tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
 <Callout type="warn">
 Both SDKs pass product and runtime identity through the API client's `identity` option. If you configure custom default or request headers, remove identity headers such as `x-source`, `x-framework`, `x-sdk-version`, and `x-client-*`. The client rejects attempts to override them.
@@ -170,7 +170,7 @@ An explicit empty allowlist means no app toolkits at all. Omitting `toolkits` ke
 | `{ enable: [] }` | No app toolkit is listed, searchable, executable, or served over MCP |
 | `{ disable: [] }` | Every toolkit in the catalog is available |
 
-Use an empty allowlist when a session should only run [custom tools](/docs/extending-sessions/custom-tools-and-toolkits) or session helpers. Meta tools such as `COMPOSIO_SEARCH_TOOLS`, connection management, and the sandbox keep their own enablement, so `session.tools()` can still return them.
+Use an empty allowlist when a session should only run [local tools](/docs/extending-sessions/custom-tools-and-toolkits) or session helpers. Meta tools such as `COMPOSIO_SEARCH_TOOLS`, connection management, and the sandbox keep their own enablement, so `session.tools()` can still return them.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -718,7 +718,7 @@ curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSIO
 </Tab>
 </Tabs>
 
-For SDK custom tools, set `preload: true` on the custom tool or custom toolkit. See [Preloading custom tools](/docs/extending-sessions/custom-tools-and-toolkits#preloading-custom-tools).
+For SDK local tools, set `preload: true` on the local tool or local toolkit. See [Preloading local tools](/docs/extending-sessions/custom-tools-and-toolkits#preloading-local-tools).
 
 To preload every tool allowed by the session filters, use the `preload.tools = "all"` shortcut (`preload={"tools": "all"}` in Python, `preload: { tools: "all" }` in TypeScript). The `all` shorthand works for both Composio tools and SDK custom tools.
 
@@ -1161,7 +1161,7 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION
 
 Both blocks are on by default. `search` controls the session's search helper, so disabling it leaves the agent with the tools you preloaded. `execute.enableMultiExecute` controls whether the agent can run several tool calls in one request. `manageConnections.enableConnectionRemoval` is update-only as well, and controls whether the session exposes the connection-removal tool.
 
-The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. `sessionConfigId` applies a [saved Session config](/docs/session-configs#applying-a-config-to-an-existing-session) and can't be combined with `toolkits`, `tools`, or `tags`. The `experimental` block on update is a different field from the `experimental` option on `create()`, which holds [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
+The `experimental` block on update holds server-side session settings: `permissions`, `linkUrlOverwrite`, `fastMode`, `submitFeedback`, and `sessionConfigId`. `sessionConfigId` applies a [saved Session config](/docs/session-configs#applying-a-config-to-an-existing-session) and can't be combined with `toolkits`, `tools`, or `tags`. The `experimental` block on update is a different field from the `experimental` option on `create()`, which holds [local tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) that run in your process, so `experimental: null` on an update leaves those alone.
 
 ### Multi-account mode after an update
 
