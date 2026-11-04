@@ -239,7 +239,7 @@ jobs:
 
   candidates-ready:
     needs: [select-candidates, candidate]
-    if: always() && needs.select-candidates.result == 'success' && needs.candidate.result == 'success'
+    if: "!cancelled() && needs.select-candidates.result == 'success' && needs.candidate.result == 'success'"
     runs-on: ubuntu-latest
     steps:
       - name: Require every selected candidate before registry upload
@@ -316,7 +316,7 @@ jobs:
       - npm-publisher-preflight
       - pypi-publisher-preflight
     if: >-
-      always() && needs.select-candidates.outputs.typescript == 'true' &&
+      !cancelled() && needs.select-candidates.outputs.typescript == 'true' &&
       needs.publication-preflight.result == 'success' &&
       needs.npm-publisher-preflight.result == 'success' &&
       (needs.pypi-publisher-preflight.result == 'success' || (needs.pypi-publisher-preflight.result == 'skipped' && needs.select-candidates.outputs.python != 'true'))
@@ -351,7 +351,7 @@ jobs:
       - npm-publisher-preflight
       - pypi-publisher-preflight
     if: >-
-      always() && needs.select-candidates.outputs.python == 'true' &&
+      !cancelled() && needs.select-candidates.outputs.python == 'true' &&
       needs.publication-preflight.result == 'success' &&
       needs.pypi-publisher-preflight.result == 'success' &&
       (needs.npm-publisher-preflight.result == 'success' || (needs.npm-publisher-preflight.result == 'skipped' && needs.select-candidates.outputs.typescript != 'true'))
@@ -385,7 +385,7 @@ jobs:
     name: Verify public SDK packages
     needs: [select-candidates, candidate, publication-preflight, publish-npm, publish-pypi]
     if: >-
-      always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
+      !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
       needs.publication-preflight.result == 'success' &&
       (needs.publish-npm.result == 'success' || needs.select-candidates.outputs.typescript != 'true') &&
       (needs.publish-pypi.result == 'success' || needs.select-candidates.outputs.python != 'true')
@@ -420,7 +420,7 @@ jobs:
     name: Announce the verified release
     needs: [registry-verification]
     if: >-
-      always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
+      !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-release/') &&
       needs.registry-verification.result == 'success'
     runs-on: ubuntu-latest
     permissions:
