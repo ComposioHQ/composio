@@ -51,7 +51,7 @@ describe('Experimental.customToolkits', () => {
       const result = await customToolkits.create(
         {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           logoFile: { content: 'aGVsbG8=', mimeType: 'image/png' },
           authSchemes: [
             {
@@ -118,7 +118,7 @@ describe('Experimental.customToolkits', () => {
 
       const result = await customToolkits.create({
         name: 'My Toolkit',
-        appUrl: 'https://mcp.example.com/mcp',
+        mcpUrl: 'https://mcp.example.com/mcp',
         authSchemes: [{ mode: 'NO_AUTH' }],
         userId: 'all',
       });
@@ -126,10 +126,29 @@ describe('Experimental.customToolkits', () => {
       expect(result).toEqual({ slug: 'CUSTOM_MY_TOOLKIT_K7F2Q', connectLink: null });
     });
 
+    it('sends the deprecated appUrl as the MCP URL', async () => {
+      mockClient.custom.createToolkit.mockResolvedValue({
+        slug: 'CUSTOM_MY_TOOLKIT_K7F2Q',
+        connect_link: null,
+      });
+
+      await customToolkits.create({
+        name: 'My Toolkit',
+        appUrl: 'https://mcp.example.com/mcp',
+        authSchemes: [{ mode: 'NO_AUTH' }],
+        userId: 'all',
+      });
+
+      const [body] = mockClient.custom.createToolkit.mock.calls[0];
+      expect(body).toMatchObject({ app_url: 'https://mcp.example.com/mcp' });
+    });
+
     it.each([
       ['no user ID', { userId: undefined }],
       ['no auth schemes', { authSchemes: [] }],
-      ['an app URL that is not a URL', { appUrl: 'not a url' }],
+      ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
+      ['no MCP URL', { mcpUrl: undefined }],
+      ['both mcpUrl and the deprecated appUrl', { appUrl: 'https://mcp.example.com/mcp' }],
       [
         'an additional API key field without a display name',
         {
@@ -146,7 +165,7 @@ describe('Experimental.customToolkits', () => {
       await expect(
         customToolkits.create({
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'NO_AUTH' }],
           userId: 'all',
           ...(override as object),

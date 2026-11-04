@@ -134,6 +134,27 @@ class ExperimentalUsage:
         return self._require_client().project.usage.retrieve(entity_type, **params)
 
 
+class CustomToolkitCreateParams(te.TypedDict, total=False):
+    """Params for :meth:`ExperimentalCustomToolkits.create`. Pass ``mcp_url``;
+    ``app_url`` is its deprecated name."""
+
+    name: te.Required[str]
+    mcp_url: str
+    app_url: str
+    logo_file: custom_create_toolkit_params.LogoFile
+    auth_schemes: te.Required[
+        t.Iterable[
+            custom_create_toolkit_params.AuthSchemeVariant0
+            | custom_create_toolkit_params.AuthSchemeVariant1
+            | custom_create_toolkit_params.AuthSchemeVariant2
+        ]
+    ]
+    user_id: te.Required[str]
+    callback_url: str
+
+
+_APP_URL_DEPRECATION = "experimental.custom_toolkits.create(app_url=...) is deprecated. Pass mcp_url instead."
+
 _UPSERT_DEPRECATION = (
     "experimental.custom_toolkits.upsert() is deprecated. Use create() for a "
     "new toolkit and update(slug, ...) to change its name, logo or API key field."
@@ -169,7 +190,7 @@ class ExperimentalCustomToolkits:
 
     def create(
         self,
-        **params: te.Unpack[custom_create_toolkit_params.CustomCreateToolkitParams],
+        **params: te.Unpack[CustomToolkitCreateParams],
     ) -> custom_create_toolkit_response.CustomCreateToolkitResponse:
         """
         Create a custom MCP toolkit and return its generated slug.
@@ -177,11 +198,12 @@ class ExperimentalCustomToolkits:
 
         Set ``user_id`` to ``"all"`` to share the toolkit with every user in
         the project, or to a user ID to make it private to that user.
-        ``app_url``, ``auth_schemes`` and ``user_id`` cannot change later:
+        ``mcp_url``, ``auth_schemes`` and ``user_id`` cannot change later:
         delete and re-create the toolkit instead.
 
         :param name: Display name of the toolkit.
-        :param app_url: The MCP server URL. Must use https.
+        :param mcp_url: The MCP server URL. Must use https.
+        :param app_url: Deprecated name for ``mcp_url``.
         :param auth_schemes: How users authenticate to the MCP server.
         :param user_id: ``"all"``, or the user ID the toolkit is private to.
         :param logo_file: Optional base64 PNG or JPEG logo.
@@ -193,7 +215,7 @@ class ExperimentalCustomToolkits:
         Example:
             toolkit = composio.experimental.custom_toolkits.create(
                 name="Internal API",
-                app_url="https://mcp.internal.example.com/mcp",
+                mcp_url="https://mcp.internal.example.com/mcp",
                 auth_schemes=[
                     {
                         "mode": "API_KEY",
@@ -203,7 +225,31 @@ class ExperimentalCustomToolkits:
                 user_id="user_123",
             )
         """
-        return self._require_client().custom.create_toolkit(**params)
+        from composio import exceptions
+
+        client = self._require_client()
+        mcp_url = params.get("mcp_url")
+        app_url = params.get("app_url")
+        url = mcp_url or app_url
+        if url is None or (mcp_url is not None and app_url is not None):
+            raise exceptions.ValidationError(
+                "Pass mcp_url (app_url is deprecated), not both"
+            )
+        if app_url is not None:
+            warnings.warn(
+                _APP_URL_DEPRECATION,
+                exceptions.ComposioDeprecationWarning,
+                stacklevel=2,
+            )
+        # The API reads app_url as mcp_url. Send mcp_url once composio-client has it.
+        return client.custom.create_toolkit(
+            name=params["name"],
+            app_url=url,
+            auth_schemes=params["auth_schemes"],
+            user_id=params["user_id"],
+            logo_file=none_to_omit(params.get("logo_file")),
+            callback_url=none_to_omit(params.get("callback_url")),
+        )
 
     def update(
         self,
