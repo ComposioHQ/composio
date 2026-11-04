@@ -54,6 +54,7 @@ from composio.core.models.tool_router_session import (
     ToolRouterSessionWithMcp,
 )
 from composio.exceptions import (
+    ComposioDeprecationWarning,
     InvalidParams,
     MCPDestinationError,
     SessionConfigConflictError,
@@ -892,7 +893,7 @@ class TestToolRouter:
             tool_router.create(
                 user_id="user_123",
                 preload={"tools": ["GREP"]},
-                experimental={"custom_tools": [grep]},
+                experimental={"local_tools": [grep]},
             )
 
         mock_client.tool_router.session.create.assert_not_called()
@@ -984,7 +985,7 @@ class TestToolRouter:
             session_preset=SESSION_PRESET_DIRECT_TOOLS,
             toolkits=["github"],
             preload={"tools": ["GITHUB_CREATE_ISSUE"]},
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
@@ -1278,7 +1279,7 @@ class TestToolRouter:
         mock_custom_tool.extends_toolkit = None
         mock_response.experimental.custom_tools = [mock_custom_tool]
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
 
         mock_client.tool_router.session.attach.assert_called_once()
         kwargs = mock_client.tool_router.session.attach.call_args.kwargs
@@ -1286,8 +1287,8 @@ class TestToolRouter:
         assert "custom_toolkits" not in kwargs["experimental"]
         mock_client.tool_router.session.retrieve.assert_not_called()
         mock_client.post.assert_not_called()
-        assert session.custom_tools()[0].slug == "SERVER_GREP"
-        assert session.custom_tools()[0].name == "Grep"
+        assert session.local_tools()[0].slug == "SERVER_GREP"
+        assert session.local_tools()[0].name == "Grep"
 
     @patch("composio.core.models.tools.Tools")
     def test_use_session_attaches_preloaded_custom_tools(
@@ -1330,7 +1331,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
 
         mock_client.tool_router.session.attach.assert_called_once()
@@ -1386,7 +1387,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
         session.search(query="search local text")
 
@@ -1734,7 +1735,7 @@ class TestToolRouter:
 
         session = tool_router.create(
             user_id="user_123",
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
         result = session.tools()
 
@@ -1901,6 +1902,192 @@ class TestToolRouter:
             "retrieved_session"
         )
         mock_client.post.assert_not_called()
+
+
+def _local_grep_tool():
+    @experimental_api.tool(slug="GREP", name="Grep", description="Search local text")
+    def grep(input: GrepInput, ctx):
+        return {"matches": []}
+
+    return grep
+
+
+def _local_role_toolkit():
+    toolkit = experimental_api.Toolkit(
+        slug="ROLES", name="Roles", description="Manage roles"
+    )
+
+    @toolkit.tool(slug="SET_ROLE")
+    def set_role(input: GrepInput, ctx):
+        """Set a role."""
+        return {"ok": True}
+
+    return toolkit
+
+
+def _mock_local_tools_response(response):
+    response.experimental = MagicMock()
+    response.experimental.assistive_prompt = None
+    server_tool = MagicMock()
+    server_tool.slug = "LOCAL_GREP"
+    server_tool.original_slug = "GREP"
+    server_tool.extends_toolkit = None
+    response.experimental.custom_tools = [server_tool]
+    server_toolkit = MagicMock()
+    server_toolkit.slug = "ROLES"
+    server_toolkit.tools = [
+        MagicMock(slug="LOCAL_ROLES_SET_ROLE", original_slug="SET_ROLE")
+    ]
+    response.experimental.custom_toolkits = [server_toolkit]
+
+
+class TestLocalToolsOptions:
+    """`local_tools`/`local_toolkits` and their deprecated `custom_*` aliases."""
+
+    def test_create_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "local_tools": [tool],
+                    "local_toolkits": [toolkit],
+                },
+            )
+
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+        assert [tk.slug for tk in session.local_toolkits()] == ["ROLES"]
+
+    def test_create_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "custom_tools": [tool],
+                    "custom_toolkits": [toolkit],
+                },
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert session.local_tools()[0].slug == "LOCAL_GREP"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_create_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.create(
+                user_id="user_123",
+                experimental=t.cast(
+                    ToolRouterExperimentalConfig,
+                    {new_name: [value()], old_name: [value()]},
+                ),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    def test_use_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.use(
+                "session_123",
+                local_tools=[tool],
+                local_toolkits=[toolkit],
+            )
+
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+
+    def test_use_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.use(
+                "session_123",
+                custom_tools=[tool],
+                custom_toolkits=[toolkit],
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert session.local_toolkits()[0].slug == "ROLES"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_use_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.use("session_123", **{new_name: [value()], old_name: [value()]})
+
+        mock_client.tool_router.session.attach.assert_not_called()
+        mock_client.tool_router.session.retrieve.assert_not_called()
 
 
 class TestToolRouterTypes:
