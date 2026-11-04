@@ -85,3 +85,24 @@ describe("Redirects - destinations are valid", () => {
     expect(failures).toEqual([]);
   });
 });
+
+describe("Redirects - saved tool tag section links", () => {
+  test("legacy anchors survive the redirect alongside the renamed headings", async () => {
+    const res = await fetchPage("/docs/tool-tags", { timeout: 30_000 });
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(new URL(res.url).pathname).toBe("/docs/governance/tool-hints");
+
+    for (const id of [
+      "tags",
+      "how-tools-are-tagged",
+      "using-tags-in-a-session",
+      "hints",
+      "how-tools-get-hints",
+      "using-hints-in-a-session",
+    ]) {
+      expect(html).toContain(`id="${id}"`);
+    }
+  });
+});

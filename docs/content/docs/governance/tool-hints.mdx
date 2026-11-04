@@ -6,6 +6,8 @@ keywords: [tags, readOnlyHint, createHint, updateHint, destructiveHint, governan
 
 Every tool has a **hint** that describes the action it takes: reading, creating, updating or deleting. In [sessions](/docs/configuring-sessions), you can use these hints to configure the tools available in the session.
 
+<span id="tags" className="block scroll-m-28" />
+
 ## Hints
 
 | Hint | The tool | For example |
@@ -15,9 +17,13 @@ Every tool has a **hint** that describes the action it takes: reading, creating,
 | `updateHint` | Changes something that already exists, such as its content or settings. It doesn't delete anything. | Edit an issue, rename a file |
 | `destructiveHint` | Deletes something, such as a file, record or repository. A tool that can delete something has this hint, even if it also creates or updates. | Delete a file, delete a repository |
 
+<span id="how-tools-are-tagged" className="block scroll-m-28" />
+
 ## How tools get hints
 
 Composio assigns hints on a best-effort basis, based on each tool's description and behavior. For MCP tools, Composio infers them from the tool's description and the hints the MCP server provides.
+
+<span id="using-tags-in-a-session" className="block scroll-m-28" />
 
 ## Using hints in a session
 
