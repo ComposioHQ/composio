@@ -17,8 +17,6 @@ permissions:
 jobs:
   build:
     name: Build SDK packages
-    outputs:
-      core_only: ${{ steps.release_mode.outputs.core_only }}
     defaults:
       run:
         working-directory: ./python
@@ -93,7 +91,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    if: github.event_name == 'push' && (vars.SDK_LEGACY_NEXT_PUBLISH_PAUSED != 'true' || needs.build.outputs.core_only == 'true')
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: pypi

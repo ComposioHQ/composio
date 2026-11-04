@@ -1,7 +1,7 @@
 import { Effect, FileSystem, Path, Schema } from 'effect';
 import { Toml } from 'effect/encoding';
 import semver from 'semver';
-import { ensure, fail, readFile, spawn, writeFile } from './runtime';
+import { ensure, fail, readFile, spawn, withoutReleaseTokens, writeFile } from './runtime';
 
 const PyProject = Schema.Struct({
   project: Schema.Struct({ name: Schema.String, version: Schema.String }),
@@ -128,7 +128,7 @@ const editPyProject = (absolutePath: string, directory: string, version: string)
   });
 
 const lockWorkspace = (cwd: string) =>
-  spawn('uv', ['lock'], { cwd }).pipe(
+  spawn('uv', ['lock'], { cwd, env: withoutReleaseTokens }).pipe(
     Effect.mapError(error => error.message),
     Effect.flatMap(result =>
       result.exitCode === 0 ? Effect.void : Effect.fail(result.stderr || 'unknown failure')

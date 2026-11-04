@@ -414,7 +414,7 @@ describe('guarded SDK release pilot', () => {
       calls.push(url);
       return new Response(
         JSON.stringify(
-          url.includes('pypi.org')
+          new URL(url).hostname === 'pypi.org'
             ? { releases: { '0.31.0': [{ yanked: false }] } }
             : { version: '0.28.0' }
         ),
