@@ -1,12 +1,18 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { commitDocsPatch, docsInputSchema } from '../scripts/sdk-release/docs';
-import { GitHubReleaseClient } from '../scripts/sdk-release/github';
-import { batchPath, type ReleaseBatch } from '../scripts/sdk-release/source';
+import { Schema } from 'effect';
+import { Base64 } from 'effect/encoding';
+import { DocsInput, commitDocsPatch } from '../scripts/sdk-release/docs';
+import { run, spawn, withoutReleaseTokens } from '../scripts/sdk-release/runtime';
+import { BATCH_PATH, type ReleaseBatch } from '../scripts/sdk-release/source';
+import {
+  exists,
+  readText,
+  remove,
+  runRelease,
+  temporaryDirectories,
+  writeText,
+  type Fetch,
+} from './sdk-release-harness';
 
 const source = 'a'.repeat(40);
 const pending = 'b'.repeat(40);
@@ -43,77 +49,70 @@ const batch: ReleaseBatch = {
   },
 };
 
-function docsInput(sourceSha = source, branchHead = pending, before: string | null = 'Current\n') {
-  return docsInputSchema.parse({
+function docsInput(
+  sourceSha = source,
+  branchHead = pending,
+  before: string | null = 'Current\n',
+  after = 'Pending\n'
+) {
+  return Schema.decodeUnknownSync(DocsInput)({
     runId: 51,
     batch,
     sourceSha,
     verifiedRunId: 51,
     verifiedSourceSha: released,
     branchHead,
-    pendingFiles: [{ path: guide, before, after: 'Pending\n' }],
+    pendingFiles: [{ path: guide, before, after }],
     targets: { '@composio/core': '1.0.1' },
     verifiedLanguages: ['typescript'],
     summaries: [],
   });
 }
 
-const roots: string[] = [];
-afterEach(async () => {
-  await Promise.all(roots.splice(0).map(cwd => rm(cwd, { recursive: true, force: true })));
-});
+const roots = temporaryDirectories('sdk-docs-prepare-');
+afterEach(() => roots.cleanup());
 
-function git(cwd: string, ...args: string[]) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  if (result.status !== 0) throw new Error(result.stderr || result.stdout);
-  return result.stdout.trim();
-}
+const git = async (cwd: string, ...args: string[]) =>
+  (await runRelease(run('git', args, { cwd }))).trim();
+const docsCli = decodeURIComponent(
+  new URL('../scripts/sdk-release/docs.ts', import.meta.url).pathname
+);
 
 async function prepareFixture(current: string | null, pendingText: string) {
-  const cwd = await mkdtemp(join(tmpdir(), 'sdk-docs-prepare-'));
-  roots.push(cwd);
-  git(cwd, 'init', '--initial-branch=next');
-  git(cwd, 'config', 'user.name', 'SDK release fixture');
-  git(cwd, 'config', 'user.email', 'sdk-release@example.invalid');
-  await mkdir(join(cwd, 'docs/content/docs'), { recursive: true });
-  await writeFile(join(cwd, guide), 'Introduction\n\nOriginal first\n\nOriginal last\n');
-  await writeFile(
-    join(cwd, 'docs/package.json'),
+  const cwd = await roots.create();
+  await git(cwd, 'init', '--initial-branch=next');
+  await git(cwd, 'config', 'user.name', 'SDK release fixture');
+  await git(cwd, 'config', 'user.email', 'sdk-release@example.invalid');
+  await writeText(`${cwd}/${guide}`, 'Introduction\n\nOriginal first\n\nOriginal last\n');
+  await writeText(
+    `${cwd}/docs/package.json`,
     JSON.stringify({ dependencies: { '@composio/core': '^1.0.0' } })
   );
-  await writeFile(
-    join(cwd, 'docs/bun.lock'),
+  await writeText(
+    `${cwd}/docs/bun.lock`,
     JSON.stringify({ packages: { '@composio/core': ['@composio/core@1.0.0'] } })
   );
-  git(cwd, 'add', '.');
-  git(cwd, 'commit', '-m', 'Initial guides');
-  git(cwd, 'checkout', '-b', maintenanceBranch);
-  await writeFile(join(cwd, guide), pendingText);
-  git(cwd, 'commit', '-am', 'Pending guide edits');
-  const branchHead = git(cwd, 'rev-parse', 'HEAD');
-  git(cwd, 'checkout', 'next');
-  if (current === null) await rm(join(cwd, guide));
-  else await writeFile(join(cwd, guide), current);
-  git(cwd, 'commit', '-am', 'Current protected guide edits');
-  const sourceSha = git(cwd, 'rev-parse', 'HEAD');
-  const inputPath = join(cwd, 'input.json');
-  const input = docsInput(sourceSha, branchHead, current);
-  input.pendingFiles[0].after = pendingText;
-  await writeFile(inputPath, JSON.stringify(input));
-  const result = spawnSync(
-    process.execPath,
-    [fileURLToPath(new URL('../scripts/sdk-release/docs.ts', import.meta.url)), 'prepare'],
-    {
+  await git(cwd, 'add', '.');
+  await git(cwd, 'commit', '-m', 'Initial guides');
+  await git(cwd, 'checkout', '-b', maintenanceBranch);
+  await writeText(`${cwd}/${guide}`, pendingText);
+  await git(cwd, 'commit', '-am', 'Pending guide edits');
+  const branchHead = await git(cwd, 'rev-parse', 'HEAD');
+  await git(cwd, 'checkout', 'next');
+  if (current === null) await remove(`${cwd}/${guide}`);
+  else await writeText(`${cwd}/${guide}`, current);
+  await git(cwd, 'commit', '-am', 'Current protected guide edits');
+  const sourceSha = await git(cwd, 'rev-parse', 'HEAD');
+  const inputPath = `${cwd}/input.json`;
+  await writeText(
+    inputPath,
+    JSON.stringify(docsInput(sourceSha, branchHead, current, pendingText))
+  );
+  const result = await runRelease(
+    spawn(process.execPath, [docsCli, 'prepare'], {
       cwd,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        SDK_DOCS_INPUT: inputPath,
-        SDK_RELEASE_TOKEN: undefined,
-        GH_TOKEN: undefined,
-        GITHUB_TOKEN: undefined,
-      },
-    }
+      env: { SDK_DOCS_INPUT: inputPath, ...withoutReleaseTokens },
+    })
   );
   return { cwd, result, sourceSha };
 }
@@ -125,14 +124,14 @@ describe('docs prepare public CLI', () => {
       'Introduction\n\nOriginal first\n\nPending last\n'
     );
     expect(result.stderr).toBe('');
-    expect(result.status).toBe(0);
-    expect(await readFile(join(cwd, guide), 'utf8')).toBe(
+    expect(Number(result.exitCode)).toBe(0);
+    expect(await readText(`${cwd}/${guide}`)).toBe(
       'Introduction\n\nProtected first\n\nPending last\n'
     );
-    expect(await Bun.file(join(cwd, 'docs/package.json')).json()).toEqual({
+    expect(JSON.parse(await readText(`${cwd}/docs/package.json`))).toEqual({
       dependencies: { '@composio/core': '1.0.1' },
     });
-    expect(git(cwd, 'rev-parse', 'HEAD')).toBe(sourceSha);
+    expect(await git(cwd, 'rev-parse', 'HEAD')).toBe(sourceSha);
   });
 
   test('overlapping guide edits fail without replacing the protected content', async () => {
@@ -141,10 +140,12 @@ describe('docs prepare public CLI', () => {
       current,
       'Introduction\n\nPending first\n\nOriginal last\n'
     );
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('Pending guide edits conflict with current protected docs');
-    expect(await readFile(join(cwd, guide), 'utf8')).toBe(current);
-    expect(git(cwd, 'status', '--porcelain', '--', 'docs')).toBe('');
+    expect(Number(result.exitCode)).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Pending guide edits conflict with current protected docs'
+    );
+    expect(await readText(`${cwd}/${guide}`)).toBe(current);
+    expect(await git(cwd, 'status', '--porcelain', '--', 'docs')).toBe('');
   });
 
   test('pending edits cannot resurrect a guide deleted on protected next', async () => {
@@ -152,10 +153,12 @@ describe('docs prepare public CLI', () => {
       null,
       'Introduction\n\nPending first\n\nOriginal last\n'
     );
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('Pending guide edits conflict with a newer protected deletion');
-    expect(await Bun.file(join(cwd, guide)).exists()).toBe(false);
-    expect(git(cwd, 'status', '--porcelain', '--', 'docs')).toBe('');
+    expect(Number(result.exitCode)).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Pending guide edits conflict with a newer protected deletion'
+    );
+    expect(await exists(`${cwd}/${guide}`)).toBe(false);
+    expect(await git(cwd, 'status', '--porcelain', '--', 'docs')).toBe('');
   });
 });
 
@@ -175,7 +178,7 @@ function commitFixture(movement?: 'next' | 'pending') {
     run_attempt: 1,
     html_url: 'https://github.com/ComposioHQ/composio/actions/runs/51',
   };
-  const github = new GitHubReleaseClient('fixture-token', async (url, init) => {
+  const github: Fetch = async (url, init) => {
     const { pathname, search, origin } = new URL(String(url));
     if (origin !== 'https://api.github.com') throw new Error('Unexpected API origin');
     const path = `${pathname}${search}`.replace('/repos/ComposioHQ/composio', '');
@@ -210,7 +213,7 @@ function commitFixture(movement?: 'next' | 'pending') {
       if (contentPath) {
         const ref = new URL(String(url)).searchParams.get('ref');
         const content =
-          contentPath === batchPath && ref === released
+          contentPath === BATCH_PATH && ref === released
             ? JSON.stringify(batch)
             : contentPath === 'ts/packages/core/package.json' && ref === released
               ? JSON.stringify({ name: '@composio/core', version: '1.0.1' })
@@ -220,7 +223,7 @@ function commitFixture(movement?: 'next' | 'pending') {
                   ? 'Pending\n'
                   : undefined;
         if (content !== undefined)
-          return respond({ encoding: 'base64', content: Buffer.from(content).toString('base64') });
+          return respond({ encoding: 'base64', content: Base64.encode(content) });
       }
     }
     if (method === 'POST' && path === '/git/trees') return respond({ sha: '1'.repeat(40) });
@@ -232,7 +235,7 @@ function commitFixture(movement?: 'next' | 'pending') {
       return respond({ object: { sha: created } });
     if (method === 'POST' && path === '/pulls') return respond({ number: 9 });
     throw new Error(`Unexpected GitHub fixture request: ${method} ${path}`);
-  });
+  };
   const patch = {
     input: docsInput(),
     files: [{ path: guide, before: 'Current\n', after: 'Merged guide\n' }],
@@ -244,7 +247,7 @@ describe('docs commit controller', () => {
   for (const movement of ['next', 'pending'] as const) {
     test(`${movement} movement during commit preparation prevents a branch update`, async () => {
       const { github, patch, calls } = commitFixture(movement);
-      await expect(commitDocsPatch(github, patch)).rejects.toThrow(
+      await expect(runRelease(commitDocsPatch(patch), github)).rejects.toThrow(
         'Protected docs, verified release or pending guide edits changed'
       );
       expect(
@@ -265,7 +268,7 @@ describe('docs commit controller', () => {
 
   test('unchanged inputs update the existing branch without force and create one PR', async () => {
     const { github, patch, calls } = commitFixture();
-    expect(await commitDocsPatch(github, patch)).toEqual({ changed: true });
+    expect(await runRelease(commitDocsPatch(patch), github)).toEqual({ changed: true });
     expect(calls.filter(call => call.path === `/git/refs/heads/${maintenanceBranch}`)).toEqual([
       {
         method: 'PATCH',

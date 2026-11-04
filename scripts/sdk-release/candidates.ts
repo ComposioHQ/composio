@@ -1,91 +1,127 @@
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
-import { z } from 'zod';
+import { Config, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import { getPackages } from '@manypkg/get-packages';
 import {
-  candidateManifestSchema,
+  ActionArtifact,
+  CANDIDATE_MANIFEST,
+  CandidateManifest,
+  candidateArtifactName,
+  downloadCandidate,
+  mayRebuildMissingCandidate,
+  normalizeArtifactDigest,
   originalCandidates,
   reuseCandidate,
-  sha256,
   verifyCandidateFiles,
-  mayRebuildMissingCandidate,
+  type CandidateArtifact,
 } from './artifacts';
-import { GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './github';
-import { batchPath, releaseBatchSchema } from './source';
-import { runPreparationCommand } from './commands';
-import { downloadCandidate } from './artifact-download';
-import { discoverPythonPackages } from './python-metadata';
+import { GitHub, REPOSITORY_PATH, Sha, request } from './github';
+import { Language, REGISTRY_LANES } from './lanes';
+import type { SdkRelease } from './plan';
+import { discoverPythonPackages, type PythonReleasePackage } from './python-metadata';
+import {
+  ensure,
+  fail,
+  formatJson,
+  fromPromise,
+  readJson,
+  run,
+  runMain,
+  sha256Hex,
+  withoutReleaseTokens,
+  type ReleaseServices,
+} from './runtime';
+import { BATCH_PATH, ReleaseBatch } from './source';
 
-export async function registryInventoryEmpty(cwd: string): Promise<boolean> {
-  const batch = releaseBatchSchema.parse(await Bun.file(resolve(cwd, batchPath)).json());
-  const python = await discoverPythonPackages(cwd);
-  for (const release of batch.plan.releases) {
-    const targets =
-      release.language === 'python'
-        ? python.map(pkg => ({ name: pkg.name, version: release.newVersion, python: true }))
-        : [{ name: release.name, version: release.newVersion, python: false }];
-    for (const target of targets) {
-      const url = target.python
-        ? `https://pypi.org/pypi/${target.name}/${target.version}/json`
-        : `https://registry.npmjs.org/${encodeURIComponent(target.name)}/${target.version}`;
-      const response = await fetch(url, { redirect: 'error' });
-      if (response.ok) return false;
-      if (response.status !== 404)
-        throw new Error(`Cannot establish public registry inventory (${response.status})`);
+/** Package versions whose public presence means a lane may already have published. */
+const REGISTRY_TARGETS: Record<
+  Language,
+  (release: SdkRelease, python: ReadonlyArray<PythonReleasePackage>) => ReadonlyArray<string>
+> = {
+  typescript: release => [release.name],
+  python: (_release, python) => python.map(pkg => pkg.name),
+};
+
+const registryStatus = (url: string) =>
+  Effect.gen(function* () {
+    const client = yield* HttpClient.HttpClient;
+    const response = yield* client.get(url);
+    return response.status;
+  }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }));
+
+/** True when no planned version is public yet; any other registry answer than 404 is an error. */
+export const registryInventoryEmpty = (cwd: string) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const batch = yield* readJson(ReleaseBatch, path.resolve(cwd, BATCH_PATH));
+    const python = yield* discoverPythonPackages(cwd);
+    const urls = batch.plan.releases.flatMap(release =>
+      REGISTRY_TARGETS[release.language](release, python).map(name =>
+        REGISTRY_LANES[release.language].versionUrl(name, release.newVersion)
+      )
+    );
+    const statuses = yield* Effect.forEach(urls, registryStatus, { concurrency: 8 });
+    for (const status of statuses) {
+      if (status >= 200 && status < 300) return false;
+      if (status !== 404)
+        return yield* fail(`Cannot establish public registry inventory (${status})`);
     }
-  }
-  return true;
-}
+    return true;
+  });
 
-export async function buildTypescript(cwd: string, directory: string, names: Set<string>) {
-  const { packages } = await getPackages(cwd);
-  const sdk = packages.filter(
-    pkg =>
-      !pkg.packageJson.private &&
-      pkg.packageJson.name.startsWith('@composio/') &&
-      pkg.packageJson.name !== '@composio/cli'
-  );
-  runPreparationCommand(
-    'pnpm',
-    ['exec', 'turbo', 'build', ...sdk.map(pkg => `--filter=${pkg.packageJson.name}`)],
-    cwd
-  );
-  const compatibility = resolve(cwd, '.artifacts/sdk-compatibility');
-  await mkdir(compatibility, { recursive: true });
-  for (const pkg of sdk) {
-    runPreparationCommand(
-      'pnpm',
-      [
+const PackedManifest = Schema.StructWithRest(
+  Schema.Struct({ name: Schema.String, version: Schema.String }),
+  [Schema.Record(Schema.String, Schema.Unknown)]
+);
+const command =
+  (cwd: string, extraEnv: Record<string, string> = {}) =>
+  (executable: string, args: ReadonlyArray<string>) =>
+    run(executable, args, { cwd, env: { ...withoutReleaseTokens, ...extraEnv } });
+
+const tarballName = (name: string, version: string) =>
+  `${name.replace(/^@/, '').replaceAll('/', '-')}-${version}.tgz`;
+
+/** Builds and packs every public SDK package, keeps the selected tarballs, and checks provider compatibility. */
+export const buildTypescript = (cwd: string, directory: string, names: ReadonlySet<string>) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const exec = command(cwd);
+    const { packages } = yield* fromPromise(() => getPackages(cwd));
+    const sdk = packages.filter(
+      pkg =>
+        !pkg.packageJson.private &&
+        pkg.packageJson.name.startsWith('@composio/') &&
+        pkg.packageJson.name !== '@composio/cli'
+    );
+    yield* exec('pnpm', [
+      'exec',
+      'turbo',
+      'build',
+      ...sdk.map(pkg => `--filter=${pkg.packageJson.name}`),
+    ]);
+    const compatibility = path.resolve(cwd, '.artifacts/sdk-compatibility');
+    yield* fs.makeDirectory(compatibility, { recursive: true });
+    for (const pkg of sdk) {
+      yield* exec('pnpm', [
         '--dir',
         pkg.dir,
         'pack',
         '--pack-destination',
         compatibility,
         '--config.ignore-scripts=true',
-      ],
-      cwd
-    );
-    const name = `${pkg.packageJson.name.replace(/^@/, '').replaceAll('/', '-')}-${pkg.packageJson.version}.tgz`;
-    const packed = z
-      .object({ name: z.string(), version: z.string() })
-      .passthrough()
-      .parse(
-        JSON.parse(
-          runPreparationCommand(
-            'tar',
-            ['-xOf', join(compatibility, name), 'package/package.json'],
-            cwd
-          )
-        )
+      ]);
+      const name = tarballName(pkg.packageJson.name, pkg.packageJson.version);
+      const packed = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(PackedManifest))(
+        yield* exec('tar', ['-xOf', path.join(compatibility, name), 'package/package.json'])
       );
-    if (packed.name !== pkg.packageJson.name || packed.version !== pkg.packageJson.version)
-      throw new Error('Packed npm metadata differs from the approved source');
-    if (names.has(pkg.packageJson.name))
-      await writeFile(join(directory, name), await readFile(join(compatibility, name)));
-  }
-  runPreparationCommand(
-    'pnpm',
-    [
+      yield* ensure(
+        packed.name === pkg.packageJson.name && packed.version === pkg.packageJson.version,
+        'Packed npm metadata differs from the approved source'
+      );
+      if (names.has(pkg.packageJson.name))
+        yield* fs.copyFile(path.join(compatibility, name), path.join(directory, name));
+    }
+    yield* exec('pnpm', [
       'exec',
       'tsx',
       'ts/scripts/check-provider-compatibility.ts',
@@ -93,142 +129,254 @@ export async function buildTypescript(cwd: string, directory: string, names: Set
       'current',
       '--candidate-dir',
       compatibility,
-    ],
-    cwd
-  );
-}
-export async function buildPython(cwd: string, directory: string) {
-  process.env.UV_PROJECT_ENVIRONMENT = resolve(cwd, 'python/.venv');
-  runPreparationCommand('uv', ['sync', '--locked', '--only-group', 'release'], cwd);
-  runPreparationCommand('make', ['build', 'BUILD_ARGS=--no-isolation'], join(cwd, 'python'));
-  runPreparationCommand(
-    'uv',
-    [
+    ]);
+  });
+
+const PYTHON_DISTRIBUTION = /\.whl$|\.tar\.gz$/;
+
+/** Builds the synchronized Python train with the locked release toolchain and keeps its distributions. */
+export const buildPython = (cwd: string, directory: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const environment = { UV_PROJECT_ENVIRONMENT: path.resolve(cwd, 'python/.venv') };
+    const exec = command(cwd, environment);
+    yield* exec('uv', ['sync', '--locked', '--only-group', 'release']);
+    yield* command(path.join(cwd, 'python'), environment)('make', [
+      'build',
+      'BUILD_ARGS=--no-isolation',
+    ]);
+    yield* exec('uv', [
       'run',
       '--locked',
       '--only-group',
       'release',
       'python',
       'scripts/sdk-release/validate-python-candidates.py',
-    ],
-    cwd
-  );
-  for (const name of await readdir(resolve(cwd, 'python/dist'))) {
-    if (name.endsWith('.whl') || name.endsWith('.tar.gz'))
-      await writeFile(join(directory, name), await readFile(resolve(cwd, 'python/dist', name)));
-  }
-}
+    ]);
+    const dist = path.resolve(cwd, 'python/dist');
+    for (const name of (yield* fs.readDirectory(dist)).filter(name =>
+      PYTHON_DISTRIBUTION.test(name)
+    ))
+      yield* fs.copyFile(path.join(dist, name), path.join(directory, name));
+  });
 
-if (import.meta.main) {
-  const env = z
-    .object({
-      GITHUB_RUN_ID: z.coerce.number().int().positive(),
-      GITHUB_RUN_ATTEMPT: z.coerce.number().int().positive(),
-      GITHUB_SHA: z.string().regex(/^[a-f0-9]{40}$/),
-      GITHUB_OUTPUT: z.string(),
-      SDK_READ_TOKEN: z.string().min(1),
-    })
-    .parse(process.env);
-  if (process.env.SDK_RELEASE_TOKEN)
-    throw new Error('Candidate jobs must not receive the controller credential');
-  const language = z.enum(['typescript', 'python']).parse(Bun.argv[2]);
-  const batch = releaseBatchSchema.parse(await Bun.file(batchPath).json());
-  const selected = batch.plan.releases.filter(release => release.language === language);
-  if (!selected.length) {
-    await writeFile(env.GITHUB_OUTPUT, 'selected=false\nbuild=false\n', { flag: 'a' });
-  } else {
-    const directory = resolve('sdk-candidate', language);
-    const github = new GitHubReleaseClient(env.SDK_READ_TOKEN);
-    const artifacts = await originalCandidates(github, env.GITHUB_RUN_ID);
-    let existing;
-    try {
-      existing = reuseCandidate(
-        artifacts,
-        `sdk-candidate-${language}`,
-        env.GITHUB_RUN_ID,
-        env.GITHUB_SHA
-      );
-    } catch (error) {
-      if (env.GITHUB_RUN_ATTEMPT > 1)
-        await writeFile(env.GITHUB_OUTPUT, 'terminal=true\n', { flag: 'a' });
-      throw error;
-    }
-    await mkdir(directory, { recursive: true });
-    if (existing) {
-      await downloadCandidate(env.SDK_READ_TOKEN, existing, directory);
-      const manifest = candidateManifestSchema.parse(
-        await Bun.file(join(directory, 'candidate.json')).json()
-      );
-      if (
-        manifest.sourceSha !== env.GITHUB_SHA ||
-        manifest.producerRun !== env.GITHUB_RUN_ID ||
-        manifest.language !== language
-      )
-        throw new Error('Candidate manifest producer/source mismatch');
-      const actual = new Map(
-        await Promise.all(
-          (await readdir(directory))
-            .filter(name => name !== 'candidate.json')
-            .map(
-              async name => [name, new Uint8Array(await readFile(join(directory, name)))] as const
-            )
-        )
-      );
-      verifyCandidateFiles(actual, manifest.files);
-      await writeFile(
-        env.GITHUB_OUTPUT,
-        `selected=true\nbuild=false\nartifact-id=${existing.id}\nartifact-digest=${existing.digest}\nartifact-expires=${existing.expires_at}\n`,
-        { flag: 'a' }
-      );
-    } else {
-      if (
-        env.GITHUB_RUN_ATTEMPT > 1 &&
-        !(await mayRebuildMissingCandidate(
-          github,
-          env.GITHUB_RUN_ID,
-          await registryInventoryEmpty(process.cwd())
-        ))
-      ) {
-        await writeFile(env.GITHUB_OUTPUT, 'terminal=true\n', { flag: 'a' });
-        throw new Error(
-          'Candidate missing after possible publication; a newly approved corrective release is required'
-        );
-      }
-      const pythonRelease = selected.find(release => release.language === 'python');
-      if (
-        pythonRelease &&
-        (await discoverPythonPackages(process.cwd())).some(
-          pkg => pkg.version !== pythonRelease.newVersion
-        )
-      )
-        throw new Error('Python candidate train differs from the approved target');
-      const { packages } = await getPackages(process.cwd());
-      for (const release of selected) {
-        const pkg = packages.find(pkg => pkg.packageJson.name === release.name);
-        if (!pkg || pkg.packageJson.version !== release.newVersion)
-          throw new Error(`Candidate version differs from approved target: ${release.name}`);
-      }
-      if (language === 'typescript')
-        await buildTypescript(
-          process.cwd(),
-          directory,
-          new Set(selected.map(release => release.name))
-        );
-      else await buildPython(process.cwd(), directory);
-      const files = await Promise.all(
-        (await readdir(directory)).map(async name => {
-          const bytes = new Uint8Array(await readFile(join(directory, name)));
-          return { name, sha256: sha256(bytes), size: bytes.length };
-        })
-      );
-      const manifest = candidateManifestSchema.parse({
-        sourceSha: env.GITHUB_SHA,
-        producerRun: env.GITHUB_RUN_ID,
-        language,
-        files,
-      });
-      await writeFile(join(directory, 'candidate.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-      await writeFile(env.GITHUB_OUTPUT, 'selected=true\nbuild=true\n', { flag: 'a' });
-    }
+/** Lane-specific source checks and builds for a fresh candidate. */
+const LANE_BUILDS: Record<
+  Language,
+  {
+    readonly verifyTrain: (
+      cwd: string,
+      selected: ReadonlyArray<SdkRelease>
+    ) => Effect.Effect<void, unknown, ReleaseServices>;
+    readonly build: (
+      cwd: string,
+      directory: string,
+      selected: ReadonlyArray<SdkRelease>
+    ) => Effect.Effect<void, unknown, ReleaseServices>;
   }
-}
+> = {
+  typescript: {
+    verifyTrain: () => Effect.void,
+    build: (cwd, directory, selected) =>
+      buildTypescript(cwd, directory, new Set(selected.map(release => release.name))),
+  },
+  python: {
+    verifyTrain: (cwd, selected) =>
+      Effect.gen(function* () {
+        const [release] = selected;
+        const python = yield* discoverPythonPackages(cwd);
+        yield* ensure(
+          python.every(pkg => pkg.version === release.newVersion),
+          'Python candidate train differs from the approved target'
+        );
+      }),
+    build: (cwd, directory) => buildPython(cwd, directory),
+  },
+};
+
+const appendOutput = (outputPath: string, text: string) =>
+  Effect.gen(function* () {
+    yield* (yield* FileSystem.FileSystem).writeFileString(outputPath, text, { flag: 'a' });
+  });
+
+const PositiveIntFromString = Schema.NumberFromString.check(
+  Schema.isInt(),
+  Schema.isGreaterThan(0)
+);
+
+const BuildEnvironment = Config.all({
+  runId: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ID'),
+  runAttempt: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ATTEMPT'),
+  sha: Config.schema(Sha, 'GITHUB_SHA'),
+  outputPath: Config.String('GITHUB_OUTPUT'),
+  token: Config.schema(Schema.NonEmptyString, 'SDK_READ_TOKEN'),
+  controllerToken: Config.option(Config.String('SDK_RELEASE_TOKEN')),
+});
+type BuildEnvironment = Config.Success<typeof BuildEnvironment>;
+
+/** A retained candidate is reused only when its manifest and bytes match this run's source. */
+const recoverCandidate = (
+  env: BuildEnvironment,
+  language: Language,
+  directory: string,
+  existing: CandidateArtifact
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    yield* downloadCandidate(existing, directory);
+    const manifest = yield* readJson(CandidateManifest, `${directory}/${CANDIDATE_MANIFEST}`);
+    yield* ensure(
+      manifest.sourceSha === env.sha &&
+        manifest.producerRun === env.runId &&
+        manifest.language === language,
+      'Candidate manifest producer/source mismatch'
+    );
+    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
+    const files = new Map(
+      yield* Effect.forEach(names, name =>
+        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
+      )
+    );
+    yield* verifyCandidateFiles(files, manifest.files);
+    yield* appendOutput(
+      env.outputPath,
+      `selected=true\nbuild=false\nartifact-id=${existing.id}\nartifact-digest=${existing.digest}\nartifact-expires=${existing.expires_at}\n`
+    );
+  });
+
+/** Builds a fresh candidate, unless a rerun may already have published the missing one. */
+const buildCandidate = (
+  env: BuildEnvironment,
+  language: Language,
+  directory: string,
+  selected: ReadonlyArray<SdkRelease>
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const cwd = (yield* Path.Path).resolve('.');
+    if (
+      env.runAttempt > 1 &&
+      !(yield* mayRebuildMissingCandidate(env.runId, yield* registryInventoryEmpty(cwd)))
+    ) {
+      yield* appendOutput(env.outputPath, 'terminal=true\n');
+      return yield* fail(
+        'Candidate missing after possible publication; a newly approved corrective release is required'
+      );
+    }
+    const lane = LANE_BUILDS[language];
+    yield* lane.verifyTrain(cwd, selected);
+    const { packages } = yield* fromPromise(() => getPackages(cwd));
+    for (const release of selected) {
+      const pkg = packages.find(candidate => candidate.packageJson.name === release.name);
+      yield* ensure(
+        pkg?.packageJson.version === release.newVersion,
+        `Candidate version differs from approved target: ${release.name}`
+      );
+    }
+    yield* lane.build(cwd, directory, selected);
+    const files = yield* Effect.forEach(yield* fs.readDirectory(directory), name =>
+      Effect.gen(function* () {
+        const bytes = yield* fs.readFile(`${directory}/${name}`);
+        return { name, sha256: yield* sha256Hex(bytes), size: bytes.length };
+      })
+    );
+    const manifest = yield* Schema.decodeUnknownEffect(CandidateManifest)({
+      sourceSha: env.sha,
+      producerRun: env.runId,
+      language,
+      files,
+    });
+    yield* fs.writeFileString(`${directory}/${CANDIDATE_MANIFEST}`, formatJson(manifest));
+    yield* appendOutput(env.outputPath, 'selected=true\nbuild=true\n');
+  });
+
+/** Builds or recovers the exact immutable candidate for one language lane. */
+const buildMode = (language: Language) =>
+  Effect.gen(function* () {
+    const env = yield* BuildEnvironment;
+    yield* ensure(
+      !Option.exists(env.controllerToken, token => token !== ''),
+      'Candidate jobs must not receive the controller credential'
+    );
+    const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+    const selected = batch.plan.releases.filter(release => release.language === language);
+    if (!selected.length)
+      return yield* appendOutput(env.outputPath, 'selected=false\nbuild=false\n');
+    yield* laneCandidate(env, language, selected).pipe(Effect.provide(GitHub.layer(env.token)));
+  });
+
+const laneCandidate = (
+  env: BuildEnvironment,
+  language: Language,
+  selected: ReadonlyArray<SdkRelease>
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const directory = (yield* Path.Path).resolve('sdk-candidate', language);
+    const artifacts = yield* originalCandidates(env.runId);
+    const existing = yield* reuseCandidate(
+      artifacts,
+      candidateArtifactName(language),
+      env.runId,
+      env.sha
+    ).pipe(
+      Effect.tapError(() =>
+        env.runAttempt > 1 ? appendOutput(env.outputPath, 'terminal=true\n') : Effect.void
+      )
+    );
+    yield* fs.makeDirectory(directory, { recursive: true });
+    yield* Option.match(existing, {
+      onSome: artifact => recoverCandidate(env, language, directory, artifact),
+      onNone: () => buildCandidate(env, language, directory, selected),
+    });
+  });
+
+const ReportEnvironment = Config.all({
+  artifactId: Config.schema(PositiveIntFromString, 'ARTIFACT_ID'),
+  artifactDigest: Config.String('ARTIFACT_DIGEST'),
+  sourceSha: Config.schema(Sha, 'SOURCE_SHA'),
+  runId: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ID'),
+  summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
+  token: Config.schema(Schema.NonEmptyString, 'SDK_READ_TOKEN'),
+});
+
+/** Confirms the uploaded or recovered artifact is this run's candidate and records its identity. */
+const reportMode = (language: Language) =>
+  Effect.gen(function* () {
+    const env = yield* ReportEnvironment;
+    const artifact = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/actions/artifacts/${env.artifactId}`,
+      ActionArtifact
+    ).pipe(Effect.provide(GitHub.layer(env.token)));
+    yield* reuseCandidate([artifact], candidateArtifactName(language), env.runId, env.sourceSha);
+    yield* ensure(
+      artifact.digest === (yield* normalizeArtifactDigest(env.artifactDigest)),
+      'Uploaded artifact digest differs'
+    );
+    const manifest = yield* readJson(
+      CandidateManifest,
+      `sdk-candidate/${language}/${CANDIDATE_MANIFEST}`
+    );
+    const files = manifest.files
+      .map(file => `- ${file.name}: ${file.sha256} (${file.size} bytes)`)
+      .join('\n');
+    yield* appendOutput(
+      env.summaryPath,
+      `${language} candidate ID=${artifact.id} digest=${artifact.digest} producer=${env.runId} source=${env.sourceSha} expires=${artifact.expires_at}\n\n${files}\n`
+    );
+  });
+
+/** `candidates.ts <language>` builds or recovers; `candidates.ts report <language>` records identity. */
+const Arguments = Schema.Union([
+  Schema.Tuple([Language]),
+  Schema.Tuple([Schema.Literal('report'), Language]),
+]);
+
+const main = Effect.gen(function* () {
+  const args = yield* Schema.decodeUnknownEffect(Arguments)(yield* (yield* Stdio.Stdio).args);
+  return yield* args.length === 1 ? buildMode(args[0]) : reportMode(args[1]);
+});
+
+if (import.meta.main) runMain(main);

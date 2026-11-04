@@ -1,64 +1,77 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { Effect, Path, Schema } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
 import semver from 'semver';
-import { z } from 'zod';
 import { discoverPythonPackages } from './python-metadata';
-import type { ReleaseFetch } from './github';
+import { ensure, fromPromise, getJson, readJson } from './runtime';
 
-const configSchema = z.object({ ignore: z.array(z.string()).default([]) }).passthrough();
+const ChangesetConfig = Schema.StructWithRest(
+  Schema.Struct({
+    ignore: Schema.Array(Schema.String).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  }),
+  [Schema.Record(Schema.String, Schema.Unknown)]
+);
+const NpmLatest = Schema.Struct({ version: Schema.String });
+const PypiReleases = Schema.Struct({
+  releases: Schema.Record(
+    Schema.String,
+    Schema.Array(
+      Schema.Struct({
+        yanked: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
+      })
+    )
+  ),
+});
 
-export async function fetchStableRegistryBaseline(
-  cwd: string,
-  fetcher: ReleaseFetch = fetch
-): Promise<Record<string, string>> {
-  const { packages } = await getPackages(cwd);
-  const config = configSchema.parse(
-    JSON.parse(await readFile(resolve(cwd, '.changeset/config.json'), 'utf8'))
-  );
-  const python = await discoverPythonPackages(cwd);
-  const npm = packages.filter(
-    pkg =>
-      !pkg.packageJson.private &&
-      pkg.packageJson.name.startsWith('@composio/') &&
-      !config.ignore.includes(pkg.packageJson.name)
-  );
-  const read = async (url: string) => {
-    const response = await fetcher(url, { redirect: 'error' });
-    if (!response.ok) throw new Error(`Registry baseline lookup failed (${response.status})`);
-    return response.json();
-  };
-  const npmEntries = await Promise.all(
-    npm.map(async pkg => {
-      const value = z
-        .object({ version: z.string() })
-        .parse(
-          await read(
-            `https://registry.npmjs.org/${encodeURIComponent(pkg.packageJson.name)}/latest`
-          )
-        );
-      if (!semver.valid(value.version) || semver.prerelease(value.version))
-        throw new Error(`Expected a stable npm baseline for ${pkg.packageJson.name}`);
-      return [pkg.packageJson.name, value.version] as const;
-    })
-  );
-  const pythonEntries = await Promise.all(
-    python.map(async pkg => {
-      const value = z
-        .object({
-          releases: z.record(z.string(), z.array(z.object({ yanked: z.boolean().default(false) }))),
-        })
-        .parse(await read(`https://pypi.org/pypi/${encodeURIComponent(pkg.name)}/json`));
-      const versions = Object.entries(value.releases)
-        .filter(
-          ([version, files]) =>
-            semver.valid(version) && !semver.prerelease(version) && files.some(file => !file.yanked)
-        )
-        .map(([version]) => version);
-      const version = semver.rsort(versions)[0];
-      if (!version) throw new Error(`No public stable PyPI baseline for ${pkg.name}`);
-      return [pkg.name, version] as const;
-    })
-  );
-  return Object.fromEntries([...npmEntries, ...pythonEntries]);
-}
+const isStable = (version: string) =>
+  semver.valid(version) !== null && semver.prerelease(version) === null;
+const BASELINE_FAILURE = 'Registry baseline lookup failed';
+
+const npmBaseline = (name: string) =>
+  Effect.gen(function* () {
+    const { version } = yield* getJson(
+      `https://registry.npmjs.org/${encodeURIComponent(name)}/latest`,
+      NpmLatest,
+      BASELINE_FAILURE
+    );
+    yield* ensure(isStable(version), `Expected a stable npm baseline for ${name}`);
+    return [name, version] as const;
+  });
+
+const pypiBaseline = (name: string) =>
+  Effect.gen(function* () {
+    const { releases } = yield* getJson(
+      `https://pypi.org/pypi/${encodeURIComponent(name)}/json`,
+      PypiReleases,
+      BASELINE_FAILURE
+    );
+    const published = Object.entries(releases)
+      .filter(([version, files]) => isStable(version) && files.some(file => !file.yanked))
+      .map(([version]) => version);
+    const [version] = semver.rsort(published);
+    yield* ensure(version !== undefined, `No public stable PyPI baseline for ${name}`);
+    return [name, version] as const;
+  });
+
+export const fetchStableRegistryBaseline = (cwd: string) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const { packages } = yield* fromPromise(() => getPackages(cwd));
+    const config = yield* readJson(ChangesetConfig, path.resolve(cwd, '.changeset/config.json'));
+    const python = yield* discoverPythonPackages(cwd);
+    const npm = packages
+      .map(pkg => pkg.packageJson)
+      .filter(
+        manifest =>
+          !manifest.private &&
+          manifest.name.startsWith('@composio/') &&
+          !config.ignore.includes(manifest.name)
+      );
+    const entries = yield* Effect.all(
+      [
+        ...npm.map(manifest => npmBaseline(manifest.name)),
+        ...python.map(pkg => pypiBaseline(pkg.name)),
+      ],
+      { concurrency: 'unbounded' }
+    );
+    return Object.fromEntries(entries);
+  });

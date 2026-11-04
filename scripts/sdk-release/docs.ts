@@ -1,426 +1,654 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
-import semver from 'semver';
-import { z } from 'zod';
 import {
-  GitHubReleaseApiError,
-  GitHubReleaseClient,
-  SDK_RELEASE_REPOSITORY,
-  releaseRunSchema,
-} from './github';
+  Config,
+  Console,
+  Effect,
+  FileSystem,
+  Match,
+  Option,
+  Path,
+  Schedule,
+  Schema,
+  Stdio,
+  Stream,
+} from 'effect';
+import { Toml } from 'effect/encoding';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
+import semver from 'semver';
 import { committedBatch, publicationState } from './coordination';
 import {
-  publicationReportSchema,
-  readPublicationStatus,
-  writePublicationStatus,
-  type PublicationReport,
-} from './publication';
-import { releaseBatchSchema, sourceShaSchema } from './source';
-import { runPreparationCommand } from './commands';
-export { isSdkChangelog } from './changelog-filter';
+  GitHub,
+  REPOSITORY_PATH,
+  ReleaseRun,
+  RunId,
+  SDK_RELEASE_REPOSITORY,
+  Sha,
+  decodeBase64Content,
+  getRun,
+  paginate,
+  request,
+  requestOptional,
+  requireActiveMember,
+} from './github';
+import { Language, REGISTRY_LANES } from './lanes';
+import { readPublicationStatus, writePublicationStatus } from './publication';
+import {
+  ensure,
+  fail,
+  formatJson,
+  readJson,
+  readOptionalFile,
+  run,
+  runMain,
+  spawn,
+  withoutReleaseTokens,
+  writeFile,
+} from './runtime';
+import { ReleaseBatch, ReleaseFile } from './source';
 
-const repo = `/repos/${SDK_RELEASE_REPOSITORY}`;
-const branch = 'docs/auto-sdk-sync';
-const marker = '<!-- sdk-release-docs -->';
-const fileSchema = z.object({
-  path: z.string(),
-  before: z.string().nullable(),
-  after: z.string().nullable(),
-});
-const manifestSchema = z
-  .object({
-    dependencies: z.record(z.string(), z.string()).optional(),
-    devDependencies: z.record(z.string(), z.string()).optional(),
-  })
-  .passthrough();
-export const docsInputSchema = z.object({
-  runId: z.number().int().positive(),
-  batch: releaseBatchSchema,
-  sourceSha: sourceShaSchema,
-  verifiedRunId: z.number().int().positive(),
-  verifiedSourceSha: sourceShaSchema,
-  branchHead: sourceShaSchema.nullable(),
-  pendingFiles: z.array(fileSchema),
-  targets: z.record(z.string(), z.string()),
-  verifiedLanguages: z.array(z.enum(['typescript', 'python'])),
-  summaries: z.array(z.string()),
-});
-type DocsInput = z.infer<typeof docsInputSchema>;
-const docsPatchSchema = z.object({ input: docsInputSchema, files: z.array(fileSchema) });
+const BRANCH = 'docs/auto-sdk-sync';
+const MARKER = '<!-- sdk-release-docs -->';
+const MAINTENANCE_TITLE = 'docs: align guides and pins with verified SDK releases';
+const PATCH_PATH = '/tmp/sdk-docs-patch.json';
+const GUIDES = 'docs/content/docs/';
+const CONTENTS_CONCURRENCY = 8;
 
-export function pinDocsSdkVersions(
+const Dependencies = Schema.Record(Schema.String, Schema.String);
+const DocsManifest = Schema.StructWithRest(
+  Schema.Struct({
+    dependencies: Schema.optionalKey(Dependencies),
+    devDependencies: Schema.optionalKey(Dependencies),
+  }),
+  [Schema.Record(Schema.String, Schema.Unknown)]
+);
+const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
+
+export const DocsInput = Schema.Struct({
+  runId: PositiveInt,
+  batch: ReleaseBatch,
+  sourceSha: Sha,
+  verifiedRunId: PositiveInt,
+  verifiedSourceSha: Sha,
+  branchHead: Schema.NullOr(Sha),
+  pendingFiles: Schema.Array(ReleaseFile),
+  targets: Schema.Record(Schema.String, Schema.String),
+  verifiedLanguages: Schema.Array(Language),
+  summaries: Schema.Array(Schema.String),
+});
+export type DocsInput = typeof DocsInput.Type;
+const DocsPatch = Schema.Struct({ input: DocsInput, files: Schema.Array(ReleaseFile) });
+const Maintenance = Schema.Literals(['pending', 'success', 'failure', 'cancelled', 'skipped']);
+type Maintenance = typeof Maintenance.Type;
+
+/** Pins every existing `@composio/*` dependency to its exact verified version, never below the installed one. */
+export const pinDocsSdkVersions = (
   value: unknown,
   targets: Record<string, string>,
   installed: Record<string, string> = {}
-) {
-  const manifest = manifestSchema.parse(value);
-  for (const section of ['dependencies', 'devDependencies'] as const) {
-    const dependencies = manifest[section];
-    if (!dependencies) continue;
-    for (const [name, current] of Object.entries(dependencies)) {
-      if (!name.startsWith('@composio/')) continue;
-      const target = targets[name];
-      const floor = semver.minVersion(current);
-      if (!target || !semver.valid(target) || !floor)
-        throw new Error(`Missing verified SDK target: ${name}`);
-      if (semver.lt(target, floor) || (installed[name] && semver.lt(target, installed[name])))
-        throw new Error(`Docs pin must not decrease: ${name}`);
-      dependencies[name] = target;
+) =>
+  Effect.gen(function* () {
+    const manifest: Record<string, unknown> = {
+      ...(yield* Schema.decodeUnknownEffect(DocsManifest)(value)),
+    };
+    for (const section of ['dependencies', 'devDependencies'] as const) {
+      const current = manifest[section] as Record<string, string> | undefined;
+      if (!current) continue;
+      const pinned = { ...current };
+      for (const [name, range] of Object.entries(current)) {
+        if (!name.startsWith('@composio/')) continue;
+        const target = targets[name];
+        const floor = semver.minVersion(range);
+        if (!target || !semver.valid(target) || !floor)
+          return yield* fail(`Missing verified SDK target: ${name}`);
+        yield* ensure(
+          !semver.lt(target, floor) && !(installed[name] && semver.lt(target, installed[name])),
+          `Docs pin must not decrease: ${name}`
+        );
+        pinned[name] = target;
+      }
+      manifest[section] = pinned;
     }
-  }
-  return manifest;
-}
+    return manifest;
+  });
 
-function lockedSdkVersions(lock: string): Record<string, string> {
-  const packages = z
-    .object({ packages: z.record(z.string(), z.array(z.unknown())) })
-    .parse(Bun.JSONC.parse(lock)).packages;
-  const installed: Record<string, string> = {};
-  for (const [name, entry] of Object.entries(packages)) {
-    if (!/^@composio\/[^/]+$/.test(name)) continue;
-    const resolution = z.string().parse(entry[0]);
-    const version = resolution.slice(`${name}@`.length);
-    if (!resolution.startsWith(`${name}@`) || !semver.valid(version))
-      throw new Error(`Invalid locked SDK version: ${name}`);
-    installed[name] = version;
+/** Converts Bun's JSONC lockfile text to JSON by dropping comments and trailing commas outside strings. */
+const jsoncToJson = (text: string) => {
+  let output = '';
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+    if (char === '"') {
+      const start = index;
+      for (index++; index < text.length && text[index] !== '"'; index++)
+        if (text[index] === '\\') index++;
+      output += text.slice(start, index + 1);
+    } else if (char === '/' && text[index + 1] === '/') {
+      while (index < text.length && text[index] !== '\n') index++;
+      output += '\n';
+    } else if (char === '/' && text[index + 1] === '*') {
+      index = text.indexOf('*/', index + 2);
+      index = index === -1 ? text.length : index + 1;
+    } else if (
+      char === ',' &&
+      /^\s*(?:\/\/[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*[}\]]/.test(text.slice(index + 1))
+    ) {
+      continue;
+    } else output += char;
   }
-  return installed;
-}
+  return output;
+};
 
-export function requireFreshDocsInput(
-  selected: Pick<DocsInput, 'sourceSha' | 'verifiedRunId' | 'branchHead'>,
-  current: Pick<DocsInput, 'sourceSha' | 'verifiedRunId' | 'branchHead'>
-) {
-  if (
-    selected.sourceSha !== current.sourceSha ||
-    selected.verifiedRunId !== current.verifiedRunId ||
-    selected.branchHead !== current.branchHead
-  )
-    throw new Error(
-      'Protected docs, verified release or pending guide edits changed; regenerate from current inputs'
+const BunLock = Schema.Struct({
+  packages: Schema.Record(Schema.String, Schema.Array(Schema.Unknown)),
+});
+const SDK_PACKAGE = /^@composio\/[^/]+$/;
+
+const lockedSdkVersions = (lock: string) =>
+  Effect.gen(function* () {
+    const { packages } = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(BunLock))(
+      jsoncToJson(lock)
     );
-}
+    const installed: Record<string, string> = {};
+    for (const [name, entry] of Object.entries(packages)) {
+      if (!SDK_PACKAGE.test(name)) continue;
+      const resolution = yield* Schema.decodeUnknownEffect(Schema.String)(entry[0]);
+      const version = resolution.slice(`${name}@`.length);
+      yield* ensure(
+        resolution.startsWith(`${name}@`) && semver.valid(version) !== null,
+        `Invalid locked SDK version: ${name}`
+      );
+      installed[name] = version;
+    }
+    return installed;
+  });
+
+type Freshness = Pick<DocsInput, 'sourceSha' | 'verifiedRunId' | 'branchHead'>;
+
+export const requireFreshDocsInput = (selected: Freshness, current: Freshness) =>
+  ensure(
+    selected.sourceSha === current.sourceSha &&
+      selected.verifiedRunId === current.verifiedRunId &&
+      selected.branchHead === current.branchHead,
+    'Protected docs, verified release or pending guide edits changed; regenerate from current inputs'
+  );
 
 type LiveRelease = Pick<DocsInput['batch'], 'date' | 'statusUrl'> & {
   plan: {
-    releases: Pick<
-      DocsInput['batch']['plan']['releases'][number],
-      'name' | 'newVersion' | 'language'
-    >[];
+    releases: ReadonlyArray<
+      Pick<DocsInput['batch']['plan']['releases'][number], 'name' | 'newVersion' | 'language'>
+    >;
   };
 };
-export async function verifyLiveReleaseDocs(
-  batch: LiveRelease,
-  fetcher: (url: string) => Promise<Response> = url =>
-    fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(30_000) })
-) {
-  const path = `/docs/changelog/${batch.date.replaceAll('-', '/')}`;
-  for (const suffix of ['', '.md']) {
-    const response = await fetcher(`https://docs.composio.dev${path}${suffix}`);
-    if (!response.ok) throw new Error(`Release documentation unavailable (${response.status})`);
-    const text = (await response.text()).replaceAll('&#x40;', '@').replaceAll('&commat;', '@');
-    const rows = (
-      suffix
-        ? text.split('\n').filter(line => line.startsWith('|'))
-        : (text.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) ?? [])
-    ).map(row => {
-      const cells = suffix
-        ? row.split('|').slice(1, -1)
-        : [...row.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => cell[1]);
-      return cells.map(cell =>
-        cell
-          .replace(/<[^>]*>/g, '')
-          .replaceAll('`', '')
-          .trim()
-          .replace(/\s+/g, ' ')
-      );
-    });
-    if (
-      !text.includes(batch.statusUrl) ||
-      !batch.plan.releases.every(release =>
-        rows.some(
-          cells =>
-            cells[0] ===
-              (release.language === 'python' ? 'Python composio' : `TypeScript ${release.name}`) &&
-            cells[1] === release.newVersion
-        )
-      )
-    )
-      throw new Error(
+
+/** The changelog page is published as HTML and as Markdown; each exposes the version table differently. */
+const LIVE_PAGE_FORMATS: ReadonlyArray<{
+  readonly suffix: string;
+  readonly rows: (text: string) => ReadonlyArray<string>;
+  readonly cells: (row: string) => ReadonlyArray<string>;
+}> = [
+  {
+    suffix: '',
+    rows: text => text.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) ?? [],
+    cells: row => [...row.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => cell[1]),
+  },
+  {
+    suffix: '.md',
+    rows: text => text.split('\n').filter(line => line.startsWith('|')),
+    cells: row => row.split('|').slice(1, -1),
+  },
+];
+
+const cellText = (cell: string) =>
+  cell
+    .replace(/<[^>]*>/g, '')
+    .replaceAll('`', '')
+    .trim()
+    .replace(/\s+/g, ' ');
+
+const fetchLive = (url: string) =>
+  Effect.gen(function* () {
+    const client = yield* HttpClient.HttpClient;
+    const response = yield* client.get(url).pipe(Effect.timeout('30 seconds'));
+    return {
+      ok: response.status >= 200 && response.status < 300,
+      status: response.status,
+      text: response.text,
+    };
+  }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'follow' }));
+
+/** The live changelog shows the publication status and every released version, and each language's reference is up. */
+export const verifyLiveReleaseDocs = (batch: LiveRelease) =>
+  Effect.gen(function* () {
+    const path = `/docs/changelog/${batch.date.replaceAll('-', '/')}`;
+    for (const format of LIVE_PAGE_FORMATS) {
+      const response = yield* fetchLive(`https://docs.composio.dev${path}${format.suffix}`);
+      yield* ensure(response.ok, `Release documentation unavailable (${response.status})`);
+      const text = (yield* response.text).replaceAll('&#x40;', '@').replaceAll('&commat;', '@');
+      const rows = format.rows(text).map(row => format.cells(row).map(cellText));
+      yield* ensure(
+        text.includes(batch.statusUrl) &&
+          batch.plan.releases.every(release =>
+            rows.some(
+              cells =>
+                cells[0] === REGISTRY_LANES[release.language].docsLabel(release.name) &&
+                cells[1] === release.newVersion
+            )
+          ),
         'Live documentation does not yet contain the reviewed release targets and publication status'
       );
-  }
-  for (const language of new Set(batch.plan.releases.map(release => release.language))) {
-    const response = await fetcher(
-      `https://docs.composio.dev/reference/sdk-reference/${language}/tools`
-    );
-    if (!response.ok || !(await response.text()).includes('Tools'))
-      throw new Error(`Live ${language} SDK reference unavailable`);
-  }
-}
-
-async function contents(github: GitHubReleaseClient, path: string, ref: string) {
-  try {
-    const file = await github.request(
-      'GET',
-      `${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`,
-      z.object({ encoding: z.literal('base64'), content: z.string() })
-    );
-    return Buffer.from(file.content, 'base64').toString('utf8');
-  } catch (error) {
-    if (error instanceof GitHubReleaseApiError && error.status === 404) return null;
-    throw error;
-  }
-}
-async function refSha(github: GitHubReleaseClient, name: string) {
-  try {
-    return (
-      await github.request(
-        'GET',
-        `${repo}/git/ref/heads/${name}`,
-        z.object({ object: z.object({ sha: sourceShaSchema }) })
-      )
-    ).object.sha;
-  } catch (error) {
-    if (error instanceof GitHubReleaseApiError && error.status === 404) return null;
-    throw error;
-  }
-}
-export async function newestVerifiedRelease(github: GitHubReleaseClient) {
-  for (let page = 1; ; page++) {
-    const runs = await github.request(
-      'GET',
-      `${repo}/actions/workflows/sdk.release.yml/runs?event=push&per_page=100&page=${page}`,
-      z.object({ workflow_runs: z.array(releaseRunSchema) })
-    );
-    for (const run of runs.workflow_runs) {
-      if (!/^sdk-release\/\d+$/.test(run.head_branch ?? '') || !run.head_sha) continue;
-      if ((await publicationState(github, run)).verified)
-        return { run, batch: (await committedBatch(github, run.head_sha))! };
     }
-    if (runs.workflow_runs.length < 100) throw new Error('No verified SDK release is available');
-  }
-}
-function allowedDocsPath(path: string) {
-  return (
-    /^docs\/content\/docs\/(?!.*(?:^|\/)\.\.\/)[a-zA-Z0-9_./-]+\.mdx$/.test(path) ||
-    ['docs/package.json', 'docs/bun.lock'].includes(path)
+    for (const language of new Set(batch.plan.releases.map(release => release.language))) {
+      const response = yield* fetchLive(
+        `https://docs.composio.dev/reference/sdk-reference/${language}/tools`
+      );
+      yield* ensure(
+        response.ok && (yield* response.text).includes('Tools'),
+        `Live ${language} SDK reference unavailable`
+      );
+    }
+  });
+
+const FileContent = Schema.Struct({ encoding: Schema.Literal('base64'), content: Schema.String });
+
+/** A file's contents at `ref`, or null when it does not exist there. */
+const contents = (path: string, ref: string) =>
+  Effect.gen(function* () {
+    const file = yield* requestOptional(
+      `${REPOSITORY_PATH}/contents/${path}?ref=${encodeURIComponent(ref)}`,
+      FileContent
+    );
+    return Option.isSome(file) ? yield* decodeBase64Content(file.value.content) : null;
+  });
+
+const refSha = (name: string) =>
+  Effect.map(
+    requestOptional(
+      `${REPOSITORY_PATH}/git/ref/heads/${name}`,
+      Schema.Struct({ object: Schema.Struct({ sha: Sha }) })
+    ),
+    ref => Option.map(ref, found => found.object.sha)
   );
-}
 
-export async function selectDocsInput(
-  github: GitHubReleaseClient,
-  runId: string
-): Promise<DocsInput> {
-  const run = await github.getRun(runId);
-  if (!(await publicationState(github, run)).verified)
-    throw new Error('Public registry verification must succeed before SDK docs maintenance');
-  const batch = (await committedBatch(github, run.head_sha!))!;
-  const latest = await newestVerifiedRelease(github);
-  const sourceSha = await refSha(github, 'next');
-  if (!sourceSha) throw new Error('Protected next is unavailable');
-  const branchHead = await refSha(github, branch);
-  const pendingFiles: DocsInput['pendingFiles'] = [];
-  if (branchHead) {
-    const comparison = await github.request(
-      'GET',
-      `${repo}/compare/${sourceSha}...${branchHead}`,
-      z.object({ files: z.array(z.object({ filename: z.string() })).max(299) })
-    );
-    for (const file of comparison.files) {
-      if (!allowedDocsPath(file.filename))
-        throw new Error('Pending docs branch contains changes outside guides and SDK pins');
-      pendingFiles.push({
-        path: file.filename,
-        before: await contents(github, file.filename, sourceSha),
-        after: await contents(github, file.filename, branchHead),
-      });
-    }
-  }
-  const tree = await github.request(
-    'GET',
-    `${repo}/git/trees/${latest.run.head_sha}?recursive=1`,
-    z.object({
-      truncated: z.literal(false),
-      tree: z.array(z.object({ path: z.string(), type: z.string() })),
+const PUBLICATION_TAG = /^sdk-release\/\d+$/;
+
+const batchAt = (sha: string) =>
+  Effect.flatMap(
+    committedBatch(sha),
+    Option.match({
+      onNone: () => fail('Publication run and frozen batch differ'),
+      onSome: Effect.succeed,
     })
   );
-  const targets: Record<string, string> = {};
-  for (const item of tree.tree.filter(
-    item =>
-      item.type === 'blob' &&
-      /^ts\/packages\/(?:[^/]+|providers\/[^/]+)\/package\.json$/.test(item.path)
-  )) {
-    const manifest = z
-      .object({ name: z.string(), version: z.string(), private: z.boolean().optional() })
-      .parse(JSON.parse((await contents(github, item.path, latest.run.head_sha!))!));
-    if (!manifest.private) targets[manifest.name] = manifest.version;
-  }
-  for (const item of tree.tree.filter(
-    item =>
-      item.type === 'blob' && /^python\/(?:providers\/[^/]+\/)?pyproject\.toml$/.test(item.path)
-  )) {
-    const project = z
-      .object({ project: z.object({ name: z.string(), version: z.string() }) })
-      .parse(Bun.TOML.parse((await contents(github, item.path, latest.run.head_sha!))!)).project;
-    targets[project.name] = project.version;
-  }
-  // A corrective source can still contain unselected, unverified versions from the failed batch.
-  for (const outstanding of latest.batch.plan.corrective?.releases ?? []) {
-    if (latest.batch.plan.releases.some(release => release.name === outstanding.name)) continue;
-    if (outstanding.language === 'typescript') targets[outstanding.name] = outstanding.oldVersion;
-    else
-      for (const name of Object.keys(targets).filter(name => !name.startsWith('@')))
+
+/** The newest publication run whose packages were verified, and the batch it published. */
+export const newestVerifiedRelease = Effect.gen(function* () {
+  const latest = yield* paginate(
+    `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=push`,
+    Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) }),
+    body => body.workflow_runs
+  ).pipe(
+    Stream.filter(run => PUBLICATION_TAG.test(run.head_branch ?? '') && run.head_sha !== undefined),
+    Stream.filterEffect(run => Effect.map(publicationState(run), state => state.verified)),
+    Stream.runHead
+  );
+  if (Option.isNone(latest)) return yield* fail('No verified SDK release is available');
+  return { run: latest.value, batch: yield* batchAt(latest.value.head_sha ?? '') };
+});
+
+const allowedDocsPath = (path: string) =>
+  /^docs\/content\/docs\/(?!.*(?:^|\/)\.\.\/)[a-zA-Z0-9_./-]+\.mdx$/.test(path) ||
+  ['docs/package.json', 'docs/bun.lock'].includes(path);
+
+const PackageManifest = Schema.Struct({
+  name: Schema.String,
+  version: Schema.String,
+  private: Schema.optionalKey(Schema.Boolean),
+});
+const PyProject = Schema.Struct({
+  project: Schema.Struct({ name: Schema.String, version: Schema.String }),
+});
+
+/** Manifests in the verified source that name released packages, and how each yields a `[name, version]` target. */
+const TARGET_MANIFESTS: ReadonlyArray<{
+  readonly path: RegExp;
+  readonly target: (
+    text: string
+  ) => Effect.Effect<Option.Option<readonly [string, string]>, unknown>;
+}> = [
+  {
+    path: /^ts\/packages\/(?:[^/]+|providers\/[^/]+)\/package\.json$/,
+    target: text =>
+      Effect.map(
+        Schema.decodeUnknownEffect(Schema.fromJsonString(PackageManifest))(text),
+        manifest =>
+          manifest.private ? Option.none() : Option.some([manifest.name, manifest.version] as const)
+      ),
+  },
+  {
+    path: /^python\/(?:providers\/[^/]+\/)?pyproject\.toml$/,
+    target: text =>
+      Effect.fromResult(Toml.parse(text)).pipe(
+        Effect.flatMap(Schema.decodeUnknownEffect(PyProject)),
+        Effect.map(({ project }) => Option.some([project.name, project.version] as const))
+      ),
+  },
+];
+
+/** Packages an outstanding corrective release leaves at its old version, by language. */
+const OUTSTANDING_NAMES: Record<
+  Language,
+  (name: string, targets: Record<string, string>) => ReadonlyArray<string>
+> = {
+  typescript: name => [name],
+  python: (_name, targets) => Object.keys(targets).filter(target => !target.startsWith('@')),
+};
+
+const verifiedTargets = (
+  latest: Effect.Success<typeof newestVerifiedRelease>,
+  tree: ReadonlyArray<{ path: string; type: string }>
+) =>
+  Effect.gen(function* () {
+    const ref = latest.run.head_sha ?? '';
+    const found = yield* Effect.forEach(
+      TARGET_MANIFESTS.flatMap(manifest =>
+        tree
+          .filter(item => item.type === 'blob' && manifest.path.test(item.path))
+          .map(item => ({ manifest, path: item.path }))
+      ),
+      ({ manifest, path }) =>
+        Effect.flatMap(contents(path, ref), text => manifest.target(text ?? 'null')),
+      { concurrency: CONTENTS_CONCURRENCY }
+    );
+    const targets: Record<string, string> = Object.fromEntries(found.flatMap(Option.toArray));
+    const released = new Set(latest.batch.plan.releases.map(release => release.name));
+    for (const outstanding of latest.batch.plan.corrective?.releases ?? []) {
+      if (released.has(outstanding.name)) continue;
+      for (const name of OUTSTANDING_NAMES[outstanding.language](outstanding.name, targets))
         targets[name] = outstanding.oldVersion;
-  }
-  return docsInputSchema.parse({
-    runId: run.id,
-    batch,
-    sourceSha,
-    verifiedRunId: latest.run.id,
-    verifiedSourceSha: latest.run.head_sha,
-    branchHead,
-    pendingFiles,
-    targets,
-    verifiedLanguages: [...new Set(latest.batch.plan.releases.map(release => release.language))],
-    summaries: latest.batch.plan.changesets.map(note => note.summary),
+    }
+    return targets;
   });
-}
 
-async function prepareDocs(cwd: string, input: DocsInput) {
-  if (process.env.SDK_RELEASE_TOKEN)
-    throw new Error('Docs generation must not receive controller credentials');
-  if (runPreparationCommand('git', ['rev-parse', 'HEAD'], cwd).trim() !== input.sourceSha)
-    throw new Error('Docs source differs from current protected input');
-  for (const file of input.pendingFiles) {
-    if (!allowedDocsPath(file.path)) throw new Error('Invalid pending docs path');
-    if (file.path.startsWith('docs/content/docs/')) {
-      const previous = spawnSync('git', ['show', `${input.sourceSha}:${file.path}`], {
-        cwd,
-        encoding: 'utf8',
-      });
-      if ((previous.status === 0 ? previous.stdout : null) !== file.before)
-        throw new Error('Pending guide baseline differs');
-      // A three-way merge preserves current protected edits and reports conflicts instead of overwriting.
-      const old = input.branchHead
-        ? runPreparationCommand(
-            'git',
-            ['merge-base', input.sourceSha, input.branchHead],
-            cwd
-          ).trim()
-        : input.sourceSha;
-      const ancestor = spawnSync('git', ['show', `${old}:${file.path}`], { cwd, encoding: 'utf8' });
-      if (file.after === null) {
-        if (file.before !== (ancestor.status === 0 ? ancestor.stdout : null))
-          throw new Error('Pending guide deletion conflicts with newer docs');
-        await Bun.$`rm -- ${file.path}`.cwd(cwd).quiet();
-      } else if (file.before === null) {
-        if (ancestor.status === 0)
-          throw new Error('Pending guide edits conflict with a newer protected deletion');
-        await Bun.$`mkdir -p -- ${file.path.split('/').slice(0, -1).join('/')}`.cwd(cwd).quiet();
-        await writeFile(`${cwd}/${file.path}`, file.after);
-      } else {
-        const current = `/tmp/sdk-guide-current-${crypto.randomUUID()}`;
-        const base = `${current}-base`,
-          pending = `${current}-pending`;
-        await writeFile(current, file.before);
-        await writeFile(base, ancestor.status === 0 ? ancestor.stdout : '');
-        await writeFile(pending, file.after);
-        const merged = spawnSync('git', ['merge-file', '-p', current, base, pending], {
-          cwd,
-          encoding: 'utf8',
-        });
-        if (merged.status !== 0)
-          throw new Error(
-            'Pending guide edits conflict with current protected docs; resolve the maintenance PR'
-          );
-        await writeFile(`${cwd}/${file.path}`, merged.stdout);
-      }
-    }
-  }
-  const installed = lockedSdkVersions(await readFile(`${cwd}/docs/bun.lock`, 'utf8'));
-  const pendingLock = input.pendingFiles.find(file => file.path === 'docs/bun.lock')?.after;
-  if (pendingLock)
-    for (const [name, version] of Object.entries(lockedSdkVersions(pendingLock))) {
-      if (!installed[name] || semver.gt(version, installed[name])) installed[name] = version;
-    }
-  const manifest = pinDocsSdkVersions(
-    JSON.parse(await readFile(`${cwd}/docs/package.json`, 'utf8')),
-    input.targets,
-    installed
-  );
-  await writeFile(`${cwd}/docs/package.json`, `${JSON.stringify(manifest, null, 2)}\n`);
-}
-
-async function captureDocsPatch(cwd: string, input: DocsInput) {
-  const paths = [
-    ...new Set(
-      [
-        ...runPreparationCommand('git', ['diff', '--name-only', '-z', input.sourceSha], cwd).split(
-          '\0'
+const pendingDocsFiles = (sourceSha: string, branchHead: string) =>
+  Effect.gen(function* () {
+    const comparison = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/compare/${sourceSha}...${branchHead}`,
+      Schema.Struct({
+        files: Schema.Array(Schema.Struct({ filename: Schema.String })).check(
+          Schema.isMaxLength(299)
         ),
-        ...runPreparationCommand(
-          'git',
-          ['ls-files', '--others', '--exclude-standard', '-z'],
-          cwd
-        ).split('\0'),
-      ].filter(Boolean)
-    ),
-  ];
-  const files = [];
-  for (const path of paths) {
-    if (!allowedDocsPath(path))
-      throw new Error(`Docs maintenance changed an unowned path: ${path}`);
-    const before = spawnSync('git', ['show', `${input.sourceSha}:${path}`], {
-      cwd,
-      encoding: 'utf8',
-    });
-    files.push({
-      path,
-      before: before.status === 0 ? before.stdout : null,
-      after: (await Bun.file(`${cwd}/${path}`).exists())
-        ? await readFile(`${cwd}/${path}`, 'utf8')
-        : null,
-    });
-  }
-  return docsPatchSchema.parse({ input, files });
-}
+      })
+    );
+    yield* ensure(
+      comparison.files.every(file => allowedDocsPath(file.filename)),
+      'Pending docs branch contains changes outside guides and SDK pins'
+    );
+    return yield* Effect.forEach(
+      comparison.files,
+      file =>
+        Effect.map(
+          Effect.all([contents(file.filename, sourceSha), contents(file.filename, branchHead)]),
+          ([before, after]) => ({ path: file.filename, before, after })
+        ),
+      { concurrency: CONTENTS_CONCURRENCY }
+    );
+  });
 
-export async function commitDocsPatch(github: GitHubReleaseClient, value: unknown) {
-  const patch = docsPatchSchema.parse(value);
-  const latest = await selectDocsInput(github, String(patch.input.runId));
-  requireFreshDocsInput(patch.input, latest);
-  for (const file of patch.files) {
-    if (
-      !allowedDocsPath(file.path) ||
-      (await contents(github, file.path, latest.sourceSha)) !== file.before
-    )
-      throw new Error('Docs patch source or path differs');
-    if (file.path === 'docs/package.json') {
-      const lock = await contents(github, 'docs/bun.lock', latest.sourceSha);
-      if (
-        !lock ||
-        !file.before ||
-        !file.after ||
-        JSON.stringify(JSON.parse(file.after)) !==
-          JSON.stringify(
-            pinDocsSdkVersions(JSON.parse(file.before), latest.targets, lockedSdkVersions(lock))
-          )
-      )
-        throw new Error('Docs manifest changes more than exact verified SDK pins');
-    }
-  }
-  if (!patch.files.length) return { changed: false };
-  const commit = await github.request(
-    'GET',
-    `${repo}/git/commits/${latest.sourceSha}`,
-    z.object({ tree: z.object({ sha: sourceShaSchema }) })
+/** Everything docs maintenance needs, captured once from the verified release and the current protected docs. */
+export const selectDocsInput = (runId: string) =>
+  Effect.gen(function* () {
+    const target = yield* getRun(runId);
+    yield* ensure(
+      (yield* publicationState(target)).verified,
+      'Public registry verification must succeed before SDK docs maintenance'
+    );
+    const batch = yield* batchAt(target.head_sha ?? '');
+    const latest = yield* newestVerifiedRelease;
+    const sourceSha = yield* Effect.flatMap(
+      refSha('next'),
+      Option.match({
+        onNone: () => fail('Protected next is unavailable'),
+        onSome: Effect.succeed,
+      })
+    );
+    const branchHead = Option.getOrNull(yield* refSha(BRANCH));
+    const pendingFiles = branchHead === null ? [] : yield* pendingDocsFiles(sourceSha, branchHead);
+    const tree = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/git/trees/${latest.run.head_sha}?recursive=1`,
+      Schema.Struct({
+        truncated: Schema.Literal(false),
+        tree: Schema.Array(Schema.Struct({ path: Schema.String, type: Schema.String })),
+      })
+    );
+    return yield* Schema.decodeUnknownEffect(DocsInput)({
+      runId: target.id,
+      batch,
+      sourceSha,
+      verifiedRunId: latest.run.id,
+      verifiedSourceSha: latest.run.head_sha,
+      branchHead,
+      pendingFiles,
+      targets: yield* verifiedTargets(latest, tree.tree),
+      verifiedLanguages: [...new Set(latest.batch.plan.releases.map(release => release.language))],
+      summaries: latest.batch.plan.changesets.map(note => note.summary),
+    });
+  });
+
+/** A file at a git revision, or `None` when it does not exist there. */
+const gitShow = (cwd: string, rev: string, path: string) =>
+  Effect.map(
+    spawn('git', ['show', `${rev}:${path}`], { cwd, env: withoutReleaseTokens }),
+    result => (result.exitCode === 0 ? Option.some(result.stdout) : Option.none<string>())
   );
-  const tree = await github.request(
-    'POST',
-    `${repo}/git/trees`,
-    z.object({ sha: sourceShaSchema }),
-    {
+
+const git = (cwd: string, ...args: ReadonlyArray<string>) =>
+  run('git', args, { cwd, env: withoutReleaseTokens });
+
+const requireNoControllerToken = (message: string) =>
+  Effect.gen(function* () {
+    const token = yield* Config.option(Config.String('SDK_RELEASE_TOKEN'));
+    yield* ensure(Option.isNone(token) || token.value === '', message);
+  });
+
+type GuideChange =
+  | { readonly _tag: 'Deleted' }
+  | { readonly _tag: 'Created'; readonly after: string }
+  | { readonly _tag: 'Edited'; readonly before: string; readonly after: string };
+
+const guideChange = ({ before, after }: ReleaseFile): GuideChange =>
+  after === null
+    ? { _tag: 'Deleted' }
+    : before === null
+      ? { _tag: 'Created', after }
+      : { _tag: 'Edited', before, after };
+
+/**
+ * Re-applies a pending guide edit onto current protected docs. Edits merge three-way against the
+ * pending branch's merge base, so protected changes survive and overlapping edits fail.
+ */
+const applyPendingGuide = (cwd: string, file: ReleaseFile, ancestor: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const target = path.resolve(cwd, file.path);
+    yield* Match.valueTags(guideChange(file), {
+      Deleted: () =>
+        Effect.gen(function* () {
+          yield* ensure(
+            file.before === Option.getOrNull(ancestor),
+            'Pending guide deletion conflicts with newer docs'
+          );
+          yield* fs.remove(target);
+        }),
+      Created: ({ after }) =>
+        Effect.gen(function* () {
+          yield* ensure(
+            Option.isNone(ancestor),
+            'Pending guide edits conflict with a newer protected deletion'
+          );
+          yield* fs.makeDirectory(path.dirname(target), { recursive: true });
+          yield* fs.writeFileString(target, after);
+        }),
+      Edited: ({ before, after }) =>
+        Effect.scoped(
+          Effect.gen(function* () {
+            const scratch = yield* fs.makeTempDirectoryScoped({ prefix: 'sdk-guide-' });
+            const [current, base, pending] = ['current', 'base', 'pending'].map(name =>
+              path.join(scratch, name)
+            );
+            yield* fs.writeFileString(current, before);
+            yield* fs.writeFileString(
+              base,
+              Option.getOrElse(ancestor, () => '')
+            );
+            yield* fs.writeFileString(pending, after);
+            const merged = yield* spawn('git', ['merge-file', '-p', current, base, pending], {
+              cwd,
+              env: withoutReleaseTokens,
+            });
+            yield* ensure(
+              merged.exitCode === 0,
+              'Pending guide edits conflict with current protected docs; resolve the maintenance PR'
+            );
+            yield* fs.writeFileString(target, merged.stdout);
+          })
+        ),
+    });
+  });
+
+const prepareDocs = (cwd: string, input: DocsInput) =>
+  Effect.gen(function* () {
+    yield* requireNoControllerToken('Docs generation must not receive controller credentials');
+    yield* ensure(
+      (yield* git(cwd, 'rev-parse', 'HEAD')).trim() === input.sourceSha,
+      'Docs source differs from current protected input'
+    );
+    const mergeBase = yield* Effect.cached(
+      input.branchHead
+        ? Effect.map(git(cwd, 'merge-base', input.sourceSha, input.branchHead), base => base.trim())
+        : Effect.succeed(input.sourceSha)
+    );
+    for (const file of input.pendingFiles) {
+      yield* ensure(allowedDocsPath(file.path), 'Invalid pending docs path');
+      if (!file.path.startsWith(GUIDES)) continue;
+      yield* ensure(
+        Option.getOrNull(yield* gitShow(cwd, input.sourceSha, file.path)) === file.before,
+        'Pending guide baseline differs'
+      );
+      yield* applyPendingGuide(cwd, file, yield* gitShow(cwd, yield* mergeBase, file.path));
+    }
+    const fs = yield* FileSystem.FileSystem;
+    const installed = yield* lockedSdkVersions(yield* fs.readFileString(`${cwd}/docs/bun.lock`));
+    const pendingLock = input.pendingFiles.find(file => file.path === 'docs/bun.lock')?.after;
+    if (pendingLock)
+      for (const [name, version] of Object.entries(yield* lockedSdkVersions(pendingLock)))
+        if (!installed[name] || semver.gt(version, installed[name])) installed[name] = version;
+    const manifest = yield* pinDocsSdkVersions(
+      JSON.parse(yield* fs.readFileString(`${cwd}/docs/package.json`)),
+      input.targets,
+      installed
+    );
+    yield* writeFile(`${cwd}/docs/package.json`, formatJson(manifest));
+  });
+
+const nulSeparated = (output: string) => output.split('\0').filter(Boolean);
+
+const captureDocsPatch = (cwd: string, input: DocsInput) =>
+  Effect.gen(function* () {
+    const paths = [
+      ...new Set([
+        ...nulSeparated(yield* git(cwd, 'diff', '--name-only', '-z', input.sourceSha)),
+        ...nulSeparated(yield* git(cwd, 'ls-files', '--others', '--exclude-standard', '-z')),
+      ]),
+    ];
+    const files = [];
+    for (const path of paths) {
+      yield* ensure(allowedDocsPath(path), `Docs maintenance changed an unowned path: ${path}`);
+      files.push({
+        path,
+        before: Option.getOrNull(yield* gitShow(cwd, input.sourceSha, path)),
+        after: Option.getOrNull(yield* readOptionalFile(`${cwd}/${path}`)),
+      });
+    }
+    return yield* Schema.decodeUnknownEffect(DocsPatch)({ input, files });
+  });
+
+const CreatedSha = Schema.Struct({ sha: Sha });
+const RefObject = Schema.Struct({ object: Schema.Struct({ sha: Sha }) });
+const PullNumber = Schema.Struct({ number: Schema.Number });
+
+/** The docs manifest may change only by pinning SDK packages to the verified targets. */
+const verifyManifestPins = (file: ReleaseFile, latest: DocsInput) =>
+  Effect.gen(function* () {
+    const lock = yield* contents('docs/bun.lock', latest.sourceSha);
+    if (!lock || !file.before || !file.after)
+      return yield* fail('Docs manifest changes more than exact verified SDK pins');
+    const pinned = yield* pinDocsSdkVersions(
+      JSON.parse(file.before),
+      latest.targets,
+      yield* lockedSdkVersions(lock)
+    );
+    yield* ensure(
+      JSON.stringify(JSON.parse(file.after)) === JSON.stringify(pinned),
+      'Docs manifest changes more than exact verified SDK pins'
+    );
+  });
+
+const publishMaintenanceBranch = (latest: DocsInput, sha: string) =>
+  latest.branchHead
+    ? request('PATCH', `${REPOSITORY_PATH}/git/refs/heads/${BRANCH}`, RefObject, {
+        sha,
+        force: false,
+      })
+    : request('POST', `${REPOSITORY_PATH}/git/refs`, RefObject, {
+        ref: `refs/heads/${BRANCH}`,
+        sha,
+      });
+
+const upsertMaintenancePull = (latest: DocsInput) =>
+  Effect.gen(function* () {
+    const prs = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/pulls?state=open&base=next&head=ComposioHQ:${BRANCH}`,
+      Schema.Array(Schema.Struct({ number: Schema.Number, body: Schema.NullOr(Schema.String) }))
+    );
+    const body = `${MARKER}\n## Summary\nUpdate guides and exact SDK pins from verified source ${latest.verifiedSourceSha}.\n\nThese maintenance changes receive ordinary review and docs example/build checks. Package publication and release completion do not wait for this PR.\n\nVerified publication run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${latest.verifiedRunId}`;
+    yield* ensure(prs.length <= 1, 'Multiple SDK docs maintenance PRs are open');
+    const [existing] = prs;
+    yield* existing
+      ? request('PATCH', `${REPOSITORY_PATH}/pulls/${existing.number}`, PullNumber, {
+          body,
+          title: MAINTENANCE_TITLE,
+        })
+      : request('POST', `${REPOSITORY_PATH}/pulls`, PullNumber, {
+          head: BRANCH,
+          base: 'next',
+          title: MAINTENANCE_TITLE,
+          body,
+        });
+  });
+
+/** Commits a captured docs patch onto current protected docs if neither the inputs nor the pending branch moved. */
+export const commitDocsPatch = (value: unknown) =>
+  Effect.gen(function* () {
+    const patch = yield* Schema.decodeUnknownEffect(DocsPatch)(value);
+    const latest = yield* selectDocsInput(String(patch.input.runId));
+    yield* requireFreshDocsInput(patch.input, latest);
+    for (const file of patch.files) {
+      yield* ensure(
+        allowedDocsPath(file.path) &&
+          (yield* contents(file.path, latest.sourceSha)) === file.before,
+        'Docs patch source or path differs'
+      );
+      if (file.path === 'docs/package.json') yield* verifyManifestPins(file, latest);
+    }
+    if (!patch.files.length) return { changed: false };
+    const commit = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/git/commits/${latest.sourceSha}`,
+      Schema.Struct({ tree: Schema.Struct({ sha: Sha }) })
+    );
+    const tree = yield* request('POST', `${REPOSITORY_PATH}/git/trees`, CreatedSha, {
       base_tree: commit.tree.sha,
       tree: patch.files.map(file => ({
         path: file.path,
@@ -428,179 +656,178 @@ export async function commitDocsPatch(github: GitHubReleaseClient, value: unknow
         type: 'blob',
         ...(file.after === null ? { sha: null } : { content: file.after }),
       })),
-    }
-  );
-  const next = await github.request(
-    'POST',
-    `${repo}/git/commits`,
-    z.object({ sha: sourceShaSchema }),
-    {
-      message: 'docs: align guides and pins with verified SDK releases',
+    });
+    const next = yield* request('POST', `${REPOSITORY_PATH}/git/commits`, CreatedSha, {
+      message: MAINTENANCE_TITLE,
       tree: tree.sha,
       parents: [latest.sourceSha, ...(latest.branchHead ? [latest.branchHead] : [])],
-    }
-  );
-  requireFreshDocsInput(latest, await selectDocsInput(github, String(patch.input.runId)));
-  if (latest.branchHead)
-    await github.request(
-      'PATCH',
-      `${repo}/git/refs/heads/${branch}`,
-      z.object({ object: z.object({ sha: sourceShaSchema }) }),
-      { sha: next.sha, force: false }
-    );
-  else
-    await github.request(
-      'POST',
-      `${repo}/git/refs`,
-      z.object({ object: z.object({ sha: sourceShaSchema }) }),
-      { ref: `refs/heads/${branch}`, sha: next.sha }
-    );
-  const prs = await github.request(
-    'GET',
-    `${repo}/pulls?state=open&base=next&head=ComposioHQ:${branch}`,
-    z.array(z.object({ number: z.number(), body: z.string().nullable() }))
-  );
-  const body = `${marker}\n## Summary\nUpdate guides and exact SDK pins from verified source ${latest.verifiedSourceSha}.\n\nThese maintenance changes receive ordinary review and docs example/build checks. Package publication and release completion do not wait for this PR.\n\nVerified publication run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${latest.verifiedRunId}`;
-  if (prs.length > 1) throw new Error('Multiple SDK docs maintenance PRs are open');
-  if (prs[0])
-    await github.request(
-      'PATCH',
-      `${repo}/pulls/${prs[0].number}`,
-      z.object({ number: z.number() }),
-      { body, title: 'docs: align guides and pins with verified SDK releases' }
-    );
-  else
-    await github.request('POST', `${repo}/pulls`, z.object({ number: z.number() }), {
-      head: branch,
-      base: 'next',
-      title: 'docs: align guides and pins with verified SDK releases',
-      body,
     });
-  return { changed: true };
-}
+    yield* requireFreshDocsInput(latest, yield* selectDocsInput(String(patch.input.runId)));
+    yield* publishMaintenanceBranch(latest, next.sha);
+    yield* upsertMaintenancePull(latest);
+    return { changed: true };
+  });
 
-async function finishDocs(
-  github: GitHubReleaseClient,
+type DocsState = 'pending' | 'failed' | 'verified';
+
+/** Verified docs stay verified; otherwise a live result replaces the previous state. `undefined` reports maintenance only. */
+const nextDocsState = (live: boolean | undefined, previous: DocsState | undefined): DocsState =>
+  live === true || previous === 'verified'
+    ? 'verified'
+    : live === false
+      ? 'failed'
+      : (previous ?? 'pending');
+
+const MergedPull = Schema.Struct({
+  number: Schema.Number,
+  merged_at: Schema.NullOr(Schema.String),
+  head: Schema.Struct({ sha: Schema.String }),
+});
+
+const finishDocs = (
   runId: string,
   appId: number,
-  successful: boolean | undefined,
-  maintenance: PublicationReport['maintenance']
-) {
-  const run = await github.getRun(runId);
-  if (!(await publicationState(github, run)).verified)
-    throw new Error('Cannot report docs completion before registry verification');
-  const batch = (await committedBatch(github, run.head_sha!))!;
-  const previous = await readPublicationStatus(github, batch, appId);
-  const pulls = await github.request(
-    'GET',
-    `${repo}/commits/${run.head_sha}/pulls?per_page=100`,
-    z.array(
-      z.object({
-        number: z.number(),
-        merged_at: z.string().nullable(),
-        head: z.object({ sha: z.string() }),
-      })
-    )
-  );
-  const pull = pulls.find(pull => pull.merged_at && pull.head.sha === run.head_sha);
-  if (!pull) throw new Error('Docs status source is not a merged release head');
-  const docs =
-    successful === true || previous?.docs === 'verified'
-      ? 'verified'
-      : successful === false
-        ? 'failed'
-        : (previous?.docs ?? 'pending');
-  await writePublicationStatus(
-    github,
-    batch,
-    {
-      ...previous,
-      runId: run.id,
-      sourceSha: run.head_sha!,
-      registryVerified: true,
-      terminal: false,
-      docs,
-      maintenance,
-      candidates: previous?.candidates ?? [],
-      inventory: previous?.inventory ?? [],
-    },
-    appId,
-    pull.number
-  );
-}
+  live: boolean | undefined,
+  maintenance: Maintenance
+) =>
+  Effect.gen(function* () {
+    const target = yield* getRun(runId);
+    yield* ensure(
+      (yield* publicationState(target)).verified,
+      'Cannot report docs completion before registry verification'
+    );
+    const headSha = target.head_sha ?? '';
+    const batch = yield* batchAt(headSha);
+    const previous = Option.getOrUndefined(yield* readPublicationStatus(batch, appId));
+    const pulls = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/commits/${target.head_sha}/pulls?per_page=100`,
+      Schema.Array(MergedPull)
+    );
+    const pull = pulls.find(candidate => candidate.merged_at && candidate.head.sha === headSha);
+    if (!pull) return yield* fail('Docs status source is not a merged release head');
+    yield* writePublicationStatus(
+      batch,
+      {
+        ...previous,
+        runId: target.id,
+        sourceSha: headSha,
+        registryVerified: true,
+        terminal: false,
+        docs: nextDocsState(live, previous?.docs),
+        maintenance,
+        candidates: previous?.candidates ?? [],
+        inventory: previous?.inventory ?? [],
+      },
+      appId,
+      pull.number
+    );
+  });
 
-if (import.meta.main) {
-  const mode = z
-    .enum(['context', 'prepare', 'capture', 'commit', 'live', 'finish', 'deploy'])
-    .parse(Bun.argv[2]);
-  const inputPath = process.env.SDK_DOCS_INPUT ?? '/tmp/sdk-docs-input.json';
-  if (mode === 'prepare' || mode === 'capture' || mode === 'live') {
-    const input = docsInputSchema.parse(await Bun.file(inputPath).json());
-    if (mode === 'prepare') await prepareDocs(process.cwd(), input);
-    else if (mode === 'capture')
-      await writeFile(
-        '/tmp/sdk-docs-patch.json',
-        JSON.stringify(await captureDocsPatch(process.cwd(), input))
-      );
-    else {
-      for (let attempt = 0; ; attempt++) {
-        try {
-          await verifyLiveReleaseDocs(input.batch);
-          break;
-        } catch (error) {
-          if (attempt === 19) throw error;
-          await Bun.sleep(30_000);
-        }
-      }
-    }
-  } else if (mode === 'deploy') {
-    const hook = process.env.VERCEL_DOCS_NEXT_DEPLOY_HOOK;
-    if (!hook)
-      throw new Error('Configure the protected-next Vercel docs deploy hook before docs recovery');
-    const url = new URL(hook);
-    if (
-      url.origin !== 'https://api.vercel.com' ||
-      !url.pathname.startsWith('/v1/integrations/deploy/')
+const Mode = Schema.Literals([
+  'context',
+  'prepare',
+  'capture',
+  'commit',
+  'live',
+  'finish',
+  'deploy',
+]);
+type Mode = typeof Mode.Type;
+
+const inputPath = Config.String('SDK_DOCS_INPUT').pipe(
+  Config.withDefault('/tmp/sdk-docs-input.json')
+);
+const controllerToken = Config.schema(Schema.NonEmptyString, 'SDK_RELEASE_TOKEN');
+const NonEmpty = Schema.NonEmptyString;
+
+const withInput = <A, E, R>(use: (input: DocsInput, cwd: string) => Effect.Effect<A, E, R>) =>
+  Effect.gen(function* () {
+    const input = yield* readJson(DocsInput, yield* inputPath);
+    return yield* use(input, (yield* Path.Path).resolve('.'));
+  });
+
+const asController = <A, E, R>(program: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(controllerToken, token => program.pipe(Effect.provide(GitHub.layer(token))));
+
+/** The live-docs check retries while the docs deployment rolls out: 20 attempts, 30 seconds apart. */
+const LIVE_DOCS_RETRY = { schedule: Schedule.spaced('30 seconds'), times: 19 } as const;
+
+/** A live result of `maintenance` reports maintenance only; any other result is pass or fail. */
+const liveResult = (value: Option.Option<string>) =>
+  Option.contains(value, 'maintenance') ? undefined : Option.contains(value, 'success');
+
+const deploy = Effect.gen(function* () {
+  const hook = yield* Config.option(Config.String('VERCEL_DOCS_NEXT_DEPLOY_HOOK'));
+  if (Option.isNone(hook) || hook.value === '')
+    return yield* fail('Configure the protected-next Vercel docs deploy hook before docs recovery');
+  const url = yield* Effect.try(() => new URL(hook.value));
+  yield* ensure(
+    url.origin === 'https://api.vercel.com' && url.pathname.startsWith('/v1/integrations/deploy/'),
+    'Invalid native Vercel deploy hook'
+  );
+  const client = yield* HttpClient.HttpClient;
+  const response = yield* client
+    .execute(HttpClientRequest.post(url))
+    .pipe(
+      Effect.timeout('30 seconds'),
+      Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' })
+    );
+  yield* ensure(
+    response.status >= 200 && response.status < 300,
+    `Current protected docs deployment request failed (${response.status})`
+  );
+  yield* Console.log('Requested a native Vercel build of the configured protected next branch.');
+});
+
+const MODES = {
+  prepare: withInput((input, cwd) => prepareDocs(cwd, input)),
+  capture: withInput((input, cwd) =>
+    Effect.flatMap(captureDocsPatch(cwd, input), patch =>
+      writeFile(PATCH_PATH, JSON.stringify(patch))
     )
-      throw new Error('Invalid native Vercel deploy hook');
-    const response = await fetch(url, {
-      method: 'POST',
-      redirect: 'error',
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!response.ok)
-      throw new Error(`Current protected docs deployment request failed (${response.status})`);
-    console.log('Requested a native Vercel build of the configured protected next branch.');
-  } else {
-    const github = new GitHubReleaseClient(z.string().min(1).parse(process.env.SDK_RELEASE_TOKEN));
-    if (mode === 'context') {
-      const actor = z.string().min(1).parse(process.env.GITHUB_ACTOR);
-      const app = z.string().min(1).parse(process.env.SDK_RELEASE_APP_SLUG);
-      if (actor !== `${app}[bot]`) await github.requireActiveMember(actor);
-      const runId = z
-        .string()
-        .regex(/^[1-9][0-9]*$/)
-        .parse(process.env.SDK_DOCS_RUN_ID);
-      const input = await selectDocsInput(github, runId);
-      await writeFile(inputPath, JSON.stringify(input));
-      await writeFile(
-        z.string().parse(process.env.GITHUB_OUTPUT),
+  ),
+  live: withInput(input => verifyLiveReleaseDocs(input.batch).pipe(Effect.retry(LIVE_DOCS_RETRY))),
+  deploy,
+  context: asController(
+    Effect.gen(function* () {
+      const actor = yield* Config.schema(NonEmpty, 'GITHUB_ACTOR');
+      const app = yield* Config.schema(NonEmpty, 'SDK_RELEASE_APP_SLUG');
+      if (actor !== `${app}[bot]`) yield* requireActiveMember(actor);
+      const runId = yield* Config.schema(RunId, 'SDK_DOCS_RUN_ID');
+      const input = yield* selectDocsInput(runId);
+      yield* writeFile(yield* inputPath, JSON.stringify(input));
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(
+        yield* Config.String('GITHUB_OUTPUT'),
         `source-sha=${input.sourceSha}\n`,
-        { flag: 'a' }
+        {
+          flag: 'a',
+        }
       );
-    } else if (mode === 'commit')
-      await commitDocsPatch(github, await Bun.file('/tmp/sdk-docs-patch.json').json());
-    else
-      await finishDocs(
-        github,
-        z.string().parse(process.env.SDK_DOCS_RUN_ID),
-        z.coerce.number().int().positive().parse(process.env.SDK_RELEASE_APP_ID),
-        process.env.SDK_DOCS_LIVE_RESULT === 'maintenance'
-          ? undefined
-          : process.env.SDK_DOCS_LIVE_RESULT === 'success',
-        publicationReportSchema.shape.maintenance.parse(
-          process.env.SDK_DOCS_MAINTENANCE_RESULT ?? 'pending'
-        )
+    })
+  ),
+  commit: asController(Effect.flatMap(readJson(Schema.Unknown, PATCH_PATH), commitDocsPatch)),
+  finish: asController(
+    Effect.gen(function* () {
+      const runId = yield* Config.String('SDK_DOCS_RUN_ID');
+      const appId = yield* Config.schema(
+        Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
+        'SDK_RELEASE_APP_ID'
       );
-  }
-}
+      const live = liveResult(yield* Config.option(Config.String('SDK_DOCS_LIVE_RESULT')));
+      const maintenance = yield* Config.schema(Maintenance, 'SDK_DOCS_MAINTENANCE_RESULT').pipe(
+        Config.withDefault('pending' as const)
+      );
+      yield* finishDocs(runId, appId, live, maintenance);
+    })
+  ),
+};
+
+const main = Effect.gen(function* () {
+  const [argument] = yield* (yield* Stdio.Stdio).args;
+  const mode = yield* Schema.decodeUnknownEffect(Mode)(argument);
+  yield* MODES[mode];
+});
+
+if (import.meta.main) runMain(main);

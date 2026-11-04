@@ -1,50 +1,74 @@
-import { z } from 'zod';
-import { releaseChoiceSchema } from './plan';
+import { Effect, Schema } from 'effect';
+import { RunId } from './github';
+import { autoByDefault } from './plan';
 
-const runIdSchema = z.string().regex(/^[1-9][0-9]*$/);
-export const releaseRequestSchema = z
-  .object({
-    action: z.enum(['release', 'refresh', 'status', 'retry']).default('release'),
-    typescript: releaseChoiceSchema.default('auto'),
-    python: releaseChoiceSchema.default('auto'),
-    run_id: runIdSchema.optional(),
-  })
-  .superRefine((value, context) => {
-    if (value.action === 'retry' && !value.run_id)
-      context.addIssue({
-        code: 'custom',
-        path: ['run_id'],
-        message: 'Retry requires the original run ID',
-      });
-  });
-export type ReleaseRequest = z.infer<typeof releaseRequestSchema>;
-const dispatchSchema = z.object({ inputs: z.record(z.string(), z.unknown()).default({}) });
-const issueSchema = z.object({ issue: z.object({ body: z.string() }) });
+export const ReleaseRequest = Schema.Struct({
+  action: Schema.Literals(['release', 'refresh', 'status', 'retry']).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed('release' as const))
+  ),
+  typescript: autoByDefault,
+  python: autoByDefault,
+  run_id: Schema.optionalKey(RunId),
+}).check(
+  Schema.makeFilter(value =>
+    value.action !== 'retry' || value.run_id !== undefined
+      ? undefined
+      : { path: ['run_id'], issue: 'Retry requires the original run ID' }
+  )
+);
+export type ReleaseRequest = typeof ReleaseRequest.Type;
+const decodeRequest = Schema.decodeUnknownSync(ReleaseRequest);
 
-export function parseReleaseRequest(eventName: string, payload: unknown): ReleaseRequest {
-  if (eventName === 'workflow_dispatch') {
-    const { inputs } = dispatchSchema.parse(payload);
-    return releaseRequestSchema.parse({
-      ...inputs,
-      run_id: inputs.run_id === '' ? undefined : inputs.run_id,
-    });
+const Dispatch = Schema.Struct({
+  inputs: Schema.Record(Schema.String, Schema.Unknown).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({}))
+  ),
+});
+const Issue = Schema.Struct({ issue: Schema.Struct({ body: Schema.String }) });
+
+/** Issue-form headings and the request fields they fill. */
+const ISSUE_FIELDS = {
+  Action: 'action',
+  TypeScript: 'typescript',
+  Python: 'python',
+  'Original run ID': 'run_id',
+} as const;
+const REQUIRED_ISSUE_FIELDS = ['Action', 'TypeScript', 'Python'] as const;
+const ISSUE_FIELD_PATTERN =
+  /^### (Action|TypeScript|Python|Original run ID)\r?\n\r?\n([\s\S]*?)(?=^### |$(?![\s\S]))/gm;
+const parseIssueBody = (body: string) => {
+  const fields = new Map<keyof typeof ISSUE_FIELDS, string>();
+  for (const match of body.matchAll(ISSUE_FIELD_PATTERN)) {
+    const heading = match[1] as keyof typeof ISSUE_FIELDS;
+    if (fields.has(heading)) throw new Error(`Duplicate release field: ${heading}`);
+    fields.set(heading, match[2].trim());
   }
-  if (eventName !== 'issues') throw new Error('Unsupported SDK release request event');
-  const body = issueSchema.parse(payload).issue.body;
-  const fields = new Map<string, string>();
-  for (const match of body.matchAll(
-    /^### (Action|TypeScript|Python|Original run ID)\r?\n\r?\n([\s\S]*?)(?=^### |$(?![\s\S]))/gm
-  )) {
-    if (fields.has(match[1])) throw new Error(`Duplicate release field: ${match[1]}`);
-    fields.set(match[1], match[2].trim());
-  }
-  if (!fields.has('Action') || !fields.has('TypeScript') || !fields.has('Python'))
+  if (!REQUIRED_ISSUE_FIELDS.every(heading => fields.has(heading)))
     throw new Error('Use the SDK release request issue form');
-  const original = fields.get('Original run ID');
-  return releaseRequestSchema.parse({
-    action: fields.get('Action'),
-    typescript: fields.get('TypeScript'),
-    python: fields.get('Python'),
-    run_id: !original || original === '_No response_' ? undefined : original,
-  });
+  return Object.fromEntries([...fields].map(([heading, value]) => [ISSUE_FIELDS[heading], value]));
+};
+
+interface RequestSource {
+  readonly fields: (payload: unknown) => Record<string, unknown>;
+  /** Values a source uses for an omitted original run ID. */
+  readonly emptyRunIds: ReadonlySet<unknown>;
+}
+
+const REQUEST_SOURCES: Record<string, RequestSource> = {
+  workflow_dispatch: {
+    fields: payload => Schema.decodeUnknownSync(Dispatch)(payload).inputs,
+    emptyRunIds: new Set([undefined, '']),
+  },
+  issues: {
+    fields: payload => parseIssueBody(Schema.decodeUnknownSync(Issue)(payload).issue.body),
+    emptyRunIds: new Set([undefined, '', '_No response_']),
+  },
+};
+
+/** Normalizes an issue-form or dispatch request through one schema. */
+export function parseReleaseRequest(eventName: string, payload: unknown): ReleaseRequest {
+  const source = REQUEST_SOURCES[eventName];
+  if (!source) throw new Error('Unsupported SDK release request event');
+  const { run_id, ...fields } = source.fields(payload);
+  return decodeRequest(source.emptyRunIds.has(run_id) ? fields : { ...fields, run_id });
 }

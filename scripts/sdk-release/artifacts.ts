@@ -1,128 +1,202 @@
-import { createHash } from 'node:crypto';
-import { z } from 'zod';
-import { GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './github';
+import { Effect, FileSystem, Option, Schema, Stream } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/http';
+import { GitHub, REPOSITORY_PATH, Sha, jobs, paginate } from './github';
+import { Language } from './lanes';
+import { ensure, fail, run, sha256Hex, withoutReleaseTokens } from './runtime';
 
-export const candidateFileSchema = z.object({
-  name: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
-  sha256: z.string().regex(/^[a-f0-9]{64}$/),
-  size: z.number().int().nonnegative(),
-});
-export const candidateManifestSchema = z.object({
-  sourceSha: z.string().regex(/^[a-f0-9]{40}$/),
-  producerRun: z.number().int().positive(),
-  language: z.enum(['typescript', 'python']),
-  files: z
-    .array(candidateFileSchema)
-    .min(1)
-    .refine(
-      files => new Set(files.map(file => file.name)).size === files.length,
-      'Candidate filenames must be unique'
-    ),
-});
-export const actionArtifactSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string(),
-  digest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
-  expired: z.boolean(),
-  created_at: z.string().datetime(),
-  expires_at: z.string().datetime(),
-  workflow_run: z.object({
-    id: z.number().int().positive(),
-    head_sha: z.string().regex(/^[a-f0-9]{40}$/),
-  }),
-});
-export type CandidateArtifact = z.infer<typeof actionArtifactSchema>;
-export function normalizeArtifactDigest(value: unknown): string {
-  const digest = z.string().parse(value);
-  return actionArtifactSchema.shape.digest.parse(
-    digest.startsWith('sha256:') ? digest : `sha256:${digest}`
-  );
-}
-export const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+const Digest = Schema.String.check(Schema.isPattern(/^sha256:[a-f0-9]{64}$/));
+const IsoDate = Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}T/));
+const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
+const ArchiveEntry = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
-export function reuseCandidate(
-  artifacts: CandidateArtifact[],
+export const CandidateFile = Schema.Struct({
+  name: Schema.String.check(Schema.isPattern(ArchiveEntry)),
+  sha256: Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/)),
+  size: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+});
+export type CandidateFile = typeof CandidateFile.Type;
+
+export const CandidateManifest = Schema.Struct({
+  sourceSha: Sha,
+  producerRun: PositiveInt,
+  language: Language,
+  files: Schema.Array(CandidateFile).check(
+    Schema.isMinLength(1),
+    Schema.makeFilter(files =>
+      new Set(files.map(file => file.name)).size === files.length
+        ? undefined
+        : 'Candidate filenames must be unique'
+    )
+  ),
+});
+export type CandidateManifest = typeof CandidateManifest.Type;
+
+/** Name of the manifest each candidate artifact carries next to its distributions. */
+export const CANDIDATE_MANIFEST = 'candidate.json';
+export const candidateArtifactName = (language: Language) => `sdk-candidate-${language}`;
+
+export const ActionArtifact = Schema.Struct({
+  id: PositiveInt,
+  name: Schema.String,
+  digest: Digest,
+  expired: Schema.Boolean,
+  created_at: IsoDate,
+  expires_at: IsoDate,
+  workflow_run: Schema.Struct({ id: PositiveInt, head_sha: Sha }),
+});
+export type CandidateArtifact = typeof ActionArtifact.Type;
+
+export const normalizeArtifactDigest = (value: unknown) =>
+  Effect.gen(function* () {
+    const digest = yield* Schema.decodeUnknownEffect(Schema.String)(value);
+    return yield* Schema.decodeUnknownEffect(Digest)(
+      digest.startsWith('sha256:') ? digest : `sha256:${digest}`
+    );
+  });
+
+/** An artifact is usable while GitHub still retains it. */
+export const isRetained = (artifact: CandidateArtifact, now: number) =>
+  !artifact.expired && Date.parse(artifact.expires_at) > now;
+
+/** The run's single artifact with this name, if it was produced from this source and is still retained. */
+export const reuseCandidate = (
+  artifacts: ReadonlyArray<CandidateArtifact>,
   name: string,
   producerRun: number,
   sourceSha: string,
   now = Date.now()
-): CandidateArtifact | undefined {
-  const matching = artifacts.filter(artifact => artifact.name === name);
-  if (matching.length > 1) throw new Error('Multiple immutable candidates have the same name');
-  const artifact = matching[0];
-  if (!artifact) return undefined;
-  if (artifact.workflow_run.id !== producerRun || artifact.workflow_run.head_sha !== sourceSha)
-    throw new Error('Candidate source or producer does not match');
-  if (artifact.expired || Date.parse(artifact.expires_at) <= now)
-    throw new Error('Original candidate unavailable; a corrective release is required');
-  return actionArtifactSchema.parse(artifact);
-}
-export function verifyArchive(bytes: Uint8Array, digest: string): void {
-  if (`sha256:${sha256(bytes)}` !== digest)
-    throw new Error('Actions artifact archive digest mismatch');
-}
-export function verifyCandidateFiles(
-  actual: Map<string, Uint8Array>,
-  expected: z.infer<typeof candidateFileSchema>[]
-): void {
-  if (actual.size !== expected.length) throw new Error('Candidate file inventory mismatch');
-  for (const file of expected) {
-    const bytes = actual.get(file.name);
-    if (!bytes || bytes.length !== file.size || sha256(bytes) !== file.sha256)
-      throw new Error(`Candidate checksum mismatch: ${file.name}`);
-  }
-}
-export function candidateGate(selected: string[], results: Record<string, string>): boolean {
-  return selected.length > 0 && selected.every(language => results[language] === 'success');
-}
-
-export async function originalCandidates(
-  github: GitHubReleaseClient,
-  run: number
-): Promise<CandidateArtifact[]> {
-  const artifacts: CandidateArtifact[] = [];
-  for (let page = 1; ; page++) {
-    const result = await github.request(
-      'GET',
-      `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${run}/artifacts?per_page=100&page=${page}`,
-      z.object({ artifacts: z.array(actionArtifactSchema) })
+) =>
+  Effect.gen(function* () {
+    const matching = artifacts.filter(artifact => artifact.name === name);
+    yield* ensure(matching.length <= 1, 'Multiple immutable candidates have the same name');
+    const [artifact] = matching;
+    if (!artifact) return Option.none<CandidateArtifact>();
+    yield* ensure(
+      artifact.workflow_run.id === producerRun && artifact.workflow_run.head_sha === sourceSha,
+      'Candidate source or producer does not match'
     );
-    artifacts.push(...result.artifacts);
-    if (result.artifacts.length < 100) return artifacts;
-  }
-}
-
-/** A registry 404 alone cannot establish that a previous publisher never ran. */
-export async function mayRebuildMissingCandidate(
-  github: GitHubReleaseClient,
-  run: number,
-  publicInventoryEmpty: boolean
-): Promise<boolean> {
-  let anyPublisherStarted = false;
-  for (let page = 1; ; page++) {
-    const result = await github.request(
-      'GET',
-      `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${run}/jobs?filter=all&per_page=100&page=${page}`,
-      z.object({
-        jobs: z.array(
-          z.object({
-            name: z.string(),
-            steps: z.array(
-              z.object({ name: z.string(), status: z.string(), conclusion: z.string().nullable() })
-            ),
-          })
-        ),
-      })
+    yield* ensure(
+      isRetained(artifact, now),
+      'Original candidate unavailable; a corrective release is required'
     );
-    anyPublisherStarted ||= result.jobs.some(job =>
-      job.steps.some(
-        step =>
-          /upload.*(?:npm|pypi)|publish.*(?:npm|pypi)/i.test(step.name) &&
-          step.status !== 'queued' &&
-          step.conclusion !== 'skipped'
+    return Option.some(yield* Schema.decodeUnknownEffect(ActionArtifact)(artifact));
+  });
+
+export const verifyArchive = (bytes: Uint8Array, digest: string) =>
+  Effect.gen(function* () {
+    yield* ensure(
+      `sha256:${yield* sha256Hex(bytes)}` === digest,
+      'Actions artifact archive digest mismatch'
+    );
+  });
+
+export const verifyCandidateFiles = (
+  actual: ReadonlyMap<string, Uint8Array>,
+  expected: ReadonlyArray<CandidateFile>
+) =>
+  Effect.gen(function* () {
+    yield* ensure(actual.size === expected.length, 'Candidate file inventory mismatch');
+    for (const file of expected) {
+      const bytes = actual.get(file.name);
+      yield* ensure(
+        bytes !== undefined &&
+          bytes.length === file.size &&
+          (yield* sha256Hex(bytes)) === file.sha256,
+        `Candidate checksum mismatch: ${file.name}`
+      );
+    }
+  });
+
+export const originalCandidates = (run: number) =>
+  Stream.runCollect(
+    paginate(
+      `${REPOSITORY_PATH}/actions/runs/${run}/artifacts`,
+      Schema.Struct({ artifacts: Schema.Array(ActionArtifact) }),
+      body => body.artifacts
+    )
+  );
+
+const PUBLISHER_STEP = /upload.*(?:npm|pypi)|publish.*(?:npm|pypi)/i;
+
+/** Whether any registry upload or publish step of these jobs may have run. */
+export const publisherStarted = (
+  runJobs: ReadonlyArray<{
+    steps: ReadonlyArray<{ name: string; status: string; conclusion: string | null }>;
+  }>
+) =>
+  runJobs.some(job =>
+    job.steps.some(
+      step =>
+        PUBLISHER_STEP.test(step.name) && step.status !== 'queued' && step.conclusion !== 'skipped'
+    )
+  );
+
+/** A rebuild needs both an empty public inventory and proof that no publisher ran; a 404 alone is not enough. */
+export const mayRebuildMissingCandidate = (run: number, publicInventoryEmpty: boolean) =>
+  Effect.map(jobs(String(run)), runJobs => publicInventoryEmpty && !publisherStarted(runJobs));
+
+/** Downloads an original Actions artifact, checks its digest and archive paths, and unpacks it into `directory`. */
+export const downloadCandidate = (artifact: { id: number; digest: string }, directory: string) =>
+  Effect.gen(function* () {
+    const github = yield* GitHub;
+    const fs = yield* FileSystem.FileSystem;
+    const client = yield* HttpClient.HttpClient;
+    const location = yield* github.redirectLocation(
+      `${REPOSITORY_PATH}/actions/artifacts/${artifact.id}/zip`
+    );
+    const url = yield* Option.match(location, {
+      onNone: () => fail('Artifact download has no archive location'),
+      onSome: value => Effect.try(() => new URL(value)),
+    });
+    yield* ensure(url.protocol === 'https:', 'Expected an HTTPS artifact archive');
+    const archive = yield* client
+      .get(url)
+      .pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }));
+    yield* ensure(
+      archive.status >= 200 && archive.status < 300,
+      'Original artifact is unavailable'
+    );
+    const bytes = new Uint8Array(yield* archive.arrayBuffer);
+    yield* verifyArchive(bytes, artifact.digest);
+    const zip = `${directory}.zip`;
+    yield* fs.writeFile(zip, bytes);
+    const paths = (yield* run('unzip', ['-Z1', zip], { env: withoutReleaseTokens }))
+      .trim()
+      .split('\n');
+    yield* ensure(
+      new Set(paths).size === paths.length && paths.every(path => ArchiveEntry.test(path)),
+      'Unexpected artifact archive path'
+    );
+    yield* fs.makeDirectory(directory, { recursive: true });
+    yield* run('unzip', ['-q', zip, '-d', directory], { env: withoutReleaseTokens });
+  });
+
+/** Downloads a candidate into a scoped temporary directory and returns its verified manifest and file bytes. */
+export const readVerifiedCandidate = (
+  artifact: CandidateArtifact,
+  expected: { sourceSha: string; producerRun: number; language: Language },
+  mismatch: string
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const root = yield* fs.makeTempDirectoryScoped({ prefix: 'sdk-candidate-' });
+    const directory = `${root}/${expected.language}`;
+    yield* downloadCandidate(artifact, directory);
+    const manifest = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(CandidateManifest))(
+      yield* fs.readFileString(`${directory}/${CANDIDATE_MANIFEST}`)
+    );
+    yield* ensure(
+      manifest.sourceSha === expected.sourceSha &&
+        manifest.producerRun === expected.producerRun &&
+        manifest.language === expected.language,
+      mismatch
+    );
+    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
+    const files = new Map(
+      yield* Effect.forEach(names, name =>
+        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
       )
     );
-    if (result.jobs.length < 100) break;
-  }
-  return publicInventoryEmpty && !anyPublisherStarted;
-}
+    yield* verifyCandidateFiles(files, manifest.files);
+    return { manifest, files };
+  });

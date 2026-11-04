@@ -1,206 +1,257 @@
-import { z } from 'zod';
-import { originalCandidates } from './artifacts';
+import { Effect, Option, Schema, Stream } from 'effect';
 import {
-  GitHubReleaseApiError,
-  GitHubReleaseClient,
+  candidateArtifactName,
+  isRetained,
+  originalCandidates,
+  publisherStarted,
+  type CandidateArtifact,
+} from './artifacts';
+import {
+  REPOSITORY_PATH,
+  ReleaseRun,
   SDK_RELEASE_REPOSITORY,
-  releaseRunSchema,
-  type ReleaseRun,
+  decodeBase64Content,
+  jobs,
+  paginate,
+  request,
+  requestOptional,
+  type ReleaseJob,
 } from './github';
-import { batchPath, releaseBatchSchema, type ReleaseBatch } from './source';
+import { ensure, fail } from './runtime';
+import { BATCH_PATH, ReleaseBatch } from './source';
 
-const repo = `/repos/${SDK_RELEASE_REPOSITORY}`;
-export async function committedBatch(
-  github: GitHubReleaseClient,
-  ref: string
-): Promise<ReleaseBatch | undefined> {
-  try {
-    const file = await github.request(
+const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
+const RELEASE_PR_MARKER = '<!-- sdk-release-batch -->';
+const MAX_RUN_ATTEMPTS = 50;
+const RECOVERY_WINDOW_MS = 30 * 86_400_000;
+const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
+
+const FileContent = Schema.Struct({ encoding: Schema.Literal('base64'), content: Schema.String });
+
+const belongsToReleaseWorkflow = (run: ReleaseRun) =>
+  run.path === WORKFLOW_PATH && run.repository.full_name === SDK_RELEASE_REPOSITORY;
+const recoveryWindowClosed = (run: ReleaseRun, now: number) =>
+  now >= Date.parse(run.created_at) + RECOVERY_WINDOW_MS;
+const attemptsExhausted = (run: ReleaseRun) =>
+  run.run_attempt >= MAX_RUN_ATTEMPTS && run.status === 'completed';
+
+/** The release batch committed at `ref`, or `None` when that ref has no batch file. */
+export const committedBatch = (ref: string) =>
+  Effect.gen(function* () {
+    const file = yield* requestOptional(
+      `${REPOSITORY_PATH}/contents/${BATCH_PATH}?ref=${ref}`,
+      FileContent
+    );
+    if (Option.isNone(file)) return Option.none<ReleaseBatch>();
+    const contents = yield* decodeBase64Content(file.value.content);
+    return Option.some(
+      yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(contents)
+    );
+  });
+
+/** The single protected source-tag run that publishes this batch, if it started. */
+export const sourceTagRun = (batch: ReleaseBatch) =>
+  Effect.gen(function* () {
+    const branch = `sdk-release/${batch.id}`;
+    const runs = yield* request(
       'GET',
-      `${repo}/contents/${batchPath}?ref=${ref}`,
-      z.object({ encoding: z.literal('base64'), content: z.string() })
-    );
-    return releaseBatchSchema.parse(
-      JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'))
-    );
-  } catch (error) {
-    if (error instanceof GitHubReleaseApiError && error.status === 404) return undefined;
-    throw error;
-  }
-}
-export async function sourceTagRun(
-  github: GitHubReleaseClient,
-  batch: ReleaseBatch
-): Promise<ReleaseRun | undefined> {
-  const runs = await github.request(
-    'GET',
-    `${repo}/actions/workflows/sdk.release.yml/runs?event=push&branch=${encodeURIComponent(`sdk-release/${batch.id}`)}&per_page=100`,
-    z.object({ total_count: z.number().max(100), workflow_runs: z.array(releaseRunSchema) })
-  );
-  const original = runs.workflow_runs.filter(
-    run =>
-      run.head_branch === `sdk-release/${batch.id}` &&
-      run.path === '.github/workflows/sdk.release.yml' &&
-      run.repository.full_name === SDK_RELEASE_REPOSITORY
-  );
-  if (original.length > 1)
-    throw new Error('Multiple source-tag runs identify the same immutable release');
-  return original[0];
-}
-export async function batchForPreparation(github: GitHubReleaseClient, runId: string) {
-  const pulls = await github.request(
-    'GET',
-    `${repo}/pulls?state=all&base=next&head=ComposioHQ:sdk-release/batch-${runId}&per_page=100`,
-    z.array(
-      z.object({
-        body: z.string().nullable(),
-        head: z.object({
-          sha: z.string(),
-          ref: z.string(),
-          repo: z.object({ full_name: z.string() }).nullable(),
-        }),
+      `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=push&branch=${encodeURIComponent(branch)}&per_page=100`,
+      Schema.Struct({
+        total_count: Schema.Number.check(Schema.isLessThanOrEqualTo(100)),
+        workflow_runs: Schema.Array(ReleaseRun),
       })
-    )
-  );
-  const release = pulls.filter(
-    pull =>
-      pull.head.ref === `sdk-release/batch-${runId}` &&
-      pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY &&
-      pull.body?.includes('<!-- sdk-release-batch -->')
-  );
-  if (release.length > 1) throw new Error('Multiple PRs identify the original preparation');
-  const batch = release[0] ? await committedBatch(github, release[0].head.sha) : undefined;
-  if (batch && (batch.id !== runId || batch.originalRunId !== runId))
-    throw new Error('Original preparation and release PR identity differ');
-  return batch;
-}
-export async function publicationState(github: GitHubReleaseClient, run: ReleaseRun) {
-  if (
-    run.path !== '.github/workflows/sdk.release.yml' ||
-    run.repository.full_name !== SDK_RELEASE_REPOSITORY ||
-    run.event !== 'push' ||
-    !/^sdk-release\/\d+$/.test(run.head_branch ?? '') ||
-    !run.head_sha
-  )
-    throw new Error('Expected the original protected publication tag run');
-  const batch = await committedBatch(github, run.head_sha);
-  if (!batch || run.head_branch !== `sdk-release/${batch.id}`)
-    throw new Error('Publication run and frozen batch differ');
-  const tag = await github.request(
-    'GET',
-    `${repo}/git/ref/tags/${run.head_branch}`,
-    z.object({ object: z.object({ type: z.string(), sha: z.string() }) })
-  );
-  if (tag.object.type !== 'commit' || tag.object.sha !== run.head_sha)
-    throw new Error('Original immutable publication tag moved');
-  const jobs = await github.jobs(String(run.id));
-  const verified = jobs.some(
-    job => job.name === 'Verify public SDK packages' && job.conclusion === 'success'
-  );
-  const possibleUpload = jobs.some(job =>
-    job.steps.some(
-      step =>
-        /upload.*(?:npm|pypi)|publish.*(?:npm|pypi)/i.test(step.name) &&
-        step.status !== 'queued' &&
-        step.conclusion !== 'skipped'
-    )
-  );
-  const artifacts =
-    !verified && run.status === 'completed' && possibleUpload
-      ? await originalCandidates(github, run.id)
-      : undefined;
-  const lostCandidate =
-    artifacts &&
-    batch.plan.releases.some(
-      release =>
-        !artifacts.some(
-          artifact =>
-            artifact.name === `sdk-candidate-${release.language}` &&
-            !artifact.expired &&
-            Date.parse(artifact.expires_at) > Date.now()
-        )
     );
-  let lostAuthorization = false;
-  if (!verified && run.status === 'completed') {
-    try {
-      const authorized = (await originalCandidates(github, Number(batch.originalRunId))).filter(
-        artifact => artifact.name === 'sdk-authorized-batch'
-      );
-      lostAuthorization =
-        authorized.length !== 1 ||
-        authorized[0].workflow_run.id !== Number(batch.originalRunId) ||
-        authorized[0].workflow_run.head_sha !== batch.inputBase ||
-        authorized[0].expired ||
-        Date.parse(authorized[0].expires_at) <= Date.now();
-    } catch (error) {
-      if (!(error instanceof GitHubReleaseApiError) || error.status !== 404) throw error;
-      lostAuthorization = true;
-    }
-  }
-  const terminal =
-    !verified &&
-    (lostAuthorization ||
-      lostCandidate ||
-      (run.run_attempt >= 50 && run.status === 'completed') ||
-      Date.now() >= Date.parse(run.created_at) + 30 * 86_400_000 ||
-      jobs.some(job =>
-        job.steps.some(
-          step => step.name === 'Registry recovery exhausted' && step.conclusion === 'success'
-        )
-      ));
-  return {
-    verified,
-    terminal,
-    jobs,
-    terminalReason: lostAuthorization
-      ? 'Original preparation authorization is unavailable. Request a newly approved higher-version corrective release.'
-      : undefined,
-  };
-}
-/** Called under the shared controller concurrency group, before planning/allocating. */
-export async function activePreparation(github: GitHubReleaseClient, exceptRun: string) {
-  for (let page = 1; ; page++) {
-    const runs = await github.request(
+    const original = runs.workflow_runs.filter(
+      run => run.head_branch === branch && belongsToReleaseWorkflow(run)
+    );
+    yield* ensure(
+      original.length <= 1,
+      'Multiple source-tag runs identify the same immutable release'
+    );
+    return Option.fromNullishOr(original[0]);
+  });
+
+const PreparationPull = Schema.Struct({
+  body: Schema.NullOr(Schema.String),
+  head: Schema.Struct({
+    sha: Schema.String,
+    ref: Schema.String,
+    repo: Schema.NullOr(Schema.Struct({ full_name: Schema.String })),
+  }),
+});
+
+/** The batch a preparation run committed to its release PR, if that PR exists. */
+export const batchForPreparation = (runId: string) =>
+  Effect.gen(function* () {
+    const branch = `sdk-release/batch-${runId}`;
+    const pulls = yield* request(
       'GET',
-      `${repo}/actions/workflows/sdk.release.yml/runs?branch=next&per_page=100&page=${page}`,
-      z.object({ workflow_runs: z.array(releaseRunSchema) })
+      `${REPOSITORY_PATH}/pulls?state=all&base=next&head=ComposioHQ:${branch}&per_page=100`,
+      Schema.Array(PreparationPull)
     );
-    for (const run of runs.workflow_runs) {
-      if (
-        String(run.id) === exceptRun ||
-        !['issues', 'workflow_dispatch'].includes(run.event ?? '') ||
-        run.path !== '.github/workflows/sdk.release.yml' ||
-        run.repository.full_name !== SDK_RELEASE_REPOSITORY ||
-        Date.now() >= Date.parse(run.created_at) + 30 * 86_400_000 ||
-        (run.run_attempt >= 50 && run.status === 'completed')
+    const release = pulls.filter(
+      pull =>
+        pull.head.ref === branch &&
+        pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY &&
+        pull.body?.includes(RELEASE_PR_MARKER) === true
+    );
+    yield* ensure(release.length <= 1, 'Multiple PRs identify the original preparation');
+    if (!release[0]) return Option.none<ReleaseBatch>();
+    const batch = yield* committedBatch(release[0].head.sha);
+    yield* ensure(
+      Option.isNone(batch) || (batch.value.id === runId && batch.value.originalRunId === runId),
+      'Original preparation and release PR identity differ'
+    );
+    return batch;
+  });
+
+const PUBLICATION_TAG = /^sdk-release\/\d+$/;
+const VERIFY_JOB = 'Verify public SDK packages';
+const RECOVERY_EXHAUSTED_STEP = 'Registry recovery exhausted';
+
+/** Whether the preparation run's authorization artifact can no longer back a retry. */
+const authorizationLost = (batch: ReleaseBatch, now: number) =>
+  originalCandidates(Number(batch.originalRunId)).pipe(
+    Effect.map(artifacts => {
+      const authorized = artifacts.filter(artifact => artifact.name === AUTHORIZED_BATCH_ARTIFACT);
+      const [only] = authorized;
+      return (
+        authorized.length !== 1 ||
+        only.workflow_run.id !== Number(batch.originalRunId) ||
+        only.workflow_run.head_sha !== batch.inputBase ||
+        !isRetained(only, now)
+      );
+    }),
+    Effect.catchTag('GitHubApiError', error =>
+      error.status === 404 ? Effect.succeed(true) : Effect.fail(error)
+    )
+  );
+
+const candidateLost = (
+  batch: ReleaseBatch,
+  artifacts: ReadonlyArray<CandidateArtifact>,
+  now: number
+) =>
+  batch.plan.releases.some(
+    release =>
+      !artifacts.some(
+        artifact =>
+          artifact.name === candidateArtifactName(release.language) && isRetained(artifact, now)
       )
-        continue;
-      const jobs = await github.jobs(String(run.id));
-      const prepared = jobs.some(job => job.name === 'release-pr' && job.conclusion === 'success');
-      if (prepared) continue;
-      if (await batchForPreparation(github, String(run.id))) continue;
-      if (
-        (await originalCandidates(github, run.id)).some(
-          artifact => artifact.name === 'sdk-authorized-batch'
-        )
-      )
-        return run;
-    }
-    if (runs.workflow_runs.length < 100) return undefined;
-  }
+  );
+
+export interface PublicationState {
+  readonly verified: boolean;
+  readonly terminal: boolean;
+  readonly jobs: ReadonlyArray<ReleaseJob>;
+  readonly terminalReason?: string;
 }
 
-export async function currentPublication(github: GitHubReleaseClient) {
-  const batch = await committedBatch(github, 'next');
-  if (!batch) return undefined;
-  const run = await sourceTagRun(github, batch);
-  if (!run) return { batch, run: undefined, active: true, verified: false, terminal: false };
-  if (
-    !run.head_sha ||
-    run.event !== 'push' ||
-    JSON.stringify(await committedBatch(github, run.head_sha)) !== JSON.stringify(batch)
-  )
-    throw new Error('Original tag run source differs from the committed batch');
-  const state = await publicationState(github, run);
-  return { batch, run, ...state, active: !state.verified && !state.terminal };
-}
+/** Whether an original publication run verified its packages, or can no longer recover. */
+export const publicationState = (run: ReleaseRun) =>
+  Effect.gen(function* () {
+    yield* ensure(
+      belongsToReleaseWorkflow(run) &&
+        run.event === 'push' &&
+        PUBLICATION_TAG.test(run.head_branch ?? '') &&
+        run.head_sha !== undefined,
+      'Expected the original protected publication tag run'
+    );
+    const headSha = run.head_sha ?? '';
+    const batch = yield* committedBatch(headSha);
+    if (Option.isNone(batch) || run.head_branch !== `sdk-release/${batch.value.id}`)
+      return yield* fail('Publication run and frozen batch differ');
+    const tag = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/git/ref/tags/${run.head_branch}`,
+      Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Schema.String }) })
+    );
+    yield* ensure(
+      tag.object.type === 'commit' && tag.object.sha === headSha,
+      'Original immutable publication tag moved'
+    );
+    const runJobs = yield* jobs(String(run.id));
+    const verified = runJobs.some(job => job.name === VERIFY_JOB && job.conclusion === 'success');
+    const settled = !verified && run.status === 'completed';
+    const now = Date.now();
+    const lostCandidate =
+      settled && publisherStarted(runJobs)
+        ? candidateLost(batch.value, yield* originalCandidates(run.id), now)
+        : false;
+    const lostAuthorization = settled ? yield* authorizationLost(batch.value, now) : false;
+    const recoveryExhausted = runJobs.some(job =>
+      job.steps.some(step => step.name === RECOVERY_EXHAUSTED_STEP && step.conclusion === 'success')
+    );
+    const terminal =
+      !verified &&
+      (lostAuthorization ||
+        lostCandidate ||
+        attemptsExhausted(run) ||
+        recoveryWindowClosed(run, now) ||
+        recoveryExhausted);
+    return {
+      verified,
+      terminal,
+      jobs: runJobs,
+      ...(lostAuthorization
+        ? {
+            terminalReason:
+              'Original preparation authorization is unavailable. Request a newly approved higher-version corrective release.',
+          }
+        : {}),
+    } satisfies PublicationState;
+  });
+
+const PREPARATION_EVENTS = new Set(['issues', 'workflow_dispatch']);
+
+/** A preparation run may still allocate versions until its release PR exists. */
+const isUnfinishedPreparation = (run: ReleaseRun) =>
+  Effect.gen(function* () {
+    const runJobs = yield* jobs(String(run.id));
+    if (runJobs.some(job => job.name === 'release-pr' && job.conclusion === 'success'))
+      return false;
+    if (Option.isSome(yield* batchForPreparation(String(run.id)))) return false;
+    return (yield* originalCandidates(run.id)).some(
+      artifact => artifact.name === AUTHORIZED_BATCH_ARTIFACT
+    );
+  });
+
+/** The newest other authorized preparation run that has not opened its release PR yet. */
+export const activePreparation = (exceptRun: string) =>
+  paginate(
+    `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?branch=next`,
+    Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) }),
+    body => body.workflow_runs
+  ).pipe(
+    Stream.filter(
+      run =>
+        String(run.id) !== exceptRun &&
+        PREPARATION_EVENTS.has(run.event ?? '') &&
+        belongsToReleaseWorkflow(run) &&
+        !recoveryWindowClosed(run, Date.now()) &&
+        !attemptsExhausted(run)
+    ),
+    Stream.filterEffect(isUnfinishedPreparation),
+    Stream.runHead
+  );
+
+/** The batch committed on next and the state of its publication. */
+export const currentPublication = Effect.gen(function* () {
+  const committed = yield* committedBatch('next');
+  if (Option.isNone(committed)) return Option.none();
+  const batch = committed.value;
+  const tagRun = yield* sourceTagRun(batch);
+  if (Option.isNone(tagRun))
+    return Option.some({ batch, run: undefined, active: true, verified: false, terminal: false });
+  const run = tagRun.value;
+  const tagged =
+    run.head_sha === undefined || run.event !== 'push'
+      ? Option.none<ReleaseBatch>()
+      : yield* committedBatch(run.head_sha);
+  yield* ensure(
+    Option.isSome(tagged) && JSON.stringify(tagged.value) === JSON.stringify(batch),
+    'Original tag run source differs from the committed batch'
+  );
+  const state = yield* publicationState(run);
+  return Option.some({ batch, run, ...state, active: !state.verified && !state.terminal });
+});

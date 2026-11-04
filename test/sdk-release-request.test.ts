@@ -1,10 +1,16 @@
-import { describe, expect, test } from 'bun:test';
-import { GitHubReleaseClient, type ReleaseFetch } from '../scripts/sdk-release/github';
-import { executeReleaseRequest } from '../scripts/sdk-release/batch';
-import { parseReleaseRequest, releaseRequestSchema } from '../scripts/sdk-release/request';
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { Effect, FileSystem, Schema } from 'effect';
+import { Base64 } from 'effect/encoding';
+import {
+  executeReleaseRequest,
+  type PlanRelease,
+  type ReleaseOutputs,
+  type ReleaseRequestContext,
+} from '../scripts/sdk-release/batch';
 import type { SdkReleasePlan } from '../scripts/sdk-release/plan';
+import { ReleaseRequest, parseReleaseRequest } from '../scripts/sdk-release/request';
+import { run, sha256Hex } from '../scripts/sdk-release/runtime';
+import { runRelease, temporaryDirectories, writeText, type Fetch } from './sdk-release-harness';
 
 const sha = 'a'.repeat(40);
 const context = { actor: 'member', runId: '21', sourceSha: sha, issueNumber: 7 };
@@ -26,6 +32,62 @@ const plan: SdkReleasePlan = {
     },
   ],
 };
+const saved = {
+  schemaVersion: 1,
+  id: '8',
+  originalRunId: '8',
+  inputBase: sha,
+  statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
+  date: '2026-11-03',
+  outputs: [],
+  plan,
+};
+
+/** A real zip of the authorized plan, so downloads exercise the archive digest and unzip checks. */
+const directories = temporaryDirectories('sdk-release-request-');
+afterAll(() => directories.cleanup());
+const authorizedArchive: { bytes: Uint8Array<ArrayBuffer>; digest: string } = {
+  bytes: new Uint8Array(),
+  digest: '',
+};
+beforeAll(async () => {
+  const directory = await directories.create();
+  await writeText(`${directory}/sdk-release-batch.json`, JSON.stringify(saved));
+  const zip = `${directory}/authorized.zip`;
+  await runRelease(run('zip', ['-j', '-q', zip, `${directory}/sdk-release-batch.json`]));
+  authorizedArchive.bytes = new Uint8Array(
+    await runRelease(
+      Effect.gen(function* () {
+        return yield* (yield* FileSystem.FileSystem).readFile(zip);
+      })
+    )
+  );
+  authorizedArchive.digest = `sha256:${await runRelease(sha256Hex(authorizedArchive.bytes))}`;
+});
+
+const decodeRequest = Schema.decodeUnknownSync(ReleaseRequest);
+const execute = (
+  fetch: Fetch,
+  value: ReleaseRequest,
+  requestContext: ReleaseRequestContext,
+  planRelease: PlanRelease<unknown, never>,
+  outputs?: ReleaseOutputs<never, never>
+) => runRelease(executeReleaseRequest(value, requestContext, planRelease, outputs), fetch);
+const planOf =
+  (value: SdkReleasePlan): PlanRelease<never, never> =>
+  () =>
+    Effect.succeed(value);
+const unexpectedPlan =
+  (message: string): PlanRelease<never, never> =>
+  () =>
+    Effect.sync((): SdkReleasePlan => {
+      throw new Error(message);
+    });
+const outputsOf =
+  (paths: ReadonlyArray<string>): ReleaseOutputs<never, never> =>
+  () =>
+    Effect.succeed(paths);
+
 function client(
   options: {
     membership?: 'active' | 'pending' | 'absent' | 'error';
@@ -41,16 +103,6 @@ function client(
   } = {}
 ) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
-  const saved = {
-    schemaVersion: 1,
-    id: '8',
-    originalRunId: '8',
-    inputBase: sha,
-    statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
-    date: '2026-11-03',
-    outputs: [],
-    plan,
-  };
   const nativeRun = (id: number, branch: string) => ({
     id,
     path: '.github/workflows/sdk.release.yml',
@@ -64,8 +116,9 @@ function client(
     run_attempt: options.runAttempt ?? 2,
     html_url: `https://github.com/ComposioHQ/composio/actions/runs/${id}`,
   });
-  const fetcher: ReleaseFetch = async (input, init) => {
+  const fetcher: Fetch = async (input, init) => {
     const url = new URL(String(input));
+    if (url.hostname === 'artifacts.test') return new Response(authorizedArchive.bytes);
     const method = init?.method ?? 'GET';
     const path = url.pathname + url.search;
     calls.push({ method, path, ...(init?.body ? { body: JSON.parse(String(init.body)) } : {}) });
@@ -176,7 +229,7 @@ function client(
     if (path.includes('/contents/.github/sdk-release-plan.json'))
       return respond({
         encoding: 'base64',
-        content: Buffer.from(JSON.stringify(saved)).toString('base64'),
+        content: Base64.encode(JSON.stringify(saved)),
       });
     if (path.includes('/actions/runs/8/artifacts'))
       return respond({
@@ -186,7 +239,7 @@ function client(
               {
                 id: 55,
                 name: 'sdk-authorized-batch',
-                digest: `sha256:${'c'.repeat(64)}`,
+                digest: authorizedArchive.digest,
                 expired: false,
                 created_at: '2026-11-03T00:00:00Z',
                 expires_at: '2099-12-01T00:00:00Z',
@@ -199,24 +252,22 @@ function client(
     if (path.endsWith('/actions/workflows/docs.sdk-change-sync.yml/dispatches'))
       return new Response(null, { status: 204 });
     if (path.endsWith('/issues/7/comments')) return respond({ id: 99 });
+    if (path.endsWith('/actions/artifacts/55/zip'))
+      return new Response(null, {
+        status: 302,
+        headers: { location: 'https://artifacts.test/55.zip' },
+      });
     throw new Error(`Unexpected request: ${method} ${path}`);
   };
-  class FixtureClient extends GitHubReleaseClient {
-    override async downloadArtifact(_artifact: { id: number; digest: string }, directory: string) {
-      await writeFile(join(directory, 'sdk-release-batch.json'), JSON.stringify(saved));
-    }
-  }
-  return { github: new FixtureClient('token', fetcher), calls };
+  return { github: fetcher, calls };
 }
-const request = releaseRequestSchema.parse({ action: 'release' });
+const request = decodeRequest({ action: 'release' });
 
 describe('SDK release member request', () => {
   test('an authorized planning failure reports its reason and request run without release writes', async () => {
     const { github, calls } = client();
     await expect(
-      executeReleaseRequest(github, request, context, async () => {
-        throw new Error('Public baseline does not match the source');
-      })
+      execute(github, request, context, unexpectedPlan('Public baseline does not match the source'))
     ).rejects.toThrow('Public baseline');
     const writes = calls.filter(call => call.method !== 'GET');
     expect(writes.map(call => call.path)).toEqual(['/repos/ComposioHQ/composio/issues/7/comments']);
@@ -239,10 +290,12 @@ describe('SDK release member request', () => {
       const { github, calls } = client({ membership });
       let planned = false;
       await expect(
-        executeReleaseRequest(github, request, context, async () => {
-          planned = true;
-          return plan;
-        })
+        execute(github, request, context, () =>
+          Effect.sync(() => {
+            planned = true;
+            return plan;
+          })
+        )
       ).rejects.toThrow();
       expect(planned).toBe(false);
       expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
@@ -250,12 +303,12 @@ describe('SDK release member request', () => {
   }
   test('an active private member with repository Read authorizes preparation and gets issue status', async () => {
     const { github, calls } = client();
-    const result = await executeReleaseRequest(
+    const result = await execute(
       github,
       request,
       context,
-      async () => plan,
-      async () => ['python/CHANGELOG.md']
+      planOf(plan),
+      outputsOf(['python/CHANGELOG.md'])
     );
     expect(result.batch?.inputBase).toBe(sha);
     expect(result.batch?.plan.releases[0].newVersion).toBe('0.31.1');
@@ -266,9 +319,7 @@ describe('SDK release member request', () => {
   });
   test('an active release returns its status without allocating another plan', async () => {
     const { github } = client({ existing: true });
-    const result = await executeReleaseRequest(github, request, context, async () => {
-      throw new Error('must not plan');
-    });
+    const result = await execute(github, request, context, unexpectedPlan('must not plan'));
     expect(result.pullRequest).toBe('https://github.com/ComposioHQ/composio/pull/9');
   });
   for (const options of [
@@ -278,22 +329,18 @@ describe('SDK release member request', () => {
   ]) {
     test(`native ${JSON.stringify(options)} blocks allocation before a PR exists`, async () => {
       const { github } = client(options);
-      const result = await executeReleaseRequest(github, request, context, async () => {
-        throw new Error('must not allocate');
-      });
+      const result = await execute(github, request, context, unexpectedPlan('must not allocate'));
       expect(result.message).toContain('already active');
       expect(result.runUrl).toContain('/actions/runs/');
     });
   }
   test('retry resolves the actual tag producer instead of rerunning the earlier preparation', async () => {
     const { github, calls } = client({ publication: 'active' });
-    await executeReleaseRequest(
+    await execute(
       github,
-      releaseRequestSchema.parse({ action: 'retry', run_id: '8', python: 'major' }),
+      decodeRequest({ action: 'retry', run_id: '8', python: 'major' }),
       context,
-      async () => {
-        throw new Error('must not plan');
-      }
+      unexpectedPlan('must not plan')
     );
     expect(
       calls.filter(call => call.path.endsWith('/rerun-failed-jobs')).map(call => call.path)
@@ -301,13 +348,11 @@ describe('SDK release member request', () => {
   });
   test('a transient source-tag authorization failure reruns that original failed stage without new allocation', async () => {
     const { github, calls } = client({ authorizationFailure: true, existing: true });
-    await executeReleaseRequest(
+    await execute(
       github,
-      releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+      decodeRequest({ action: 'retry', run_id: '8' }),
       context,
-      async () => {
-        throw new Error('must not allocate');
-      }
+      unexpectedPlan('must not allocate')
     );
     expect(
       calls.filter(call => call.path.endsWith('/rerun-failed-jobs')).map(call => call.path)
@@ -319,13 +364,11 @@ describe('SDK release member request', () => {
       runAttempt: 50,
       createdAt: '2025-01-01T00:00:00Z',
     });
-    const result = await executeReleaseRequest(
+    const result = await execute(
       github,
-      releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+      decodeRequest({ action: 'retry', run_id: '8' }),
       context,
-      async () => {
-        throw new Error('must not plan');
-      }
+      unexpectedPlan('must not plan')
     );
     expect(result.message).toContain('without registry identity');
     expect(calls.filter(call => call.method === 'POST').map(call => call.path)).toEqual([
@@ -337,12 +380,7 @@ describe('SDK release member request', () => {
   test('partial upload with deleted candidates stops same-version recovery', async () => {
     const { github, calls } = client({ publication: 'terminal' });
     await expect(
-      executeReleaseRequest(
-        github,
-        releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
-        context,
-        async () => plan
-      )
+      execute(github, decodeRequest({ action: 'retry', run_id: '8' }), context, planOf(plan))
     ).rejects.toThrow('higher-version corrective');
     expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
       '/repos/ComposioHQ/composio/issues/7/comments',
@@ -354,12 +392,7 @@ describe('SDK release member request', () => {
   test('lost preparation authorization ends recovery even while publication candidates remain available', async () => {
     const { github, calls } = client({ publication: 'active', authorizationLost: true });
     await expect(
-      executeReleaseRequest(
-        github,
-        releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
-        context,
-        async () => plan
-      )
+      execute(github, decodeRequest({ action: 'retry', run_id: '8' }), context, planOf(plan))
     ).rejects.toThrow('higher-version corrective');
     expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
       '/repos/ComposioHQ/composio/issues/7/comments',
@@ -370,15 +403,16 @@ describe('SDK release member request', () => {
   });
   test('explicit refresh prepares a replacement from the original version baseline and choices', async () => {
     const { github, calls } = client({ existing: true });
-    const result = await executeReleaseRequest(
+    const result = await execute(
       github,
-      releaseRequestSchema.parse({ action: 'refresh' }),
+      decodeRequest({ action: 'refresh' }),
       context,
-      async choices => {
-        expect(choices).toEqual(plan.choices);
-        return plan;
-      },
-      async () => ['python/CHANGELOG.md']
+      choices =>
+        Effect.sync(() => {
+          expect(choices).toEqual(plan.choices);
+          return plan;
+        }),
+      outputsOf(['python/CHANGELOG.md'])
     );
     expect(result.batch?.replaces).toEqual({ number: 9, headSha: sha });
     expect(result.batch?.id).toBe('21');
@@ -387,11 +421,11 @@ describe('SDK release member request', () => {
   test('refresh refuses to silently advance the original version baseline', async () => {
     const { github } = client({ existing: true });
     await expect(
-      executeReleaseRequest(
+      execute(
         github,
-        releaseRequestSchema.parse({ action: 'refresh' }),
+        decodeRequest({ action: 'refresh' }),
         context,
-        async () => ({
+        planOf({
           ...plan,
           releases: plan.releases.map(release => ({ ...release, oldVersion: '0.32.0' })),
         })
@@ -400,13 +434,11 @@ describe('SDK release member request', () => {
   });
   test('retry takes priority over an open release PR and ignores new bump choices', async () => {
     const { github, calls } = client({ existing: true });
-    const result = await executeReleaseRequest(
+    const result = await execute(
       github,
-      releaseRequestSchema.parse({ action: 'retry', run_id: '8', python: 'major' }),
+      decodeRequest({ action: 'retry', run_id: '8', python: 'major' }),
       context,
-      async () => {
-        throw new Error('must not plan');
-      }
+      unexpectedPlan('must not plan')
     );
     expect(result.message).toContain('ignored');
     expect(
@@ -415,11 +447,11 @@ describe('SDK release member request', () => {
   });
   test('queued retry reports the original run without another rerun', async () => {
     const { github, calls } = client({ runStatus: 'queued' });
-    const result = await executeReleaseRequest(
+    const result = await execute(
       github,
-      releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
+      decodeRequest({ action: 'retry', run_id: '8' }),
       context,
-      async () => plan
+      planOf(plan)
     );
     expect(result.message).toContain('queued');
     expect(calls.some(call => call.path.endsWith('/rerun-failed-jobs'))).toBe(false);
@@ -427,12 +459,7 @@ describe('SDK release member request', () => {
   test('unrelated source branches cannot be retried', async () => {
     const { github, calls } = client({ runBranch: 'attacker-branch' });
     await expect(
-      executeReleaseRequest(
-        github,
-        releaseRequestSchema.parse({ action: 'retry', run_id: '8' }),
-        context,
-        async () => plan
-      )
+      execute(github, decodeRequest({ action: 'retry', run_id: '8' }), context, planOf(plan))
     ).rejects.toThrow('guarded');
     expect(calls.filter(call => call.method !== 'GET').map(call => call.path)).toEqual([
       '/repos/ComposioHQ/composio/issues/7/comments',
@@ -440,11 +467,11 @@ describe('SDK release member request', () => {
   });
   test('a reconciled no-op creates no branch or source commit', async () => {
     const { github, calls } = client();
-    const result = await executeReleaseRequest(
+    const result = await execute(
       github,
       request,
       { ...context, issueNumber: undefined },
-      async () => ({ ...plan, releases: [] })
+      planOf({ ...plan, releases: [] })
     );
     expect(result.message).toContain('Nothing to release');
     expect(calls.filter(call => call.method !== 'GET')).toEqual([]);

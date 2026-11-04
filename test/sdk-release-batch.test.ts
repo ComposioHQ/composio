@@ -1,12 +1,43 @@
-import { describe, expect, test } from 'bun:test';
-import { eligibleApproval, validateReleaseDiff } from '../scripts/sdk-release/source';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { Effect, FileSystem, Option } from 'effect';
+import { Base64 } from 'effect/encoding';
 import {
-  candidateGate,
+  mayRebuildMissingCandidate,
   normalizeArtifactDigest,
   reuseCandidate,
   verifyArchive,
   verifyCandidateFiles,
 } from '../scripts/sdk-release/artifacts';
+import {
+  authorizeSourceTag,
+  commitPreparedRelease,
+  mergeApprovedRelease,
+} from '../scripts/sdk-release/batch';
+import { run, sha256Hex } from '../scripts/sdk-release/runtime';
+import {
+  BATCH_PATH,
+  eligibleApproval,
+  validateReleaseDiff,
+  type ReleaseBatch,
+  type ReleaseFile,
+} from '../scripts/sdk-release/source';
+import { readExactCandidateTarballs } from '../ts/scripts/check-provider-compatibility';
+import { missingReleaseNotes } from '../ts/scripts/validate-changesets.mjs';
+import { runRelease, temporaryDirectories, writeText, type Fetch } from './sdk-release-harness';
+
+const directories = temporaryDirectories('sdk-release-batch-');
+afterAll(() => directories.cleanup());
+const readBytes = (file: string) =>
+  runRelease(
+    Effect.gen(function* () {
+      return yield* (yield* FileSystem.FileSystem).readFile(file);
+    })
+  );
+const validate = (
+  files: ReadonlyArray<ReleaseFile>,
+  plan: Parameters<typeof validateReleaseDiff>[1],
+  outputs: ReadonlyArray<string>
+) => runRelease(validateReleaseDiff(files, plan, outputs));
 
 const base = 'a'.repeat(40);
 const head = 'b'.repeat(40);
@@ -30,25 +61,19 @@ describe('approved release source', () => {
       eligibleApproval([review, { ...review, state: 'CHANGES_REQUESTED' }], 'author', head)
     ).toBe(false);
   });
-  test('source edits and lock dependency changes fail release-only validation', () => {
+  test('source edits and lock dependency changes fail release-only validation', async () => {
     const plan = { releases: [], changesets: [], retainedChangesets: [] };
-    expect(() =>
-      validateReleaseDiff(
-        [{ path: 'ts/packages/core/src/index.ts', before: 'x', after: 'y' }],
-        plan,
-        []
-      )
-    ).toThrow();
-    expect(() =>
-      validateReleaseDiff([{ path: 'pnpm-lock.yaml', before: 'dep: 1', after: 'dep: 2' }], plan, [])
-    ).toThrow();
-    expect(() =>
-      validateReleaseDiff(
-        [{ path: 'docs/content/changelog/release.mdx', before: 'x', after: 'edited narrative' }],
-        plan,
-        ['docs/content/changelog/release.mdx']
-      )
-    ).not.toThrow();
+    await expect(
+      validate([{ path: 'ts/packages/core/src/index.ts', before: 'x', after: 'y' }], plan, [])
+    ).rejects.toThrow('Not a planned release output');
+    await expect(
+      validate([{ path: 'pnpm-lock.yaml', before: 'dep: 1', after: 'dep: 2' }], plan, [])
+    ).rejects.toThrow('Release changes dependency resolution');
+    await validate(
+      [{ path: 'docs/content/changelog/release.mdx', before: 'x', after: 'edited narrative' }],
+      plan,
+      ['docs/content/changelog/release.mdx']
+    );
   });
 });
 
@@ -63,48 +88,39 @@ const artifact = {
   created_at: '2026-11-01T00:00:00Z',
 };
 describe('immutable candidates', () => {
-  test('native upload and REST digests normalize without accepting malformed hashes', () => {
+  test('native upload and REST digests normalize without accepting malformed hashes', async () => {
     const raw = 'a'.repeat(64);
-    expect(normalizeArtifactDigest(raw)).toBe(`sha256:${raw}`);
-    expect(normalizeArtifactDigest(`sha256:${raw}`)).toBe(`sha256:${raw}`);
-    expect(() => normalizeArtifactDigest(`sha256:${raw.slice(1)}`)).toThrow();
-    expect(() => normalizeArtifactDigest(`md5:${raw}`)).toThrow();
+    expect(await runRelease(normalizeArtifactDigest(raw))).toBe(`sha256:${raw}`);
+    expect(await runRelease(normalizeArtifactDigest(`sha256:${raw}`))).toBe(`sha256:${raw}`);
+    await expect(runRelease(normalizeArtifactDigest(`sha256:${raw.slice(1)}`))).rejects.toThrow();
+    await expect(runRelease(normalizeArtifactDigest(`md5:${raw}`))).rejects.toThrow();
   });
-  test('reuses IDs only from the original source and producer', () => {
-    expect(reuseCandidate([artifact], artifact.name, 8, head, Date.parse('2026-11-03'))?.id).toBe(
-      42
+  test('reuses IDs only from the original source and producer', async () => {
+    const reused = await runRelease(
+      reuseCandidate([artifact], artifact.name, 8, head, Date.parse('2026-11-03'))
     );
-    expect(() => reuseCandidate([artifact], artifact.name, 9, head)).toThrow();
-    expect(() => reuseCandidate([artifact], artifact.name, 8, base)).toThrow();
-    expect(() =>
-      reuseCandidate([{ ...artifact, expired: true }], artifact.name, 8, head)
-    ).toThrow();
+    expect(Option.getOrUndefined(reused)?.id).toBe(42);
+    await expect(runRelease(reuseCandidate([artifact], artifact.name, 9, head))).rejects.toThrow(
+      'Candidate source or producer does not match'
+    );
+    await expect(runRelease(reuseCandidate([artifact], artifact.name, 8, base))).rejects.toThrow(
+      'Candidate source or producer does not match'
+    );
+    await expect(
+      runRelease(reuseCandidate([{ ...artifact, expired: true }], artifact.name, 8, head))
+    ).rejects.toThrow('Original candidate unavailable');
   });
-  test('archive digest and every file checksum fail closed', () => {
-    expect(() => verifyArchive(new Uint8Array([1]), artifact.digest)).toThrow();
-    expect(() =>
-      verifyCandidateFiles(new Map([['package.tgz', new Uint8Array([1, 2, 3, 4])]]), files)
-    ).toThrow();
-  });
-  test('all selected languages must succeed; empty languages skip', () => {
-    expect(
-      candidateGate(['typescript', 'python'], { typescript: 'success', python: 'failure' })
-    ).toBe(false);
-    expect(candidateGate(['python'], { typescript: 'skipped', python: 'success' })).toBe(true);
-    expect(candidateGate([], { typescript: 'skipped', python: 'skipped' })).toBe(false);
+  test('archive digest and every file checksum fail closed', async () => {
+    await expect(runRelease(verifyArchive(new Uint8Array([1]), artifact.digest))).rejects.toThrow(
+      'Actions artifact archive digest mismatch'
+    );
+    await expect(
+      runRelease(
+        verifyCandidateFiles(new Map([['package.tgz', new Uint8Array([1, 2, 3, 4])]]), files)
+      )
+    ).rejects.toThrow('Candidate checksum mismatch: package.tgz');
   });
 });
-
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { GitHubReleaseClient } from '../scripts/sdk-release/github';
-import {
-  authorizeSourceTag,
-  commitPreparedRelease,
-  mergeApprovedRelease,
-} from '../scripts/sdk-release/batch';
-import { batchPath, type ReleaseBatch } from '../scripts/sdk-release/source';
-import { missingReleaseNotes } from '../ts/scripts/validate-changesets.mjs';
 
 const batch: ReleaseBatch = {
   schemaVersion: 1,
@@ -144,10 +160,24 @@ const newManifest = JSON.stringify({
   dependencies: { client: '1.0.0' },
 });
 const releaseFiles = [
-  { path: batchPath, before: null, after: JSON.stringify(batch) },
+  { path: BATCH_PATH, before: null, after: JSON.stringify(batch) },
   { path: 'ts/packages/core/package.json', before: oldManifest, after: newManifest },
   { path: batch.outputs[0], before: null, after: 'Human-edited release narrative' },
 ];
+
+/** A real zip of the authorized plan, so downloads exercise the archive digest and unzip checks. */
+const authorizedArchive: { bytes: Uint8Array<ArrayBuffer>; digest: string } = {
+  bytes: new Uint8Array(),
+  digest: '',
+};
+beforeAll(async () => {
+  const directory = await directories.create();
+  await writeText(`${directory}/sdk-release-batch.json`, JSON.stringify(batch));
+  const zip = `${directory}/authorized.zip`;
+  await runRelease(run('zip', ['-j', '-q', zip, `${directory}/sdk-release-batch.json`]));
+  authorizedArchive.bytes = new Uint8Array(await readBytes(zip));
+  authorizedArchive.digest = `sha256:${await runRelease(sha256Hex(authorizedArchive.bytes))}`;
+});
 
 function fakeController(
   options: {
@@ -179,8 +209,9 @@ function fakeController(
     head: { sha: head, ref: 'sdk-release/batch-8', repo: { full_name: 'ComposioHQ/composio' } },
     base: { ref: 'next' },
   });
-  const fetcher = async (input: string | URL | Request, init?: RequestInit) => {
+  const fetcher: Fetch = async (input, init) => {
     const url = new URL(String(input));
+    if (url.hostname === 'artifacts.test') return new Response(authorizedArchive.bytes);
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '') + url.search;
     const method = init?.method ?? 'GET';
     const response = (data: unknown, status = 200) =>
@@ -268,10 +299,10 @@ function fakeController(
       const data = url.searchParams.get('ref') === base ? file?.before : file?.after;
       if (data == null) return response({}, 404);
       const contents =
-        options.editedPlan && filename === batchPath
+        options.editedPlan && filename === BATCH_PATH
           ? JSON.stringify({ ...batch, outputs: ['ts/packages/core/src/'] })
           : data;
-      return response({ encoding: 'base64', content: Buffer.from(contents).toString('base64') });
+      return response({ encoding: 'base64', content: Base64.encode(contents) });
     }
     if (path === '/git/ref/heads/sdk-release/batch-8')
       return options.existingBranch ? response({ object: { sha: head } }) : response({}, 404);
@@ -297,28 +328,32 @@ function fakeController(
           {
             ...artifact,
             name: 'sdk-authorized-batch',
+            digest: authorizedArchive.digest,
             workflow_run: { id: 8, head_sha: base },
             expires_at: '2099-12-01T00:00:00Z',
           },
         ],
       });
+    if (path === `/actions/artifacts/${artifact.id}/zip`)
+      return new Response(null, {
+        status: 302,
+        headers: { location: `https://artifacts.test/${artifact.id}.zip` },
+      });
     throw new Error(`Unexpected read ${path}`);
   };
-  class FixtureClient extends GitHubReleaseClient {
-    override async downloadArtifact(_artifact: { id: number; digest: string }, directory: string) {
-      await writeFile(join(directory, 'sdk-release-batch.json'), JSON.stringify(batch));
-    }
-  }
-  return { github: new FixtureClient('token', fetcher), writes };
+  return { fetcher, writes };
 }
 
 describe('controller API contracts', () => {
   test('failed, pending or absent production docs prevent both merge and tag authorization', async () => {
     for (const docs of ['failure', 'pending', 'missing'] as const) {
       for (const pendingMerge of [true, false]) {
-        const { github, writes } = fakeController({ docs, pendingMerge });
+        const { fetcher, writes } = fakeController({ docs, pendingMerge });
         await expect(
-          pendingMerge ? mergeApprovedRelease(github, 9, 123) : authorizeSourceTag(github, 9, 123)
+          runRelease(
+            pendingMerge ? mergeApprovedRelease(9, 123, '0') : authorizeSourceTag(9, 123),
+            fetcher
+          )
         ).rejects.toThrow('docs');
         expect(writes).toEqual([]);
       }
@@ -326,16 +361,16 @@ describe('controller API contracts', () => {
   });
   test('merge and squash tag the approved head while later next commits remain independent', async () => {
     for (const mergeKind of ['merge', 'squash'] as const) {
-      const { github, writes } = fakeController({ mergeKind });
-      expect(await authorizeSourceTag(github, 9, 123)).toBe('sdk-release/8');
+      const { fetcher, writes } = fakeController({ mergeKind });
+      expect(await runRelease(authorizeSourceTag(9, 123), fetcher)).toBe('sdk-release/8');
       expect(writes).toEqual([
         { path: '/git/refs', body: { ref: 'refs/tags/sdk-release/8', sha: head } },
       ]);
     }
   });
   test('automatic protected merge supplies the expected final head', async () => {
-    const { github, writes } = fakeController({ pendingMerge: true });
-    await mergeApprovedRelease(github, 9, 123);
+    const { fetcher, writes } = fakeController({ pendingMerge: true });
+    await runRelease(mergeApprovedRelease(9, 123, '0'), fetcher);
     expect(writes[0]).toEqual({
       path: '/pulls/9/merge',
       body: { sha: head, merge_method: 'squash' },
@@ -343,25 +378,27 @@ describe('controller API contracts', () => {
   });
   test('old reviews, failed candidates and edited frozen plans cause no tag writes', async () => {
     for (const options of [{ oldReview: true }, { failedCandidate: true }, { editedPlan: true }]) {
-      const { github, writes } = fakeController(options);
-      await expect(authorizeSourceTag(github, 9, 123)).rejects.toThrow();
+      const { fetcher, writes } = fakeController(options);
+      await expect(runRelease(authorizeSourceTag(9, 123), fetcher)).rejects.toThrow();
       expect(writes).toEqual([]);
     }
   });
   test('an existing matching tag is reused and a moved source is refused', async () => {
     const matching = fakeController({ existingTag: head });
-    await authorizeSourceTag(matching.github, 9, 123);
+    await runRelease(authorizeSourceTag(9, 123), matching.fetcher);
     expect(matching.writes).toEqual([]);
     const moved = fakeController({ existingTag: merge });
-    await expect(authorizeSourceTag(moved.github, 9, 123)).rejects.toThrow('another source');
+    await expect(runRelease(authorizeSourceTag(9, 123), moved.fetcher)).rejects.toThrow(
+      'another source'
+    );
     expect(moved.writes).toEqual([]);
   });
   test('partial preparation retry reconciles an existing source branch without creating another commit', async () => {
-    const { github, writes } = fakeController({ existingBranch: true });
-    await commitPreparedRelease(github, { batch, files: releaseFiles }, batch);
+    const { fetcher, writes } = fakeController({ existingBranch: true });
+    await runRelease(commitPreparedRelease({ batch, files: releaseFiles }, batch), fetcher);
     expect(writes.map(write => write.path)).toEqual(['/pulls']);
   });
-  test('major targets allow normal Changesets peer-range updates without changing unrelated fields', () => {
+  test('major targets allow normal Changesets peer-range updates without changing unrelated fields', async () => {
     const plan = {
       ...batch.plan,
       releases: [
@@ -379,32 +416,30 @@ describe('controller API contracts', () => {
       version: '0.1.0',
       peerDependencies: { '@composio/core': '>=1.0.0 <2.0.0 || >=2.0.0-beta.0 <2.0.0' },
     };
-    expect(() =>
-      validateReleaseDiff(
-        [
-          {
-            path: 'ts/packages/core/package.json',
-            before: oldManifest,
-            after: newManifest.replace('1.0.1', '2.0.0'),
-          },
-          {
-            path: 'ts/packages/providers/provider/package.json',
-            before: JSON.stringify(provider),
-            after: JSON.stringify({
-              ...provider,
-              version: '0.1.1',
-              peerDependencies: { '@composio/core': '>=2.0.0' },
-            }),
-          },
-        ],
-        plan,
-        []
-      )
-    ).not.toThrow();
+    await validate(
+      [
+        {
+          path: 'ts/packages/core/package.json',
+          before: oldManifest,
+          after: newManifest.replace('1.0.1', '2.0.0'),
+        },
+        {
+          path: 'ts/packages/providers/provider/package.json',
+          before: JSON.stringify(provider),
+          after: JSON.stringify({
+            ...provider,
+            version: '0.1.1',
+            peerDependencies: { '@composio/core': '>=2.0.0' },
+          }),
+        },
+      ],
+      plan,
+      []
+    );
   });
-  test('coincident client versions and Python dependency literals cannot masquerade as SDK metadata', () => {
-    expect(() =>
-      validateReleaseDiff(
+  test('coincident client versions and Python dependency literals cannot masquerade as SDK metadata', async () => {
+    await expect(
+      validate(
         [
           {
             path: 'ts/packages/core/package.json',
@@ -415,7 +450,7 @@ describe('controller API contracts', () => {
         batch.plan,
         []
       )
-    ).toThrow('Unplanned dependency');
+    ).rejects.toThrow('Unplanned dependency');
   });
 });
 
@@ -485,56 +520,47 @@ describe('SDK fragment policy', () => {
   });
 });
 
-import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { spawnSync } from 'node:child_process';
-import { mayRebuildMissingCandidate, sha256 } from '../scripts/sdk-release/artifacts';
-import { readExactCandidateTarballs } from '../ts/scripts/check-provider-compatibility';
-
 test('missing candidates cannot rebuild after any original-run upload step may have executed', async () => {
-  const fixture = (status: string, conclusion: string | null) =>
-    new GitHubReleaseClient(
-      'token',
-      async () =>
-        new Response(
-          JSON.stringify({
-            jobs: [
-              {
-                name: 'npm',
-                steps: [{ name: 'Upload original candidates to npm', status, conclusion }],
-              },
-            ],
-          })
-        )
-    );
-  expect(await mayRebuildMissingCandidate(fixture('completed', 'failure'), 8, true)).toBe(false);
-  expect(await mayRebuildMissingCandidate(fixture('queued', null), 8, false)).toBe(false);
-  expect(await mayRebuildMissingCandidate(fixture('queued', null), 8, true)).toBe(true);
+  const fixture =
+    (status: string, conclusion: string | null): Fetch =>
+    async () =>
+      new Response(
+        JSON.stringify({
+          jobs: [
+            {
+              name: 'npm',
+              steps: [{ name: 'Upload original candidates to npm', status, conclusion }],
+            },
+          ],
+        })
+      );
+  expect(
+    await runRelease(mayRebuildMissingCandidate(8, true), fixture('completed', 'failure'))
+  ).toBe(false);
+  expect(await runRelease(mayRebuildMissingCandidate(8, false), fixture('queued', null))).toBe(
+    false
+  );
+  expect(await runRelease(mayRebuildMissingCandidate(8, true), fixture('queued', null))).toBe(true);
 });
 
 test('exact candidate compatibility keeps the original packed dependency and tarball bytes', async () => {
-  const temporary = await mkdtemp(join(tmpdir(), 'sdk-exact-tarball-'));
-  try {
-    await mkdir(join(temporary, 'package'));
-    await writeFile(
-      join(temporary, 'package/package.json'),
-      JSON.stringify({
-        name: '@composio/core',
-        version: '1.0.1',
-        dependencies: { '@composio/json-schema-to-zod': '0.1.0' },
-      })
-    );
-    const file = join(temporary, 'composio-core-1.0.1.tgz');
-    const result = spawnSync('tar', ['-czf', file, '-C', temporary, 'package']);
-    if (result.status !== 0) throw new Error('Fixture tarball creation failed');
-    const checksum = sha256(await readFile(file));
-    const candidates = await readExactCandidateTarballs(temporary);
-    expect(candidates.get('@composio/core')).toBe(file);
-    expect(sha256(await readFile(file))).toBe(checksum);
-    expect(
-      spawnSync('tar', ['-xOf', file, 'package/package.json'], { encoding: 'utf8' }).stdout
-    ).toContain('"@composio/json-schema-to-zod":"0.1.0"');
-  } finally {
-    await rm(temporary, { recursive: true, force: true });
-  }
+  const temporary = await directories.create();
+  await writeText(
+    `${temporary}/package/package.json`,
+    JSON.stringify({
+      name: '@composio/core',
+      version: '1.0.1',
+      dependencies: { '@composio/json-schema-to-zod': '0.1.0' },
+    })
+  );
+  const file = `${temporary}/composio-core-1.0.1.tgz`;
+  await runRelease(run('tar', ['-czf', file, '-C', temporary, 'package']));
+  const checksum = async () => runRelease(sha256Hex(await readBytes(file)));
+  const before = await checksum();
+  const candidates = await readExactCandidateTarballs(temporary);
+  expect(candidates.get('@composio/core')).toBe(file);
+  expect(await checksum()).toBe(before);
+  expect(await runRelease(run('tar', ['-xOf', file, 'package/package.json']))).toContain(
+    '"@composio/json-schema-to-zod":"0.1.0"'
+  );
 });

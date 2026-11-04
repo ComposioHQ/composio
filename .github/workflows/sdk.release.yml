@@ -314,21 +314,8 @@ jobs:
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id || steps.build.outputs.artifact-id }}
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest || steps.build.outputs.artifact-digest }}
           SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          LANGUAGE: ${{ matrix.language }}
           SDK_READ_TOKEN: ${{ github.token }}
-        run: |
-          bun - <<'JS'
-          import { appendFile } from 'node:fs/promises';
-          import { actionArtifactSchema, candidateManifestSchema, normalizeArtifactDigest, reuseCandidate } from './scripts/sdk-release/artifacts';
-          import { GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './scripts/sdk-release/github';
-          const github = new GitHubReleaseClient(process.env.SDK_READ_TOKEN);
-          const artifact = await github.request('GET', `/repos/${SDK_RELEASE_REPOSITORY}/actions/artifacts/${process.env.ARTIFACT_ID}`, actionArtifactSchema);
-          reuseCandidate([artifact], `sdk-candidate-${process.env.LANGUAGE}`, Number(process.env.GITHUB_RUN_ID), process.env.SOURCE_SHA);
-          if (artifact.digest !== normalizeArtifactDigest(process.env.ARTIFACT_DIGEST)) throw new Error('Uploaded artifact digest differs');
-          const manifest = candidateManifestSchema.parse(await Bun.file(`sdk-candidate/${process.env.LANGUAGE}/candidate.json`).json());
-          const files = manifest.files.map(file => `- ${file.name}: ${file.sha256} (${file.size} bytes)`).join('\n');
-          await appendFile(process.env.GITHUB_STEP_SUMMARY, `${process.env.LANGUAGE} candidate ID=${artifact.id} digest=${artifact.digest} producer=${process.env.GITHUB_RUN_ID} source=${process.env.SOURCE_SHA} expires=${artifact.expires_at}\n\n${files}\n`);
-          JS
+        run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}
 
   candidates-ready:
     needs: [select-candidates, candidate]

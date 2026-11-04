@@ -152,9 +152,9 @@ describe('SDK release planning', () => {
       })
     ).rejects.toThrow('Registry baseline mismatch for @composio/core');
     await applySdkReleasePlan(cwd, plan, { updateLockfile: false });
-    expect(
-      JSON.parse(await readFile(join(cwd, 'packages/provider/package.json'), 'utf8')).version
-    ).toBe('0.11.2');
+    expect(JSON.parse(await readText(`${cwd}/packages/provider/package.json`)).version).toBe(
+      '0.11.2'
+    );
     const other = await fixture();
     await other.json('packages/provider/package.json', {
       name: '@composio/provider',

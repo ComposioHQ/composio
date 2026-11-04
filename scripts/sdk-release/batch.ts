@@ -1,860 +1,1047 @@
-import { writeFile, mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { originalCandidates, reuseCandidate } from './artifacts';
-import { z } from 'zod';
-import { GitHubReleaseApiError, GitHubReleaseClient, SDK_RELEASE_REPOSITORY } from './github';
-import { createSdkReleasePlan } from './plan';
-import type { CorrectiveInput } from './plan';
 import {
+  Cause,
+  Config,
+  Console,
+  Effect,
+  FileSystem,
+  Option,
+  Path,
+  Predicate,
+  Schema,
+  Stdio,
+  Stream,
+} from 'effect';
+import { Base64 } from 'effect/encoding';
+import { downloadCandidate, originalCandidates, reuseCandidate } from './artifacts';
+import {
+  currentPublication,
   activePreparation,
   batchForPreparation,
   committedBatch,
-  currentPublication,
   publicationState,
   sourceTagRun,
 } from './coordination';
-import { fetchStableRegistryBaseline } from './registry-baseline';
-import { parseReleaseRequest, releaseRequestSchema, type ReleaseRequest } from './request';
 import {
-  batchPath,
+  GitHub,
+  REPOSITORY_PATH,
+  ReleaseRun,
+  RunId,
+  SDK_RELEASE_REPOSITORY,
+  Sha,
+  commentIssue,
+  decodeBase64Content,
+  getRun,
+  jobs,
+  paginateArray,
+  request,
+  requestOptional,
+  requireActiveMember,
+  rerunFailedJobs,
+} from './github';
+import { createSdkReleasePlan, type CorrectiveInput, type SdkReleasePlan } from './plan';
+import { fetchStableRegistryBaseline } from './registry-baseline';
+import { ReleaseRequest, parseReleaseRequest } from './request';
+import { ensure, fail, formatJson, readJson, runMain, type ReleaseServices } from './runtime';
+import {
+  BATCH_PATH,
+  ReleaseBatch,
+  ReleasePatch,
   eligibleApproval,
   releaseOutputs,
-  releasePatchSchema,
-  releaseBatchSchema,
-  sourceShaSchema,
   validateReleaseDiff,
-  type ReleaseBatch,
+  type ReleaseFile,
+  type Review,
 } from './source';
 
-const repo = `/repos/${SDK_RELEASE_REPOSITORY}`;
-const commitSchema = z.object({
-  sha: sourceShaSchema,
-  tree: z.object({ sha: sourceShaSchema }),
-  parents: z.array(z.object({ sha: sourceShaSchema })),
-});
-const pullSchema = z.object({
-  number: z.number().int().positive(),
-  html_url: z.url(),
-  body: z.string().nullable(),
-  state: z.string(),
-  merged: z.boolean().optional(),
-  merged_at: z.string().nullable().optional(),
-  merge_commit_sha: sourceShaSchema.nullable().optional(),
-  user: z.object({ login: z.string() }),
-  head: z.object({
-    sha: sourceShaSchema,
-    ref: z.string(),
-    repo: z.object({ full_name: z.string() }).nullable(),
-  }),
-  base: z.object({ ref: z.string() }),
-});
-const fileSchema = z.object({ encoding: z.literal('base64'), content: z.string() });
-const compareSchema = z.object({
-  files: z
-    .array(
-      z.object({
-        filename: z.string(),
-        status: z.string(),
-        sha: sourceShaSchema,
-      })
-    )
-    .max(299),
-});
-export async function activeRelease(github: GitHubReleaseClient, batchId?: string) {
-  for (let page = 1; ; page++) {
-    const pulls = await github.request(
-      'GET',
-      `${repo}/pulls?state=open&base=next&per_page=100&page=${page}`,
-      z.array(pullSchema)
-    );
-    const pull = pulls.find(
-      pull =>
-        pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY &&
-        /^sdk-release\/batch-\d+$/.test(pull.head.ref) &&
-        pull.body?.includes('<!-- sdk-release-batch -->') &&
-        (!batchId || pull.head.ref === `sdk-release/batch-${batchId}`)
-    );
-    if (pull) return pull;
-    if (pulls.length < 100) return undefined;
-  }
-}
-async function content(
-  github: GitHubReleaseClient,
-  path: string,
-  sha: string
-): Promise<string | null> {
-  try {
-    const file = await github.request('GET', `${repo}/contents/${path}?ref=${sha}`, fileSchema);
-    return Buffer.from(file.content, 'base64').toString('utf8');
-  } catch (error) {
-    if (error instanceof GitHubReleaseApiError && error.status === 404) return null;
-    throw error;
-  }
-}
+const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
+const RELEASE_PR_MARKER = '<!-- sdk-release-batch -->';
+const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
+const PUBLICATION_TAG = /^sdk-release\/\d+$/;
+const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
+const AUTHORIZED_BATCH_FILE = 'sdk-release-batch.json';
+const RETRYABLE_CONCLUSIONS = new Set(['failure', 'cancelled', 'timed_out']);
+const REVIEW_STATES = new Set(['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED']);
+const MAX_RUN_ATTEMPTS = 50;
+const RECOVERY_WINDOW_MS = 30 * 86_400_000;
+/** Bounded so large release diffs stay under GitHub's secondary rate limit. */
+const CONTENT_CONCURRENCY = 8;
+const runUrl = (id: string | number) =>
+  `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}`;
+const releaseBranch = (id: string) => `sdk-release/batch-${id}`;
 
-export async function commitPreparedRelease(
-  github: GitHubReleaseClient,
-  value: unknown,
-  authorizedValue: ReleaseBatch
-): Promise<string> {
-  const authorized = releaseBatchSchema.parse(authorizedValue);
-  const patch = releasePatchSchema.parse(value);
-  if (JSON.stringify(patch.batch) !== JSON.stringify(authorized))
-    throw new Error('Prepared batch differs from the authorized request');
-  const alreadyCreated = await activeRelease(github, authorized.id);
-  if (alreadyCreated) {
-    await closeReplacedPull(github, authorized, alreadyCreated.html_url);
-    return alreadyCreated.html_url;
-  }
-  const current = await activeRelease(github);
-  if (current && (!authorized.replaces || current.number !== authorized.replaces.number))
-    return current.html_url;
-  if (authorized.replaces) {
-    const previous = await github.request(
-      'GET',
-      `${repo}/pulls/${authorized.replaces.number}`,
-      pullSchema
-    );
-    if (previous.merged || previous.head.sha !== authorized.replaces.headSha)
-      throw new Error(
-        'Original release changed during refresh; inspect both candidates before continuing'
-      );
-  }
-  const source = await github.request(
-    'GET',
-    `${repo}/git/commits/${authorized.inputBase}`,
-    commitSchema
+const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
+const Commit = Schema.Struct({
+  sha: Sha,
+  tree: Schema.Struct({ sha: Sha }),
+  parents: Schema.Array(Schema.Struct({ sha: Sha })),
+});
+const Pull = Schema.Struct({
+  number: PositiveInt,
+  html_url: Schema.String,
+  body: Schema.NullOr(Schema.String),
+  state: Schema.String,
+  merged: Schema.optionalKey(Schema.Boolean),
+  merged_at: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  merge_commit_sha: Schema.optionalKey(Schema.NullOr(Sha)),
+  user: Schema.Struct({ login: Schema.String }),
+  head: Schema.Struct({
+    sha: Sha,
+    ref: Schema.String,
+    repo: Schema.NullOr(Schema.Struct({ full_name: Schema.String })),
+  }),
+  base: Schema.Struct({ ref: Schema.String }),
+});
+type Pull = typeof Pull.Type;
+const FileContent = Schema.Struct({ encoding: Schema.Literal('base64'), content: Schema.String });
+const Compare = Schema.Struct({
+  files: Schema.Array(
+    Schema.Struct({ filename: Schema.String, status: Schema.String, sha: Sha })
+  ).check(Schema.isMaxLength(299)),
+});
+const CreatedSha = Schema.Struct({ sha: Sha });
+const ShaRef = Schema.Struct({ object: Schema.Struct({ sha: Sha }) });
+const TagRef = Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Sha }) });
+const CreatedRef = Schema.Struct({ ref: Schema.String });
+
+const isReleasePull = (pull: Pull) =>
+  pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY &&
+  RELEASE_BRANCH.test(pull.head.ref) &&
+  pull.body?.includes(RELEASE_PR_MARKER) === true;
+
+/** The open release PR into next, optionally for one batch. */
+export const activeRelease = (batchId?: string) =>
+  paginateArray(`${REPOSITORY_PATH}/pulls?state=open&base=next`, Pull).pipe(
+    Stream.filter(
+      pull =>
+        isReleasePull(pull) && (batchId === undefined || pull.head.ref === releaseBranch(batchId))
+    ),
+    Stream.runHead
   );
-  for (const file of patch.files) {
-    if ((await content(github, file.path, authorized.inputBase)) !== file.before)
-      throw new Error(`Prepared input differs from frozen source: ${file.path}`);
-  }
-  const planFile = patch.files.find(file => file.path === batchPath);
-  if (
-    !planFile?.after ||
-    JSON.stringify(releaseBatchSchema.parse(JSON.parse(planFile.after))) !==
-      JSON.stringify(authorized)
-  )
-    throw new Error('Prepared source plan changed');
-  validateReleaseDiff(patch.files, authorized.plan, authorized.outputs);
-  const branch = `sdk-release/batch-${authorized.id}`;
-  let originalHead: string | undefined;
-  try {
-    const existing = await github.request(
+
+/** A file's UTF-8 contents at `sha`, or `None` when it does not exist there. */
+const content = (path: string, sha: string) =>
+  Effect.gen(function* () {
+    const file = yield* requestOptional(
+      `${REPOSITORY_PATH}/contents/${path}?ref=${sha}`,
+      FileContent
+    );
+    return Option.isNone(file)
+      ? Option.none<string>()
+      : Option.some(yield* decodeBase64Content(file.value.content));
+  });
+const contentOrNull = (path: string, sha: string) =>
+  Effect.map(content(path, sha), Option.getOrNull);
+
+const contentsAt = (paths: ReadonlyArray<string>, sha: string) =>
+  Effect.forEach(paths, path => contentOrNull(path, sha), { concurrency: CONTENT_CONCURRENCY });
+
+const sameJson = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+
+/** A saved preparation branch must hold exactly the prepared files on top of the frozen input. */
+const verifySavedBranch = (head: string, authorized: ReleaseBatch, patch: ReleasePatch) =>
+  Effect.gen(function* () {
+    const saved = yield* request('GET', `${REPOSITORY_PATH}/git/commits/${head}`, Commit);
+    const savedDiff = yield* request(
       'GET',
-      `${repo}/git/ref/heads/${branch}`,
-      z.object({ object: z.object({ sha: sourceShaSchema }) })
+      `${REPOSITORY_PATH}/compare/${authorized.inputBase}...${head}`,
+      Compare
     );
-    originalHead = existing.object.sha;
-    const saved = await github.request('GET', `${repo}/git/commits/${originalHead}`, commitSchema);
-    const savedDiff = await github.request(
-      'GET',
-      `${repo}/compare/${authorized.inputBase}...${originalHead}`,
-      compareSchema
+    yield* ensure(
+      saved.parents.length === 1 &&
+        saved.parents[0].sha === authorized.inputBase &&
+        sameJson(
+          savedDiff.files.map(file => file.filename).sort(),
+          patch.files.map(file => file.path).sort()
+        ),
+      'Existing preparation branch no longer matches the original source'
     );
-    if (
-      saved.parents.length !== 1 ||
-      saved.parents[0].sha !== authorized.inputBase ||
-      JSON.stringify(savedDiff.files.map(file => file.filename).sort()) !==
-        JSON.stringify(patch.files.map(file => file.path).sort())
-    )
-      throw new Error('Existing preparation branch no longer matches the original source');
-    for (const file of patch.files)
-      if ((await content(github, file.path, originalHead)) !== file.after)
-        throw new Error('Existing preparation branch differs from the original prepared files');
-  } catch (error) {
-    if (!(error instanceof GitHubReleaseApiError) || error.status !== 404) throw error;
-  }
-  if (!originalHead) {
-    const blobs = await Promise.all(
-      patch.files.map(async file => {
-        if (file.after === null)
-          return { path: file.path, mode: '100644', type: 'blob', sha: null };
-        const blob = await github.request(
-          'POST',
-          `${repo}/git/blobs`,
-          z.object({ sha: sourceShaSchema }),
-          { content: Buffer.from(file.after).toString('base64'), encoding: 'base64' }
-        );
-        return { path: file.path, mode: '100644', type: 'blob', sha: blob.sha };
-      })
+    const contents = yield* contentsAt(
+      patch.files.map(file => file.path),
+      head
     );
-    const tree = await github.request(
-      'POST',
-      `${repo}/git/trees`,
-      z.object({ sha: sourceShaSchema }),
-      { base_tree: source.tree.sha, tree: blobs }
+    yield* ensure(
+      patch.files.every((file, index) => contents[index] === file.after),
+      'Existing preparation branch differs from the original prepared files'
     );
-    const created = await github.request(
-      'POST',
-      `${repo}/git/commits`,
-      z.object({ sha: sourceShaSchema }),
-      {
-        message: 'chore(release): prepare SDK versions and documentation',
-        parents: [authorized.inputBase],
-        tree: tree.sha,
-      }
+  });
+
+const createPreparationBranch = (
+  branch: string,
+  authorized: ReleaseBatch,
+  patch: ReleasePatch,
+  sourceTree: string
+) =>
+  Effect.gen(function* () {
+    const blobs = yield* Effect.forEach(
+      patch.files,
+      file =>
+        file.after === null
+          ? Effect.succeed({
+              path: file.path,
+              mode: '100644',
+              type: 'blob',
+              sha: null as string | null,
+            })
+          : Effect.map(
+              request('POST', `${REPOSITORY_PATH}/git/blobs`, CreatedSha, {
+                content: Base64.encode(file.after),
+                encoding: 'base64',
+              }),
+              blob => ({ path: file.path, mode: '100644', type: 'blob', sha: blob.sha })
+            ),
+      { concurrency: 'unbounded' }
     );
-    await github.request('POST', `${repo}/git/refs`, z.object({ ref: z.string() }), {
+    const tree = yield* request('POST', `${REPOSITORY_PATH}/git/trees`, CreatedSha, {
+      base_tree: sourceTree,
+      tree: blobs,
+    });
+    const created = yield* request('POST', `${REPOSITORY_PATH}/git/commits`, CreatedSha, {
+      message: 'chore(release): prepare SDK versions and documentation',
+      parents: [authorized.inputBase],
+      tree: tree.sha,
+    });
+    yield* request('POST', `${REPOSITORY_PATH}/git/refs`, CreatedRef, {
       ref: `refs/heads/${branch}`,
       sha: created.sha,
     });
-  }
-  const rows = authorized.plan.releases
-    .map(
-      release =>
-        `| ${release.name} | ${authorized.plan.recommended.find(recommendation => recommendation.name === release.name)?.newVersion ?? 'none'} | ${release.newVersion} |`
-    )
-    .join('\n');
-  const pull = await github.request('POST', `${repo}/pulls`, pullSchema, {
-    title: 'chore(release): publish SDK packages',
-    head: branch,
-    base: 'next',
-    body: `<!-- sdk-release-batch -->\n<!-- sdk-release-note-exempt: This release PR applies previously reviewed SDK changes and only updates release metadata and generated documentation. -->\nRelease source is frozen at input ${authorized.inputBase}. Later next commits remain pending. Review the full diff and approve the final head. The controller merges that exact head after required checks pass.\n\n${authorized.statusUrl}\n\n| Package | Recommended | Selected |\n| --- | --- | --- |\n${rows}\n\nOriginal preparation run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${authorized.originalRunId}`,
   });
-  await closeReplacedPull(github, authorized, pull.html_url);
-  return pull.html_url;
-}
 
-async function closeReplacedPull(
-  github: GitHubReleaseClient,
-  batch: ReleaseBatch,
-  replacementUrl: string
-): Promise<void> {
-  if (!batch.replaces) return;
-  const previous = await github.request(
-    'GET',
-    `${repo}/pulls/${batch.replaces.number}`,
-    pullSchema
-  );
-  if (previous.state === 'closed' && !previous.merged) return;
-  if (previous.merged || previous.head.sha !== batch.replaces.headSha)
-    throw new Error(
+const releasePullBody = (batch: ReleaseBatch) => {
+  const rows = batch.plan.releases
+    .map(release => {
+      const recommended =
+        batch.plan.recommended.find(candidate => candidate.name === release.name)?.newVersion ??
+        'none';
+      return `| ${release.name} | ${recommended} | ${release.newVersion} |`;
+    })
+    .join('\n');
+  return `${RELEASE_PR_MARKER}\n<!-- sdk-release-note-exempt: This release PR applies previously reviewed SDK changes and only updates release metadata and generated documentation. -->\nRelease source is frozen at input ${batch.inputBase}. Later next commits remain pending. Review the full diff and approve the final head. The controller merges that exact head after required checks pass.\n\n${batch.statusUrl}\n\n| Package | Recommended | Selected |\n| --- | --- | --- |\n${rows}\n\nOriginal preparation run: ${runUrl(batch.originalRunId)}`;
+};
+
+/** Commits the prepared patch to its release branch and opens (or recovers) the release PR. */
+export const commitPreparedRelease = (value: unknown, authorizedValue: ReleaseBatch) =>
+  Effect.gen(function* () {
+    const authorized = yield* Schema.decodeUnknownEffect(ReleaseBatch)(authorizedValue);
+    const patch = yield* Schema.decodeUnknownEffect(ReleasePatch)(value);
+    yield* ensure(
+      sameJson(patch.batch, authorized),
+      'Prepared batch differs from the authorized request'
+    );
+    const alreadyCreated = yield* activeRelease(authorized.id);
+    if (Option.isSome(alreadyCreated)) {
+      yield* closeReplacedPull(authorized, alreadyCreated.value.html_url);
+      return alreadyCreated.value.html_url;
+    }
+    const current = yield* activeRelease();
+    if (Option.isSome(current) && current.value.number !== authorized.replaces?.number)
+      return current.value.html_url;
+    if (authorized.replaces) {
+      const previous = yield* request(
+        'GET',
+        `${REPOSITORY_PATH}/pulls/${authorized.replaces.number}`,
+        Pull
+      );
+      yield* ensure(
+        !previous.merged && previous.head.sha === authorized.replaces.headSha,
+        'Original release changed during refresh; inspect both candidates before continuing'
+      );
+    }
+    const source = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/git/commits/${authorized.inputBase}`,
+      Commit
+    );
+    const frozen = yield* contentsAt(
+      patch.files.map(file => file.path),
+      authorized.inputBase
+    );
+    for (const [index, file] of patch.files.entries())
+      yield* ensure(
+        frozen[index] === file.before,
+        `Prepared input differs from frozen source: ${file.path}`
+      );
+    const planFile = patch.files.find(file => file.path === BATCH_PATH);
+    const plannedBatch = planFile?.after
+      ? yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(planFile.after)
+      : undefined;
+    yield* ensure(
+      plannedBatch !== undefined && sameJson(plannedBatch, authorized),
+      'Prepared source plan changed'
+    );
+    yield* validateReleaseDiff(patch.files, authorized.plan, authorized.outputs);
+    const branch = releaseBranch(authorized.id);
+    const existing = yield* requestOptional(`${REPOSITORY_PATH}/git/ref/heads/${branch}`, ShaRef);
+    yield* Option.match(existing, {
+      onSome: ref => verifySavedBranch(ref.object.sha, authorized, patch),
+      onNone: () => createPreparationBranch(branch, authorized, patch, source.tree.sha),
+    });
+    const pull = yield* request('POST', `${REPOSITORY_PATH}/pulls`, Pull, {
+      title: 'chore(release): publish SDK packages',
+      head: branch,
+      base: 'next',
+      body: releasePullBody(authorized),
+    });
+    yield* closeReplacedPull(authorized, pull.html_url);
+    return pull.html_url;
+  });
+
+const closeReplacedPull = (batch: ReleaseBatch, replacementUrl: string) =>
+  Effect.gen(function* () {
+    if (!batch.replaces) return;
+    const previous = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/pulls/${batch.replaces.number}`,
+      Pull
+    );
+    if (previous.state === 'closed' && !previous.merged) return;
+    yield* ensure(
+      !previous.merged && previous.head.sha === batch.replaces.headSha,
       `Original release changed during refresh. Replacement is preserved at ${replacementUrl}`
     );
-  await github.request('PATCH', `${repo}/pulls/${batch.replaces.number}`, pullSchema, {
-    state: 'closed',
+    yield* request('PATCH', `${REPOSITORY_PATH}/pulls/${batch.replaces.number}`, Pull, {
+      state: 'closed',
+    });
+    yield* commentIssue(
+      batch.replaces.number,
+      `Superseded by ${replacementUrl}. The original branch and release evidence are retained. The replacement requires a new approval.`
+    );
   });
-  await github.commentIssue(
-    batch.replaces.number,
-    `Superseded by ${replacementUrl}. The original branch and release evidence are retained. The replacement requires a new approval.`
-  );
-}
 
-export async function verifyOriginalBatch(
-  github: GitHubReleaseClient,
-  batch: ReleaseBatch
-): Promise<void> {
-  const original = await github.getRun(batch.originalRunId);
-  if (
-    original.path !== '.github/workflows/sdk.release.yml' ||
-    original.repository.full_name !== SDK_RELEASE_REPOSITORY ||
-    original.head_branch !== 'next'
-  )
-    throw new Error('Release preparation was not produced by the protected controller');
-  const artifact = reuseCandidate(
-    await originalCandidates(github, Number(batch.originalRunId)),
-    'sdk-authorized-batch',
-    Number(batch.originalRunId),
-    batch.inputBase
-  );
-  if (!artifact)
-    throw new Error('Original authorized release plan is unavailable; prepare a new release');
-  const directory = await mkdtemp(join(tmpdir(), 'sdk-original-plan-'));
-  try {
-    await github.downloadArtifact(artifact, directory);
-    const saved = releaseBatchSchema.parse(
-      await Bun.file(join(directory, 'sdk-release-batch.json')).json()
-    );
-    if (JSON.stringify(saved) !== JSON.stringify(batch))
-      throw new Error('Committed release plan differs from the original authorized plan');
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-    await rm(`${directory}.zip`, { force: true });
-  }
-}
-
-export async function verifyReleaseHead(github: GitHubReleaseClient, number: number) {
-  const pull = await github.request('GET', `${repo}/pulls/${number}`, pullSchema);
-  if (
-    pull.base.ref !== 'next' ||
-    pull.head.repo?.full_name !== SDK_RELEASE_REPOSITORY ||
-    !/^sdk-release\/batch-\d+$/.test(pull.head.ref) ||
-    !pull.body?.includes('<!-- sdk-release-batch -->')
-  )
-    throw new Error('Expected an SDK release PR into protected next');
-  const raw = await content(github, batchPath, pull.head.sha);
-  if (!raw) throw new Error('Missing committed release plan');
-  const batch = releaseBatchSchema.parse(JSON.parse(raw));
-  await verifyOriginalBatch(github, batch);
-  if (pull.head.ref !== `sdk-release/batch-${batch.id}`)
-    throw new Error('Release branch and batch do not agree');
-  const reviews: { user: string; state: string; commitId: string; permission: string }[] = [];
-  for (let page = 1; ; page++) {
-    const pageReviews = await github.request(
-      'GET',
-      `${repo}/pulls/${number}/reviews?per_page=100&page=${page}`,
-      z.array(
-        z.object({
-          user: z.object({ login: z.string() }),
-          state: z.string(),
-          commit_id: sourceShaSchema,
-        })
-      )
-    );
-    for (const review of pageReviews) {
-      if (!['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) continue;
-      const permission = await github.request(
-        'GET',
-        `${repo}/collaborators/${encodeURIComponent(review.user.login)}/permission`,
-        z.object({ permission: z.string() })
-      );
-      reviews.push({
-        user: review.user.login,
-        state: review.state,
-        commitId: review.commit_id,
-        permission: permission.permission,
-      });
-    }
-    if (pageReviews.length < 100) break;
-  }
-  if (!eligibleApproval(reviews, pull.user.login, pull.head.sha))
-    throw new Error('Final release head lacks an eligible non-author approval');
-  const checks = await github.request(
-    'GET',
-    `${repo}/commits/${pull.head.sha}/check-runs?per_page=100`,
-    z.object({
-      total_count: z.number().max(100),
-      check_runs: z.array(
-        z.object({
-          name: z.string(),
-          head_sha: sourceShaSchema,
-          app: z.object({ slug: z.string() }).nullable(),
-          conclusion: z.string().nullable(),
-        })
-      ),
+/** Downloads a retained authorized-batch artifact into a scoped directory and decodes its plan. */
+const downloadAuthorizedBatch = (artifact: Parameters<typeof downloadCandidate>[0]) =>
+  Effect.scoped(
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const root = yield* fs.makeTempDirectoryScoped({ prefix: 'sdk-authorized-plan-' });
+      const directory = `${root}/plan`;
+      yield* downloadCandidate(artifact, directory);
+      return yield* readJson(ReleaseBatch, `${directory}/${AUTHORIZED_BATCH_FILE}`);
     })
   );
-  for (const language of new Set(batch.plan.releases.map(release => release.language))) {
-    if (
-      !checks.check_runs.some(
+
+/** The committed plan must equal the plan the protected controller authorized and retained. */
+export const verifyOriginalBatch = (batch: ReleaseBatch) =>
+  Effect.gen(function* () {
+    const original = yield* getRun(batch.originalRunId);
+    yield* ensure(
+      original.path === WORKFLOW_PATH &&
+        original.repository.full_name === SDK_RELEASE_REPOSITORY &&
+        original.head_branch === 'next',
+      'Release preparation was not produced by the protected controller'
+    );
+    const artifact = yield* reuseCandidate(
+      yield* originalCandidates(Number(batch.originalRunId)),
+      AUTHORIZED_BATCH_ARTIFACT,
+      Number(batch.originalRunId),
+      batch.inputBase
+    );
+    if (Option.isNone(artifact))
+      return yield* fail('Original authorized release plan is unavailable; prepare a new release');
+    const saved = yield* downloadAuthorizedBatch(artifact.value);
+    yield* ensure(
+      sameJson(saved, batch),
+      'Committed release plan differs from the original authorized plan'
+    );
+  });
+
+const PullReview = Schema.Struct({
+  user: Schema.Struct({ login: Schema.String }),
+  state: Schema.String,
+  commit_id: Sha,
+});
+const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
+const CheckRuns = Schema.Struct({
+  total_count: Schema.Number.check(Schema.isLessThanOrEqualTo(100)),
+  check_runs: Schema.Array(
+    Schema.Struct({
+      name: Schema.String,
+      head_sha: Sha,
+      app: Schema.NullOr(Schema.Struct({ slug: Schema.String })),
+      conclusion: Schema.NullOr(Schema.String),
+    })
+  ),
+});
+
+/** Review decisions with each reviewer's repository permission, looked up once per login. */
+const reviewsWithPermissions = (number: number) =>
+  Effect.gen(function* () {
+    const decisions = (yield* Stream.runCollect(
+      paginateArray(`${REPOSITORY_PATH}/pulls/${number}/reviews`, PullReview)
+    )).filter(review => REVIEW_STATES.has(review.state));
+    const logins = [...new Set(decisions.map(review => review.user.login))];
+    const permissions = new Map(
+      yield* Effect.forEach(
+        logins,
+        login =>
+          Effect.map(
+            request(
+              'GET',
+              `${REPOSITORY_PATH}/collaborators/${encodeURIComponent(login)}/permission`,
+              CollaboratorPermission
+            ),
+            result => [login, result.permission] as const
+          ),
+        { concurrency: CONTENT_CONCURRENCY }
+      )
+    );
+    return decisions.map(
+      review =>
+        ({
+          user: review.user.login,
+          state: review.state,
+          commitId: review.commit_id,
+          permission: permissions.get(review.user.login) ?? '',
+        }) satisfies Review
+    );
+  });
+
+/** Checks a release PR's identity, plan, approval, final-head checks and diff; returns them. */
+export const verifyReleaseHead = (number: number) =>
+  Effect.gen(function* () {
+    const pull = yield* request('GET', `${REPOSITORY_PATH}/pulls/${number}`, Pull);
+    yield* ensure(
+      pull.base.ref === 'next' && isReleasePull(pull),
+      'Expected an SDK release PR into protected next'
+    );
+    const raw = yield* content(BATCH_PATH, pull.head.sha);
+    if (Option.isNone(raw)) return yield* fail('Missing committed release plan');
+    const batch = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(raw.value);
+    yield* verifyOriginalBatch(batch);
+    yield* ensure(
+      pull.head.ref === releaseBranch(batch.id),
+      'Release branch and batch do not agree'
+    );
+    const reviews = yield* reviewsWithPermissions(number);
+    yield* ensure(
+      eligibleApproval(reviews, pull.user.login, pull.head.sha),
+      'Final release head lacks an eligible non-author approval'
+    );
+    const checks = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/commits/${pull.head.sha}/check-runs?per_page=100`,
+      CheckRuns
+    );
+    const passed = (name: string) =>
+      checks.check_runs.some(
         check =>
-          check.name === `SDK candidate (${language})` &&
+          check.name === name &&
           check.head_sha === pull.head.sha &&
           check.app?.slug === 'github-actions' &&
           check.conclusion === 'success'
-      )
-    )
-      throw new Error(`Missing green final-head ${language} candidate check`);
-  }
-  if (
-    !checks.check_runs.some(
-      check =>
-        check.name === 'typescript-check' &&
-        check.head_sha === pull.head.sha &&
-        check.app?.slug === 'github-actions' &&
-        check.conclusion === 'success'
-    )
-  )
-    throw new Error('Missing green final-head production docs check');
-  const diff = await github.request(
-    'GET',
-    `${repo}/compare/${batch.inputBase}...${pull.head.sha}`,
-    compareSchema
-  );
-  const files = await Promise.all(
-    diff.files.map(async file => ({
-      path: file.filename,
-      before: await content(github, file.filename, batch.inputBase),
-      after: await content(github, file.filename, pull.head.sha),
-    }))
-  );
-  validateReleaseDiff(files, batch.plan, batch.outputs);
-  return { pull, batch, diff };
-}
-
-export async function mergeApprovedRelease(
-  github: GitHubReleaseClient,
-  number: number,
-  appId: number
-): Promise<string> {
-  if (await activePreparation(github, process.env.GITHUB_RUN_ID ?? '0'))
-    throw new Error('A release refresh is preparing; the previous PR must not merge');
-  const { pull } = await verifyReleaseHead(github, number);
-  if (!pull.merged) {
-    const result = await github.request(
-      'PUT',
-      `${repo}/pulls/${number}/merge`,
-      z.object({ merged: z.boolean(), sha: sourceShaSchema }),
-      { sha: pull.head.sha, merge_method: 'squash' }
-    );
-    if (!result.merged) throw new Error('Protected expected-head merge was not accepted');
-  }
-  return authorizeSourceTag(github, number, appId);
-}
-
-export async function authorizeSourceTag(
-  github: GitHubReleaseClient,
-  number: number,
-  appId: number
-): Promise<string> {
-  const { pull, batch } = await verifyReleaseHead(github, number);
-  if (!pull.merged || !pull.merge_commit_sha) throw new Error('Release PR has not merged');
-  await (
-    await import('./registry')
-  ).verifyPublicationPolicy(
-    github,
-    new Set(batch.plan.releases.map(release => release.language)),
-    appId
-  );
-  const merged = await github.request(
-    'GET',
-    `${repo}/git/commits/${pull.merge_commit_sha}`,
-    commitSchema
-  );
-  if (!merged.parents.some(parent => parent.sha === pull.head.sha)) {
-    if (merged.parents.length !== 1) throw new Error('Unrecognized release merge topology');
-    // GitHub's merged PR records the reviewed head and the resulting squash
-    // commit separately. The publication tag retains the reviewed head.
-  }
-
-  const tag = `sdk-release/${batch.id}`;
-  try {
-    const existing = await github.request(
+      );
+    for (const language of new Set(batch.plan.releases.map(release => release.language)))
+      yield* ensure(
+        passed(`SDK candidate (${language})`),
+        `Missing green final-head ${language} candidate check`
+      );
+    yield* ensure(passed('typescript-check'), 'Missing green final-head production docs check');
+    const diff = yield* request(
       'GET',
-      `${repo}/git/ref/tags/${tag}`,
-      z.object({ object: z.object({ type: z.string(), sha: sourceShaSchema }) })
+      `${REPOSITORY_PATH}/compare/${batch.inputBase}...${pull.head.sha}`,
+      Compare
     );
-    if (existing.object.type !== 'commit' || existing.object.sha !== pull.head.sha)
-      throw new Error('Publication source tag already points to another source');
-  } catch (error) {
-    if (!(error instanceof GitHubReleaseApiError) || error.status !== 404) throw error;
-    await github.request('POST', `${repo}/git/refs`, z.object({ ref: z.string() }), {
-      ref: `refs/tags/${tag}`,
-      sha: pull.head.sha,
+    const files = yield* Effect.forEach(
+      diff.files,
+      file =>
+        Effect.map(
+          Effect.all([
+            contentOrNull(file.filename, batch.inputBase),
+            contentOrNull(file.filename, pull.head.sha),
+          ]),
+          ([before, after]) => ({ path: file.filename, before, after }) satisfies ReleaseFile
+        ),
+      { concurrency: CONTENT_CONCURRENCY }
+    );
+    yield* validateReleaseDiff(files, batch.plan, batch.outputs);
+    return { pull, batch, diff };
+  });
+
+/** Merges the verified release PR at its approved head, then authorizes its publication tag. */
+export const mergeApprovedRelease = (number: number, appId: number, runId: string) =>
+  Effect.gen(function* () {
+    yield* ensure(
+      Option.isNone(yield* activePreparation(runId)),
+      'A release refresh is preparing; the previous PR must not merge'
+    );
+    const { pull } = yield* verifyReleaseHead(number);
+    if (!pull.merged) {
+      const result = yield* request(
+        'PUT',
+        `${REPOSITORY_PATH}/pulls/${number}/merge`,
+        Schema.Struct({ merged: Schema.Boolean, sha: Sha }),
+        { sha: pull.head.sha, merge_method: 'squash' }
+      );
+      yield* ensure(result.merged, 'Protected expected-head merge was not accepted');
+    }
+    return yield* authorizeSourceTag(number, appId);
+  });
+
+/**
+ * Creates the immutable publication tag on the reviewed head. GitHub records that head and the
+ * squash commit separately, so a single-parent squash need not list the head as a parent.
+ */
+export const authorizeSourceTag = (number: number, appId: number) =>
+  Effect.gen(function* () {
+    const { pull, batch } = yield* verifyReleaseHead(number);
+    if (!pull.merged || !pull.merge_commit_sha) return yield* fail('Release PR has not merged');
+    const registry = yield* Effect.promise(() => import('./registry'));
+    yield* registry.verifyPublicationPolicy(
+      new Set(batch.plan.releases.map(release => release.language)),
+      appId
+    );
+    const merged = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/git/commits/${pull.merge_commit_sha}`,
+      Commit
+    );
+    yield* ensure(
+      merged.parents.some(parent => parent.sha === pull.head.sha) || merged.parents.length === 1,
+      'Unrecognized release merge topology'
+    );
+    const tag = `sdk-release/${batch.id}`;
+    const existing = yield* requestOptional(`${REPOSITORY_PATH}/git/ref/tags/${tag}`, TagRef);
+    yield* Option.match(existing, {
+      onSome: ref =>
+        ensure(
+          ref.object.type === 'commit' && ref.object.sha === pull.head.sha,
+          'Publication source tag already points to another source'
+        ),
+      onNone: () =>
+        request('POST', `${REPOSITORY_PATH}/git/refs`, CreatedRef, {
+          ref: `refs/tags/${tag}`,
+          sha: pull.head.sha,
+        }),
     });
-  }
-  return tag;
+    return tag;
+  });
+
+export interface ReleaseRequestContext {
+  readonly actor: string;
+  readonly runId: string;
+  readonly sourceSha: string;
+  readonly issueNumber?: number;
+  readonly runAttempt?: number;
 }
 
-export async function executeReleaseRequest(
-  github: GitHubReleaseClient,
-  value: ReleaseRequest,
-  context: {
-    actor: string;
-    runId: string;
-    sourceSha: string;
-    issueNumber?: number;
-    runAttempt?: number;
-  },
-  plan: (
-    choices?: ReleaseBatch['plan']['choices'],
-    corrective?: CorrectiveInput
-  ) => Promise<ReleaseBatch['plan']>,
-  outputs: typeof releaseOutputs = releaseOutputs
-): Promise<{
-  message: string;
-  batch?: ReleaseBatch;
-  reusedBatch?: boolean;
-  pullRequest?: string;
-  runUrl?: string;
-}> {
-  const request = releaseRequestSchema.parse(value);
-  await github.requireActiveMember(context.actor);
-  try {
-    let result: {
-      message: string;
-      batch?: ReleaseBatch;
-      reusedBatch?: boolean;
-      pullRequest?: string;
-      runUrl?: string;
-    };
-    if (request.action === 'retry' || (request.action === 'status' && request.run_id)) {
-      let original = await github.getRun(request.run_id!);
-      if (
-        original.path !== '.github/workflows/sdk.release.yml' ||
-        original.repository.full_name !== SDK_RELEASE_REPOSITORY ||
-        !(original.head_branch === 'next' || /^sdk-release\/\d+$/.test(original.head_branch ?? ''))
-      )
-        throw new Error('Run does not belong to a guarded SDK release');
-      const latest = await committedBatch(github, 'next');
-      const frozen = /^sdk-release\/\d+$/.test(original.head_branch ?? '')
-        ? original.head_sha
-          ? await committedBatch(github, original.head_sha)
-          : undefined
-        : latest?.originalRunId === String(original.id)
-          ? latest
-          : await batchForPreparation(github, String(original.id));
-      if (frozen) {
-        const publication = await sourceTagRun(github, frozen);
-        if (publication) {
-          if (
-            !publication.head_sha ||
-            JSON.stringify(await committedBatch(github, publication.head_sha)) !==
-              JSON.stringify(frozen)
-          )
-            throw new Error('Original publication source differs from its frozen batch');
-          const state = await publicationState(github, publication);
-          if (state.verified) {
-            if (request.action === 'retry')
-              await github.request(
-                'POST',
-                `${repo}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
-                z.unknown(),
-                { ref: 'next', inputs: { run_id: String(publication.id) } }
-              );
-            result = {
-              message:
-                request.action === 'retry'
-                  ? 'Packages are verified; retrying documentation on protected next without registry identity or candidate artifacts.'
-                  : 'Packages published; documentation status is tracked separately.',
-              runUrl: publication.html_url,
-            };
-            if (context.issueNumber)
-              await github.commentIssue(
-                context.issueNumber,
-                `${result.message}\n\n${result.runUrl}`
-              );
-            return result;
-          }
-          if (state.terminal)
-            throw new Error(
-              'Original publication recovery ended; a newly approved higher-version corrective release is required'
-            );
-          original = publication;
-        } else if (original.conclusion === 'success') {
-          const pulls = await github.request(
-            'GET',
-            `${repo}/pulls?state=closed&head=ComposioHQ:sdk-release/batch-${frozen.id}&per_page=100`,
-            z.array(pullSchema)
-          );
-          const merged = pulls.find(pull => pull.merged_at || pull.merged || pull.merge_commit_sha);
-          if (merged?.merge_commit_sha) {
-            const runs = await github.request(
-              'GET',
-              `${repo}/actions/workflows/sdk.release.yml/runs?event=pull_request_target&head_sha=${merged.merge_commit_sha}&per_page=100`,
-              z.object({ workflow_runs: z.array((await import('./github')).releaseRunSchema) })
-            );
-            const failed = [];
-            for (const run of runs.workflow_runs)
-              if (
-                (await github.jobs(String(run.id))).some(
-                  job => job.name === 'source-tag' && job.conclusion === 'failure'
-                )
-              )
-                failed.push(run);
-            if (failed.length !== 1)
-              throw new Error(
-                'Cannot uniquely identify the original failed source-tag authorization run'
-              );
-            original = failed[0];
-          }
+export interface ReleaseRequestResult {
+  readonly message: string;
+  readonly batch?: ReleaseBatch;
+  readonly reusedBatch?: boolean;
+  readonly pullRequest?: string;
+  readonly runUrl?: string;
+}
+
+/** How a request outcome is reported on its issue. */
+type Reply =
+  | { readonly _tag: 'Standard' }
+  | { readonly _tag: 'Text'; readonly text: string }
+  | { readonly _tag: 'None' };
+
+interface Outcome {
+  readonly result: ReleaseRequestResult;
+  readonly reply: Reply;
+}
+const standard = (result: ReleaseRequestResult): Outcome => ({
+  result,
+  reply: { _tag: 'Standard' },
+});
+
+export type PlanRelease<E, R> = (
+  choices?: SdkReleasePlan['choices'],
+  corrective?: CorrectiveInput
+) => Effect.Effect<SdkReleasePlan, E, R>;
+export type ReleaseOutputs<E, R> = (
+  ...args: Parameters<typeof releaseOutputs>
+) => Effect.Effect<ReadonlyArray<string>, E, R>;
+
+/** The batch an original run froze: its tag's batch, the batch on next, or its preparation PR's. */
+const frozenBatchFor = (original: ReleaseRun) =>
+  Effect.gen(function* () {
+    const latest = yield* committedBatch('next');
+    if (PUBLICATION_TAG.test(original.head_branch ?? ''))
+      return original.head_sha === undefined
+        ? Option.none<ReleaseBatch>()
+        : yield* committedBatch(original.head_sha);
+    return Option.exists(latest, batch => batch.originalRunId === String(original.id))
+      ? latest
+      : yield* batchForPreparation(String(original.id));
+  });
+
+/** The unique pull_request_target run whose source-tag job failed after the release PR merged. */
+const failedSourceTagRun = (frozen: ReleaseBatch) =>
+  Effect.gen(function* () {
+    const pulls = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/pulls?state=closed&head=ComposioHQ:${releaseBranch(frozen.id)}&per_page=100`,
+      Schema.Array(Pull)
+    );
+    const merged = pulls.find(pull => pull.merged_at || pull.merged || pull.merge_commit_sha);
+    if (!merged?.merge_commit_sha) return Option.none<ReleaseRun>();
+    const runs = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=pull_request_target&head_sha=${merged.merge_commit_sha}&per_page=100`,
+      Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) })
+    );
+    const failed = yield* Effect.filter(
+      runs.workflow_runs,
+      run =>
+        Effect.map(jobs(String(run.id)), runJobs =>
+          runJobs.some(job => job.name === 'source-tag' && job.conclusion === 'failure')
+        ),
+      { concurrency: CONTENT_CONCURRENCY }
+    );
+    yield* ensure(
+      failed.length === 1,
+      'Cannot uniquely identify the original failed source-tag authorization run'
+    );
+    return Option.some(failed[0]);
+  });
+
+const dispatchDocs = (runId: string | number) =>
+  request(
+    'POST',
+    `${REPOSITORY_PATH}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
+    Schema.Unknown,
+    { ref: 'next', inputs: { run_id: String(runId) } }
+  );
+
+const isRetryable = (run: ReleaseRun, now: number) =>
+  RETRYABLE_CONCLUSIONS.has(run.conclusion ?? '') &&
+  run.run_attempt < MAX_RUN_ATTEMPTS &&
+  now - Date.parse(run.created_at) < RECOVERY_WINDOW_MS;
+
+/** Status or retry of an original run; retries follow a frozen batch to its publication run. */
+const retryOrStatus = (request: ReleaseRequest & { run_id: string }) =>
+  Effect.gen(function* () {
+    let original = yield* getRun(request.run_id);
+    yield* ensure(
+      original.path === WORKFLOW_PATH &&
+        original.repository.full_name === SDK_RELEASE_REPOSITORY &&
+        (original.head_branch === 'next' || PUBLICATION_TAG.test(original.head_branch ?? '')),
+      'Run does not belong to a guarded SDK release'
+    );
+    const frozen = yield* frozenBatchFor(original);
+    if (Option.isSome(frozen)) {
+      const publication = yield* sourceTagRun(frozen.value);
+      if (Option.isSome(publication)) {
+        const run = publication.value;
+        const tagged =
+          run.head_sha === undefined
+            ? Option.none<ReleaseBatch>()
+            : yield* committedBatch(run.head_sha);
+        yield* ensure(
+          Option.exists(tagged, batch => sameJson(batch, frozen.value)),
+          'Original publication source differs from its frozen batch'
+        );
+        const state = yield* publicationState(run);
+        if (state.verified) {
+          if (request.action === 'retry') yield* dispatchDocs(run.id);
+          return standard({
+            message:
+              request.action === 'retry'
+                ? 'Packages are verified; retrying documentation on protected next without registry identity or candidate artifacts.'
+                : 'Packages published; documentation status is tracked separately.',
+            runUrl: run.html_url,
+          });
         }
-      }
-      if (request.action === 'status' || original.status !== 'completed')
-        result = {
-          message: `Original run is ${original.status}${original.conclusion ? ` (${original.conclusion})` : ''}. Retry ignores new bump choices.`,
-          runUrl: original.html_url,
-        };
-      else {
-        if (
-          !['failure', 'cancelled', 'timed_out'].includes(original.conclusion ?? '') ||
-          original.run_attempt >= 50 ||
-          Date.now() - Date.parse(original.created_at) >= 30 * 86400000
-        )
-          throw new Error('Original release cannot be retried');
-        await github.rerunFailedJobs(String(original.id));
-        result = {
-          message: 'Retrying the original run. New bump choices are ignored.',
-          runUrl: original.html_url,
-        };
-      }
-    } else {
-      const current = await activeRelease(github);
-      const preparation = await activePreparation(github, context.runId);
-      const publication = await currentPublication(github);
-      if (preparation || publication?.active) {
-        result = {
-          message: 'A release is already active; no competing versions were allocated.',
-          runUrl:
-            preparation?.html_url ?? publication?.run?.html_url ?? publication?.batch.statusUrl,
-          ...(current ? { pullRequest: current.html_url } : {}),
-        };
-        if (context.issueNumber)
-          await github.commentIssue(context.issueNumber, `${result.message}\n\n${result.runUrl}`);
-        return result;
-      }
-      if ((current && request.action !== 'refresh') || request.action === 'status')
-        result = current
-          ? {
-              message: 'A release is already active; no competing versions were allocated.',
-              pullRequest: current.html_url,
-            }
-          : { message: 'No active SDK release.' };
-      else {
-        if ((context.runAttempt ?? 1) > 1) {
-          const artifact = reuseCandidate(
-            await originalCandidates(github, Number(context.runId)),
-            'sdk-authorized-batch',
-            Number(context.runId),
-            context.sourceSha
+        if (state.terminal)
+          return yield* fail(
+            'Original publication recovery ended; a newly approved higher-version corrective release is required'
           );
-          if (artifact) {
-            const directory = await mkdtemp(join(tmpdir(), 'sdk-retry-plan-'));
-            try {
-              await github.downloadArtifact(artifact, directory);
-              const saved = releaseBatchSchema.parse(
-                await Bun.file(join(directory, 'sdk-release-batch.json')).json()
-              );
-              if (saved.id !== context.runId || saved.inputBase !== context.sourceSha)
-                throw new Error('Original preparation plan identity differs');
-              return {
-                message: 'Reusing the original authorized release plan. New choices are ignored.',
-                batch: saved,
-                reusedBatch: true,
-              };
-            } finally {
-              await rm(directory, { recursive: true, force: true });
-              await rm(`${directory}.zip`, { force: true });
-            }
-          }
-          if (
-            (await github.jobs(context.runId)).some(
-              job =>
-                job.name === 'authorize' &&
-                job.steps.some(
-                  step =>
-                    step.name === 'Retain authorized release input' && step.conclusion === 'success'
-                )
+        original = run;
+      } else if (original.conclusion === 'success') {
+        original = Option.getOrElse(yield* failedSourceTagRun(frozen.value), () => original);
+      }
+    }
+    if (request.action === 'status' || original.status !== 'completed') {
+      const conclusion = original.conclusion ? ` (${original.conclusion})` : '';
+      return standard({
+        message: `Original run is ${original.status}${conclusion}. Retry ignores new bump choices.`,
+        runUrl: original.html_url,
+      });
+    }
+    yield* ensure(isRetryable(original, Date.now()), 'Original release cannot be retried');
+    yield* rerunFailedJobs(String(original.id));
+    return standard({
+      message: 'Retrying the original run. New bump choices are ignored.',
+      runUrl: original.html_url,
+    });
+  });
+
+/** A rerun preparation reuses its retained authorized plan instead of reallocating versions. */
+const reuseAuthorizedPlan = (context: ReleaseRequestContext) =>
+  Effect.gen(function* () {
+    const artifact = yield* reuseCandidate(
+      yield* originalCandidates(Number(context.runId)),
+      AUTHORIZED_BATCH_ARTIFACT,
+      Number(context.runId),
+      context.sourceSha
+    );
+    if (Option.isSome(artifact)) {
+      const saved = yield* downloadAuthorizedBatch(artifact.value);
+      yield* ensure(
+        saved.id === context.runId && saved.inputBase === context.sourceSha,
+        'Original preparation plan identity differs'
+      );
+      return Option.some<Outcome>({
+        result: {
+          message: 'Reusing the original authorized release plan. New choices are ignored.',
+          batch: saved,
+          reusedBatch: true,
+        },
+        reply: { _tag: 'None' },
+      });
+    }
+    const retained = (yield* jobs(context.runId)).some(
+      job =>
+        job.name === 'authorize' &&
+        job.steps.some(
+          step => step.name === 'Retain authorized release input' && step.conclusion === 'success'
+        )
+    );
+    yield* ensure(
+      !retained,
+      'Original authorized release input was deleted; submit a new request instead of reallocating versions in an old run'
+    );
+    return Option.none<Outcome>();
+  });
+
+/** The fields of `currentPublication` a new request depends on. */
+interface Publication {
+  readonly batch: ReleaseBatch;
+  readonly run: ReleaseRun | undefined;
+  readonly active: boolean;
+  readonly terminal: boolean;
+}
+
+/** A partial or terminal publication's outstanding targets become the next plan's corrective input. */
+const correctiveFor = (cwd: string, publication: Publication | undefined) =>
+  Effect.gen(function* () {
+    const headSha = publication?.run?.head_sha;
+    if (!publication || headSha === undefined) return undefined;
+    const { plan } = publication.batch;
+    const unselected =
+      plan.corrective?.releases.filter(
+        release => !plan.releases.some(selected => selected.name === release.name)
+      ) ?? [];
+    const outstanding = publication.terminal ? [...plan.releases, ...unselected] : unselected;
+    if (!outstanding.length) return undefined;
+    const registry = yield* Effect.promise(() => import('./registry'));
+    return yield* registry.correctiveInventory(cwd, publication.batch, headSha, outstanding);
+  });
+
+const createStatusIssue = (run: string) =>
+  Effect.map(
+    request('POST', `${REPOSITORY_PATH}/issues`, Schema.Struct({ number: PositiveInt }), {
+      title: `[SDK publication] Batch ${run}`,
+      body: `Publication status for ${runUrl(run)}. Packages are not yet verified.`,
+    }),
+    issue => issue.number
+  );
+
+/** Allocates a new batch, refreshes the active one, or reports that a release is already active. */
+const prepareRelease = <PE, PR, OE, OR>(
+  request: ReleaseRequest,
+  context: ReleaseRequestContext,
+  plan: PlanRelease<PE, PR>,
+  outputs: ReleaseOutputs<OE, OR>
+) =>
+  Effect.gen(function* () {
+    const cwd = (yield* Path.Path).resolve('.');
+    const [current, preparing, committed] = yield* Effect.all(
+      [activeRelease(), activePreparation(context.runId), currentPublication],
+      { concurrency: 'unbounded' }
+    );
+    const preparation: ReleaseRun | undefined = Option.getOrUndefined(preparing);
+    const publication: Publication | undefined = Option.getOrUndefined(
+      committed as Option.Option<Publication>
+    );
+    if (preparation || publication?.active) {
+      const result: ReleaseRequestResult = {
+        message: 'A release is already active; no competing versions were allocated.',
+        runUrl: preparation?.html_url ?? publication?.run?.html_url ?? publication?.batch.statusUrl,
+        ...(Option.isSome(current) ? { pullRequest: current.value.html_url } : {}),
+      };
+      return {
+        result,
+        reply: { _tag: 'Text', text: `${result.message}\n\n${result.runUrl}` },
+      } satisfies Outcome;
+    }
+    if ((Option.isSome(current) && request.action !== 'refresh') || request.action === 'status')
+      return standard(
+        Option.match(current, {
+          onSome: pull => ({
+            message: 'A release is already active; no competing versions were allocated.',
+            pullRequest: pull.html_url,
+          }),
+          onNone: () => ({ message: 'No active SDK release.' }),
+        })
+      );
+    if ((context.runAttempt ?? 1) > 1) {
+      const reused = yield* reuseAuthorizedPlan(context);
+      if (Option.isSome(reused)) return reused.value;
+    }
+    let previous: ReleaseBatch | undefined;
+    if (request.action === 'refresh') {
+      if (Option.isNone(current)) return yield* fail('No active release candidate to refresh');
+      const saved = yield* content(BATCH_PATH, current.value.head.sha);
+      if (Option.isNone(saved)) return yield* fail('Active release has no frozen plan');
+      previous = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseBatch))(
+        saved.value
+      );
+      yield* verifyOriginalBatch(previous);
+    }
+    const corrective = yield* correctiveFor(cwd, publication);
+    const selected = yield* plan(previous?.plan.choices, corrective);
+    const baselineChanged = selected.releases.some(release => {
+      const original = previous?.plan.releases.find(entry => entry.name === release.name);
+      return original !== undefined && original.oldVersion !== release.oldVersion;
+    });
+    yield* ensure(
+      !baselineChanged,
+      'Refresh changed the original version baseline; reconcile the active release first'
+    );
+    if (!selected.releases.length)
+      return standard({
+        message: 'Nothing to release. Stable registry baselines were reconciled.',
+      });
+    const date = new Date().toISOString().slice(0, 10);
+    const issue = context.issueNumber ?? (yield* createStatusIssue(context.runId));
+    const batch = yield* Schema.decodeUnknownEffect(ReleaseBatch)({
+      schemaVersion: 1,
+      id: context.runId,
+      originalRunId: context.runId,
+      inputBase: context.sourceSha,
+      date,
+      statusUrl: `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${issue}`,
+      plan: selected,
+      ...(previous && Option.isSome(current)
+        ? { replaces: { number: current.value.number, headSha: current.value.head.sha } }
+        : {}),
+      outputs: yield* outputs(
+        cwd,
+        date,
+        context.runId,
+        new Set(selected.releases.map(release => release.language)),
+        new Set(selected.releases.map(release => release.name))
+      ),
+    });
+    return standard({
+      message:
+        'Release preparation authorized. The concrete release PR requires final-head approval and green checks.',
+      batch,
+    });
+  });
+
+const replyText = (outcome: Outcome, runId: string) => {
+  switch (outcome.reply._tag) {
+    case 'None':
+      return undefined;
+    case 'Text':
+      return outcome.reply.text;
+    case 'Standard':
+      return `${outcome.result.message}\n\n${outcome.result.pullRequest ?? outcome.result.runUrl ?? runUrl(runId)}`;
+  }
+};
+
+const causeMessage = (cause: Cause.Cause<unknown>) => {
+  const error = Cause.squash(cause);
+  return error instanceof Error ? error.message : 'Release request failed';
+};
+
+/** Authorizes the requester, then serves a release, refresh, status or retry request. */
+export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
+  value: ReleaseRequest,
+  context: ReleaseRequestContext,
+  plan: PlanRelease<PE, PR>,
+  outputs: ReleaseOutputs<OE, OR> = releaseOutputs as unknown as ReleaseOutputs<OE, OR>
+) =>
+  Effect.gen(function* () {
+    const request = yield* Schema.decodeUnknownEffect(ReleaseRequest)(value);
+    yield* requireActiveMember(context.actor);
+    const reply = (text: string) =>
+      context.issueNumber === undefined ? Effect.void : commentIssue(context.issueNumber, text);
+    const outcome = yield* Effect.gen(function* () {
+      const served: Outcome =
+        request.run_id !== undefined && (request.action === 'retry' || request.action === 'status')
+          ? yield* retryOrStatus({ ...request, run_id: request.run_id })
+          : yield* prepareRelease(request, context, plan, outputs);
+      const text = replyText(served, context.runId);
+      if (text !== undefined) yield* reply(text);
+      return served;
+    }).pipe(
+      Effect.tapCause(cause =>
+        reply(
+          `The release request could not complete: ${causeMessage(cause)}\n\nInspect this request run: ${runUrl(context.runId)}`
+        ).pipe(
+          Effect.catchCause(reportCause =>
+            Console.error(
+              'Could not report the release request failure:',
+              causeMessage(reportCause)
             )
           )
-            throw new Error(
-              'Original authorized release input was deleted; submit a new request instead of reallocating versions in an old run'
-            );
-        }
-        let previous: ReleaseBatch | undefined;
-        if (request.action === 'refresh') {
-          if (!current) throw new Error('No active release candidate to refresh');
-          const saved = await content(github, batchPath, current.head.sha);
-          if (!saved) throw new Error('Active release has no frozen plan');
-          previous = releaseBatchSchema.parse(JSON.parse(saved));
-          await verifyOriginalBatch(github, previous);
-        }
-        let corrective: CorrectiveInput | undefined;
-        if (publication?.run?.head_sha) {
-          const unselected =
-            publication.batch.plan.corrective?.releases.filter(
-              release =>
-                !publication.batch.plan.releases.some(selected => selected.name === release.name)
-            ) ?? [];
-          const outstanding = publication.terminal
-            ? [...publication.batch.plan.releases, ...unselected]
-            : unselected;
-          if (outstanding.length)
-            corrective = await (
-              await import('./registry')
-            ).correctiveInventory(
-              process.cwd(),
-              publication.batch,
-              publication.run.head_sha,
-              outstanding
-            );
-        }
-        const selected = await plan(previous?.plan.choices, corrective);
-        if (
-          previous &&
-          selected.releases.some(release => {
-            const original = previous.plan.releases.find(entry => entry.name === release.name);
-            return original && original.oldVersion !== release.oldVersion;
-          })
         )
-          throw new Error(
-            'Refresh changed the original version baseline; reconcile the active release first'
-          );
-        if (!selected.releases.length)
-          result = { message: 'Nothing to release. Stable registry baselines were reconciled.' };
-        else {
-          const date = new Date().toISOString().slice(0, 10);
-          const statusUrl = `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${context.issueNumber ?? (await createStatusIssue(github, context.runId))}`;
-          const batch = releaseBatchSchema.parse({
-            schemaVersion: 1,
-            id: context.runId,
-            originalRunId: context.runId,
-            inputBase: context.sourceSha,
-            date,
-            statusUrl,
-            plan: selected,
-            ...(previous && current
-              ? { replaces: { number: current.number, headSha: current.head.sha } }
-              : {}),
-            outputs: await outputs(
-              process.cwd(),
-              date,
-              context.runId,
-              new Set(selected.releases.map(release => release.language)),
-              new Set(selected.releases.map(release => release.name))
-            ),
-          });
-          result = {
-            message:
-              'Release preparation authorized. The concrete release PR requires final-head approval and green checks.',
-            batch,
-          };
-        }
-      }
-    }
-    if (context.issueNumber)
-      await github.commentIssue(
-        context.issueNumber,
-        `${result.message}\n\n${result.pullRequest ?? result.runUrl ?? `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${context.runId}`}`
-      );
-    return result;
-  } catch (error) {
-    if (context.issueNumber) {
-      try {
-        await github.commentIssue(
-          context.issueNumber,
-          `The release request could not complete: ${error instanceof Error ? error.message : 'Release request failed'}\n\nInspect this request run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${context.runId}`
-        );
-      } catch (reportError) {
-        console.error(
-          'Could not report the release request failure:',
-          reportError instanceof Error ? reportError.message : 'GitHub unavailable'
-        );
-      }
-    }
-    throw error;
-  }
+      )
+    );
+    return outcome.result;
+  });
+
+const Mode = Schema.Literals(['authorize', 'commit', 'tag', 'merge', 'report']);
+type Mode = typeof Mode.Type;
+
+const Environment = Config.all({
+  token: Config.schema(Schema.NonEmptyString, 'SDK_RELEASE_TOKEN'),
+  runId: Config.schema(RunId, 'GITHUB_RUN_ID'),
+  sha: Config.schema(Sha, 'GITHUB_SHA'),
+  eventPath: Config.String('GITHUB_EVENT_PATH'),
+  eventName: Config.String('GITHUB_EVENT_NAME'),
+  outputPath: Config.String('GITHUB_OUTPUT'),
+  summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
+  appId: Config.schema(
+    Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
+    'SDK_RELEASE_APP_ID'
+  ),
+});
+type Environment = Config.Success<typeof Environment>;
+
+const EventEnvelope = Schema.Struct({
+  sender: Schema.Struct({ login: Schema.String }),
+  issue: Schema.optionalKey(Schema.Struct({ number: PositiveInt })),
+  pull_request: Schema.optionalKey(Schema.Struct({ number: PositiveInt })),
+});
+const WorkflowRunEvent = Schema.Struct({ workflow_run: Schema.Struct({ id: PositiveInt }) });
+
+const appendFile = (path: string, text: string) =>
+  Effect.gen(function* () {
+    yield* (yield* FileSystem.FileSystem).writeFileString(path, text, { flag: 'a' });
+  });
+const writeSummary = (env: Environment, text: string) =>
+  Effect.gen(function* () {
+    yield* (yield* FileSystem.FileSystem).writeFileString(env.summaryPath, text);
+  });
+
+interface ModeInput {
+  readonly env: Environment;
+  readonly event: unknown;
+  readonly envelope: typeof EventEnvelope.Type;
 }
 
-if (import.meta.main) {
-  const mode = z.enum(['authorize', 'commit', 'tag', 'merge', 'report']).parse(Bun.argv[2]);
-  const env = z
-    .object({
-      SDK_RELEASE_TOKEN: z.string().min(1),
-      GITHUB_RUN_ID: z.string().regex(/^[1-9][0-9]*$/),
-      GITHUB_SHA: sourceShaSchema,
-      GITHUB_EVENT_PATH: z.string(),
-      GITHUB_EVENT_NAME: z.string(),
-      GITHUB_OUTPUT: z.string(),
-      GITHUB_STEP_SUMMARY: z.string(),
-      SDK_RELEASE_APP_ID: z.coerce.number().int().positive(),
-    })
-    .parse(process.env);
-  const github = new GitHubReleaseClient(env.SDK_RELEASE_TOKEN);
-  const event: unknown = await Bun.file(env.GITHUB_EVENT_PATH).json();
-  const envelope = z
-    .object({
-      sender: z.object({ login: z.string() }),
-      issue: z.object({ number: z.number().int().positive() }).optional(),
-      pull_request: z.object({ number: z.number().int().positive() }).optional(),
-    })
-    .parse(event);
-  if (mode === 'report') {
-    const runId = z
-      .object({ workflow_run: z.object({ id: z.number().int().positive() }) })
-      .parse(event).workflow_run.id;
-    const { report } = await (
-      await import('./publication')
-    ).reportPublication(github, String(runId), env.SDK_RELEASE_APP_ID);
-    if (report.registryVerified)
-      await github.request(
-        'POST',
-        `${repo}/actions/workflows/docs.sdk-change-sync.yml/dispatches`,
-        z.unknown(),
-        { ref: 'next', inputs: { run_id: String(runId) } }
-      );
-    await writeFile(
-      env.GITHUB_OUTPUT,
-      `registry-verified=${report.registryVerified}\noriginal-run-id=${report.runId}\n`,
-      { flag: 'a' }
+const reportMode = ({ env, event }: ModeInput) =>
+  Effect.gen(function* () {
+    const runId = (yield* Schema.decodeUnknownEffect(WorkflowRunEvent)(event)).workflow_run.id;
+    const publication = yield* Effect.promise(() => import('./publication'));
+    const { report } = yield* publication.reportPublication(String(runId), env.appId);
+    if (report.registryVerified) yield* dispatchDocs(runId);
+    yield* appendFile(
+      env.outputPath,
+      `registry-verified=${report.registryVerified}\noriginal-run-id=${report.runId}\n`
     );
-    await writeFile(
-      env.GITHUB_STEP_SUMMARY,
+    yield* writeSummary(
+      env,
       `Publication status updated for original run ${runId}. Registry verified: ${report.registryVerified}; docs: ${report.docs}.\n`
     );
-  } else if (mode === 'merge') {
-    const current = await activeRelease(github);
-    if (current) {
-      try {
-        await writeFile(
-          env.GITHUB_STEP_SUMMARY,
-          `Approved publication source: ${await mergeApprovedRelease(github, current.number, env.SDK_RELEASE_APP_ID)}\n`
-        );
-      } catch (error) {
-        if (error instanceof GitHubReleaseApiError) throw error;
-        await writeFile(
-          env.GITHUB_STEP_SUMMARY,
-          `Release awaits current-head approval or successful candidate checks: ${current.html_url}\n${error instanceof Error ? error.message : 'not eligible'}\n`
-        );
-      }
-    }
-  } else if (mode === 'tag') {
-    if (!envelope.pull_request) throw new Error('Expected merged release PR event');
-    await writeFile(
-      env.GITHUB_STEP_SUMMARY,
-      `Approved publication source: ${await authorizeSourceTag(github, envelope.pull_request.number, env.SDK_RELEASE_APP_ID)}\n`
+  });
+
+/** Merging waits quietly for approval and checks; only GitHub API failures fail the step. */
+const mergeMode = ({ env }: ModeInput) =>
+  Effect.gen(function* () {
+    const current = yield* activeRelease();
+    if (Option.isNone(current)) return;
+    yield* mergeApprovedRelease(current.value.number, env.appId, env.runId).pipe(
+      Effect.flatMap(tag => writeSummary(env, `Approved publication source: ${tag}\n`)),
+      Effect.catch((error): Effect.Effect<void, unknown, FileSystem.FileSystem> =>
+        Predicate.isTagged(error, 'GitHubApiError')
+          ? Effect.fail(error)
+          : writeSummary(
+              env,
+              `Release awaits current-head approval or successful candidate checks: ${current.value.html_url}\n${error instanceof Error ? error.message : 'not eligible'}\n`
+            )
+      )
     );
-  } else if (mode === 'commit') {
-    const batch = releaseBatchSchema.parse(await Bun.file('/tmp/sdk-authorized/batch.json').json());
-    const url = await commitPreparedRelease(
-      github,
-      await Bun.file('/tmp/sdk-prepared/patch.json').json(),
-      batch
+  });
+
+const tagMode = ({ env, envelope }: ModeInput) =>
+  Effect.gen(function* () {
+    if (!envelope.pull_request) return yield* fail('Expected merged release PR event');
+    const tag = yield* authorizeSourceTag(envelope.pull_request.number, env.appId);
+    yield* writeSummary(env, `Approved publication source: ${tag}\n`);
+  });
+
+const commitMode = ({ env }: ModeInput) =>
+  Effect.gen(function* () {
+    const batch = yield* readJson(ReleaseBatch, '/tmp/sdk-authorized/batch.json');
+    const patch = yield* readJson(Schema.Unknown, '/tmp/sdk-prepared/patch.json');
+    const url = yield* commitPreparedRelease(patch, batch);
+    yield* writeSummary(env, `Release PR: ${url}\n`);
+  });
+
+const authorizeMode = ({ env, event, envelope }: ModeInput) =>
+  Effect.gen(function* () {
+    const cwd = (yield* Path.Path).resolve('.');
+    const runAttempt = yield* Config.schema(
+      Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
+      'GITHUB_RUN_ATTEMPT'
     );
-    await writeFile(env.GITHUB_STEP_SUMMARY, `Release PR: ${url}\n`);
-  } else {
-    const result = await executeReleaseRequest(
-      github,
-      parseReleaseRequest(env.GITHUB_EVENT_NAME, event),
+    const request = yield* Effect.try(() => parseReleaseRequest(env.eventName, event));
+    const result = yield* executeReleaseRequest(
+      request,
       {
         actor: envelope.sender.login,
-        runId: env.GITHUB_RUN_ID,
-        sourceSha: env.GITHUB_SHA,
-        runAttempt: z.coerce.number().int().positive().parse(process.env.GITHUB_RUN_ATTEMPT),
+        runId: env.runId,
+        sourceSha: env.sha,
+        runAttempt,
         ...(envelope.issue ? { issueNumber: envelope.issue.number } : {}),
       },
-      async (choices, corrective) =>
-        createSdkReleasePlan(process.cwd(), {
-          ...parseReleaseRequest(env.GITHUB_EVENT_NAME, event),
-          ...choices,
-          corrective,
-          baseline: await fetchStableRegistryBaseline(process.cwd()),
+      (choices, corrective) =>
+        Effect.gen(function* () {
+          const baseline = yield* fetchStableRegistryBaseline(cwd);
+          return yield* createSdkReleasePlan(cwd, {
+            ...request,
+            ...choices,
+            ...(corrective ? { corrective } : {}),
+            baseline,
+          });
         })
     );
     if (result.batch) {
-      await writeFile('sdk-release-batch.json', `${JSON.stringify(result.batch, null, 2)}\n`);
+      yield* (yield* FileSystem.FileSystem).writeFileString(
+        'sdk-release-batch.json',
+        formatJson(result.batch)
+      );
       const prepared = result.reusedBatch
-        ? reuseCandidate(
-            await originalCandidates(github, Number(env.GITHUB_RUN_ID)),
+        ? yield* reuseCandidate(
+            yield* originalCandidates(Number(env.runId)),
             'sdk-prepared-patch',
-            Number(env.GITHUB_RUN_ID),
-            env.GITHUB_SHA
+            Number(env.runId),
+            env.sha
           )
-        : undefined;
-      await writeFile(
-        env.GITHUB_OUTPUT,
-        `prepare=true\nnew-batch=${!result.reusedBatch}\nreuse-patch=${Boolean(prepared)}\n`,
-        { flag: 'a' }
+        : Option.none();
+      yield* appendFile(
+        env.outputPath,
+        `prepare=true\nnew-batch=${!result.reusedBatch}\nreuse-patch=${Option.isSome(prepared)}\n`
       );
     }
-    await writeFile(
-      env.GITHUB_STEP_SUMMARY,
-      `${result.message}\n${result.pullRequest ?? result.runUrl ?? ''}\n`
-    );
-  }
-}
+    yield* writeSummary(env, `${result.message}\n${result.pullRequest ?? result.runUrl ?? ''}\n`);
+  });
 
-async function createStatusIssue(github: GitHubReleaseClient, run: string): Promise<number> {
-  const issue = await github.request(
-    'POST',
-    `${repo}/issues`,
-    z.object({ number: z.number().int().positive() }),
-    {
-      title: `[SDK publication] Batch ${run}`,
-      body: `Publication status for https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${run}. Packages are not yet verified.`,
-    }
-  );
-  return issue.number;
-}
+const MODES: Record<
+  Mode,
+  (input: ModeInput) => Effect.Effect<void, unknown, GitHub | ReleaseServices>
+> = {
+  authorize: authorizeMode,
+  commit: commitMode,
+  tag: tagMode,
+  merge: mergeMode,
+  report: reportMode,
+};
+
+const main = Effect.gen(function* () {
+  const [argument] = yield* (yield* Stdio.Stdio).args;
+  const mode = yield* Schema.decodeUnknownEffect(Mode)(argument);
+  const env = yield* Environment;
+  const event = yield* readJson(Schema.Unknown, env.eventPath);
+  const envelope = yield* Schema.decodeUnknownEffect(EventEnvelope)(event);
+  yield* MODES[mode]({ env, event, envelope }).pipe(Effect.provide(GitHub.layer(env.token)));
+});
+
+if (import.meta.main) runMain(main);

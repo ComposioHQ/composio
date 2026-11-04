@@ -22,9 +22,9 @@ const PROVIDERS_DIRECTORY = 'python/providers';
 const RUNTIME_VERSION_PATH = 'python/composio/__version__.py';
 
 /** Each pattern captures `(prefix)(quote)(version)`. */
-const PROJECT_VERSION = /(^\[project\][\s\S]*?^version\s*=\s*)(["'])([^"']+)\2/m;
-const SETUP_VERSION = /(\bversion\s*=\s*)(["'])([^"']+)\2/;
-const RUNTIME_VERSION = /(^\s*__version__\s*=\s*)(["'])([^"']+)\2/m;
+export const PROJECT_VERSION = /(^\[project\][\s\S]*?^version\s*=\s*)(["'])([^"']+)\2/m;
+export const SETUP_VERSION = /(\bversion\s*=\s*)(["'])([^"']+)\2/;
+export const RUNTIME_VERSION = /(^\s*__version__\s*=\s*)(["'])([^"']+)\2/m;
 
 const mirroredVersion = (contents: string, pattern: RegExp) => contents.match(pattern)?.[3];
 const withVersion = (contents: string, pattern: RegExp, version: string) =>

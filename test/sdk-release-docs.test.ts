@@ -1,10 +1,18 @@
 import { describe, expect, test } from 'bun:test';
+import { isSdkChangelog } from '../scripts/sdk-release/changelog-filter';
 import {
-  isSdkChangelog,
-  pinDocsSdkVersions,
-  requireFreshDocsInput,
-  verifyLiveReleaseDocs,
+  pinDocsSdkVersions as pinEffect,
+  requireFreshDocsInput as freshnessEffect,
+  verifyLiveReleaseDocs as verifyLiveEffect,
 } from '../scripts/sdk-release/docs';
+import { runRelease, type Fetch } from './sdk-release-harness';
+
+const pinDocsSdkVersions = (...args: Parameters<typeof pinEffect>) =>
+  runRelease(pinEffect(...args));
+const requireFreshDocsInput = (...args: Parameters<typeof freshnessEffect>) =>
+  runRelease(freshnessEffect(...args));
+const verifyLiveReleaseDocs = (release: Parameters<typeof verifyLiveEffect>[0], fetch: Fetch) =>
+  runRelease(verifyLiveEffect(release), fetch);
 
 describe('released SDK documentation', () => {
   test('only the SDK frontmatter marker suppresses ordinary changelog automation', () => {
@@ -13,14 +21,14 @@ describe('released SDK documentation', () => {
     ).toBe(false);
     expect(isSdkChangelog('---\ntitle: Release\nsdkRelease: "51"\n---\nChanges')).toBe(true);
   });
-  test('pins only existing SDK dependencies to exact verified versions without downgrades', () => {
+  test('pins only existing SDK dependencies to exact verified versions without downgrades', async () => {
     const manifest = {
       scripts: { build: 'next build' },
       dependencies: { '@composio/core': '^0.28.0', react: '^19' },
       devDependencies: { '@composio/openai': '0.13.1' },
     };
     expect(
-      pinDocsSdkVersions(manifest, {
+      await pinDocsSdkVersions(manifest, {
         '@composio/core': '0.29.0',
         '@composio/openai': '0.13.2',
         '@composio/google': '0.12.0',
@@ -30,25 +38,25 @@ describe('released SDK documentation', () => {
       dependencies: { '@composio/core': '0.29.0', react: '^19' },
       devDependencies: { '@composio/openai': '0.13.2' },
     });
-    expect(() =>
+    await expect(
       pinDocsSdkVersions(manifest, { '@composio/core': '0.27.0', '@composio/openai': '0.13.2' })
-    ).toThrow('decrease');
+    ).rejects.toThrow('decrease');
   });
-  test('an existing range cannot conceal a higher installed SDK version in the Bun lock', () => {
+  test('an existing range cannot conceal a higher installed SDK version in the Bun lock', async () => {
     const manifest = { dependencies: { '@composio/core': '^0.27.0' } };
-    expect(() =>
+    await expect(
       pinDocsSdkVersions(manifest, { '@composio/core': '0.28.0' }, { '@composio/core': '0.29.0' })
-    ).toThrow('decrease');
+    ).rejects.toThrow('decrease');
   });
-  test('a delayed request cannot overwrite newer verified targets, protected docs or pending guide edits', () => {
+  test('a delayed request cannot overwrite newer verified targets, protected docs or pending guide edits', async () => {
     const input = { sourceSha: 'a'.repeat(40), verifiedRunId: 51, branchHead: 'b'.repeat(40) };
-    expect(() => requireFreshDocsInput(input, input)).not.toThrow();
+    await requireFreshDocsInput(input, input);
     for (const latest of [
       { ...input, verifiedRunId: 52 },
       { ...input, sourceSha: 'c'.repeat(40) },
       { ...input, branchHead: 'c'.repeat(40) },
     ]) {
-      expect(() => requireFreshDocsInput(input, latest)).toThrow('changed');
+      await expect(requireFreshDocsInput(input, latest)).rejects.toThrow('changed');
     }
   });
   test('completion needs the status link and package/version rows in HTML and Markdown, plus live references', async () => {
@@ -62,7 +70,8 @@ describe('released SDK documentation', () => {
       },
     };
     const requests: string[] = [];
-    const fetcher = async (url: string) => {
+    const fetcher: Fetch = async input => {
+      const url = String(input);
       requests.push(url);
       return new Response(
         url.endsWith('/tools')
