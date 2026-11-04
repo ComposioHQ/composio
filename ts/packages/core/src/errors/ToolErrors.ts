@@ -70,19 +70,20 @@ export class ComposioToolFetchError extends ComposioError {
   }
 }
 
-const RATE_LIMIT_FIXES = [
-  'Wait for the time given in retryAfterSeconds, then retry',
-  'Reduce how many requests this project sends per minute',
-];
-
 /** Error options for a 429. Leaves out an unknown wait, as `ComposioError` does for unset fields. */
 const rateLimitOptions = (cause: APIError, meta: Record<string, unknown>) => {
   const retryAfterSeconds = getRetryAfterSeconds(cause);
   return {
+    retryAfterSeconds,
     cause,
     statusCode: 429,
     meta: retryAfterSeconds === undefined ? meta : { ...meta, retryAfterSeconds },
-    possibleFixes: RATE_LIMIT_FIXES,
+    possibleFixes: [
+      retryAfterSeconds === undefined
+        ? 'Wait before retrying'
+        : `Wait ${Math.ceil(retryAfterSeconds)} seconds, then retry`,
+      'Reduce how many requests your organization sends per minute',
+    ],
   };
 };
 
@@ -95,10 +96,10 @@ export class ComposioToolFetchRateLimitError extends ComposioToolFetchError {
   declare public readonly retryAfterSeconds?: number;
 
   constructor(message: string, cause: APIError, meta: Record<string, unknown> = {}) {
-    const options = rateLimitOptions(cause, meta);
+    const { retryAfterSeconds, ...options } = rateLimitOptions(cause, meta);
     super(message, options);
-    if ('retryAfterSeconds' in options.meta) {
-      this.retryAfterSeconds = getRetryAfterSeconds(cause);
+    if (retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = retryAfterSeconds;
     }
     this.name = 'ComposioToolFetchRateLimitError';
   }
@@ -145,10 +146,10 @@ export class ComposioToolExecutionRateLimitError extends ComposioToolExecutionEr
   declare public readonly retryAfterSeconds?: number;
 
   constructor(message: string, cause: APIError, meta: Record<string, unknown> = {}) {
-    const options = rateLimitOptions(cause, meta);
+    const { retryAfterSeconds, ...options } = rateLimitOptions(cause, meta);
     super(message, options);
-    if ('retryAfterSeconds' in options.meta) {
-      this.retryAfterSeconds = getRetryAfterSeconds(cause);
+    if (retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = retryAfterSeconds;
     }
     this.name = 'ComposioToolExecutionRateLimitError';
   }

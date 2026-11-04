@@ -113,6 +113,37 @@ describe('tools.execute schema cache', () => {
     expect(retrieve).toHaveBeenCalledTimes(2);
   });
 
+  it('uses the pinned lifetime for a version set in toolkitVersions', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const { tools, retrieve } = createTools({
+      toolkitVersions: { [toolMocks.rawTool.toolkit.slug]: '20250909_00' },
+    });
+
+    await run(tools);
+    vi.advanceTimersByTime(60 * 60 * 1000 - 1);
+    await run(tools);
+    expect(retrieve).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1);
+    await run(tools);
+    expect(retrieve).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops the oldest schema past 500 entries', async () => {
+    const { tools, retrieve } = createTools();
+
+    for (let i = 0; i <= 500; i++) {
+      await run(tools, `v${i}`);
+    }
+    expect(retrieve).toHaveBeenCalledTimes(501);
+
+    // The newest entry is still cached, and the oldest was dropped.
+    await run(tools, 'v500');
+    expect(retrieve).toHaveBeenCalledTimes(501);
+    await run(tools, 'v0');
+    expect(retrieve).toHaveBeenCalledTimes(502);
+  });
+
   it('does not cache a failed fetch', async () => {
     const retrieve = vi
       .fn<() => Response>()
@@ -162,7 +193,10 @@ describe('rate limit errors', () => {
     expect(isComposioRateLimitError(error)).toBe(true);
     expect(error.retryAfterSeconds).toBe(7);
     expect(error.statusCode).toBe(429);
-    expect(error.possibleFixes.join(' ')).not.toContain('slug');
+    expect(error.possibleFixes).toEqual([
+      'Wait 7 seconds, then retry',
+      'Reduce how many requests your organization sends per minute',
+    ]);
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -188,6 +222,7 @@ describe('rate limit errors', () => {
 
     expect(isComposioRateLimitError(error)).toBe(true);
     expect(Object.keys(error)).not.toContain('retryAfterSeconds');
+    expect(error.possibleFixes[0]).toBe('Wait before retrying');
   });
 
   it('does not report other failures as rate limits', async () => {

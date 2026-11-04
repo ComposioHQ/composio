@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ConnectionRequest } from '../../src/types/connectionRequest.types';
-import ComposioClient, { APIError, ComposioError, RateLimitError } from '@composio/client';
+import ComposioClient, {
+  APIError,
+  Auth,
+  ComposioError,
+  createFetchTransport,
+  RateLimitError,
+} from '@composio/client';
 import {
   ComposioConnectedAccountNotFoundError,
   ConnectionRequestFailedError,
@@ -376,7 +382,7 @@ describe('ConnectionRequest', () => {
       expect(await result).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
     });
 
-    it('never waits past the timeout for a 429', async () => {
+    it('stops its own delay at the timeout after a 429', async () => {
       mockClient.connectedAccounts.retrieve.mockRejectedValue(rateLimited({ 'retry-after': '60' }));
 
       const result = start(5000);
@@ -384,6 +390,56 @@ describe('ConnectionRequest', () => {
 
       expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
       expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(2);
+    });
+
+    it('reads a date-format Retry-After', async () => {
+      vi.useFakeTimers({ now: Date.UTC(2026, 0, 1) });
+      mockClient.connectedAccounts.retrieve
+        .mockRejectedValueOnce(rateLimited({ 'retry-after': 'Thu, 01 Jan 2026 00:00:10 GMT' }))
+        .mockRejectedValue(new APIError(500, undefined, 'stop', new Headers()));
+
+      const result = createConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId
+      )
+        .waitForConnection()
+        .catch(error => error);
+      await vi.advanceTimersByTimeAsync(9999);
+      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(2);
+      await result;
+    });
+
+    it('runs past the timeout while the real client retries a 429', async () => {
+      vi.useFakeTimers();
+      const fetch = vi.fn<typeof globalThis.fetch>(
+        async () =>
+          new Response(JSON.stringify({ error: { message: 'slow down' } }), {
+            status: 429,
+            headers: { 'content-type': 'application/json', 'retry-after': '3' },
+          })
+      );
+      const client = new ComposioClient({
+        auth: Auth.project('test-api-key'),
+        baseURL: 'https://backend.invalid',
+        transport: createFetchTransport({ fetch }),
+      });
+      let settled = false;
+      const result = createConnectionRequest(client, connectedAccountId)
+        .waitForConnection(1000)
+        .catch(error => error)
+        .finally(() => {
+          settled = true;
+        });
+
+      await vi.advanceTimersByTimeAsync(5999);
+      expect(settled).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
+      expect(fetch).toHaveBeenCalledTimes(3);
     });
 
     it('keeps its usual delay when a 429 has no usable Retry-After', async () => {

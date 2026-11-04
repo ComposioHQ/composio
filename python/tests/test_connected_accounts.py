@@ -6,9 +6,16 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
-from composio_client import BadRequestError, ConflictError, RateLimitError, omit
+from composio_client import (
+    BadRequestError,
+    ConflictError,
+    ProjectAuth,
+    RateLimitError,
+    omit,
+)
 
 from composio import exceptions
+from composio.client import HttpClient
 from composio.core.models.connected_accounts import (
     AuthScheme,
     ConnectedAccounts,
@@ -190,7 +197,32 @@ class TestConnectionRequestPolling:
         assert self._request(client).wait_for_connection(timeout=60.0) is active
         assert clock["now"] == 10.0
 
-    def test_never_waits_past_the_timeout_for_a_429(self, monkeypatch):
+    def test_runs_past_the_timeout_while_the_real_client_retries_a_429(
+        self, monkeypatch
+    ):
+        clock = self._clock(monkeypatch)
+        requests = []
+
+        def handler(request):
+            requests.append(request)
+            return httpx.Response(
+                429, headers={"retry-after": "3"}, json={"error": {"message": "x"}}
+            )
+
+        client = HttpClient(
+            provider="test",
+            auth=ProjectAuth("test-api-key"),
+            base_url="https://backend.invalid",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+
+        with pytest.raises(exceptions.ComposioSDKTimeoutError):
+            self._request(client).wait_for_connection(timeout=1.0)
+
+        assert clock["now"] == 6.0
+        assert len(requests) == 3
+
+    def test_stops_its_own_delay_at_the_timeout_after_a_429(self, monkeypatch):
         clock = self._clock(monkeypatch)
         client = Mock()
         client.connected_accounts.retrieve.side_effect = self._rate_limited("60")

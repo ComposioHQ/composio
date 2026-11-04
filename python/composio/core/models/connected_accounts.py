@@ -110,8 +110,9 @@ class ConnectionRequest(Resource):
 
         The delay between polls grows from 1 second to 5 seconds, so a connection
         can be up to 5 seconds old when this returns. A rate-limited poll doesn't
-        fail the wait: it waits as long as the response asks, within the timeout,
-        and polls again.
+        fail the wait: once the client's own retries run out, it waits as long as
+        the response asks, up to the timeout, and polls again. The client's retries
+        can carry the wait past the timeout, because they aren't bound by it.
 
         :param timeout: The timeout to wait for the connection to be established.
         :return: Connected account object.
@@ -144,8 +145,8 @@ class ConnectionRequest(Resource):
                         f"Timeout while waiting for connection {self.id} to be active"
                     ),
                 )
-            # Stop at the deadline rather than past it, so the last poll happens
-            # as the time runs out.
+            # This delay stops at the deadline, so the last poll happens as the
+            # time runs out.
             time.sleep(min(delay, remaining))
             poll_delay = min(poll_delay * _POLL_DELAY_GROWTH, _MAX_POLL_DELAY_SECONDS)
 

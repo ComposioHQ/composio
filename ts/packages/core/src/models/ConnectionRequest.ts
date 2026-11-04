@@ -63,8 +63,9 @@ export function createConnectionRequest(
    * This method polls the Composio API to check the status of the connection request until it
    * either becomes active, enters a terminal error state, or times out. The delay between polls
    * grows from 1 second to 5 seconds, so a connection can be up to 5 seconds old when this returns.
-   * A rate-limited poll doesn't fail the wait: it waits as long as the response asks, within the
-   * timeout, and polls again.
+   * A rate-limited poll doesn't fail the wait: once the client's own retries run out, it waits as
+   * long as the response asks, up to the timeout, and polls again. The client's retries can carry
+   * the wait past the timeout, because they aren't bound by it.
    *
    * @param {number} [timeout=60000] - Maximum time to wait in milliseconds before timing out (default: 60 seconds)
    * @returns {Promise<ConnectedAccountRetrieveResponse>} The final connected account response when successful
@@ -145,7 +146,7 @@ export function createConnectionRequest(
       if (remaining <= 0) {
         throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
       }
-      // Stop at the deadline rather than past it, so the last poll happens as the time runs out.
+      // This delay stops at the deadline, so the last poll happens as the time runs out.
       await new Promise(resolve => setTimeout(resolve, Math.min(delay, remaining)));
       pollDelay = Math.min(pollDelay * POLL_DELAY_GROWTH, MAX_POLL_DELAY_MS);
     }
