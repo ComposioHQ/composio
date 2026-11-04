@@ -33,7 +33,8 @@ import {
   requestOptional,
   requireActiveMember,
 } from './github';
-import { createSdkReleasePlan, type SdkReleasePlan } from './plan';
+import { createSdkReleasePlan, type SdkReleasePlan, type SupersedeInput } from './plan';
+import { discoverPythonPackages } from './python-metadata';
 import { verifyPublicationPolicy } from './registry';
 import { fetchStableRegistryBaseline } from './registry-baseline';
 import { releasePullBody } from './release-pr';
@@ -42,6 +43,7 @@ import { ensure, fail, formatJson, readJson, runMain, type ReleaseServices } fro
 import {
   BATCH_PATH,
   ReleaseBatch,
+  committedBatch,
   ReleasePatch,
   releaseOutputs,
   requestIssueNumber,
@@ -332,6 +334,53 @@ const prepareRelease = <PE, PR, OE, OR>(
     } satisfies ReleaseRequestResult;
   });
 
+const ReleaseTag = Schema.Struct({
+  ref: Schema.String,
+  object: Schema.Struct({ type: Schema.Literal('commit'), sha: Sha }),
+});
+const RELEASE_TAG = /^refs\/tags\/sdk-release\/([1-9][0-9]*)$/;
+
+/**
+ * The newest tagged release's planned versions the registry baseline does not serve. Any lagging
+ * Python package strands the whole Python lane, which shares one version.
+ */
+export const supersededRelease = (
+  baseline: Record<string, string>,
+  pythonPackages: ReadonlyArray<string>
+) =>
+  Effect.gen(function* () {
+    const tags = yield* Stream.runCollect(
+      paginateArray(`${REPOSITORY_PATH}/git/matching-refs/tags/sdk-release/`, ReleaseTag)
+    );
+    const [newest] = tags
+      .flatMap(tag => {
+        const id = RELEASE_TAG.exec(tag.ref)?.[1];
+        return id === undefined ? [] : [{ id, sha: tag.object.sha }];
+      })
+      .sort((a, b) => Number(b.id) - Number(a.id));
+    if (newest === undefined) return yield* fail('No tagged SDK release to supersede');
+    const batch = yield* committedBatch(newest.sha);
+    if (Option.isNone(batch))
+      return yield* fail(`sdk-release/${newest.id} has no committed release plan`);
+    const stranded = batch.value.plan.releases
+      .filter(release =>
+        release.language === 'python'
+          ? pythonPackages.some(name => baseline[name] !== release.newVersion)
+          : baseline[release.name] !== release.newVersion
+      )
+      .map(({ name, oldVersion, newVersion, language }) => ({
+        name,
+        oldVersion,
+        newVersion,
+        language,
+      }));
+    if (!stranded.length)
+      return yield* fail(
+        `Nothing to supersede: every version planned by sdk-release/${newest.id} is published. Request the release without supersede.`
+      );
+    return { batchId: newest.id, releases: stranded } satisfies SupersedeInput;
+  });
+
 /** Authorizes the requester, then serves a release request. */
 export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
   value: ReleaseRequest,
@@ -345,10 +394,6 @@ export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
     const reply = (text: string) =>
       context.issueNumber === undefined ? Effect.void : commentIssue(context.issueNumber, text);
     return yield* Effect.gen(function* () {
-      if (request.action !== 'release')
-        return yield* fail(
-          `The ${request.action} action is no longer supported. To finish a failed publication, open its tag run and choose "Re-run failed jobs". To replace a stale release PR, close it and request a new release.`
-        );
       const result = yield* prepareRelease(context, plan, outputs);
       yield* reply(`${result.message}\n\n${result.pullRequest ?? runUrl(context.runId)}`);
       return result;
@@ -437,7 +482,18 @@ const authorizeMode = ({ env, event, envelope }: ModeInput) =>
       () =>
         Effect.gen(function* () {
           const baseline = yield* fetchStableRegistryBaseline(cwd);
-          return yield* createSdkReleasePlan(cwd, { ...request, baseline });
+          const supersede = request.supersede
+            ? yield* supersededRelease(
+                baseline,
+                (yield* discoverPythonPackages(cwd)).map(pkg => pkg.name)
+              )
+            : undefined;
+          return yield* createSdkReleasePlan(cwd, {
+            typescript: request.typescript,
+            python: request.python,
+            baseline,
+            ...(supersede ? { supersede } : {}),
+          });
         })
     );
     if (result.batch) {

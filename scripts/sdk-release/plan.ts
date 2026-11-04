@@ -19,12 +19,10 @@ export { PYTHON_RELEASE_MARKER } from './lanes';
 
 const Bump = Schema.Literals(['major', 'minor', 'patch']);
 type Bump = typeof Bump.Type;
-const Sha256 = Schema.String.check(Schema.isPattern(/^[a-f0-9]{64}$/));
 
-/** The partial batch a corrective release supersedes, and the files its registries already hold. */
-export const CorrectiveInput = Schema.Struct({
+/** The newest tagged release's planned versions that never reached their registry. */
+export const SupersedeInput = Schema.Struct({
   batchId: Schema.String.check(Schema.isPattern(/^[1-9][0-9]*$/)),
-  sourceSha: Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/)),
   releases: Schema.Array(
     Schema.Struct({
       name: Schema.String,
@@ -33,16 +31,9 @@ export const CorrectiveInput = Schema.Struct({
       language: Language,
     })
   ).check(Schema.isMinLength(1)),
-  inventory: Schema.Array(
-    Schema.Struct({
-      name: Schema.String,
-      version: Schema.String,
-      files: Schema.Array(Schema.Struct({ name: Schema.String, sha256: Sha256 })),
-    })
-  ),
 });
-export type CorrectiveInput = typeof CorrectiveInput.Type;
-const CORRECTIVE_NOTE = /^sdk-corrective-\d+$/;
+export type SupersedeInput = typeof SupersedeInput.Type;
+const SUPERSEDE_NOTE = /^sdk-supersede-\d+$/;
 export const ReleaseChoice = Schema.Literals(['auto', 'major', 'minor', 'patch', 'skip']);
 export type ReleaseChoice = typeof ReleaseChoice.Type;
 export const autoByDefault = ReleaseChoice.pipe(
@@ -53,7 +44,7 @@ export const ReleaseOptions = Schema.Struct({
   typescript: autoByDefault,
   python: autoByDefault,
   baseline: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
-  corrective: Schema.optionalKey(CorrectiveInput),
+  supersede: Schema.optionalKey(SupersedeInput),
 });
 export type SdkReleaseOptions = typeof ReleaseOptions.Encoded;
 type Choices = Record<Language, ReleaseChoice>;
@@ -84,7 +75,7 @@ export const SdkReleasePlan = Schema.Struct({
   releases: Schema.Array(Release),
   changesets: Schema.Array(Changeset),
   retainedChangesets: Schema.Array(Changeset),
-  corrective: Schema.optionalKey(CorrectiveInput),
+  supersede: Schema.optionalKey(SupersedeInput),
 });
 export type SdkReleasePlan = typeof SdkReleasePlan.Type;
 export type SdkRelease = typeof Release.Type;
@@ -176,27 +167,24 @@ const selectedReleases = (native: ReleasePlan) =>
   );
 
 /**
- * A corrective release may start from versions a partial batch already published,
- * provided the recorded inventory covers that package.
+ * A superseding release may start from a stranded version: source carries the tagged version
+ * while the registry still serves the version before it. Every Python package follows the marker.
  */
-const reconciledByCorrective = (
-  corrective: CorrectiveInput,
+const strandedBySupersede = (
+  supersede: SupersedeInput,
   python: ReadonlyArray<PythonReleasePackage>,
   published: string,
   pkg: { name: string; version: string }
 ) => {
-  const original = corrective.releases.find(
+  const stranded = supersede.releases.find(
     release =>
       release.name === pkg.name ||
       (release.language === 'python' && python.some(candidate => candidate.name === pkg.name))
   );
   return (
-    original !== undefined &&
-    pkg.version === original.newVersion &&
-    [original.oldVersion, original.newVersion].includes(published) &&
-    corrective.inventory.some(
-      item => item.name === pkg.name && item.version === original.newVersion
-    )
+    stranded !== undefined &&
+    pkg.version === stranded.newVersion &&
+    [stranded.oldVersion, stranded.newVersion].includes(published)
   );
 };
 
@@ -205,7 +193,7 @@ const assertStableBaselines = (
   python: ReadonlyArray<PythonReleasePackage>,
   allowed: Set<string>,
   baseline: Record<string, string> | undefined,
-  corrective: CorrectiveInput | undefined
+  supersede: SupersedeInput | undefined
 ) =>
   Effect.gen(function* () {
     const npm = packages.packages
@@ -219,8 +207,9 @@ const assertStableBaselines = (
       yield* ensure(
         published === undefined ||
           published === pkg.version ||
-          (corrective !== undefined && reconciledByCorrective(corrective, python, published, pkg)),
-        `Registry baseline mismatch for ${pkg.name}: source ${pkg.version}, published ${published}`
+          (supersede !== undefined && strandedBySupersede(supersede, python, published, pkg)),
+        `Registry baseline mismatch for ${pkg.name}: source ${pkg.version}, published ${published}. ` +
+          'Finish an unpublished release with "Re-run failed jobs" on its tag run; if its candidates expired, request a new release with supersede.'
       );
     }
     const missing = [...npm.filter(pkg => pkg.name !== PYTHON_RELEASE_MARKER), ...python]
@@ -277,26 +266,23 @@ const maintenanceNotes = (
       })
   );
 
-/** A corrective release re-releases a partial batch's targets as patches over their recorded versions. */
-const correctiveNote = (
-  corrective: CorrectiveInput,
+/** Forces a patch over each stranded tagged version so the new release moves past it. */
+const supersedeNote = (
+  supersede: SupersedeInput,
   inputs: { allowed: Set<string>; packages: Packages }
 ) =>
   Effect.gen(function* () {
-    for (const release of corrective.releases)
+    for (const release of supersede.releases)
       yield* ensure(
         inputs.allowed.has(release.name) &&
           inputs.packages.packages.find(pkg => pkg.packageJson.name === release.name)?.packageJson
             .version === release.newVersion,
-        `Corrective source metadata differs from recorded partial batch: ${release.name}`
+        `Source differs from the superseded release sdk-release/${supersede.batchId}: ${release.name}`
       );
     return {
-      id: `sdk-corrective-${corrective.batchId}`,
-      summary: `Corrective release after incomplete publication of batch ${corrective.batchId}. Previously uploaded files remain unchanged.`,
-      releases: corrective.releases.map(release => ({
-        name: release.name,
-        type: 'patch' as const,
-      })),
+      id: `sdk-supersede-${supersede.batchId}`,
+      summary: `Supersedes release ${supersede.batchId}, which did not finish publishing. Previously uploaded files remain unchanged.`,
+      releases: supersede.releases.map(release => ({ name: release.name, type: 'patch' as const })),
     } satisfies NewChangeset;
   });
 
@@ -309,11 +295,11 @@ export const createSdkReleasePlan = (cwd: string, options: SdkReleaseOptions = {
       inputs.python,
       inputs.allowed,
       choices.baseline,
-      choices.corrective
+      choices.supersede
     );
     const notes = [
       ...inputs.changesets,
-      ...(choices.corrective ? [yield* correctiveNote(choices.corrective, inputs)] : []),
+      ...(choices.supersede ? [yield* supersedeNote(choices.supersede, inputs)] : []),
     ];
     const recommendation = assembleReleasePlan(notes, inputs.packages, inputs.config, undefined);
     const { selected, retained } = splitNotes(notes, choices);
@@ -333,7 +319,7 @@ export const createSdkReleasePlan = (cwd: string, options: SdkReleaseOptions = {
       releases,
       changesets: native.changesets,
       retainedChangesets: retained,
-      ...(choices.corrective ? { corrective: choices.corrective } : {}),
+      ...(choices.supersede ? { supersede: choices.supersede } : {}),
     });
   });
 
@@ -380,7 +366,7 @@ export const applySdkReleasePlan = (
     );
     const expected = yield* createSdkReleasePlan(cwd, {
       ...plan.choices,
-      ...(plan.corrective ? { corrective: plan.corrective } : {}),
+      ...(plan.supersede ? { supersede: plan.supersede } : {}),
     });
     yield* ensure(
       JSON.stringify(expected) === JSON.stringify(plan),
@@ -406,7 +392,7 @@ export const applySdkReleasePlan = (
     const changedPaths = (yield* fromPromise(() =>
       applyReleasePlan(native, inputs.packages, inputs.config, undefined, cwd)
     )).map(file => path.relative(cwd, file));
-    for (const note of plan.retainedChangesets.filter(note => !CORRECTIVE_NOTE.test(note.id))) {
+    for (const note of plan.retainedChangesets.filter(note => !SUPERSEDE_NOTE.test(note.id))) {
       const file = path.resolve(cwd, '.changeset', `${note.id}.md`);
       yield* writeFile(file, serializeChangeset(toNewChangeset(note)));
       changedPaths.push(path.relative(cwd, file));

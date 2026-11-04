@@ -1,22 +1,13 @@
 name: SDK release
-description: Request, inspect, or retry a TypeScript and Python SDK release
+description: Request a TypeScript and Python SDK release
 title: '[SDK release] Request'
 body:
   - type: markdown
     attributes:
       value: |
         Any active ComposioHQ member can use this form, including members with repository Read access.
-        The bot prepares one release PR. Approve its final head; the bot merges after checks pass.
-        Refresh replaces the active candidate from current next and requires new approval.
-        A retry uses the original run, versions, and inputs; new language choices are ignored.
-  - type: dropdown
-    id: action
-    attributes:
-      label: Action
-      options: [release, refresh, status, retry]
-      default: 0
-    validations:
-      required: true
+        The bot prepares one release PR. A repository writer who did not request the release approves its final head, then a person merges it.
+        Choose supersede only when the last tagged release can no longer finish publishing because its candidates expired.
   - type: dropdown
     id: typescript
     attributes:
@@ -35,9 +26,12 @@ body:
       default: 0
     validations:
       required: true
-  - type: input
-    id: run_id
+  - type: dropdown
+    id: supersede
     attributes:
-      label: Original run ID
-      description: Required for retry; optional for status. Copy the number from the original Actions run URL.
-      placeholder: '123456789'
+      label: Supersede a stranded release
+      description: yes plans past the newest tagged release when some of its versions never reached the registry.
+      options: ['no', 'yes']
+      default: 0
+    validations:
+      required: true

@@ -6,11 +6,6 @@ on:
     types: [opened]
   workflow_dispatch:
     inputs:
-      action:
-        description: Prepare a release PR, inspect status, or retry the original run
-        type: choice
-        options: [release, refresh, status, retry]
-        default: release
       typescript:
         description: TypeScript bump (auto uses Changesets recommendations)
         type: choice
@@ -21,10 +16,10 @@ on:
         type: choice
         options: [auto, patch, minor, major, skip]
         default: auto
-      run_id:
-        description: Original run ID; retry ignores new bump choices
-        type: string
-        required: false
+      supersede:
+        description: Plan past the newest tagged release when some of its versions never reached the registry
+        type: boolean
+        default: false
   pull_request_target:
     branches: [next]
     types: [closed]

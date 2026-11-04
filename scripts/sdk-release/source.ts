@@ -217,7 +217,7 @@ const normalizePnpmContexts = (contents: string, plan: DiffPlan) =>
 const retainedNote = (note: DiffPlan['retainedChangesets'][number]) =>
   `---\n${note.releases.map(entry => `${JSON.stringify(entry.name)}: ${entry.type}`).join('\n')}\n---\n\n${note.summary}\n`;
 
-const GENERATED_NOTE = /^sdk-maintenance-(typescript|python)$|^sdk-corrective-\d+$/;
+const GENERATED_NOTE = /^sdk-maintenance-(typescript|python)$|^sdk-supersede-\d+$/;
 
 const plannedVersionMetadata = (
   files: ReadonlyArray<ReleaseFile>,

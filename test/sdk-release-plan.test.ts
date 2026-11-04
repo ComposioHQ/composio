@@ -108,16 +108,32 @@ function versions(plan: SdkReleasePlan) {
 }
 
 describe('SDK release planning', () => {
-  test('a terminal provider-only partial batch recommends a higher patch with no new fragments', async () => {
+  test('TypeScript-only, Python-only and mixed notes plan only their own lanes', async () => {
+    const languages = async (releases: Record<string, string>) => {
+      const { cwd, note } = await fixture();
+      await note('change', releases);
+      const plan = await createSdkReleasePlan(cwd);
+      return [...new Set(plan.releases.map(release => release.language))].sort();
+    };
+    expect(await languages({ '@composio/provider': 'patch' })).toEqual(['typescript']);
+    expect(await languages({ '@composio/python-sdk': 'patch' })).toEqual(['python']);
+    expect(
+      await languages({ '@composio/provider': 'patch', '@composio/python-sdk': 'patch' })
+    ).toEqual(['python', 'typescript']);
+  });
+
+  test('supersede moves stranded npm packages above their tagged versions', async () => {
     const { cwd, json } = await fixture();
+    // sdk-release/8 bumped core, slim and provider; only provider 0.11.1 never reached npm.
+    for (const name of ['core', 'slim'])
+      await json(`packages/${name}/package.json`, { name: `@composio/${name}`, version: '0.29.0' });
     await json('packages/provider/package.json', {
       name: '@composio/provider',
       version: '0.11.1',
-      peerDependencies: { '@composio/core': '^0.28.0' },
+      peerDependencies: { '@composio/core': '^0.29.0' },
     });
-    const corrective = {
+    const supersede = {
       batchId: '8',
-      sourceSha: 'a'.repeat(40),
       releases: [
         {
           name: '@composio/provider',
@@ -126,55 +142,100 @@ describe('SDK release planning', () => {
           language: 'typescript' as const,
         },
       ],
-      inventory: [{ name: '@composio/provider', version: '0.11.1', files: [] }],
     };
-    const plan = await createSdkReleasePlan(cwd, { corrective });
-    expect(versions(plan)).toEqual({ '@composio/provider': '0.11.2' });
-    expect(plan.recommended.map(release => release.newVersion)).toEqual(['0.11.2']);
     const baseline = {
-      '@composio/core': '0.28.0',
-      '@composio/slim': '0.28.0',
+      '@composio/core': '0.29.0',
+      '@composio/slim': '0.29.0',
       '@composio/provider': '0.11.0',
       composio: '0.31.0',
       'composio-openai': '0.31.0',
       'composio-outside': '0.31.0',
     };
     await expect(createSdkReleasePlan(cwd, { baseline })).rejects.toThrow(
-      'Registry baseline mismatch'
+      'Registry baseline mismatch for @composio/provider'
     );
-    expect(versions(await createSdkReleasePlan(cwd, { corrective, baseline }))).toEqual({
-      '@composio/provider': '0.11.2',
-    });
+    const plan = await createSdkReleasePlan(cwd, { supersede, baseline });
+    expect(versions(plan)).toEqual({ '@composio/provider': '0.11.2' });
+    expect(plan.changesets.map(note => note.id)).toEqual(['sdk-supersede-8']);
     await expect(
       createSdkReleasePlan(cwd, {
-        corrective,
-        baseline: { ...baseline, '@composio/core': '0.27.0' },
+        supersede,
+        baseline: { ...baseline, '@composio/core': '0.28.0' },
       })
     ).rejects.toThrow('Registry baseline mismatch for @composio/core');
+    expect(
+      versions(await createSdkReleasePlan(cwd, { supersede, baseline, typescript: 'minor' }))
+    ).toEqual({ '@composio/provider': '0.12.0' });
+    await expect(
+      createSdkReleasePlan(cwd, {
+        supersede: { ...supersede, releases: [{ ...supersede.releases[0], newVersion: '0.11.2' }] },
+      })
+    ).rejects.toThrow(
+      'Source differs from the superseded release sdk-release/8: @composio/provider'
+    );
     await applySdkReleasePlan(cwd, plan, { updateLockfile: false });
     expect(JSON.parse(await readText(`${cwd}/packages/provider/package.json`)).version).toBe(
       '0.11.2'
     );
-    const other = await fixture();
-    await other.json('packages/provider/package.json', {
-      name: '@composio/provider',
-      version: '0.11.1',
-    });
-    expect(
-      versions(await createSdkReleasePlan(other.cwd, { corrective, typescript: 'minor' }))
-    ).toEqual({ '@composio/provider': '0.12.0' });
-    expect(
-      (await createSdkReleasePlan(other.cwd, { corrective, typescript: 'skip' })).releases
-    ).toEqual([]);
-    await expect(
-      createSdkReleasePlan(other.cwd, {
-        corrective: {
-          ...corrective,
-          releases: [{ ...corrective.releases[0], newVersion: '0.11.2' }],
-        },
-      })
-    ).rejects.toThrow('metadata differs');
+    expect(await exists(`${cwd}/.changeset/sdk-supersede-8.md`)).toBe(false);
   });
+
+  test('supersede after a Python partial moves the whole Python lane to one higher version', async () => {
+    const { cwd, json } = await fixture();
+    // sdk-release/8 bumped the Python lane to 0.31.1; composio-openai 0.31.1 never reached PyPI.
+    await json('python/package.json', {
+      name: '@composio/python-sdk',
+      version: '0.31.1',
+      private: true,
+    });
+    await writeText(
+      `${cwd}/python/pyproject.toml`,
+      '[project]\nname = "composio"\nversion = "0.31.1"\n'
+    );
+    await writeText(`${cwd}/python/composio/__version__.py`, '__version__ = "0.31.1"\n');
+    for (const provider of ['openai', 'outside']) {
+      await writeText(
+        `${cwd}/python/providers/${provider}/pyproject.toml`,
+        `[project]\nname = "composio-${provider}"\nversion = "0.31.1"\n`
+      );
+      await writeText(
+        `${cwd}/python/providers/${provider}/setup.py`,
+        `from setuptools import setup\nsetup(name="composio_${provider}", version="0.31.1")\n`
+      );
+    }
+    const baseline = {
+      '@composio/core': '0.28.0',
+      '@composio/slim': '0.28.0',
+      '@composio/provider': '0.11.0',
+      composio: '0.31.1',
+      'composio-openai': '0.31.0',
+      'composio-outside': '0.31.1',
+    };
+    await expect(createSdkReleasePlan(cwd, { baseline })).rejects.toThrow(
+      'Registry baseline mismatch for composio-openai: source 0.31.1, published 0.31.0'
+    );
+    const supersede = {
+      batchId: '8',
+      releases: [
+        {
+          name: '@composio/python-sdk',
+          oldVersion: '0.31.0',
+          newVersion: '0.31.1',
+          language: 'python' as const,
+        },
+      ],
+    };
+    const plan = await createSdkReleasePlan(cwd, { supersede, baseline });
+    expect(versions(plan)).toEqual({ '@composio/python-sdk': '0.31.2' });
+    await applySdkReleasePlan(cwd, plan, { updateLockfile: false });
+    const packages = await discoverPythonPackages(cwd);
+    expect(packages.map(pkg => [pkg.name, pkg.version])).toEqual([
+      ['composio', '0.31.2'],
+      ['composio-openai', '0.31.2'],
+      ['composio-outside', '0.31.2'],
+    ]);
+  });
+
   test('Python-only fragments version private marker and every Python mirror without npm targets', async () => {
     const { cwd, note } = await fixture();
     await note('python-fix', { '@composio/python-sdk': 'patch' }, 'Fix connected account updates.');
@@ -284,9 +345,11 @@ describe('SDK release planning', () => {
       'composio-openai': '0.31.0',
       'composio-outside': '0.31.0',
     };
-    await expect(createSdkReleasePlan(cwd, { baseline })).rejects.toThrow(
+    const refusal = createSdkReleasePlan(cwd, { baseline });
+    await expect(refusal).rejects.toThrow(
       'Registry baseline mismatch for @composio/core: source 0.28.0, published 0.27.0'
     );
+    await expect(refusal).rejects.toThrow('request a new release with supersede');
     const published = { ...baseline, '@composio/core': '0.28.0', '@composio/slim': '0.28.0' };
     expect(versions(await createSdkReleasePlan(cwd, { baseline: published }))).toEqual({
       '@composio/provider': '0.11.1',

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { Effect, Schema } from 'effect';
 import {
   executeReleaseRequest,
+  supersededRelease,
   type PlanRelease,
   type ReleaseOutputs,
   type ReleaseRequestContext,
@@ -97,7 +98,7 @@ function client(
   };
   return { github: fetcher, calls };
 }
-const request = decodeRequest({ action: 'release' });
+const request = decodeRequest({});
 
 describe('SDK release member request', () => {
   test('an authorized planning failure reports its reason and request run without release writes', async () => {
@@ -110,16 +111,28 @@ describe('SDK release member request', () => {
     expect(writes[0].body).toEqual({ body: expect.stringContaining('Public baseline') });
     expect(writes[0].body).toEqual({ body: expect.stringContaining('/actions/runs/21') });
   });
-  test('issue and dispatch normalize through the same active schema', () => {
-    const issue = {
+  test('issue and dispatch normalize through the same release-only schema', () => {
+    const issue = (supersede: string) => ({
       issue: {
-        body: '### Action\n\nrelease\n\n### TypeScript\n\nauto\n\n### Python\n\npatch\n\n### Original run ID\n\n_No response_\n',
+        body: `### TypeScript\n\nauto\n\n### Python\n\npatch\n\n### Supersede a stranded release\n\n${supersede}\n`,
       },
-    };
-    expect(parseReleaseRequest('issues', issue)).toEqual(
-      parseReleaseRequest('workflow_dispatch', { inputs: { action: 'release', python: 'patch' } })
+    });
+    expect(parseReleaseRequest('issues', issue('no'))).toEqual(
+      parseReleaseRequest('workflow_dispatch', { inputs: { python: 'patch' } })
     );
-    expect(parseReleaseRequest('workflow_dispatch', { inputs: {} }).action).toBe('release');
+    expect(parseReleaseRequest('issues', issue('yes'))).toEqual(
+      parseReleaseRequest('workflow_dispatch', { inputs: { python: 'patch', supersede: 'true' } })
+    );
+    expect(parseReleaseRequest('workflow_dispatch', { inputs: {} })).toEqual({
+      typescript: 'auto',
+      python: 'auto',
+      supersede: false,
+    });
+    expect(Object.keys(ReleaseRequest.fields).sort()).toEqual([
+      'python',
+      'supersede',
+      'typescript',
+    ]);
   });
   for (const membership of ['pending', 'absent', 'error'] as const) {
     test(`${membership} membership fails before planning or any release write`, async () => {
@@ -187,22 +200,98 @@ describe('SDK release member request', () => {
       expect.objectContaining({ body: expect.stringContaining('/actions/runs/21') })
     );
   });
-  for (const action of ['retry', 'status', 'refresh'] as const) {
-    test(`a ${action} request is refused and points to re-running failed jobs`, async () => {
-      const { github, calls } = client({ existing: true });
-      await expect(
-        execute(
-          github,
-          decodeRequest({ action, run_id: '8' }),
-          context,
-          unexpectedPlan('must not plan')
-        )
-      ).rejects.toThrow(`The ${action} action is no longer supported`);
-      const writes = calls.filter(call => call.method !== 'GET');
-      expect(writes.map(call => call.path)).toEqual([
-        '/repos/ComposioHQ/composio/issues/7/comments',
-      ]);
-      expect(writes[0].body).toEqual({ body: expect.stringContaining('Re-run failed jobs') });
+});
+
+type TaggedRelease = Pick<SdkReleasePlan['releases'][number], 'name' | 'oldVersion' | 'newVersion'>;
+const typescriptRelease = (name: string, oldVersion: string, newVersion: string) =>
+  ({ name, oldVersion, newVersion, language: 'typescript' }) as const;
+const pythonRelease = { name: '@composio/python-sdk', oldVersion: '0.31.0', newVersion: '0.31.1' };
+const PYTHON_PACKAGES = ['composio', 'composio-openai'];
+
+/** Tags sdk-release/9 and sdk-release/12; only batch 12 carries the given releases. */
+function tagged(releases: ReadonlyArray<TaggedRelease & { language: 'typescript' | 'python' }>) {
+  const batch = (id: string, value: typeof releases) => ({
+    schemaVersion: 1,
+    id,
+    inputBase: sha,
+    originalRunId: id,
+    requestedBy: ['member'],
+    statusUrl: 'https://github.com/ComposioHQ/composio/issues/7',
+    date: '2026-11-01',
+    plan: {
+      ...plan,
+      releases: value.map(release => ({ ...release, type: 'patch', changesets: [] })),
+    },
+    outputs: [],
+  });
+  const batches: Record<string, unknown> = {
+    ['9'.repeat(40)]: batch('9', [typescriptRelease('@composio/core', '0.27.0', '0.28.0')]),
+    ['c'.repeat(40)]: batch('12', releases),
+  };
+  const fetcher: Fetch = async input => {
+    const url = new URL(String(input));
+    const respond = (data: unknown) => new Response(JSON.stringify(data), { status: 200 });
+    if (url.pathname === '/repos/ComposioHQ/composio/git/matching-refs/tags/sdk-release/')
+      return respond(
+        Object.keys(batches).map(commit => ({
+          ref: `refs/tags/sdk-release/${commit === 'c'.repeat(40) ? '12' : '9'}`,
+          object: { type: 'commit', sha: commit },
+        }))
+      );
+    if (url.pathname === '/repos/ComposioHQ/composio/contents/.github/sdk-release-plan.json') {
+      const content = Buffer.from(
+        JSON.stringify(batches[url.searchParams.get('ref') ?? ''])
+      ).toString('base64');
+      return respond({ encoding: 'base64', content });
+    }
+    throw new Error(`Unexpected request: ${url.pathname}`);
+  };
+  return fetcher;
+}
+
+describe('SDK release supersede', () => {
+  test('an npm partial selects only the stranded packages of the newest tagged release', async () => {
+    const fetcher = tagged([
+      typescriptRelease('@composio/core', '0.28.0', '0.29.0'),
+      typescriptRelease('@composio/slim', '0.28.0', '0.29.0'),
+      typescriptRelease('@composio/provider', '0.11.0', '0.11.1'),
+    ]);
+    const baseline = {
+      '@composio/core': '0.29.0',
+      '@composio/slim': '0.29.0',
+      '@composio/provider': '0.11.0',
+      composio: '0.31.0',
+      'composio-openai': '0.31.0',
+    };
+    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES), fetcher)).toEqual({
+      batchId: '12',
+      releases: [typescriptRelease('@composio/provider', '0.11.0', '0.11.1')],
     });
-  }
+  });
+  test('one unpublished Python provider strands the whole Python lane', async () => {
+    const fetcher = tagged([{ ...pythonRelease, language: 'python' }]);
+    const baseline = {
+      '@composio/core': '0.28.0',
+      composio: '0.31.1',
+      'composio-openai': '0.31.0',
+    };
+    expect(await runRelease(supersededRelease(baseline, PYTHON_PACKAGES), fetcher)).toEqual({
+      batchId: '12',
+      releases: [{ ...pythonRelease, language: 'python' }],
+    });
+  });
+  test('supersede is refused when the newest tagged release is fully published', async () => {
+    const fetcher = tagged([
+      typescriptRelease('@composio/provider', '0.11.0', '0.11.1'),
+      { ...pythonRelease, language: 'python' },
+    ]);
+    const baseline = {
+      '@composio/provider': '0.11.1',
+      composio: '0.31.1',
+      'composio-openai': '0.31.1',
+    };
+    await expect(runRelease(supersededRelease(baseline, PYTHON_PACKAGES), fetcher)).rejects.toThrow(
+      'Nothing to supersede: every version planned by sdk-release/12 is published'
+    );
+  });
 });
