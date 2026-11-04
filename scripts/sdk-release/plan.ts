@@ -13,7 +13,7 @@ import {
   type PythonMetadataOptions,
   type PythonReleasePackage,
 } from './python-metadata';
-import { ensure, fail, fromPromise, sha256Hex, writeFile } from './runtime';
+import { ensure, fail, fromPromise, sameJson, sha256Hex, writeFile } from './runtime';
 
 export { PYTHON_RELEASE_MARKER } from './lanes';
 
@@ -368,10 +368,7 @@ export const applySdkReleasePlan = (
       ...plan.choices,
       ...(plan.supersede ? { supersede: plan.supersede } : {}),
     });
-    yield* ensure(
-      JSON.stringify(expected) === JSON.stringify(plan),
-      'Release data changed from the selected source plan'
-    );
+    yield* ensure(sameJson(expected, plan), 'Release data changed from the selected source plan');
     for (const release of plan.releases)
       yield* ensure(
         inputs.allowed.has(release.name) &&
@@ -386,7 +383,7 @@ export const applySdkReleasePlan = (
       undefined
     );
     yield* ensure(
-      JSON.stringify(yield* selectedReleases(native)) === JSON.stringify(plan.releases),
+      sameJson(yield* selectedReleases(native), plan.releases),
       'Release targets changed from the selected Changesets plan'
     );
     const changedPaths = (yield* fromPromise(() =>

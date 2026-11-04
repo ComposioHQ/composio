@@ -21,17 +21,23 @@ import {
 } from './approval';
 import {
   CONTENT_CONCURRENCY,
+  CreatedSha,
   GitHub,
+  PositiveInt,
+  PositiveIntFromString,
   REPOSITORY_PATH,
   RunId,
   SDK_RELEASE_REPOSITORY,
   Sha,
+  ShaRef,
+  TagRef,
   commentIssue,
   fileAtOrNull,
   paginateArray,
   request,
   requestOptional,
   requireActiveMember,
+  runUrl,
 } from './github';
 import { createSdkReleasePlan, type SdkReleasePlan, type SupersedeInput } from './plan';
 import { discoverPythonPackages } from './python-metadata';
@@ -39,10 +45,20 @@ import { verifyPublicationPolicy } from './registry';
 import { fetchStableRegistryBaseline } from './registry-baseline';
 import { releasePullBody } from './release-pr';
 import { ReleaseRequest, parseReleaseRequest } from './request';
-import { ensure, fail, formatJson, readJson, runMain, type ReleaseServices } from './runtime';
+import {
+  appendFile,
+  ensure,
+  fail,
+  formatJson,
+  readJson,
+  runMain,
+  sameJson,
+  type ReleaseServices,
+} from './runtime';
 import {
   BATCH_PATH,
   ReleaseBatch,
+  batchLanguages,
   committedBatch,
   ReleasePatch,
   releaseOutputs,
@@ -50,17 +66,11 @@ import {
   validateReleaseDiff,
 } from './source';
 
-const runUrl = (id: string | number) =>
-  `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}`;
-const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
 const Commit = Schema.Struct({
   sha: Sha,
   tree: Schema.Struct({ sha: Sha }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),
 });
-const CreatedSha = Schema.Struct({ sha: Sha });
-const ShaRef = Schema.Struct({ object: Schema.Struct({ sha: Sha }) });
-const TagRef = Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Sha }) });
 const CreatedRef = Schema.Struct({ ref: Schema.String });
 
 /** The open release PR into next, optionally for one batch. */
@@ -75,8 +85,6 @@ export const activeRelease = (batchId?: string) =>
 
 const contentsAt = (paths: ReadonlyArray<string>, sha: string) =>
   Effect.forEach(paths, path => fileAtOrNull(path, sha), { concurrency: CONTENT_CONCURRENCY });
-
-const sameJson = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
 
 /** A saved preparation branch must hold exactly the prepared files on top of the frozen input. */
 const verifySavedBranch = (head: string, authorized: ReleaseBatch, patch: ReleasePatch) =>
@@ -230,10 +238,7 @@ export const authorizeSourceTag = (number: number, appId: number) =>
     yield* verifyReleaseGate(pull, batch).pipe(
       Effect.tapCause(cause => reportRefusedRelease(pull, batch, cause))
     );
-    yield* verifyPublicationPolicy(
-      new Set(batch.plan.releases.map(release => release.language)),
-      appId
-    );
+    yield* verifyPublicationPolicy(batchLanguages(batch), appId);
     const merged = yield* request(
       'GET',
       `${REPOSITORY_PATH}/git/commits/${pull.merge_commit_sha}`,
@@ -381,7 +386,6 @@ export const supersededRelease = (
     return { batchId: newest.id, releases: stranded } satisfies SupersedeInput;
   });
 
-/** Authorizes the requester, then serves a release request. */
 export const executeReleaseRequest = <PE, PR, OE = never, OR = never>(
   value: ReleaseRequest,
   context: ReleaseRequestContext,
@@ -424,10 +428,7 @@ const Environment = Config.all({
   eventName: Config.String('GITHUB_EVENT_NAME'),
   outputPath: Config.String('GITHUB_OUTPUT'),
   summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
-  appId: Config.schema(
-    Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
-    'SDK_RELEASE_APP_ID'
-  ),
+  appId: Config.schema(PositiveIntFromString, 'SDK_RELEASE_APP_ID'),
 });
 type Environment = Config.Success<typeof Environment>;
 
@@ -437,10 +438,6 @@ const EventEnvelope = Schema.Struct({
   pull_request: Schema.optionalKey(Schema.Struct({ number: PositiveInt })),
 });
 
-const appendFile = (path: string, text: string) =>
-  Effect.gen(function* () {
-    yield* (yield* FileSystem.FileSystem).writeFileString(path, text, { flag: 'a' });
-  });
 const writeSummary = (env: Environment, text: string) =>
   Effect.gen(function* () {
     yield* (yield* FileSystem.FileSystem).writeFileString(env.summaryPath, text);

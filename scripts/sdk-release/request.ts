@@ -52,7 +52,6 @@ const SUPERSEDE_VALUES = new Map<unknown, boolean>([
   ['no', false],
 ]);
 
-/** Normalizes an issue-form or dispatch request through one schema. */
 export function parseReleaseRequest(eventName: string, payload: unknown): ReleaseRequest {
   const source = REQUEST_SOURCES[eventName];
   if (!source) throw new Error('Unsupported SDK release request event');

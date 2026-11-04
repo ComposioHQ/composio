@@ -94,6 +94,11 @@ export const run = (command: string, args: ReadonlyArray<string>, options: Comma
     )
   );
 
+export const inDirectory =
+  (cwd: string, extraEnv: Record<string, string> = {}) =>
+  (command: string, args: ReadonlyArray<string>) =>
+    run(command, args, { cwd, env: { ...withoutReleaseTokens, ...extraEnv } });
+
 /** Reads a file, or `None` when it does not exist. */
 export const readFile = (path: string) =>
   Effect.gen(function* () {
@@ -113,11 +118,20 @@ export const writeFile = (path: string, contents: string) =>
     yield* fs.writeFileString(path, contents);
   });
 
+export const appendFile = (path: string, text: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    yield* fs.writeFileString(path, text, { flag: 'a' });
+  });
+
 export const parseJson = <S extends Schema.Top>(schema: S, contents: string) =>
   Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(contents);
 
 export const readJson = <S extends Schema.Top>(schema: S, path: string) =>
   readFile(path).pipe(Effect.flatMap(contents => parseJson(schema, contents)));
+
+export const sameJson = (left: unknown, right: unknown) =>
+  JSON.stringify(left) === JSON.stringify(right);
 
 export const formatJson = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 
@@ -158,7 +172,6 @@ export const ReleaseServices = Layer.mergeAll(
 
 export type ReleaseServices = Layer.Success<typeof ReleaseServices>;
 
-/** Runs a release entry point with the platform services it needs. */
 /** Runs a release entry point; failures go to stderr and exit non-zero, like a thrown error. */
 export const runMain = <A, E>(program: Effect.Effect<A, E, ReleaseServices>) =>
   BunRuntime.runMain(

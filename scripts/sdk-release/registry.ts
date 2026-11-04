@@ -22,27 +22,39 @@ import {
   candidateArtifactName,
   downloadCandidate,
   originalCandidates,
+  readCandidateFiles,
   reuseCandidate,
   verifyCandidateFiles,
   type CandidateArtifact,
   type CandidateFile,
 } from './artifacts';
 import { verifyReleaseHead } from './approval';
-import { GitHub, REPOSITORY_PATH, SDK_RELEASE_REPOSITORY, Sha, getRun, request } from './github';
-import { REGISTRY_LANES, Language as LanguageSchema, type Language } from './lanes';
+import {
+  GitHub,
+  PositiveIntFromString,
+  REPOSITORY_PATH,
+  SDK_RELEASE_REPOSITORY,
+  Sha,
+  getRun,
+  request,
+  runUrl,
+} from './github';
+import { NPM_REGISTRY, REGISTRY_LANES, Language as LanguageSchema, type Language } from './lanes';
 import { discoverPythonPackages } from './python-metadata';
 import {
   ReleaseError,
+  appendFile,
   ensure,
   fail,
   parseJson,
   readJson,
   run,
   runMain,
+  sameJson,
   sha256Hex,
   withoutReleaseTokens,
 } from './runtime';
-import { BATCH_PATH, ReleaseBatch } from './source';
+import { BATCH_PATH, ReleaseBatch, batchLanguages } from './source';
 import { RELEASE_WORKFLOW_PATH, tagRunProblem, type ReleaseApp } from './tag-run';
 
 export interface PublicationSource {
@@ -72,16 +84,11 @@ export interface RegistryState {
   readonly tagsToRepair: ReadonlyArray<StableTag>;
 }
 
-const NPM_REGISTRY = 'https://registry.npmjs.org';
 const SLSA_PROVENANCE = 'https://slsa.dev/provenance/v1';
 const REGISTRY_TIMEOUT = '30 seconds';
 
 const Url = Schema.String.check(
   Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
-);
-const PositiveIntFromString = Schema.NumberFromString.check(
-  Schema.isInt(),
-  Schema.isGreaterThan(0)
 );
 
 const isSuccess = (status: number) => status >= 200 && status < 300;
@@ -465,7 +472,7 @@ export const verifyPublicationSource = (
     yield* ensure(
       verified.pull.merged === true &&
         verified.pull.head.sha === source.sha &&
-        JSON.stringify(verified.batch) === JSON.stringify(batch),
+        sameJson(verified.batch, batch),
       'Publication source differs from the merged approved release'
     );
     return verified.pull;
@@ -573,13 +580,9 @@ export const verifyPublicationPolicy = (
     );
   });
 
-const batchLanguages = (batch: ReleaseBatch) =>
-  new Set(batch.plan.releases.map(release => release.language));
-
 /** Reads and checks an already downloaded original candidate directory. */
 const readCandidateDirectory = (directory: string, source: PublicationSource, language: Language) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const manifest = yield* readJson(CandidateManifest, path.join(directory, CANDIDATE_MANIFEST));
     yield* ensure(
@@ -592,12 +595,7 @@ const readCandidateDirectory = (directory: string, source: PublicationSource, la
       manifest.approvedFrom !== undefined,
       'Publication candidate was not copied from the approved release PR'
     );
-    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
-    const bytes = new Map(
-      yield* Effect.forEach(names, name =>
-        Effect.map(fs.readFile(path.join(directory, name)), contents => [name, contents] as const)
-      )
-    );
+    const bytes = yield* readCandidateFiles(directory);
     yield* verifyCandidateFiles(bytes, manifest.files);
     return { manifest, bytes };
   });
@@ -647,11 +645,7 @@ export const loadOriginalDistributions = (
 const appendTo = (target: Option.Option<string>, text: string) =>
   Option.match(target, {
     onNone: () => Effect.void,
-    onSome: file =>
-      Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        yield* fs.writeFileString(file, text, { flag: 'a' });
-      }),
+    onSome: file => appendFile(file, text),
   });
 
 const ActionsFiles = Config.all({
@@ -668,7 +662,7 @@ const reportCandidates = (
 ) =>
   Effect.gen(function* () {
     const lines = [
-      `Original producer: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${source.runId}`,
+      `Original producer: ${runUrl(source.runId)}`,
       `Source: ${source.sha}`,
       identities
         .map(

@@ -1,12 +1,11 @@
 import { Effect, FileSystem, Option, Schema, Stream } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
-import { GitHub, REPOSITORY_PATH, Sha, paginate } from './github';
+import { GitHub, PositiveInt, REPOSITORY_PATH, Sha, paginate } from './github';
 import { Language } from './lanes';
 import { ensure, fail, run, sha256Hex, withoutReleaseTokens } from './runtime';
 
 const Digest = Schema.String.check(Schema.isPattern(/^sha256:[a-f0-9]{64}$/));
 const IsoDate = Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}T/));
-const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
 const ArchiveEntry = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 export const CandidateFile = Schema.Struct({
@@ -115,6 +114,17 @@ export const verifyCandidateFiles = (
         `Candidate checksum mismatch: ${file.name}`
       );
     }
+  });
+
+export const readCandidateFiles = (directory: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
+    return new Map(
+      yield* Effect.forEach(names, name =>
+        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
+      )
+    );
   });
 
 export const originalCandidates = (run: number) =>

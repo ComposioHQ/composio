@@ -3,6 +3,7 @@ import { Schema } from 'effect';
 export const Language = Schema.Literals(['typescript', 'python']);
 export type Language = typeof Language.Type;
 export const LANGUAGES = Language.literals;
+export const NPM_REGISTRY = 'https://registry.npmjs.org';
 
 /** Private workspace package whose Changesets version drives the synchronized Python train. */
 export const PYTHON_RELEASE_MARKER = '@composio/python-sdk';
@@ -35,8 +36,7 @@ export const REGISTRY_LANES: Record<Language, RegistryLane> = {
     environment: 'npm-release',
     oidcAudience: 'npm:registry.npmjs.org',
     downloadHost: 'registry.npmjs.org',
-    versionUrl: (name, version) =>
-      `https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`,
+    versionUrl: (name, version) => `${NPM_REGISTRY}/${encodeURIComponent(name)}/${version}`,
     docsLabel: name => `TypeScript ${name}`,
   },
   python: {

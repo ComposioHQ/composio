@@ -1,19 +1,23 @@
 import { Effect, FileSystem, Path, Schema, Stdio } from 'effect';
 import { Toml } from 'effect/encoding';
 import { getPackages } from '@manypkg/get-packages';
-import { CANDIDATE_MANIFEST, CandidateManifest, verifyCandidateFiles } from './artifacts';
-import { readCandidateFiles, tarballName } from './candidates';
-import { LANGUAGES, type Language } from './lanes';
+import {
+  CANDIDATE_MANIFEST,
+  CandidateManifest,
+  readCandidateFiles,
+  verifyCandidateFiles,
+} from './artifacts';
+import { tarballName } from './candidates';
+import { LANGUAGES, NPM_REGISTRY, type Language } from './lanes';
 import { discoverPythonPackages } from './python-metadata';
 import {
   ensure,
   fail,
   fromPromise,
+  inDirectory,
   readJson,
   ReleaseError,
-  run,
   runMain,
-  withoutReleaseTokens,
   writeFile,
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch } from './source';
@@ -22,7 +26,6 @@ import {
   type ProviderCompatibilityCase,
 } from '../../ts/scripts/check-provider-compatibility';
 
-const NPM_REGISTRY = 'https://registry.npmjs.org';
 const PYPI_INDEX = 'https://pypi.org/simple';
 const Versioned = Schema.Struct({ version: Schema.String });
 const MiseTools = Schema.Struct({ tools: Schema.Struct({ python: Schema.String }) });
@@ -110,8 +113,7 @@ export const checkStrictConsumer = (
 ) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const command = (executable: string, args: ReadonlyArray<string>) =>
-      run(executable, args, { cwd: directory, env: withoutReleaseTokens });
+    const command = inDirectory(directory);
     const imports = names
       .map(
         (name, index) =>
@@ -152,8 +154,7 @@ const verifyNpmConsumer = (
 ) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const command = (executable: string, args: ReadonlyArray<string>) =>
-      run(executable, args, { cwd: directory, env: withoutReleaseTokens });
+    const command = inDirectory(directory);
     const npm = batch.plan.releases.filter(release => release.language === 'typescript');
     const { packages } = yield* fromPromise(() => getPackages(cwd));
     const peers = yield* externalPeers(npm, packages);
@@ -230,8 +231,7 @@ const verifyPythonConsumer = (
 ) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const command = (executable: string, args: ReadonlyArray<string>) =>
-      run(executable, args, { cwd: directory, env: withoutReleaseTokens });
+    const command = inDirectory(directory);
     const version =
       batch.plan.releases.find(release => release.language === 'python')?.newVersion ?? '';
     const packages = yield* discoverPythonPackages(cwd);
@@ -276,8 +276,7 @@ export const verifyPublishedProviders = (
 ) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const command = (executable: string, args: ReadonlyArray<string>) =>
-      run(executable, args, { cwd: directory, env: withoutReleaseTokens });
+    const command = inDirectory(directory);
     const python = yield* pythonVersion(cwd);
     const source = { kind: 'local', directory: candidates } as const;
     const core = pythonRequirement(source, yield* candidateWheels(source), 'composio', version);

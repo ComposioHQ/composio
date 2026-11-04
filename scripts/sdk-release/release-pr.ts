@@ -1,4 +1,4 @@
-import { SDK_RELEASE_REPOSITORY } from './github';
+import { SDK_RELEASE_REPOSITORY, runUrl } from './github';
 import { PYTHON_RELEASE_MARKER } from './lanes';
 import type { ReleaseBatch } from './source';
 
@@ -12,7 +12,6 @@ type Plan = ReleaseBatch['plan'];
 type Changeset = Plan['changesets'][number];
 
 const repositoryUrl = `https://github.com/${SDK_RELEASE_REPOSITORY}`;
-const runUrl = (id: string) => `${repositoryUrl}/actions/runs/${id}`;
 const fileUrl = (branch: string, path: string) =>
   `${repositoryUrl}/${path.endsWith('/') ? 'tree' : 'blob'}/${branch}/${path}`;
 

@@ -9,11 +9,13 @@ import {
   downloadCandidate,
   normalizeArtifactDigest,
   originalCandidates,
+  readCandidateFiles,
   reuseCandidate,
   verifyCandidateFiles,
 } from './artifacts';
 import {
   GitHub,
+  PositiveIntFromString,
   REPOSITORY_PATH,
   ReleaseRun,
   SDK_RELEASE_REPOSITORY,
@@ -24,15 +26,15 @@ import { Language } from './lanes';
 import type { SdkRelease } from './plan';
 import { discoverPythonPackages } from './python-metadata';
 import {
+  appendFile,
   ensure,
   fail,
   formatJson,
   fromPromise,
+  inDirectory,
   readJson,
-  run,
   runMain,
   sha256Hex,
-  withoutReleaseTokens,
   type ReleaseServices,
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch } from './source';
@@ -41,10 +43,6 @@ const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
   [Schema.Record(Schema.String, Schema.Unknown)]
 );
-const command =
-  (cwd: string, extraEnv: Record<string, string> = {}) =>
-  (executable: string, args: ReadonlyArray<string>) =>
-    run(executable, args, { cwd, env: { ...withoutReleaseTokens, ...extraEnv } });
 
 export const tarballName = (name: string, version: string) =>
   `${name.replace(/^@/, '').replaceAll('/', '-')}-${version}.tgz`;
@@ -54,7 +52,7 @@ export const buildTypescript = (cwd: string, directory: string, names: ReadonlyS
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const exec = command(cwd);
+    const exec = inDirectory(cwd);
     const { packages } = yield* fromPromise(() => getPackages(cwd));
     const sdk = packages.filter(
       pkg =>
@@ -109,9 +107,9 @@ export const buildPython = (cwd: string, directory: string) =>
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const environment = { UV_PROJECT_ENVIRONMENT: path.resolve(cwd, 'python/.venv') };
-    const exec = command(cwd, environment);
+    const exec = inDirectory(cwd, environment);
     yield* exec('uv', ['sync', '--locked', '--only-group', 'release']);
-    yield* command(path.join(cwd, 'python'), environment)('make', [
+    yield* inDirectory(path.join(cwd, 'python'), environment)('make', [
       'build',
       'BUILD_ARGS=--no-isolation',
     ]);
@@ -164,16 +162,6 @@ const LANE_BUILDS: Record<
   },
 };
 
-const appendOutput = (outputPath: string, text: string) =>
-  Effect.gen(function* () {
-    yield* (yield* FileSystem.FileSystem).writeFileString(outputPath, text, { flag: 'a' });
-  });
-
-const PositiveIntFromString = Schema.NumberFromString.check(
-  Schema.isInt(),
-  Schema.isGreaterThan(0)
-);
-
 const BuildEnvironment = Config.all({
   runId: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ID'),
   sha: Config.schema(Sha, 'GITHUB_SHA'),
@@ -190,17 +178,6 @@ const isSourceTag = (ref: string) => ref.startsWith('refs/tags/sdk-release/');
 /** The pull_request-only workflow that builds release-PR candidates. */
 const CANDIDATES_WORKFLOW = 'sdk.release.candidates.yml';
 const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
-
-export const readCandidateFiles = (directory: string) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
-    return new Map(
-      yield* Effect.forEach(names, name =>
-        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
-      )
-    );
-  });
 
 /**
  * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
@@ -295,10 +272,9 @@ const buildCandidate = (
       ...(approvedFrom && { approvedFrom }),
     });
     yield* fs.writeFileString(`${directory}/${CANDIDATE_MANIFEST}`, formatJson(manifest));
-    yield* appendOutput(env.outputPath, 'selected=true\n');
+    yield* appendFile(env.outputPath, 'selected=true\n');
   });
 
-/** Builds or copies the candidate for one language lane. */
 const buildMode = (language: Language) =>
   Effect.gen(function* () {
     const env = yield* BuildEnvironment;
@@ -308,7 +284,7 @@ const buildMode = (language: Language) =>
     );
     const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
     const selected = batch.plan.releases.filter(release => release.language === language);
-    if (!selected.length) return yield* appendOutput(env.outputPath, 'selected=false\n');
+    if (!selected.length) return yield* appendFile(env.outputPath, 'selected=false\n');
     yield* buildCandidate(env, language, selected).pipe(Effect.provide(GitHub.layer(env.token)));
   });
 
@@ -345,7 +321,7 @@ const reportMode = (language: Language) =>
     const approved = manifest.approvedFrom
       ? `Copied from approved release-PR run ${manifest.approvedFrom.run} (artifact ${manifest.approvedFrom.artifactId}, ${manifest.approvedFrom.digest}).\n\n`
       : '';
-    yield* appendOutput(
+    yield* appendFile(
       env.summaryPath,
       `${language} candidate ID=${artifact.id} digest=${artifact.digest} producer=${env.runId} source=${env.sourceSha} expires=${artifact.expires_at}\n\n${approved}${files}\n`
     );

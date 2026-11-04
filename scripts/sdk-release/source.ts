@@ -44,6 +44,10 @@ export const requestIssueNumber = (batch: ReleaseBatch) => {
   return match ? Number(match[1]) : undefined;
 };
 
+export const batchLanguages = (batch: {
+  readonly plan: { readonly releases: ReadonlyArray<{ readonly language: Language }> };
+}) => new Set(batch.plan.releases.map(release => release.language));
+
 export const ReleaseFile = Schema.Struct({
   path: Schema.String,
   before: Schema.NullOr(Schema.String),

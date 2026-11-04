@@ -5,13 +5,22 @@ import { ensure } from './runtime';
 
 export const SDK_RELEASE_REPOSITORY = 'ComposioHQ/composio';
 export const REPOSITORY_PATH = `/repos/${SDK_RELEASE_REPOSITORY}`;
+export const runUrl = (id: string | number) =>
+  `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}`;
 const PAGE_SIZE = 100;
 /** Bounded so large release diffs stay under GitHub's secondary rate limit. */
 export const CONTENT_CONCURRENCY = 8;
 
 export const RunId = Schema.String.check(Schema.isPattern(/^[1-9][0-9]*$/));
 export const Sha = Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/));
-const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
+export const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
+export const PositiveIntFromString = Schema.NumberFromString.check(
+  Schema.isInt(),
+  Schema.isGreaterThan(0)
+);
+export const ShaRef = Schema.Struct({ object: Schema.Struct({ sha: Sha }) });
+export const TagRef = Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Sha }) });
+export const CreatedSha = Schema.Struct({ sha: Sha });
 const Login = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})$/));
 
 export const ReleaseRun = Schema.Struct({

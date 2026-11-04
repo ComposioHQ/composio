@@ -185,8 +185,6 @@ jobs:
           SDK_RELEASE_TOKEN: ${{ steps.sdk-token.outputs.token }}
         run: bun scripts/sdk-release/batch.ts tag
 
-  # The tag run publishes the files the approved release PR built in sdk.release.candidates.yml.
-  # These jobs check out only the protected tag and copy those files; they never build.
   select-candidates:
     if: >-
       github.repository == 'ComposioHQ/composio' &&
@@ -330,7 +328,6 @@ jobs:
   publish-npm:
     name: Publish original npm candidates
     needs: [select-candidates, publication-preflight, npm-publisher-preflight, pypi-publisher-preflight]
-    # A check skipped because its language is not in this release does not block the other.
     if: >-
       always() && needs.select-candidates.outputs.typescript == 'true' &&
       needs.publication-preflight.result == 'success' &&
@@ -430,7 +427,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.run_id }}
         run: gh workflow run docs.sdk-change-sync.yml --repo "$GITHUB_REPOSITORY" --ref next -f run_id="$RUN_ID"
-      # A failed comment must not fail this job: docs maintenance trusts its conclusion.
       - name: Report the published versions on the request issue
         continue-on-error: true
         env:

@@ -290,7 +290,6 @@ jobs:
           VERCEL_DOCS_NEXT_DEPLOY_HOOK: ${{ secrets.VERCEL_DOCS_NEXT_DEPLOY_HOOK }}
         run: bun scripts/sdk-release/docs.ts deploy
 
-  # Reports a mismatch on the release request; the published release is unaffected.
   sdk-live:
     needs: [sdk-context, sdk-deploy]
     runs-on: ubuntu-latest

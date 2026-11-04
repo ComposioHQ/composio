@@ -15,12 +15,16 @@ import { Toml } from 'effect/encoding';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import semver from 'semver';
 import {
+  CONTENT_CONCURRENCY,
+  CreatedSha,
   GitHub,
+  PositiveInt,
+  PositiveIntFromString,
   REPOSITORY_PATH,
   ReleaseRun,
   RunId,
-  SDK_RELEASE_REPOSITORY,
   Sha,
+  ShaRef,
   commentIssue,
   decodeBase64Content,
   getRun,
@@ -29,9 +33,11 @@ import {
   request,
   requestOptional,
   requireActiveMember,
+  runUrl,
 } from './github';
 import { Language, REGISTRY_LANES } from './lanes';
 import {
+  appendFile,
   ensure,
   fail,
   formatJson,
@@ -39,19 +45,19 @@ import {
   readOptionalFile,
   run,
   runMain,
+  sameJson,
   spawn,
   withoutReleaseTokens,
   writeFile,
 } from './runtime';
-import { ReleaseBatch, ReleaseFile, committedBatch } from './source';
-import { tagRunProblem, type ReleaseApp } from './tag-run';
+import { ReleaseBatch, ReleaseFile, batchLanguages, committedBatch } from './source';
+import { RELEASE_WORKFLOW_FILE, tagRunProblem, type ReleaseApp } from './tag-run';
 
 const BRANCH = 'docs/auto-sdk-sync';
 const MARKER = '<!-- sdk-release-docs -->';
 const MAINTENANCE_TITLE = 'docs: align guides and pins with verified SDK releases';
 const PATCH_PATH = '/tmp/sdk-docs-patch.json';
 const GUIDES = 'docs/content/docs/';
-const CONTENTS_CONCURRENCY = 8;
 
 const Dependencies = Schema.Record(Schema.String, Schema.String);
 const DocsManifest = Schema.StructWithRest(
@@ -61,7 +67,6 @@ const DocsManifest = Schema.StructWithRest(
   }),
   [Schema.Record(Schema.String, Schema.Unknown)]
 );
-const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
 
 export const DocsInput = Schema.Struct({
   runId: PositiveInt,
@@ -263,7 +268,7 @@ export const verifyLiveReleaseDocs = (batch: LiveRelease) =>
         'Live documentation does not yet contain the reviewed release targets and publication status'
       );
     }
-    for (const language of new Set(batch.plan.releases.map(release => release.language))) {
+    for (const language of batchLanguages(batch)) {
       const response = yield* fetchLive(
         `https://docs.composio.dev/reference/sdk-reference/${language}/tools`
       );
@@ -287,12 +292,8 @@ const contents = (path: string, ref: string) =>
   });
 
 const refSha = (name: string) =>
-  Effect.map(
-    requestOptional(
-      `${REPOSITORY_PATH}/git/ref/heads/${name}`,
-      Schema.Struct({ object: Schema.Struct({ sha: Sha }) })
-    ),
-    ref => Option.map(ref, found => found.object.sha)
+  Effect.map(requestOptional(`${REPOSITORY_PATH}/git/ref/heads/${name}`, ShaRef), ref =>
+    Option.map(ref, found => found.object.sha)
   );
 
 const VERIFY_JOB = 'Verify public SDK packages';
@@ -322,7 +323,7 @@ const batchAt = (run: ReleaseRun) =>
 export const newestVerifiedRelease = (app: ReleaseApp) =>
   Effect.gen(function* () {
     const latest = yield* paginate(
-      `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=push`,
+      `${REPOSITORY_PATH}/actions/workflows/${RELEASE_WORKFLOW_FILE}/runs?event=push`,
       Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) }),
       body => body.workflow_runs
     ).pipe(
@@ -386,7 +387,7 @@ const verifiedTargets = (
       ),
       ({ manifest, path }) =>
         Effect.flatMap(contents(path, ref), text => manifest.target(text ?? 'null')),
-      { concurrency: CONTENTS_CONCURRENCY }
+      { concurrency: CONTENT_CONCURRENCY }
     );
     return Object.fromEntries(found.flatMap(Option.toArray));
   });
@@ -413,7 +414,7 @@ const pendingDocsFiles = (sourceSha: string, branchHead: string) =>
           Effect.all([contents(file.filename, sourceSha), contents(file.filename, branchHead)]),
           ([before, after]) => ({ path: file.filename, before, after })
         ),
-      { concurrency: CONTENTS_CONCURRENCY }
+      { concurrency: CONTENT_CONCURRENCY }
     );
   });
 
@@ -453,7 +454,7 @@ export const selectDocsInput = (runId: string, app: ReleaseApp) =>
       branchHead,
       pendingFiles,
       targets: yield* verifiedTargets(latest, tree.tree),
-      verifiedLanguages: [...new Set(latest.batch.plan.releases.map(release => release.language))],
+      verifiedLanguages: [...batchLanguages(latest.batch)],
       summaries: latest.batch.plan.changesets.map(note => note.summary),
     });
   });
@@ -597,8 +598,6 @@ const captureDocsPatch = (cwd: string, input: DocsInput) =>
     return yield* Schema.decodeUnknownEffect(DocsPatch)({ input, files });
   });
 
-const CreatedSha = Schema.Struct({ sha: Sha });
-const RefObject = Schema.Struct({ object: Schema.Struct({ sha: Sha }) });
 const PullNumber = Schema.Struct({ number: Schema.Number });
 
 /** The docs manifest may change only by pinning SDK packages to the verified targets. */
@@ -613,18 +612,18 @@ const verifyManifestPins = (file: ReleaseFile, latest: DocsInput) =>
       yield* lockedSdkVersions(lock)
     );
     yield* ensure(
-      JSON.stringify(JSON.parse(file.after)) === JSON.stringify(pinned),
+      sameJson(JSON.parse(file.after), pinned),
       'Docs manifest changes more than exact verified SDK pins'
     );
   });
 
 const publishMaintenanceBranch = (latest: DocsInput, sha: string) =>
   latest.branchHead
-    ? request('PATCH', `${REPOSITORY_PATH}/git/refs/heads/${BRANCH}`, RefObject, {
+    ? request('PATCH', `${REPOSITORY_PATH}/git/refs/heads/${BRANCH}`, ShaRef, {
         sha,
         force: false,
       })
-    : request('POST', `${REPOSITORY_PATH}/git/refs`, RefObject, {
+    : request('POST', `${REPOSITORY_PATH}/git/refs`, ShaRef, {
         ref: `refs/heads/${BRANCH}`,
         sha,
       });
@@ -636,7 +635,7 @@ const upsertMaintenancePull = (latest: DocsInput) =>
       `${REPOSITORY_PATH}/pulls?state=open&base=next&head=ComposioHQ:${BRANCH}`,
       Schema.Array(Schema.Struct({ number: Schema.Number, body: Schema.NullOr(Schema.String) }))
     );
-    const body = `${MARKER}\n## Summary\nUpdate guides and exact SDK pins from verified source ${latest.verifiedSourceSha}.\n\nThese maintenance changes receive ordinary review and docs example/build checks. Package publication and release completion do not wait for this PR.\n\nVerified publication run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${latest.verifiedRunId}`;
+    const body = `${MARKER}\n## Summary\nUpdate guides and exact SDK pins from verified source ${latest.verifiedSourceSha}.\n\nThese maintenance changes receive ordinary review and docs example/build checks. Package publication and release completion do not wait for this PR.\n\nVerified publication run: ${runUrl(latest.verifiedRunId)}`;
     yield* ensure(prs.length <= 1, 'Multiple SDK docs maintenance PRs are open');
     const [existing] = prs;
     yield* existing
@@ -701,10 +700,7 @@ const inputPath = Config.String('SDK_DOCS_INPUT').pipe(
 const controllerToken = Config.schema(Schema.NonEmptyString, 'SDK_RELEASE_TOKEN');
 const NonEmpty = Schema.NonEmptyString;
 const releaseApp = Config.all({
-  id: Config.schema(
-    Schema.NumberFromString.check(Schema.isInt(), Schema.isGreaterThan(0)),
-    'SDK_RELEASE_APP_ID'
-  ),
+  id: Config.schema(PositiveIntFromString, 'SDK_RELEASE_APP_ID'),
   slug: Config.schema(NonEmpty, 'SDK_RELEASE_APP_SLUG'),
 });
 
@@ -781,10 +777,7 @@ const MODES = {
     Effect.gen(function* () {
       const token = yield* Config.schema(Schema.NonEmptyString, 'GITHUB_TOKEN');
       const runId = yield* Config.schema(RunId, 'GITHUB_RUN_ID');
-      yield* checkLiveDocs(
-        input.batch,
-        `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}`
-      ).pipe(Effect.provide(GitHub.layer(token)));
+      yield* checkLiveDocs(input.batch, runUrl(runId)).pipe(Effect.provide(GitHub.layer(token)));
     })
   ),
   deploy,
@@ -792,20 +785,12 @@ const MODES = {
     Effect.gen(function* () {
       const actor = yield* Config.schema(NonEmpty, 'GITHUB_ACTOR');
       const app = yield* releaseApp;
-      // The tag run dispatches this workflow with its GITHUB_TOKEN.
-      if (actor !== `${app.slug}[bot]` && actor !== 'github-actions[bot]')
-        yield* requireActiveMember(actor);
+      const dispatchedByTagRun = actor === 'github-actions[bot]';
+      if (actor !== `${app.slug}[bot]` && !dispatchedByTagRun) yield* requireActiveMember(actor);
       const runId = yield* Config.schema(RunId, 'SDK_DOCS_RUN_ID');
       const input = yield* selectDocsInput(runId, app);
       yield* writeFile(yield* inputPath, JSON.stringify(input));
-      const fs = yield* FileSystem.FileSystem;
-      yield* fs.writeFileString(
-        yield* Config.String('GITHUB_OUTPUT'),
-        `source-sha=${input.sourceSha}\n`,
-        {
-          flag: 'a',
-        }
-      );
+      yield* appendFile(yield* Config.String('GITHUB_OUTPUT'), `source-sha=${input.sourceSha}\n`);
     })
   ),
   commit: asController(

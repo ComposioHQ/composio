@@ -2,6 +2,7 @@ import { Effect, FileSystem, Option, Schema, Stream } from 'effect';
 import { downloadCandidate, originalCandidates, reuseCandidate } from './artifacts';
 import {
   CONTENT_CONCURRENCY,
+  PositiveInt,
   REPOSITORY_PATH,
   SDK_RELEASE_REPOSITORY,
   Sha,
@@ -12,10 +13,16 @@ import {
   request,
 } from './github';
 import { RELEASE_PR_MARKER } from './release-pr';
-import { ensure, fail, readJson } from './runtime';
-import { BATCH_PATH, ReleaseBatch, validateReleaseDiff, type ReleaseFile } from './source';
+import { ensure, fail, readJson, sameJson } from './runtime';
+import {
+  BATCH_PATH,
+  ReleaseBatch,
+  batchLanguages,
+  validateReleaseDiff,
+  type ReleaseFile,
+} from './source';
+import { RELEASE_WORKFLOW_PATH } from './tag-run';
 
-const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
 const AUTHORIZED_BATCH_ARTIFACT = 'sdk-authorized-batch';
 const AUTHORIZED_BATCH_FILE = 'sdk-release-batch.json';
 const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
@@ -24,7 +31,6 @@ const REVIEW_STATES = new Set(['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED']);
 
 export const releaseBranch = (id: string) => `sdk-release/batch-${id}`;
 
-const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
 export const Pull = Schema.Struct({
   number: PositiveInt,
   html_url: Schema.String,
@@ -80,7 +86,6 @@ export function eligibleApproval(
   );
 }
 
-/** Downloads a retained authorized-batch artifact into a scoped directory and decodes its plan. */
 const downloadAuthorizedBatch = (artifact: Parameters<typeof downloadCandidate>[0]) =>
   Effect.scoped(
     Effect.gen(function* () {
@@ -97,7 +102,7 @@ const verifyOriginalBatch = (batch: ReleaseBatch) =>
   Effect.gen(function* () {
     const original = yield* getRun(batch.originalRunId);
     yield* ensure(
-      original.path === WORKFLOW_PATH &&
+      original.path === RELEASE_WORKFLOW_PATH &&
         original.repository.full_name === SDK_RELEASE_REPOSITORY &&
         original.head_branch === 'next',
       'Release preparation was not produced by the protected controller'
@@ -112,7 +117,7 @@ const verifyOriginalBatch = (batch: ReleaseBatch) =>
       return yield* fail('Original authorized release plan is unavailable; prepare a new release');
     const saved = yield* downloadAuthorizedBatch(artifact.value);
     yield* ensure(
-      JSON.stringify(saved) === JSON.stringify(batch),
+      sameJson(saved, batch),
       'Committed release plan differs from the original authorized plan'
     );
   });
@@ -208,7 +213,7 @@ export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch) =>
           check.app?.slug === 'github-actions' &&
           check.conclusion === 'success'
       );
-    for (const language of new Set(batch.plan.releases.map(release => release.language)))
+    for (const language of batchLanguages(batch))
       for (const check of [`SDK candidate (${language})`, `SDK candidate smoke (${language})`])
         yield* ensure(passed(check), `Missing green final-head check: ${check}`);
     yield* ensure(passed('typescript-check'), 'Missing green final-head production docs check');

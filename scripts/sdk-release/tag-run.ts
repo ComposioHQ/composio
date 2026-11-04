@@ -1,25 +1,27 @@
-import { Config, Effect, FileSystem, Option, Schema, Stdio } from 'effect';
+import { Config, Effect, Option, Schema, Stdio } from 'effect';
 import {
   GitHub,
   REPOSITORY_PATH,
   RunId,
   SDK_RELEASE_REPOSITORY,
   Sha,
+  TagRef,
   commentIssue,
   jobs,
   request,
   requestOptional,
+  runUrl,
   type ReleaseRun,
 } from './github';
 import { packageLabel } from './release-pr';
-import { fail, runMain } from './runtime';
+import { appendFile, fail, runMain } from './runtime';
 import { committedBatch, requestIssueNumber } from './source';
 
-export const RELEASE_WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
+export const RELEASE_WORKFLOW_FILE = 'sdk.release.yml';
+export const RELEASE_WORKFLOW_PATH = `.github/workflows/${RELEASE_WORKFLOW_FILE}`;
 const RELEASE_TAG = /^sdk-release\/\d+$/;
 
 const App = Schema.Struct({ id: Schema.Number, slug: Schema.String });
-const TagRef = Schema.Struct({ object: Schema.Struct({ type: Schema.String, sha: Sha }) });
 
 export interface ReleaseApp {
   readonly id: number;
@@ -72,9 +74,6 @@ const requestIssueAt = (sha: string) =>
     return { batch: batch.value, issue };
   });
 
-const runUrl = (runId: string) =>
-  `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}`;
-
 /** Posts the published versions and the run link on the request issue. */
 export const reportRelease = (sha: string, runId: string) =>
   Effect.gen(function* () {
@@ -119,7 +118,7 @@ const main = Effect.gen(function* () {
   const body = yield* REPORTS[mode](env.sha, env.runId).pipe(
     Effect.provide(GitHub.layer(env.token))
   );
-  yield* (yield* FileSystem.FileSystem).writeFileString(env.summary, `${body}\n`, { flag: 'a' });
+  yield* appendFile(env.summary, `${body}\n`);
 });
 
 if (import.meta.main) runMain(main);
