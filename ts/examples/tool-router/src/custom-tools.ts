@@ -94,8 +94,8 @@ const composio = new Composio({
 const session = await composio.create("default", {
   toolkits: ["gmail"],
   experimental: {
-    customTools: [getUser, createDraft],
-    customToolkits: [roleManager],
+    localTools: [getUser, createDraft],
+    localToolkits: [roleManager],
   },
 });
 

@@ -2054,9 +2054,12 @@ describe('ToolRouter', () => {
         ['toolkits', { toolkits: { disable: ['x'] } }],
         ['tools', { tools: { github: ['GITHUB_GET_REPO'] } }],
         ['tags', { tags: ['readOnlyHint'] }],
+        ['experimental.localTools', { experimental: { localTools: [customTool] } }],
+        ['experimental.localToolkits', { experimental: { localToolkits: [customToolkit] } }],
         ['experimental.customTools', { experimental: { customTools: [customTool] } }],
         ['experimental.customToolkits', { experimental: { customToolkits: [customToolkit] } }],
         ['toolkits', { toolkits: [] }],
+        ['experimental.localTools', { experimental: { localTools: [] } }],
         ['experimental.customTools', { experimental: { customTools: [] } }],
       ])(
         'rejects sessionConfigId combined with %s (%j) without calling the API',
@@ -3941,6 +3944,51 @@ describe('ToolRouter', () => {
         }),
       ]);
     });
+
+    it('should attach local tools passed as localTools with the same wire payload', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      const attachResponse = {
+        ...mockSessionRetrieveResponse,
+        experimental: {
+          custom_tools: [{ slug: 'LOCAL_GREP', original_slug: 'GREP', extends_toolkit: null }],
+        },
+      };
+      mockClient.toolRouter.session.attach
+        .mockResolvedValueOnce(attachResponse)
+        .mockResolvedValueOnce(attachResponse);
+
+      const session = await toolRouter.use(sessionId, { localTools: [grepTool] });
+      await toolRouter.use(sessionId, { customTools: [grepTool] });
+
+      const [[, localBody], [, customBody]] = mockClient.toolRouter.session.attach.mock.calls;
+      expect(localBody).toEqual({
+        experimental: { custom_tools: [expect.objectContaining({ slug: 'GREP' })] },
+      });
+      expect(customBody).toEqual(localBody);
+      expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      expect(session.localTools()).toEqual([expect.objectContaining({ slug: 'LOCAL_GREP' })]);
+      expect(session.customTools()).toEqual(session.localTools());
+    });
+
+    it.each([
+      ['localTools or customTools', { localTools: [], customTools: [] }],
+      ['localToolkits or customToolkits', { localToolkits: [], customToolkits: [] }],
+    ])(
+      'should reject passing both %s to use() without calling the API',
+      async (fields, options) => {
+        const error = await toolRouter.use(sessionId, options).catch(e => e);
+
+        expect(error).toBeInstanceOf(ValidationError);
+        expect(error.message).toContain(`Pass either ${fields}, not both`);
+        expect(mockClient.toolRouter.session.attach).not.toHaveBeenCalled();
+        expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      }
+    );
 
     it('should return a session with correct session ID', async () => {
       const customResponse = {
