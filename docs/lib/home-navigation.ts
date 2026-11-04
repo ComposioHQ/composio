@@ -180,7 +180,7 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/toolkits' },
               { url: '/docs/tool-tags' },
               { url: '/docs/instant-tools' },
-              { url: '/docs/extending-sessions/custom-tools-and-toolkits' },
+              { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
             ],
           },
