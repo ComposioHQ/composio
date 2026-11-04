@@ -103,3 +103,20 @@ test('changeset text cannot hide or add content in the release PR', () => {
   expect(body).toContain('Fix crash &lt;\\!-- \\[click\\]\\(https://evil.test\\) \\| \\`x\\`');
   expect(body).not.toContain('<!-- [click]');
 });
+
+test('a package name cannot break out of its code span in the release PR', () => {
+  const forged = '@composio/x` [click](https://evil.test)';
+  const body = releasePullBody(
+    {
+      ...batch,
+      plan: {
+        ...batch.plan,
+        recommended: [release(forged, 'typescript', '1.1.0', [])],
+        releases: [release(forged, 'typescript', '1.1.0', [])],
+      },
+    },
+    'sdk-release/batch-8'
+  );
+  expect(body).toContain('| @composio/x\\` \\[click\\]\\(https://evil.test\\) | 1.0.0 → **1.1.0**');
+  expect(body).not.toContain('[click](https://evil.test)');
+});

@@ -16,9 +16,6 @@ const runUrl = (id: string) => `${repositoryUrl}/actions/runs/${id}`;
 const fileUrl = (branch: string, path: string) =>
   `${repositoryUrl}/${path.endsWith('/') ? 'tree' : 'blob'}/${branch}/${path}`;
 
-const packageLabel = (name: string) =>
-  name === PYTHON_RELEASE_MARKER ? 'Python SDK (`composio` and every provider)' : `\`${name}\``;
-
 /** Shows contributor text literally, so it cannot hide or add content in the reviewed body. */
 const escapeMarkdown = (text: string) =>
   text
@@ -26,6 +23,15 @@ const escapeMarkdown = (text: string) =>
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replace(/[\\`*_[\]()|#!]/g, '\\$&');
+
+/** npm-valid names render as code; anything else renders as escaped text. */
+const SAFE_PACKAGE_NAME = /^@composio\/[a-z0-9][a-z0-9._-]*$/;
+const packageLabel = (name: string) =>
+  name === PYTHON_RELEASE_MARKER
+    ? 'Python SDK (`composio` and every provider)'
+    : SAFE_PACKAGE_NAME.test(name)
+      ? `\`${name}\``
+      : escapeMarkdown(name);
 
 /** First line of a changeset summary, short enough for one list item. */
 const headline = (summary: string) => {
