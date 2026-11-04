@@ -21,6 +21,7 @@ import {
   ToolRouterProxyExecute,
   ToolRouterHook,
 } from '../types/toolRouter.types';
+import type { LocalTool, LocalToolkit } from '../types/customTool.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
 import type { TypeOf } from 'zod/v3';
@@ -143,6 +144,41 @@ export const resolveToolRouterSandboxConfig = (
     );
   }
   return config.sandbox ?? config.workbench;
+};
+
+/** Local tools options, accepted under their current names and the deprecated `custom*` aliases. */
+export type LocalToolsOptions = {
+  localTools?: LocalTool[];
+  localToolkits?: LocalToolkit[];
+  /** @deprecated Use `localTools` instead. */
+  customTools?: LocalTool[];
+  /** @deprecated Use `localToolkits` instead. */
+  customToolkits?: LocalToolkit[];
+};
+
+/**
+ * Resolves local tools and toolkits from `localTools` / `localToolkits` or
+ * their deprecated `customTools` / `customToolkits` aliases. `pathPrefix`
+ * names where the options were passed (e.g. `experimental.`) in the error.
+ */
+export const resolveLocalToolsOptions = (
+  options: LocalToolsOptions | undefined,
+  pathPrefix = ''
+): { tools?: LocalTool[]; toolkits?: LocalToolkit[] } => {
+  if (options?.localTools !== undefined && options.customTools !== undefined) {
+    throw new ValidationError(
+      `Pass either ${pathPrefix}localTools or ${pathPrefix}customTools, not both. ${pathPrefix}customTools is a deprecated alias for ${pathPrefix}localTools.`
+    );
+  }
+  if (options?.localToolkits !== undefined && options.customToolkits !== undefined) {
+    throw new ValidationError(
+      `Pass either ${pathPrefix}localToolkits or ${pathPrefix}customToolkits, not both. ${pathPrefix}customToolkits is a deprecated alias for ${pathPrefix}localToolkits.`
+    );
+  }
+  return {
+    tools: options?.localTools ?? options?.customTools,
+    toolkits: options?.localToolkits ?? options?.customToolkits,
+  };
 };
 
 export const transformToolRouterSandboxParams = (
