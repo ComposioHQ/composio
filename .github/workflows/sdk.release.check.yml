@@ -11,6 +11,7 @@ on:
       - 'scripts/sdk-release/**'
       - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
+      - 'docs/scripts/generate-sdk-release-notes.ts'
       - '.github/workflows/sdk.release*.yml'
       - '.github/workflows/docs.sdk-change-sync.yml'
       - '.github/workflows/docs-typescript-check.yml'
@@ -33,6 +34,7 @@ on:
       - 'scripts/sdk-release/**'
       - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
+      - 'docs/scripts/generate-sdk-release-notes.ts'
       - '.github/workflows/sdk.release*.yml'
       - '.github/workflows/docs.sdk-change-sync.yml'
       - '.github/workflows/docs-typescript-check.yml'
@@ -81,5 +83,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run test:sdk-release
       - run: pnpm run test:release-workflow
+      - name: Install docs dependencies imported by release preparation
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
       - run: pnpm run typecheck:sdk-release
       - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.ts
