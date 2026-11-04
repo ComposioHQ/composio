@@ -10,7 +10,12 @@ import * as runtime from 'react/jsx-runtime';
 import { applyMdxPreset } from 'fumadocs-mdx/config';
 import { frontmatter } from 'fumadocs-core/content/md/frontmatter';
 import { remarkLLMs } from 'fumadocs-core/mdx-plugins/remark-llms';
-import type { ReleaseDocumentationPlan } from '../../scripts/generate-sdk-release-notes';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import { Effect } from 'effect';
+import type {
+  ReleaseDocumentationPlan,
+  ReleaseNoteOptions,
+} from '../../scripts/generate-sdk-release-notes';
 
 const docsRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const fixtures: string[] = [];
@@ -101,8 +106,18 @@ test('historical release code renders with old docs SDK pins while maintained gu
   }
 }, 30000);
 
+const generateSdkReleaseNotes = async (
+  directory: string,
+  value: ReleaseDocumentationPlan,
+  input: ReleaseNoteOptions
+) => {
+  const notes = await import('../../scripts/generate-sdk-release-notes');
+  return Effect.runPromise(
+    notes.generateSdkReleaseNotes(directory, value, input).pipe(Effect.provide(BunServices.layer))
+  );
+};
+
 test('release note generation records selected versions once and retains reviewed narrative', async () => {
-  const { generateSdkReleaseNotes } = await import('../../scripts/generate-sdk-release-notes');
   const directory = await fixture();
   const first = await generateSdkReleaseNotes(directory, plan, options);
   const path = join(directory, first.path);
@@ -124,7 +139,6 @@ test('release note generation records selected versions once and retains reviewe
 });
 
 test('no-op plans create no changelog', async () => {
-  const { generateSdkReleaseNotes } = await import('../../scripts/generate-sdk-release-notes');
   const directory = await fixture();
   await expect(
     generateSdkReleaseNotes(directory, { ...plan, releases: [], changesets: [] }, options)

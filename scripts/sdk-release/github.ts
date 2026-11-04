@@ -1,221 +1,156 @@
-import { z } from 'zod';
+import { Context, Data, Effect, Layer, Option, Schema, Stream } from 'effect';
+import { Base64 } from 'effect/encoding';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
+import { ensure } from './runtime';
 
 export const SDK_RELEASE_REPOSITORY = 'ComposioHQ/composio';
-export const runIdSchema = z.string().regex(/^[1-9][0-9]*$/);
-const shaSchema = z.string().regex(/^[a-f0-9]{40}$/);
-const pullSchema = z.object({
-  number: z.number().int().positive(),
-  html_url: z.string().url(),
-  draft: z.boolean(),
-  body: z.string().nullable(),
-  head: z.object({ ref: z.string(), repo: z.object({ full_name: z.string() }).nullable() }),
-});
-export const releaseRunSchema = z.object({
-  id: z.number().int().positive(),
-  path: z.string(),
-  head_branch: z.string().nullable(),
-  repository: z.object({ full_name: z.string() }),
-  status: z.string(),
-  conclusion: z.string().nullable(),
-  created_at: z.string().datetime(),
-  run_attempt: z.number().int().positive(),
-  html_url: z.string().url(),
-});
-export type ReleaseRun = z.infer<typeof releaseRunSchema>;
-export type ReleaseFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+export const REPOSITORY_PATH = `/repos/${SDK_RELEASE_REPOSITORY}`;
+const PAGE_SIZE = 100;
 
-export class GitHubReleaseApiError extends Error {
-  constructor(
-    readonly status: number,
-    method: string,
-    path: string
-  ) {
-    super(`GitHub ${method} ${path} failed (${status})`);
-  }
+export const RunId = Schema.String.check(Schema.isPattern(/^[1-9][0-9]*$/));
+export const Sha = Schema.String.check(Schema.isPattern(/^[a-f0-9]{40}$/));
+const PositiveInt = Schema.Int.check(Schema.isGreaterThan(0));
+const Login = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})$/));
+
+export const ReleaseRun = Schema.Struct({
+  id: PositiveInt,
+  path: Schema.String,
+  head_branch: Schema.NullOr(Schema.String),
+  repository: Schema.Struct({ full_name: Schema.String }),
+  status: Schema.String,
+  conclusion: Schema.NullOr(Schema.String),
+  created_at: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}T/)),
+  run_attempt: PositiveInt,
+  html_url: Schema.String.check(Schema.isPattern(/^https:\/\//)),
+});
+export type ReleaseRun = typeof ReleaseRun.Type;
+
+export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+
+export class GitHubApiError extends Data.TaggedError('GitHubApiError')<{
+  readonly status: number;
+  readonly method: HttpMethod;
+  readonly path: string;
+  readonly message: string;
+}> {}
+
+const decodeBody = <S extends Schema.Top>(schema: S, text: string) =>
+  text === ''
+    ? Schema.decodeUnknownEffect(schema)(undefined)
+    : Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(text);
+
+const makeGitHub = (token: string) =>
+  Effect.gen(function* () {
+    const client = yield* HttpClient.HttpClient;
+    const request = <S extends Schema.Top>(
+      method: HttpMethod,
+      path: string,
+      schema: S,
+      body?: unknown
+    ) =>
+      Effect.gen(function* () {
+        yield* ensure(path.startsWith('/') && !path.startsWith('//'), 'Expected a GitHub API path');
+        const base = HttpClientRequest.make(method)(`https://api.github.com${path}`, {
+          headers: {
+            accept: 'application/vnd.github+json',
+            authorization: `Bearer ${token}`,
+            'x-github-api-version': '2026-03-10',
+          },
+        });
+        const response = yield* client.execute(
+          body === undefined ? base : HttpClientRequest.bodyJsonUnsafe(base, body)
+        );
+        if (response.status < 200 || response.status >= 300)
+          return yield* new GitHubApiError({
+            status: response.status,
+            method,
+            path,
+            message: `GitHub ${method} ${path} failed (${response.status})`,
+          });
+        return yield* decodeBody(schema, yield* response.text);
+      }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }));
+    return { request };
+  });
+
+/** The controller's GitHub App installation client. Only trusted controller entry points provide it. */
+export class GitHub extends Context.Service<
+  GitHub,
+  Effect.Success<ReturnType<typeof makeGitHub>>
+>()('sdk-release/GitHub') {
+  static readonly layer = (token: string) => Layer.effect(GitHub, makeGitHub(token));
 }
 
-/** Only trusted controller code receives this App installation token. */
-export class GitHubReleaseClient {
-  constructor(
-    private readonly token: string,
-    private readonly fetcher: ReleaseFetch = fetch
-  ) {}
+export const request = <S extends Schema.Top>(
+  method: HttpMethod,
+  path: string,
+  schema: S,
+  body?: unknown
+) =>
+  Effect.gen(function* () {
+    const github = yield* GitHub;
+    return yield* github.request(method, path, schema, body);
+  });
 
-  async request<T>(method: string, path: string, schema: z.ZodType<T>, body?: unknown): Promise<T> {
-    if (!path.startsWith('/') || path.startsWith('//'))
-      throw new Error('Expected a GitHub API path');
-    const response = await this.fetcher(`https://api.github.com${path}`, {
-      method,
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${this.token}`,
-        'x-github-api-version': '2026-03-10',
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      redirect: 'error',
-    });
-    if (!response.ok) throw new GitHubReleaseApiError(response.status, method, path);
-    if (response.status === 204 || response.headers.get('content-length') === '0')
-      return schema.parse(undefined);
-    const text = await response.text();
-    return schema.parse(text ? JSON.parse(text) : undefined);
-  }
+/** Optional lookup: a 404 becomes `None`; every other failure still fails. */
+export const requestOptional = <S extends Schema.Top>(path: string, schema: S) =>
+  request('GET', path, schema).pipe(
+    Effect.map(Option.some),
+    Effect.catchTag('GitHubApiError', error =>
+      error.status === 404 ? Effect.succeedNone : Effect.fail(error)
+    )
+  );
 
-  async requireActiveMember(login: string): Promise<void> {
-    const user = z
-      .string()
-      .regex(/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})$/)
-      .parse(login);
-    const membership = await this.request(
+/** Streams a paginated list endpoint until GitHub returns a short page. */
+export const paginate = <S extends Schema.Top>(path: string, item: S) =>
+  Stream.paginate(1, (page: number) =>
+    request(
+      'GET',
+      `${path}${path.includes('?') ? '&' : '?'}per_page=${PAGE_SIZE}&page=${page}`,
+      Schema.Array(item)
+    ).pipe(
+      Effect.map(
+        items => [items, items.length < PAGE_SIZE ? Option.none() : Option.some(page + 1)] as const
+      )
+    )
+  );
+
+export const requireActiveMember = (login: string) =>
+  Effect.gen(function* () {
+    const user = yield* Schema.decodeUnknownEffect(Login)(login);
+    const membership = yield* request(
       'GET',
       `/orgs/ComposioHQ/memberships/${encodeURIComponent(user)}`,
-      z.object({ state: z.enum(['active', 'pending']) })
+      Schema.Struct({ state: Schema.Literals(['active', 'pending']) })
     );
-    if (membership.state !== 'active')
-      throw new Error('An active ComposioHQ membership is required');
-  }
+    yield* ensure(membership.state === 'active', 'An active ComposioHQ membership is required');
+  });
 
-  async findPilotPullRequest(): Promise<z.infer<typeof pullSchema> | undefined> {
-    for (let page = 1; ; page++) {
-      const pulls = await this.request(
-        'GET',
-        `/repos/${SDK_RELEASE_REPOSITORY}/pulls?state=open&base=next&per_page=100&page=${page}`,
-        z.array(pullSchema)
-      );
-      const current = pulls.find(
-        pull =>
-          pull.draft &&
-          pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY &&
-          /^sdk-release\/preview-\d+$/.test(pull.head.ref) &&
-          pull.body?.includes('<!-- sdk-release-preview -->')
-      );
-      if (current) return current;
-      if (pulls.length < 100) return undefined;
-    }
-  }
-
-  async createPilotPullRequest(
-    runId: string,
-    sourceSha: string,
-    contents: string
-  ): Promise<string> {
-    const id = runIdSchema.parse(runId);
-    const source = shaSchema.parse(sourceSha);
-    const commit = await this.request(
-      'GET',
-      `/repos/${SDK_RELEASE_REPOSITORY}/git/commits/${source}`,
-      z.object({ sha: shaSchema, tree: z.object({ sha: shaSchema }) })
-    );
-    if (commit.sha !== source) throw new Error('Preview source commit did not match');
-    const branch = `sdk-release/preview-${id}`;
-    let existing: { object: { sha: string } } | undefined;
-    try {
-      existing = await this.request(
-        'GET',
-        `/repos/${SDK_RELEASE_REPOSITORY}/git/ref/heads/${branch}`,
-        z.object({ object: z.object({ sha: shaSchema }) })
-      );
-    } catch (error) {
-      if (!(error instanceof GitHubReleaseApiError) || error.status !== 404) throw error;
-    }
-    if (existing) {
-      const saved = await this.request(
-        'GET',
-        `/repos/${SDK_RELEASE_REPOSITORY}/git/commits/${existing.object.sha}`,
-        z.object({ parents: z.array(z.object({ sha: shaSchema })) })
-      );
-      const file = await this.request(
-        'GET',
-        `/repos/${SDK_RELEASE_REPOSITORY}/contents/.github/sdk-release-previews/${id}.json?ref=${existing.object.sha}`,
-        z.object({ encoding: z.literal('base64'), content: z.string() })
-      );
-      const diff = await this.request(
-        'GET',
-        `/repos/${SDK_RELEASE_REPOSITORY}/compare/${source}...${existing.object.sha}`,
-        z.object({ files: z.array(z.object({ filename: z.string(), status: z.string() })) })
-      );
-      if (
-        diff.files.length !== 1 ||
-        diff.files[0].filename !== `.github/sdk-release-previews/${id}.json` ||
-        diff.files[0].status !== 'added' ||
-        saved.parents.length !== 1 ||
-        saved.parents[0].sha !== source ||
-        Buffer.from(file.content, 'base64').toString('utf8') !== contents
-      )
-        throw new Error('The original preview branch no longer matches its source and plan');
-    } else {
-      const tree = await this.request(
-        'POST',
-        `/repos/${SDK_RELEASE_REPOSITORY}/git/trees`,
-        z.object({ sha: shaSchema }),
-        {
-          base_tree: commit.tree.sha,
-          tree: [
-            {
-              path: `.github/sdk-release-previews/${id}.json`,
-              mode: '100644',
-              type: 'blob',
-              content: contents,
-            },
-          ],
-        }
-      );
-      const prepared = await this.request(
-        'POST',
-        `/repos/${SDK_RELEASE_REPOSITORY}/git/commits`,
-        z.object({ sha: shaSchema }),
-        {
-          message: 'chore(release): preview SDK release request',
-          parents: [source],
-          tree: tree.sha,
-        }
-      );
-      await this.request(
-        'POST',
-        `/repos/${SDK_RELEASE_REPOSITORY}/git/refs`,
-        z.object({ ref: z.string() }),
-        {
-          ref: `refs/heads/${branch}`,
-          sha: prepared.sha,
-        }
-      );
-    }
-    const pull = await this.request('POST', `/repos/${SDK_RELEASE_REPOSITORY}/pulls`, pullSchema, {
-      title: 'chore(release): preview SDK release request',
-      base: 'next',
-      head: branch,
-      draft: true,
-      body: `<!-- sdk-release-preview -->\nThis draft is a plan-only pilot. It does not change SDK versions, consume notes, update production docs, merge, create a source tag, or publish packages.\n\nOriginal run: https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}\n\nInspect the plan artifact and close this draft after the access test. Do not merge it.`,
-    });
-    return pull.html_url;
-  }
-
-  async commentIssue(issueNumber: number, body: string): Promise<void> {
-    const issue = z.number().int().positive().parse(issueNumber);
-    await this.request(
+export const commentIssue = (issueNumber: number, body: string) =>
+  Effect.gen(function* () {
+    const issue = yield* Schema.decodeUnknownEffect(PositiveInt)(issueNumber);
+    yield* request(
       'POST',
-      `/repos/${SDK_RELEASE_REPOSITORY}/issues/${issue}/comments`,
-      z.object({ id: z.number() }),
+      `${REPOSITORY_PATH}/issues/${issue}/comments`,
+      Schema.Struct({ id: Schema.Number }),
       { body }
     );
-  }
+  });
 
-  getRun(id: string): Promise<ReleaseRun> {
-    const runId = runIdSchema.parse(id);
-    return this.request(
-      'GET',
-      `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}`,
-      releaseRunSchema
-    );
-  }
+export const getRun = (id: string) =>
+  Effect.gen(function* () {
+    const runId = yield* Schema.decodeUnknownEffect(RunId)(id);
+    return yield* request('GET', `${REPOSITORY_PATH}/actions/runs/${runId}`, ReleaseRun);
+  });
 
-  async rerunFailedJobs(id: string): Promise<void> {
-    const runId = runIdSchema.parse(id);
-    await this.request(
+export const rerunFailedJobs = (id: string) =>
+  Effect.gen(function* () {
+    const runId = yield* Schema.decodeUnknownEffect(RunId)(id);
+    yield* request(
       'POST',
-      `/repos/${SDK_RELEASE_REPOSITORY}/actions/runs/${runId}/rerun-failed-jobs`,
-      z.unknown()
+      `${REPOSITORY_PATH}/actions/runs/${runId}/rerun-failed-jobs`,
+      Schema.Unknown
     );
-  }
-}
+  });
+
+export const decodeBase64Content = (content: string) =>
+  Effect.fromResult(Base64.decodeString(content.replace(/\s/g, '')));

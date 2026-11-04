@@ -5,7 +5,7 @@ on:
     branches: [next]
     paths:
       - 'scripts/sdk-release/**'
-      - 'test/sdk-release-*.test.ts'
+      - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
       - '.github/workflows/sdk.release*.yml'
       - '.github/ISSUE_TEMPLATE/sdk-release.yml'
@@ -15,7 +15,7 @@ on:
     branches: [next]
     paths:
       - 'scripts/sdk-release/**'
-      - 'test/sdk-release-*.test.ts'
+      - 'test/sdk-release-*.ts'
       - 'tsconfig.sdk-release.json'
       - '.github/workflows/sdk.release*.yml'
       - '.github/ISSUE_TEMPLATE/sdk-release.yml'
@@ -42,4 +42,4 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run test:sdk-release
       - run: pnpm run typecheck:sdk-release
-      - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.test.ts
+      - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.ts

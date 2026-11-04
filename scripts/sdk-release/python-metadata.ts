@@ -1,122 +1,184 @@
-import { readFile, readdir, writeFile } from 'node:fs/promises';
-import type { Dirent } from 'node:fs';
-import { relative, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { z } from 'zod';
+import { Effect, FileSystem, Path, Schema } from 'effect';
+import { Toml } from 'effect/encoding';
 import semver from 'semver';
+import { ensure, fail, readFile, spawn, writeFile } from './runtime';
 
-const projectSchema = z.object({ project: z.object({ name: z.string(), version: z.string() }) });
+const PyProject = Schema.Struct({
+  project: Schema.Struct({ name: Schema.String, version: Schema.String }),
+});
 
 export interface PythonReleasePackage {
-  name: string;
-  version: string;
-  directory: string;
+  readonly name: string;
+  readonly version: string;
+  readonly directory: string;
 }
 
 export interface PythonMetadataOptions {
-  updateLockfile?: boolean;
+  readonly updateLockfile?: boolean;
 }
 
-export async function discoverPythonPackages(cwd: string): Promise<PythonReleasePackage[]> {
-  const directories = ['python'];
-  const providers = resolve(cwd, 'python/providers');
-  let entries: Dirent<string>[];
-  try {
-    entries = await readdir(providers, { withFileTypes: true });
-  } catch (error) {
-    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
-    entries = [];
-  }
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!entry.isDirectory()) continue;
-    const directory = `python/providers/${entry.name}`;
-    if (await Bun.file(resolve(cwd, directory, 'pyproject.toml')).exists())
-      directories.push(directory);
-  }
-  const packages = await Promise.all(
-    directories.map(async directory => {
-      const value = projectSchema.parse(
-        Bun.TOML.parse(await readFile(resolve(cwd, directory, 'pyproject.toml'), 'utf8'))
-      );
-      if (directory !== 'python') {
-        const setupPath = `${directory}/setup.py`;
-        const setup = await readFile(resolve(cwd, setupPath), 'utf8');
-        const mirror = setup.match(/\bversion\s*=\s*(["'])([^"']+)\1/);
-        if (mirror?.[2] !== value.project.version) {
-          throw new Error(`Python version mirror mismatch in ${setupPath}`);
-        }
-      }
-      return {
-        name: value.project.name.toLowerCase().replace(/[-_.]+/g, '-'),
-        version: value.project.version,
-        directory,
-      };
-    })
+const CORE_DIRECTORY = 'python';
+const PROVIDERS_DIRECTORY = 'python/providers';
+const RUNTIME_VERSION_PATH = 'python/composio/__version__.py';
+
+/** Each pattern captures `(prefix)(quote)(version)`. */
+const PROJECT_VERSION = /(^\[project\][\s\S]*?^version\s*=\s*)(["'])([^"']+)\2/m;
+const SETUP_VERSION = /(\bversion\s*=\s*)(["'])([^"']+)\2/;
+const RUNTIME_VERSION = /(^\s*__version__\s*=\s*)(["'])([^"']+)\2/m;
+
+const mirroredVersion = (contents: string, pattern: RegExp) => contents.match(pattern)?.[3];
+const withVersion = (contents: string, pattern: RegExp, version: string) =>
+  contents.replace(
+    pattern,
+    (_match, prefix: string, quote: string) => `${prefix}${quote}${version}${quote}`
   );
-  const runtimePath = 'python/composio/__version__.py';
-  const runtime = await readFile(resolve(cwd, runtimePath), 'utf8');
-  const mirror = runtime.match(/^\s*__version__\s*=\s*(["'])([^"']+)\1/m);
-  if (mirror?.[2] !== packages[0].version) {
-    throw new Error(`Python version mirror mismatch in ${runtimePath}`);
-  }
-  return packages;
+
+/** Providers mirror their version in setup.py; the core package keeps it in pyproject.toml only. */
+const hasSetupMirror = (directory: string) => directory !== CORE_DIRECTORY;
+
+const parsePyProject = (contents: string) =>
+  Effect.fromResult(Toml.parse(contents)).pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(PyProject))
+  );
+
+const providerDirectories = (cwd: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const entries = yield* fs
+      .readDirectory(path.resolve(cwd, PROVIDERS_DIRECTORY))
+      .pipe(Effect.catchReason('PlatformError', 'NotFound', () => Effect.succeed([])));
+    const candidates = entries
+      .toSorted((a, b) => a.localeCompare(b))
+      .map(entry => `${PROVIDERS_DIRECTORY}/${entry}`);
+    return yield* Effect.filter(candidates, directory =>
+      Effect.gen(function* () {
+        const info = yield* fs.stat(path.resolve(cwd, directory));
+        return (
+          info.type === 'Directory' &&
+          (yield* fs.exists(path.resolve(cwd, directory, 'pyproject.toml')))
+        );
+      })
+    );
+  });
+
+const readPackage = (cwd: string, directory: string) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const project = yield* parsePyProject(
+      yield* readFile(path.resolve(cwd, directory, 'pyproject.toml'))
+    );
+    if (hasSetupMirror(directory)) {
+      const setupPath = `${directory}/setup.py`;
+      const setup = yield* readFile(path.resolve(cwd, setupPath));
+      yield* ensure(
+        mirroredVersion(setup, SETUP_VERSION) === project.project.version,
+        `Python version mirror mismatch in ${setupPath}`
+      );
+    }
+    return {
+      name: project.project.name.toLowerCase().replace(/[-_.]+/g, '-'),
+      version: project.project.version,
+      directory,
+    } satisfies PythonReleasePackage;
+  });
+
+export const discoverPythonPackages = (cwd: string) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const directories = [CORE_DIRECTORY, ...(yield* providerDirectories(cwd))];
+    const packages = yield* Effect.forEach(directories, directory => readPackage(cwd, directory), {
+      concurrency: 'unbounded',
+    });
+    const runtime = yield* readFile(path.resolve(cwd, RUNTIME_VERSION_PATH));
+    yield* ensure(
+      mirroredVersion(runtime, RUNTIME_VERSION) === packages[0].version,
+      `Python version mirror mismatch in ${RUNTIME_VERSION_PATH}`
+    );
+    return packages;
+  });
+
+interface Edit {
+  readonly path: string;
+  readonly contents: string;
 }
 
-export async function synchronizePythonMetadata(
+const editVersion = (absolutePath: string, pattern: RegExp, version: string, missing: string) =>
+  Effect.gen(function* () {
+    const contents = yield* readFile(absolutePath);
+    yield* ensure(pattern.test(contents), missing);
+    const updated = withVersion(contents, pattern, version);
+    return updated === contents
+      ? undefined
+      : ({ path: absolutePath, contents: updated } satisfies Edit);
+  });
+
+const editPyProject = (absolutePath: string, directory: string, version: string) =>
+  Effect.gen(function* () {
+    const contents = yield* readFile(absolutePath);
+    const updated = withVersion(contents, PROJECT_VERSION, version);
+    const project = yield* parsePyProject(updated);
+    yield* ensure(
+      project.project.version === version,
+      `Cannot update Python project version in ${directory}/pyproject.toml`
+    );
+    return updated === contents
+      ? undefined
+      : ({ path: absolutePath, contents: updated } satisfies Edit);
+  });
+
+const lockWorkspace = (cwd: string) =>
+  spawn('uv', ['lock'], { cwd }).pipe(
+    Effect.mapError(error => error.message),
+    Effect.flatMap(result =>
+      result.exitCode === 0 ? Effect.void : Effect.fail(result.stderr || 'unknown failure')
+    ),
+    Effect.catch(detail => fail(`uv lock failed: ${detail}`))
+  );
+
+export const synchronizePythonMetadata = (
   cwd: string,
   version: string,
   options: PythonMetadataOptions = {}
-): Promise<string[]> {
-  if (!semver.valid(version) || semver.prerelease(version)) {
-    throw new Error(
+) =>
+  Effect.gen(function* () {
+    yield* ensure(
+      semver.valid(version) !== null && semver.prerelease(version) === null,
       `Python stable release requires a stable semantic version, received ${version}`
     );
-  }
-  const packages = await discoverPythonPackages(cwd);
-  const edits: { path: string; contents: string }[] = [];
-  for (const pkg of packages) {
-    const path = resolve(cwd, pkg.directory, 'pyproject.toml');
-    const contents = await readFile(path, 'utf8');
-    const updated = contents.replace(
-      /(^\[project\][\s\S]*?^version\s*=\s*)(["'])([^"']+)\2/m,
-      (_match, prefix: string, quote: string) => `${prefix}${quote}${version}${quote}`
+    const path = yield* Path.Path;
+    const packages = yield* discoverPythonPackages(cwd);
+    const edits: Array<Edit | undefined> = [];
+    for (const pkg of packages) {
+      edits.push(
+        yield* editPyProject(
+          path.resolve(cwd, pkg.directory, 'pyproject.toml'),
+          pkg.directory,
+          version
+        )
+      );
+      if (hasSetupMirror(pkg.directory))
+        edits.push(
+          yield* editVersion(
+            path.resolve(cwd, pkg.directory, 'setup.py'),
+            SETUP_VERSION,
+            version,
+            `Cannot find provider setup version in ${pkg.directory}/setup.py`
+          )
+        );
+    }
+    edits.push(
+      yield* editVersion(
+        path.resolve(cwd, RUNTIME_VERSION_PATH),
+        RUNTIME_VERSION,
+        version,
+        'Cannot find Python runtime __version__'
+      )
     );
-    if (projectSchema.parse(Bun.TOML.parse(updated)).project.version !== version) {
-      throw new Error(`Cannot update Python project version in ${pkg.directory}/pyproject.toml`);
-    }
-    if (updated !== contents) edits.push({ path, contents: updated });
-    if (pkg.directory !== 'python') {
-      const setupPath = resolve(cwd, pkg.directory, 'setup.py');
-      const setup = await readFile(setupPath, 'utf8');
-      if (!/\bversion\s*=\s*(["'])([^"']+)\1/.test(setup)) {
-        throw new Error(`Cannot find provider setup version in ${pkg.directory}/setup.py`);
-      }
-      const updatedSetup = setup.replace(
-        /(\bversion\s*=\s*)(["'])([^"']+)\2/,
-        (_match, prefix: string, quote: string) => `${prefix}${quote}${version}${quote}`
-      );
-      if (updatedSetup !== setup) edits.push({ path: setupPath, contents: updatedSetup });
-    }
-  }
-  const runtimePath = resolve(cwd, 'python/composio/__version__.py');
-  const runtime = await readFile(runtimePath, 'utf8');
-  if (!/^\s*__version__\s*=\s*(["'])([^"']+)\1/m.test(runtime)) {
-    throw new Error('Cannot find Python runtime __version__');
-  }
-  const updatedRuntime = runtime.replace(
-    /(^\s*__version__\s*=\s*)(["'])([^"']+)\2/m,
-    (_match, prefix: string, quote: string) => `${prefix}${quote}${version}${quote}`
-  );
-  if (updatedRuntime !== runtime) edits.push({ path: runtimePath, contents: updatedRuntime });
-  for (const edit of edits) await writeFile(edit.path, edit.contents);
-  const changed = edits.map(edit => relative(cwd, edit.path));
-  if (options.updateLockfile !== false) {
-    const result = spawnSync('uv', ['lock'], { cwd, encoding: 'utf8' });
-    if (result.status !== 0)
-      throw new Error(
-        `uv lock failed: ${result.stderr || result.error?.message || 'unknown failure'}`
-      );
-    changed.push('uv.lock');
-  }
-  return changed;
-}
+    const changed = edits.filter(edit => edit !== undefined);
+    yield* Effect.forEach(changed, edit => writeFile(edit.path, edit.contents), { discard: true });
+    const changedPaths = changed.map(edit => path.relative(cwd, edit.path));
+    if (options.updateLockfile === false) return changedPaths;
+    yield* lockWorkspace(cwd);
+    return [...changedPaths, 'uv.lock'];
+  });

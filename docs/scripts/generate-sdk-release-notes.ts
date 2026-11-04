@@ -1,149 +1,164 @@
-import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, relative, resolve } from 'node:path';
-import { parseArgs } from 'node:util';
-import { z } from 'zod';
+import { Data, Effect, FileSystem, Option, Path, Schema } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { frontmatter as parseFrontmatter } from 'fumadocs-core/content/md/frontmatter';
-const PYTHON_RELEASE_MARKER = '@composio/python-sdk';
-const releaseDocumentationPlanSchema = z.object({
-  releases: z.array(
-    z.object({
-      name: z.string(),
-      newVersion: z.string(),
-      language: z.enum(['typescript', 'python']),
-    })
+
+const Language = Schema.Literals(['typescript', 'python']);
+type Language = typeof Language.Type;
+
+const ReleaseDocumentationPlan = Schema.Struct({
+  releases: Schema.Array(
+    Schema.Struct({ name: Schema.String, newVersion: Schema.String, language: Language })
   ),
-  changesets: z.array(z.object({ summary: z.string() })),
+  changesets: Schema.Array(Schema.Struct({ summary: Schema.String })),
 });
-export type ReleaseDocumentationPlan = z.infer<typeof releaseDocumentationPlanSchema>;
+export type ReleaseDocumentationPlan = typeof ReleaseDocumentationPlan.Encoded;
 
-const releaseNoteOptionsSchema = z.object({
-  releaseId: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  publicationStatusUrl: z.url().refine(value => {
-    const url = new URL(value);
-    return (
-      url.origin === 'https://github.com' &&
-      /^\/ComposioHQ\/composio\/(issues|pull)\/\d+$/.test(url.pathname)
-    );
-  }, 'Publication status must link to the repository release request or PR'),
+const PUBLICATION_STATUS_PATH = /^\/ComposioHQ\/composio\/(issues|pull)\/\d+$/;
+const isPublicationStatusUrl = (value: string) =>
+  URL.canParse(value) &&
+  new URL(value).origin === 'https://github.com' &&
+  PUBLICATION_STATUS_PATH.test(new URL(value).pathname);
+
+const ReleaseNoteOptions = Schema.Struct({
+  releaseId: Schema.String.check(Schema.isPattern(/^[A-Za-z0-9][A-Za-z0-9_-]*$/)),
+  date: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/)),
+  publicationStatusUrl: Schema.String.check(
+    Schema.makeFilter(value =>
+      isPublicationStatusUrl(value)
+        ? undefined
+        : 'Publication status must link to the repository release request or PR'
+    )
+  ),
 });
-export type ReleaseNoteOptions = z.infer<typeof releaseNoteOptionsSchema>;
+export type ReleaseNoteOptions = typeof ReleaseNoteOptions.Type;
 
-function targets(plan: ReleaseDocumentationPlan): Record<string, string> {
-  return Object.fromEntries(plan.releases.map(release => [release.name, release.newVersion]));
-}
+const ExistingEntry = Schema.Struct({
+  sdkRelease: Schema.String,
+  sdkReleaseTargets: Schema.Record(Schema.String, Schema.String),
+});
 
-function versionTable(plan: ReleaseDocumentationPlan): string {
-  return [
+export class ReleaseNotesError extends Data.TaggedError('ReleaseNotesError')<{
+  readonly message: string;
+}> {}
+
+/** How each language appears in the docs version table and how its reference docs are generated. */
+const LANGUAGE_DOCS: Record<
+  Language,
+  {
+    readonly label: (name: string) => string;
+    readonly reference: {
+      readonly command: string;
+      readonly args: ReadonlyArray<string>;
+      readonly directory: string;
+    };
+  }
+> = {
+  typescript: {
+    label: name => `TypeScript \`${name}\``,
+    reference: {
+      command: 'pnpm',
+      args: ['--filter', '@composio/core', 'generate:docs'],
+      directory: '.',
+    },
+  },
+  python: {
+    label: () => 'Python `composio`',
+    reference: {
+      command: 'uv',
+      args: ['run', '--with', 'griffe', 'python', 'scripts/generate-docs.py'],
+      directory: 'python',
+    },
+  },
+};
+
+type Plan = typeof ReleaseDocumentationPlan.Type;
+
+const targets = (plan: Plan) =>
+  Object.fromEntries(plan.releases.map(release => [release.name, release.newVersion]));
+
+const sameTargets = (left: Record<string, string>, right: Record<string, string>) =>
+  JSON.stringify(Object.entries(left).sort()) === JSON.stringify(Object.entries(right).sort());
+
+const versionTable = (plan: Plan) =>
+  [
     '| SDK | Version |',
     '| --- | --- |',
-    ...plan.releases.map(release =>
-      release.name === PYTHON_RELEASE_MARKER
-        ? `| Python \`composio\` | \`${release.newVersion}\` |`
-        : `| TypeScript \`${release.name}\` | \`${release.newVersion}\` |`
+    ...plan.releases.map(
+      release =>
+        `| ${LANGUAGE_DOCS[release.language].label(release.name)} | \`${release.newVersion}\` |`
     ),
   ].join('\n');
-}
 
-export async function generateSdkReleaseNotes(
+const entryPath = (options: ReleaseNoteOptions) => {
+  const [year, month, day] = options.date.split('-');
+  return `docs/content/changelog/${month}-${day}-${year.slice(2)}-sdk-${options.releaseId}.mdx`;
+};
+
+const renderEntry = (plan: Plan, options: ReleaseNoteOptions) => {
+  const summaries = [...new Set(plan.changesets.map(note => note.summary.trim()).filter(Boolean))];
+  return `---\ntitle: ${JSON.stringify(`SDK release ${options.releaseId}`)}\ndate: ${JSON.stringify(options.date)}\nsdkRelease: ${JSON.stringify(options.releaseId)}\nsdkReleaseTargets: ${JSON.stringify(targets(plan))}\n---\n\nThis entry records the release targets. See [publication status](${options.publicationStatusUrl}) for package availability.\n\n### SDK Versions\n\n${versionTable(plan)}\n\n### Changes\n\n${summaries.join('\n\n')}\n`;
+};
+
+/** Writes the release's changelog entry once; a retry with the same targets keeps reviewed prose. */
+export const generateSdkReleaseNotes = (
   cwd: string,
   value: ReleaseDocumentationPlan,
   input: ReleaseNoteOptions
-): Promise<{ path: string; preserved: boolean }> {
-  const plan = releaseDocumentationPlanSchema.parse(value);
-  const options = releaseNoteOptionsSchema.parse(input);
-  if (!plan.releases.length) throw new Error('Nothing to document');
-  const [year, month, day] = options.date.split('-');
-  const path = resolve(
-    cwd,
-    'docs/content/changelog',
-    `${month}-${day}-${year.slice(2)}-sdk-${options.releaseId}.mdx`
-  );
-  let contents: string | undefined;
-  try {
-    contents = await readFile(path, 'utf8');
-  } catch (error) {
-    if (!z.object({ code: z.literal('ENOENT') }).safeParse(error).success) throw error;
-  }
-  if (contents !== undefined) {
-    const existing = z
-      .object({
-        sdkRelease: z.string(),
-        sdkReleaseTargets: z.record(z.string(), z.string()),
-      })
-      .parse(parseFrontmatter(contents).data);
-    if (
-      existing.sdkRelease !== options.releaseId ||
-      JSON.stringify(Object.entries(existing.sdkReleaseTargets).sort()) !==
-        JSON.stringify(Object.entries(targets(plan)).sort())
-    ) {
-      throw new Error('Release targets changed; refresh the entry explicitly and obtain approval');
-    }
-    return { path: relative(cwd, path), preserved: true };
-  }
-  const summaries = [...new Set(plan.changesets.map(note => note.summary.trim()).filter(Boolean))];
-  const generated = `---\ntitle: ${JSON.stringify(`SDK release ${options.releaseId}`)}\ndate: ${JSON.stringify(options.date)}\nsdkRelease: ${JSON.stringify(options.releaseId)}\nsdkReleaseTargets: ${JSON.stringify(targets(plan))}\n---\n\nThis entry records the release targets. See [publication status](${options.publicationStatusUrl}) for package availability.\n\n### SDK Versions\n\n${versionTable(plan)}\n\n### Changes\n\n${summaries.join('\n\n')}\n`;
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, generated, { flag: 'wx' });
-  return { path: relative(cwd, path), preserved: false };
-}
-
-export function generateSdkReleaseReferences(
-  cwd: string,
-  value: ReleaseDocumentationPlan
-): string[] {
-  const plan = releaseDocumentationPlanSchema.parse(value);
-  const languages = new Set(plan.releases.map(release => release.language));
-  const paths: string[] = [];
-  for (const language of languages) {
-    const command =
-      language === 'typescript'
-        ? {
-            executable: 'pnpm',
-            args: ['--filter', '@composio/core', 'generate:docs'],
-            directory: cwd,
-          }
-        : {
-            executable: 'uv',
-            args: ['run', '--with', 'griffe', 'python', 'scripts/generate-docs.py'],
-            directory: join(cwd, 'python'),
-          };
-    const result = spawnSync(command.executable, command.args, {
-      cwd: command.directory,
-      stdio: 'inherit',
-    });
-    if (result.status !== 0)
-      throw new Error(
-        `${language} reference generation failed: ${result.error?.message ?? result.status}`
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const plan = yield* Schema.decodeUnknownEffect(ReleaseDocumentationPlan)(value);
+    const options = yield* Schema.decodeUnknownEffect(ReleaseNoteOptions)(input);
+    if (!plan.releases.length)
+      return yield* new ReleaseNotesError({ message: 'Nothing to document' });
+    const relativePath = entryPath(options);
+    const absolutePath = path.resolve(cwd, relativePath);
+    const existing = yield* fs.readFileString(absolutePath).pipe(
+      Effect.map(Option.some),
+      Effect.catchReason('PlatformError', 'NotFound', () => Effect.succeedNone)
+    );
+    if (Option.isSome(existing)) {
+      const entry = yield* Schema.decodeUnknownEffect(ExistingEntry)(
+        parseFrontmatter(existing.value).data
       );
-    paths.push(`docs/content/reference/sdk-reference/${language}`);
-  }
-  return paths;
-}
+      if (
+        entry.sdkRelease !== options.releaseId ||
+        !sameTargets(entry.sdkReleaseTargets, targets(plan))
+      )
+        return yield* new ReleaseNotesError({
+          message: 'Release targets changed; refresh the entry explicitly and obtain approval',
+        });
+      return { path: relativePath, preserved: true };
+    }
+    yield* fs.makeDirectory(path.dirname(absolutePath), { recursive: true });
+    yield* fs.writeFileString(absolutePath, renderEntry(plan, options), { flag: 'wx' });
+    return { path: relativePath, preserved: false };
+  });
 
-if (import.meta.main) {
-  const { values } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      plan: { type: 'string' },
-      id: { type: 'string' },
-      date: { type: 'string' },
-      'status-url': { type: 'string' },
-      cwd: { type: 'string' },
-      references: { type: 'boolean', default: false },
-    },
+/** Regenerates the symbol reference for each released language, streaming generator output. */
+export const generateSdkReleaseReferences = (cwd: string, value: ReleaseDocumentationPlan) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const plan = yield* Schema.decodeUnknownEffect(ReleaseDocumentationPlan)(value);
+    const languages = [...new Set(plan.releases.map(release => release.language))];
+    return yield* Effect.forEach(languages, language =>
+      Effect.gen(function* () {
+        const { command, args, directory } = LANGUAGE_DOCS[language].reference;
+        const exitCode = yield* spawner.exitCode(
+          ChildProcess.make(command, args, {
+            cwd: path.resolve(cwd, directory),
+            stdin: 'inherit',
+            stdout: 'inherit',
+            stderr: 'inherit',
+          })
+        );
+        if (exitCode !== 0)
+          return yield* new ReleaseNotesError({
+            message: `${language} reference generation failed: ${exitCode}`,
+          });
+        return `docs/content/reference/sdk-reference/${language}`;
+      })
+    );
   });
-  if (!values.plan) throw new Error('--plan is required');
-  const plan = releaseDocumentationPlanSchema.parse(
-    JSON.parse(await readFile(values.plan, 'utf8'))
-  );
-  const options = releaseNoteOptionsSchema.parse({
-    releaseId: values.id,
-    date: values.date,
-    publicationStatusUrl: values['status-url'],
-  });
-  const cwd = resolve(values.cwd ?? process.cwd());
-  if (values.references) generateSdkReleaseReferences(cwd, plan);
-  console.log(JSON.stringify(await generateSdkReleaseNotes(cwd, plan, options)));
-}

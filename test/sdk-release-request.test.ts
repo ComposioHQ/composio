@@ -1,19 +1,28 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { GitHubReleaseClient, type ReleaseFetch } from '../scripts/sdk-release/github';
-import { executePilotRequest, parseReleaseRequest } from '../scripts/sdk-release/request';
+import { Effect } from 'effect';
+import { Base64 } from 'effect/encoding';
+import type { SdkReleasePlan } from '../scripts/sdk-release/plan';
 import { createPilotPlan } from '../scripts/sdk-release/preview';
+import {
+  executePilotRequest,
+  parseReleaseRequest,
+  type PilotContext,
+  type ReleaseRequest,
+} from '../scripts/sdk-release/request';
+import {
+  exists,
+  json,
+  readText,
+  runRelease,
+  temporaryDirectories,
+  writeText,
+  type Fetch,
+} from './sdk-release-harness';
 
-const temporary: string[] = [];
+const temporary = temporaryDirectories('sdk-release-request-');
 async function fixture() {
-  const cwd = await mkdtemp(join(tmpdir(), 'sdk-release-request-'));
-  temporary.push(cwd);
-  const file = async (path: string, value: string) => {
-    await mkdir(join(cwd, path, '..'), { recursive: true });
-    await writeFile(join(cwd, path), value);
-  };
+  const cwd = await temporary.create();
+  const file = (path: string, value: string) => writeText(`${cwd}/${path}`, value);
   await file(
     'package.json',
     JSON.stringify({ name: 'pilot-fixture', private: true, workspaces: ['packages/*'] })
@@ -48,9 +57,19 @@ async function fixture() {
   return cwd;
 }
 
-afterEach(async () => {
-  await Promise.all(temporary.splice(0).map(path => rm(path, { recursive: true, force: true })));
-});
+afterEach(() => temporary.cleanup());
+
+const execute = (
+  fetch: Fetch,
+  request: ReleaseRequest,
+  context: PilotContext,
+  plan: Effect.Effect<SdkReleasePlan>
+) => runRelease(executePilotRequest(request, context, plan), fetch);
+const planOf = (plan: SdkReleasePlan) => Effect.succeed(plan);
+const unexpectedPlan = (message: string) =>
+  Effect.sync((): SdkReleasePlan => {
+    throw new Error(message);
+  });
 
 function issueBody(
   typescript = 'auto',
@@ -76,15 +95,10 @@ function apiFixture(
   let pullFailed = false;
   let planContents = '';
 
-  const fetcher: ReleaseFetch = async (input, init) => {
+  const fetcher: Fetch = async (input, init) => {
     const url = new URL(String(input));
     const method = init?.method ?? 'GET';
     const path = url.pathname;
-    const json = (value: unknown, status = 200) =>
-      new Response(JSON.stringify(value), {
-        status,
-        headers: { 'content-type': 'application/json' },
-      });
     if (method !== 'GET') {
       writes.push({ path, body: init?.body ? JSON.parse(String(init.body)) : null });
       if (path.endsWith('/git/trees')) {
@@ -153,7 +167,7 @@ function apiFixture(
       const body = JSON.parse(planContents);
       return json({
         encoding: 'base64',
-        content: Buffer.from(body.tree[0].content).toString('base64'),
+        content: Base64.encode(body.tree[0].content),
       });
     }
     if (path.includes('/git/commits/'))
@@ -177,7 +191,7 @@ function apiFixture(
       });
     throw new Error(`Unexpected read ${path}`);
   };
-  return { client: new GitHubReleaseClient('token', fetcher), writes, reads };
+  return { client: fetcher, writes, reads };
 }
 
 const context = { actor: 'private-member', runId: '123', sourceSha: 'a'.repeat(40) };
@@ -211,14 +225,14 @@ describe('guarded SDK release pilot', () => {
       const { client, writes } = apiFixture({ membership });
       let planned = false;
       await expect(
-        executePilotRequest(
+        execute(
           client,
           parseReleaseRequest('workflow_dispatch', { inputs: {} }),
           { ...context, issueNumber: 77 },
-          async () => {
+          Effect.sync(() => {
             planned = true;
             return emptyPlan;
-          }
+          })
         )
       ).rejects.toThrow();
       expect(planned).toBe(false);
@@ -241,11 +255,11 @@ describe('guarded SDK release pilot', () => {
         },
       ],
     };
-    const result = await executePilotRequest(
+    const result = await execute(
       client,
       parseReleaseRequest('workflow_dispatch', { inputs: {} }),
       context,
-      async () => plan
+      planOf(plan)
     );
     expect(result.state).toBe('preview');
     expect(result.pullRequest).toBe('https://github.com/ComposioHQ/composio/pull/91');
@@ -260,13 +274,11 @@ describe('guarded SDK release pilot', () => {
     ).toBe(false);
     expect(JSON.stringify(tree)).not.toMatch(/package\.json|pyproject\.toml|CHANGELOG/);
     const existing = apiFixture({ active: true });
-    const status = await executePilotRequest(
+    const status = await execute(
       existing.client,
       parseReleaseRequest('workflow_dispatch', { inputs: { python: 'major' } }),
       context,
-      async () => {
-        throw new Error('must not allocate a second batch');
-      }
+      unexpectedPlan('must not allocate a second batch')
     );
     expect(status.state).toBe('existing');
     expect(existing.writes).toEqual([]);
@@ -274,11 +286,11 @@ describe('guarded SDK release pilot', () => {
 
   test('an authorized issue request receives the normalized active preview status', async () => {
     const { client, writes } = apiFixture({ active: true });
-    await executePilotRequest(
+    await execute(
       client,
       parseReleaseRequest('workflow_dispatch', { inputs: {} }),
       { ...context, issueNumber: 77 },
-      async () => emptyPlan
+      planOf(emptyPlan)
     );
     expect(writes).toEqual([
       {
@@ -306,8 +318,8 @@ describe('guarded SDK release pilot', () => {
       ],
     };
     const request = parseReleaseRequest('workflow_dispatch', { inputs: {} });
-    await expect(executePilotRequest(client, request, context, async () => plan)).rejects.toThrow();
-    const result = await executePilotRequest(client, request, context, async () => plan);
+    await expect(execute(client, request, context, planOf(plan))).rejects.toThrow();
+    const result = await execute(client, request, context, planOf(plan));
     expect(result.state).toBe('preview');
     expect(writes.filter(write => write.path.endsWith('/git/refs'))).toHaveLength(1);
   });
@@ -329,9 +341,9 @@ describe('guarded SDK release pilot', () => {
       ],
     };
     const request = parseReleaseRequest('workflow_dispatch', { inputs: {} });
-    await expect(executePilotRequest(client, request, context, async () => plan)).rejects.toThrow();
+    await expect(execute(client, request, context, planOf(plan))).rejects.toThrow();
     options.tamperTree = true;
-    await expect(executePilotRequest(client, request, context, async () => plan)).rejects.toThrow(
+    await expect(execute(client, request, context, planOf(plan))).rejects.toThrow(
       'source and plan'
     );
     expect(writes.filter(write => write.path.endsWith('/pulls'))).toHaveLength(1);
@@ -342,9 +354,7 @@ describe('guarded SDK release pilot', () => {
     const request = parseReleaseRequest('workflow_dispatch', {
       inputs: { action: 'retry', run_id: '120', python: 'major' },
     });
-    const result = await executePilotRequest(client, request, context, async () => {
-      throw new Error('retry must not plan');
-    });
+    const result = await execute(client, request, context, unexpectedPlan('retry must not plan'));
     expect(result.state).toBe('retrying');
     expect(writes).toEqual([
       { path: '/repos/ComposioHQ/composio/actions/runs/120/rerun-failed-jobs', body: null },
@@ -353,11 +363,11 @@ describe('guarded SDK release pilot', () => {
 
   test('a retry already queued returns the original status without rerunning again', async () => {
     const { client, writes } = apiFixture({ run: { status: 'queued', conclusion: null } });
-    const result = await executePilotRequest(
+    const result = await execute(
       client,
       parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
       context,
-      async () => emptyPlan
+      planOf(emptyPlan)
     );
     expect(result.state).toBe('run-status');
     expect(result.runUrl).toBe('https://github.com/ComposioHQ/composio/actions/runs/120');
@@ -372,13 +382,11 @@ describe('guarded SDK release pilot', () => {
     test(`retry rejects ${name} before any rerun write`, async () => {
       const { client, writes } = apiFixture({ run });
       await expect(
-        executePilotRequest(
+        execute(
           client,
           parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
           context,
-          async () => {
-            throw new Error('retry must not plan');
-          }
+          unexpectedPlan('retry must not plan')
         )
       ).rejects.toThrow('Retry requires a failed original');
       expect(writes).toEqual([]);
@@ -388,11 +396,11 @@ describe('guarded SDK release pilot', () => {
   test('an arbitrary branch run cannot be retried through the controller', async () => {
     const { client, writes } = apiFixture({ run: { head_branch: 'untrusted' } });
     await expect(
-      executePilotRequest(
+      execute(
         client,
         parseReleaseRequest('workflow_dispatch', { inputs: { action: 'retry', run_id: '120' } }),
         context,
-        async () => emptyPlan
+        planOf(emptyPlan)
       )
     ).rejects.toThrow();
     expect(writes).toEqual([]);
@@ -401,7 +409,7 @@ describe('guarded SDK release pilot', () => {
   test('pilot audits real registry baselines in a temporary marker workspace without changing source metadata or notes', async () => {
     const cwd = await fixture();
     const calls: string[] = [];
-    const registryFetch: ReleaseFetch = async input => {
+    const registryFetch: Fetch = async input => {
       const url = String(input);
       calls.push(url);
       return new Response(
@@ -413,20 +421,20 @@ describe('guarded SDK release pilot', () => {
         { headers: { 'content-type': 'application/json' } }
       );
     };
-    const plan = await createPilotPlan(cwd, { typescript: 'auto', python: 'auto' }, registryFetch);
+    const plan = await runRelease(
+      createPilotPlan(cwd, { typescript: 'auto', python: 'auto' }),
+      registryFetch
+    );
     expect(plan.releases.map(release => [release.name, release.newVersion])).toEqual([
       ['@composio/python-sdk', '0.31.1'],
     ]);
     expect(calls).toHaveLength(3);
-    expect(await Bun.file(join(cwd, 'python/package.json')).exists()).toBe(false);
-    expect(await readFile(join(cwd, 'python/pyproject.toml'), 'utf8')).toContain('0.31.0');
-    expect(await readFile(join(cwd, '.changeset/python-note.md'), 'utf8')).toContain(
-      'Fix account updates.'
-    );
+    expect(await exists(`${cwd}/python/package.json`)).toBe(false);
+    expect(await readText(`${cwd}/python/pyproject.toml`)).toContain('0.31.0');
+    expect(await readText(`${cwd}/.changeset/python-note.md`)).toContain('Fix account updates.');
     await expect(
-      createPilotPlan(
-        cwd,
-        { typescript: 'auto', python: 'auto' },
+      runRelease(
+        createPilotPlan(cwd, { typescript: 'auto', python: 'auto' }),
         async () => new Response('{}', { status: 503 })
       )
     ).rejects.toThrow();
