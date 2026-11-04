@@ -958,10 +958,11 @@ export type ToolRouterSessionExecuteFn = (
 
 export interface ToolRouterSessionExecuteOptions {
   /**
-   * Account identifier for direct app tool execution. Use `instant_account` to
-   * explicitly select the Composio Instant account. Accepted on every project:
-   * in multi-account sessions it picks the account; on single-account projects it
-   * must match one of the session's active connections for the toolkit.
+   * Account identifier for direct app tool execution. In multi-account sessions,
+   * an account ID or alias picks one of the user's connected accounts. Use
+   * `instant_account` in any session to explicitly select the Composio Instant
+   * account, even when the user has connected the toolkit themselves; the call
+   * fails rather than falling back to another account.
    * Meta/helper tools either ignore this top-level field or define
    * their own account-selection fields, for example
    * COMPOSIO_MULTI_EXECUTE_TOOL.tools[].account.

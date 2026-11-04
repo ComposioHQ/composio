@@ -435,7 +435,8 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
             slug: toolSlug,
             resolvedProject: context.resolvedProject,
             resolvedUserId: context.resolvedUserId,
-            skipConnectionCheck: params.skipConnectionCheck,
+            // The instant account needs no connection of the user's.
+            skipConnectionCheck: params.skipConnectionCheck || context.useInstantAccount,
             skipChecks: params.skipChecks,
           });
 
