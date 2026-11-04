@@ -65,7 +65,7 @@ const composio = new Composio({ apiKey: "your_api_key" });
 
 A standalone tool handles internal app logic that doesn't need Composio auth. `ctx.userId` identifies which user's session is running.
 
-{/* code-example: no-api reason="custom tool handlers are defined and run in-process in the SDK" */}
+{/* code-example: no-api reason="local tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -381,7 +381,7 @@ const composio = new Composio({ apiKey: "your_api_key" });
 
 A local toolkit groups related standalone tools under a namespace. Tools inside a toolkit cannot use `extendsToolkit`.
 
-{/* code-example: no-api reason="custom toolkits and their tool handlers are defined in-process in the SDK" */}
+{/* code-example: no-api reason="local toolkits and their tool handlers are defined in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -496,7 +496,7 @@ local tool when it should be returned directly from `session.tools()`. Toolkit
 preload applies to all tools in that toolkit; set `preload: false` /
 `preload=False` on one tool to opt it out.
 
-{/* code-example: no-api reason="preload is a property of SDK-defined custom tools whose handlers run in-process" */}
+{/* code-example: no-api reason="preload is a property of SDK-defined local tools whose handlers run in-process" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -641,7 +641,7 @@ const customToolkits = session.customToolkits();
 
 When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `composio.use()`, you can attach local tools at the same time:
 
-{/* code-example: no-api reason="attaching custom tools on use() needs the SDK to run their handlers locally" */}
+{/* code-example: no-api reason="attaching local tools on use() needs the SDK to run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -675,7 +675,7 @@ const session = await composio.use("session_id", {
 
 Use `session.execute()` to run local tools directly, outside of an agent loop. Local tools execute in-process; remote tools are sent to the backend automatically.
 
-{/* code-example: no-api reason="custom tools execute in-process in the SDK, not on the backend" */}
+{/* code-example: no-api reason="local tools execute in-process in the SDK, not on the backend" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python

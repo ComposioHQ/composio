@@ -39,12 +39,12 @@ A stored set of credentials (OAuth tokens or API keys) linked to a userID, creat
 The object returned when you initiate authentication. It contains the Connect Link URL and a `waitForConnection()` method that resolves once the user completes the flow.
 </GlossaryTerm>
 
-<GlossaryTerm name="Custom Tool">
-A tool you define yourself and use alongside Composio's built-in tools. Add experimental local tools and local toolkits through [Local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits).
-</GlossaryTerm>
-
 <GlossaryTerm name="In-Chat Authentication">
 A flow in which the agent handles authentication itself by calling `COMPOSIO_MANAGE_CONNECTIONS` to generate a Connect Link and send it to the user in the conversation. See [In-chat authentication](/docs/authentication#in-chat-authentication).
+</GlossaryTerm>
+
+<GlossaryTerm name="Local Tool">
+A tool you define yourself that runs in your application process alongside Composio's built-in tools. Previously called a custom tool. Add experimental local tools and local toolkits through [Local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits).
 </GlossaryTerm>
 
 <GlossaryTerm name="MCP (Model Context Protocol)">
@@ -64,7 +64,7 @@ Middleware that transforms tool behavior. [Schema modifiers](/docs/tools-direct/
 </GlossaryTerm>
 
 <GlossaryTerm name="Native Tools">
-Tools you access through provider packages with `session.tools()` and call directly, rather than over MCP. Both paths give the agent the same capabilities, but tools called directly integrate with your AI framework and support modifiers and custom tools.
+Tools you access through provider packages with `session.tools()` and call directly, rather than over MCP. Both paths give the agent the same capabilities, but tools called directly integrate with your AI framework and support modifiers and local tools.
 </GlossaryTerm>
 
 <GlossaryTerm name="Organization">

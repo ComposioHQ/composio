@@ -638,7 +638,7 @@ Keep the preloaded set small, generally fewer than 20 tools, to avoid context bl
 <Callout type="info">
 Requires `@composio/core` ≥ `0.9.0` (TypeScript) or `composio` ≥ `0.13.0`
 (Python). Older SDKs do not support `preload.tools`,
-`sessionPreset` / `session_preset`, or custom-tool `preload`.
+`sessionPreset` / `session_preset`, or local-tool `preload`.
 </Callout>
 
 <Callout type="info">
@@ -1359,7 +1359,7 @@ The exported `ToolRouterSessionMetaToolSlug` type lists the accepted slugs. The 
 
 In TypeScript, the third argument holds input-response options: `session.executeMeta(slug, args, { inputResponses, requestState })`. Request options belong in the fourth argument. To pass only request options, use `session.executeMeta(slug, args, undefined, requestOptions)`.
 
-`COMPOSIO_MULTI_EXECUTE_TOOL` calls through this method run on the backend. Custom tools named in those calls are not executed in your process.
+`COMPOSIO_MULTI_EXECUTE_TOOL` calls through this method run on the backend. Local tools named in those calls are not executed in your process.
 
 ### authorize()
 
