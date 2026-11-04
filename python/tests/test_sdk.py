@@ -20,10 +20,18 @@ class TestComposioSDK:
 
     @pytest.mark.parametrize("config", [{}, {"api_key": None}, {"api_key": ""}])
     def test_sdk_requires_api_key(self, config):
-        """Missing credentials must fail, not create an unauthenticated client."""
+        """Missing credentials must explain SDK setup and the separate CLI install."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(exceptions.ApiKeyNotProvidedError):
+            with pytest.raises(exceptions.ApiKeyNotProvidedError) as exc_info:
                 Composio(**config)
+
+        message = str(exc_info.value)
+        assert "COMPOSIO_API_KEY" in message
+        assert "Composio(api_key=" in message
+        assert "Optional: `composio login`" in message
+        assert "requires installing the CLI separately" in message
+        assert "https://docs.composio.dev/docs/cli#install" in message
+        assert "does not set `COMPOSIO_API_KEY`" in message
 
     @pytest.mark.parametrize("api_key", [None, ""])
     def test_sdk_explicit_missing_api_key_does_not_fall_back_to_env(self, api_key):
