@@ -55,6 +55,7 @@ test('a transient artifact-list failure leaves the original candidate retryable'
         GITHUB_RUN_ID: '9',
         GITHUB_RUN_ATTEMPT: '2',
         GITHUB_SHA: 'b'.repeat(40),
+        GITHUB_REF: 'refs/pull/9/merge',
         GITHUB_OUTPUT: output,
         SDK_READ_TOKEN: 'fixture',
         SDK_RELEASE_TOKEN: '',

@@ -16,10 +16,20 @@ export const CandidateFile = Schema.Struct({
 });
 export type CandidateFile = typeof CandidateFile.Type;
 
+/** The release-PR candidate whose checked bytes a source-tag run publishes. */
+export const ApprovedCandidate = Schema.Struct({
+  run: PositiveInt,
+  artifactId: PositiveInt,
+  digest: Digest,
+});
+export type ApprovedCandidate = typeof ApprovedCandidate.Type;
+
 export const CandidateManifest = Schema.Struct({
   sourceSha: Sha,
   producerRun: PositiveInt,
   language: Language,
+  /** Present on source-tag candidates, which copy the approved release-PR files. */
+  approvedFrom: Schema.optionalKey(ApprovedCandidate),
   files: Schema.Array(CandidateFile).check(
     Schema.isMinLength(1),
     Schema.makeFilter(files =>

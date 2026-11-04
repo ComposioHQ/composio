@@ -299,7 +299,7 @@ jobs:
       - name: Registry recovery exhausted
         if: failure() && steps.build.outputs.terminal == 'true'
         run: echo 'Recovery ended; request a newly approved higher-version corrective release.'
-      - name: Retain original candidate bytes
+      - name: Retain candidate bytes for publication and retries
         if: steps.build.outputs.build == 'true'
         id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

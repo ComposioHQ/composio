@@ -4,6 +4,7 @@ import { getPackages } from '@manypkg/get-packages';
 import {
   ActionArtifact,
   CANDIDATE_MANIFEST,
+  type ApprovedCandidate,
   CandidateManifest,
   candidateArtifactName,
   downloadCandidate,
@@ -14,7 +15,14 @@ import {
   verifyCandidateFiles,
   type CandidateArtifact,
 } from './artifacts';
-import { GitHub, REPOSITORY_PATH, Sha, request } from './github';
+import {
+  GitHub,
+  REPOSITORY_PATH,
+  ReleaseRun,
+  SDK_RELEASE_REPOSITORY,
+  Sha,
+  request,
+} from './github';
 import { Language, REGISTRY_LANES } from './lanes';
 import type { SdkRelease } from './plan';
 import { discoverPythonPackages, type PythonReleasePackage } from './python-metadata';
@@ -209,11 +217,78 @@ const BuildEnvironment = Config.all({
   runId: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ID'),
   runAttempt: Config.schema(PositiveIntFromString, 'GITHUB_RUN_ATTEMPT'),
   sha: Config.schema(Sha, 'GITHUB_SHA'),
+  ref: Config.String('GITHUB_REF'),
   outputPath: Config.String('GITHUB_OUTPUT'),
   token: Config.schema(Schema.NonEmptyString, 'SDK_READ_TOKEN'),
   controllerToken: Config.option(Config.String('SDK_RELEASE_TOKEN')),
 });
 type BuildEnvironment = Config.Success<typeof BuildEnvironment>;
+
+/** Release-PR runs build candidates; source-tag runs publish the approved release-PR bytes. */
+const isSourceTag = (ref: string) => ref.startsWith('refs/tags/sdk-release/');
+
+const WORKFLOW_PATH = '.github/workflows/sdk.release.yml';
+
+const readCandidateFiles = (directory: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
+    return new Map(
+      yield* Effect.forEach(names, name =>
+        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
+      )
+    );
+  });
+
+/**
+ * Copies the candidate a release-PR run built and checked on this exact head into `directory`.
+ * Every successful release-PR run on the head passed the candidate checks the merge requires;
+ * the newest one is used.
+ */
+export const adoptApprovedCandidate = (sha: string, language: Language, directory: string) =>
+  Effect.gen(function* () {
+    const { workflow_runs } = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/actions/workflows/sdk.release.yml/runs?event=pull_request&head_sha=${sha}&status=success&per_page=100`,
+      Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) })
+    );
+    const [run] = workflow_runs
+      .filter(
+        candidate =>
+          candidate.path === WORKFLOW_PATH &&
+          candidate.repository.full_name === SDK_RELEASE_REPOSITORY &&
+          candidate.event === 'pull_request' &&
+          candidate.head_sha === sha &&
+          candidate.conclusion === 'success'
+      )
+      .toSorted((a, b) => b.id - a.id);
+    if (!run)
+      return yield* fail(`No successful release-PR run built the approved ${language} candidate`);
+    const artifact = yield* reuseCandidate(
+      yield* originalCandidates(run.id),
+      candidateArtifactName(language),
+      run.id,
+      sha
+    );
+    if (Option.isNone(artifact))
+      return yield* fail(`Approved ${language} candidate is missing from ${run.html_url}`);
+    yield* downloadCandidate(artifact.value, directory);
+    const manifestPath = `${directory}/${CANDIDATE_MANIFEST}`;
+    const manifest = yield* readJson(CandidateManifest, manifestPath);
+    yield* ensure(
+      manifest.sourceSha === sha &&
+        manifest.producerRun === run.id &&
+        manifest.language === language,
+      'Approved candidate manifest producer/source mismatch'
+    );
+    yield* verifyCandidateFiles(yield* readCandidateFiles(directory), manifest.files);
+    yield* (yield* FileSystem.FileSystem).remove(manifestPath);
+    return {
+      run: run.id,
+      artifactId: artifact.value.id,
+      digest: artifact.value.digest,
+    } satisfies ApprovedCandidate;
+  });
 
 /** A retained candidate is reused only when its manifest and bytes match this run's source. */
 const recoverCandidate = (
@@ -223,7 +298,6 @@ const recoverCandidate = (
   existing: CandidateArtifact
 ) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
     yield* downloadCandidate(existing, directory);
     const manifest = yield* readJson(CandidateManifest, `${directory}/${CANDIDATE_MANIFEST}`);
     yield* ensure(
@@ -232,20 +306,17 @@ const recoverCandidate = (
         manifest.language === language,
       'Candidate manifest producer/source mismatch'
     );
-    const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
-    const files = new Map(
-      yield* Effect.forEach(names, name =>
-        Effect.map(fs.readFile(`${directory}/${name}`), bytes => [name, bytes] as const)
-      )
-    );
-    yield* verifyCandidateFiles(files, manifest.files);
+    yield* verifyCandidateFiles(yield* readCandidateFiles(directory), manifest.files);
     yield* appendOutput(
       env.outputPath,
       `selected=true\nbuild=false\nartifact-id=${existing.id}\nartifact-digest=${existing.digest}\nartifact-expires=${existing.expires_at}\n`
     );
   });
 
-/** Builds a fresh candidate, unless a rerun may already have published the missing one. */
+/**
+ * Builds a release-PR candidate, or copies the approved one on a source-tag push, unless a rerun
+ * may already have published the missing one.
+ */
 const buildCandidate = (
   env: BuildEnvironment,
   language: Language,
@@ -274,7 +345,9 @@ const buildCandidate = (
         `Candidate version differs from approved target: ${release.name}`
       );
     }
-    yield* lane.build(cwd, directory, selected);
+    const approvedFrom = isSourceTag(env.ref)
+      ? yield* adoptApprovedCandidate(env.sha, language, directory)
+      : yield* Effect.as(lane.build(cwd, directory, selected), undefined);
     const files = yield* Effect.forEach(yield* fs.readDirectory(directory), name =>
       Effect.gen(function* () {
         const bytes = yield* fs.readFile(`${directory}/${name}`);
@@ -286,6 +359,7 @@ const buildCandidate = (
       producerRun: env.runId,
       language,
       files,
+      ...(approvedFrom && { approvedFrom }),
     });
     yield* fs.writeFileString(`${directory}/${CANDIDATE_MANIFEST}`, formatJson(manifest));
     yield* appendOutput(env.outputPath, 'selected=true\nbuild=true\n');
@@ -362,9 +436,12 @@ const reportMode = (language: Language) =>
     const files = manifest.files
       .map(file => `- ${file.name}: ${file.sha256} (${file.size} bytes)`)
       .join('\n');
+    const approved = manifest.approvedFrom
+      ? `Copied from approved release-PR run ${manifest.approvedFrom.run} (artifact ${manifest.approvedFrom.artifactId}, ${manifest.approvedFrom.digest}).\n\n`
+      : '';
     yield* appendOutput(
       env.summaryPath,
-      `${language} candidate ID=${artifact.id} digest=${artifact.digest} producer=${env.runId} source=${env.sourceSha} expires=${artifact.expires_at}\n\n${files}\n`
+      `${language} candidate ID=${artifact.id} digest=${artifact.digest} producer=${env.runId} source=${env.sourceSha} expires=${artifact.expires_at}\n\n${approved}${files}\n`
     );
   });
 

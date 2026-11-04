@@ -775,6 +775,10 @@ const readCandidateDirectory = (directory: string, source: PublicationSource, la
         manifest.language === language,
       'Original candidate producer/source conflict'
     );
+    yield* ensure(
+      manifest.approvedFrom !== undefined,
+      'Publication candidate was not copied from the approved release PR'
+    );
     const names = (yield* fs.readDirectory(directory)).filter(name => name !== CANDIDATE_MANIFEST);
     const bytes = new Map(
       yield* Effect.forEach(names, name =>
