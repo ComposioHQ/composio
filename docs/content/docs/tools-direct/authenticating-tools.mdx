@@ -540,20 +540,62 @@ console.log(connectedAccount.id);
   <Tab value="API">
 ```bash
 # CONNECTED_ACCOUNT_ID is the ID returned when you initiated or linked the account.
+# Requires Bash, curl, jq, and Python 3 to parse Retry-After dates.
+POLL_DIR=$(mktemp -d) || exit 1
+trap 'rm -rf "$POLL_DIR"' EXIT
 DEADLINE=$((SECONDS + 60))
+POLL_DELAY=1
 while true; do
-  ACCOUNT=$(curl --fail-with-body -s https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
+  HTTP_CODE=$(curl -sS \
+    --dump-header "$POLL_DIR/headers" --output "$POLL_DIR/account" \
+    --write-out '%{http_code}' \
+    "https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID" \
     -H "x-api-key: $COMPOSIO_API_KEY") || exit 1
-  STATUS=$(echo "$ACCOUNT" | jq -r '.status')
-  case "$STATUS" in
-    ACTIVE) echo "$ACCOUNT" | jq -r '.id'; break ;;
-    FAILED|EXPIRED|INACTIVE|REVOKED) echo "Connection ended: $STATUS" >&2; exit 1 ;;
+  DELAY=$POLL_DELAY
+  case "$HTTP_CODE" in
+    200)
+      STATUS=$(jq -r '.status' "$POLL_DIR/account") || exit 1
+      case "$STATUS" in
+        ACTIVE) jq -r '.id' "$POLL_DIR/account"; break ;;
+        FAILED|EXPIRED|REVOKED) echo "Connection ended: $STATUS" >&2; exit 1 ;;
+      esac ;;
+    429)
+      DELAY=$(python3 - "$POLL_DIR/headers" "$POLL_DELAY" <<'PY'
+import math
+import sys
+import time
+from email.utils import parsedate_to_datetime
+from pathlib import Path
+
+headers = Path(sys.argv[1]).read_text(encoding="iso-8859-1").splitlines()
+value = next((line.split(":", 1)[1].strip() for line in reversed(headers)
+              if line.lower().startswith("retry-after:")), "")
+try:
+    seconds = float(value)
+except ValueError:
+    try:
+        seconds = parsedate_to_datetime(value).timestamp() - time.time()
+    except (TypeError, ValueError, OverflowError):
+        seconds = 0
+print(max(float(sys.argv[2]), seconds if math.isfinite(seconds) else 0))
+PY
+      ) || exit 1 ;;
+    *) cat "$POLL_DIR/account" >&2; exit 1 ;;
   esac
-  if [ "$SECONDS" -ge "$DEADLINE" ]; then
+  REMAINING=$((DEADLINE - SECONDS))
+  if [ "$REMAINING" -le 0 ]; then
     echo "Timed out waiting for authorization" >&2
     exit 1
   fi
-  sleep 1
+  SLEEP_FOR=$(awk -v delay="$DELAY" -v remaining="$REMAINING" \
+    'BEGIN { print (delay < remaining ? delay : remaining) }') || exit 1
+  sleep "$SLEEP_FOR" || exit 1
+  if [ "$HTTP_CODE" = 429 ] && [ "$SECONDS" -ge "$DEADLINE" ]; then
+    echo "Timed out waiting for authorization" >&2
+    exit 1
+  fi
+  POLL_DELAY=$(awk -v delay="$POLL_DELAY" \
+    'BEGIN { delay *= 1.5; print (delay < 5 ? delay : 5) }') || exit 1
 done
 ```
   </Tab>
@@ -564,7 +606,7 @@ The method polls the Composio API, waiting 1 second between polls at first and u
 - Enters a terminal state like **FAILED** or **EXPIRED** (throws an error)
 - Exceeds the specified timeout (throws a timeout error)
 
-A rate-limited poll doesn't end the wait. The method waits as long as the response asks and polls again, and these retries can carry the wait past the timeout.
+A rate-limited poll waits for `Retry-After` before polling again. If the wait reaches the timeout, it times out without sending another request. The SDK clients also retry individual HTTP requests, which can run past the timeout. The API example handles 429 responses directly.
 
 ### Checking Connection Status
 

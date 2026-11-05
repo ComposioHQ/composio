@@ -64,8 +64,9 @@ export function createConnectionRequest(
    * either becomes active, enters a terminal error state, or times out. The delay between polls
    * grows from 1 second to 5 seconds, so a connection can be up to 5 seconds old when this returns.
    * A rate-limited poll doesn't fail the wait: once the client's own retries run out, it waits as
-   * long as the response asks, up to the timeout, and polls again. The client's retries can carry
-   * the wait past the timeout, because they aren't bound by it.
+   * long as the response asks before polling again. If that delay reaches the timeout, the wait
+   * times out without another poll. The client's retries can carry the wait past the timeout,
+   * because they aren't bound by it.
    *
    * @param {number} [timeout=60000] - Maximum time to wait in milliseconds before timing out (default: 60 seconds)
    * @returns {Promise<ConnectedAccountRetrieveResponse>} The final connected account response when successful
@@ -118,6 +119,7 @@ export function createConnectionRequest(
 
     while (true) {
       let delay = pollDelay;
+      let rateLimited = false;
       try {
         const response = await client.connectedAccounts.retrieve(request.id);
         request.status = response.status;
@@ -139,18 +141,24 @@ export function createConnectionRequest(
         if (!isRateLimitResponse(error)) {
           throw error;
         }
+        rateLimited = true;
         delay = Math.max(delay, (getRetryAfterSeconds(error) ?? 0) * 1000);
       }
 
       const remaining = deadline - Date.now();
       // Written so a NaN timeout times out rather than polling forever.
       if (!(remaining > 0)) {
-        throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
+        break;
       }
-      // This delay stops at the deadline, so the last poll happens as the time runs out.
       await new Promise(resolve => setTimeout(resolve, Math.min(delay, remaining)));
+      // A rate-limited poll must not start a fresh client retry cycle at the deadline.
+      if (rateLimited && Date.now() >= deadline) {
+        break;
+      }
       pollDelay = Math.min(pollDelay * POLL_DELAY_GROWTH, MAX_POLL_DELAY_MS);
     }
+
+    throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
   }
 
   return request;
