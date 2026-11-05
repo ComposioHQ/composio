@@ -14,6 +14,7 @@ on:
       - 'scripts/sdk-release/**'
       - 'test/sdk-release-*'
       - 'tsconfig.sdk-release.json'
+      - 'docs/scripts/generate-sdk-release-notes.ts'
       - '.github/workflows/sdk.release*.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -56,6 +57,9 @@ jobs:
         with:
           enable-caching: 'false'
       - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install the docs dependencies release preparation imports
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
       - run: pnpm run typecheck:sdk-release
       - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.ts
       - run: pnpm run test:sdk-release
