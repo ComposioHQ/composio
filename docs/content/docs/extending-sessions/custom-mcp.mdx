@@ -93,7 +93,7 @@ Set `auth_schemes` to one of these:
 
 ### Create a toolkit for one user
 
-Set `user_id` to a user's ID to make the toolkit private: only that user's sessions and API calls can see or run its tools.
+Set `user_id` to a user's ID to make the toolkit private: only that user's sessions and API calls can see or run its tools. Private toolkits need a Pro plan: on the free plan, create returns `403`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -402,6 +402,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 ## Limits
 
+- Private toolkits need a Pro plan. Shared toolkits (`user_id: "all"`) work on every plan.
 - Remote servers only: local and STDIO servers aren't supported.
 - `app_url`, `auth_schemes`, and `user_id` can't change after creation.
 - At most 500 tools per toolkit.

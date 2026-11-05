@@ -162,8 +162,8 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
   tools: [setUserRole, updateUserStatus],
 });
 
-const customTools = [getUserDetails, listUserKeys, formatGmailEmail];
-const customToolkits = [userManagement];
+const localTools = [getUserDetails, listUserKeys, formatGmailEmail];
+const localToolkits = [userManagement];
 
 // ── Agent ─────────────────────────────────────────────────────────
 
@@ -175,13 +175,13 @@ const composio = new Composio({
 
 const existingSessionId = process.env.COMPOSIO_SESSION_ID;
 const session = existingSessionId
-  ? await composio.use(existingSessionId, { customTools, customToolkits })
+  ? await composio.use(existingSessionId, { localTools, localToolkits })
   : await composio.create("custom-tools-agent-user", {
       toolkits: ["weathermap", "gmail"],
       manageConnections: false,
       experimental: {
-        customTools,
-        customToolkits,
+        localTools,
+        localToolkits,
       },
     });
 

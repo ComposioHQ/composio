@@ -1,11 +1,14 @@
 from .auth_configs import AuthConfigs
 from .connected_accounts import ConnectedAccounts
-from .custom_tool import ExperimentalToolkit
+from .custom_tool import ExperimentalToolkit, LocalToolkit
 from .custom_tool_types import (
     CustomTool,
+    LocalTool,
     ProxyExecuteBinaryData,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
+    RegisteredLocalTool,
+    RegisteredLocalToolkit,
     SessionContext,
     ToolRouterSessionProxyExecuteBlocked,
     ToolRouterSessionProxyExecuteCompleted,
@@ -62,6 +65,8 @@ __all__ = [
     "ExperimentalCustomToolkits",
     "ExperimentalToolkit",
     "ExperimentalUsage",
+    "LocalTool",
+    "LocalToolkit",
     "UsageSummaryResponse",
     "Keyring",
     "Logs",
@@ -69,6 +74,8 @@ __all__ = [
     "ProxyExecuteBinaryData",
     "RegisteredCustomTool",
     "RegisteredCustomToolkit",
+    "RegisteredLocalTool",
+    "RegisteredLocalToolkit",
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",
