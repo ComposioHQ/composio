@@ -15,7 +15,14 @@ import {
   type CandidateFile,
 } from './artifacts';
 import { GitHub, REPOSITORY_PATH, Sha, request } from './github';
-import { NPM_REGISTRY, REGISTRY_LANES, Language, type Language as Lang } from './lanes';
+import { CHANNELS, type Channel } from './channel';
+import {
+  NPM_REGISTRY,
+  REGISTRY_LANES,
+  REGISTRY_VERSION,
+  Language,
+  type Language as Lang,
+} from './lanes';
 import { discoverPythonPackages } from './python-metadata';
 import {
   appendFile,
@@ -40,16 +47,18 @@ export interface Distribution {
   readonly sha256: string;
 }
 
-export interface StableTag {
+/** An npm dist-tag of the release's channel that should point at `version`. */
+export interface ChannelTag {
   readonly name: string;
   readonly version: string;
+  readonly tag: string;
 }
 
-/** What the registries already serve, what they are missing, and which `latest` tags lag. */
+/** What the registries already serve, what they are missing, and which channel tags lag. */
 export interface RegistryState {
   readonly existing: ReadonlyArray<Distribution>;
   readonly missing: ReadonlyArray<Distribution>;
-  readonly tagsToRepair: ReadonlyArray<StableTag>;
+  readonly tagsToRepair: ReadonlyArray<ChannelTag>;
 }
 
 const REGISTRY_TIMEOUT = '30 seconds';
@@ -125,7 +134,7 @@ const NpmVersion = Schema.Struct({
   version: Schema.String,
   dist: Schema.Struct({ tarball: Url }),
 });
-const NpmLatest = Schema.Struct({ version: Schema.String });
+const NpmTagged = Schema.Struct({ version: Schema.String });
 const PackageIdentity = Schema.Struct({ name: Schema.String, version: Schema.String });
 
 const pythonDistributionNames = (name: string, version: string) => {
@@ -155,9 +164,12 @@ const distributionOf = (
   sha256: entry.sha256,
 });
 
-/** npm: one tarball per package version and a stable `latest` tag. */
+/**
+ * npm: one tarball per package version, and the channel's dist-tag moved forward to it. A beta
+ * only ever reads and moves its own tag, never `latest`.
+ */
 const npmAdapter = {
-  reconcileGroup: (group: ReadonlyArray<Distribution>) =>
+  reconcileGroup: (group: ReadonlyArray<Distribution>, channel: Channel) =>
     Effect.gen(function* () {
       yield* ensure(group.length === 1, 'Expected exactly one npm tarball per package');
       const [file] = group;
@@ -173,21 +185,22 @@ const npmAdapter = {
         );
         yield* verifyOriginalBytes(dist.tarball, file);
       }
-      const latest = yield* registryJson(
-        `${NPM_REGISTRY}/${encodeURIComponent(file.name)}/latest`,
-        NpmLatest
+      const { npmTag } = CHANNELS[channel];
+      const current = yield* registryJson(
+        `${NPM_REGISTRY}/${encodeURIComponent(file.name)}/${npmTag}`,
+        NpmTagged
       );
-      const tagged = Option.getOrUndefined(Option.map(latest, value => value.version));
+      const tagged = Option.getOrUndefined(Option.map(current, value => value.version));
       yield* ensure(
         tagged === undefined || semver.valid(tagged) !== null,
-        `Invalid stable npm tag: ${file.name}`
+        `Invalid npm ${npmTag} tag: ${file.name}`
       );
       return {
         existing: Option.isSome(metadata) ? [file] : [],
         missing: Option.isSome(metadata) ? [] : [file],
         tagsToRepair:
           tagged === undefined || semver.lt(tagged, file.version)
-            ? [{ name: file.name, version: file.version }]
+            ? [{ name: file.name, version: file.version, tag: npmTag }]
             : [],
       } satisfies RegistryState;
     }),
@@ -225,7 +238,7 @@ const npmAdapter = {
 
 /** PyPI: a wheel and sdist for every package of the synchronized Python train. */
 const pythonAdapter = {
-  reconcileGroup: (group: ReadonlyArray<Distribution>) =>
+  reconcileGroup: (group: ReadonlyArray<Distribution>, _channel: Channel) =>
     Effect.gen(function* () {
       const [first] = group;
       const metadata = yield* registryJson(
@@ -258,7 +271,7 @@ const pythonAdapter = {
   candidateDistributions: (candidate: LoadedCandidate) =>
     Effect.gen(function* () {
       const release = candidate.batch.plan.releases.find(entry => entry.language === 'python');
-      const version = release?.newVersion ?? '';
+      const version = REGISTRY_VERSION.python(release?.newVersion ?? '');
       const files: Distribution[] = [];
       for (const pkg of yield* discoverPythonPackages(candidate.cwd))
         for (const name of pythonDistributionNames(pkg.name, version)) {
@@ -277,11 +290,14 @@ const pythonAdapter = {
 const REGISTRY_ADAPTERS = { typescript: npmAdapter, python: pythonAdapter } as const;
 
 /** Splits reviewed files into those the registry already serves and those still missing. */
-export const reconcileRegistry = (files: ReadonlyArray<Distribution>) =>
+export const reconcileRegistry = (
+  files: ReadonlyArray<Distribution>,
+  channel: Channel = 'stable'
+) =>
   Effect.gen(function* () {
     const groups = Map.groupBy(files, file => `${file.language}:${file.name}@${file.version}`);
     const states: ReadonlyArray<RegistryState> = yield* Effect.forEach(groups.values(), group =>
-      REGISTRY_ADAPTERS[group[0].language].reconcileGroup(group)
+      REGISTRY_ADAPTERS[group[0].language].reconcileGroup(group, channel)
     );
     return {
       existing: states.flatMap(state => state.existing),
@@ -290,28 +306,31 @@ export const reconcileRegistry = (files: ReadonlyArray<Distribution>) =>
     } satisfies RegistryState;
   });
 
-const incompleteInventory = (state: RegistryState, stableTags: boolean) =>
+const incompleteInventory = (state: RegistryState, channelTags: boolean) =>
   [
     ...state.missing.map(file => `${file.name}@${file.version}/${file.file}`),
-    ...(stableTags ? state.tagsToRepair : []).map(tag => `${tag.name}@${tag.version} stable tag`),
+    ...(channelTags ? state.tagsToRepair : []).map(
+      tag => `${tag.name}@${tag.version} ${tag.tag} tag`
+    ),
   ].join(', ');
 
 /**
- * Polls the registries until every file is visible, and every stable tag too unless
- * `stableTags` is false (right after an upload, before `latest` moves).
+ * Polls the registries until every file is visible, and every channel tag too unless
+ * `channelTags` is false (right after an upload, before the channel tag moves).
  */
 export const waitForRegistry = (
   files: ReadonlyArray<Distribution>,
   options: {
     readonly attempts?: number;
     readonly spacing?: Duration.Input;
-    readonly stableTags?: boolean;
+    readonly channelTags?: boolean;
+    readonly channel?: Channel;
   } = {}
 ) => {
   const attempts = options.attempts ?? 6;
-  return reconcileRegistry(files).pipe(
+  return reconcileRegistry(files, options.channel).pipe(
     Effect.flatMap(state => {
-      const missing = incompleteInventory(state, options.stableTags ?? true);
+      const missing = incompleteInventory(state, options.channelTags ?? true);
       return missing
         ? Effect.fail(new RegistryIncomplete({ message: missing }))
         : Effect.succeed(state);
@@ -384,13 +403,17 @@ export const loadOriginalDistributions = (
     });
   });
 
-/** Publishes under a release-only dist-tag, then moves `latest` once the upload is visible. */
-const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distribution>) =>
+/**
+ * Publishes under a release-only dist-tag, moves the channel's tag once the upload is visible,
+ * then drops the release-only tag.
+ */
+export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distribution>) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
+    const channel = batch.plan.choices.channel;
     const npm = (args: ReadonlyArray<string>) =>
       run('npm', args, { cwd, env: withoutReleaseTokens });
-    for (const file of (yield* reconcileRegistry(files)).missing)
+    for (const file of (yield* reconcileRegistry(files, channel)).missing)
       yield* npm([
         'publish',
         path.resolve(cwd, 'sdk-publication/typescript', file.file),
@@ -399,10 +422,10 @@ const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distr
         '--access=public',
         `--tag=sdk-release-${batch.id}`,
       ]);
-    const visible = yield* waitForRegistry(files, { stableTags: false });
+    const visible = yield* waitForRegistry(files, { channelTags: false, channel });
     for (const tag of visible.tagsToRepair)
-      yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, 'latest']);
-    yield* waitForRegistry(files);
+      yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, tag.tag]);
+    yield* waitForRegistry(files, { channel });
     // The release-only tag only served the upload; a re-run finds it already gone.
     const releaseOnly = `sdk-release-${batch.id}`;
     for (const file of files) {
@@ -458,7 +481,8 @@ const main = Effect.gen(function* () {
   const files = yield* loadOriginalDistributions(cwd, batch, env.sha, env.approved, language).pipe(
     Effect.provide(GitHub.layer(env.token))
   );
-  if (mode === 'verify') return yield* waitForRegistry(files);
+  if (mode === 'verify')
+    return yield* waitForRegistry(files, { channel: batch.plan.choices.channel });
   if (language === 'typescript') return yield* publishNpm(cwd, batch, files);
   yield* stageMissingPython(cwd, files, env.output);
 });

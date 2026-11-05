@@ -20,7 +20,13 @@ import {
   runUrl,
 } from './github';
 import { createSdkReleasePlan, type SdkReleasePlan } from './plan';
-import { Pull, isReleasePull, releaseBranch, releasePullBody } from './release-pr';
+import {
+  Pull,
+  isReleasePull,
+  releaseBranch,
+  releasePullBody,
+  releasePullTitle,
+} from './release-pr';
 import { ReleaseRequest, parseReleaseRequest } from './request';
 import {
   appendFile,
@@ -37,7 +43,7 @@ import {
   ReleasePatch,
   releaseOutputs,
   releaseTag,
-  validateReleaseDiff,
+  validateBatchDiff,
 } from './source';
 import { ReleaseState } from './state';
 
@@ -266,10 +272,10 @@ export const openReleasePull = (cwd: string, planned: ReleaseBatch, value: unkno
       'Prepared release plan differs from the planned batch'
     );
     const outputs = yield* releaseOutputs(cwd, batch);
-    yield* validateReleaseDiff(patch.files, batch.plan, outputs);
+    yield* validateBatchDiff(patch.files, batch, outputs);
     const branch = yield* commitReleaseBranch(batch, patch);
     const pull = yield* request('POST', `${REPOSITORY_PATH}/pulls`, Pull, {
-      title: 'chore(release): publish SDK packages',
+      title: releasePullTitle(batch),
       head: branch,
       base: 'next',
       body: releasePullBody(batch, branch, outputs),
@@ -382,7 +388,7 @@ const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
           appSlug,
           ...(envelope.issue ? { issueNumber: envelope.issue.number } : {}),
         },
-        choices => createSdkReleasePlan(cwd, choices)
+        choices => createSdkReleasePlan(cwd, { ...choices, run: env.runId })
       );
       yield* outcome._tag === 'Planned'
         ? appendFile(env.outputPath, `batch=${JSON.stringify(outcome.batch)}\n`)

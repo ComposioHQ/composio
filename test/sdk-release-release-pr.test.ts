@@ -32,7 +32,7 @@ const batch: ReleaseBatch = {
   plan: {
     schemaVersion: 1,
     inputFingerprint: 'frozen',
-    choices: { typescript: 'auto', python: 'minor' },
+    choices: { typescript: 'auto', python: 'minor', channel: 'stable' },
     recommended: [
       release('@composio/core', 'typescript', '1.1.0', ['brave-cats']),
       release('@composio/python-sdk', 'python', '1.0.1', []),

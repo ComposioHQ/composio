@@ -5,6 +5,8 @@ import { BATCH_PATH, validateReleaseDiff, type ReleaseFile } from '../scripts/sd
 import {
   base,
   batch,
+  betaBatch,
+  betaFiles,
   fakeController,
   newManifest,
   oldManifest,
@@ -131,6 +133,41 @@ describe('release PR', () => {
       _tag: 'InReview',
       pull: 'https://github.com/ComposioHQ/composio/pull/5',
     });
+    expect(writes).toEqual([]);
+  });
+
+  test('a beta release PR commits only its plan, so next keeps its versions and changesets', async () => {
+    const { fetcher, writes } = fakeController({ beta: true });
+    const state = await runRelease(
+      openReleasePull(await resolvePath('.'), betaBatch, { files: betaFiles }),
+      fetcher
+    );
+    expect(state).toEqual({
+      _tag: 'InReview',
+      pull: 'https://github.com/ComposioHQ/composio/pull/9',
+    });
+    expect(writePaths(writes)).toEqual([
+      'POST /git/blobs',
+      'POST /git/trees',
+      'POST /git/commits',
+      'POST /git/refs',
+      'POST /pulls',
+    ]);
+    expect(writes.find(write => write.path === '/pulls')?.body).toMatchObject({
+      title: 'chore(release): publish SDK beta packages',
+      body: expect.stringContaining('never touches `latest`'),
+    });
+  });
+
+  test('a beta release PR that also writes a changelog is refused before any write', async () => {
+    const { fetcher, writes } = fakeController({ beta: true });
+    const changelog = { path: 'ts/packages/core/CHANGELOG.md', before: null, after: '## beta' };
+    await expect(
+      runRelease(
+        openReleasePull(await resolvePath('.'), betaBatch, { files: [...betaFiles, changelog] }),
+        fetcher
+      )
+    ).rejects.toThrow('A beta release PR changes only .github/sdk-release-plan.json');
     expect(writes).toEqual([]);
   });
 

@@ -1,8 +1,13 @@
 import { Schema } from 'effect';
+import { stableByDefault } from './channel';
 import { autoByDefault } from './plan';
 
-/** Per-language bump choices; `auto` follows the changesets. */
-export const ReleaseRequest = Schema.Struct({ typescript: autoByDefault, python: autoByDefault });
+/** The channel and per-language bump choices; `auto` follows the changesets. */
+export const ReleaseRequest = Schema.Struct({
+  channel: stableByDefault,
+  typescript: autoByDefault,
+  python: autoByDefault,
+});
 export type ReleaseRequest = typeof ReleaseRequest.Type;
 
 const Dispatch = Schema.Struct({
@@ -11,8 +16,9 @@ const Dispatch = Schema.Struct({
 const Issue = Schema.Struct({ issue: Schema.Struct({ body: Schema.String }) });
 
 /** Issue-form headings and the request fields they fill. */
-const ISSUE_FIELDS = { TypeScript: 'typescript', Python: 'python' } as const;
-const ISSUE_FIELD_PATTERN = /^### (TypeScript|Python)\r?\n\r?\n([\s\S]*?)(?=^### |$(?![\s\S]))/gm;
+const ISSUE_FIELDS = { Channel: 'channel', TypeScript: 'typescript', Python: 'python' } as const;
+const ISSUE_FIELD_PATTERN =
+  /^### (Channel|TypeScript|Python)\r?\n\r?\n([\s\S]*?)(?=^### |$(?![\s\S]))/gm;
 
 const parseIssueBody = (body: string) => {
   const fields = new Map<keyof typeof ISSUE_FIELDS, string>();

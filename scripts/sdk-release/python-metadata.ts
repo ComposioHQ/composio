@@ -1,6 +1,5 @@
 import { Effect, FileSystem, Path, Schema } from 'effect';
 import { Toml } from 'effect/encoding';
-import semver from 'semver';
 import { ensure, fail, readFile, spawn, withoutReleaseTokens, writeFile } from './runtime';
 
 const PyProject = Schema.Struct({
@@ -143,8 +142,8 @@ export const synchronizePythonMetadata = (
 ) =>
   Effect.gen(function* () {
     yield* ensure(
-      semver.valid(version) !== null && semver.prerelease(version) === null,
-      `Python stable release requires a stable semantic version, received ${version}`
+      /^\d+\.\d+\.\d+(b\d+)?$/.test(version),
+      `Python release requires a final or beta PEP 440 version, received ${version}`
     );
     const path = yield* Path.Path;
     const packages = yield* discoverPythonPackages(cwd);

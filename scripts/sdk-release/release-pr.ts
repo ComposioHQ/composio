@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 import { PositiveInt, SDK_RELEASE_REPOSITORY, Sha, runUrl } from './github';
-import { PYTHON_RELEASE_MARKER } from './lanes';
+import type { Channel } from './channel';
+import { PYTHON_RELEASE_MARKER, REGISTRY_VERSION } from './lanes';
 import { issueUrl, type ReleaseBatch } from './source';
 
 const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
@@ -71,6 +72,27 @@ const changesetLine = (note: Changeset) => {
   return `- \`.changeset/${note.id}.md\` (${bumps || 'no version bump'}): ${headline(note.summary)}`;
 };
 
+/** How a release PR explains its channel to the reviewer. */
+const CHANNEL_COPY: Record<
+  Channel,
+  { readonly title: string; readonly summary: string; readonly notes: string }
+> = {
+  stable: {
+    title: 'chore(release): publish SDK packages',
+    summary: 'A stable release: npm moves `latest` to these versions.',
+    notes: '## Changesets consumed',
+  },
+  beta: {
+    title: 'chore(release): publish SDK beta packages',
+    summary:
+      'A beta release: npm moves `next` to these versions and never touches `latest`, and pip installs them only with `--pre` or an exact pin. This PR commits only the release plan. The candidate checks apply its versions, so `next` keeps its stable versions and every changeset below stays pending for the stable release.',
+    notes: '## Changesets previewed',
+  },
+};
+
+export const releasePullTitle = (batch: ReleaseBatch) =>
+  CHANNEL_COPY[batch.plan.choices.channel].title;
+
 const packageRows = (plan: Plan) =>
   plan.releases.map(release => {
     const recommended = plan.recommended.find(candidate => candidate.name === release.name);
@@ -79,7 +101,7 @@ const packageRows = (plan: Plan) =>
         ? ''
         : ` (recommended ${recommended?.newVersion ?? 'none'})`;
     const notes = release.changesets.map(id => `\`${id}\``).join(', ') || 'maintenance release';
-    return `| ${packageLabel(release.name)} | ${release.oldVersion} → **${release.newVersion}**${override} | ${release.type} | ${notes} |`;
+    return `| ${packageLabel(release.name)} | ${release.oldVersion} → **${REGISTRY_VERSION[release.language](release.newVersion)}**${override} | ${release.type} | ${notes} |`;
   });
 
 /** Lists what ships, which changesets it consumes, and which changelogs and docs it edits. */
@@ -89,6 +111,7 @@ export const releasePullBody = (
   outputs: ReadonlyArray<string>
 ) => {
   const { plan } = batch;
+  const copy = CHANNEL_COPY[plan.choices.channel];
   const changelogs = outputs.filter(path => path.endsWith('/CHANGELOG.md'));
   const docsChangelog = outputs.filter(path => path.startsWith('docs/content/changelog/'));
   const references = outputs.filter(path =>
@@ -97,13 +120,14 @@ export const releasePullBody = (
   const link = (path: string) => `[\`${path}\`](${fileUrl(branch, path)})`;
   const sections = [
     NOTE_EXEMPT,
+    copy.summary,
     '## What gets released',
     [
       '| Package | Version | Bump | Changesets |',
       '| --- | --- | --- | --- |',
       ...packageRows(plan),
     ].join('\n'),
-    '## Changesets consumed',
+    copy.notes,
     plan.changesets.map(changesetLine).join('\n') || 'None: this is a maintenance release.',
     ...(plan.retainedChangesets.length
       ? [

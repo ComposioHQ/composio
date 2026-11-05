@@ -16,7 +16,7 @@ export const batch: ReleaseBatch = {
   plan: {
     schemaVersion: 1,
     inputFingerprint: 'frozen',
-    choices: { typescript: 'auto', python: 'skip' },
+    choices: { typescript: 'auto', python: 'skip', channel: 'stable' },
     recommended: [],
     releases: [
       {
@@ -32,6 +32,20 @@ export const batch: ReleaseBatch = {
     retainedChangesets: [],
   },
 };
+/** Batch 8 as a beta: same request and source, snapshot versions, and nothing consumed. */
+export const betaBatch: ReleaseBatch = {
+  ...batch,
+  plan: {
+    ...batch.plan,
+    choices: { ...batch.plan.choices, channel: 'beta', run: '8' },
+    releases: batch.plan.releases.map(release => ({
+      ...release,
+      newVersion: `${release.newVersion}-beta.8`,
+    })),
+  },
+};
+/** The only file a beta release PR commits. */
+export const betaFiles = [{ path: BATCH_PATH, before: null, after: JSON.stringify(betaBatch) }];
 export const oldManifest = JSON.stringify({
   name: '@composio/core',
   version: '1.0.0',
@@ -52,6 +66,8 @@ export const releaseFiles = [
 export interface ControllerOptions {
   /** `next` carries batch 8's plan without its tag: a release merged and failed its gate. */
   readonly untaggedNext?: boolean;
+  /** Serve batch 8 as a beta release PR. */
+  readonly beta?: boolean;
   readonly deletedReviewer?: boolean;
   readonly oldReview?: boolean;
   readonly reviewer?: string;
@@ -171,7 +187,7 @@ export function fakeController(options: ControllerOptions = {}) {
       });
     if (path.startsWith('/contents/')) {
       const filename = url.pathname.split('/contents/')[1];
-      const file = releaseFiles.find(file => file.path === filename);
+      const file = (options.beta ? betaFiles : releaseFiles).find(file => file.path === filename);
       const data = url.searchParams.get('ref') === base ? file?.before : file?.after;
       if (data == null) return response({}, 404);
       return new Response(data);

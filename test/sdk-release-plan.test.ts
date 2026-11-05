@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { pythonVersion } from '../scripts/sdk-release/channel';
 import {
   applySdkReleasePlan as applyPlanEffect,
   createSdkReleasePlan as createPlanEffect,
@@ -128,6 +129,36 @@ describe('SDK release planning', () => {
     expect(await readText(`${cwd}/python/providers/outside/setup.py`)).toContain('0.31.1');
     expect(await readText(`${cwd}/python/setup.py`)).toBe(
       'from setuptools import setup\nsetup(name="composio")\n'
+    );
+  });
+
+  test('a beta plans snapshot versions of the next stable release, suffixed with its run', async () => {
+    const { cwd, note } = await fixture();
+    await note('core-feature', { '@composio/core': 'minor' }, 'Add trigger polling.');
+    await note('python-fix', { '@composio/python-sdk': 'patch' }, 'Fix connected accounts.');
+    const plan = await createSdkReleasePlan(cwd, { channel: 'beta', run: '19087654321' });
+    expect(versions(plan)).toMatchObject({
+      '@composio/core': '0.29.0-beta.19087654321',
+      '@composio/slim': '0.29.0-beta.19087654321',
+      '@composio/python-sdk': '0.31.1-beta.19087654321',
+    });
+    expect(plan.choices).toMatchObject({ channel: 'beta', run: '19087654321' });
+    await applySdkReleasePlan(cwd, plan, { updateLockfile: false });
+    expect(JSON.parse(await readText(`${cwd}/packages/core/package.json`)).version).toBe(
+      '0.29.0-beta.19087654321'
+    );
+    // Python spells the same beta the PEP 440 way, in every mirror.
+    expect(await readText(`${cwd}/python/composio/__version__.py`)).toContain('0.31.1b19087654321');
+    expect(
+      (await discoverPythonPackages(cwd)).every(pkg => pkg.version === '0.31.1b19087654321')
+    ).toBe(true);
+  });
+
+  test('a beta needs its planning run, so its versions are unique', async () => {
+    const { cwd, note } = await fixture();
+    await note('core-feature', { '@composio/core': 'minor' });
+    await expect(createSdkReleasePlan(cwd, { channel: 'beta' })).rejects.toThrow(
+      'A beta plan needs its planning run'
     );
   });
 
@@ -277,4 +308,9 @@ describe('SDK release planning', () => {
     );
     expect(JSON.parse(await readText(`${cwd}/packages/core/package.json`)).version).toBe('0.28.0');
   });
+});
+
+test('a beta takes the PEP 440 spelling on PyPI and stable versions keep theirs', () => {
+  expect(pythonVersion('0.31.1-beta.19087654321')).toBe('0.31.1b19087654321');
+  expect(pythonVersion('0.31.1')).toBe('0.31.1');
 });

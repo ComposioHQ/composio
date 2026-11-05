@@ -2,6 +2,7 @@ import { Effect, Schema } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
 import semver from 'semver';
 import { PositiveInt, RunId, SDK_RELEASE_REPOSITORY, Sha } from './github';
+import { CHANNELS } from './channel';
 import { PYTHON_RELEASE_MARKER, type Language } from './lanes';
 import { SdkReleasePlan } from './plan';
 import { PROJECT_VERSION, RUNTIME_VERSION, SETUP_VERSION } from './python-metadata';
@@ -24,6 +25,10 @@ export const BATCH_PATH = '.github/sdk-release-plan.json';
 
 /** The tag a release batch publishes from. */
 export const releaseTag = (id: string) => `sdk-release/${id}`;
+
+/** What the batch's channel changes about its release. */
+export const channelOf = (batch: Pick<ReleaseBatch, 'plan'>) =>
+  CHANNELS[batch.plan.choices.channel];
 
 export const issueUrl = (batch: ReleaseBatch) =>
   `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${batch.issue}`;
@@ -269,6 +274,26 @@ const validateReleaseFile = (
     return yield* fail(`Not a planned release output: ${path}`);
   });
 
+/**
+ * A beta release PR commits only its plan: its versions are applied where the candidates are
+ * built, so `next` keeps its stable versions and every changeset.
+ */
+const validatePlanOnlyDiff = (files: ReadonlyArray<ReleaseFile>) =>
+  ensure(
+    files.length === 1 && files[0].path === BATCH_PATH,
+    `A beta release PR changes only ${BATCH_PATH}`
+  );
+
+/** Checks the release PR's diff against what its channel lets it commit. */
+export const validateBatchDiff = (
+  files: ReadonlyArray<ReleaseFile>,
+  batch: ReleaseBatch,
+  outputs: ReadonlyArray<string>
+) =>
+  channelOf(batch).commitsVersions
+    ? validateReleaseDiff(files, batch.plan, outputs)
+    : validatePlanOnlyDiff(files);
+
 /** Every changed file must be a planned version, note, lockfile, or generated release output. */
 export const validateReleaseDiff = (
   files: ReadonlyArray<ReleaseFile>,
@@ -295,6 +320,7 @@ export const validateReleaseDiff = (
 /** The changelog and reference paths a release may write besides version metadata. */
 export const releaseOutputs = (cwd: string, batch: ReleaseBatch) =>
   Effect.gen(function* () {
+    if (!channelOf(batch).commitsVersions) return [];
     const { packages } = yield* fromPromise(() => getPackages(cwd));
     const names = new Set(batch.plan.releases.map(release => release.name));
     const [year, month, day] = batch.date.split('-');
