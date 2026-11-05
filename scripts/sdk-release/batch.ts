@@ -1,6 +1,6 @@
 import { Config, Effect, Option, Path, Schema, Stdio, Stream } from 'effect';
 import { Base64 } from 'effect/encoding';
-import { readReleasePull, verifyReleaseGate } from './approval';
+import { readReleasePull, trustedIssue, verifyReleaseGate } from './approval';
 import {
   CONTENT_CONCURRENCY,
   CreatedSha,
@@ -77,11 +77,19 @@ export interface ReleaseRequestContext {
   readonly runId: string;
   readonly sourceSha: string;
   readonly issueNumber?: number;
+  /** The release App, whose commits alone may name a request issue. */
+  readonly appSlug: string;
 }
 
 /** A request either ends the request stage or plans a batch for the release PR jobs. */
 export type RequestOutcome =
   { readonly _tag: 'Planned'; readonly batch: ReleaseBatch } | ReleaseState;
+
+/** The outcome, and the request issue the status job shows it on, when there is one. */
+export interface RequestResult {
+  readonly outcome: RequestOutcome;
+  readonly issue: Option.Option<number>;
+}
 
 /** Opens the tracking issue for a dispatch-started release; issue-form requests already have one. */
 const createRequestIssue = (run: string) =>
@@ -108,7 +116,10 @@ export const executeReleaseRequest = <E, R>(
     return yield* parse.pipe(
       Effect.matchEffect({
         onFailure: reason =>
-          Effect.succeed<RequestOutcome>(ReleaseState.make({ _tag: 'NeedsInput', reason })),
+          Effect.succeed<RequestResult>({
+            outcome: ReleaseState.make({ _tag: 'NeedsInput', reason }),
+            issue: Option.fromNullishOr(context.issueNumber),
+          }),
         onSuccess: releaseRequest => decideRequest(releaseRequest, context, plan),
       })
     );
@@ -120,17 +131,28 @@ const decideRequest = <E, R>(
   plan: (request: ReleaseRequest) => Effect.Effect<SdkReleasePlan, E, R>
 ) =>
   Effect.gen(function* () {
+    const requestIssue = Option.fromNullishOr(context.issueNumber);
+    const decided = (outcome: ReleaseState, issue = requestIssue): RequestResult => ({
+      outcome,
+      issue,
+    });
     const current = yield* activeRelease;
+    if (Option.isSome(current) && current.value.head.ref === releaseBranch(context.runId)) {
+      // A re-run of a dispatch has no issue in its event; its release PR's plan names it.
+      const issue = Option.isSome(requestIssue)
+        ? requestIssue
+        : yield* Effect.flatMap(readReleasePull(current.value.number), ({ pull, batch }) =>
+            trustedIssue(pull, batch, context.appSlug)
+          );
+      return decided(ReleaseState.make({ _tag: 'InReview', pull: current.value.html_url }), issue);
+    }
     if (Option.isSome(current))
-      return ReleaseState.make({
-        _tag: current.value.head.ref === releaseBranch(context.runId) ? 'InReview' : 'Waiting',
-        pull: current.value.html_url,
-      });
+      return decided(ReleaseState.make({ _tag: 'Waiting', pull: current.value.html_url }));
     const untagged = yield* untaggedRelease(context.sourceSha);
     if (Option.isSome(untagged))
-      return ReleaseState.make({ _tag: 'Blocked', release: untagged.value });
+      return decided(ReleaseState.make({ _tag: 'Blocked', release: untagged.value }));
     const selected = yield* plan(releaseRequest);
-    if (!selected.releases.length) return ReleaseState.make({ _tag: 'Empty' });
+    if (!selected.releases.length) return decided(ReleaseState.make({ _tag: 'Empty' }));
     const issue = context.issueNumber ?? (yield* createRequestIssue(context.runId));
     const batch = yield* Schema.decodeUnknownEffect(ReleaseBatch)({
       id: context.runId,
@@ -145,7 +167,7 @@ const decideRequest = <E, R>(
       new TextEncoder().encode(JSON.stringify(batch)).length < 120_000,
       'Release batch is too large to pass between jobs'
     );
-    return { _tag: 'Planned', batch } as RequestOutcome;
+    return { outcome: { _tag: 'Planned', batch }, issue: Option.some(issue) } as RequestResult;
   });
 
 // 2. release PR --------------------------------------------------------------------------------
@@ -218,6 +240,11 @@ export const openReleasePull = (cwd: string, planned: ReleaseBatch, value: unkno
         _tag: current.value.head.ref === releaseBranch(batch.id) ? 'InReview' : 'Waiting',
         pull: current.value.html_url,
       });
+    // Another release may have merged and failed its gate since this one was planned.
+    const next = yield* request('GET', `${REPOSITORY_PATH}/git/ref/heads/next`, TagRef);
+    const untagged = yield* untaggedRelease(next.object.sha);
+    if (Option.isSome(untagged))
+      return ReleaseState.make({ _tag: 'Blocked', release: untagged.value });
     const frozen = yield* Effect.forEach(
       patch.files,
       file => fileAtOrNull(file.path, batch.inputBase),
@@ -325,6 +352,13 @@ type Mode = (
   envelope: typeof EventEnvelope.Type
 ) => Effect.Effect<void, unknown, GitHub | ReleaseServices>;
 
+/** Writes the request issue, when known, for the stage's status job. */
+const outputIssue = (env: Environment, issue: Option.Option<number>) =>
+  Option.match(issue, {
+    onNone: () => Effect.void,
+    onSome: number => appendFile(env.outputPath, `issue=${number}\n`),
+  });
+
 /** Writes a stage outcome as a job output for the stage's status job. */
 const outputState = (env: Environment, state: ReleaseState) =>
   appendFile(env.outputPath, `state=${JSON.stringify(state)}\n`);
@@ -335,7 +369,8 @@ const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
       const cwd = (yield* Path.Path).resolve('.');
       // Known before planning, so a failure is still reported on the request issue.
       if (envelope.issue) yield* appendFile(env.outputPath, `issue=${envelope.issue.number}\n`);
-      const outcome = yield* executeReleaseRequest(
+      const appSlug = yield* Config.String('SDK_RELEASE_APP_SLUG');
+      const { outcome, issue } = yield* executeReleaseRequest(
         Effect.try({
           try: () => parseReleaseRequest(env.eventName, event),
           catch: error => (error instanceof Error ? error.message : 'Unreadable request'),
@@ -344,16 +379,15 @@ const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
           actor: envelope.sender.login,
           runId: env.runId,
           sourceSha: env.sha,
+          appSlug,
           ...(envelope.issue ? { issueNumber: envelope.issue.number } : {}),
         },
         choices => createSdkReleasePlan(cwd, choices)
       );
       yield* outcome._tag === 'Planned'
-        ? appendFile(
-            env.outputPath,
-            `batch=${JSON.stringify(outcome.batch)}\nissue=${outcome.batch.issue}\n`
-          )
+        ? appendFile(env.outputPath, `batch=${JSON.stringify(outcome.batch)}\n`)
         : outputState(env, outcome);
+      yield* outputIssue(env, issue);
     }),
   'release-pr': (env: Environment) =>
     Effect.gen(function* () {
@@ -371,7 +405,8 @@ const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
       if (!envelope.pull_request) return yield* fail('Expected a closed release PR event');
       const appSlug = yield* Config.String('SDK_RELEASE_APP_SLUG');
       const { pull, batch } = yield* readReleasePull(envelope.pull_request.number);
-      yield* appendFile(env.outputPath, `issue=${batch.issue}\n`);
+      const issue = yield* trustedIssue(pull, batch, appSlug);
+      yield* outputIssue(env, issue);
       yield* outputState(env, yield* authorizeSourceTag(pull, batch, appSlug));
     }),
 };

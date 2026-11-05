@@ -50,6 +50,8 @@ export const releaseFiles = [
 ];
 
 export interface ControllerOptions {
+  /** `next` carries batch 8's plan without its tag: a release merged and failed its gate. */
+  readonly untaggedNext?: boolean;
   readonly deletedReviewer?: boolean;
   readonly oldReview?: boolean;
   readonly reviewer?: string;
@@ -105,6 +107,7 @@ export function fakeController(options: ControllerOptions = {}) {
       if (/^\/issues\/\d+\/comments$/.test(path)) return response({ id: 1 });
       throw new Error(`Unexpected write ${method} ${path}`);
     }
+    if (path === '/orgs/ComposioHQ/memberships/requester') return response({ state: 'active' });
     if (path.startsWith('/pulls?'))
       return response(
         options.openRelease
@@ -121,7 +124,7 @@ export function fakeController(options: ControllerOptions = {}) {
             ]
           : []
       );
-    if (path === '/pulls/9') return response(pull());
+    if (path === '/pulls/9' || path === '/pulls/5') return response(pull());
     if (path.startsWith('/pulls/9/reviews'))
       return response([
         ...(options.deletedReviewer ? [{ user: null, state: 'APPROVED', commit_id: head }] : []),
@@ -173,6 +176,8 @@ export function fakeController(options: ControllerOptions = {}) {
       if (data == null) return response({}, 404);
       return new Response(data);
     }
+    if (path === '/git/ref/heads/next')
+      return response({ object: { type: 'commit', sha: options.untaggedNext ? head : base } });
     if (path === '/git/ref/heads/sdk-release/batch-8')
       return options.existingBranch
         ? response({ ref: 'refs/heads/sdk-release/batch-8' })

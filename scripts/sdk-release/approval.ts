@@ -116,6 +116,31 @@ export const readReleasePull = (number: number) =>
   });
 
 /**
+ * Whether the release PR head is the release App's own verified commit on the planned source. A
+ * person can sign a commit that names the bot as author, but not one it committed.
+ */
+export const isReleaseAppHead = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+  Effect.map(
+    request('GET', `${REPOSITORY_PATH}/commits/${pull.head.sha}`, HeadCommit),
+    head =>
+      head.author?.login === `${appSlug}[bot]` &&
+      head.committer?.login === `${appSlug}[bot]` &&
+      head.commit.verification.verified &&
+      head.parents.length === 1 &&
+      head.parents[0].sha === batch.inputBase
+  );
+
+/**
+ * The request issue named by a release PR's plan, only when the release App committed that plan.
+ * Anyone with write access can push a `sdk-release/batch-*` branch, so its plan cannot pick the
+ * issue the bot comments on, labels and closes.
+ */
+export const trustedIssue = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+  Effect.map(isReleaseAppHead(pull, batch, appSlug), trusted =>
+    trusted ? Option.some(batch.issue) : Option.none<number>()
+  );
+
+/**
  * The checks a release PR must pass before its head is tagged:
  * - the head is the release App's own commit on the frozen source, so nobody added changes the
  *   release-only diff check did not see;
@@ -124,14 +149,8 @@ export const readReleasePull = (number: number) =>
  */
 export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
   Effect.gen(function* () {
-    const head = yield* request('GET', `${REPOSITORY_PATH}/commits/${pull.head.sha}`, HeadCommit);
     yield* ensure(
-      // A person can sign a commit that names the bot as author, but not one it committed.
-      head.author?.login === `${appSlug}[bot]` &&
-        head.committer?.login === `${appSlug}[bot]` &&
-        head.commit.verification.verified &&
-        head.parents.length === 1 &&
-        head.parents[0].sha === batch.inputBase,
+      yield* isReleaseAppHead(pull, batch, appSlug),
       'The release PR head must be the release App commit on the planned source; request a new release instead of pushing to its branch'
     );
     const reviews = yield* reviewsWithPermissions(pull.number);

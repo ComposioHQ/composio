@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { Effect } from 'effect';
-import { eligibleApproval, readReleasePull } from '../scripts/sdk-release/approval';
+import { Effect, Option } from 'effect';
+import { eligibleApproval, readReleasePull, trustedIssue } from '../scripts/sdk-release/approval';
 import { authorizeSourceTag } from '../scripts/sdk-release/batch';
 import {
   APP_SLUG,
@@ -88,6 +88,21 @@ describe('source tag', () => {
     const { fetcher, writes } = fakeController({ deletedReviewer: true });
     expect(await tag(fetcher)).toEqual(tagged);
     expect(writes).toEqual([tagWrite]);
+  });
+
+  test("only the release App's plan may name the request issue the status job writes to", async () => {
+    const issueOf = (options: Parameters<typeof fakeController>[0]) => {
+      const { fetcher } = fakeController(options);
+      return runRelease(
+        Effect.flatMap(readReleasePull(9), ({ pull, batch }) =>
+          trustedIssue(pull, batch, APP_SLUG)
+        ),
+        fetcher
+      );
+    };
+    expect(await issueOf({})).toEqual(Option.some(8));
+    expect(await issueOf({ closedUnmerged: true, headAuthor: 'writer' })).toEqual(Option.none());
+    expect(await issueOf({ headCommitter: 'writer' })).toEqual(Option.none());
   });
 
   test('a release PR closed without merging is abandoned and creates no tag', async () => {

@@ -1,12 +1,18 @@
 import { describe, expect, test } from 'bun:test';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import { executeReleaseRequest, type ReleaseRequestContext } from '../scripts/sdk-release/batch';
 import type { SdkReleasePlan } from '../scripts/sdk-release/plan';
 import { parseReleaseRequest, type ReleaseRequest } from '../scripts/sdk-release/request';
 import { runRelease, type Fetch } from './sdk-release-harness';
 
 const sha = 'a'.repeat(40);
-const context = { actor: 'member', runId: '21', sourceSha: sha, issueNumber: 7 };
+const context = {
+  actor: 'member',
+  runId: '21',
+  sourceSha: sha,
+  issueNumber: 7,
+  appSlug: 'sdk-release-app',
+};
 const plan: SdkReleasePlan = {
   schemaVersion: 1,
   inputFingerprint: 'frozen',
@@ -36,7 +42,11 @@ const execute = (
   requestContext: ReleaseRequestContext,
   plan: () => Effect.Effect<SdkReleasePlan>,
   parse: Effect.Effect<ReleaseRequest, string> = Effect.succeed(request)
-) => runRelease(executeReleaseRequest(parse, requestContext, plan), fetch);
+) =>
+  runRelease(
+    Effect.map(executeReleaseRequest(parse, requestContext, plan), result => result.outcome),
+    fetch
+  );
 
 const openRelease = {
   number: 9,
@@ -188,6 +198,23 @@ describe('SDK release member request', () => {
       _tag: 'Empty',
     });
     expect(writes()).toEqual([]);
+  });
+
+  test('the request issue travels with every outcome, so the status job can show it', async () => {
+    const waiting = client({ open: 'sdk-release/batch-8' });
+    const result = await runRelease(
+      executeReleaseRequest(Effect.succeed(request), context, failing('must not plan')),
+      waiting.fetcher
+    );
+    expect(result.issue).toEqual(Option.some(7));
+    const dispatched = client();
+    const planned = await runRelease(
+      executeReleaseRequest(Effect.succeed(request), { ...context, issueNumber: undefined }, () =>
+        Effect.succeed(plan)
+      ),
+      dispatched.fetcher
+    );
+    expect(planned.issue).toEqual(Option.some(31));
   });
 
   test('a dispatch-started release opens its tracking issue', async () => {

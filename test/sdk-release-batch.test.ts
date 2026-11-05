@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { openReleasePull } from '../scripts/sdk-release/batch';
+import { Effect, Option } from 'effect';
+import { executeReleaseRequest, openReleasePull } from '../scripts/sdk-release/batch';
 import { BATCH_PATH, validateReleaseDiff, type ReleaseFile } from '../scripts/sdk-release/source';
 import {
   base,
@@ -90,6 +91,28 @@ describe('release PR', () => {
       { path: 'ts/packages/core/src/backdoor.ts', before: null, after: 'export {};' },
     ];
     await expect(open(fetcher, widened)).rejects.toThrow('Not a planned release output');
+    expect(writes).toEqual([]);
+  });
+
+  test('a re-run of a dispatched request finds its issue in its own release PR', async () => {
+    const { fetcher } = fakeController({ openRelease: 'sdk-release/batch-8' });
+    const result = await runRelease(
+      executeReleaseRequest(
+        Effect.succeed({ channel: 'stable', typescript: 'auto', python: 'skip' }),
+        { actor: 'requester', runId: '8', sourceSha: base, appSlug: 'sdk-release-app' },
+        () => Effect.die('must not plan')
+      ),
+      fetcher
+    );
+    expect(result).toEqual({
+      outcome: { _tag: 'InReview', pull: 'https://github.com/ComposioHQ/composio/pull/5' },
+      issue: Option.some(8),
+    });
+  });
+
+  test('a release that merged and failed its gate since planning blocks this one', async () => {
+    const { fetcher, writes } = fakeController({ untaggedNext: true });
+    expect(await open(fetcher)).toEqual({ _tag: 'Blocked', release: '8' });
     expect(writes).toEqual([]);
   });
 

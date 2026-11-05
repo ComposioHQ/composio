@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { Effect, Option } from 'effect';
 import { showStatus, stageOutcome } from '../scripts/sdk-release/report';
 import {
@@ -9,7 +9,18 @@ import {
   type Stage,
   type StateName,
 } from '../scripts/sdk-release/state';
-import { runRelease, type Fetch } from './sdk-release-harness';
+import { spawn } from '../scripts/sdk-release/runtime';
+import {
+  readText,
+  resolvePath,
+  runRelease,
+  temporaryDirectories,
+  writeText,
+  type Fetch,
+} from './sdk-release-harness';
+
+const roots = temporaryDirectories('sdk-release-status-');
+afterEach(() => roots.cleanup());
 
 const pull = 'https://github.com/ComposioHQ/composio/pull/9';
 const run = '77';
@@ -161,12 +172,12 @@ function requestIssue(comments: { id: number; login: string; body: string }[] = 
 describe('status on the request issue', () => {
   test('one status comment and one label follow the release, and a final state closes it', async () => {
     const issue = requestIssue();
-    await runRelease(showStatus(8, EXAMPLES.InReview, run), issue.fetcher);
+    await runRelease(showStatus(8, EXAMPLES.InReview, run, 'request'), issue.fetcher);
     expect(issue.comments).toHaveLength(1);
     expect([...issue.labels]).toEqual(['SDK release', 'sdk-release:in-review']);
     expect(issue.state()).toBe('open');
 
-    await runRelease(showStatus(8, EXAMPLES.Published, run), issue.fetcher);
+    await runRelease(showStatus(8, EXAMPLES.Published, run, 'publish'), issue.fetcher);
     expect(issue.comments).toHaveLength(1);
     expect(issue.comments[0].body).toContain('`@composio/core` 1.0.1');
     expect([...issue.labels]).toEqual(['SDK release', 'sdk-release:published']);
@@ -175,11 +186,40 @@ describe('status on the request issue', () => {
 
   test('a comment that copies the status marker is never edited unless the workflow wrote it', async () => {
     const issue = requestIssue([
-      { id: 1, login: 'someone', body: '<!-- sdk-release-status -->\nfake status' },
+      { id: 1, login: 'someone', body: '<!-- sdk-release-status stage=publish -->\nfake status' },
     ]);
-    await runRelease(showStatus(8, EXAMPLES.Waiting, run), issue.fetcher);
+    await runRelease(showStatus(8, EXAMPLES.Waiting, run, 'request'), issue.fetcher);
     expect(issue.comments[0].body).toContain('fake status');
     expect(issue.comments).toHaveLength(2);
     expect(issue.writes).toContain('POST /issues/8/comments');
   });
+
+  test('a late or re-run earlier stage never replaces a later stage result', async () => {
+    const issue = requestIssue();
+    await runRelease(showStatus(8, EXAMPLES.Published, run, 'publish'), issue.fetcher);
+    const published = issue.comments[0].body;
+    await runRelease(showStatus(8, EXAMPLES.Tagged, run, 'review'), issue.fetcher);
+    expect(issue.comments).toEqual([expect.objectContaining({ body: published })]);
+    expect([...issue.labels]).toEqual(['SDK release', 'sdk-release:published']);
+  });
+});
+
+/** The status job as the workflow runs it, with the job outputs GitHub passes. */
+const statusRun = async (env: Record<string, string>) => {
+  const directory = await roots.create();
+  const summary = `${directory}/summary`;
+  await writeText(summary, '');
+  const result = await runRelease(
+    spawn('bun', [await resolvePath('scripts/sdk-release/report.ts'), 'status', 'request'], {
+      cwd: directory,
+      env: { GITHUB_TOKEN: 'fixture', GITHUB_RUN_ID: '77', GITHUB_STEP_SUMMARY: summary, ...env },
+    })
+  );
+  return { exitCode: result.exitCode, stderr: result.stderr, summary: await readText(summary) };
+};
+
+test('outputs a failed job never wrote arrive empty, and the status still records the failure', async () => {
+  const run = await statusRun({ RESULTS: '{"plan": "failure"}', OUTCOME: '', ISSUE: '' });
+  expect({ exitCode: run.exitCode, stderr: run.stderr }).toMatchObject({ exitCode: 0 });
+  expect(run.summary).toContain('The request stage failed in: plan.');
 });

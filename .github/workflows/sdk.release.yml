@@ -71,6 +71,7 @@ jobs:
         id: plan
         env:
           SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/batch.ts plan
 
   # Runs the docs generators, which install third-party packages, so it gets no credentials.

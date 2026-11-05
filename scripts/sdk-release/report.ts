@@ -16,7 +16,10 @@ import { DISPLAY, ReleaseState, STATUS_LABELS, Stage, describe, endsStage } from
 
 /** Status comments come from the workflow token, so nobody else's comment is ever edited. */
 const STATUS_AUTHOR = 'github-actions[bot]';
-const STATUS_MARKER = '<!-- sdk-release-status -->';
+const STATUS_MARKER = '<!-- sdk-release-status';
+const marker = (stage: Stage) => `${STATUS_MARKER} stage=${stage} -->`;
+const MARKED_STAGE = /^<!-- sdk-release-status stage=(request|review|publish) -->/;
+const STAGE_ORDER = Stage.literals;
 
 const IssueComment = Schema.Struct({
   id: PositiveInt,
@@ -28,12 +31,14 @@ const Written = Schema.Unknown;
 
 /**
  * Shows `state` on the request issue: one status comment edited in place, one status label, and
- * the issue closed once the release can no longer advance. Nothing here is read back as state.
+ * the issue closed once the release can no longer advance. The comment records which stage wrote
+ * it, so a late or re-run earlier stage never replaces a later stage's result; nothing else is
+ * read back.
  */
-export const showStatus = (issue: number, state: ReleaseState, run: string) =>
+export const showStatus = (issue: number, state: ReleaseState, run: string, stage: Stage) =>
   Effect.gen(function* () {
     const display = DISPLAY[state._tag];
-    const body = `${STATUS_MARKER}\n**SDK release: ${display.label.replace('sdk-release:', '')}**\n\n${describe(state)}\n\n<sub>Updated by ${runUrl(run)}</sub>`;
+    const body = `${marker(stage)}\n**SDK release: ${display.label.replace('sdk-release:', '')}**\n\n${describe(state)}\n\n<sub>Updated by ${runUrl(run)}</sub>`;
     const issuePath = `${REPOSITORY_PATH}/issues/${issue}`;
     const existing = yield* paginateArray(`${issuePath}/comments`, IssueComment).pipe(
       Stream.filter(
@@ -42,6 +47,15 @@ export const showStatus = (issue: number, state: ReleaseState, run: string) =>
       ),
       Stream.runHead
     );
+    const shown = Option.flatMap(existing, comment =>
+      Option.fromNullishOr(MARKED_STAGE.exec(comment.body ?? '')?.[1] as Stage | undefined)
+    );
+    const later = Option.filter(
+      shown,
+      shownStage => STAGE_ORDER.indexOf(shownStage) > STAGE_ORDER.indexOf(stage)
+    );
+    if (Option.isSome(later))
+      return yield* Console.log(`The ${later.value} stage already reported; keeping its status`);
     yield* Option.match(existing, {
       onSome: comment =>
         request('PATCH', `${REPOSITORY_PATH}/issues/comments/${comment.id}`, Written, { body }),
@@ -94,13 +108,20 @@ const publishedState = (batch: ReleaseBatch) =>
     })),
   });
 
-const StatusEnvironment = Config.all({
+/**
+ * A job output the status job reads. GitHub passes an output that a failed or skipped job never
+ * wrote as an empty string, so empty means absent.
+ */
+export const jobOutput = <A, E>(decode: (text: string) => Effect.Effect<A, E>, text: string) =>
+  text === '' ? Effect.succeedNone : Effect.asSome(decode(text));
+
+export const StatusEnvironment = Config.all({
   token: Config.schema(Schema.NonEmptyString, 'GITHUB_TOKEN'),
   runId: Config.schema(RunId, 'GITHUB_RUN_ID'),
   summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
   results: Config.schema(Schema.fromJsonString(Results), 'RESULTS'),
-  recorded: Config.option(Config.schema(Schema.fromJsonString(ReleaseState), 'OUTCOME')),
-  issue: Config.option(Config.schema(Schema.NumberFromString.check(Schema.isInt()), 'ISSUE')),
+  outcome: Config.String('OUTCOME').pipe(Config.withDefault('')),
+  issue: Config.String('ISSUE').pipe(Config.withDefault('')),
 });
 
 /**
@@ -110,18 +131,25 @@ const StatusEnvironment = Config.all({
 const statusMode = (stage: Stage) =>
   Effect.gen(function* () {
     const env = yield* StatusEnvironment;
+    const issue = yield* jobOutput(
+      Schema.decodeUnknownEffect(Schema.NumberFromString.check(Schema.isInt())),
+      env.issue
+    );
     const state = yield* stageOutcome(
       stage,
       env.results,
-      env.recorded,
+      yield* jobOutput(
+        Schema.decodeUnknownEffect(Schema.fromJsonString(ReleaseState)),
+        env.outcome
+      ),
       Effect.map(readJson(ReleaseBatch, BATCH_PATH), publishedState),
       env.runId
     );
     yield* appendFile(env.summaryPath, `${describe(state)}\n`);
-    yield* Option.match(env.issue, {
+    yield* Option.match(issue, {
       onNone: () => Console.log('No request issue to update'),
       onSome: issue =>
-        showStatus(issue, state, env.runId).pipe(Effect.provide(GitHub.layer(env.token))),
+        showStatus(issue, state, env.runId, stage).pipe(Effect.provide(GitHub.layer(env.token))),
     });
   });
 
