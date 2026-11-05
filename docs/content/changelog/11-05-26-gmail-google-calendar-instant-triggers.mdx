@@ -53,7 +53,7 @@ Gmail delivers mailbox changes through Google Cloud Pub/Sub, so your app needs a
 Setup is complete once your Gmail [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) exists and holds every field: `topic_name`, `push_service_account_email`, and `push_audience`. Until then, new Gmail triggers keep polling, and `fallback_reason` tells you which piece is missing. Nothing breaks while you set up.
 
 <Callout type="warn">
-**Composio can't see your Google Cloud setup.** It treats the endpoint as ready as soon as it holds every field, and from then on, new Gmail triggers you create without `type` use the webhook. If your Pub/Sub push subscription doesn't deliver to the endpoint's `webhook_url` yet, Gmail's changes never reach Composio. Those triggers stay silent, and no error tells you. The rollout below avoids this.
+**A note on timing.** Composio can't look inside your Google Cloud project, so it treats your endpoint as ready as soon as you've filled in every field. From then on, new Gmail triggers you create without `type` use the webhook. If your Pub/Sub push subscription isn't delivering to the endpoint's `webhook_url` yet, Gmail's changes won't reach Composio, and those triggers will stay quiet with no error to tell you why. The rollout below keeps you on polling until you've seen an event arrive.
 </Callout>
 
 For a smooth, test-first rollout:
