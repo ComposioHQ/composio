@@ -43,7 +43,7 @@ Gmail delivers mailbox changes through Google Cloud Pub/Sub. Set it up once per 
 3. Create a service account only for push deliveries, for example `composio-gmail-push`. Give it no roles and create no keys: Pub/Sub uses it only to sign each push.
 4. [Create a Gmail webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) with your OAuth client ID, and note its `webhook_url`.
 5. Create a push subscription on the topic. Set its endpoint URL to the `webhook_url`, turn on authentication with the service account, and set the audience to the same `webhook_url`. Leave payload unwrapping off, and set the subscription to never expire.
-6. On the endpoint, set `topic_name` to the topic's full name, `push_service_account_email` to the service account's email, and `push_audience` to the `webhook_url`.
+6. Share your Pub/Sub details with Composio by [updating the endpoint](/docs/setting-up-triggers/custom-oauth-webhooks#updating-an-endpoint), a `PATCH` or `composio.webhooks.endpoints.update()` in the SDKs. Set `topic_name` to the topic's full name, `push_service_account_email` to the service account's email, and `push_audience` to the `webhook_url`.
 
 Until the endpoint has all three fields, new Gmail triggers poll, and their `fallback_reason` says what's missing. Once it does, new triggers you create without `type` use the webhook straight away. That's why the fields come last, after the push subscription is delivering.
 
