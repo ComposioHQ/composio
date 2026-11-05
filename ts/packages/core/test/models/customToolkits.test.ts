@@ -78,7 +78,7 @@ describe('Experimental.customToolkits', () => {
       const [body, options] = mockClient.custom.createToolkit.mock.calls[0];
       expect(JSON.parse(JSON.stringify(body))).toEqual({
         name: 'My Toolkit',
-        app_url: 'https://mcp.example.com/mcp',
+        mcp_url: 'https://mcp.example.com/mcp',
         logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
         auth_schemes: [
           {
@@ -238,7 +238,7 @@ describe('Experimental.customToolkits', () => {
           slug: 'MY TOOLKIT',
           toolkit_config: {
             name: 'My Toolkit',
-            app_url: 'https://mcp.example.com/mcp',
+            mcp_url: 'https://mcp.example.com/mcp',
             logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
             auth_schemes: [
               { mode: 'NO_AUTH' },
@@ -276,7 +276,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkit_config: {
           name: 'My Toolkit',
-          app_url: 'https://mcp.example.com/mcp',
+          mcp_url: 'https://mcp.example.com/mcp',
           auth_schemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
