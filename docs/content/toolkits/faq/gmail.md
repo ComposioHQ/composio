@@ -26,7 +26,28 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 ## Why is my Gmail trigger slow?
 
-Gmail triggers poll roughly every minute by default. If you need lower latency, consider using webhooks or Google Pub/Sub integrations.
+Your trigger is probably polling. Gmail triggers use webhooks on Composio-managed auth, so events arrive in seconds, but a trigger polls when:
+
+- It was created as a polling trigger. Composio doesn't move existing triggers to webhooks; delete the trigger and create it again.
+- You passed `type: "poll"` when you created it.
+- Your own OAuth app has no complete Gmail webhook endpoint yet. See the next question.
+
+A polling trigger waits up to its `polling_interval` between checks. [List the trigger](/docs/setting-up-triggers/managing-triggers#listing-active-triggers) and read its `type` and `fallback_reason` to see which case applies.
+
+## How do I set up Gmail webhooks with my own OAuth app?
+
+Gmail delivers mailbox changes through Google Cloud Pub/Sub. Set it up once per OAuth app, in the Google Cloud project that owns your OAuth client:
+
+1. Enable the Gmail API and the Cloud Pub/Sub API.
+2. Create a Pub/Sub topic. Its full name is `projects/<project-id>/topics/<topic-id>`. On the topic, grant `gmail-api-push@system.gserviceaccount.com` the Pub/Sub Publisher role (`roles/pubsub.publisher`).
+3. Create a service account only for push deliveries, for example `composio-gmail-push`. Give it no roles and create no keys: Pub/Sub uses it only to sign each push.
+4. [Create a Gmail webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) with your OAuth client ID, and note its `webhook_url`.
+5. Create a push subscription on the topic. Set its endpoint URL to the `webhook_url`, turn on authentication with the service account, and set the audience to the same `webhook_url`. Leave payload unwrapping off, and set the subscription to never expire.
+6. On the endpoint, set `topic_name` to the topic's full name, `push_service_account_email` to the service account's email, and `push_audience` to the `webhook_url`.
+
+Until the endpoint has all three fields, new Gmail triggers poll, and their `fallback_reason` says what's missing. Once it does, new triggers you create without `type` use the webhook straight away. That's why the fields come last, after the push subscription is delivering.
+
+If pushes don't arrive, check that Pub/Sub's service agent, `service-<project-number>@gcp-sa-pubsub.iam.gserviceaccount.com`, can sign tokens for the service account. If it can't, grant it the Service Account Token Creator role on that account. Google documents its side in [Gmail push notifications](https://developers.google.com/workspace/gmail/api/guides/push).
 
 ## Why am I getting "Quota Exhausted" or "rate limit exhausted"?
 

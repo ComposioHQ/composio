@@ -6,7 +6,7 @@ date: '2026-11-05'
 
 Your Gmail and Google Calendar triggers no longer wait for the next poll. Google now tells Composio about a new email or a moved meeting as it happens, and the event reaches your webhook URL in seconds, in the same payload shape your handler already reads.
 
-On Composio-managed auth, there's nothing to set up. Create a trigger the way you always have:
+On Composio-managed auth, there's nothing to set up, and you can start right away. Create a trigger the way you always have:
 
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_GMAIL_MESSAGE/upsert \
@@ -42,7 +42,7 @@ Python `composio` 0.31.0 and TypeScript `@composio/core` 0.28.0 support `type` a
 
 ### Existing triggers
 
-Composio doesn't move your existing triggers. They keep polling exactly as before, so nothing changes under you. To move one to webhooks, delete it and create it again. An existing trigger keeps the type it was created with, so an upsert that asks for the other type returns `409`.
+Composio doesn't move your existing triggers. They keep polling exactly as before, so nothing changes under you. To move one to webhooks, delete it and create it again.
 
 ### Gmail and Calendar on your own OAuth app
 
