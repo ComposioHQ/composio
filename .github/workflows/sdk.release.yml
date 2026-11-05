@@ -292,8 +292,14 @@ jobs:
         run: |
           cd "$(mktemp -d)"
           npm init --yes > /dev/null
-          # shellcheck disable=SC2086 # one argument per package
-          npm install --ignore-scripts --registry=https://registry.npmjs.org $SPECS
+          # The registry CDN can serve a stale package document right after publishing.
+          for attempt in 1 2 3 4 5; do
+            # shellcheck disable=SC2086 # one argument per package
+            npm install --ignore-scripts --registry=https://registry.npmjs.org $SPECS && break
+            [ "$attempt" -lt 5 ] || exit 1
+            echo "npm install failed (attempt $attempt); retrying in 30 seconds"
+            sleep 30
+          done
           npm audit signatures
 
   publish-pypi:
