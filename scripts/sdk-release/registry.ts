@@ -36,7 +36,7 @@ import {
   Language,
   type Language as Lang,
 } from './lanes';
-import { verifyNpmProvenance, verifyPypiProvenance } from './provenance';
+import { verifyNpmProvenance, verifyPypiProvenance, type ProvenanceWait } from './provenance';
 import { discoverPythonPackages } from './python-metadata';
 import {
   appendFile,
@@ -481,11 +481,11 @@ export const npmSpecs = (files: ReadonlyArray<Distribution>) =>
  * Checks that every PyPI file is attested by this release, and returns the file URLs for the
  * signature check that `pypi-attestations` runs next.
  */
-export const verifyPypiFiles = (files: ReadonlyArray<Distribution>) =>
+export const verifyPypiFiles = (files: ReadonlyArray<Distribution>, wait: ProvenanceWait = {}) =>
   Effect.gen(function* () {
     const urls: string[] = [];
     for (const file of files) {
-      yield* verifyPypiProvenance(file);
+      yield* verifyPypiProvenance(file, wait);
       const metadata = yield* registryJson(
         REGISTRY_LANES.python.versionUrl(file.name, file.version),
         PypiVersion

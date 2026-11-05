@@ -149,12 +149,21 @@ async function rehearse(release: ReleaseBatch, tags: Record<string, string>) {
         typescript: 'auto',
         python: 'skip',
       }),
-      { actor: 'requester', runId: release.id, sourceSha: base, issueNumber: release.issue },
+      {
+        actor: 'requester',
+        runId: release.id,
+        sourceSha: base,
+        issueNumber: release.issue,
+        appSlug: 'sdk-release-app',
+      },
       () => Effect.succeed(release.plan)
     ),
     github.fetcher
   );
-  expect(planned).toMatchObject({ _tag: 'Planned', batch: { id: release.id, plan: release.plan } });
+  expect(planned.outcome).toMatchObject({
+    _tag: 'Planned',
+    batch: { id: release.id, plan: release.plan },
+  });
   ended.push(
     await runRelease(
       openReleasePull(cwd, release, { files: beta ? betaFiles : releaseFiles }),
@@ -272,10 +281,19 @@ describe('release rehearsal', () => {
     ) => {
       const { fetcher } = fakeController(options);
       return runRelease(
-        executeReleaseRequest(
-          parse ?? Effect.succeed({ channel: 'stable', typescript: 'auto', python: 'skip' }),
-          { actor: 'requester', runId: '8', sourceSha, issueNumber: 8 },
-          () => Effect.succeed(releases)
+        Effect.map(
+          executeReleaseRequest(
+            parse ?? Effect.succeed({ channel: 'stable', typescript: 'auto', python: 'skip' }),
+            {
+              actor: 'requester',
+              runId: '8',
+              sourceSha,
+              issueNumber: 8,
+              appSlug: 'sdk-release-app',
+            },
+            () => Effect.succeed(releases)
+          ),
+          result => result.outcome
         ),
         fetcher
       );

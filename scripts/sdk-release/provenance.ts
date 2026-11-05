@@ -1,4 +1,5 @@
 import { Data, Effect, Schedule, Schema } from 'effect';
+import type { Duration } from 'effect';
 import { Digest } from 'effect/crypto';
 import { Base64 } from 'effect/encoding';
 import { FetchHttpClient, HttpClient } from 'effect/http';
@@ -55,7 +56,13 @@ const PypiProvenance = Schema.Struct({
 /** Provenance can trail an upload by a few seconds, so a missing document is retried. */
 class ProvenancePending extends Data.TaggedError('ProvenancePending')<{ readonly url: string }> {}
 
-const provenanceJson = <S extends Schema.Top>(url: string, schema: S) =>
+/** How long to wait for provenance that trails an upload. */
+export interface ProvenanceWait {
+  readonly attempts?: number;
+  readonly spacing?: Duration.Input;
+}
+
+const provenanceJson = <S extends Schema.Top>(url: string, schema: S, wait: ProvenanceWait) =>
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
     const response = yield* client.get(url);
@@ -65,8 +72,8 @@ const provenanceJson = <S extends Schema.Top>(url: string, schema: S) =>
   }).pipe(
     Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }),
     Effect.retry({
-      schedule: Schedule.spaced('10 seconds'),
-      times: 5,
+      schedule: Schedule.spaced(wait.spacing ?? '10 seconds'),
+      times: (wait.attempts ?? 6) - 1,
       while: error => error instanceof ProvenancePending,
     }),
     Effect.catchTag('ProvenancePending', error =>
@@ -78,10 +85,10 @@ const provenanceJson = <S extends Schema.Top>(url: string, schema: S) =>
  * The npm SLSA provenance of a published tarball must name this repository, the release
  * workflow and this batch's tag, and its subject must be the reviewed bytes.
  */
-export const verifyNpmProvenance = (file: Distribution, id: string) =>
+export const verifyNpmProvenance = (file: Distribution, id: string, wait: ProvenanceWait = {}) =>
   Effect.gen(function* () {
     const url = `${NPM_REGISTRY}/-/npm/v1/attestations/${encodeURIComponent(file.name)}@${file.version}`;
-    const { attestations } = yield* provenanceJson(url, NpmAttestations);
+    const { attestations } = yield* provenanceJson(url, NpmAttestations, wait);
     const slsa = attestations.find(attestation => attestation.predicateType === SLSA_PROVENANCE);
     if (!slsa) return yield* fail(`${file.name}@${file.version} has no SLSA provenance`);
     const payload = yield* Effect.fromResult(Base64.decodeString(slsa.bundle.dsseEnvelope.payload));
@@ -104,10 +111,10 @@ export const verifyNpmProvenance = (file: Distribution, id: string) =>
   });
 
 /** Every PyPI file must carry a PEP 740 attestation from this repository's release workflow. */
-export const verifyPypiProvenance = (file: Distribution) =>
+export const verifyPypiProvenance = (file: Distribution, wait: ProvenanceWait = {}) =>
   Effect.gen(function* () {
     const url = `https://pypi.org/integrity/${file.name}/${file.version}/${file.file}/provenance`;
-    const { attestation_bundles } = yield* provenanceJson(url, PypiProvenance);
+    const { attestation_bundles } = yield* provenanceJson(url, PypiProvenance, wait);
     yield* ensure(
       attestation_bundles.some(
         ({ publisher }) =>
