@@ -1,8 +1,14 @@
 name: SDK release
 run-name: SDK release (${{ github.event_name }}, ${{ github.actor }})
 
-# Stage 1 of the SDK release: a ComposioHQ member opens an `[SDK release]` issue or dispatches
-# this workflow, and the bot plans versions on protected next and opens one release PR.
+# One release, four stages, each started by its own event:
+#   1. request   a ComposioHQ member opens an `[SDK release]` issue or dispatches this workflow;
+#                the bot plans versions on protected next and opens one release PR.
+#   2. review    sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
+#                a writer who did not request the release approves, and a person merges.
+#   3. tag       on merge, the bot re-checks approval and checks, then tags the reviewed head.
+#   4. publish   the tag run uploads the reviewed files to npm and PyPI, then opens a docs PR
+#                that pins the released versions so twoslash checks against them.
 
 on:
   issues:
@@ -19,6 +25,11 @@ on:
         type: choice
         options: [auto, patch, minor, major, skip]
         default: auto
+  pull_request_target:
+    branches: [next]
+    types: [closed]
+  push:
+    tags: ['sdk-release/*']
 
 permissions:
   contents: read
@@ -137,3 +148,206 @@ jobs:
           issue=$(jq -r .issue <<< "$BATCH")
           gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" \
             --body "Preparing the release PR failed. Inspect $RUN_URL, then re-run its failed jobs or request the release again."
+
+  # 3. tag -------------------------------------------------------------------------------------
+
+  # Runs next as it was before this merge, so the merged release PR cannot change the gate.
+  tag:
+    if: >-
+      github.repository == 'ComposioHQ/composio' && github.event_name == 'pull_request_target' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        id: app
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Check approval and candidate checks, then tag the reviewed head
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+        run: bun scripts/sdk-release/batch.ts tag
+
+  # 4. publish ---------------------------------------------------------------------------------
+
+  # Pins the release-PR artifacts once by ID and digest. "Re-run failed jobs" keeps this
+  # output, so every attempt publishes the same reviewed bytes.
+  candidates:
+    if: github.repository == 'ComposioHQ/composio' && startsWith(github.ref, 'refs/tags/sdk-release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      approved: ${{ steps.approve.outputs.approved }}
+      typescript: ${{ steps.approve.outputs.typescript }}
+      python: ${{ steps.approve.outputs.python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Pin the approved release-PR candidates
+        id: approve
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+        run: bun scripts/sdk-release/candidates.ts approve
+
+  publish-npm:
+    needs: candidates
+    if: needs.candidates.outputs.typescript == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    # One npm publisher at a time, so an older retry cannot move `latest` back over a newer release.
+    concurrency:
+      group: sdk-release-npm
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Pin npm with native dist-tag OIDC support
+        run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
+      - name: Upload missing npm files, then move latest
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
+        run: bun scripts/sdk-release/registry.ts publish typescript
+
+  publish-pypi:
+    needs: candidates
+    if: needs.candidates.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi-release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Stage the PyPI files that are still missing
+        id: stage
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
+        run: bun scripts/sdk-release/registry.ts publish python
+      - name: Upload missing PyPI files
+        if: steps.stage.outputs.missing == 'true'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
+        with:
+          packages-dir: sdk-publication/missing-python/
+      - name: Wait until PyPI serves every file
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
+        run: bun scripts/sdk-release/registry.ts verify python
+
+  docs:
+    needs: [candidates, publish-npm, publish-pypi]
+    if: >-
+      !cancelled() && needs.candidates.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.publish-npm.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.publish-pypi.result)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Report the published versions on the request issue
+        id: released
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/sdk-release/report.ts released
+      - if: steps.released.outputs.npm != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: next
+          path: next
+          persist-credentials: false
+      - name: Pin the docs to the released npm versions
+        if: steps.released.outputs.npm != ''
+        working-directory: next/docs
+        env:
+          RELEASED: ${{ steps.released.outputs.npm }}
+        run: |
+          specs=$(bun ../../scripts/sdk-release/report.ts docs-pins package.json)
+          [ -n "$specs" ] || exit 0
+          # The registry CDN can serve a stale package document right after publishing.
+          for attempt in 1 2 3 4 5; do
+            # shellcheck disable=SC2086 # one argument per package
+            bun add --dev --exact --ignore-scripts $specs && exit 0
+            echo "bun add failed (attempt $attempt); retrying in 30 seconds"
+            sleep 30
+          done
+          exit 1
+      - if: steps.released.outputs.npm != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        id: app
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+      - name: Open the docs pin PR
+        if: steps.released.outputs.npm != ''
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.app.outputs.token }}
+          path: next
+          base: next
+          branch: docs/${{ github.ref_name }}
+          add-paths: |
+            docs/package.json
+            docs/bun.lock
+          commit-message: 'docs: pin the SDK packages released in ${{ github.ref_name }}'
+          title: 'docs: pin the SDK packages released in ${{ github.ref_name }}'
+          body: |
+            Pins the docs to the npm versions published by ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}, so twoslash type-checks every snippet against the released types.
+
+            Merge after the docs checks pass.
+
+  report-failure:
+    needs: [candidates, publish-npm, publish-pypi, docs]
+    if: failure() && startsWith(github.ref, 'refs/tags/sdk-release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Name the failed jobs and the re-run on the request issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/sdk-release/report.ts failed
