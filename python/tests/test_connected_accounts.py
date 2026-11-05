@@ -222,6 +222,43 @@ class TestConnectionRequestPolling:
         assert clock["now"] == 6.0
         assert len(requests) == 3
 
+    def test_waiting_by_id_survives_a_429_on_its_first_request(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        active = Mock(status="ACTIVE")
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = [
+            self._rate_limited("10"),
+            active,
+        ]
+
+        result = ConnectedAccounts(client=client).wait_for_connection(
+            id="conn-1", timeout=60.0
+        )
+
+        assert result is active
+        assert clock["now"] == 10.0
+        client.connected_accounts.retrieve.assert_called_with(nanoid="conn-1")
+
+    def test_waiting_by_id_sends_one_request_when_already_active(self, monkeypatch):
+        self._clock(monkeypatch)
+        client = Mock()
+        client.connected_accounts.retrieve.return_value = Mock(status="ACTIVE")
+
+        ConnectedAccounts(client=client).wait_for_connection(id="conn-1", timeout=60.0)
+
+        assert client.connected_accounts.retrieve.call_count == 1
+
+    def test_a_nan_timeout_times_out_after_one_poll(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        client = Mock()
+        client.connected_accounts.retrieve.return_value = Mock(status="PENDING")
+
+        with pytest.raises(exceptions.ComposioSDKTimeoutError):
+            self._request(client).wait_for_connection(timeout=float("nan"))
+
+        assert clock["now"] == 0.0
+        assert client.connected_accounts.retrieve.call_count == 1
+
     def test_stops_its_own_delay_at_the_timeout_after_a_429(self, monkeypatch):
         clock = self._clock(monkeypatch)
         client = Mock()
@@ -741,17 +778,15 @@ class TestConnectedAccounts:
         connected_accounts = ConnectedAccounts(client=mock_client)
 
         with patch(
-            "composio.core.models.connected_accounts.ConnectionRequest.from_id"
-        ) as mock_from_id:
-            mock_request = Mock()
-            mock_request.wait_for_connection.return_value = "connected"
-            mock_from_id.return_value = mock_request
-
+            "composio.core.models.connected_accounts.ConnectionRequest.wait_for_connection",
+            return_value="connected",
+        ) as mock_wait:
             result = connected_accounts.wait_for_connection(id="conn-123", timeout=42.0)
 
-        mock_from_id.assert_called_once_with(id="conn-123", client=mock_client)
-        mock_request.wait_for_connection.assert_called_once_with(timeout=42.0)
+        mock_wait.assert_called_once_with(timeout=42.0)
         assert result == "connected"
+        # The wait does all the fetching, so its 429 handling covers every request.
+        mock_client.connected_accounts.retrieve.assert_not_called()
 
 
 def _make_status_error(error_type: t.Type[Exception], message: str):

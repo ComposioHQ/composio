@@ -392,6 +392,22 @@ describe('ConnectionRequest', () => {
       expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(2);
     });
 
+    it('times out after one poll on a NaN timeout', async () => {
+      mockClient.connectedAccounts.retrieve.mockResolvedValue(pending);
+
+      expect(await start(NaN)).toBeInstanceOf(ConnectionRequestTimeoutError);
+      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps polling on an infinite timeout', async () => {
+      mockClient.connectedAccounts.retrieve.mockResolvedValue(pending);
+
+      void start(Infinity);
+      await vi.advanceTimersByTimeAsync(2500);
+
+      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(3);
+    });
+
     it('reads a date-format Retry-After', async () => {
       vi.useFakeTimers({ now: Date.UTC(2026, 0, 1) });
       mockClient.connectedAccounts.retrieve

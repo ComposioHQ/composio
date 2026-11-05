@@ -139,7 +139,8 @@ class ConnectionRequest(Resource):
                     )
 
             remaining = deadline - time.time()
-            if remaining <= 0:
+            # Written so a NaN timeout times out rather than polling forever.
+            if not remaining > 0:
                 raise exceptions.ComposioSDKTimeoutError(
                     message=(
                         f"Timeout while waiting for connection {self.id} to be active"
@@ -886,8 +887,11 @@ class ConnectedAccounts:
         """
         Wait for connected account with given ID to be active
         """
-        return ConnectionRequest.from_id(
+        # No fetch first: a 429 on it would end the wait before polling starts.
+        return ConnectionRequest(
             id=id,
+            status="INITIATED",
+            redirect_url=None,
             client=self._client,
         ).wait_for_connection(
             timeout=timeout,

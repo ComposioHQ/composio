@@ -143,7 +143,8 @@ export function createConnectionRequest(
       }
 
       const remaining = deadline - Date.now();
-      if (remaining <= 0) {
+      // Written so a NaN timeout times out rather than polling forever.
+      if (!(remaining > 0)) {
         throw new ConnectionRequestTimeoutError(`Connection request timed out for ${request.id}`);
       }
       // This delay stops at the deadline, so the last poll happens as the time runs out.
