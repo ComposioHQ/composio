@@ -12,17 +12,13 @@ import { LlamaindexProvider } from '../src';
 // Mock the llamaindex module (per-file scoping keeps this independent of llamaindex.test.ts).
 vi.mock('llamaindex', () => {
   return {
-    tool: vi.fn().mockImplementation(config => ({
-      metadata: {
-        name: config.name,
-        description: config.description,
-        parameters: config.parameters,
-      },
-      call: config.execute,
-      _type: 'llamaindex_tool',
-      _config: config,
-    })),
-    JSONValue: {},
+    FunctionTool: class {
+      constructor(
+        readonly call: (input: unknown) => unknown,
+        readonly metadata: { name: string; description: string; parameters: unknown },
+        readonly zodType: unknown
+      ) {}
+    },
   };
 });
 
@@ -97,14 +93,31 @@ describe('LlamaindexProvider regression: $ref in JSON Schema', () => {
     executeToolFn = vi.fn().mockResolvedValue({ data: {}, error: null, successful: true });
   });
 
-  it('produces a Zod schema that validates the $defs-described shape', () => {
+  it('validates arguments against the $defs-described shape', () => {
     const wrapped = provider.wrapTool(refTool, executeToolFn);
-    const schema = wrapped.metadata.parameters as {
+    const schema = (wrapped as unknown as { zodType: unknown }).zodType as {
       safeParse: (value: unknown) => { success: boolean };
     };
 
     expect(schema.safeParse({ message: { subject: 's', body: 'b' } }).success).toBe(true);
     expect(schema.safeParse({ message: 42 }).success).toBe(false);
+  });
+
+  it('shows the model the schema with its definitions inlined', () => {
+    const wrapped = provider.wrapTool(refTool, executeToolFn);
+
+    expect(wrapped.metadata.parameters).toEqual({
+      type: 'object',
+      properties: {
+        message: {
+          type: 'object',
+          properties: { subject: { type: 'string' }, body: { type: 'string' } },
+          required: ['subject', 'body'],
+          additionalProperties: false,
+        },
+      },
+      required: ['message'],
+    });
   });
 
   it('does not throw when $ref points into an undeclared $defs block', () => {

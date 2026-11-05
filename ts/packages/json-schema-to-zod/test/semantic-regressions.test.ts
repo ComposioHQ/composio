@@ -327,6 +327,16 @@ describe.each(builders)('whole-schema semantic regressions ($name)', builder => 
     expect(builder.convert(schema).safeParse(value).success).toBe(false);
   });
 
+  it('does not treat a subnormal as an integer multiple', () => {
+    const schema: JsonSchema = { type: 'number', multipleOf: 5 };
+    const value = -5e-324;
+
+    // Ajv divides in floating point and `-5e-324 / 5` underflows to `-0`, so the
+    // oracle accepts; the property suite skips this case for that reason.
+    expect(ajv.compile(schema)(value), 'the oracle underflows on this fixture').toBe(true);
+    expect(builder.convert(schema).safeParse(value).success).toBe(false);
+  });
+
   it('keeps a guarded object root a ZodObject with its shape', () => {
     const schema: JsonSchema = {
       type: 'object',

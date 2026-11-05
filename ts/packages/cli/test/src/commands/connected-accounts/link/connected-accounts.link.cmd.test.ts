@@ -2,12 +2,14 @@ import { BadRequestError } from '@composio/client/effect';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import type { MockRequestScope } from 'test/__utils__/services/test-layer';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import open from 'open';
 import { afterEach, vi } from 'vitest';
 
@@ -202,21 +204,29 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData: makeConnectedAccountsData(),
+      connectedAccountsData: makeConnectedAccountsData({
+        items: [
+          makeConnectedAccount(),
+          makeConnectedAccount({ id: 'con_global', alias: 'global', user_id: 'global-default' }),
+        ],
+      }),
       fixture: 'global-test-user-id',
     })
   )(
-    '[Given] dev connected-accounts link --list without developer project context [Then] it still uses consumer resolution',
+    '[Given] dev connected-accounts link --list in a developer project directory [Then] it lists the test user’s accounts',
     it => {
-      it.effect('lists connected accounts instead of requiring a developer project', () =>
+      // `link` on the dev tree acts on the developer project; it used to list the consumer
+      // user's accounts in the consumer project.
+      it.effect('lists the global test user’s accounts, not the consumer user’s', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
 
-          expect(output).toContain('default');
-          expect(output).toContain('castle');
-          expect(output).not.toContain('MissingDeveloperProjectError');
+          expect(lines).toContain('Using global test user id "global-default"');
+          expect(parseLastLine(lines)).toMatchObject({
+            total: 1,
+            items: [{ id: 'con_global', user_id: 'global-default' }],
+          });
         })
       );
     }
@@ -296,6 +306,29 @@ describe('CLI: composio dev connected-accounts link', () => {
           command: 'link',
           option: '--alias',
           message: '`--alias` cannot be empty.',
+        });
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+    );
+
+    // Logged as decoration, this mistake vanished whenever stderr was not a TTY and the
+    // command exited 0; as a `CommandInputError` it reaches stderr and exits 1.
+    it.effect('reports a toolkit passed together with --auth-config', () =>
+      Effect.gen(function* () {
+        const error = yield* cli([
+          'dev',
+          'connected-accounts',
+          'link',
+          'gmail',
+          '--auth-config',
+          'ac_test',
+          '--no-wait',
+        ]).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'dev connected-accounts link',
+          option: '--auth-config',
         });
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
@@ -434,22 +467,23 @@ describe('CLI: composio dev connected-accounts link', () => {
           }),
       },
     })
-  )(
-    '[Given] auth-config link returns an incomplete response [Then] logs an error and exits early',
-    it => {
-      it.effect('reports the incomplete response instead of waiting with empty values', () =>
-        Effect.gen(function* () {
-          yield* cli(['link', 'gmail']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+  )('[Given] auth-config link returns an incomplete response [Then] reports it and exits 1', it => {
+    it.effect('reports the incomplete response instead of waiting with empty values', () =>
+      Effect.gen(function* () {
+        // Redirected streams, as under a script: only plain stderr lines and stdout data show.
+        const terminal = redirectedTerminalUI();
+        const exit = yield* Effect.exit(
+          cli(['link', 'gmail']).pipe(Effect.provide(terminal.layer))
+        );
 
-          expect(lines).toEqual([
-            'Linking gmail...',
-            'The link response from the API is missing `connected_account_id` or `redirect_url`.',
-          ]);
-        })
-      );
-    }
-  );
+        expect(terminal.stderr()).toBe(
+          'The link response from the API is missing `connected_account_id` or `redirect_url`.\n'
+        );
+        expect(terminal.stdout()).toBe('');
+        expect(exitCodeOf(exit)).toBe(1);
+      })
+    );
+  });
 
   layer(
     TestLive({
@@ -530,10 +564,11 @@ describe('CLI: composio dev connected-accounts link', () => {
     it => {
       it.effect('fails locally and tells the user to pass --alias', () =>
         Effect.gen(function* () {
-          yield* cli(['link', 'gmail']);
+          const exit = yield* Effect.exit(cli(['link', 'gmail']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
+          expect(exitCodeOf(exit)).toBe(1);
           expect(output).toContain('Pass --alias to create another one');
           expect(output).toContain('con_test_link');
           expect(output).not.toContain('"status"');
@@ -554,10 +589,11 @@ describe('CLI: composio dev connected-accounts link', () => {
   )('[Given] a duplicate alias [Then] link explains how to use the existing account', it => {
     it.effect('detects the exact existing alias before creating a link', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--alias', 'work']);
+        const exit = yield* Effect.exit(cli(['link', 'gmail', '--alias', 'work']));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
+        expect(exitCodeOf(exit)).toBe(1);
         expect(output).toContain('Alias "work" is already in use');
         expect(output).toContain('composio execute <TOOL_SLUG> --account work');
         expect(output).toContain('composio connections list --toolkit gmail');

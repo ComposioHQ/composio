@@ -17,6 +17,12 @@ describe('APP_CONFIG', () => {
         ENVIRONMENT: undefined,
         BASE_URL: constants.DEFAULT_BASE_URL,
         WEB_URL: constants.DEFAULT_WEB_URL,
+        BACKEND: {
+          baseURL: constants.DEFAULT_BASE_URL,
+          webURL: constants.DEFAULT_WEB_URL,
+          selectedBy: Option.none(),
+          webURLSet: false,
+        },
         CACHE_DIR: undefined,
         SESSION_DIR: undefined,
         BIN_DIR: undefined,
@@ -28,6 +34,7 @@ describe('APP_CONFIG', () => {
         CLI_INVOCATION_ORIGIN: undefined,
         CLI_PARENT_RUN_ID: undefined,
         RUN_OUTPUT_DIR: undefined,
+        RUN_STAGED_FILES_FILE: undefined,
         DISABLE_CONNECTED_ACCOUNT_CACHE: true,
         TOOLKIT_VERSIONS: Option.none(),
       });
@@ -61,6 +68,7 @@ describe('APP_CONFIG', () => {
         COMPOSIO_CLI_INVOCATION_ORIGIN: 'run',
         COMPOSIO_CLI_PARENT_RUN_ID: 'run_parent',
         COMPOSIO_RUN_OUTPUT_DIR: '\t/tmp/composio-output\n',
+        COMPOSIO_RUN_STAGED_FILES_FILE: '/tmp/composio-output/metadata.json',
         COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'OFF',
         COMPOSIO_TOOLKIT_VERSION_GMAIL: '20250901_00',
       });
@@ -69,6 +77,12 @@ describe('APP_CONFIG', () => {
         ENVIRONMENT: undefined,
         BASE_URL: 'https://test.localhost',
         WEB_URL: 'https://web.localhost',
+        BACKEND: {
+          baseURL: 'https://test.localhost',
+          webURL: 'https://web.localhost',
+          selectedBy: Option.some('COMPOSIO_BASE_URL' as const),
+          webURLSet: true,
+        },
         CACHE_DIR: '/tmp/composio-cache',
         SESSION_DIR: undefined,
         BIN_DIR: '/usr/local/bin',
@@ -80,6 +94,7 @@ describe('APP_CONFIG', () => {
         CLI_INVOCATION_ORIGIN: 'run',
         CLI_PARENT_RUN_ID: 'run_parent',
         RUN_OUTPUT_DIR: '/tmp/composio-output',
+        RUN_STAGED_FILES_FILE: '/tmp/composio-output/metadata.json',
         DISABLE_CONNECTED_ACCOUNT_CACHE: false,
         TOOLKIT_VERSIONS: Option.some({ GMAIL: '20250901_00' }),
       });

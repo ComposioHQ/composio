@@ -1,5 +1,17 @@
 # @composio/anthropic
 
+## 0.11.7
+
+### Patch Changes
+
+- fecf1bf: Accept `@anthropic-ai/sdk` `^0.135.0` as a peer dependency.
+
+## 0.11.6
+
+### Patch Changes
+
+- ba7c9a1: Remove the unused `@mastra/mcp` peer dependency. The provider never imported it, but package managers that install peers automatically pulled in about 234 extra packages.
+
 ## 0.11.5
 
 ### Patch Changes

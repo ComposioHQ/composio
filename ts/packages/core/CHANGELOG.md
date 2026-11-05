@@ -1,5 +1,89 @@
 # @composio/core
 
+## 0.28.0
+
+### Minor Changes
+
+- d2d4148: Requires `@composio/client` `2.0.0`. POST and PATCH requests, including tool execution and trigger creation, are now sent once instead of being retried on a lost response or a retryable status, because a write can complete on the server after its response is lost. Other requests keep their retries. On the client returned by `getClient()`, a write retries only when that call sets `maxRetries`.
+- e87ed85: Requires `@composio/client` `2.0.0-rc.20`. The SDK imports the client's types from the one `@composio/client/resources/*` spelling rc.20 publishes and reaches nested types by indexed access; every type the SDK exports keeps its shape. With rc.20, the resources of the client returned by `getClient()` are plain objects typed by interfaces: the resource classes, `Composio.Tools`-style statics and namespace-member types such as `SessionCreateParams.Experimental` are gone, and the `.js`/`.mjs` subpath spellings no longer resolve.
+- 3f3df9a: Requires `@composio/client` `2.0.0-rc.21`. The SDK's behaviour is unchanged. With rc.21, the client returned by `getClient()` no longer has `request()`, `Composio.Composio` or `Composio.DEFAULT_TIMEOUT`: call the raw verb for the method (`get`, `post`, `patch`, `put`, `delete`), which takes the same `query`, `body` and request options.
+- 54a935f: Requires `@composio/client` `2.0.0-rc.23`. `composio.sessionConfigs.list()` no longer sends `search`, which the Composio API removed: the option is deprecated, ignored, and logs a warning when set; filter `items` by name instead. With rc.23, the client returned by `getClient()` no longer has `cli.createCodactFailure` (now under `client._internal`, typed through `@composio/client/internal`) or `org.clanker.createClaim`, and its `sessionConfigs.list()` no longer accepts `search`.
+- 7434e02: Requires `@composio/client` `2.0.0-rc.22`. `composio.toolkits.get(slug)` now returns `meta.appUrl` when the API sends the toolkit's app URL; it was always left out before. `composio.sessionConfigs.get()` keeps the `require_approval` lists of a stored policy, and no longer fails validation on a policy entry that only sets `require_approval`; `SessionConfigPolicy` gains the matching optional `require_approval` fields and the approval-only entry. Session hooks, blocked calls and hook results are read from the API types of `@composio/client` instead of SDK copies, with the same results and errors for well-formed responses; a malformed `hook_results` or blocked response is no longer re-validated by the SDK, matching every other API response.
+- a5a1fc8: Requires `@composio/client` `2.0.1`. Adds `composio.experimental.customToolkits.create()` and `update()`, which call the v3.1 custom toolkit create and update endpoints. `create()` takes `userId` (`'all'` to share the toolkit, or the user it is private to), generates the slug, and returns a `connectLink` for a private toolkit. `upsert()` is deprecated and logs a warning once per process; it keeps working.
+
+  API-key auth schemes accept `additionalFields.genericId` with a required `displayName` and optional `description` to collect the value used by `{{generic_id}}` headers.
+
+- d2d4148: `composio.triggers.create()` accepts `type` (`'webhook'` or `'poll'`, for a trigger that supports both) and `pollingInterval` (minutes between polls, which wins over `triggerConfig.interval`), and returns the instance's `type`, `fallbackReason` and `pollingInterval` along with `triggerId`. `composio.triggers.listActive()` items carry the same three fields, and `getType()` / `listTypes()` return each trigger type's `type`, `types` and `requiresWebhookEndpointSetup`.
+
+### Patch Changes
+
+- e547eb0: Upload local files with the MIME type of their extension
+
+  A file uploaded from a local path used to be sent as `application/octet-stream` whatever it was, so tools that check the file's type, such as Canva's design import, rejected it. The SDK now infers the type from the file name's extension (a `.pptx` uploads as `application/vnd.openxmlformats-officedocument.presentationml.presentation`) and keeps `application/octet-stream` only for missing or unknown extensions. The TypeScript and Python SDKs now use the same extension table, so a file uploads with the same type from either SDK and from the CLI. Files passed as `File` objects and URLs keep the type they carry.
+
+- 30f8ca1: `getExtensionFromMimeType` now maps `text/csv` to `csv` from its table, matching the Python SDK. The returned extension is unchanged.
+- f6368e0: Add the missing `experimental` option to the `ToolRouterAuthorizeFn` type. `session.authorize()` already accepted `experimental: { accountType, aclConfigForShared }` at runtime, but sessions returned by `composio.create()` and `composio.use()` rejected it at compile time.
+
+## 0.27.0
+
+### Minor Changes
+
+- c2bbfa8: Add session hooks. A hook can block a tool call before it runs, or block its result before the agent sees it.
+
+  `create()` and `update()` accept `hooks`. On `update()`, `hooks` replaces the whole list and `null` removes every hook. `hooks` cannot be combined with `experimental.sessionConfigId`.
+
+  ```ts
+  const session = await composio.create('user_123', {
+    hooks: [
+      {
+        type: 'before_execute',
+        id: 'no_external_email',
+        name: 'No external email',
+        appliesTo: { toolkits: ['gmail'] },
+        handler: {
+          type: 'condition_check',
+          condition: 'Sending email to anyone outside example.org',
+          action: 'block',
+        },
+      },
+    ],
+  });
+  ```
+
+  A blocked call comes back from `session.execute()` and `session.executeMeta()` with `resultType: 'blocked'`, empty `data`, the hook's message in `error`, and `blockReason`. Provider integrations hand it to the agent as a failed call with that message. Every result also carries `hookResults` when a hook applied.
+
+  `session.proxyExecute()` and `ctx.proxyExecute()` now return `resultType: 'completed'` or `resultType: 'blocked'`. A blocked request has no HTTP response, so TypeScript code that reads `status` has to check `resultType` first.
+
+## 0.26.0
+
+### Minor Changes
+
+- e08c84f: Requires `@composio/client` `2.0.0-rc.18`. The SDK now hands the API client its credential as the client's `auth` option and its organization and project as `scope`, instead of placing them in default headers. The `apiKey`, `userApiKey`, `orgApiKey`, `orgId` and `projectId` options, their environment fallbacks and the credentials sent on each request are unchanged, with one exception: with `apiKey: null` and only an organization API key (the `orgApiKey` option, `COMPOSIO_ORG_API_KEY`, or an `x-org-api-key` default header), every request now carries `x-org-api-key`, and so do trigger channel authorization and `session.mcp.headers`. Before, only the organization-owner operations did, and every other request went out without a credential.
+
+  Credential and scope headers in `defaultHeaders` or `createSession({ headers })` keep working, but the SDK folds them into its own options instead of forwarding them: an `x-user-api-key` or `x-org-api-key` entry becomes the credential every request carries, an `x-api-key` entry becomes the project key, and `x-org-id` / `x-project-id` entries become `orgId` / `projectId`. `getConfig()` reports the folded values (for example `apiKey: null` and `userApiKey` for an `x-user-api-key` entry) and no longer lists those entries under `defaultHeaders`. Setting more than one of `x-api-key`, `x-user-api-key` and `x-org-api-key` now throws a `ComposioError`; the API rejected every such request.
+
+  On the client returned by `getClient()`, `apiKey`, `userApiKey` and `orgApiKey` are read-only and deprecated (read the keys from `getConfig()`, or `authMode` and `scope` from the client), and a per-call `headers` option can no longer name a credential or scope header. The API client no longer reads the environment itself: the SDK still honours `COMPOSIO_ALLOW_INSECURE_HTTP=1`, and no longer applies `COMPOSIO_CUSTOM_HEADERS`; pass `defaultHeaders` instead.
+
+  The deprecated `customConnectionData` now requires `val.access_token` for `S2S_OAUTH2`, as the API does.
+
+- 57de614: Requires `@composio/client` `2.0.0-rc.19`. The SDK forwards the API client's log lines through a `Console`-shaped object instead of the client's removed `Logger` interface; what is logged, and at which SDK level, is unchanged. With rc.19, the client returned by `getClient()` no longer has `apiKey`, `userApiKey`, `orgApiKey` or `logger`, and its `baseURL`, `maxRetries`, `timeout` and `logLevel` are read-only: read the keys from `getConfig()`, and derive a client with `withOptions()` to change the others.
+
+### Patch Changes
+
+- 9d26fb8: Fold OpenAPI `nullable` into the type in strict tool schemas
+
+  `toStrictJsonSchema` no longer passes OpenAPI `nullable` through. Anthropic strict tool use rejects it on an object schema with a 400 for the whole request. A node with `nullable: true` now accepts `null` through its `type` (`["object", "null"]`) or a null branch, matching how the tool's arguments are validated, and the rewrite is reported as a `nullable-converted` change. `nullable: false` is removed as an `unsupported-keyword-stripped` change. `omitNullToolArguments` now keeps a `null` for a property marked `nullable: true`, as it already does for one whose `type` includes `null`.
+
+- 3dd9a2c: Strip string `format` values that OpenAI structured outputs rejects from strict tool schemas
+
+  `toStrictJsonSchema` now removes a `format` on a string schema unless it is one of `date-time`, `time`, `date`, `duration`, `email`, `hostname`, `ipv4`, `ipv6`, or `uuid`. OpenAI rejects any other string format in strict mode with a 400 for the whole request, so a single tool with `format: "uri"`, a custom format such as `repo.nwo`, or the `format: "path"` that file uploads add made every strict request fail. The removal is reported as an `unsupported-keyword-stripped` change. Formats on number and integer schemas are kept, since the API does not check them.
+
+- 04fdb41: Check a string tool parameter as base64 only when its `contentEncoding` is `base64`. `format: "binary"` (raw octets in OpenAPI) and other encodings such as `base16` were validated as base64, so the Vercel, LangChain, LlamaIndex, and Claude Agent SDK providers rejected tool calls with plain text or hex in those fields, and the schema sent to the model described them as `contentEncoding: "base64"`. Those fields are now plain strings. `contentEncoding: "base64"` keeps its check, and `format: "byte"` stays unchecked.
+- be12ce1: Warn once per toolkit version when the API reports it as deprecated through the `Composio-Deprecated-Toolkits` response header. The warning names the version, the sunset date and how to pin a newer version. Silence it with `logLevel: 'error'` or `COMPOSIO_LOG_LEVEL=error`.
+- Updated dependencies [f119f05]
+- Updated dependencies [04fdb41]
+  - @composio/json-schema-to-zod@0.4.0
+
 ## 0.25.0
 
 ### Minor Changes

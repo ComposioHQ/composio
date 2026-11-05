@@ -27,10 +27,30 @@ For an unattended coding agent with no human available to log in, use the [agent
 
 Send it in the `x-api-key` header:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+print(composio.client.tools.list())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+console.log(await composio.getClient().get<unknown>('/api/v3.1/tools'));
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl https://backend.composio.dev/api/v3.1/tools \
+curl -X GET https://backend.composio.dev/api/v3.1/tools \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
+</Tab>
+</Tabs>
 
 ## Organization API key
 
@@ -40,10 +60,37 @@ Get it from the dashboard: open **Organization Settings → General Settings** a
 
 Send it in the `x-org-api-key` header:
 
+The Python SDK also requires `COMPOSIO_API_KEY` to initialize; the generated organization endpoint selects `COMPOSIO_ORG_API_KEY` for this request.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"])
+print(composio.client.org.owner.project.list())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: null,
+  orgApiKey: process.env.COMPOSIO_ORG_API_KEY,
+});
+console.log(await composio.getClient().get<unknown>('/api/v3.1/org/owner/project/list'));
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl https://backend.composio.dev/api/v3.1/org/projects \
+curl -X GET https://backend.composio.dev/api/v3.1/org/owner/project/list \
   -H "x-org-api-key: $COMPOSIO_ORG_API_KEY"
 ```
+</Tab>
+</Tabs>
 
 ## Scoped project API key
 
@@ -51,12 +98,43 @@ A scoped project API key authenticates to a single project but reaches only the 
 
 Scope a key to the least it needs, then send it like any project key:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio(api_key=os.environ["COMPOSIO_SCOPED_API_KEY"])
+result = composio.client.post(
+    "/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
+    cast_to=object,
+    body={"arguments": {"username": "pg"}},
+)
+print(result)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const scopedApiKey = process.env.COMPOSIO_SCOPED_API_KEY;
+if (!scopedApiKey) throw new Error('Set COMPOSIO_SCOPED_API_KEY to a least-privilege project key');
+const composio = new Composio({ apiKey: scopedApiKey });
+const result = await composio.getClient().post<unknown>('/api/v3.1/tools/execute/HACKERNEWS_GET_USER', {
+  body: { arguments: { username: 'pg' } },
+});
+console.log(result);
+```
+</Tab>
+<Tab value="API">
 ```bash
-curl https://backend.composio.dev/api/v3.1/tools/execute/HACKERNEWS_GET_USER \
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/HACKERNEWS_GET_USER \
   -H "x-api-key: $COMPOSIO_SCOPED_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"arguments": {"username": "pg"}}'
 ```
+</Tab>
+</Tabs>
 
 See [Scoped project API keys](/reference/authenticating-to-composio/project-api-key-permissions) for the permission areas, access levels, and the routes each one covers.
 
@@ -66,12 +144,42 @@ A user API key authenticates you as a member of your organization instead of as 
 
 Every session route accepts a user API key as an alternative to a project key: create, retrieve, update, delete, attach, link, search, execute, tools, toolkits, mounts, and config history. Without a scope header the key addresses your developer project:
 
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio(
+    disable_api_key=True,
+    user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
+)
+session = composio.create(user_id="user_123", toolkits=["gmail"])
+print(session)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: null,
+  userApiKey: process.env.COMPOSIO_USER_API_KEY,
+});
+const session = await composio.create('user_123', { toolkits: ['gmail'] });
+console.log(session);
+```
+</Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-key-header" operation="POST /api/v3.1/tool_router/session" field="x-api-key" reason="session routes accept x-user-api-key but OpenAPI lists only the project API-key alternative" */}
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "x-user-api-key: $COMPOSIO_USER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "user_123", "toolkits": {"enable": ["gmail"]}}'
 ```
+</Tab>
+</Tabs>
 
 To act in your organization's consumer project, add `x-org-id` and `x-project-id`, always together and always as nano IDs (`org_...` and `proj_...`, never UUIDs). The [consumer agent guide](/docs/consumer-agents#run-sessions-in-your-organizations-consumer-project) shows how to resolve those IDs first.
 
@@ -98,6 +206,7 @@ The SDKs resolve the project API key by intent, so an unexpected key never gets 
 
 A user-only instance sends `x-user-api-key` on every request and no `x-api-key`. Only `x-user-api-key` in `defaultHeaders` counts as a credential; every other default header passes through untouched. Clones made with `createSession()` keep the credentials they were resolved with instead of re-reading the environment.
 
+{/* code-example: no-api reason="SDK constructor options choosing which key header the client sends" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
@@ -117,7 +226,6 @@ composio = Composio(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 // Project key: pass it, or omit apiKey to fall back to COMPOSIO_API_KEY.

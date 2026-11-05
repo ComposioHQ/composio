@@ -52,7 +52,7 @@ import { telemetry } from '../telemetry/Telemetry';
 import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
-import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import {
@@ -72,7 +72,7 @@ import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
 type ToolRouterSessionExecuteOptions = {
-  experimental?: SessionExecuteParams.Experimental;
+  experimental?: NonNullable<SessionExecuteParams['experimental']>;
 };
 
 type RawToolParameters =
@@ -409,9 +409,9 @@ export class Tools<
    * Lists Composio API tools available to the SDK.
    *
    * This method fetches remote Composio tools from the API in raw format. The response can be
-   * filtered and modified as needed. Local experimental custom tools are session-scoped; attach
+   * filtered and modified as needed. Experimental local tools are session-scoped; attach
    * them when creating or reusing a Tool Router session, then use `session.tools()`,
-   * `session.customTools()`, or `session.execute()`.
+   * `session.localTools()`, or `session.execute()`.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
@@ -628,8 +628,8 @@ export class Tools<
    * This method fetches a single tool in raw format without provider-specific wrapping,
    * providing direct access to the tool's schema and metadata. Tool versions are controlled
    * at the Composio SDK initialization level through the `toolkitVersions` configuration.
-   * Local experimental custom tools are session-scoped; attach them when creating or reusing a
-   * Tool Router session, then use `session.tools()`, `session.customTools()`, or
+   * Experimental local tools are session-scoped; attach them when creating or reusing a
+   * Tool Router session, then use `session.tools()`, `session.localTools()`, or
    * `session.execute()`.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
@@ -1362,7 +1362,7 @@ export class Tools<
     }
     // convert the headers and query to the composio format
     // { name: string, type: 'header' | 'query', value: string }
-    const parameters: ComposioToolProxyParams.Parameter[] = [];
+    const parameters: NonNullable<ComposioToolProxyParams['parameters']>[number][] = [];
     const parameterTypes = {
       header: 'header',
       query: 'query',

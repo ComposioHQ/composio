@@ -3,10 +3,12 @@ import { vi } from 'vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { ConfigProvider, Effect, Fiber, Layer } from 'effect';
+import { FetchHttpClient } from 'effect/http';
 import * as tempy from 'tempy';
 import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
 import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { DashboardToolExecution } from 'src/services/dashboard-tool-execution';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { cliDebugFlagsLayer } from 'src/services/runtime-flags';
@@ -59,8 +61,13 @@ const withExecutor = () => {
   const singleton = Layer.provide(ComposioClientSingleton.Default, platform);
   const repository = Layer.provide(ComposioToolkitsRepository.Default, platform);
   const catalog = Layer.provide(ToolkitSlugCatalog.Default, Layer.mergeAll(repository, platform));
+  // Never called here: every execution in this file targets the backend.
+  const dashboard = Layer.provide(
+    DashboardToolExecution.Default,
+    Layer.mergeAll(Layer.provide(ComposioUserContextLive, platform), FetchHttpClient.layer)
+  );
   return Layer.mergeAll(
-    Layer.provide(ToolsExecutorLive, Layer.mergeAll(singleton, catalog)),
+    Layer.provide(ToolsExecutorLive, Layer.mergeAll(singleton, catalog, dashboard)),
     singleton,
     repository,
     platform,
@@ -161,6 +168,7 @@ describe('interrupting a single-shot client request', () => {
       const fiber = yield* Effect.forkChild(
         executor.execute('COMPOSIO_SEARCH_TOOLS', {
           userId: 'default',
+          target: { kind: 'backend' },
           arguments: { queries: [{ use_case: 'send an email' }] },
         })
       );

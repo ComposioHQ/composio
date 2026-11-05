@@ -1,6 +1,7 @@
 {
   "title": "Authentication",
   "pages": [
+    "managed-auth-for-custom-tools",
     "manually-authenticating",
     "managing-multiple-connected-accounts",
     "importing-existing-connections",

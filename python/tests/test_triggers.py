@@ -302,6 +302,24 @@ class TestTriggers:
         assert call_kwargs["user_id"] is omit
         assert result == mock_response
 
+    def test_create_passes_type_and_polling_interval(self, triggers, mock_client):
+        """type and polling_interval reach the upsert; unset ones are omitted."""
+        triggers.create(
+            slug="GMAIL_NEW_GMAIL_MESSAGE",
+            user_id="user-123",
+            type="poll",
+            polling_interval=15,
+        )
+        triggers.create(slug="GMAIL_NEW_GMAIL_MESSAGE", user_id="user-123")
+
+        with_fields, without_fields = (
+            mock_client.trigger_instances.upsert.call_args_list
+        )
+        assert with_fields.kwargs["type"] == "poll"
+        assert with_fields.kwargs["polling_interval"] == 15
+        assert without_fields.kwargs["type"] is omit
+        assert without_fields.kwargs["polling_interval"] is omit
+
     def test_create_with_user_id(self, triggers, mock_client):
         """Test create trigger with user_id only.
 

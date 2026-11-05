@@ -1,5 +1,7 @@
 import { APIConnectionError, type RequestOptions } from '@composio/client/effect';
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
+import type { PermissionsResolveResponse } from '@composio/client/resources/_internal/consumer';
+import type { ConsumerRetrieveConfigResponse } from '@composio/client/resources/_internal/org/consumer';
 import { Effect, Option } from 'effect';
 import type { OrganizationSummary, OrgProject } from 'src/services/composio-account';
 import { TIMESTAMP } from '../models/account';
@@ -49,9 +51,18 @@ export interface AccountTestData {
     SessionRetrieveInfoResponse | ((scope: MockRequestScope) => SessionRetrieveInfoResponse);
   organizations?: ReadonlyArray<OrganizationSummary>;
   projects?: ReadonlyArray<OrgProject>;
+  /**
+   * The `consumer_user_id` the consumer project resolve endpoint answers with. Omitted (the
+   * default) serves `consumer-user-<orgId>`; `''` serves an empty id (the backend's
+   * "logged in, but no consumer user" shape); `null` serves no field at all, which only a
+   * mock can answer — the real response schema requires the string.
+   */
+  consumerUserId?: string | null;
   connectedToolkits?: ReadonlyArray<string>;
   latestToolVersion?: { readonly tool_slug: string; readonly version: string };
   projectApiKey?: string;
+  consumerConfig?: ConsumerRetrieveConfigResponse;
+  consumerPermissions?: PermissionsResolveResponse;
   onRequest?: (request: MockAccountRequest) => void;
 }
 
@@ -140,34 +151,53 @@ export const mockAccountResources = (accountData: AccountTestData, base: MockReq
           );
         },
       },
-      consumer: {
-        project: {
-          resolve: (
-            params: { 'x-user-api-key': string; 'x-org-id': string },
+    },
+    _internal: {
+      org: {
+        consumer: {
+          project: {
+            resolve: (
+              params: { 'x-user-api-key': string; 'x-org-id': string },
+              options?: RequestOptions
+            ) => {
+              record('org.consumer.project.resolve', options, params);
+              const orgId = params['x-org-id'];
+              return Effect.succeed({
+                project_id: 'consumer_project_id_test',
+                project_nano_id: 'consumer_project_test',
+                project_name: 'Consumer Project',
+                org_id: orgId,
+                project_type: 'CONSUMER' as const,
+                config: { consumer_experience_enabled: true, enhanced_controls: false },
+                consumer_user_id:
+                  accountData.consumerUserId === null
+                    ? undefined
+                    : (accountData.consumerUserId ?? `consumer-user-${orgId}`),
+              });
+            },
+          },
+          listConnectedToolkits: (
+            params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
             options?: RequestOptions
           ) => {
-            record('org.consumer.project.resolve', options, params);
-            const orgId = params['x-org-id'];
-            return Effect.succeed({
-              project_id: 'consumer_project_id_test',
-              project_nano_id: 'consumer_project_test',
-              project_name: 'Consumer Project',
-              org_id: orgId,
-              project_type: 'CONSUMER' as const,
-              config: { consumer_experience_enabled: true, enhanced_controls: false },
-              consumer_user_id: `consumer-user-${orgId}`,
-            });
+            record('org.consumer.listConnectedToolkits', options, params);
+            return withTestData(
+              accountData.connectedToolkits,
+              'org.consumer.listConnectedToolkits'
+            ).pipe(Effect.map(toolkits => ({ toolkits: [...toolkits] })));
+          },
+          retrieveConfig: (options?: RequestOptions) => {
+            record('org.consumer.config', options);
+            return withTestData(accountData.consumerConfig, 'org.consumer.config');
           },
         },
-        listConnectedToolkits: (
-          params: { user_id: string; 'x-user-api-key': string; 'x-org-id': string },
-          options?: RequestOptions
-        ) => {
-          record('org.consumer.listConnectedToolkits', options, params);
-          return withTestData(
-            accountData.connectedToolkits,
-            'org.consumer.listConnectedToolkits'
-          ).pipe(Effect.map(toolkits => ({ toolkits: [...toolkits] })));
+      },
+      consumer: {
+        permissions: {
+          resolve: (body?: unknown, options?: RequestOptions) => {
+            record('consumer.permissions.resolve', options, body);
+            return withTestData(accountData.consumerPermissions, 'consumer.permissions.resolve');
+          },
         },
       },
     },

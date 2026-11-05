@@ -27,7 +27,7 @@ jobs:
       # downstream workflows like build-cli-binaries.yml, so publishing fires.
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
@@ -44,7 +44,7 @@ jobs:
           # Keep the release runtime explicitly pinned because trusted publishing
           # depends on the npm bundled with this Node.js release, even though the
           # pin currently matches the repository toolchain.
-          node-version: '24.17.0'
+          node-version: '24.22.1'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -64,6 +64,9 @@ jobs:
         if: github.event_name != 'workflow_dispatch' # only run on master merges
         with:
           github-token: ${{ steps.app-token.outputs.token }}
+          # SDKs publish to npm. The CLI binary workflow owns GitHub Releases.
+          create-github-releases: false
+          push-git-tags: true
           publish-script: pnpm changeset:release
           commit-message: 'Release: update version'
           pr-title: 'Release: update version'

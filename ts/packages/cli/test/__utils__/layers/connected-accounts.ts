@@ -3,7 +3,7 @@ import type {
   AuthConfigCreateResponse,
 } from '@composio/client/resources/auth-configs';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
-import { Array as Arr, Effect, Layer } from 'effect';
+import { Array as Arr, Effect, Layer, Stream } from 'effect';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import {
@@ -79,6 +79,16 @@ const findById = <A extends { readonly id: string }>(
   );
 
 /**
+ * The repository's auth-config methods.
+ */
+export type AuthConfigRepositoryMethod = 'listAuthConfigs' | 'getAuthConfig' | 'createAuthConfig';
+
+export type AuthConfigRepositoryMethods = Pick<
+  ComposioToolkitsRepositoryShape,
+  AuthConfigRepositoryMethod
+>;
+
+/**
  * The repository methods this family serves.
  */
 export type ConnectedAccountRepositoryMethod =
@@ -90,13 +100,12 @@ export type ConnectedAccountRepositoryMethods = Pick<
 >;
 
 /**
- * The repository's auth-config and connected-account methods, answering from
- * the test data the way the API would.
+ * The repository's auth-config methods, answering from the test data the way
+ * the API would.
  */
-export const connectedAccountRepositoryMethods = (
-  authConfigsData: ResolvedAuthConfigsTestData,
-  connectedAccountsData: ResolvedConnectedAccountsTestData
-): ConnectedAccountRepositoryMethods => ({
+export const authConfigRepositoryMethods = (
+  authConfigsData: ResolvedAuthConfigsTestData
+): AuthConfigRepositoryMethods => ({
   listAuthConfigs: (params: {
     search?: string;
     toolkit_slug?: string;
@@ -143,6 +152,17 @@ export const connectedAccountRepositoryMethods = (
       }
     );
   },
+});
+
+/**
+ * The repository's auth-config and connected-account methods, answering from
+ * the test data the way the API would.
+ */
+export const connectedAccountRepositoryMethods = (
+  authConfigsData: ResolvedAuthConfigsTestData,
+  connectedAccountsData: ResolvedConnectedAccountsTestData
+): ConnectedAccountRepositoryMethods => ({
+  ...authConfigRepositoryMethods(authConfigsData),
   getConnectedAccount: (nanoid: string) =>
     findById(connectedAccountsData.items, nanoid, () =>
       notFoundError(`Connected account "${nanoid}" not found`, {
@@ -159,64 +179,79 @@ export const connectedAccountRepositoryMethods = (
  */
 export const mockConnectedAccountResources = (
   connectedAccountsData: ResolvedConnectedAccountsTestData
-) => ({
-  link: {
-    create: (_params: { auth_config_id: string; user_id: string }) =>
-      Effect.succeed(
-        connectedAccountsData.linkResponse ?? {
-          connected_account_id: 'con_test_link',
-          expires_at: '2026-12-31T23:59:59Z',
-          link_token: 'lt_test_token',
-          redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
-        }
-      ),
-  },
-  connectedAccounts: {
-    list: (params?: {
-      toolkit_slugs?: string[];
-      user_ids?: string[];
-      statuses?: string[];
-      limit?: number;
-    }) => {
-      let results = [...connectedAccountsData.items];
-
-      if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
-        const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
-        results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
-      }
-
-      if (params?.user_ids && params.user_ids.length > 0) {
-        const userIds = new Set(params.user_ids);
-        results = results.filter(item => userIds.has(item.user_id));
-      }
-
-      if (params?.statuses && params.statuses.length > 0) {
-        const statuses = new Set(params.statuses);
-        results = results.filter(item => statuses.has(item.status));
-      }
-
-      const limit = params?.limit ?? DEFAULT_PAGE_LIMIT;
-      return Effect.succeed({
-        items: results.slice(0, limit),
-        total_items: results.length,
-        total_pages: Math.ceil(results.length / limit),
-        current_page: 1,
-        next_cursor: null,
-      });
+) => {
+  const resources = {
+    link: {
+      create: (_params: { auth_config_id: string; user_id: string }) =>
+        Effect.succeed(
+          connectedAccountsData.linkResponse ?? {
+            connected_account_id: 'con_test_link',
+            expires_at: '2026-12-31T23:59:59Z',
+            link_token: 'lt_test_token',
+            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
+          }
+        ),
     },
-    retrieve: (nanoid: string) =>
-      findById(connectedAccountsData.items, nanoid, () =>
-        notFoundError(`Connected account "${nanoid}" not found`)
-      ),
-    delete: (nanoid: string) =>
-      findById(connectedAccountsData.items, nanoid, () =>
-        notFoundError(`Connected account "${nanoid}" not found`)
-      ).pipe(
-        Effect.tap(() => Effect.sync(() => connectedAccountsData.onDelete?.(nanoid))),
-        Effect.as({})
-      ),
-  },
-});
+    connectedAccounts: {
+      list: (params?: {
+        toolkit_slugs?: string[];
+        user_ids?: string[];
+        statuses?: string[];
+        limit?: number;
+      }) => {
+        let results = [...connectedAccountsData.items];
+
+        if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
+          const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
+          results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
+        }
+
+        if (params?.user_ids && params.user_ids.length > 0) {
+          const userIds = new Set(params.user_ids);
+          results = results.filter(item => userIds.has(item.user_id));
+        }
+
+        if (params?.statuses && params.statuses.length > 0) {
+          const statuses = new Set(params.statuses);
+          results = results.filter(item => statuses.has(item.status));
+        }
+
+        const limit = params?.limit ?? DEFAULT_PAGE_LIMIT;
+        return Effect.succeed({
+          items: results.slice(0, limit),
+          total_items: results.length,
+          total_pages: Math.ceil(results.length / limit),
+          current_page: 1,
+          next_cursor: null,
+        });
+      },
+      retrieve: (nanoid: string) =>
+        findById(connectedAccountsData.items, nanoid, () =>
+          notFoundError(`Connected account "${nanoid}" not found`)
+        ),
+      delete: (nanoid: string) =>
+        findById(connectedAccountsData.items, nanoid, () =>
+          notFoundError(`Connected account "${nanoid}" not found`)
+        ).pipe(
+          Effect.tap(() => Effect.sync(() => connectedAccountsData.onDelete?.(nanoid))),
+          Effect.as({})
+        ),
+    },
+  };
+  return {
+    ...resources,
+    connectedAccounts: {
+      ...resources.connectedAccounts,
+      listStream: (params?: Parameters<typeof resources.connectedAccounts.list>[0]) =>
+        Stream.fromEffect(
+          resources.connectedAccounts.list({
+            ...params,
+            limit: Math.max(connectedAccountsData.items.length, 1),
+          })
+        ).pipe(Stream.flatMap(page => Stream.fromIterable(page.items))),
+    },
+  };
+};
 
 /**
  * A `ComposioToolkitsRepository` that serves only auth configs and connected

@@ -6,6 +6,9 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pytest
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteResponse,
+)
 from composio_client import ProjectAuth, omit
 from pydantic import BaseModel, Field, RootModel
 
@@ -119,8 +122,15 @@ class TestToolExecution:
         result = tools.get_raw_tool_router_meta_tools(
             "session_123", modifiers=[observe_toolkit]
         )
-        mock_client.tool_router.session.execute.return_value = Mock(
-            data={}, error=None, result_type="completed"
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "data": {},
+                    "error": None,
+                    "result_type": "completed",
+                    "log_id": "log_1",
+                }
+            )
         )
         execute = tools._wrap_execute_tool_for_tool_router(
             "session_123", modifiers=[observe_before_execute, observe_after_execute]
@@ -168,8 +178,15 @@ class TestToolExecution:
             "required": ["attachment"],
         }
         tools._tool_schemas[tool.slug] = tool
-        mock_client.tool_router.session.execute.return_value = Mock(
-            data={}, error=None, result_type="completed"
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "data": {},
+                    "error": None,
+                    "result_type": "completed",
+                    "log_id": "log_1",
+                }
+            )
         )
         execute = tools._wrap_execute_tool_for_tool_router("session_123")
         arguments = {

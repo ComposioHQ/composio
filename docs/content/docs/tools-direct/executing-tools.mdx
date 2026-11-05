@@ -20,6 +20,7 @@ To run a specific tool version, pass `version` directly to `composio.tools.execu
 
 TypeScript SDK methods accept an `AbortSignal` in their trailing request options. Aborted requests throw `ComposioRequestCancelledError`, so cancellation can be handled separately from execution failures:
 
+{/* code-example: single-language reason="AbortSignal request cancellation is a TypeScript SDK mechanism with no Python counterpart" */}
 ```typescript
 import { Composio, ComposioRequestCancelledError } from '@composio/core';
 
@@ -44,6 +45,7 @@ Use an `AbortController` when application code decides when to cancel. Custom to
 
 Use the Composio SDK with providers like OpenAI, Anthropic, and Google AI. To learn how to set up these providers, see [Providers](/docs/providers/openai).
 
+{/* code-example: no-api reason="LLM chat-completions loop with provider-formatted tools and handle_tool_calls; the provider integration is SDK-side" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -56,7 +58,8 @@ from datetime import datetime
 user_id = "user-k7334"
 
 # Create composio client
-composio = Composio(provider=OpenAIProvider(), api_key="your_composio_api_key")
+provider = OpenAIProvider()
+composio = Composio(provider=provider, api_key="your_composio_api_key")
 
 # Create openai client
 openai = OpenAI()
@@ -78,27 +81,26 @@ result = openai.chat.completions.create(
 )
 
 # Handle tool calls
-result = composio.provider.handle_tool_calls(user_id=user_id, response=result)
+result = provider.handle_tool_calls(user_id=user_id, response=result)
 print(result)
 ```
   </Tab>
   <Tab value="TypeScript">
 ```typescript
-import { Composio } from '@composio/core';
-import { AnthropicProvider } from '@composio/anthropic';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { Composio, OpenAIProvider } from '@composio/core';
+import OpenAI from 'openai';
 
 // Use a unique identifier for each user in your application
 const userId = 'user-k7334';
 
-// Create anthropic client
-const anthropic = new Anthropic();
-
-// Create Composio client
+// Create composio client
 const composio = new Composio({
-  apiKey: "your-composio-api-key",
-  provider: new AnthropicProvider(),
+  apiKey: 'your_composio_api_key',
+  provider: new OpenAIProvider(),
 });
+
+// Create openai client
+const openai = new OpenAI();
 
 // Get calendar tools for this user
 const tools = await composio.tools.get(userId, {
@@ -106,21 +108,18 @@ const tools = await composio.tools.get(userId, {
 });
 
 // Ask the LLM to check calendar
-const msg = await anthropic.messages.create({
-  model: 'claude-sonnet-4-6',
-  tools: tools,
+const completion = await openai.chat.completions.create({
+  model: 'gpt-5.4',
+  tools,
   messages: [
-    {
-      role: 'user',
-      content: `What's on my calendar for the next 7 days?`,
-    },
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: "What's on my calendar for the next 7 days?" },
   ],
-  max_tokens: 1024,
 });
 
 // Handle tool calls
-const result = await composio.provider.handleToolCalls(userId, msg);
-console.log('Results:', JSON.stringify(result, null, 2));
+const result = await composio.provider.handleToolCalls(userId, completion);
+console.log(result);
 ```
   </Tab>
 </Tabs>
@@ -129,6 +128,7 @@ console.log('Results:', JSON.stringify(result, null, 2));
 
 Agentic frameworks automatically handle the tool execution loop. Composio provides support for frameworks like this by making sure the tools are formatted into the correct objects for the agentic framework to execute.
 
+{/* code-example: no-api reason="OpenAI Agents framework integration; the agent loop runs in the SDK provider" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -170,38 +170,33 @@ asyncio.run(main())
   <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
-import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { VercelProvider } from '@composio/vercel';
+import { Agent, run } from '@openai/agents';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
 
 // Use a unique identifier for each user in your application
 const userId = 'user-k7334';
 
 // Initialize Composio toolset
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
+  apiKey: 'your_composio_api_key',
+  provider: new OpenAIAgentsProvider(),
 });
 
 // Get all tools for the user
 const tools = await composio.tools.get(userId, {
-  toolkits: ['HACKERNEWS_GET_LATEST_POSTS'],
-  limit: 10,
+  toolkits: ['COMPOSIO_SEARCH'],
 });
 
-// Generate text with tool use
-const { text } = await generateText({
-  model: anthropic('claude-sonnet-4-6'),
-  messages: [
-    {
-      role: 'user',
-      content: 'Do a thorough DEEP research on the top articles on Hacker News about Composio',
-    },
-  ],
+// Create an agent with the tools
+const agent = new Agent({
+  name: 'Deep Researcher',
+  instructions: 'You are an investigative journalist.',
   tools,
 });
 
-console.log(text);
+// Run the agent
+const result = await run(agent, 'Do a thorough DEEP research on Golden Gate Bridge');
+console.log(result.finalOutput);
 ```
   </Tab>
 </Tabs>
@@ -235,12 +230,12 @@ Pass `version` on the `tools.execute()` call to select a specific tool version. 
 
 Choose an available version from the [GitHub toolkit page](/toolkits/github) or [look it up with the SDK](/docs/tools-direct/toolkit-versioning#managing-versions). The examples below use `20250909_00`. Replace it with the version you have tested, and keep that string in your code or configuration.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
 
-composio = Composio(api_key="your_composio_key")
+composio = Composio(api_key="your_composio_api_key")
 
 result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
@@ -255,7 +250,7 @@ print(result)
 ```typescript
 import { Composio } from "@composio/core";
 
-const composio = new Composio({ apiKey: "your_composio_key" });
+const composio = new Composio({ apiKey: "your_composio_api_key" });
 
 const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
   userId: "user-k7334",
@@ -263,6 +258,14 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
   arguments: { owner: "ComposioHQ", repo: "composio", page: 1, per_page: 5 },
 });
 console.log(result);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_LIST_STARGAZERS \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-k7334", "version": "20250909_00", "arguments": {"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5}}'
 ```
   </Tab>
 </Tabs>
@@ -273,7 +276,7 @@ A dated `version` satisfies the direct-execution version check. To set a default
 
 If an LLM consumes the output and can handle schema changes, you can use `latest`. Direct execution requires the explicit opt-in shown below.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio
@@ -282,7 +285,7 @@ user_id = "user-k7334"
 # Configure toolkit versions at SDK level for every toolkit you execute.
 # Use "latest", or pin a version (see "Pin a version" above)
 composio = Composio(
-    api_key="your_composio_key",
+    api_key="your_composio_api_key",
     toolkit_versions={"github": "latest"}
 )
 
@@ -305,7 +308,7 @@ const userId = "user-k7334";
 // Configure toolkit versions at SDK level for every toolkit you execute.
 // Use "latest", or pin a version (see "Pin a version" above)
 const composio = new Composio({
-    apiKey: "your_composio_key",
+    apiKey: "your_composio_api_key",
     toolkitVersions: { github: "latest" }
 });
 
@@ -322,6 +325,15 @@ const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
   dangerouslySkipVersionCheck: true,
 });
 console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# The version check is SDK-side; over REST, send "latest" (also the v3.1 default)
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_LIST_STARGAZERS \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-k7334", "version": "latest", "arguments": {"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5}}'
 ```
   </Tab>
 </Tabs>
@@ -342,7 +354,7 @@ Prefer relative endpoints when possible. They resolve against the connected acco
 A relative endpoint is appended to the base URL, and many base URLs already include a path. Google Calendar's base URL is `https://www.googleapis.com/calendar/v3`, so pass `/users/me/calendarList`. Passing `/calendar/v3/users/me/calendarList` requests `/calendar/v3/calendar/v3/users/me/calendarList` and returns a `404`.
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
 # Send a proxy request to the endpoint
@@ -371,7 +383,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const { data } = await composio.tools.proxyExecute({
     endpoint:'/repos/composiohq/composio/issues/1',
     method: 'GET',
-    connectedAccountId: 'ca_jI*****', // use connected account for github
+    connectedAccountId: 'ca_jI6********', // use connected account for github
     parameters:[
         {
             "name": "Accept",
@@ -382,6 +394,20 @@ const { data } = await composio.tools.proxyExecute({
 });
 
 console.log(data);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+# Send a proxy request to the endpoint
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "endpoint": "/repos/composiohq/composio/issues/1",
+    "method": "GET",
+    "connected_account_id": "ca_jI6********",
+    "parameters": [{"name": "Accept", "value": "application/vnd.github.v3+json", "type": "header"}]
+  }'
 ```
   </Tab>
 </Tabs>
@@ -398,11 +424,15 @@ Automatic file handling is **off by default**. Enable it with `dangerouslyAllowA
 
 Pass local file paths, URLs, or File objects to tools that accept files. The SDK uploads the file to Composio's storage and converts it to the format the tool expects — you don't need to construct the file metadata object (`s3key`, `name`, `mimetype`) yourself.
 
+{/* code-example: no-api reason="automatic file upload from local paths/URLs is done client-side by the SDK before execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
+import os
+from composio import Composio
+
 composio = Composio(
-    api_key="your_composio_key",
+    api_key="your_api_key",
     toolkit_versions={"googledrive": "latest", "gmail": "latest"},
     dangerously_allow_auto_upload_download_files=True,
 )
@@ -431,7 +461,7 @@ const composio = new Composio({
 // ---cut---
 // Upload a local file to Google Drive
 const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
-  userId: 'user-4235***',
+  userId: 'user-1235***',
   arguments: {
     file_to_upload: path.join(__dirname, 'document.pdf')
   },
@@ -445,6 +475,7 @@ console.log(result.data);  // Contains Google Drive file details
 
 This also works with public URLs. For example, to send a Gmail email with an attachment from a URL:
 
+{/* code-example: no-api reason="the SDK fetches the attachment URL and stages it in Composio storage client-side before execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -466,7 +497,8 @@ result = composio.tools.execute(
 import { Composio } from '@composio/core';
 const composio = new Composio({
   apiKey: 'your_api_key',
-  toolkitVersions: { gmail: 'latest' },
+  toolkitVersions: { googledrive: 'latest', gmail: 'latest' },
+  dangerouslyAllowAutoUploadDownloadFiles: true,
 });
 // ---cut---
 const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
@@ -487,11 +519,14 @@ const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
 
 When tools return files, Composio downloads them to the local directory and provides the file path in the response:
 
+{/* code-example: no-api reason="automatic file download to a local directory is done client-side by the SDK after execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
+from composio import Composio
+
 composio = Composio(
-    api_key="your_composio_key",
+    api_key="your_api_key",
     toolkit_versions={"googledrive": "latest"},
     dangerously_allow_auto_upload_download_files=True,
     file_download_dir="./downloads",  # Optional: Specify download directory
@@ -522,7 +557,7 @@ const composio = new Composio({
 const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
     userId: 'user-1235***',
     arguments: {
-      file_id: 'your-file-id'
+      file_id: 'your_file_id'
     },
     dangerouslySkipVersionCheck: true, // required when running "latest"
   });
@@ -568,14 +603,26 @@ Disabling protection or wiring a hook that always approves paths can allow **exf
 
 **Constructor options (defaults protect sensitive locations):**
 
-<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+{/* code-example: no-api reason="sensitive file upload protection is an SDK constructor option enforced client-side" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_api_key",
+    sensitive_file_upload_protection=True,
+    file_upload_path_deny_segments=("internal-only-secrets",),
+)
+```
+  </Tab>
   <Tab value="TypeScript">
 ```typescript
 // @errors: 2353
 import { Composio } from '@composio/core';
 
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY!,
+  apiKey: 'your_composio_api_key',
   // default true — block paths under built-in segments (e.g. .ssh, .aws) and risky basenames
   sensitiveFileUploadProtection: true,
   // optional: extra path *components* anywhere in the path (as written or symlink-resolved),
@@ -584,22 +631,37 @@ const composio = new Composio({
 });
 ```
   </Tab>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio(
-    api_key="your_composio_key",
-    sensitive_file_upload_protection=True,
-    file_upload_path_deny_segments=("internal-only-secrets",),
-)
-```
-  </Tab>
 </Tabs>
 
 **Per-execution upload hook** (run after the path is chosen but before read/upload; return a new path, `false` to abort, or throw). TypeScript passes `beforeFileUpload` on the **third** argument to `tools.execute`. In Python, add **`@before_file_upload`** functions to the `modifiers` list for `get` / `execute` (see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python)).
 
-<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+{/* code-example: no-api reason="before_file_upload/beforeFileUpload hooks run client-side in the SDK" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+import os
+from composio import Composio, before_file_upload
+
+# New form: take a single ``context`` arg; ``context["source"]`` is "path"
+# or "url". The legacy ``(path, tool, toolkit)`` 3-arg form is still accepted.
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(context) -> str | bool:
+    if context["source"] != "path":
+        return context["path"]
+    # ...audit context["path"]...
+    return context["path"]
+
+composio = Composio(api_key="your_api_key", toolkit_versions={"googledrive": "latest"})
+
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+    user_id="user-4235***",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    modifiers=[audit_path],
+)
+```
+  </Tab>
   <Tab value="TypeScript">
 ```typescript
 // @noErrors
@@ -628,31 +690,6 @@ await composio.tools.execute(
 );
 ```
   </Tab>
-  <Tab value="Python">
-```python
-import os
-from composio import Composio, before_file_upload
-
-# New form: take a single ``context`` arg; ``context["source"]`` is "path"
-# or "url". The legacy ``(path, tool, toolkit)`` 3-arg form is still accepted.
-@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
-def audit_path(ctx) -> str | bool:
-    if ctx["source"] != "path":
-        return ctx["path"]
-    # ...audit ctx["path"]...
-    return ctx["path"]
-
-composio = Composio(toolkit_versions={"googledrive": "latest"})
-
-composio.tools.execute(
-    "GOOGLEDRIVE_UPLOAD_FILE",
-    {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
-    user_id="user-1235***",
-    dangerously_skip_version_check=True,  # required when running "latest"
-    modifiers=[audit_path],
-)
-```
-  </Tab>
 </Tabs>
 
 **Errors:** `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked; `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` (or equivalent abort).
@@ -663,6 +700,7 @@ Both SDKs ship with automatic file handling **off**. Opt in with `dangerouslyAll
 
 When auto-handling is off, handle the staging yourself.
 
+{/* code-example: no-api reason="compares SDK file-handling configuration and SDK-side manual staging with files.upload" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 The Python SDK does not expose a top-level manual-staging API. Either:

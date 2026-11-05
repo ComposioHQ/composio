@@ -1,5 +1,6 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { Argument, Command, Flag } from 'effect/cli';
-import { requireLogin } from 'src/effects/require-auth';
+import { withCommandMeta } from 'src/invocation/command-identity';
 import { runToolsSearch } from './tools.search.handler';
 
 const query = Argument.String('query').pipe(
@@ -29,7 +30,7 @@ const human = Flag.Boolean('human').pipe(
   Flag.withDescription('Show formatted human-readable search output')
 );
 
-export const toolsCmd$Search = Command.make(
+const toolsCmd$SearchBase = Command.make(
   'search',
   { query, toolkits, limit, json, human },
   runToolsSearch
@@ -69,5 +70,18 @@ export const toolsCmd$Search = Command.make(
       description: 'Narrow results to a specific toolkit',
     },
   ]),
-  requireLogin
+  withCommandMeta({ requiresLogin: true })
 );
+
+export const toolsCmd$Search = withCommandTelemetry(toolsCmd$SearchBase, input => {
+  const query = input.query[0] ?? '';
+  return telemetry.fields({
+    toolkits: {
+      value: telemetry.optional(input.toolkits),
+      flags: telemetry.present(input.toolkits) ? ['--toolkits'] : [],
+    },
+    limit: telemetry.value(input.limit === undefined ? undefined : String(input.limit)),
+    query_length: telemetry.value(query.length),
+    query_term_count: telemetry.value(query.split(/\s+/u).filter(Boolean).length),
+  });
+});

@@ -253,7 +253,7 @@ export class ConnectedAccounts {
       connection: {
         callback_url: options?.callbackUrl,
         user_id: userId,
-        state: state as ConnectedAccountCreateParamsRaw.Connection['state'],
+        state: state as NonNullable<ConnectedAccountCreateParamsRaw['connection']>['state'],
         ...(options?.alias != null && { alias: options.alias }),
       },
     };

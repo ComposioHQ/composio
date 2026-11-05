@@ -1,4 +1,4 @@
-import { Array as Arr, Data, Effect, Match, Option, pipe } from 'effect';
+import { Array as Arr, Data, Effect, Match, Option, Predicate, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { APP_VERSION } from 'src/constants';
 import {
@@ -32,7 +32,7 @@ import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/co
 import { PendingLoginSession } from 'src/services/pending-login-session';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
-import { InvalidOrganizationError } from './login.errors';
+import { InvalidOrganizationError, LoginSessionRequestError } from './login.errors';
 import {
   AGENT_WITH_OTHER_FLAGS_MESSAGE,
   ALREADY_LOGGED_IN_MESSAGE,
@@ -124,14 +124,14 @@ const loginWithKey = (params: {
 }) =>
   Effect.gen(function* () {
     const client = yield* ComposioSessionRepository;
-    const getSession = client
-      .getSession({ id: params.key })
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new LoginSessionError({ message: SESSION_NOT_FOUND_MESSAGE, operation: 'load', cause })
-        )
-      );
+    const getSession = client.getSession({ id: params.key }).pipe(
+      // Only a 404 means the session is gone; any other failure keeps its cause.
+      Effect.mapError(cause =>
+        Predicate.isTagged(cause, '@composio/client/NotFoundError')
+          ? new LoginSessionError({ message: SESSION_NOT_FOUND_MESSAGE, operation: 'load', cause })
+          : new LoginSessionRequestError({ message: 'Failed to load the login session.', cause })
+      )
+    );
     const linkedSession = yield* params.noWait
       ? Effect.flatMap(getSession, requireLinkedNow)
       : waitForLinkedSession(getSession, params.pollRetries);

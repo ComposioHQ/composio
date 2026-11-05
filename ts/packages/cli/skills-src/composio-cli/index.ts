@@ -169,6 +169,11 @@ const commands: SkillCommand[] = [
         description: 'Stop long-running listeners cleanly.',
       },
       {
+        name: '`--fail-fast`',
+        description:
+          'Stop at the first event that fails to save and exit 1, so a bounded run that lost events is not a success.',
+      },
+      {
         name: '`--account`',
         description: 'Select which connected account to use by alias, word_id, or account id.',
       },

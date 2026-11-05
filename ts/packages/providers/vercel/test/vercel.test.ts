@@ -11,8 +11,12 @@ interface MockedVercelTool {
   _isMockedVercelTool: boolean;
 }
 
+/** The AI SDK schema the provider builds; `validate` runs the tool's Zod schema. */
+type ValidatingSchema = { validate: (value: unknown) => Promise<{ success: boolean }> };
+
 // Mock the ai module
-vi.mock('ai', () => {
+vi.mock('ai', async importOriginal => {
+  const actual = await importOriginal<typeof import('ai')>();
   return {
     tool: vi.fn().mockImplementation(toolConfig => {
       return {
@@ -20,7 +24,7 @@ vi.mock('ai', () => {
         _isMockedVercelTool: true,
       } as MockedVercelTool;
     }),
-    jsonSchema: vi.fn().mockImplementation(schema => schema),
+    jsonSchema: actual.jsonSchema,
   };
 });
 
@@ -82,11 +86,10 @@ describe('VercelProvider', () => {
 
       expect(tool).toHaveBeenCalledWith({
         description: mockTool.description,
-        inputSchema: expect.any(Object), // Now it's a Zod schema object
+        inputSchema: expect.any(Object),
         execute: expect.any(Function),
       });
 
-      // jsonSchema is no longer called since we use Zod schemas directly
       expect(wrapped._isMockedVercelTool).toBe(true);
     });
 
@@ -101,10 +104,9 @@ describe('VercelProvider', () => {
         mockExecuteToolFn
       ) as unknown as MockedVercelTool;
 
-      // Verify that tool was called with an empty object converted to Zod schema
       expect(tool).toHaveBeenCalledWith({
         description: toolWithoutParams.description,
-        inputSchema: expect.any(Object), // Should be a Zod schema for empty object
+        inputSchema: expect.any(Object),
         execute: expect.any(Function),
       });
       expect(wrapped._isMockedVercelTool).toBe(true);
@@ -134,7 +136,7 @@ describe('VercelProvider', () => {
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
     });
 
-    it('keeps optional and nested parameters available under strict mode', () => {
+    it('keeps optional and nested parameters available under strict mode', async () => {
       const strictProvider = new VercelProvider({ strict: true });
       const wrapped = strictProvider.wrapTool(
         {
@@ -156,24 +158,31 @@ describe('VercelProvider', () => {
         mockExecuteToolFn
       ) as unknown as MockedVercelTool;
 
-      const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+      const schema = wrapped.inputSchema as ValidatingSchema;
 
       // Optional parameters are still accepted, and may be null.
       expect(
-        schema.safeParse({ cfg: { url: 'https://example.com', note: 'x' }, id: null, label: null })
-          .success
+        (
+          await schema.validate({
+            cfg: { url: 'https://example.com', note: 'x' },
+            id: null,
+            label: null,
+          })
+        ).success
       ).toBe(true);
       // Every property is required under strict mode, so omitting one fails.
-      expect(schema.safeParse({ cfg: { url: 'https://example.com' }, id: 'a' }).success).toBe(
-        false
-      );
+      expect(
+        (await schema.validate({ cfg: { url: 'https://example.com' }, id: 'a' })).success
+      ).toBe(false);
       // Objects are closed, so unknown keys fail.
       expect(
-        schema.safeParse({
-          cfg: { url: 'https://example.com', note: null, extra: 1 },
-          id: 'a',
-          label: null,
-        }).success
+        (
+          await schema.validate({
+            cfg: { url: 'https://example.com', note: null, extra: 1 },
+            id: 'a',
+            label: null,
+          })
+        ).success
       ).toBe(false);
     });
 
@@ -208,7 +217,7 @@ describe('VercelProvider', () => {
       });
     });
 
-    it('keeps the original schema for tools strict mode cannot express', () => {
+    it('keeps the original schema for tools strict mode cannot express', async () => {
       const strictProvider = new VercelProvider({ strict: true });
       const wrapped = strictProvider.wrapTool(
         {
@@ -225,10 +234,10 @@ describe('VercelProvider', () => {
         mockExecuteToolFn
       ) as unknown as MockedVercelTool;
 
-      const schema = wrapped.inputSchema as { safeParse: (value: unknown) => { success: boolean } };
+      const schema = wrapped.inputSchema as ValidatingSchema;
 
       // `name` stays optional and `headers` still accepts arbitrary keys.
-      expect(schema.safeParse({ headers: { 'x-a': '1' } }).success).toBe(true);
+      expect((await schema.validate({ headers: { 'x-a': '1' } })).success).toBe(true);
     });
   });
 
@@ -252,12 +261,12 @@ describe('VercelProvider', () => {
       expect(tool).toHaveBeenCalledTimes(2);
       expect(tool).toHaveBeenCalledWith({
         description: mockTool.description,
-        inputSchema: expect.any(Object), // Now it's a Zod schema object
+        inputSchema: expect.any(Object),
         execute: expect.any(Function),
       });
       expect(tool).toHaveBeenCalledWith({
         description: anotherTool.description,
-        inputSchema: expect.any(Object), // Now it's a Zod schema object
+        inputSchema: expect.any(Object),
         execute: expect.any(Function),
       });
     });

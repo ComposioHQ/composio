@@ -1,17 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { afterEach } from 'vitest';
 import { buildRootCommand } from 'src/commands';
-import { teardown } from 'src/cli-main';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 const capture = (args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
-    const exit = yield* Effect.exit(cli(args));
-    let exitCode = 0;
-    teardown(exit, code => {
-      exitCode = code;
-    });
+    const exitCode = exitCodeOf(yield* Effect.exit(cli(args)));
     const stdout = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' })).join('\n');
     const stderr = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' })).join('\n');
     return { exitCode, stdout, stderr };
@@ -37,10 +32,6 @@ const visibleCommandPaths = commandPaths(
   .map(path => ({ path, command: path.join(' ') }));
 
 describe('framework command help', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive())(it => {
     it.effect.each(visibleCommandPaths)(
       'renders $command from the same definitions used by parsing',

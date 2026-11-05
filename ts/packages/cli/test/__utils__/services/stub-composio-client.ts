@@ -19,7 +19,8 @@ export interface StubRequest {
  * and the validation a call asks for are the client's own.
  *
  * A retried call sleeps on Effect's clock, so a test whose answer is retryable
- * runs under `it.live` and answers with a `retry-after-ms: 0` header.
+ * runs on the live clock (`it.live`, or `layer(..., { excludeTestServices: true })`)
+ * and answers with a `retry-after-ms: 0` header.
  */
 export const stubComposioClient = (
   respond: (request: StubRequest) => Response
@@ -58,8 +59,8 @@ export const stubComposioClient = (
  * client to `respond`; every other resource keeps the test layer's answers.
  *
  * The test layer's answers do not model request options (`signal`,
- * `maxRetries`, or any header beyond `decode`) and `connectedAccounts.list`
- * never returns a `next_cursor`, so pagination, retries, and abort are
+ * `maxRetries`, or any header beyond `decode`), and its connected-account
+ * shadows serve fixtures without cursor traversal, so pagination, retries, and abort are
  * exercised through {@link stubComposioClient}, the real `make` over a
  * recording transport.
  */

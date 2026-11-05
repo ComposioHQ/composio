@@ -1,5 +1,6 @@
 import { Data, Effect, Option } from 'effect';
 import type { ComposioClientShape } from '@composio/client/effect';
+import type { SessionCreateParams } from '@composio/client/resources/tool-router';
 import {
   getFreshConsumerToolRouterAuthConfigsFromCache,
   getFreshConsumerToolRouterConnectedAccountsFromCache,
@@ -53,15 +54,21 @@ export class ToolRouterSessionCreateError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
+/** Everything a Tool Router session is built from, resolved before the session exists. */
+export interface ToolRouterSessionContext {
+  /** The session-create body, minus the user id. */
+  readonly sessionConfig: Omit<SessionCreateParams, 'user_id'>;
+  readonly permissionSnapshot?: ConsumerPermissionSnapshot;
+  readonly connectedAccounts?: Record<string, string>;
+  readonly connectedAccountWordIds?: Record<string, string>;
+}
+
 /**
- * Create an ephemeral Tool Router session for the given user ID.
- * Returns the session id plus the permission and connected-account context bound to it.
- *
- * Accepts a pre-resolved client instance (from ComposioClientSingleton)
- * so callers can resolve the dependency at layer construction time.
- * Used by `ToolsExecutorLive` which already holds the client reference.
+ * Resolve the connections, permission snapshot and session settings for the
+ * given user ID without creating a session. Callers that execute through the
+ * Dashboard use only the connection context; the Dashboard owns the session.
  */
-export const createToolRouterSessionContext = (
+export const resolveToolRouterSessionContext = (
   client: ComposioClientShape,
   userId: string,
   options?: CreateToolRouterSessionOptions
@@ -167,9 +174,8 @@ export const createToolRouterSessionContext = (
           connectedAccountIds,
         })
       : undefined;
-    return yield* client.toolRouter.session
-      .create({
-        user_id: userId,
+    return {
+      sessionConfig: {
         auth_configs: connectionContext.authConfigs,
         connected_accounts: connectionContext.connectedAccounts,
         manage_connections: { enable: options?.manageConnections ?? false },
@@ -185,26 +191,51 @@ export const createToolRouterSessionContext = (
         experimental: permissionSnapshot?.enhancedControlsEnabled
           ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
           : undefined,
-      })
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new ToolRouterSessionCreateError({
-              message: 'Failed to create a Tool Router session.',
-              cause,
-            })
-        ),
-        Effect.map((session): CreatedToolRouterSession => ({
-          sessionId: session.session_id,
-          permissionSnapshot,
-          connectedAccounts: connectionContext.connectedAccounts,
-          connectedAccountWordIds: resolveConnectedAccountWordIds(
-            connectionContext.connectedAccounts,
-            connectionContext.availableConnectedAccounts
-          ),
-        }))
-      );
+      },
+      permissionSnapshot,
+      connectedAccounts: connectionContext.connectedAccounts,
+      connectedAccountWordIds: resolveConnectedAccountWordIds(
+        connectionContext.connectedAccounts,
+        connectionContext.availableConnectedAccounts
+      ),
+    } satisfies ToolRouterSessionContext;
   });
+
+/** Create an ephemeral Tool Router session from an already resolved context. */
+export const createToolRouterSessionFromContext = (
+  client: ComposioClientShape,
+  userId: string,
+  { sessionConfig, ...context }: ToolRouterSessionContext
+) =>
+  client.toolRouter.session.create({ user_id: userId, ...sessionConfig }).pipe(
+    Effect.mapError(
+      cause =>
+        new ToolRouterSessionCreateError({
+          message: 'Failed to create a Tool Router session.',
+          cause,
+        })
+    ),
+    Effect.map((session): CreatedToolRouterSession => ({
+      sessionId: session.session_id,
+      ...context,
+    }))
+  );
+
+/**
+ * Create an ephemeral Tool Router session for the given user ID.
+ * Returns the session id plus the permission and connected-account context bound to it.
+ *
+ * Accepts a pre-resolved client instance (from ComposioClientSingleton)
+ * so callers can resolve the dependency at layer construction time.
+ */
+export const createToolRouterSessionContext = (
+  client: ComposioClientShape,
+  userId: string,
+  options?: CreateToolRouterSessionOptions
+) =>
+  resolveToolRouterSessionContext(client, userId, options).pipe(
+    Effect.flatMap(context => createToolRouterSessionFromContext(client, userId, context))
+  );
 
 /** The name commands create their Tool Router session by. */
 export const resolveToolRouterSession = createToolRouterSessionContext;

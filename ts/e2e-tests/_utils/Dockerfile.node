@@ -1,21 +1,26 @@
 # Reusable Dockerfile for Node.js e2e tests
-# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.22.3 -t test-name .
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.23.4 --build-arg NODE_VERSION_DIGEST=sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d -t test-name .
 #
-# Uses official node:slim images, pulled from the ECR Public mirror. For multi-version testing, run the build/run
+# Uses official node:slim images. For multi-version testing, run the build/run
 # multiple times with different NODE_VERSION values from the shell script.
+#
+# Base images are digest-pinned for supply-chain integrity. ECR Public mirrors the
+# Docker Official Images, so builds do not depend on Docker Hub availability, but
+# its anonymous rate limit can still return 429 on shared runner IPs; CI mitigates
+# that by retrying with backoff (see .github/actions/build-e2e-image).
 #
 # bun and pnpm are installed from mise.toml/mise.lock (the single source of truth).
 # Node is the test matrix axis and stays on the base image, so it is disabled in
 # mise (MISE_DISABLE_TOOLS) to avoid shadowing the base image's Node.
 
 ARG NODE_VERSION
-# Base images come from the ECR Public mirror of the Docker Official Images, so
-# builds do not depend on Docker Hub's availability or anonymous pull limits.
+# Digest pin for the node:${NODE_VERSION}-slim base image; must come from toolchain-versions.json (no default on purpose so builds fail loudly instead of silently floating).
+ARG NODE_VERSION_DIGEST
 ARG BASE_REGISTRY=public.ecr.aws/docker/library
 
 # The toolchain stage depends only on the base image and mise.toml/mise.lock, so
 # CI saves its layers to the GitHub Actions cache (see .github/actions/build-e2e-image).
-FROM ${BASE_REGISTRY}/node:${NODE_VERSION}-slim AS toolchain
+FROM ${BASE_REGISTRY}/node:${NODE_VERSION}-slim@${NODE_VERSION_DIGEST} AS toolchain
 
 ENV MISE_DATA_DIR="/mise"
 ENV MISE_CACHE_DIR="/mise/cache"

@@ -1,5 +1,6 @@
 import { isAPIError } from '@composio/client/effect';
 import { Data, Effect, Option } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from './project-context';
 import { ComposioUserContext } from './user-context';
@@ -28,7 +29,7 @@ export interface ResolvedCommandProject {
 
 /**
  * The command's project could not be determined from the CLI's state and flags. The message
- * names the command that fixes it; `cli-main.ts` prints it as one line and exits 1.
+ * names the command that fixes it; the invocation prints it as one line and exits 1.
  */
 export class ProjectResolutionError extends Data.TaggedError('services/ProjectResolutionError')<{
   readonly reason:
@@ -39,12 +40,16 @@ export class ProjectResolutionError extends Data.TaggedError('services/ProjectRe
     | 'request_failed';
   readonly message: string;
   readonly cause?: unknown;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 const missingOrg = () =>
   new ProjectResolutionError({
     reason: 'missing_org',
-    message: 'No current org configured. Run `composio login` or `composio dev orgs switch`.',
+    message: 'No current org configured. Run `composio login` or `composio orgs switch`.',
   });
 
 /**

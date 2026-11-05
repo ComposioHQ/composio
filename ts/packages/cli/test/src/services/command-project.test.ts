@@ -27,6 +27,7 @@ const userContext = (orgId: Option.Option<string>) =>
         projectId: Option.none(),
         testUserId: Option.none(),
       },
+      backendMismatch: Option.none(),
       isLoggedIn: () => true,
       logout: Effect.void,
       login: () => Effect.void,
@@ -84,7 +85,7 @@ describe('resolveCommandProject', () => {
       expect(error).toBeInstanceOf(ProjectResolutionError);
       expect(error).toMatchObject({
         reason: 'missing_org',
-        message: 'No current org configured. Run `composio login` or `composio dev orgs switch`.',
+        message: 'No current org configured. Run `composio login` or `composio orgs switch`.',
       });
       expect(fetchSpy).not.toHaveBeenCalled();
     }).pipe(Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), noLocalProject)))

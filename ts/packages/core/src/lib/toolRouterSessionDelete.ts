@@ -4,22 +4,13 @@ import type { ToolRouterSessionDeleteResponse } from '../types/toolRouter.types'
 import { ToolRouterSessionDeleteResponseSchema } from '../types/toolRouter.types';
 import { withCancellation } from '../utils/cancellation';
 
-type ToolRouterSessionDeleteWireResponse = {
-  session_id: string;
-  deleted: true;
-};
-
 export async function deleteToolRouterSession(
   client: ComposioClient,
   sessionId: string,
   requestOptions?: ComposioRequestOptions
 ): Promise<ToolRouterSessionDeleteResponse> {
   const response = await withCancellation(
-    () =>
-      client.delete<ToolRouterSessionDeleteWireResponse>(
-        `/api/v3.1/tool_router/session/${encodeURIComponent(sessionId)}`,
-        requestOptions
-      ),
+    () => client.toolRouter.session.delete(sessionId, requestOptions),
     requestOptions?.signal
   );
 

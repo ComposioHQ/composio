@@ -2,13 +2,14 @@
 ToolRouterSession class for managing a single tool router session.
 
 Provides methods for tools, authorize, toolkits, search, execute, and files.
-When custom tools are bound to the session, execution is routed: local tools
+When local tools are bound to the session, execution is routed: local tools
 run in-process, remote tools are sent to the backend.
 """
 
 from __future__ import annotations
 
 import typing as t
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
@@ -26,9 +27,6 @@ from composio_client.types.tool_router import (
     session_link_params,
     session_patch_params,
     session_search_response,
-)
-from composio_client.types.tool_router.session_execute_response import (
-    SessionExecuteResponse,
 )
 
 from composio import exceptions
@@ -53,9 +51,11 @@ from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
     InlineCustomToolsWirePayload,
-    ToolRouterSessionProxyExecuteResponse,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
+    RegisteredLocalTool,
+    RegisteredLocalToolkit,
+    ToolRouterSessionProxyExecuteResponse,
 )
 from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.inline_custom_tools_payload import (
@@ -74,6 +74,7 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
+    ToolRouterSessionExecuteResponse,
     require_execute_meta_result,
     require_execute_result,
 )
@@ -174,10 +175,69 @@ class ToolRouterProxyExecuteConfig(te.TypedDict):
     enable: bool
 
 
-ToolRouterSessionExecuteResponse = SessionExecuteResponse
-"""Result of :meth:`ToolRouterSession.execute`. ``instant_charge`` is present
-only when the Session sets ``instant.return_instant_charge`` and a charge is
-available."""
+class ToolRouterHookToolkitsScope(te.TypedDict):
+    """Runs a hook only on calls to these toolkits, including their proxy calls."""
+
+    toolkits: t.List[str]
+
+
+ToolRouterHookAppliesTo = t.Union[t.Literal["all"], ToolRouterHookToolkitsScope]
+"""Which tool calls a hook runs on: ``"all"``, or only the listed toolkits."""
+
+
+class ToolRouterHookConditionCheckHandler(te.TypedDict):
+    """Blocks a call or result when it matches ``condition``.
+
+    ``condition`` is a plain sentence describing what to block, for example
+    ``"Sending email to anyone outside example.org"``.
+    """
+
+    type: t.Literal["condition_check"]
+    condition: str
+    action: t.Literal["block"]
+
+
+class ToolRouterHookPromptInjectionCheckHandler(te.TypedDict):
+    """A pre-defined check that blocks results with text that tries to give
+    the agent instructions."""
+
+    type: t.Literal["prompt_injection_check"]
+    action: t.Literal["block"]
+
+
+class ToolRouterBeforeExecuteHook(te.TypedDict):
+    """A hook that can block a tool call before it runs.
+
+    ``id`` is unique within the session and shows up in results and logs.
+    ``name`` is optional; the agent sees it when this hook blocks a call.
+    """
+
+    type: t.Literal["before_execute"]
+    id: str
+    name: te.NotRequired[str]
+    applies_to: ToolRouterHookAppliesTo
+    handler: ToolRouterHookConditionCheckHandler
+
+
+class ToolRouterAfterExecuteHook(te.TypedDict):
+    """A hook that can block a tool call's result before the agent sees it.
+
+    ``id`` is unique within the session and shows up in results and logs.
+    ``name`` is optional; the agent sees it when this hook blocks a call.
+    """
+
+    type: t.Literal["after_execute"]
+    id: str
+    name: te.NotRequired[str]
+    applies_to: ToolRouterHookAppliesTo
+    handler: t.Union[
+        ToolRouterHookConditionCheckHandler, ToolRouterHookPromptInjectionCheckHandler
+    ]
+
+
+ToolRouterHook = t.Union[ToolRouterBeforeExecuteHook, ToolRouterAfterExecuteHook]
+"""A hook on a session's tool calls."""
+
 
 ToolRouterInputResponse = session_execute_params.CurrentInputResponsesValue
 """Experimental. The user's answer to one question of a
@@ -249,6 +309,14 @@ class ToolRouterUpdateExperimentalConfig(te.TypedDict, total=False):
     no_elicitation_support_fallback: t.Literal["deny", "allow"]
     """What happens to a call that needs the user's approval when the
     session's MCP client can't ask the user: ``"deny"`` or ``"allow"``."""
+
+
+_CUSTOM_TOOLS_DEPRECATION = (
+    "`session.custom_tools()` is deprecated; use `session.local_tools()`"
+)
+_CUSTOM_TOOLKITS_DEPRECATION = (
+    "`session.custom_toolkits()` is deprecated; use `session.local_toolkits()`"
+)
 
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
@@ -382,7 +450,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         in-process, remote tools are sent to the backend.
         """
         from composio.core.models.tools import Tools as ToolsModel
-        from composio.core.provider import AgenticProvider, NonAgenticProvider
+        from composio.core.provider import (
+            AgenticProvider,
+            NonAgenticProvider,
+            bind_execution_target,
+        )
 
         if self._provider is None:
             raise ValueError(
@@ -433,7 +505,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             TToolCollection,
             t.cast(AgenticProvider[TTool, TToolCollection], self._provider).wrap_tools(
                 tools=router_tools,
-                execute_tool=execute_fn,
+                execute_tool=bind_execution_target(execute_fn, self),
             ),
         )
 
@@ -970,9 +1042,12 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         Both paths return a ``ToolRouterSessionExecuteResponse`` with ``data``,
         ``error``, ``log_id``, ``result_type``, and ``instant_charge``
-        attributes. ``result_type`` is ``"completed"`` or ``"failed"``; a failed
-        execution can carry a ``None`` or empty ``error``, so read
-        ``result_type`` to tell the two apart.
+        attributes. ``result_type`` is ``"completed"``, ``"failed"`` or
+        ``"blocked"``; a failed execution can carry a ``None`` or empty
+        ``error``, so read ``result_type`` to tell them apart. A ``"blocked"``
+        call (a session hook blocked it) has empty ``data``, the hook's message
+        in ``error``, and ``block_reason`` (``type`` and ``hook_id``).
+        ``hook_results`` lists every session hook that applied.
 
         :raises ToolInputRequiredError: If the tool needs input from the user
             (for example an approval) before it can run. Nothing was executed.
@@ -1066,15 +1141,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             slug,
         )
 
-    def custom_tools(
+    def local_tools(
         self, *, toolkit: t.Optional[str] = None
-    ) -> t.List[RegisteredCustomTool]:
-        """List all custom tools registered in this session.
+    ) -> t.List[RegisteredLocalTool]:
+        """List all local tools registered in this session.
 
         Returns tools with their final slugs, schemas, and resolved toolkit.
 
         :param toolkit: Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
-        :returns: Array of registered custom tools
+        :returns: Array of registered local tools
         """
         if not self._custom_tools_map:
             return []
@@ -1097,8 +1172,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             for entry in entries
         ]
 
-    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
-        """List all custom toolkits registered in this session.
+    def local_toolkits(self) -> t.List[RegisteredLocalToolkit]:
+        """List all toolkits of local tools registered in this session.
 
         Returns toolkits with their tools showing final slugs.
         """
@@ -1143,6 +1218,28 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             )
         return result
 
+    @te.deprecated(_CUSTOM_TOOLS_DEPRECATION, category=None)
+    def custom_tools(
+        self, *, toolkit: t.Optional[str] = None
+    ) -> t.List[RegisteredCustomTool]:
+        """Deprecated alias for :meth:`local_tools`."""
+        warnings.warn(
+            _CUSTOM_TOOLS_DEPRECATION,
+            exceptions.ComposioDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.local_tools(toolkit=toolkit)
+
+    @te.deprecated(_CUSTOM_TOOLKITS_DEPRECATION, category=None)
+    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
+        """Deprecated alias for :meth:`local_toolkits`."""
+        warnings.warn(
+            _CUSTOM_TOOLKITS_DEPRECATION,
+            exceptions.ComposioDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.local_toolkits()
+
     def proxy_execute(
         self,
         *,
@@ -1159,7 +1256,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         :param method: HTTP method
         :param body: Request body (for POST, PUT, PATCH)
         :param parameters: Query/header parameters
-        :returns: Proxied API response
+        :returns: The proxied API response with ``result_type="completed"``,
+            or ``result_type="blocked"`` with the hook's ``message`` when a
+            session hook blocked the request (it then has no ``status``)
         :raises ToolInputRequiredError: If the call needs input from the user
             before it can run. Nothing was executed.
         """
@@ -1201,6 +1300,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         proxy_execute: t.Union[
             t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]], "Omit"
         ] = omit,
+        hooks: t.Union[t.Optional[t.List[ToolRouterHook]], "Omit"] = omit,
         preload: t.Union[t.Optional[session_patch_params.Preload], "Omit"] = omit,
         search: t.Union[t.Optional[session_patch_params.Search], "Omit"] = omit,
         execute: t.Union[t.Optional[session_patch_params.Execute], "Omit"] = omit,
@@ -1229,6 +1329,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         exposes the ``COMPOSIO_PROXY_EXECUTE`` meta tool, ``False`` also turns
         off the sandbox ``proxy_execute()`` helper, and ``None`` removes the
         stored block.
+        ``hooks`` replaces the whole list of hooks, and ``None`` removes every
+        hook. ``hooks`` cannot be combined with
+        ``experimental={'session_config_id': ...}`` (``hooks=None`` counts).
 
         By default the request carries no precondition: the last writer wins.
         Pass ``expected_config_version`` (for example this object's
@@ -1265,6 +1368,16 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 "`instant` does not accept None; pass False to disable "
                 "Instant usage, or omit it to keep the stored policy"
             )
+        if (
+            not isinstance(hooks, Omit)
+            and isinstance(experimental, dict)
+            and experimental.get("session_config_id") is not None
+        ):
+            raise exceptions.InvalidParams(
+                "`hooks` cannot be combined with `experimental={'session_config_id': ...}`; "
+                "a saved Session config sets the session's access policy, so apply "
+                "hooks in a separate update"
+            )
 
         precondition: t.Union[int, "Omit"]
         if expected_config_version is None or expected_config_version is False:
@@ -1279,18 +1392,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         workbench_payload = sandbox if sandbox is not omit else workbench
 
-        # The generated client has no typed parameter for the precondition, so
-        # it travels as an extra root body field.
+        # The spec does not declare the ``expected_config_version`` precondition
+        # until ComposioHQ/platform#13157 lands, so it travels as an extra root
+        # body field.
         extra_body: t.Optional[t.Dict[str, t.Any]] = (
             None
             if isinstance(precondition, Omit)
             else {"expected_config_version": precondition}
         )
 
-        # The generated client does not type ``None`` for every policy block
-        # although the API accepts it (it removes the stored override), nor the
-        # subfield removals inside ``manage_connections``, ``multi_account`` and
-        # ``experimental``; the values are serialized as-is.
+        # Until ComposioHQ/platform#13157 lands, the spec does not mark every
+        # policy block nullable although the API accepts ``None`` (it removes the
+        # stored override), nor the subfield removals inside
+        # ``manage_connections``, ``multi_account`` and ``experimental``; the
+        # values are serialized as-is.
         try:
             response = self._client.tool_router.session.patch(
                 session_id=self.session_id,
@@ -1331,6 +1446,20 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 experimental=t.cast(
                     t.Union[t.Optional[session_patch_params.Experimental], "Omit"],
                     experimental,
+                ),
+                hooks=t.cast(
+                    t.Union[
+                        t.Optional[
+                            t.Iterable[
+                                t.Union[
+                                    session_patch_params.CurrentHookVariant0,
+                                    session_patch_params.CurrentHookVariant1,
+                                ]
+                            ]
+                        ],
+                        "Omit",
+                    ],
+                    hooks,
                 ),
                 extra_body=extra_body,
                 # A stale precondition is a deterministic 409: never retry it.

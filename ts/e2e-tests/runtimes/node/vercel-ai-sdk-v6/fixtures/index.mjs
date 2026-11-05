@@ -1,4 +1,5 @@
 import { VercelProvider } from '@composio/vercel';
+import { asSchema } from 'ai';
 
 const composioTool = {
   slug: 'TEST_TOOL',
@@ -48,6 +49,40 @@ if (calls.at(-1)?.slug !== 'TEST_TOOL' || calls.at(-1)?.params?.query !== 'strin
   throw new Error('String input was not normalized before executeTool');
 }
 console.log('STRING_INPUT_EXECUTION_OK');
+
+// The model is shown the tool's JSON Schema as is, and the AI SDK validates
+// tool-call arguments with the Zod schema built from it.
+const annotatedTool = {
+  ...composioTool,
+  slug: 'ANNOTATED_TOOL',
+  inputParameters: {
+    type: 'object',
+    properties: {
+      file: { type: 'string', format: 'binary' },
+      hex: {
+        type: 'string',
+        contentEncoding: 'base16',
+        contentMediaType: 'application/octet-stream',
+      },
+    },
+    required: ['hex'],
+  },
+};
+const annotatedSchema = asSchema(provider.wrapTool(annotatedTool, executeTool).inputSchema);
+const annotatedJson = await annotatedSchema.jsonSchema;
+if (
+  annotatedJson.properties?.file?.format !== 'binary' ||
+  annotatedJson.properties?.hex?.contentEncoding !== 'base16' ||
+  annotatedJson.properties?.hex?.contentMediaType !== 'application/octet-stream'
+) {
+  throw new Error(`The source keywords did not reach the schema: ${JSON.stringify(annotatedJson)}`);
+}
+const accepted = await annotatedSchema.validate({ hex: 'ff' });
+const rejected = await annotatedSchema.validate({ hex: 1 });
+if (!accepted.success || rejected.success) {
+  throw new Error('Tool-call arguments were not validated with the Zod schema');
+}
+console.log('SOURCE_SCHEMA_OK');
 
 const toolSet = provider.wrapTools([composioTool], executeTool);
 if (!toolSet.TEST_TOOL) {

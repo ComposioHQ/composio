@@ -49,14 +49,14 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^26.6.4",
-    "bun-types": "^1.4.2",
+    "bun-types": "^1.4.3",
     "effect": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "effect": "4.0.3"
+    "effect": "^4.1.0"
   },
   "peerDependenciesMeta": {
     "effect": {

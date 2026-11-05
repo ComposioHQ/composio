@@ -30,7 +30,7 @@ pnpm typecheck
 pnpm test
 pnpm test:e2e
 pnpm test:e2e:cli
-pnpm validate:agent-skills
+bun run validate:agent-skills
 ```
 
 Python commands run from `python/`:

@@ -1,5 +1,5 @@
 import { Array as Arr } from 'effect';
-import { RUN_FILE_FLAGS, RUN_KNOWN_BOOLEAN_FLAGS, RUN_KNOWN_VALUE_FLAGS } from './run.cmd';
+import { RUN_FILE_FLAGS, RUN_KNOWN_BOOLEAN_FLAGS, RUN_KNOWN_VALUE_FLAGS } from './run/run.cmd';
 import { rootCommandIndex } from 'src/utils/cli-args';
 
 export const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {

@@ -1,4 +1,5 @@
 import { Data, Effect, FileSystem, Match, Path } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { ChildProcess } from 'effect/process';
 import { ChildProcessSpawner } from 'effect/process/ChildProcessSpawner';
 import {
@@ -10,7 +11,11 @@ export class ComposioCorePkgNotFound extends Data.TaggedError('error/ComposioCor
   readonly message: string;
   readonly cause: string;
   readonly fix?: string;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 const DEFAULT_PACKAGE_MANAGER: PackageManager = 'npm';
 

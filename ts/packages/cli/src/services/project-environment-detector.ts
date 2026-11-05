@@ -2,6 +2,7 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Match, Context, Layer } from 'effect';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { getAncestors } from 'src/utils/get-ancestors';
 import { HOST_CONFIG } from 'src/config';
 
@@ -34,7 +35,11 @@ export class ProjectEnvironmentDetectorError extends Data.TaggedError(
   readonly message: string;
   readonly checkedPaths: string[];
   readonly details?: string;
-}> {}
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Constants

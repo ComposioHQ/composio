@@ -132,6 +132,26 @@ const toolkitSlugsQuery = (path: string) =>
   new URL(path, 'https://stub.invalid').searchParams.get('toolkit_slugs');
 
 describe('listConnectedAccountsForToolkit', () => {
+  it.effect('stops at an empty terminal cursor without duplicating accounts', () =>
+    Effect.gen(function* () {
+      const { client, requests } = stubComposioClient(
+        pagesInOrder(
+          page([makeAccount({ id: 'con_gmail' })], { total_items: 1, next_cursor: '' }),
+          page([makeAccount({ id: 'con_gmail' })])
+        )
+      );
+
+      const accounts = yield* listConnectedAccountsForToolkit({
+        client,
+        userId: 'default',
+        toolkitSlug: 'gmail',
+      });
+
+      expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
+      expect(requests).toHaveLength(1);
+    })
+  );
+
   it.effect('matches toolkit slugs the way the grouping helpers do, from the shared list', () =>
     Effect.gen(function* () {
       const { client, requests } = stubComposioClient(
@@ -152,35 +172,6 @@ describe('listConnectedAccountsForToolkit', () => {
       expect(accounts.map(item => item.id)).toEqual(['con_github']);
       expect(requests).toHaveLength(1);
       expect(toolkitSlugsQuery(requests[0]!.path)).toBeNull();
-    })
-  );
-
-  it.effect('matches toolkit slugs the way the grouping helpers do, on the filtered request', () =>
-    Effect.gen(function* () {
-      // A shared list that pages is incomplete, so the filtered request runs
-      // and its answer is taken as is.
-      const { client, requests } = stubComposioClient(
-        pagesInOrder(
-          page(
-            [
-              makeAccount({ id: 'con_github', toolkit: { slug: 'GitHub ' } }),
-              makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } }),
-            ],
-            { total_items: 2, next_cursor: 'more' }
-          ),
-          page([makeAccount({ id: 'con_github', toolkit: { slug: 'GitHub ' } })])
-        )
-      );
-
-      const accounts = yield* listConnectedAccountsForToolkit({
-        client,
-        userId: 'default',
-        toolkitSlug: ' github',
-      });
-
-      expect(accounts.map(item => item.id)).toEqual(['con_github']);
-      expect(requests).toHaveLength(2);
-      expect(toolkitSlugsQuery(requests[1]!.path)).toBe('github');
     })
   );
 
@@ -208,14 +199,16 @@ describe('listConnectedAccountsForToolkit', () => {
     })
   );
 
-  it.effect('falls back to the filtered request when the shared page is full', () =>
+  it.effect('derives from every page of the shared list, following next_cursor', () =>
     Effect.gen(function* () {
-      const fullPage = Array.from({ length: 1000 }, (_, index) =>
+      // The server serves at most 50 accounts per page, so the toolkit's
+      // account can sit past the first page.
+      const firstPage = Array.from({ length: 50 }, (_, index) =>
         makeAccount({ id: `con_slack_${index}`, toolkit: { slug: 'slack' } })
       );
       const { client, requests } = stubComposioClient(
         pagesInOrder(
-          page(fullPage, { total_items: 1001, next_cursor: null }),
+          page(firstPage, { total_items: 51, next_cursor: 'page-2' }),
           page([makeAccount({ id: 'con_gmail', toolkit: { slug: 'gmail' } })])
         )
       );
@@ -228,7 +221,10 @@ describe('listConnectedAccountsForToolkit', () => {
 
       expect(accounts.map(item => item.id)).toEqual(['con_gmail']);
       expect(requests).toHaveLength(2);
-      expect(toolkitSlugsQuery(requests[1]!.path)).toBe('gmail');
+      const query = (path: string) => new URL(path, 'https://stub.invalid').searchParams;
+      expect(query(requests[0]!.path).get('limit')).toBe('50');
+      expect(query(requests[1]!.path).get('cursor')).toBe('page-2');
+      expect(requests.map(request => toolkitSlugsQuery(request.path))).toEqual([null, null]);
     })
   );
 });
@@ -253,5 +249,127 @@ describe('resolveConnectedAccountForToolkit', () => {
         `Failed to load connected accounts for toolkit "gmail": Error: 400 ${JSON.stringify(body)}`
       );
     })
+  );
+
+  // #4745: with several usable accounts and none aliased `default`, picking the
+  // newest silently could act on the wrong mailbox; the caller must choose.
+  it.effect(
+    'fails instead of silently picking one, when several accounts are connected and none is alias=default',
+    () =>
+      Effect.gen(function* () {
+        const { client } = stubComposioClient(() =>
+          page([
+            makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+            makeAccount({
+              id: 'con_personal',
+              alias: 'personal',
+              toolkit: { slug: 'gmail' },
+              updated_at: '2026-01-02T00:00:00.000Z',
+            }),
+          ])
+        );
+
+        const error = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.none(),
+        }).pipe(Effect.flip, Effect.provide(TerminalUITest));
+
+        expect(error).toBeInstanceOf(ConnectedAccountResolutionError);
+        expect(error.message).toContain('Multiple connected accounts exist');
+        expect(error.message).toContain('work');
+        expect(error.message).toContain('personal');
+        expect(error.message).toContain('Pass --account <alias or id> to choose one.');
+      })
+  );
+
+  it.effect(
+    'still picks the alias=default account automatically when one exists, even with several accounts connected',
+    () =>
+      Effect.gen(function* () {
+        const { client } = stubComposioClient(() =>
+          page([
+            makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+            makeAccount({ id: 'con_main', alias: 'default', toolkit: { slug: 'gmail' } }),
+          ])
+        );
+
+        const selected = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.none(),
+        }).pipe(Effect.provide(TerminalUITest));
+
+        expect(selected).toBe('con_main');
+      })
+  );
+
+  it.effect('still picks the only account automatically when exactly one is connected', () =>
+    Effect.gen(function* () {
+      const { client } = stubComposioClient(() =>
+        page([makeAccount({ id: 'con_only', toolkit: { slug: 'gmail' } })])
+      );
+
+      const selected = yield* resolveConnectedAccountForToolkit({
+        client,
+        toolkitSlug: 'gmail',
+        userId: 'default',
+        selector: Option.none(),
+      }).pipe(Effect.provide(TerminalUITest));
+
+      expect(selected).toBe('con_only');
+    })
+  );
+
+  it.effect(
+    'an explicit --account selector still matches as before, even with several accounts',
+    () =>
+      Effect.gen(function* () {
+        const { client } = stubComposioClient(() =>
+          page([
+            makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+            makeAccount({ id: 'con_personal', alias: 'personal', toolkit: { slug: 'gmail' } }),
+          ])
+        );
+
+        const selected = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.some('personal'),
+        }).pipe(Effect.provide(TerminalUITest));
+
+        expect(selected).toBe('con_personal');
+      })
+  );
+
+  it.effect(
+    'an empty or whitespace-only --account value is treated as no selector, not a bypass',
+    () =>
+      Effect.gen(function* () {
+        const { client } = stubComposioClient(() =>
+          page([
+            makeAccount({ id: 'con_work', alias: 'work', toolkit: { slug: 'gmail' } }),
+            makeAccount({
+              id: 'con_personal',
+              alias: 'personal',
+              toolkit: { slug: 'gmail' },
+              updated_at: '2026-01-02T00:00:00.000Z',
+            }),
+          ])
+        );
+
+        const error = yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug: 'gmail',
+          userId: 'default',
+          selector: Option.some('   '),
+        }).pipe(Effect.flip, Effect.provide(TerminalUITest));
+
+        expect(error).toBeInstanceOf(ConnectedAccountResolutionError);
+        expect(error.message).toContain('Multiple connected accounts exist');
+      })
   );
 });

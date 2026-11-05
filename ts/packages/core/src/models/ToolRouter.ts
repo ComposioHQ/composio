@@ -37,10 +37,10 @@ import {
   SessionCreateParams,
   SessionCreateResponse,
   SessionRetrieveResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type {
-  CustomTool,
-  CustomToolkit,
+  LocalTool,
+  LocalToolkit,
   InlineCustomToolsWirePayload,
 } from '../types/customTool.types';
 import {
@@ -52,7 +52,10 @@ import {
   transformToolRouterMultiAccountParams,
   transformToolRouterInstantParams,
   transformToolRouterProxyExecuteParams,
+  transformToolRouterHooksParams,
   resolveToolRouterSandboxConfig,
+  resolveLocalToolsOptions,
+  type LocalToolsOptions,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
@@ -90,8 +93,8 @@ function preloadsAllCustomTools(preload?: { tools?: readonly string[] | string }
 }
 
 function prepareInlineCustomTools(options: {
-  customTools?: CustomTool[];
-  customToolkits?: CustomToolkit[];
+  customTools?: LocalTool[];
+  customToolkits?: LocalToolkit[];
   defaultPreload?: boolean;
   preloadTools?: readonly string[] | typeof PRELOAD_TOOLS_ALL;
 }): InlineCustomToolsWirePayload | undefined {
@@ -180,6 +183,7 @@ export class ToolRouter<
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
+   * @throws {ValidationError} When a local tools option and its deprecated `custom*` alias are both passed
    *
    * @example
    * ```typescript
@@ -191,8 +195,8 @@ export class ToolRouter<
    *   toolkits: ['gmail'],
    *   manageConnections: true,
    *   experimental: {
-   *     customTools: [myCustomTool],
-   *     customToolkits: [myToolkit],
+   *     localTools: [myLocalTool],
+   *     localToolkits: [myLocalToolkit],
    *   },
    * });
    *
@@ -224,9 +228,10 @@ export class ToolRouter<
     const routerConfig = parseSessionConfigInput(ToolRouterCreateSessionConfigSchema, config ?? {});
     const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
 
-    // Extract custom tools/toolkits from experimental config
-    const customTools = routerConfig.experimental?.customTools;
-    const customToolkits = routerConfig.experimental?.customToolkits;
+    const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(
+      routerConfig.experimental,
+      'create'
+    );
     const defaultCustomPreload = preloadsAllCustomTools(routerConfig.preload);
     const inlineCustomToolsPayload = prepareInlineCustomTools({
       customTools,
@@ -293,6 +298,9 @@ export class ToolRouter<
       ...(routerConfig.proxyExecute !== undefined && {
         proxy_execute: transformToolRouterProxyExecuteParams(routerConfig.proxyExecute),
       }),
+      ...(routerConfig.hooks !== undefined && {
+        hooks: transformToolRouterHooksParams(routerConfig.hooks),
+      }),
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {
         search: { enable: false },
@@ -347,8 +355,12 @@ export class ToolRouter<
    * origins is logged, so native tools keep working.
    *
    * @param id {string} The id of the session to use
+   * @param options {object} Optional session reuse options
+   * @param options.localTools Local tools to attach to the session; `customTools` is a deprecated alias.
+   * @param options.localToolkits Toolkits of local tools to attach; `customToolkits` is a deprecated alias.
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
+   * @throws {ValidationError} When a local tools option and its deprecated `custom*` alias are both passed
    *
    * @example
    * ```typescript
@@ -366,21 +378,23 @@ export class ToolRouter<
   // in the returned type. See https://docs.composio.dev/docs/sessions-via-mcp
   async use(
     id: string,
-    options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true },
+    options: LocalToolsOptions & { mcp: true },
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>>;
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean },
+    options?: LocalToolsOptions & { mcp?: boolean },
     requestOptions?: ComposioRequestOptions
   ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean },
+    options?: LocalToolsOptions & { mcp?: boolean },
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const customTools = options?.customTools;
-    const customToolkits = options?.customToolkits;
+    const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(
+      options,
+      'use'
+    );
     const hasCustoms = !!(customTools?.length || customToolkits?.length);
 
     let session: SessionRetrieveResponse | SessionAttachResponse;

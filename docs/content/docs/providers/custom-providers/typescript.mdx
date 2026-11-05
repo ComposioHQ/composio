@@ -3,6 +3,8 @@ title: TypeScript Custom Provider
 description: Build an agent with any TypeScript framework and enable it to use 1000+ tools with Composio.
 ---
 
+{/* code-example: single-language-page reason="TypeScript-specific custom provider guide; Python has its own page" */}
+
 A **provider** adapts Composio tools to the format your AI framework expects. Write one, and any framework can call Composio's 1000+ tools. This guide shows you how to build your own in TypeScript.
 
 ## Provider architecture
@@ -163,6 +165,10 @@ export class MyAgentProvider extends BaseAgenticProvider<AgentToolkit, AgentTool
   }
 }
 ```
+
+## Build Zod schemas
+
+If your framework expects Zod v4 schemas, import `jsonSchemaToZod` or `jsonSchemaToZodShape` from `@composio/json-schema-to-zod/v4`. This entry builds classic Zod v4 schemas and requires Zod `4.1.13` or newer. It stores schema annotations in metadata so `z.toJSONSchema()` preserves them. The root `@composio/json-schema-to-zod` entry builds Zod v3 schemas.
 
 ## Support strict tool schemas
 

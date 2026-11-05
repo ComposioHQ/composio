@@ -236,7 +236,7 @@ class TestFileUploadableAllowlistWiring:
 
         # Short-circuit the network-bound parts.
         mock_client = Mock()
-        mock_client.post.return_value = Mock(
+        mock_client.files.create_presigned_url.return_value = Mock(
             new_presigned_url="https://example/upload", key="k"
         )
         monkeypatch.setattr(files_mod, "upload", lambda url, file, mimetype=None: True)

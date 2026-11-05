@@ -1,15 +1,19 @@
 # Reusable Dockerfile for CLI e2e tests (debian runtime)
-# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.22.3 -t test-name .
+# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.23.4 --build-arg NODE_VERSION_DIGEST=sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d -t test-name .
 
 ARG NODE_VERSION
+# Digest pin for the node:${NODE_VERSION}-slim base image; must come from toolchain-versions.json (no default on purpose so builds fail loudly instead of silently floating).
+ARG NODE_VERSION_DIGEST
 ARG CLI_VERSION=0.0.0
-# Base images come from the ECR Public mirror of the Docker Official Images, so
-# builds do not depend on Docker Hub's availability or anonymous pull limits.
+# Base images are digest-pinned for supply-chain integrity. ECR Public mirrors the
+# Docker Official Images, so builds do not depend on Docker Hub availability, but
+# its anonymous rate limit can still return 429 on shared runner IPs; CI mitigates
+# that by retrying with backoff (see .github/actions/build-e2e-image).
 ARG BASE_REGISTRY=public.ecr.aws/docker/library
 
 # The toolchain stage depends only on the base image and mise.toml/mise.lock, so
 # CI saves its layers to the GitHub Actions cache (see .github/actions/build-e2e-image).
-FROM ${BASE_REGISTRY}/node:${NODE_VERSION}-slim AS toolchain
+FROM ${BASE_REGISTRY}/node:${NODE_VERSION}-slim@${NODE_VERSION_DIGEST} AS toolchain
 
 ENV MISE_DATA_DIR="/mise"
 ENV MISE_CACHE_DIR="/mise/cache"
@@ -78,7 +82,8 @@ COPY ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/
 # Pre-create Composio CLI cache directory to work around Bun issue #7967
 RUN mkdir -p /tmp/.composio
 
-FROM ${BASE_REGISTRY}/debian:bookworm-slim
+# Runtime base pinned by digest, matching Dockerfile.install (same supply-chain rationale).
+FROM ${BASE_REGISTRY}/debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587
 
 ENV PATH="/usr/local/bin:/bin"
 ENV HOME="/tmp"

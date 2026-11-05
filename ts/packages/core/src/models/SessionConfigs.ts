@@ -15,6 +15,7 @@ import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import { withCancellation } from '../utils/cancellation';
+import logger from '../utils/logger';
 import {
   transformSessionConfig,
   transformSessionConfigListResponse,
@@ -33,7 +34,7 @@ import {
  *
  * @example
  * ```typescript
- * const { items } = await composio.sessionConfigs.list({ search: 'support' });
+ * const { items } = await composio.sessionConfigs.list();
  * const sessionConfig = await composio.sessionConfigs.get(items[0].id);
  * const session = await composio.sessions.create('user_123', {
  *   experimental: { sessionConfigId: sessionConfig.id },
@@ -56,7 +57,8 @@ export class SessionConfigs {
    *
    * Requires Session configs to be enabled for the project.
    *
-   * @param {SessionConfigListParams} [params] - `search`, `archived`, `limit` and `cursor`
+   * @param {SessionConfigListParams} [params] - `archived`, `limit` and `cursor`; the
+   *   deprecated `search` is ignored
    * @returns {Promise<SessionConfigListResponse>} Config summaries and the next cursor
    * @throws {ValidationError} If the params fail validation
    *
@@ -80,8 +82,14 @@ export class SessionConfigs {
         cause: parsedParams.error,
       });
     }
+    const { search, ...query } = parsedParams.data;
+    if (search !== undefined) {
+      logger.warn(
+        'sessionConfigs.list(): the Composio API no longer accepts `search`; the option is ignored.'
+      );
+    }
     const result = await withCancellation(
-      () => this.client.sessionConfigs.list(parsedParams.data, requestOptions),
+      () => this.client.sessionConfigs.list(query, requestOptions),
       requestOptions?.signal
     );
     return transformSessionConfigListResponse(result);

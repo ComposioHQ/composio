@@ -44,6 +44,7 @@ async function requestOptionsArg(): Promise<void> {
   await composio.create('user_123', { toolkits: ['gmail'] }, { signal: ctrl.signal });
   await composio.create('user_123', { mcp: true }, { signal: ctrl.signal });
   await composio.sessions.create('user_123', undefined, { signal: ctrl.signal });
+  await composio.use('session_123', { localTools: [] }, { signal: ctrl.signal });
   await composio.use('session_123', { customTools: [] }, { signal: ctrl.signal });
   await composio.use('session_123', { mcp: true }, { signal: ctrl.signal });
 }
@@ -71,7 +72,14 @@ async function updateContract(): Promise<void> {
   await session.update({ expectedConfigVersion: true });
 }
 
+// `authorize()` accepts the `experimental` block for SHARED connections (#4286).
+async function authorizeExperimental(): Promise<void> {
+  const session = await composio.create('user_123');
+  await session.authorize('slackbot', { experimental: { accountType: 'SHARED' } });
+}
+
 void createGating;
 void useGating;
 void requestOptionsArg;
 void updateContract;
+void authorizeExperimental;
