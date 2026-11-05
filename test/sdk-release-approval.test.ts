@@ -77,6 +77,12 @@ describe('source tag', () => {
     expect(writes).toEqual([tagWrite]);
   });
 
+  test("a deleted account's review is skipped and the approved head is still tagged", async () => {
+    const { fetcher, writes } = fakeController({ deletedReviewer: true });
+    expect(await tag(fetcher)).toBe('sdk-release/8');
+    expect(writes).toEqual([tagWrite]);
+  });
+
   test('a release PR closed without merging creates no tag', async () => {
     const { fetcher, writes } = fakeController({ closedUnmerged: true });
     await expect(tag(fetcher)).rejects.toThrow('Release PR has not merged');

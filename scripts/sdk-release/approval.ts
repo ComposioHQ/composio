@@ -43,7 +43,7 @@ export function eligibleApproval(
 }
 
 const PullReview = Schema.Struct({
-  user: Schema.Struct({ login: Schema.String }),
+  user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   state: Schema.String,
   commit_id: Sha,
 });
@@ -68,10 +68,15 @@ const HeadCommit = Schema.Struct({
 /** Review decisions with each reviewer's repository permission, looked up once per login. */
 const reviewsWithPermissions = (number: number) =>
   Effect.gen(function* () {
+    // A deleted account's review has `user: null`; it can't be a writer, so it is skipped.
     const decisions = (yield* Stream.runCollect(
       paginateArray(`${REPOSITORY_PATH}/pulls/${number}/reviews`, PullReview)
-    )).filter(review => REVIEW_STATES.has(review.state));
-    const logins = [...new Set(decisions.map(review => review.user.login))];
+    )).flatMap(({ user, state, commit_id }) =>
+      user !== null && REVIEW_STATES.has(state)
+        ? [{ user: user.login, state, commitId: commit_id }]
+        : []
+    );
+    const logins = [...new Set(decisions.map(review => review.user))];
     const permissions = new Map(
       yield* Effect.forEach(
         logins,
@@ -88,13 +93,7 @@ const reviewsWithPermissions = (number: number) =>
       )
     );
     return decisions.map(
-      review =>
-        ({
-          user: review.user.login,
-          state: review.state,
-          commitId: review.commit_id,
-          permission: permissions.get(review.user.login) ?? '',
-        }) satisfies Review
+      review => ({ ...review, permission: permissions.get(review.user) ?? '' }) satisfies Review
     );
   });
 
