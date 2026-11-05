@@ -75,18 +75,27 @@ const changesetLine = (note: Changeset) => {
 /** How a release PR explains its channel to the reviewer. */
 const CHANNEL_COPY: Record<
   Channel,
-  { readonly title: string; readonly summary: string; readonly notes: string }
+  {
+    readonly title: string;
+    readonly summary: string;
+    readonly notes: string;
+    readonly afterPublish: string;
+  }
 > = {
   stable: {
     title: 'chore(release): publish SDK packages',
     summary: 'A stable release: npm moves `latest` to these versions.',
     notes: '## Changesets consumed',
+    afterPublish:
+      '5. After publishing, the bot opens a docs PR that pins the released npm versions, so twoslash checks the docs against them.',
   },
   beta: {
     title: 'chore(release): publish SDK beta packages',
     summary:
       'A beta release: npm moves `next` to these versions and never touches `latest`, and pip installs them only with `--pre` or an exact pin. This PR commits only the release plan. The candidate checks apply its versions, so `next` keeps its stable versions and every changeset below stays pending for the stable release.',
     notes: '## Changesets previewed',
+    afterPublish:
+      '5. A beta opens no docs PR: the docs keep following stable releases. The request issue lists the published versions.',
   },
 };
 
@@ -148,7 +157,7 @@ export const releasePullBody = (
       `2. Review the diff and approve this head. Approval must come from a writer other than the requester (@${batch.requestedBy}). Do not push to this branch: the tag step only accepts the release bot's commit. To change the notes, fix the changesets on \`next\`, close this PR and request a new release.`,
       `3. After approval and green checks, merge this PR. The release workflow rechecks the approval and tags this exact head \`sdk-release/${batch.id}\`; if the check fails, it creates no tag and asks you to revert this PR and request the release again.`,
       '4. The tag run publishes the exact files the `SDK candidate` checks built and the `SDK candidate smoke` checks installed on this PR. If a publish job fails, use "Re-run failed jobs" on that run.',
-      '5. After publishing, the bot opens a docs PR that pins the released npm versions, so twoslash checks the docs against them.',
+      copy.afterPublish,
     ].join('\n'),
     `Request: ${issueUrl(batch)}\nPlanning run: ${runUrl(batch.id)}`,
   ];

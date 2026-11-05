@@ -153,10 +153,13 @@ describe('release PR', () => {
       'POST /git/refs',
       'POST /pulls',
     ]);
-    expect(writes.find(write => write.path === '/pulls')?.body).toMatchObject({
-      title: 'chore(release): publish SDK beta packages',
-      body: expect.stringContaining('never touches `latest`'),
-    });
+    const opened = writes.find(write => write.path === '/pulls')?.body as {
+      readonly title: string;
+      readonly body: string;
+    };
+    expect(opened.title).toBe('chore(release): publish SDK beta packages');
+    expect(opened.body).toContain('never touches `latest`');
+    expect(opened.body).toContain('A beta opens no docs PR');
   });
 
   test('a beta release PR that also writes a changelog is refused before any write', async () => {
