@@ -1,47 +1,128 @@
-import { Config, Console, Effect, Schema, Stdio } from 'effect';
+import { Config, Console, Effect, Option, Schema, Stdio, Stream } from 'effect';
 import semver from 'semver';
-import { GitHub, RunId, commentIssue, jobs, runUrl } from './github';
+import {
+  GitHub,
+  PositiveInt,
+  REPOSITORY_PATH,
+  RunId,
+  paginateArray,
+  request,
+  runUrl,
+} from './github';
 import { packageLabel } from './release-pr';
-import { appendFile, readJson, runMain } from './runtime';
+import { appendFile, ensure, readJson, runMain } from './runtime';
 import { BATCH_PATH, ReleaseBatch } from './source';
+import { DISPLAY, ReleaseState, STATUS_LABELS, Stage, describe, endsStage } from './state';
+
+/** Status comments come from the workflow token, so nobody else's comment is ever edited. */
+const STATUS_AUTHOR = 'github-actions[bot]';
+const STATUS_MARKER = '<!-- sdk-release-status -->';
+
+const IssueComment = Schema.Struct({
+  id: PositiveInt,
+  body: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
+});
+const IssueLabel = Schema.Struct({ name: Schema.String });
+const Written = Schema.Unknown;
 
 /**
- * Posts the published versions on the request issue and returns the released npm versions,
- * which the docs job pins.
+ * Shows `state` on the request issue: one status comment edited in place, one status label, and
+ * the issue closed once the release can no longer advance. Nothing here is read back as state.
  */
-export const reportRelease = (batch: ReleaseBatch, runId: string) =>
+export const showStatus = (issue: number, state: ReleaseState, run: string) =>
   Effect.gen(function* () {
-    yield* commentIssue(
-      batch.issue,
-      [
-        `Published by ${runUrl(runId)}:`,
-        '',
-        ...batch.plan.releases.map(
-          release => `- ${packageLabel(release.name)} ${release.newVersion}`
-        ),
-      ].join('\n')
+    const display = DISPLAY[state._tag];
+    const body = `${STATUS_MARKER}\n**SDK release: ${display.label.replace('sdk-release:', '')}**\n\n${describe(state)}\n\n<sub>Updated by ${runUrl(run)}</sub>`;
+    const issuePath = `${REPOSITORY_PATH}/issues/${issue}`;
+    const existing = yield* paginateArray(`${issuePath}/comments`, IssueComment).pipe(
+      Stream.filter(
+        comment =>
+          comment.user?.login === STATUS_AUTHOR && (comment.body ?? '').startsWith(STATUS_MARKER)
+      ),
+      Stream.runHead
     );
-    return Object.fromEntries(
-      batch.plan.releases
-        .filter(release => release.language === 'typescript')
-        .map(release => [release.name, release.newVersion])
-    );
+    yield* Option.match(existing, {
+      onSome: comment =>
+        request('PATCH', `${REPOSITORY_PATH}/issues/comments/${comment.id}`, Written, { body }),
+      onNone: () => request('POST', `${issuePath}/comments`, Written, { body }),
+    });
+    const labels = yield* Stream.runCollect(paginateArray(`${issuePath}/labels`, IssueLabel));
+    for (const { name } of labels.filter(
+      label => STATUS_LABELS.includes(label.name) && label.name !== display.label
+    ))
+      yield* request('DELETE', `${issuePath}/labels/${encodeURIComponent(name)}`, Written);
+    yield* request('POST', `${issuePath}/labels`, Written, { labels: [display.label] });
+    if (display.close)
+      yield* request('PATCH', issuePath, Written, { state: 'closed', state_reason: display.close });
   });
 
-/** Posts the failed jobs of this run attempt and the recovery step on the request issue. */
-export const reportFailure = (batch: ReleaseBatch, runId: string) =>
+/** A job's result as GitHub reports it to the jobs that need it. */
+const JobResult = Schema.Literals(['success', 'failure', 'cancelled', 'skipped']);
+const Results = Schema.Record(Schema.String, JobResult);
+
+/**
+ * The state a stage ended in: `Failed` when any of its jobs failed or was cancelled, otherwise
+ * the state its last job recorded. The publish stage records nothing, because reaching the end
+ * with every job green is what `Published` means.
+ */
+export const stageOutcome = <E, R>(
+  stage: Stage,
+  results: Readonly<Record<string, typeof JobResult.Type>>,
+  recorded: Option.Option<ReleaseState>,
+  published: Effect.Effect<ReleaseState, E, R>,
+  run: string
+) =>
   Effect.gen(function* () {
-    const failed = (yield* jobs(runId, 'latest'))
-      .filter(job => job.conclusion === 'failure')
-      .map(job => job.name);
-    yield* commentIssue(
-      batch.issue,
-      [
-        `The release run failed in: ${failed.join(', ')}.`,
-        `Open ${runUrl(runId)} and choose "Re-run failed jobs". A re-run uploads only the files the registries are missing.`,
-        'If the approved candidates expired or a registry already serves different bytes, add changesets for the affected packages and request a new release; it moves them to the next version.',
-      ].join('\n\n')
+    const failed = Object.entries(results)
+      .filter(([, result]) => result === 'failure' || result === 'cancelled')
+      .map(([job]) => job);
+    const state = failed.length
+      ? ReleaseState.make({ _tag: 'Failed', stage, jobs: failed, run: runUrl(run) })
+      : yield* Option.match(recorded, { onSome: Effect.succeed, onNone: () => published });
+    yield* ensure(endsStage(stage, state), `The ${stage} stage cannot end in ${state._tag}`);
+    return state;
+  });
+
+/** Every planned package and its new version, as the status comment lists them. */
+const publishedState = (batch: ReleaseBatch) =>
+  ReleaseState.make({
+    _tag: 'Published',
+    versions: batch.plan.releases.map(release => ({
+      name: packageLabel(release.name),
+      version: release.newVersion,
+    })),
+  });
+
+const StatusEnvironment = Config.all({
+  token: Config.schema(Schema.NonEmptyString, 'GITHUB_TOKEN'),
+  runId: Config.schema(RunId, 'GITHUB_RUN_ID'),
+  summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
+  results: Config.schema(Schema.fromJsonString(Results), 'RESULTS'),
+  recorded: Config.option(Config.schema(Schema.fromJsonString(ReleaseState), 'OUTCOME')),
+  issue: Config.option(Config.schema(Schema.NumberFromString.check(Schema.isInt()), 'ISSUE')),
+});
+
+/**
+ * `report.ts status <stage>` runs last in every stage, even after a failure or cancellation. It
+ * writes the outcome to the run summary and shows it on the request issue when there is one.
+ */
+const statusMode = (stage: Stage) =>
+  Effect.gen(function* () {
+    const env = yield* StatusEnvironment;
+    const state = yield* stageOutcome(
+      stage,
+      env.results,
+      env.recorded,
+      Effect.map(readJson(ReleaseBatch, BATCH_PATH), publishedState),
+      env.runId
     );
+    yield* appendFile(env.summaryPath, `${describe(state)}\n`);
+    yield* Option.match(env.issue, {
+      onNone: () => Console.log('No request issue to update'),
+      onSome: issue =>
+        showStatus(issue, state, env.runId).pipe(Effect.provide(GitHub.layer(env.token))),
+    });
   });
 
 /**
@@ -63,35 +144,27 @@ const DocsManifest = Schema.Struct({
   devDependencies: Schema.Record(Schema.String, Schema.String),
 });
 
-/** `report.ts docs-pins <docs package.json>` prints the specs for `bun add`; reads `RELEASED`. */
-const docsPins = (manifestPath: string) =>
+/** `report.ts docs-pins <docs package.json>` prints the `bun add` specs for this tag's npm release. */
+const docsPinsMode = (manifestPath: string) =>
   Effect.gen(function* () {
-    const released = yield* Config.schema(
-      Schema.fromJsonString(Schema.Record(Schema.String, Schema.String)),
-      'RELEASED'
+    const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+    const released = Object.fromEntries(
+      batch.plan.releases
+        .filter(release => release.language === 'typescript')
+        .map(release => [release.name, release.newVersion])
     );
     const { devDependencies } = yield* readJson(DocsManifest, manifestPath);
     yield* Console.log(docsPinSpecs(released, devDependencies).join(' '));
   });
 
-/** `report.ts released` or `report.ts failed`, run from the tag checkout. */
+const Arguments = Schema.Union([
+  Schema.Tuple([Schema.Literal('status'), Stage]),
+  Schema.Tuple([Schema.Literal('docs-pins'), Schema.String]),
+]);
+
 const main = Effect.gen(function* () {
-  const args = yield* (yield* Stdio.Stdio).args;
-  if (args[0] === 'docs-pins') return yield* docsPins(args[1] ?? '');
-  const [mode] = yield* Schema.decodeUnknownEffect(
-    Schema.Tuple([Schema.Literals(['released', 'failed'])])
-  )(args);
-  const env = yield* Config.all({
-    token: Config.schema(Schema.NonEmptyString, 'GITHUB_TOKEN'),
-    runId: Config.schema(RunId, 'GITHUB_RUN_ID'),
-    output: Config.String('GITHUB_OUTPUT'),
-  });
-  const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
-  yield* Effect.gen(function* () {
-    if (mode === 'failed') return yield* reportFailure(batch, env.runId);
-    const npm = yield* reportRelease(batch, env.runId);
-    if (Object.keys(npm).length) yield* appendFile(env.output, `npm=${JSON.stringify(npm)}\n`);
-  }).pipe(Effect.provide(GitHub.layer(env.token)));
+  const args = yield* Schema.decodeUnknownEffect(Arguments)(yield* (yield* Stdio.Stdio).args);
+  yield* args[0] === 'status' ? statusMode(args[1]) : docsPinsMode(args[1]);
 });
 
 if (import.meta.main) runMain(main);

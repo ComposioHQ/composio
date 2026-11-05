@@ -34,8 +34,9 @@ const failing = (message: string) => () =>
 const execute = (
   fetch: Fetch,
   requestContext: ReleaseRequestContext,
-  plan: () => Effect.Effect<SdkReleasePlan>
-) => runRelease(executeReleaseRequest(request, requestContext, plan), fetch);
+  plan: () => Effect.Effect<SdkReleasePlan>,
+  parse: Effect.Effect<ReleaseRequest, string> = Effect.succeed(request)
+) => runRelease(executeReleaseRequest(parse, requestContext, plan), fetch);
 
 const openRelease = {
   number: 9,
@@ -49,7 +50,13 @@ const openRelease = {
 };
 
 function client(
-  options: { membership?: 'active' | 'pending' | 'absent' | 'error'; existing?: boolean } = {}
+  options: {
+    membership?: 'active' | 'pending' | 'absent' | 'error';
+    /** Head branch of a release PR already open into next. */
+    open?: string;
+    /** The release plan committed on next, and whether its tag exists. */
+    committed?: { id: string; tagged: boolean };
+  } = {}
 ) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
   const fetcher: Fetch = async (input, init) => {
@@ -63,7 +70,18 @@ function client(
       if (options.membership === 'error') return respond({}, 503);
       return respond({ state: options.membership ?? 'active' });
     }
-    if (path.includes('/pulls?')) return respond(options.existing ? [openRelease] : []);
+    if (path.includes('/pulls?'))
+      return respond(
+        options.open ? [{ ...openRelease, head: { ...openRelease.head, ref: options.open } }] : []
+      );
+    if (path.startsWith('/repos/ComposioHQ/composio/contents/.github/sdk-release-plan.json'))
+      return options.committed
+        ? new Response(JSON.stringify({ id: options.committed.id }))
+        : respond({}, 404);
+    if (path === `/repos/ComposioHQ/composio/git/ref/tags/sdk-release/${options.committed?.id}`)
+      return options.committed?.tagged
+        ? respond({ object: { type: 'commit', sha } })
+        : respond({}, 404);
     if (method === 'POST' && path === '/repos/ComposioHQ/composio/issues')
       return respond({ number: 31 }, 201);
     if (path.endsWith('/issues/7/comments')) return respond({ id: 99 });
@@ -110,66 +128,72 @@ describe('SDK release member request', () => {
     });
   }
 
-  test('an active member gets a batch frozen at the source and a reply on the issue', async () => {
+  test('an active member gets a batch frozen at the source, and nothing is posted', async () => {
     const { fetcher, writes } = client();
-    const result = await execute(fetcher, context, planned(plan));
-    expect(result.batch).toMatchObject({
-      id: '21',
-      inputBase: sha,
-      requestedBy: 'member',
-      issue: 7,
-      plan,
+    const outcome = await execute(fetcher, context, planned(plan));
+    expect(outcome).toMatchObject({
+      _tag: 'Planned',
+      batch: { id: '21', inputBase: sha, requestedBy: 'member', issue: 7, plan },
     });
-    expect(writes().map(call => call.path)).toEqual([
-      '/repos/ComposioHQ/composio/issues/7/comments',
-    ]);
+    expect(writes()).toEqual([]);
   });
 
-  test('a planning failure is reported on the issue with the request run', async () => {
+  test('a planning failure fails the job without posting; the status job reports it', async () => {
     const { fetcher, writes } = client();
     await expect(execute(fetcher, context, failing('Invalid Changesets config'))).rejects.toThrow(
       'Invalid Changesets config'
     );
-    expect(writes()).toEqual([
-      {
-        method: 'POST',
-        path: '/repos/ComposioHQ/composio/issues/7/comments',
-        body: { body: expect.stringContaining('/actions/runs/21') },
-      },
-    ]);
+    expect(writes()).toEqual([]);
   });
 
-  test('an open release PR stops the request before planning', async () => {
-    const { fetcher, writes } = client({ existing: true });
-    const result = await execute(fetcher, context, failing('must not plan'));
-    expect(result.batch).toBeUndefined();
-    expect(result.message).toContain('Another SDK release is in progress');
-    expect(writes()).toEqual([
-      {
-        method: 'POST',
-        path: '/repos/ComposioHQ/composio/issues/7/comments',
-        body: { body: result.message },
-      },
-    ]);
+  test("a member's unreadable form needs input and plans nothing", async () => {
+    const { fetcher } = client();
+    expect(
+      await execute(fetcher, context, failing('must not plan'), Effect.fail('Use the form'))
+    ).toEqual({ _tag: 'NeedsInput', reason: 'Use the form' });
   });
 
-  test('an empty plan replies "Nothing to release." and plans no batch', async () => {
+  test('another open release PR makes the request wait, before planning', async () => {
+    const { fetcher, writes } = client({ open: 'sdk-release/batch-8' });
+    expect(await execute(fetcher, context, failing('must not plan'))).toEqual({
+      _tag: 'Waiting',
+      pull: openRelease.html_url,
+    });
+    expect(writes()).toEqual([]);
+  });
+
+  test('a re-run that finds its own release PR resumes it instead of waiting', async () => {
+    const { fetcher } = client({ open: 'sdk-release/batch-21' });
+    expect(await execute(fetcher, context, failing('must not plan'))).toEqual({
+      _tag: 'InReview',
+      pull: openRelease.html_url,
+    });
+  });
+
+  test('a merged release plan on next without its tag blocks new planning', async () => {
+    const blocked = client({ committed: { id: '20', tagged: false } });
+    expect(await execute(blocked.fetcher, context, failing('must not plan'))).toEqual({
+      _tag: 'Blocked',
+      release: '20',
+    });
+    const tagged = client({ committed: { id: '20', tagged: true } });
+    expect(await execute(tagged.fetcher, context, planned(plan))).toMatchObject({
+      _tag: 'Planned',
+    });
+  });
+
+  test('an empty plan ends the request with nothing to release', async () => {
     const { fetcher, writes } = client();
-    const result = await execute(fetcher, context, planned({ ...plan, releases: [] }));
-    expect(result).toEqual({ message: 'Nothing to release.' });
-    expect(writes()).toEqual([
-      {
-        method: 'POST',
-        path: '/repos/ComposioHQ/composio/issues/7/comments',
-        body: { body: 'Nothing to release.' },
-      },
-    ]);
+    expect(await execute(fetcher, context, planned({ ...plan, releases: [] }))).toEqual({
+      _tag: 'Empty',
+    });
+    expect(writes()).toEqual([]);
   });
 
   test('a dispatch-started release opens its tracking issue', async () => {
     const { fetcher, writes } = client();
-    const result = await execute(fetcher, { ...context, issueNumber: undefined }, planned(plan));
-    expect(result.batch?.issue).toBe(31);
+    const outcome = await execute(fetcher, { ...context, issueNumber: undefined }, planned(plan));
+    expect(outcome).toMatchObject({ _tag: 'Planned', batch: { issue: 31 } });
     expect(writes().map(call => `${call.method} ${call.path}`)).toEqual([
       'POST /repos/ComposioHQ/composio/issues',
     ]);

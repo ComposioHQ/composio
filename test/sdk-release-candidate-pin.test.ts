@@ -38,7 +38,10 @@ const approvedArchive = async () => {
 };
 
 /** The tag run's pinning job for tag run 9, run as the CLI on a fresh checkout. */
-const pinAttempt = async (archive: { zip: string; digest: string }) => {
+const pinAttempt = async (
+  archive: { zip: string; digest: string },
+  options: { expired?: boolean } = {}
+) => {
   const directory = await directories.create();
   await writeText(`${directory}/package.json`, JSON.stringify({ name: 'root', private: true }));
   await writeText(`${directory}/pnpm-workspace.yaml`, "packages: ['core']\n");
@@ -90,7 +93,7 @@ const pinAttempt = async (archive: { zip: string; digest: string }) => {
           id: 77,
           name: 'sdk-candidate-typescript',
           digest: archive.digest,
-          expired: false,
+          expired: options.expired ?? false,
           created_at: '2026-11-03T00:05:00Z',
           expires_at: '2099-12-01T00:00:00Z',
           workflow_run: { id: 41, head_sha: head },
@@ -134,23 +137,32 @@ globalThis.fetch = async input => {
       }
     )
   );
-  expect({ exitCode: result.exitCode, stderr: result.stderr }).toMatchObject({ exitCode: 0 });
   return {
+    exitCode: result.exitCode,
+    stderr: result.stderr,
     output: await readText(output),
-    tarball: await readText(`${directory}/sdk-candidate/typescript/${tarball}`),
+    tarball: () => readText(`${directory}/sdk-candidate/typescript/${tarball}`),
   };
 };
 
 test('the tag run pins the approved release-PR artifact and its languages as job outputs', async () => {
   const archive = await approvedArchive();
   const pinned = await pinAttempt(archive);
-  expect(pinned.tarball).toBe('approved tarball bytes');
+  expect({ exitCode: pinned.exitCode, stderr: pinned.stderr }).toMatchObject({ exitCode: 0 });
+  expect(await pinned.tarball()).toBe('approved tarball bytes');
   expect(pinned.output).toBe(
     [
+      'issue=8',
       `approved=${JSON.stringify({ typescript: { run: 41, artifactId: 77, digest: archive.digest } })}`,
       'typescript=true',
       'python=false',
       '',
     ].join('\n')
   );
+});
+
+test('a failed adoption still names the request issue, so the publish status reaches it', async () => {
+  const pinned = await pinAttempt(await approvedArchive(), { expired: true });
+  expect(pinned.exitCode).not.toBe(0);
+  expect(pinned.output).toBe('issue=8\n');
 });
