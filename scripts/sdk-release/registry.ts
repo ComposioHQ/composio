@@ -438,8 +438,9 @@ export class NpmCli extends Context.Service<
 }
 
 /**
- * Publishes under a release-only dist-tag, moves the channel's tag once the upload is visible,
- * drops the release-only tag, and checks that each tarball's provenance names this release.
+ * Publishes under a release-only dist-tag, checks that each tarball's provenance names this
+ * release, then moves the channel's tag and drops the release-only tag. A failed check leaves
+ * the channel tag where it was.
  */
 export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distribution>) =>
   Effect.gen(function* () {
@@ -457,6 +458,8 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
         `--tag=sdk-release-${batch.id}`,
       ]);
     const visible = yield* waitForRegistry(files, { channelTags: false, channel });
+    // Users only install a version once its channel tag moves, so it moves after the checks.
+    for (const file of files) yield* verifyNpmProvenance(file, batch.id);
     for (const tag of visible.tagsToRepair)
       yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, tag.tag]);
     yield* waitForRegistry(files, { channel });
@@ -470,7 +473,6 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
       if (Option.exists(tags, value => releaseOnly in value))
         yield* npm(['dist-tag', 'rm', file.name, releaseOnly]);
     }
-    for (const file of files) yield* verifyNpmProvenance(file, batch.id);
   });
 
 /** The `name@version` specs of the published tarballs, for a fresh install. */

@@ -231,7 +231,7 @@ describe('release rehearsal', () => {
     expect(registry.commands.some(command => command.includes('latest'))).toBe(false);
   });
 
-  test('provenance from another ref fails the publication after upload', async () => {
+  test('provenance from another ref fails the publication before latest moves', async () => {
     const registry = npmRegistry({ latest: '1.0.0' }, { ref: 'refs/heads/next' });
     const tarball = await tarballOf(batch);
     registry.stage(tarball);
@@ -241,6 +241,8 @@ describe('release rehearsal', () => {
         registry.fetcher
       )
     ).rejects.toThrow('was built by https://github.com/ComposioHQ/composio');
+    expect(registry.tags.latest).toBe('1.0.0');
+    expect(registry.commands.some(command => command.startsWith('dist-tag'))).toBe(false);
   });
 
   test('provenance that describes other bytes fails the publication', async () => {
