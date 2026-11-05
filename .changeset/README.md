@@ -14,3 +14,6 @@ under SDK source has no public effect, explain it in the PR description:
 <!-- sdk-release-note-exempt: Explain why this change has no published behavior. -->
 ```
 
+The SDK release issue form prepares one release PR from protected `next`. A writer
+who did not request the release approves its final head after the candidate checks
+pass, and a person merges it. See `ts/docs/internal/release.md`.
