@@ -295,12 +295,13 @@ jobs:
           persist-credentials: false
       - name: Pin the docs to the released npm versions
         if: steps.released.outputs.npm != ''
-        working-directory: next/docs
         env:
           RELEASED: ${{ steps.released.outputs.npm }}
         run: |
-          specs=$(bun ../../scripts/sdk-release/report.ts docs-pins package.json)
+          # Run report.ts from the root: next/docs/bunfig.toml preloads docs packages that aren't installed here.
+          specs=$(bun scripts/sdk-release/report.ts docs-pins next/docs/package.json)
           [ -n "$specs" ] || exit 0
+          cd next/docs
           # The registry CDN can serve a stale package document right after publishing.
           for attempt in 1 2 3 4 5; do
             # shellcheck disable=SC2086 # one argument per package
