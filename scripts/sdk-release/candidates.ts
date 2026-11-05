@@ -1,5 +1,6 @@
 import { Config, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
+import { isReleaseAppCommit } from './approval';
 import {
   ActionArtifact,
   ApprovedCandidates,
@@ -357,6 +358,7 @@ const reportMode = (language: Language) =>
 
 const ApproveEnvironment = Config.all({
   sha: Config.schema(Sha, 'GITHUB_SHA'),
+  appSlug: Config.String('SDK_RELEASE_APP_SLUG'),
   ref: Config.String('GITHUB_REF'),
   outputPath: Config.String('GITHUB_OUTPUT'),
   summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
@@ -381,8 +383,13 @@ const approveMode = Effect.gen(function* () {
     env.ref === `refs/tags/${releaseTag(batch.id)}`,
     `Approved candidates are pinned only by the release tag of batch ${batch.id}`
   );
-  // Written first, so the publish status still reaches the request issue if adoption fails.
-  yield* appendFile(env.outputPath, `issue=${batch.issue}\n`);
+  // Written first, so the publish status still reaches the request issue if adoption fails. Only
+  // a plan the release App committed may name that issue: the tag ruleset should stop anyone
+  // else from pushing a release tag, and this keeps a forged one from steering the bot.
+  const trusted = yield* isReleaseAppCommit(env.sha, batch.inputBase, env.appSlug).pipe(
+    Effect.provide(GitHub.layer(env.token))
+  );
+  if (trusted) yield* appendFile(env.outputPath, `issue=${batch.issue}\n`);
   const approved: Record<string, ApprovedCandidate> = {};
   yield* Effect.gen(function* () {
     for (const language of batchLanguages(batch)) {

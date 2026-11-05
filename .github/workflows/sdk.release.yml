@@ -247,6 +247,7 @@ jobs:
         id: approve
         env:
           SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/candidates.ts approve
 
   publish-npm:

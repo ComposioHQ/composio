@@ -40,7 +40,7 @@ const approvedArchive = async () => {
 /** The tag run's pinning job for tag run 9, run as the CLI on a fresh checkout. */
 const pinAttempt = async (
   archive: { zip: string; digest: string },
-  options: { expired?: boolean } = {}
+  options: { expired?: boolean; headAuthor?: string } = {}
 ) => {
   const directory = await directories.create();
   await writeText(`${directory}/package.json`, JSON.stringify({ name: 'root', private: true }));
@@ -50,7 +50,14 @@ const pinAttempt = async (
     JSON.stringify({ name: '@composio/core', version: '1.0.1' })
   );
   await writeText(`${directory}/.github/sdk-release-plan.json`, JSON.stringify(batch));
+  const app = 'sdk-release-app[bot]';
   const routes = {
+    [`/commits/${head}`]: {
+      author: { login: options.headAuthor ?? app },
+      committer: { login: options.headAuthor ?? app },
+      commit: { verification: { verified: true } },
+      parents: [{ sha: batch.inputBase }],
+    },
     '/actions/workflows/sdk.release.candidates.yml/runs': {
       workflow_runs: [
         {
@@ -132,6 +139,7 @@ globalThis.fetch = async input => {
           GITHUB_OUTPUT: output,
           GITHUB_STEP_SUMMARY: summary,
           SDK_READ_TOKEN: 'fixture',
+          SDK_RELEASE_APP_SLUG: 'sdk-release-app',
           SDK_RELEASE_TOKEN: '',
         },
       }
@@ -165,4 +173,10 @@ test('a failed adoption still names the request issue, so the publish status rea
   const pinned = await pinAttempt(await approvedArchive(), { expired: true });
   expect(pinned.exitCode).not.toBe(0);
   expect(pinned.output).toBe('issue=8\n');
+});
+
+test('a release tag on a commit the App did not make names no issue for the bot to write to', async () => {
+  const pinned = await pinAttempt(await approvedArchive(), { expired: true, headAuthor: 'writer' });
+  expect(pinned.exitCode).not.toBe(0);
+  expect(pinned.output).toBe('');
 });

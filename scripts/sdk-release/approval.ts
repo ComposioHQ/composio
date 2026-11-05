@@ -119,16 +119,19 @@ export const readReleasePull = (number: number) =>
  * Whether the release PR head is the release App's own verified commit on the planned source. A
  * person can sign a commit that names the bot as author, but not one it committed.
  */
-export const isReleaseAppHead = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+export const isReleaseAppCommit = (sha: string, inputBase: string, appSlug: string) =>
   Effect.map(
-    request('GET', `${REPOSITORY_PATH}/commits/${pull.head.sha}`, HeadCommit),
+    request('GET', `${REPOSITORY_PATH}/commits/${sha}`, HeadCommit),
     head =>
       head.author?.login === `${appSlug}[bot]` &&
       head.committer?.login === `${appSlug}[bot]` &&
       head.commit.verification.verified &&
       head.parents.length === 1 &&
-      head.parents[0].sha === batch.inputBase
+      head.parents[0].sha === inputBase
   );
+
+export const isReleaseAppHead = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+  isReleaseAppCommit(pull.head.sha, batch.inputBase, appSlug);
 
 /**
  * The request issue named by a release PR's plan, only when the release App committed that plan.
