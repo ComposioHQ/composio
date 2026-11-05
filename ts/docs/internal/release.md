@@ -1,18 +1,45 @@
-# Stable SDK releases
+# SDK releases
 
-One workflow, `sdk.release.yml`, releases the TypeScript SDK, the Python SDK, or both. A member requests the release, the bot opens one release PR, a reviewer approves it, and a person merges it. The workflow then publishes the files the PR checked and opens a docs PR that pins the released versions.
+One workflow, `sdk.release.yml`, releases the TypeScript SDK, the Python SDK, or both, as a stable release or a beta. A member requests the release, the bot opens one release PR, a reviewer approves it, and a person merges it. The workflow then publishes the files the PR checked, checks that users get exactly those files, and, for a stable release, opens a docs PR that pins the released versions.
 
 ```text
 request (issue or dispatch) → release PR (bot) → candidate checks → approve → merge
-  → tag sdk-release/<id> → publish npm + PyPI → docs pin PR
+  → tag sdk-release/<id> → publish npm + PyPI → verify → docs pin PR (stable)
 ```
+
+## Release states
+
+The request issue always shows where the release is: one status comment that the bot edits in place, and one `sdk-release:<state>` label. `scripts/sdk-release/state.ts` lists every state and which stage can end in it.
+
+| State         | Meaning                                                                                         | Issue  |
+| ------------- | ----------------------------------------------------------------------------------------------- | ------ |
+| `in-review`   | The release PR is open.                                                                         | open   |
+| `publishing`  | The merged PR is tagged; the tag run is publishing.                                             | open   |
+| `published`   | Every planned package is on its registry.                                                       | closed |
+| `failed`      | A job failed or was cancelled. **Re-run failed jobs** resumes it.                               | open   |
+| `needs-input` | The request form could not be read.                                                             | closed |
+| `waiting`     | Another release PR is open. Request again after it finishes.                                    | closed |
+| `blocked`     | A release merged into `next` but was never tagged. Re-run its tag job or revert its release PR. | closed |
+| `empty`       | No pending changesets for the selected languages.                                               | closed |
+| `abandoned`   | The release PR closed without merging.                                                          | closed |
+| `refused`     | The release PR merged but failed the gate. Revert it, then request again.                       | closed |
 
 ## Request
 
 1. Open a GitHub issue with the **SDK release** form. Every active ComposioHQ member can use it, including members with repository Read access. Repository writers can instead run **SDK release** on `next` in Actions.
-2. Leave each language at `auto` to follow its changesets, or choose `patch`, `minor`, `major`, or `skip`. An explicit bump with no changesets creates a maintenance release; `auto` with no changesets replies "Nothing to release."
+2. Choose the channel: `stable`, or `beta` for a preview.
+3. Leave each language at `auto` to follow its changesets, or choose `patch`, `minor`, `major`, or `skip`. An explicit bump with no changesets creates a maintenance release; `auto` with no changesets ends as `empty`.
 
-The bot plans versions on the current `next`, regenerates the SDK reference docs, writes the package changelogs and one docs changelog entry, and opens the release PR. Later `next` commits wait for the next release. Only one release PR is open at a time.
+For a stable release, the bot plans versions on the current `next`, regenerates the SDK reference docs, writes the package changelogs and one docs changelog entry, and opens the release PR. Later `next` commits wait for the next release. Only one release PR is open at a time, across both channels.
+
+### Betas
+
+A beta goes through the same release PR, approval, gate and tag as a stable release. Only its versions and npm dist-tag differ:
+
+- Its versions are the ones the pending changesets would release, suffixed with the planning run: `0.29.0-beta.<run>` on npm and `0.29.0b<run>` on PyPI. Core and every Python provider release together.
+- Its release PR commits only `.github/sdk-release-plan.json`. The candidate checks apply the versions where they build, so `next` keeps its stable versions and every changeset stays pending for the stable release.
+- npm publishes it under the `next` dist-tag and never moves `latest`. (`beta` belongs to the 1.0 train on `main`.) pip and uv install it only with `--pre` or an exact pin.
+- It needs no docs check, writes no changelog and opens no docs pin PR.
 
 ## Review and approve
 
@@ -25,21 +52,34 @@ Do not push to the release branch. The tag step accepts only the bot's commit, s
 
 ## Merge and publish
 
-A person merges the approved, green release PR under normal `next` protection. On merge, the `tag` job checks that the head is the bot's commit, the approval, and the candidate and docs checks, then tags the head `sdk-release/<id>`. If the gate fails it creates no tag and comments the fix on the PR: revert the release PR on `next`, then request the release again.
+A person merges the approved, green release PR under normal `next` protection. On merge, the `tag` job checks that the head is the bot's commit, the approval, and the candidate checks (plus the docs check for a stable release), then tags the head `sdk-release/<id>`. If the gate refuses the release it creates no tag and comments the fix on the PR: revert the release PR on `next`, then request the release again. Closing the release PR without merging abandons the release.
 
 The tag run then:
 
 1. Pins the candidate artifacts built on the release PR by ID and digest. It never rebuilds.
-2. Uploads only the files npm and PyPI are missing. An existing file with identical bytes is accepted; different bytes stop the run with a conflict. npm versions are uploaded under a release-only dist-tag, and `latest` moves once every upload is visible.
-3. Comments the published versions on the request issue and opens a docs PR that pins the released npm versions in `docs/package.json` and `docs/bun.lock`. Merging that PR after its checks pass is what makes twoslash type-check the docs against the released types.
+2. Uploads only the files npm and PyPI are missing. An existing file with identical bytes is accepted; different bytes stop the run with a conflict. npm versions are uploaded under a release-only dist-tag; the channel's tag (`latest` or `next`) moves forward once every upload is visible, and the release-only tag is removed.
+3. Checks what users get. Each npm tarball's provenance must name `sdk.release.yml` at this release's tag and describe the reviewed bytes, and `npm audit signatures` passes on a fresh install. Each PyPI file must be attested by `sdk.release.yml` in `pypi-release`, and `pypi-attestations` verifies the signature.
+4. For a stable release, opens a docs PR that pins the released npm versions in `docs/package.json` and `docs/bun.lock`. Merging that PR after its checks pass is what makes twoslash type-check the docs against the released types.
 
-If any job fails, the run comments the failed jobs and the run link on the request issue.
+The last job of each stage shows the outcome on the request issue, including failed and cancelled jobs.
 
 ## Recover a failed release
 
 Open the tag run and choose **Re-run failed jobs**. A re-run publishes the same pinned files, skips files already published, and uploads the rest. This works while the candidate artifacts exist, 30 days from the candidate build.
 
 If the artifacts expired, or a registry already serves different bytes, add changesets for the affected packages on `next` and request a new release. It plans from the versions in `next`, so the unpublished versions are skipped and the packages move to the next version.
+
+## Verify a release yourself
+
+Anyone can check that a published version came from this workflow:
+
+```bash
+# npm: registry signatures and provenance of an installed version
+npm install @composio/core@0.29.0 && npm audit signatures
+# PyPI: the PEP 740 attestation of a published file
+uvx pypi-attestations verify pypi --repository https://github.com/ComposioHQ/composio \
+  https://files.pythonhosted.org/.../composio-0.29.0-py3-none-any.whl
+```
 
 ## Add a release note
 
@@ -77,12 +117,12 @@ Complete these hosted prerequisites before the first release.
 1. Install a dedicated SDK release App with repository Contents, Pull requests, and Issues write, Actions read, and organization Members read. It needs no protection bypass on `next`. Set the `SDK_RELEASE_APP_SLUG` and `SDK_RELEASE_APP_CLIENT_ID` variables. Put `SDK_RELEASE_APP_PRIVATE_KEY` only in the `sdk-release-control` environment, restricted to `next`.
 2. Protect `sdk-release/*` tags against creation, update, and deletion, with only this App allowed to bypass. Publishing trusts these tags, so check that an ordinary writer cannot create or move one.
 3. Create `npm-release` and `pypi-release` environments that deploy only from `sdk-release/*` tags.
-4. Register trusted publishers for `.github/workflows/sdk.release.yml` with the `npm-release` environment on every npm package, and with `pypi-release` on every PyPI package. Always set the environment: PyPI treats a publisher without one as matching any environment. On npm, enable **Allow npm dist-tag**, because the publish job moves `latest` with `npm dist-tag`. Register shortly before the first release, because npm drops a new trusted publisher that hasn't published within 2 days. Keep the existing `ts.release.yml` and `py.release.yml` publishers. npm allows up to 10 trusted publishers per package and PyPI accepts several, so the `main` beta lane and core prereleases keep publishing.
+4. Register trusted publishers for `.github/workflows/sdk.release.yml` with the `npm-release` environment on every npm package, and with `pypi-release` on every PyPI package. Always set the environment: PyPI treats a publisher without one as matching any environment. On npm, enable **Allow npm dist-tag**, because the publish job moves `latest` or `next` and removes the release-only tag with `npm dist-tag`. Register shortly before the first release, because npm drops a new trusted publisher that hasn't published within 2 days. Keep the existing `ts.release.yml` and `py.release.yml` publishers. npm allows up to 10 trusted publishers per package and PyPI accepts several, so the `main` beta lane and core prereleases keep publishing.
 5. Restrict pushes to `sdk-release/batch-*` branches to the App. The tag step refuses heads the App did not commit, so this only prevents confusion.
 6. Keep Actions artifact retention at 30 days or more.
 
-## CLI binaries and beta SDKs
+## CLI binaries and the 1.0 train
 
 CLI binaries keep **Build CLI Binaries** and GitHub Releases. `@composio/cli` stays excluded from changesets. Follow the [CLI release skill](../../../.agents/skills/cli-release/references/release-workflow.md).
 
-The `main` SDK beta lane keeps `ts.release.yml`, its prerelease state and its trusted identity. `py.release.yml` keeps build-only dispatch and core prereleases.
+The 1.0 prerelease train on `main` keeps `ts.release.yml`, its prerelease state, the npm `beta` dist-tag and its trusted identity. `py.release.yml` keeps build-only dispatch and core prereleases. Betas of `next` use `sdk.release.yml` instead.

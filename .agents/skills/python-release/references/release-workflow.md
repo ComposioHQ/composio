@@ -10,7 +10,7 @@ make build
 
 `make build` cleans build outputs, builds the root package, then builds provider packages and collects distributions.
 
-Stable Python releases use the unified `sdk.release.yml` member request and one approved release PR. Author changesets for the private `@composio/python-sdk` marker; the release bot synchronizes core and all supported provider metadata. Read `ts/docs/internal/release.md` for request, approval, merge, recovery and owner setup steps.
+Stable and beta Python releases use the unified `sdk.release.yml` member request and one approved release PR; a beta publishes `X.Y.ZbN` for core and every provider. Author changesets for the private `@composio/python-sdk` marker; the release bot synchronizes core and all supported provider metadata. Read `ts/docs/internal/release.md` for request, approval, merge, recovery and owner setup steps.
 
 Recovery: re-run a failed tag run with `gh run rerun <tag-run-id> --failed`. When the approved candidate expired, add a changeset and request a new release. Agents stop at "release PR ready for approval" and never merge it.
 

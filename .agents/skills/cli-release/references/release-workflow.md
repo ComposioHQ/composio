@@ -19,7 +19,7 @@
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
 - `.changeset/config.json` ignores `@composio/cli`.
 
-`sdk.release.yml` owns stable Python/TypeScript publication; `ts.release.yml` retains the `main` SDK beta lane. CLI binary releases use their own workflow.
+`sdk.release.yml` owns stable and beta Python/TypeScript publication from `next`; `ts.release.yml` retains the 1.0 prerelease train on `main`. CLI binary releases use their own workflow.
 
 ## Choose The Path
 
