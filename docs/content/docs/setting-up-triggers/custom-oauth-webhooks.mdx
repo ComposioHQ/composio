@@ -164,7 +164,11 @@ For providers that issue a verification challenge on save (Slack `url_verificati
 
 Gmail delivers mailbox changes through Google Cloud Pub/Sub instead of a request URL on your OAuth app. You create a topic and a push subscription in the Google Cloud project that owns your OAuth client. Each Gmail trigger's description lists the steps; read it with `composio.triggers.get_type("GMAIL_NEW_GMAIL_MESSAGE")` in Python or `composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE')` in TypeScript. The Gmail endpoint takes three fields: `topic_name`, `push_service_account_email`, and `push_audience`.
 
-Until the endpoint exists with all three fields, new Gmail triggers poll, and their `fallback_reason` names what's missing. Once all three are set, every new Gmail trigger created without `type` uses the webhook. If the Pub/Sub push subscription isn't delivering to the endpoint's `webhook_url` by then, those triggers receive nothing and report no error.
+Until the endpoint exists with all three fields, new Gmail triggers poll, and their `fallback_reason` names what's missing.
+
+<Callout type="warn">
+**New Gmail triggers switch to the webhook as soon as the endpoint is complete.** Once all three fields are set, every new Gmail trigger you create without `type` uses the webhook. If the Pub/Sub push subscription isn't delivering to the endpoint's `webhook_url` by then, those triggers receive nothing and report no error.
+</Callout>
 
 To switch over without missing an email:
 

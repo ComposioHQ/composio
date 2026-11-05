@@ -1,25 +1,12 @@
 ---
 title: 'Instant triggers for Gmail and Google Calendar'
-description: 'Gmail and Google Calendar triggers can now receive events by webhook, so a change reaches you in seconds instead of on the next poll.'
+description: 'Gmail and Google Calendar triggers now fire the moment something changes, instead of on the next poll.'
 date: '2026-11-05'
 ---
 
-A new email or a moved meeting no longer has to wait for the next poll. Google now tells Composio the moment something changes, and the event reaches your webhook URL in the same payload shape you already handle.
+Your Gmail and Google Calendar triggers no longer wait for the next poll. Google now tells Composio about a new email or a moved meeting as it happens, and the event reaches your webhook URL in seconds, in the same payload shape your handler already reads.
 
-- **Composio-managed auth:** new triggers use webhooks automatically. There's nothing to set up.
-- **Existing triggers:** they keep polling, exactly as before. To move one to webhooks, delete it and create it again.
-- **Your own Google OAuth app:** Calendar needs no setup. Gmail needs a Pub/Sub topic in your Google Cloud project, and its triggers keep polling until that's in place.
-
-### Supported triggers
-
-- **Gmail:** `GMAIL_NEW_GMAIL_MESSAGE` and `GMAIL_EMAIL_SENT_TRIGGER`.
-- **Google Calendar:** `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CREATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_UPDATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER`, `GOOGLECALENDAR_EVENT_CANCELED_DELETED_TRIGGER`, and `GOOGLECALENDAR_ATTENDEE_RESPONSE_CHANGED_TRIGGER`.
-
-`GOOGLECALENDAR_EVENT_STARTING_SOON_TRIGGER` keeps polling, because it fires on a schedule relative to each event's start time.
-
-### Choose webhook or polling
-
-When a trigger supports both, Composio uses a webhook whenever one can be set up. Pass `type` as `"webhook"` or `"poll"` to choose yourself. The response tells you what the instance ended up with. Here, a custom Gmail app has no webhook endpoint yet, so the instance polls:
+On Composio-managed auth, there's nothing to set up. Create a trigger the way you always have:
 
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_GMAIL_MESSAGE/upsert \
@@ -31,33 +18,47 @@ curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_G
 ```json
 {
   "trigger_id": "ti_xxx",
-  "type": "poll",
-  "fallback_reason": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers.",
-  "polling_interval": 15
+  "type": "webhook",
+  "fallback_reason": null,
+  "polling_interval": null
 }
 ```
 
-`fallback_reason` is set only when an instance polls because its webhook couldn't be set up, and it names what's missing. An existing instance keeps the type it was created with, so an upsert that asks for the other type returns `409`.
+What just happened? The trigger supports both webhooks and polling, so Composio picked the webhook. The response's `type` tells you which one each trigger uses.
 
-Python `composio` 0.31.0 and TypeScript `@composio/core` 0.28.0 accept `type` and the polling interval. See the [SDK release notes](/docs/changelog/2026/11/03).
+### What's new
 
-### `polling_interval` replaces `interval`
+- **Instant Gmail triggers.** `GMAIL_NEW_GMAIL_MESSAGE` and `GMAIL_EMAIL_SENT_TRIGGER`.
+- **Instant Google Calendar triggers.** `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CREATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_UPDATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER`, `GOOGLECALENDAR_EVENT_CANCELED_DELETED_TRIGGER`, and `GOOGLECALENDAR_ATTENDEE_RESPONSE_CHANGED_TRIGGER`. `GOOGLECALENDAR_EVENT_STARTING_SOON_TRIGGER` keeps polling, because it fires on a schedule relative to each event's start time.
+- **Choose webhook or polling.** Pass `type` as `"webhook"` or `"poll"`. Omit it and Composio uses a webhook whenever it can set one up.
+- **`polling_interval`.** Set the minutes between polls with this top-level parameter (`pollingInterval` in TypeScript). It applies when you pass `type: "poll"`, and when a trigger falls back to polling. Composio checks it even when the trigger ends up on a webhook, so a value outside the toolkit's allowed range fails the request.
+- **`fallback_reason`.** When a trigger polls because Composio couldn't set up its webhook, `fallback_reason` says what's missing.
 
-Set the minutes between polls with the new top-level `polling_interval` parameter (`pollingInterval` in TypeScript). It applies whenever an instance polls: when you pass `type: "poll"`, and when a webhook isn't available and the instance falls back. Composio checks it even when the instance ends up on a webhook, so a value outside the toolkit's allowed range fails the request.
+Python `composio` 0.31.0 and TypeScript `@composio/core` 0.28.0 support `type` and the polling interval. See the [SDK release notes](/docs/changelog/2026/11/03).
 
-`interval` inside `trigger_config` is deprecated. It still works when you don't pass `polling_interval`.
+<Callout>
+**Deprecated: `interval` in `trigger_config`.** Use the top-level `polling_interval` instead. `interval` keeps working when you don't pass `polling_interval`.
+</Callout>
 
-### Gmail on your own OAuth app
+### Existing triggers
 
-Gmail delivers mailbox changes through Google Cloud Pub/Sub, so a custom Gmail app needs a topic and a push subscription in the Google Cloud project that owns your OAuth client. Each Gmail trigger's description lists the steps. Read it with `composio.triggers.get_type("GMAIL_NEW_GMAIL_MESSAGE")` in Python, `composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE')` in TypeScript, or `GET /api/v3.1/triggers_types/GMAIL_NEW_GMAIL_MESSAGE`.
+Composio doesn't move your existing triggers. They keep polling exactly as before, so nothing changes under you. To move one to webhooks, delete it and create it again. An existing trigger keeps the type it was created with, so an upsert that asks for the other type returns `409`.
 
-Setup is complete once your Gmail [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) exists and holds every required field: `topic_name`, `push_service_account_email`, and `push_audience`. Until then, new Gmail triggers poll, and their `fallback_reason` says what's missing.
+### Gmail and Calendar on your own OAuth app
 
-From the moment setup is complete, every new Gmail trigger created without `type` uses a webhook. If the Pub/Sub push subscription isn't delivering to the endpoint's `webhook_url` yet, those triggers stay silent: no events and no error.
+Google Calendar works on your own Google OAuth app with no extra setup.
 
-To switch over without missing an email:
+Gmail delivers mailbox changes through Google Cloud Pub/Sub, so your app needs a topic and a push subscription in the Google Cloud project that owns your OAuth client. Each Gmail trigger's description walks you through it. Read it with `composio.triggers.get_type("GMAIL_NEW_GMAIL_MESSAGE")` in Python, `composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE')` in TypeScript, or `GET /api/v3.1/triggers_types/GMAIL_NEW_GMAIL_MESSAGE`.
 
-1. Pass `type: "poll"` when you create Gmail triggers, so new triggers keep polling while you set up.
+Setup is complete once your Gmail [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) exists and holds every field: `topic_name`, `push_service_account_email`, and `push_audience`. Until then, new Gmail triggers keep polling, and `fallback_reason` tells you which piece is missing. Nothing breaks while you set up.
+
+<Callout type="warn">
+Once the endpoint is complete, every new Gmail trigger you create without `type` uses the webhook right away. If the Pub/Sub push subscription isn't delivering to the endpoint's `webhook_url` yet, those triggers fire nothing, and no error tells you.
+</Callout>
+
+For a smooth, test-first rollout:
+
+1. Create Gmail triggers with `type: "poll"` while you set up, so the switch can't catch you halfway.
 2. Create the webhook endpoint, fill every field, and create the Pub/Sub push subscription that delivers to its `webhook_url`.
-3. Create a few test triggers with `type: "webhook"`, send yourself an email, and confirm the events arrive.
-4. Pass `type: "webhook"`, or drop `type`, for new triggers. Recreate your existing polling triggers to move them over.
+3. Create a few test triggers with `type: "webhook"`, send yourself an email, and watch the event arrive.
+4. Switch new triggers to `type: "webhook"`, or drop `type`. Recreate your existing polling triggers to move them over.

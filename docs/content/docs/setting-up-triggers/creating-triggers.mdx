@@ -138,7 +138,7 @@ The trigger instance is created. Next, [receive its events](/docs/setting-up-tri
 
 ## Choosing webhook or polling
 
-Some trigger types, including the Gmail and Google Calendar triggers, can receive events by webhook or by polling. Composio uses a webhook whenever one can be set up. Pass `type` as `"webhook"` or `"poll"` to choose yourself, and `polling_interval` to set the minutes between polls.
+Some trigger types, including the Gmail and Google Calendar triggers, can receive events by webhook or by polling. Composio uses a webhook whenever it can set one up. Pass `type` as `"webhook"` or `"poll"` to choose yourself, and `polling_interval` to set the minutes between polls.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
@@ -179,7 +179,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_G
   </Tab>
 </Tabs>
 
-Omit `type` to let Composio choose. The response reports what the instance uses. `fallback_reason` is set when the instance polls because its webhook couldn't be set up, for example when your own OAuth app has no [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) yet.
+Omit `type` to let Composio choose. The response reports what the instance uses. Composio sets `fallback_reason` when the instance polls because it couldn't set up a webhook, for example when your own OAuth app has no [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) yet.
 
 `polling_interval` replaces the `interval` field in `trigger_config`, which still works but is deprecated. Composio checks `polling_interval` whenever the instance could poll, so a value outside the toolkit's allowed range fails the request even when the instance ends up on a webhook.
 
