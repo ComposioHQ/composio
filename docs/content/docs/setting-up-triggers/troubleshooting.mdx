@@ -31,6 +31,8 @@ Use the trigger logs to locate the first missing step:
 | No trigger event appears | Confirm the provider event matches the trigger type and configuration. For polling triggers, allow the polling interval to pass. For realtime triggers, check provider ingress. |
 | A trigger event exists, but your app receives nothing | Inspect the project's outbound webhook subscription, destination URL, enabled events, and delivery response. |
 | Your app receives a request, but the handler rejects it | Check the signing secret, raw request body, timestamp, and handler logs using [signature verification](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures). |
+| A Gmail or Google Calendar trigger polls instead of using a webhook | [List the trigger](/docs/setting-up-triggers/managing-triggers#listing-active-triggers) and read its `type` and `fallback_reason`. `fallback_reason` names what the webhook setup is missing. |
+| A Gmail webhook trigger on your own OAuth app receives nothing | Check that the Pub/Sub push subscription delivers to the endpoint's `webhook_url`, with the service account and audience set on the endpoint. See [Gmail push notifications](/docs/setting-up-triggers/custom-oauth-webhooks#gmail-push-notifications). |
 
 Your outbound subscription must include `composio.trigger.message`. A toolkit's trigger slug is not a webhook subscription event type. See [project subscriptions](/docs/setting-up-triggers/subscribing-to-events#manage-project-subscriptions).
 
@@ -38,7 +40,7 @@ With Composio-managed OAuth, Composio manages provider ingress. If matching even
 
 ## Test Gmail polling with a new message
 
-A new message can take up to one full polling interval to appear. That's the `interval` set on the trigger. On Composio-managed auth, the shortest allowed interval is 2 minutes. A trigger with a longer interval waits that long. An empty legacy `last_synced_at` field alone does not establish that polling has stopped. Gmail polling uses a mailbox history cursor, and its first successful poll establishes a baseline. Messages that existed before that baseline are not a backfill.
+A new message can take up to one full polling interval to appear. That's the trigger's `polling_interval`. On Composio-managed auth, the shortest allowed interval is 2 minutes. A trigger with a longer interval waits that long. An empty legacy `last_synced_at` field alone does not establish that polling has stopped. Gmail polling uses a mailbox history cursor, and its first successful poll establishes a baseline. Messages that existed before that baseline are not a backfill.
 
 Wait for the first successful poll to establish the baseline, then send one new message to the connected mailbox. Keep its Gmail message ID and UTC arrival time, then check the intended trigger instance and your webhook delivery logs after another full polling interval. If you need older messages, fetch them separately with Gmail tools.
 

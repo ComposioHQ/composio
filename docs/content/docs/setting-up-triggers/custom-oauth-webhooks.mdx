@@ -160,6 +160,21 @@ Paste the `webhook_url` from step 2 into the provider's app dashboard:
 
 For providers that issue a verification challenge on save (Slack `url_verification`, Notion's verification token, and so on), Composio responds automatically, with no handshake code on your side. Once the provider accepts the URL, go [create your trigger](/docs/setting-up-triggers/creating-triggers).
 
+## Gmail push notifications
+
+Gmail delivers mailbox changes through Google Cloud Pub/Sub instead of a request URL on your OAuth app. You create a topic and a push subscription in the Google Cloud project that owns your OAuth client. Each Gmail trigger's description lists the steps; read it with `composio.triggers.get_type("GMAIL_NEW_GMAIL_MESSAGE")` in Python or `composio.triggers.getType('GMAIL_NEW_GMAIL_MESSAGE')` in TypeScript. The Gmail endpoint takes three fields: `topic_name`, `push_service_account_email`, and `push_audience`.
+
+Until the endpoint exists with all three fields, new Gmail triggers poll, and their `fallback_reason` names what's missing. Once all three are set, every new Gmail trigger created without `type` uses the webhook. If the Pub/Sub push subscription isn't delivering to the endpoint's `webhook_url` by then, those triggers receive nothing and report no error.
+
+To switch over without missing an email:
+
+1. Pass `type: "poll"` when you create Gmail triggers, so new triggers keep polling while you set up.
+2. Create the endpoint, fill all three fields, and create the Pub/Sub push subscription that delivers to its `webhook_url`.
+3. Create a few test triggers with `type: "webhook"`, send yourself an email, and confirm the events arrive.
+4. Pass `type: "webhook"`, or drop `type`, for new triggers. An existing trigger keeps polling until you delete it and create it again.
+
+See [Choosing webhook or polling](/docs/setting-up-triggers/creating-triggers#choosing-webhook-or-polling) for `type` and `polling_interval`.
+
 ## Updating an endpoint
 
 To rotate the signing secret or update any single field, `PATCH` it (other fields are preserved):
