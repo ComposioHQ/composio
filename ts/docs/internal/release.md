@@ -57,8 +57,8 @@ A person merges the approved, green release PR under normal `next` protection. O
 The tag run then:
 
 1. Pins the candidate artifacts built on the release PR by ID and digest. It never rebuilds.
-2. Uploads only the files npm and PyPI are missing. An existing file with identical bytes is accepted; different bytes stop the run with a conflict. npm versions are uploaded under a release-only dist-tag; the channel's tag (`latest` or `next`) moves forward once every upload is visible, and the release-only tag is removed.
-3. Checks what users get. Each npm tarball's provenance must name `sdk.release.yml` at this release's tag and describe the reviewed bytes, and `npm audit signatures` passes on a fresh install. Each PyPI file must be attested by `sdk.release.yml` in `pypi-release`, and `pypi-attestations` verifies the signature.
+2. Uploads only the files npm and PyPI are missing. An existing file with identical bytes is accepted; different bytes stop the run with a conflict. npm versions are uploaded under a release-only dist-tag. Once every upload is visible and each tarball's provenance names `sdk.release.yml` at this release's tag and describes the reviewed bytes, the channel's tag (`latest` or `next`) moves forward and the release-only tag is removed. A failed provenance check leaves the channel tag where it was.
+3. Checks what users get: `npm audit signatures` passes on a fresh install, each PyPI file is attested by `sdk.release.yml` in `pypi-release`, and `pypi-attestations` verifies the signature.
 4. For a stable release, opens a docs PR that pins the released npm versions in `docs/package.json` and `docs/bun.lock`. Merging that PR after its checks pass is what makes twoslash type-check the docs against the released types.
 
 The last job of each stage shows the outcome on the request issue, including failed and cancelled jobs.
