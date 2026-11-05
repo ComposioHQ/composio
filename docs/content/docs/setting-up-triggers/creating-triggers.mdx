@@ -181,7 +181,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_G
 
 Omit `type` to let Composio choose. The response reports what the instance uses. Composio sets `fallback_reason` when the instance polls because it couldn't set up a webhook, for example when your own OAuth app has no [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) yet.
 
-When you omit `type`, Composio checks `polling_interval` before it tries the webhook, in case the trigger falls back to polling, so a value outside the toolkit's allowed range fails the request. With `type: "webhook"`, Composio doesn't use it.
+When you omit `type` or pass `type: "poll"`, Composio checks `polling_interval` before it sets up the trigger, so a value below the toolkit's minimum fails the request.
 
 ## Next
 
