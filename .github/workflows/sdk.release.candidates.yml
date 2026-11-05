@@ -1,0 +1,125 @@
+name: SDK release candidates
+run-name: SDK release candidates (${{ github.head_ref }})
+
+# Builds and checks the package files a release PR will publish. This workflow only runs on
+# pull_request, with a read-only token, no secrets and no caches. The privileged SDK release
+# workflow never checks out PR code; after approval and merge, its tag run publishes these exact
+# artifacts.
+on:
+  pull_request:
+    branches: [next]
+    paths: ['.github/sdk-release-plan.json', 'scripts/sdk-release/**']
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  select-candidates:
+    if: >-
+      github.repository == 'ComposioHQ/composio' &&
+      startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
+    runs-on: ubuntu-latest
+    outputs:
+      typescript: ${{ steps.select.outputs.typescript }}
+      python: ${{ steps.select.outputs.python }}
+      languages: ${{ steps.select.outputs.languages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Select planned language lanes
+        id: select
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const batch = JSON.parse(readFileSync('.github/sdk-release-plan.json', 'utf8'));
+          const languages = [...new Set(batch.plan.releases.map(release => release.language))];
+          // Languages reach shell steps through the matrix, so accept only known values.
+          if (!languages.every(language => ['typescript', 'python'].includes(language))) throw new Error('Unknown release language');
+          appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\n`);
+          for (const language of ['typescript', 'python']) appendFileSync(process.env.GITHUB_OUTPUT, `${language}=${languages.includes(language)}\n`);
+          JS
+
+  candidate:
+    # The release merge requires this check name to pass on the approved head.
+    name: SDK candidate (${{ matrix.language }})
+    needs: select-candidates
+    if: needs.select-candidates.outputs.typescript == 'true' || needs.select-candidates.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.select-candidates.outputs.languages) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+        if: matrix.language == 'python'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build and check the candidate
+        id: build
+        env:
+          SDK_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
+      - name: Retain candidate bytes for publication
+        if: steps.build.outputs.selected == 'true'
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-candidate-${{ matrix.language }}
+          path: sdk-candidate/${{ matrix.language }}/
+          retention-days: 30
+          if-no-files-found: error
+          overwrite: true
+      - name: Report candidate identity
+        if: steps.build.outputs.selected == 'true'
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          SDK_READ_TOKEN: ${{ github.token }}
+        run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}
+
+  # Installs third-party packages from the registries, so it runs apart from the build job and
+  # has no upload step. Code it runs still holds this run's runtime token, so the tag run refuses
+  # any candidate artifact created after the build job finished.
+  smoke:
+    # The release merge requires this check name to pass on the approved head.
+    name: SDK candidate smoke (${{ matrix.language }})
+    needs: [select-candidates, candidate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.select-candidates.outputs.languages) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+        if: matrix.language == 'python'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: sdk-candidate-${{ matrix.language }}
+          path: sdk-candidate/${{ matrix.language }}
+      - name: Install and import the candidate like a user
+        run: bun scripts/sdk-release/consumers.ts sdk-candidate/${{ matrix.language }}
