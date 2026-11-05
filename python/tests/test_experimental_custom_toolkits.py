@@ -16,7 +16,7 @@ from composio.core.models.experimental import (
 
 TOOLKIT_CONFIG: custom_upsert_params.ToolkitConfig = {
     "name": "My Toolkit",
-    "app_url": "https://mcp.example.com/mcp",
+    "mcp_url": "https://mcp.example.com/mcp",
     "auth_schemes": [
         {
             "mode": "API_KEY",
@@ -45,49 +45,15 @@ class TestExperimentalCustomToolkits:
         assert isinstance(experimental.custom_toolkits, ExperimentalCustomToolkits)
         assert experimental.custom_toolkits._client is mock_client
 
-    def test_create_sends_mcp_url(self, custom_toolkits, mock_client):
+    def test_create_passes_params_through(self, custom_toolkits, mock_client):
         mock_client.custom.create_toolkit.return_value = "created"
 
-        result = custom_toolkits.create(
-            name="My Toolkit",
-            mcp_url="https://mcp.example.com/mcp",
-            auth_schemes=TOOLKIT_CONFIG["auth_schemes"],
-            user_id="user_123",
-        )
+        result = custom_toolkits.create(**TOOLKIT_CONFIG, user_id="user_123")
 
         assert result == "created"
         mock_client.custom.create_toolkit.assert_called_once_with(
-            **TOOLKIT_CONFIG, user_id="user_123", logo_file=omit, callback_url=omit
+            **TOOLKIT_CONFIG, user_id="user_123"
         )
-
-    def test_create_with_deprecated_app_url_warns(self, custom_toolkits, mock_client):
-        with pytest.warns(exceptions.ComposioDeprecationWarning, match="mcp_url"):
-            custom_toolkits.create(**TOOLKIT_CONFIG, user_id="user_123")
-
-        mock_client.custom.create_toolkit.assert_called_once_with(
-            **TOOLKIT_CONFIG, user_id="user_123", logo_file=omit, callback_url=omit
-        )
-
-    @pytest.mark.parametrize(
-        "urls",
-        [
-            {},
-            {
-                "mcp_url": "https://mcp.example.com/mcp",
-                "app_url": "https://mcp.example.com/mcp",
-            },
-        ],
-    )
-    def test_create_needs_exactly_one_url(self, custom_toolkits, mock_client, urls):
-        with pytest.raises(exceptions.ValidationError):
-            custom_toolkits.create(
-                name="My Toolkit",
-                auth_schemes=TOOLKIT_CONFIG["auth_schemes"],
-                user_id="all",
-                **urls,
-            )
-
-        mock_client.custom.create_toolkit.assert_not_called()
 
     def test_update_passes_slug_and_params_through(self, custom_toolkits, mock_client):
         mock_client.custom.update_toolkits.return_value = "updated"

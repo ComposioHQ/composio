@@ -134,27 +134,6 @@ class ExperimentalUsage:
         return self._require_client().project.usage.retrieve(entity_type, **params)
 
 
-class CustomToolkitCreateParams(te.TypedDict, total=False):
-    """Params for :meth:`ExperimentalCustomToolkits.create`. Pass ``mcp_url``;
-    ``app_url`` is its deprecated name."""
-
-    name: te.Required[str]
-    mcp_url: str
-    app_url: str
-    logo_file: custom_create_toolkit_params.LogoFile
-    auth_schemes: te.Required[
-        t.Iterable[
-            custom_create_toolkit_params.AuthSchemeVariant0
-            | custom_create_toolkit_params.AuthSchemeVariant1
-            | custom_create_toolkit_params.AuthSchemeVariant2
-        ]
-    ]
-    user_id: te.Required[str]
-    callback_url: str
-
-
-_APP_URL_DEPRECATION = "experimental.custom_toolkits.create(app_url=...) is deprecated. Pass mcp_url instead."
-
 _UPSERT_DEPRECATION = (
     "experimental.custom_toolkits.upsert() is deprecated. Use create() for a "
     "new toolkit and update(slug, ...) to change its name, logo or API key field."
@@ -190,7 +169,7 @@ class ExperimentalCustomToolkits:
 
     def create(
         self,
-        **params: te.Unpack[CustomToolkitCreateParams],
+        **params: te.Unpack[custom_create_toolkit_params.CustomCreateToolkitParams],
     ) -> custom_create_toolkit_response.CustomCreateToolkitResponse:
         """
         Create a custom MCP toolkit and return its generated slug.
@@ -203,7 +182,6 @@ class ExperimentalCustomToolkits:
 
         :param name: Display name of the toolkit.
         :param mcp_url: The MCP server URL. Must use https.
-        :param app_url: Deprecated name for ``mcp_url``.
         :param auth_schemes: How users authenticate to the MCP server.
         :param user_id: ``"all"``, or the user ID the toolkit is private to.
         :param logo_file: Optional base64 PNG or JPEG logo.
@@ -225,31 +203,7 @@ class ExperimentalCustomToolkits:
                 user_id="user_123",
             )
         """
-        from composio import exceptions
-
-        client = self._require_client()
-        mcp_url = params.get("mcp_url")
-        app_url = params.get("app_url")
-        url = mcp_url or app_url
-        if url is None or (mcp_url is not None and app_url is not None):
-            raise exceptions.ValidationError(
-                "Pass mcp_url (app_url is deprecated), not both"
-            )
-        if app_url is not None:
-            warnings.warn(
-                _APP_URL_DEPRECATION,
-                exceptions.ComposioDeprecationWarning,
-                stacklevel=2,
-            )
-        # The API reads app_url as mcp_url. Send mcp_url once composio-client has it.
-        return client.custom.create_toolkit(
-            name=params["name"],
-            app_url=url,
-            auth_schemes=params["auth_schemes"],
-            user_id=params["user_id"],
-            logo_file=none_to_omit(params.get("logo_file")),
-            callback_url=none_to_omit(params.get("callback_url")),
-        )
+        return self._require_client().custom.create_toolkit(**params)
 
     def update(
         self,
@@ -295,14 +249,14 @@ class ExperimentalCustomToolkits:
             its name, logo or API key field. ``create`` generates the slug,
             so store the slug it returns.
 
-        ``app_url`` and ``auth_schemes`` cannot change on an existing
+        ``mcp_url`` and ``auth_schemes`` cannot change on an existing
         toolkit: re-sending them unchanged is a no-op, and changing them fails
         with a 409. Delete and re-register the toolkit instead, which revokes
         its connections.
 
         :param slug: Letters, digits, underscores or spaces (max 30). The API
             prefixes it with ``CUSTOM_`` and turns spaces into underscores.
-        :param toolkit_config: ``name``, ``app_url`` (the MCP URL for MCP
+        :param toolkit_config: ``name``, ``mcp_url`` (the MCP URL for MCP
             apps), ``auth_schemes`` and an optional base64 ``logo_file``.
         :return: The toolkit's ``slug``.
 
@@ -311,7 +265,7 @@ class ExperimentalCustomToolkits:
                 slug="INTERNAL_API",
                 toolkit_config={
                     "name": "Internal API",
-                    "app_url": "https://mcp.internal.example.com/mcp",
+                    "mcp_url": "https://mcp.internal.example.com/mcp",
                     "auth_schemes": [
                         {
                             "mode": "API_KEY",

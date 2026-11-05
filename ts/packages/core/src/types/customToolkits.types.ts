@@ -53,49 +53,24 @@ export type CustomToolkitLogoFile = z.infer<typeof CustomToolkitLogoFileSchema>;
  * Params for `composio.experimental.customToolkits.create()`.
  * **Experimental — custom toolkits are in pilot; shape may change.**
  */
-export const CustomToolkitCreateParamsSchema = z
-  .object({
-    /** Human-readable toolkit name. */
-    name: z.string().min(1).max(200),
-    /** The MCP server URL. Must use https. */
-    mcpUrl: z.string().url().optional(),
-    /** @deprecated Use `mcpUrl`. */
-    appUrl: z.string().url().optional(),
-    /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the MCP logo. */
-    logoFile: CustomToolkitLogoFileSchema.optional(),
-    /** At least one scheme. Cannot be changed after create. */
-    authSchemes: z.array(CustomToolkitAuthSchemeSchema).min(1),
-    /**
-     * `'all'` to share the toolkit with every user in the project, or a user ID
-     * to make it private to that user. Cannot be changed after create.
-     */
-    userId: z.string().min(1),
-    /** Where to send the user after they connect. Used only for `connectLink`. */
-    callbackUrl: z.string().url().optional(),
-  })
-  .transform(({ mcpUrl, appUrl, ...params }, ctx) => {
-    const url = mcpUrl ?? appUrl;
-    if (url === undefined || (mcpUrl !== undefined && appUrl !== undefined)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Pass mcpUrl (appUrl is deprecated), not both',
-        path: ['mcpUrl'],
-      });
-      return z.NEVER;
-    }
-    return { ...params, mcpUrl: url };
-  });
-
-type CustomToolkitCreateUrl =
-  | { /** The MCP server URL. Must use https. */ mcpUrl: string; appUrl?: never }
-  | { /** @deprecated Use `mcpUrl`. */ appUrl: string; mcpUrl?: never };
-
-/** Params for `create()`: exactly one of `mcpUrl` or the deprecated `appUrl`. */
-export type CustomToolkitCreateParams = Omit<
-  z.input<typeof CustomToolkitCreateParamsSchema>,
-  'mcpUrl' | 'appUrl'
-> &
-  CustomToolkitCreateUrl;
+export const CustomToolkitCreateParamsSchema = z.object({
+  /** Human-readable toolkit name. */
+  name: z.string().min(1).max(200),
+  /** The MCP server URL. Must use https. */
+  mcpUrl: z.string().url(),
+  /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the MCP logo. */
+  logoFile: CustomToolkitLogoFileSchema.optional(),
+  /** At least one scheme. Cannot be changed after create. */
+  authSchemes: z.array(CustomToolkitAuthSchemeSchema).min(1),
+  /**
+   * `'all'` to share the toolkit with every user in the project, or a user ID
+   * to make it private to that user. Cannot be changed after create.
+   */
+  userId: z.string().min(1),
+  /** Where to send the user after they connect. Used only for `connectLink`. */
+  callbackUrl: z.string().url().optional(),
+});
+export type CustomToolkitCreateParams = z.infer<typeof CustomToolkitCreateParamsSchema>;
 
 export const CustomToolkitCreateResponseSchema = z.object({
   /** Slug of the created toolkit. Store it to update, sync or delete the toolkit later. */
@@ -160,8 +135,8 @@ export const CustomToolkitUpsertParamsSchema = z.object({
   toolkitConfig: z.object({
     /** Human-readable toolkit name. */
     name: z.string().min(1).max(200),
-    /** The app URL. For an MCP app, the MCP server URL. */
-    appUrl: z.string().url(),
+    /** The MCP server URL. Must use https. */
+    mcpUrl: z.string().url(),
     /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the Composio logo. */
     logoFile: CustomToolkitLogoFileSchema.optional(),
     /** At least one scheme. The schemes cannot change once the toolkit exists. */

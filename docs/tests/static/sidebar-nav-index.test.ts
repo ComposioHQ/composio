@@ -61,12 +61,27 @@ describe('buildSidebarNavIndex', () => {
     });
   });
 
+  test('governance guides stay top-level within the Governance section', () => {
+    expect(index['/docs/governance/tool-hints']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 1,
+    });
+    expect(index['/docs/governance/approvals']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 2,
+    });
+  });
+
   test('folder index pages resolve to the folder row', () => {
     expect(index['/docs/authentication']).toEqual({
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 1,
-      position: index['/docs/tool-tags'].position + 1,
+      position: index['/docs/toolkits'].position + 1,
     });
   });
 

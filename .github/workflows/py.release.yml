@@ -38,6 +38,12 @@ jobs:
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
 
       - name: Resolve release package set
         id: release_mode

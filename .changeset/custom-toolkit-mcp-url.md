@@ -3,4 +3,4 @@
 '@composio/slim': minor
 ---
 
-`composio.experimental.customToolkits.create()` takes the MCP server URL as `mcpUrl`. `appUrl` still works but is deprecated; passing both, or neither, throws `ValidationError`. Python's `experimental.custom_toolkits.create()` takes `mcp_url` the same way and warns when given `app_url`.
+Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.

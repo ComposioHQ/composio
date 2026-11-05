@@ -24,11 +24,11 @@ import {
   CreateCustomToolkitBaseSchema,
   CustomToolSlugSchema,
   type AnyZodSchema,
-  type CreateCustomToolParams,
-  type CreateCustomToolkitParams,
-  type CustomTool,
-  type CustomToolkit,
-  type CustomToolExecuteFn,
+  type CreateLocalToolParams,
+  type CreateLocalToolkitParams,
+  type LocalTool,
+  type LocalToolkit,
+  type LocalToolExecuteFn,
   type CustomToolsMap,
   type CustomToolsMapEntry,
   type CustomToolWireDefinition,
@@ -97,10 +97,10 @@ function validateSlugLength(
 }
 
 /**
- * Create a custom tool for use in tool router sessions.
+ * Create a local tool for use in tool router sessions.
  *
  * The returned object is a lightweight reference containing the tool's metadata
- * and execute function. Pass it to `composio.create(userId, { experimental: { customTools: [...] } })`
+ * and execute function. Pass it to `composio.create(userId, { experimental: { localTools: [...] } })`
  * to bind it to a session.
  *
  * Just return the result data from `execute`, or throw an error.
@@ -113,7 +113,7 @@ function validateSlugLength(
  *
  * @param slug - Unique tool identifier (alphanumeric, underscores, hyphens; no LOCAL_ or COMPOSIO_ prefix)
  * @param options - Tool definition including name, schema, and execute function
- * @returns A CustomTool to pass to session creation
+ * @returns A LocalTool to pass to session creation
  *
  * @example Standalone tool (no auth)
  * ```typescript
@@ -142,8 +142,8 @@ function validateSlugLength(
  */
 export function createCustomTool<T extends AnyZodSchema>(
   slug: string,
-  options: CreateCustomToolParams<T>
-): CustomTool {
+  options: CreateLocalToolParams<T>
+): LocalTool {
   // Validate slug separately
   const slugResult = CustomToolSlugSchema.safeParse(slug);
   if (!slugResult.success) {
@@ -192,12 +192,13 @@ export function createCustomTool<T extends AnyZodSchema>(
     inputSchema,
     outputSchema,
     inputParams,
-    execute: execute as CustomToolExecuteFn<AnyZodSchema>,
+    execute: execute as LocalToolExecuteFn<AnyZodSchema>,
   };
 }
 
 /**
- * Create a custom toolkit that groups related tools.
+ * Create a toolkit that groups related local tools. Pass it to
+ * `composio.create(userId, { experimental: { localToolkits: [...] } })`.
  *
  * Tools passed here must NOT have `extendsToolkit` set — they inherit the toolkit identity instead.
  *
@@ -207,7 +208,7 @@ export function createCustomTool<T extends AnyZodSchema>(
  *
  * @param slug - Unique toolkit identifier (alphanumeric, underscores, hyphens; no LOCAL_ or COMPOSIO_ prefix)
  * @param options - Toolkit definition including name, description, and tools
- * @returns A CustomToolkit to pass to session creation
+ * @returns A LocalToolkit to pass to session creation
  *
  * @example
  * ```typescript
@@ -218,10 +219,7 @@ export function createCustomTool<T extends AnyZodSchema>(
  * });
  * ```
  */
-export function createCustomToolkit(
-  slug: string,
-  options: CreateCustomToolkitParams
-): CustomToolkit {
+export function createCustomToolkit(slug: string, options: CreateLocalToolkitParams): LocalToolkit {
   // Validate slug
   const slugResult = CustomToolSlugSchema.safeParse(slug);
   if (!slugResult.success) {
@@ -322,16 +320,13 @@ const addOriginalSlugAlias = (params: {
  * @returns Maps for O(1) lookup by both final and original slug
  * @throws If duplicate slugs or cross-group collisions
  */
-export function buildCustomToolsMap(
-  tools: CustomTool[],
-  toolkits?: CustomToolkit[]
-): CustomToolsMap {
+export function buildCustomToolsMap(tools: LocalTool[], toolkits?: LocalToolkit[]): CustomToolsMap {
   const byFinalSlug = new Map<string, CustomToolsMapEntry>();
   const byOriginalSlug = new Map<string, CustomToolsMapEntry>();
   const byToolkitAndOriginalSlug = new Map<string, CustomToolsMapEntry>();
   const ambiguousOriginalSlugs = new Set<string>();
 
-  const addEntry = (handle: CustomTool, finalSlug: string, toolkit?: string) => {
+  const addEntry = (handle: LocalTool, finalSlug: string, toolkit?: string) => {
     const originalSlug = handle.slug.toUpperCase();
     // Custom tool slugs are matched case-insensitively across local and response maps.
     const finalSlugKey = finalSlug.toUpperCase();
@@ -426,7 +421,7 @@ function preloadWireProperty(
 }
 
 export function serializeCustomTools(
-  tools: CustomTool[],
+  tools: LocalTool[],
   options: CustomToolSerializationOptions = {}
 ): CustomToolWireDefinition[] {
   const defaultPreload = options.defaultPreload ?? false;
@@ -449,7 +444,7 @@ export function serializeCustomTools(
  * @returns Array of CustomToolkitDefinition for the API payload
  */
 export function serializeCustomToolkits(
-  toolkits: CustomToolkit[],
+  toolkits: LocalToolkit[],
   options: CustomToolSerializationOptions = {}
 ): CustomToolkitWireDefinition[] {
   const defaultPreload = options.defaultPreload ?? false;
@@ -480,8 +475,8 @@ export function serializeCustomToolkits(
  * @returns Maps for O(1) lookup by both final and original slug
  */
 export function buildCustomToolsMapFromResponse(
-  tools: CustomTool[],
-  toolkits: CustomToolkit[] | undefined,
+  tools: LocalTool[],
+  toolkits: LocalToolkit[] | undefined,
   experimental:
     SessionCreateResponse['experimental'] | SessionRetrieveResponse['experimental'] | undefined
 ): CustomToolsMap {
@@ -490,11 +485,11 @@ export function buildCustomToolsMapFromResponse(
   const byToolkitAndOriginalSlug = new Map<string, CustomToolsMapEntry>();
   const ambiguousOriginalSlugs = new Set<string>();
 
-  type HandleMatch = { handle: CustomTool; toolkit?: string };
+  type HandleMatch = { handle: LocalTool; toolkit?: string };
   const handlesByQualifiedOriginalSlug = new Map<string, HandleMatch>();
   const handlesByOriginalSlug = new Map<string, HandleMatch[]>();
 
-  const registerHandle = (handle: CustomTool, toolkit?: string) => {
+  const registerHandle = (handle: LocalTool, toolkit?: string) => {
     const originalSlug = handle.slug.toUpperCase();
     const match = { handle, toolkit };
     handlesByQualifiedOriginalSlug.set(qualifiedOriginalSlugKey(toolkit, originalSlug), match);
@@ -636,8 +631,8 @@ export function findCustomToolMapEntryByToolkitAndOriginalSlug(
 /**
  * Reject legacy attempts to preload custom tools through top-level preload.tools.
  *
- * Custom tool direct exposure is controlled by CustomTool.preload /
- * CustomToolkit.preload so it follows the current SDK-provided custom
+ * Custom tool direct exposure is controlled by LocalTool.preload /
+ * LocalToolkit.preload so it follows the current SDK-provided custom
  * definitions instead of stale session config.
  *
  * @internal

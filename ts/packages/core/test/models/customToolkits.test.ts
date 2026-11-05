@@ -78,7 +78,7 @@ describe('Experimental.customToolkits', () => {
       const [body, options] = mockClient.custom.createToolkit.mock.calls[0];
       expect(JSON.parse(JSON.stringify(body))).toEqual({
         name: 'My Toolkit',
-        app_url: 'https://mcp.example.com/mcp',
+        mcp_url: 'https://mcp.example.com/mcp',
         logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
         auth_schemes: [
           {
@@ -126,29 +126,10 @@ describe('Experimental.customToolkits', () => {
       expect(result).toEqual({ slug: 'CUSTOM_MY_TOOLKIT_K7F2Q', connectLink: null });
     });
 
-    it('sends the deprecated appUrl as the MCP URL', async () => {
-      mockClient.custom.createToolkit.mockResolvedValue({
-        slug: 'CUSTOM_MY_TOOLKIT_K7F2Q',
-        connect_link: null,
-      });
-
-      await customToolkits.create({
-        name: 'My Toolkit',
-        appUrl: 'https://mcp.example.com/mcp',
-        authSchemes: [{ mode: 'NO_AUTH' }],
-        userId: 'all',
-      });
-
-      const [body] = mockClient.custom.createToolkit.mock.calls[0];
-      expect(body).toMatchObject({ app_url: 'https://mcp.example.com/mcp' });
-    });
-
     it.each([
       ['no user ID', { userId: undefined }],
       ['no auth schemes', { authSchemes: [] }],
       ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
-      ['no MCP URL', { mcpUrl: undefined }],
-      ['both mcpUrl and the deprecated appUrl', { appUrl: 'https://mcp.example.com/mcp' }],
       [
         'an additional API key field without a display name',
         {
@@ -214,7 +195,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'NO_AUTH' as const }],
         },
       };
@@ -235,7 +216,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           logoFile: { content: 'aGVsbG8=', mimeType: 'image/png' },
           authSchemes: [
             { mode: 'NO_AUTH' },
@@ -257,7 +238,7 @@ describe('Experimental.customToolkits', () => {
           slug: 'MY TOOLKIT',
           toolkit_config: {
             name: 'My Toolkit',
-            app_url: 'https://mcp.example.com/mcp',
+            mcp_url: 'https://mcp.example.com/mcp',
             logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
             auth_schemes: [
               { mode: 'NO_AUTH' },
@@ -285,7 +266,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
@@ -295,7 +276,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkit_config: {
           name: 'My Toolkit',
-          app_url: 'https://mcp.example.com/mcp',
+          mcp_url: 'https://mcp.example.com/mcp',
           auth_schemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
@@ -304,7 +285,7 @@ describe('Experimental.customToolkits', () => {
     it.each([
       ['a slug outside the API grammar', { slug: 'my-toolkit' }],
       ['no auth schemes', { authSchemes: [] }],
-      ['an app URL that is not a URL', { appUrl: 'not a url' }],
+      ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
     ])('rejects %s before calling the API', async (_label, override) => {
       const { slug = 'MY_TOOLKIT', ...config } = override as Record<string, unknown>;
 
@@ -313,7 +294,7 @@ describe('Experimental.customToolkits', () => {
           slug: slug as string,
           toolkitConfig: {
             name: 'My Toolkit',
-            appUrl: 'https://mcp.example.com/mcp',
+            mcpUrl: 'https://mcp.example.com/mcp',
             authSchemes: [{ mode: 'NO_AUTH' }],
             ...config,
           },

@@ -12,7 +12,7 @@ import type {
 import {
   CustomToolkitApiKeyField,
   CustomToolkitAuthScheme,
-  CustomToolkitCreateParamsSchema,
+  CustomToolkitCreateParams,
   CustomToolkitCreateResponse,
   CustomToolkitCreateResponseSchema,
   CustomToolkitDeleteResponse,
@@ -28,7 +28,6 @@ import {
   CustomToolkitUpsertResponse,
   CustomToolkitUpsertResponseSchema,
 } from '../../types/customToolkits.types';
-import type { z } from 'zod/v3';
 import { transform } from '../transform';
 
 type RawCustomToolkitAuthScheme = RawCustomCreateToolkitParams['auth_schemes'][number];
@@ -71,11 +70,10 @@ const transformCustomToolkitAuthScheme = (
 };
 
 export const transformCustomToolkitCreateParams = (
-  params: z.output<typeof CustomToolkitCreateParamsSchema>
+  params: CustomToolkitCreateParams
 ): RawCustomCreateToolkitParams => ({
   name: params.name,
-  // The API reads app_url as mcp_url. Send mcp_url once @composio/client has it.
-  app_url: params.mcpUrl,
+  mcp_url: params.mcpUrl,
   logo_file: transformCustomToolkitLogoFile(params.logoFile),
   auth_schemes: params.authSchemes.map(transformCustomToolkitAuthScheme),
   user_id: params.userId,
@@ -120,7 +118,7 @@ export const transformCustomToolkitUpsertParams = (
   slug: params.slug,
   toolkit_config: {
     name: params.toolkitConfig.name,
-    app_url: params.toolkitConfig.appUrl,
+    mcp_url: params.toolkitConfig.mcpUrl,
     logo_file: transformCustomToolkitLogoFile(params.toolkitConfig.logoFile),
     auth_schemes: params.toolkitConfig.authSchemes.map(transformCustomToolkitAuthScheme),
   },
