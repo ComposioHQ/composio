@@ -1,6 +1,6 @@
 ---
 title: Token custody and credential isolation
-description: How Composio protects provider credentials, keeps one user's connected accounts unusable by another, injects credentials during execution, and how deployment choices change custody.
+description: How Composio protects provider credentials, scopes session account selection, uses credentials during execution, and how your backend authorizes direct calls.
 keywords: [token custody, credential isolation, user isolation, multi-tenant, connected accounts, token redaction, OAuth, proxy execute, BYOC, customer-managed keys]
 ---
 
@@ -70,8 +70,8 @@ Encryption at rest protects stored credentials; the execution service still decr
 Composio separates connected accounts at two levels: the project, and the `user_id` inside that project.
 
 - **Projects are isolated.** Connected accounts, auth configs, sessions, and logs belong to one project. An API key for one project cannot read or use another project's connected accounts.
-- **Connected accounts are private to their user by default.** Each connected account is created for a `user_id`. A PRIVATE account (the default) can be used only by the `user_id` that owns it. Sessions resolve accounts by that user ID, so a session for user A doesn't see or execute with user B's accounts.
-- **Sharing is explicit.** An account becomes usable by other users only if you create it as a [shared connection](/docs/extending-sessions/shared-connections) with an access control list. Shared accounts are deny-by-default, are never resolved implicitly, and must be pinned into a session. A disallowed user gets `ComposioSharedAccessDeniedError` (403) on direct execution, and session creation fails with `ComposioSharedConnectionNotAccessibleError` (400).
+- **Session account selection is scoped to a user.** Each connected account is created for a `user_id`. Sessions resolve PRIVATE accounts (the default) by that user ID, so a session for user A doesn't see or execute with user B's private accounts.
+- **Session sharing is explicit.** To make another user's account available to a session, create it as a [shared connection](/docs/extending-sessions/shared-connections) with an access control list. Shared accounts are deny-by-default, are never resolved implicitly, and must be pinned into a session. A disallowed user gets `ComposioSharedAccessDeniedError` (403) on direct execution, and session creation fails with `ComposioSharedConnectionNotAccessibleError` (400).
 - **Optional identity check before activation.** With an [OAuth callback verifier](/docs/auth-configuration/connected-accounts#complete-deferred-oauth), Composio redirects to your application so you can confirm who completed consent. It checks project ownership and the connection's user ID before completing the token exchange.
 
 ```mermaid
@@ -82,9 +82,15 @@ flowchart LR
     S -. "denied" .-> CB["user_b's private accounts"]
 ```
 
+### Direct Proxy Execute needs application authorization
+
+[Direct Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute) accepts a `connected_account_id` independently of a session. For a PRIVATE connection, Composio validates the supplied `user_id` against the account owner only when project 2FA is enabled. Without that setting, passing `user_id` does not enforce an owner check. Your backend must verify that the selected account belongs to the signed-in user before making a direct call.
+
+For a SHARED connection, `user_id` is required and checked against the connection's access control list. This check does not depend on project 2FA. Your backend must still derive that ID from the authenticated user.
+
 ### Your backend owns identity
 
-Composio enforces the `user_id` boundary, but it doesn't know who is signed in to your product. A project API key can create sessions and execute tools for any `user_id` in that project. That makes your backend the place where user A is kept from acting as user B:
+The `user_id` on a session is supplied by your application, not proof of who is signed in to your product. A project API key can create sessions and execute tools for any `user_id` in that project. That makes your backend the place where user A is kept from acting as user B:
 
 - Derive the `user_id` from your authenticated session on the server. Never accept a user ID from the browser, a URL parameter, or model output.
 - Keep the Composio API key on your backend. Anyone holding it can act for any user in the project.

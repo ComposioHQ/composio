@@ -13,7 +13,7 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 ## Isolation and access control
 
 - Organizations and projects isolate your resources. Data from one project is not visible to another.
-- Connected accounts are private to the `user_id` that owns them by default. Other users in the project can use one only through an explicit [shared connection](/docs/extending-sessions/shared-connections). See [how user isolation works](/docs/security/token-custody#how-user-isolation-works).
+- Sessions select private connected accounts by their configured `user_id`; cross-user access through sessions requires an explicit [shared connection](/docs/extending-sessions/shared-connections). Direct Proxy Execute validates a private account's owner only when project 2FA is enabled. Your backend must authorize the selected account and derive `user_id` from the signed-in user. See [how user isolation works](/docs/security/token-custody#how-user-isolation-works).
 - API keys are scoped, support per-key IP allowlisting, and can opt in to capabilities such as Proxy Execute at creation.
 - Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, proxy execution, and session-linked MCP access). See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
 - Multi-factor authentication (MFA) is available for Dashboard sign-in and can be enforced by an organization admin.
