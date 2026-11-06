@@ -211,6 +211,8 @@ describe("Navigation - meta.json validity", () => {
       const entries = new Set(
         ((meta.pages || []) as string[]).filter((e: string) => !isSeparator(e))
       );
+      // A folder's explicit index is referenced independently of its child links.
+      if (meta.pagesIndex) entries.add(meta.pagesIndex);
       // "..." means "include everything else", so skip orphan check
       if (entries.has("...")) continue;
 

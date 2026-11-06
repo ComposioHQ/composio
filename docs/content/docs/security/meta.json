@@ -1,8 +1,9 @@
 {
   "title": "Security",
-  "defaultOpen": true,
+  "defaultOpen": false,
+  "pagesIndex": "overview",
   "pages": [
-    "overview",
+    "[Overview](/docs/security/overview)",
     "composio-as-subprocessor",
     "token-custody",
     "data-retention",
