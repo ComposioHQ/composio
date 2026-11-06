@@ -50,3 +50,7 @@ export const applyObjectPolicy = <S>(base: PolicyBase<S>, policy: ObjectPolicy<S
 /** Attaches the rest schema to a tuple when the schema declares one. */
 export const buildTuple = <S>(tuple: S & { rest(schema: S): S }, rest: S | undefined): S =>
   rest === undefined ? tuple : tuple.rest(rest);
+
+/** RFC 3339 `partial-time` with an optional `time-offset`, which zod's `time()` rejects. */
+export const RFC3339_TIME =
+  /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?([Zz]|[+-]([01]\d|2[0-3]):[0-5]\d)?)?$/;
