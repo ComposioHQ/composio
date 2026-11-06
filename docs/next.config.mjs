@@ -1177,13 +1177,28 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/security/token-custody',
+        destination: '/docs/security/overview',
+        permanent: true,
+      },
+      {
+        source: '/docs/security/token-custody.:format(md|mdx)',
+        destination: '/docs/security/overview.:format',
+        permanent: true,
+      },
+      {
+        source: '/llms.mdx/docs/security/token-custody',
+        destination: '/llms.mdx/docs/security/overview',
+        permanent: true,
+      },
+      {
         source: '/docs/:legacy(self-hosting|deployment)',
-        destination: '/docs/security/token-custody#deployment-options',
+        destination: '/docs/security/byoc',
         permanent: true,
       },
       {
         source: '/docs/hosting/:path*',
-        destination: '/docs/security/token-custody#deployment-options',
+        destination: '/docs/security/byoc',
         permanent: true,
       },
       {

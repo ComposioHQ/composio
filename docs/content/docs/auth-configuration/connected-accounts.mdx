@@ -101,7 +101,7 @@ curl -X GET https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
 
 Connected-account responses describe the authentication state. Sensitive credential fields in `account.state.val` are [redacted by default](#credential-masking), for both Composio-managed and custom auth configs. This object is not a source of usable provider tokens for your own tools.
 
-To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execute), which injects credentials server-side. For custom business logic, use [session extension tools](/docs/extending-sessions/local-tools-and-toolkits). See [Token custody architecture](/docs/security/token-custody) for the boundaries between your application, Composio, and the provider.
+To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execute), which injects credentials server-side. For custom business logic, use [session extension tools](/docs/extending-sessions/local-tools-and-toolkits). See [credential protection](/docs/security/overview#credential-protection) for the boundaries between your application, Composio, and the provider.
 
 ## Refresh credentials
 
