@@ -100,7 +100,7 @@ def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[
 Create a trigger instance
 
 ```python
-def create(slug: str, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any | None] = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
+def create(slug: str, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any | None] = ..., type: Literal['webhook', 'poll' | None] = ..., polling_interval: int | None = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
 ```
 
 **Parameters**
@@ -111,10 +111,12 @@ def create(slug: str, user_id: str | None = ..., connected_account_id: str | Non
 | `user_id?` | `str \| None` |
 | `connected_account_id?` | `str \| None` |
 | `trigger_config?` | `Dict[str, Any \| None]` |
+| `type?` | `Literal['webhook', 'poll' \| None]` |
+| `polling_interval?` | `int \| None` |
 
 **Returns**
 
-`trigger_instance_upsert_response.TriggerInstanceUpsertRes...` — The trigger instance
+`trigger_instance_upsert_response.TriggerInstanceUpsertRes...` — The trigger instance, with the `type` it uses, the `fallback_reason` when it polls after a webhook was unavailable, and its `polling_interval`
 
 ---
 
