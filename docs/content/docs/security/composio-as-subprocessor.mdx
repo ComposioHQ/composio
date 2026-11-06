@@ -20,7 +20,7 @@ The [DPA's scope of processing](https://composio.dev/legal/dpa) covers authentic
 
 | Data | Where it goes in Composio Cloud |
 | --- | --- |
-| Provider credentials | Stored encrypted by Composio and used server-side to authenticate requests to the connected provider. Account APIs redact tokens by default. See [Token custody architecture](/docs/security/token-custody). |
+| Provider credentials | Stored encrypted by Composio and used server-side to authenticate requests to the connected provider. Account APIs redact tokens by default. See [Credential protection](/docs/security/overview#credential-protection). |
 | Request arguments and tool results | Pass through Composio's execution infrastructure and the destination provider, with results returned to the caller. Execution logs store payloads by default. |
 | Trigger payloads | Pass through event processing and delivery infrastructure to configured destinations. ZDR omits payloads from trigger logs, but events are still stored for processing and delivery. |
 | Files | Tools can stage uploads and downloads in temporary object storage and return presigned URLs. Sandbox workflows can also process files. URL expiry and object deletion are separate. |
