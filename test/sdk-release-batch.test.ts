@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { openReleasePull } from '../scripts/sdk-release/batch';
+import { Effect, Option } from 'effect';
+import { executeReleaseRequest, openReleasePull } from '../scripts/sdk-release/batch';
 import { BATCH_PATH, validateReleaseDiff, type ReleaseFile } from '../scripts/sdk-release/source';
 import {
   base,
@@ -44,7 +45,10 @@ describe('release PR', () => {
 
   test('a release-only patch is committed on the frozen source and opened as one PR', async () => {
     const { fetcher, writes } = fakeController();
-    expect(await open(fetcher)).toBe('https://github.com/ComposioHQ/composio/pull/9');
+    expect(await open(fetcher)).toEqual({
+      _tag: 'InReview',
+      pull: 'https://github.com/ComposioHQ/composio/pull/9',
+    });
     expect(writePaths(writes)).toEqual([
       'POST /git/blobs',
       'POST /git/blobs',
@@ -53,13 +57,9 @@ describe('release PR', () => {
       'POST /git/commits',
       'POST /git/refs',
       'POST /pulls',
-      'POST /issues/8/comments',
     ]);
     expect(writes.find(write => write.path === '/git/commits')?.body).toMatchObject({
       parents: [base],
-    });
-    expect(writes.at(-1)?.body).toEqual({
-      body: 'Release PR: https://github.com/ComposioHQ/composio/pull/9',
     });
   });
 
@@ -94,22 +94,44 @@ describe('release PR', () => {
     expect(writes).toEqual([]);
   });
 
-  test('another open release PR opens nothing and reports it once on the request issue', async () => {
-    const { fetcher, writes } = fakeController({ openRelease: 'sdk-release/batch-7' });
-    expect(await open(fetcher)).toBeUndefined();
-    expect(writePaths(writes)).toEqual(['POST /issues/8/comments']);
+  test('a re-run of a dispatched request finds its issue in its own release PR', async () => {
+    const { fetcher } = fakeController({ openRelease: 'sdk-release/batch-8' });
+    const result = await runRelease(
+      executeReleaseRequest(
+        Effect.succeed({ channel: 'stable', typescript: 'auto', python: 'skip' }),
+        { actor: 'requester', runId: '8', sourceSha: base, appSlug: 'sdk-release-app' },
+        () => Effect.die('must not plan')
+      ),
+      fetcher
+    );
+    expect(result).toEqual({
+      outcome: { _tag: 'InReview', pull: 'https://github.com/ComposioHQ/composio/pull/5' },
+      issue: Option.some(8),
+    });
   });
 
-  test('a re-run after this request opened its release PR returns that PR and repeats its link', async () => {
+  test('a release that merged and failed its gate since planning blocks this one', async () => {
+    const { fetcher, writes } = fakeController({ untaggedNext: true });
+    expect(await open(fetcher)).toEqual({ _tag: 'Blocked', release: '8' });
+    expect(writes).toEqual([]);
+  });
+
+  test('another open release PR opens nothing and the request waits for it', async () => {
+    const { fetcher, writes } = fakeController({ openRelease: 'sdk-release/batch-7' });
+    expect(await open(fetcher)).toEqual({
+      _tag: 'Waiting',
+      pull: 'https://github.com/ComposioHQ/composio/pull/5',
+    });
+    expect(writes).toEqual([]);
+  });
+
+  test('a re-run after this request opened its release PR resumes that PR', async () => {
     const { fetcher, writes } = fakeController({ openRelease: 'sdk-release/batch-8' });
-    expect(await open(fetcher)).toBe('https://github.com/ComposioHQ/composio/pull/5');
-    expect(writes).toEqual([
-      {
-        method: 'POST',
-        path: '/issues/8/comments',
-        body: { body: 'Release PR: https://github.com/ComposioHQ/composio/pull/5' },
-      },
-    ]);
+    expect(await open(fetcher)).toEqual({
+      _tag: 'InReview',
+      pull: 'https://github.com/ComposioHQ/composio/pull/5',
+    });
+    expect(writes).toEqual([]);
   });
 
   test('major targets allow normal Changesets peer-range updates without changing unrelated fields', async () => {

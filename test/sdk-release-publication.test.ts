@@ -6,9 +6,8 @@ import {
   waitForRegistry,
   type Distribution,
 } from '../scripts/sdk-release/registry';
-import { docsPinSpecs, reportFailure, reportRelease } from '../scripts/sdk-release/report';
+import { docsPinSpecs } from '../scripts/sdk-release/report';
 import { sha256Hex } from '../scripts/sdk-release/runtime';
-import type { ReleaseBatch } from '../scripts/sdk-release/source';
 import { batch, head } from './sdk-release-controller-fixture';
 import { runRelease, type Fetch } from './sdk-release-harness';
 
@@ -214,66 +213,6 @@ describe('pinned candidate download', () => {
         throw new Error('no request expected');
       })
     ).rejects.toThrow('No approved typescript candidate was pinned');
-  });
-});
-
-/** Records the comments a tag run posts on its request issue. */
-function reportingRun(jobs: ReadonlyArray<{ name: string; conclusion: string | null }> = []) {
-  const comments: { issue: number; body: string }[] = [];
-  const fetch: Fetch = async (input, init) => {
-    const url = new URL(String(input));
-    const path = url.pathname.replace('/repos/ComposioHQ/composio', '') + url.search;
-    const respond = (data: unknown) => new Response(JSON.stringify(data));
-    if (path === '/actions/runs/77/jobs?filter=latest&per_page=100&page=1')
-      return respond({ jobs: jobs.map(job => ({ ...job, steps: [] })) });
-    const comment = /^\/issues\/(\d+)\/comments$/.exec(path);
-    if (comment && init?.method === 'POST') {
-      comments.push({ issue: Number(comment[1]), body: JSON.parse(String(init.body)).body });
-      return respond({ id: comments.length });
-    }
-    throw new Error(`Unexpected request: ${init?.method ?? 'GET'} ${path}`);
-  };
-  return { fetch, comments };
-}
-
-describe('release run reporting', () => {
-  test('a published release lists every version and returns only the npm versions to pin', async () => {
-    const mixed: ReleaseBatch = {
-      ...batch,
-      plan: {
-        ...batch.plan,
-        releases: [
-          ...batch.plan.releases,
-          {
-            name: '@composio/python-sdk',
-            type: 'patch',
-            oldVersion: '0.31.0',
-            newVersion: '0.31.1',
-            changesets: [],
-            language: 'python',
-          },
-        ],
-      },
-    };
-    const run = reportingRun();
-    expect(await runRelease(reportRelease(mixed, '77'), run.fetch)).toEqual({
-      '@composio/core': '1.0.1',
-    });
-    expect(run.comments).toHaveLength(1);
-    expect(run.comments[0].issue).toBe(8);
-    expect(run.comments[0].body).toContain('`@composio/core` 1.0.1');
-    expect(run.comments[0].body).toContain('Python SDK (`composio` and every provider) 0.31.1');
-  });
-  test('a failed run names only the failed jobs on the request issue', async () => {
-    const run = reportingRun([
-      { name: 'publish-npm', conclusion: 'success' },
-      { name: 'publish-pypi', conclusion: 'failure' },
-      { name: 'docs', conclusion: 'skipped' },
-    ]);
-    await runRelease(reportFailure(batch, '77'), run.fetch);
-    expect(run.comments).toHaveLength(1);
-    expect(run.comments[0].issue).toBe(8);
-    expect(run.comments[0].body).toContain('failed in: publish-pypi.');
   });
 });
 

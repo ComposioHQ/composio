@@ -1,5 +1,6 @@
 import { Config, Effect, FileSystem, Option, Path, Schema, Stdio } from 'effect';
 import { getPackages } from '@manypkg/get-packages';
+import { isReleaseAppCommit } from './approval';
 import {
   ActionArtifact,
   ApprovedCandidates,
@@ -40,7 +41,7 @@ import {
   sha256Hex,
   type ReleaseServices,
 } from './runtime';
-import { BATCH_PATH, ReleaseBatch, batchLanguages } from './source';
+import { BATCH_PATH, ReleaseBatch, batchLanguages, releaseTag } from './source';
 
 const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
@@ -154,7 +155,6 @@ const BuildEnvironment = Config.all({
   /** The release PR head; on pull_request, GITHUB_SHA is the merge commit instead. */
   sha: Config.schema(Sha, 'SDK_SOURCE_SHA'),
   ref: Config.String('GITHUB_REF'),
-  outputPath: Config.String('GITHUB_OUTPUT'),
   controllerToken: Config.option(Config.String('SDK_RELEASE_TOKEN')),
 });
 type BuildEnvironment = Config.Success<typeof BuildEnvironment>;
@@ -301,7 +301,6 @@ const buildCandidate = (
       files,
     });
     yield* fs.writeFileString(`${directory}/${CANDIDATE_MANIFEST}`, formatJson(manifest));
-    yield* appendFile(env.outputPath, 'selected=true\n');
   });
 
 const buildMode = (language: Language) =>
@@ -317,7 +316,7 @@ const buildMode = (language: Language) =>
     );
     const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
     const selected = batch.plan.releases.filter(release => release.language === language);
-    if (!selected.length) return yield* appendFile(env.outputPath, 'selected=false\n');
+    yield* ensure(selected.length > 0, `This release plans no ${language} packages`);
     yield* buildCandidate(env, language, selected);
   });
 
@@ -359,6 +358,7 @@ const reportMode = (language: Language) =>
 
 const ApproveEnvironment = Config.all({
   sha: Config.schema(Sha, 'GITHUB_SHA'),
+  appSlug: Config.String('SDK_RELEASE_APP_SLUG'),
   ref: Config.String('GITHUB_REF'),
   outputPath: Config.String('GITHUB_OUTPUT'),
   summaryPath: Config.String('GITHUB_STEP_SUMMARY'),
@@ -377,9 +377,19 @@ const approveMode = Effect.gen(function* () {
     !Option.exists(env.controllerToken, token => token !== ''),
     'Candidate jobs must not receive the controller credential'
   );
-  yield* ensure(isSourceTag(env.ref), 'Approved candidates are pinned only by a source-tag run');
   const path = yield* Path.Path;
   const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+  yield* ensure(
+    env.ref === `refs/tags/${releaseTag(batch.id)}`,
+    `Approved candidates are pinned only by the release tag of batch ${batch.id}`
+  );
+  // Written first, so the publish status still reaches the request issue if adoption fails. Only
+  // a plan the release App committed may name that issue: the tag ruleset should stop anyone
+  // else from pushing a release tag, and this keeps a forged one from steering the bot.
+  const trusted = yield* isReleaseAppCommit(env.sha, batch.inputBase, env.appSlug).pipe(
+    Effect.provide(GitHub.layer(env.token))
+  );
+  if (trusted) yield* appendFile(env.outputPath, `issue=${batch.issue}\n`);
   const approved: Record<string, ApprovedCandidate> = {};
   yield* Effect.gen(function* () {
     for (const language of batchLanguages(batch)) {

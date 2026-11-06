@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { eligibleApproval } from '../scripts/sdk-release/approval';
+import { Effect, Option } from 'effect';
+import { eligibleApproval, readReleasePull, trustedIssue } from '../scripts/sdk-release/approval';
 import { authorizeSourceTag } from '../scripts/sdk-release/batch';
 import {
   APP_SLUG,
@@ -12,13 +13,19 @@ import {
 import { runRelease } from './sdk-release-harness';
 
 const tag = (fetcher: ReturnType<typeof fakeController>['fetcher']) =>
-  runRelease(authorizeSourceTag(9, APP_SLUG), fetcher);
+  runRelease(
+    Effect.flatMap(readReleasePull(9), ({ pull, batch }) =>
+      authorizeSourceTag(pull, batch, APP_SLUG)
+    ),
+    fetcher
+  );
+const pull = 'https://github.com/ComposioHQ/composio/pull/9';
+const tagged = { _tag: 'Tagged', tag: 'sdk-release/8' } as const;
 const tagWrite = {
   method: 'POST',
   path: '/git/refs',
   body: { ref: 'refs/tags/sdk-release/8', sha: head },
 };
-const gateComments = ['/issues/9/comments', '/issues/8/comments'];
 const commentBodies = (writes: ReadonlyArray<{ body: unknown }>) =>
   writes.map(write => (write.body as { body: string }).body);
 
@@ -53,7 +60,7 @@ describe('source tag', () => {
     'a merged, approved release tags the reviewed head (%s merge)',
     async mergeKind => {
       const { fetcher, writes } = fakeController({ mergeKind });
-      expect(await tag(fetcher)).toBe('sdk-release/8');
+      expect(await tag(fetcher)).toEqual(tagged);
       expect(writes).toEqual([tagWrite]);
     }
   );
@@ -73,19 +80,34 @@ describe('source tag', () => {
         ? Promise.resolve(Response.json({ total_count: 103, check_runs: unrelated }))
         : fetcher(input, init);
     };
-    expect(await tag(paged)).toBe('sdk-release/8');
+    expect(await tag(paged)).toEqual(tagged);
     expect(writes).toEqual([tagWrite]);
   });
 
   test("a deleted account's review is skipped and the approved head is still tagged", async () => {
     const { fetcher, writes } = fakeController({ deletedReviewer: true });
-    expect(await tag(fetcher)).toBe('sdk-release/8');
+    expect(await tag(fetcher)).toEqual(tagged);
     expect(writes).toEqual([tagWrite]);
   });
 
-  test('a release PR closed without merging creates no tag', async () => {
+  test("only the release App's plan may name the request issue the status job writes to", async () => {
+    const issueOf = (options: Parameters<typeof fakeController>[0]) => {
+      const { fetcher } = fakeController(options);
+      return runRelease(
+        Effect.flatMap(readReleasePull(9), ({ pull, batch }) =>
+          trustedIssue(pull, batch, APP_SLUG)
+        ),
+        fetcher
+      );
+    };
+    expect(await issueOf({})).toEqual(Option.some(8));
+    expect(await issueOf({ closedUnmerged: true, headAuthor: 'writer' })).toEqual(Option.none());
+    expect(await issueOf({ headCommitter: 'writer' })).toEqual(Option.none());
+  });
+
+  test('a release PR closed without merging is abandoned and creates no tag', async () => {
     const { fetcher, writes } = fakeController({ closedUnmerged: true });
-    await expect(tag(fetcher)).rejects.toThrow('Release PR has not merged');
+    expect(await tag(fetcher)).toEqual({ _tag: 'Abandoned', pull });
     expect(writes).toEqual([]);
   });
 
@@ -106,35 +128,35 @@ describe('source tag', () => {
     ['the docs check is pending', { docs: 'pending' }, 'docs check'],
     ['the docs check is missing', { docs: 'missing' }, 'docs check'],
   ])(
-    'when %s, no tag is created and the PR and request are told to revert',
+    'when %s, the release is refused, no tag is created and the PR is told to revert',
     async (_name, options, reason) => {
       const { fetcher, writes } = fakeController(options);
-      await expect(tag(fetcher)).rejects.toThrow(reason);
-      expect(writes.map(write => write.path)).toEqual(gateComments);
+      expect(await tag(fetcher)).toEqual({
+        _tag: 'Refused',
+        pull,
+        reason: expect.stringContaining(reason),
+      });
+      expect(writes.map(write => write.path)).toEqual(['/issues/9/comments']);
       for (const body of commentBodies(writes)) {
         expect(body).toContain(reason);
-        expect(body).toContain('Revert this release PR on next');
+        expect(body).toContain('Revert it on `next`');
       }
     }
   );
 
-  test('a GitHub error during the gate asks for a re-run, never a revert', async () => {
+  test('a GitHub error during the gate fails the job for a re-run and refuses nothing', async () => {
     const { fetcher, writes } = fakeController();
     const unavailable: typeof fetcher = (input, init) =>
       new URL(String(input)).pathname.includes('/check-runs')
         ? Promise.resolve(new Response('Bad Gateway', { status: 502 }))
         : fetcher(input, init);
     await expect(tag(unavailable)).rejects.toThrow('(502)');
-    expect(writes.map(write => write.path)).toEqual(gateComments);
-    for (const body of commentBodies(writes)) {
-      expect(body).not.toContain('Revert');
-      expect(body).toContain('Re-run failed jobs');
-    }
+    expect(writes).toEqual([]);
   });
 
   test('an existing matching tag is reused and a tag on another commit is refused', async () => {
     const matching = fakeController({ existingTag: head });
-    expect(await tag(matching.fetcher)).toBe('sdk-release/8');
+    expect(await tag(matching.fetcher)).toEqual(tagged);
     expect(matching.writes).toEqual([]);
     const moved = fakeController({ existingTag: merge });
     await expect(tag(moved.fetcher)).rejects.toThrow('another source');

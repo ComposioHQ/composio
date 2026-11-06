@@ -28,7 +28,7 @@ import {
   sha256Hex,
   withoutReleaseTokens,
 } from './runtime';
-import { BATCH_PATH, ReleaseBatch, batchLanguages } from './source';
+import { BATCH_PATH, ReleaseBatch, batchLanguages, releaseTag } from './source';
 
 /** One reviewed distribution file: an npm tarball or a Python wheel/sdist. */
 export interface Distribution {
@@ -403,6 +403,16 @@ const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distr
     for (const tag of visible.tagsToRepair)
       yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, 'latest']);
     yield* waitForRegistry(files);
+    // The release-only tag only served the upload; a re-run finds it already gone.
+    const releaseOnly = `sdk-release-${batch.id}`;
+    for (const file of files) {
+      const tags = yield* registryJson(
+        `${NPM_REGISTRY}/-/package/${encodeURIComponent(file.name)}/dist-tags`,
+        Schema.Record(Schema.String, Schema.String)
+      );
+      if (Option.exists(tags, value => releaseOnly in value))
+        yield* npm(['dist-tag', 'rm', file.name, releaseOnly]);
+    }
   });
 
 /** Stages only the missing Python files for the trusted-publisher upload step. */
@@ -438,12 +448,12 @@ const main = Effect.gen(function* () {
     yield* (yield* Stdio.Stdio).args
   );
   const env = yield* Environment;
-  yield* ensure(
-    env.ref.startsWith('refs/tags/sdk-release/'),
-    'Registry jobs require a release tag'
-  );
   const cwd = (yield* Path.Path).resolve('.');
   const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+  yield* ensure(
+    env.ref === `refs/tags/${releaseTag(batch.id)}`,
+    `Registry jobs require the release tag of batch ${batch.id}`
+  );
   yield* ensure(batchLanguages(batch).has(language), `This release plans no ${language} packages`);
   const files = yield* loadOriginalDistributions(cwd, batch, env.sha, env.approved, language).pipe(
     Effect.provide(GitHub.layer(env.token))

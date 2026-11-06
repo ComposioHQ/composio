@@ -22,6 +22,9 @@ export const ReleaseBatch = Schema.Struct({
 export type ReleaseBatch = typeof ReleaseBatch.Type;
 export const BATCH_PATH = '.github/sdk-release-plan.json';
 
+/** The tag a release batch publishes from. */
+export const releaseTag = (id: string) => `sdk-release/${id}`;
+
 export const issueUrl = (batch: ReleaseBatch) =>
   `https://github.com/${SDK_RELEASE_REPOSITORY}/issues/${batch.issue}`;
 

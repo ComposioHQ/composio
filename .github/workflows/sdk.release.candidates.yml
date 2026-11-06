@@ -21,8 +21,6 @@ jobs:
       startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
     runs-on: ubuntu-latest
     outputs:
-      typescript: ${{ steps.select.outputs.typescript }}
-      python: ${{ steps.select.outputs.python }}
       languages: ${{ steps.select.outputs.languages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -39,14 +37,12 @@ jobs:
           // Languages reach shell steps through the matrix, so accept only known values.
           if (!languages.every(language => ['typescript', 'python'].includes(language))) throw new Error('Unknown release language');
           appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\n`);
-          for (const language of ['typescript', 'python']) appendFileSync(process.env.GITHUB_OUTPUT, `${language}=${languages.includes(language)}\n`);
           JS
 
   candidate:
     # The release merge requires this check name to pass on the approved head.
     name: SDK candidate (${{ matrix.language }})
     needs: select-candidates
-    if: needs.select-candidates.outputs.typescript == 'true' || needs.select-candidates.outputs.python == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -63,15 +59,12 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
         with:
           enable-caching: 'false'
-        if: matrix.language == 'python'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Build and check the candidate
-        id: build
         env:
           SDK_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
       - name: Retain candidate bytes for publication
-        if: steps.build.outputs.selected == 'true'
         id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -81,7 +74,6 @@ jobs:
           if-no-files-found: error
           overwrite: true
       - name: Report candidate identity
-        if: steps.build.outputs.selected == 'true'
         env:
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
@@ -115,7 +107,6 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
         with:
           enable-caching: 'false'
-        if: matrix.language == 'python'
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:

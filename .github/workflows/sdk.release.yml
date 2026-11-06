@@ -1,13 +1,15 @@
 name: SDK release
 run-name: SDK release (${{ github.event_name }}, ${{ github.actor }})
 
-# One release, four stages, each started by its own event:
+# One release, three stages, each started by its own event. scripts/sdk-release/state.ts lists
+# the states every stage can end in; each stage's last job shows that state on the request issue.
 #   1. request   a ComposioHQ member opens an `[SDK release]` issue or dispatches this workflow;
 #                the bot plans versions on protected next and opens one release PR.
-#   2. review    sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
+#                sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
 #                a writer who did not request the release approves, and a person merges.
-#   3. tag       on merge, the bot re-checks approval and checks, then tags the reviewed head.
-#   4. publish   the tag run uploads the reviewed files to npm and PyPI, then opens a docs PR
+#   2. review    when the release PR closes, the bot re-checks approval and checks, then tags the
+#                reviewed head. A PR closed without merging is abandoned.
+#   3. publish   the tag run uploads the reviewed files to npm and PyPI, then opens a docs PR
 #                that pins the released versions so twoslash checks against them.
 
 on:
@@ -44,11 +46,14 @@ jobs:
        (github.event_name == 'issues' && startsWith(github.event.issue.title, '[SDK release]')))
     runs-on: ubuntu-latest
     environment: sdk-release-control
+    # Queued, not replaced: a newer request never cancels one that is already waiting.
     concurrency:
       group: sdk-release-controller
-      cancel-in-progress: false
+      queue: max
     outputs:
       batch: ${{ steps.plan.outputs.batch }}
+      issue: ${{ steps.plan.outputs.issue }}
+      state: ${{ steps.plan.outputs.state }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -66,6 +71,7 @@ jobs:
         id: plan
         env:
           SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/batch.ts plan
 
   # Runs the docs generators, which install third-party packages, so it gets no credentials.
@@ -103,9 +109,12 @@ jobs:
     needs: [plan, prepare]
     runs-on: ubuntu-latest
     environment: sdk-release-control
+    outputs:
+      state: ${{ steps.open.outputs.state }}
+    # Queued, not replaced: a newer request never cancels one that is already waiting.
     concurrency:
       group: sdk-release-controller
-      cancel-in-progress: false
+      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -126,39 +135,48 @@ jobs:
       # The batch comes from the plan job's output, which the credential-free prepare job
       # cannot change; the patch is checked against it before anything is committed.
       - name: Check the release-only diff and open the release PR
+        id: open
         env:
           SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
           SDK_RELEASE_BATCH: ${{ needs.plan.outputs.batch }}
         run: bun scripts/sdk-release/batch.ts release-pr /tmp/sdk-release/sdk-release-patch.json
 
-  # Tells the request issue when planning succeeded but no release PR opened.
-  request-failed:
+  request-status:
     needs: [plan, prepare, release-pr]
-    if: failure() && needs.plan.outputs.batch != ''
+    if: always() && needs.plan.result != 'skipped'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
     steps:
-      - name: Comment on the request issue
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Show the request outcome on the request issue
         env:
-          GH_TOKEN: ${{ github.token }}
-          BATCH: ${{ needs.plan.outputs.batch }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          issue=$(jq -r .issue <<< "$BATCH")
-          gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" \
-            --body "Preparing the release PR failed. Inspect $RUN_URL, then re-run its failed jobs or request the release again."
+          GITHUB_TOKEN: ${{ github.token }}
+          RESULTS: >-
+            {"plan": "${{ needs.plan.result }}", "prepare": "${{ needs.prepare.result }}",
+             "release-pr": "${{ needs.release-pr.result }}"}
+          OUTCOME: ${{ needs.release-pr.outputs.state || needs.plan.outputs.state }}
+          ISSUE: ${{ needs.plan.outputs.issue }}
+        run: bun scripts/sdk-release/report.ts status request
 
   # 3. tag -------------------------------------------------------------------------------------
 
   # Runs next as it was before this merge, so the merged release PR cannot change the gate.
+  # Every release-PR closure runs it: an unmerged PR is recorded as abandoned.
   tag:
     if: >-
       github.repository == 'ComposioHQ/composio' && github.event_name == 'pull_request_target' &&
-      github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
     runs-on: ubuntu-latest
     environment: sdk-release-control
+    outputs:
+      issue: ${{ steps.tag.outputs.issue }}
+      state: ${{ steps.tag.outputs.state }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -174,12 +192,35 @@ jobs:
           owner: ComposioHQ
           repositories: composio
       - name: Check approval and candidate checks, then tag the reviewed head
+        id: tag
         env:
           SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
           SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/batch.ts tag
 
-  # 4. publish ---------------------------------------------------------------------------------
+  review-status:
+    needs: tag
+    if: always() && needs.tag.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Show the review outcome on the request issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESULTS: '{"tag": "${{ needs.tag.result }}"}'
+          OUTCOME: ${{ needs.tag.outputs.state }}
+          ISSUE: ${{ needs.tag.outputs.issue }}
+        run: bun scripts/sdk-release/report.ts status review
+
+  # 3. publish ---------------------------------------------------------------------------------
 
   # Pins the release-PR artifacts once by ID and digest. "Re-run failed jobs" keeps this
   # output, so every attempt publishes the same reviewed bytes.
@@ -193,6 +234,7 @@ jobs:
       approved: ${{ steps.approve.outputs.approved }}
       typescript: ${{ steps.approve.outputs.typescript }}
       python: ${{ steps.approve.outputs.python }}
+      issue: ${{ steps.approve.outputs.issue }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -205,6 +247,7 @@ jobs:
         id: approve
         env:
           SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/candidates.ts approve
 
   publish-npm:
@@ -215,7 +258,7 @@ jobs:
     # One npm publisher at a time, so an older retry cannot move `latest` back over a newer release.
     concurrency:
       group: sdk-release-npm
-      cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       actions: read
@@ -228,7 +271,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Pin npm with native dist-tag OIDC support
         run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
-      - name: Upload missing npm files, then move latest
+      - name: Upload missing npm files, move latest, then drop the release-only tag
         env:
           SDK_READ_TOKEN: ${{ github.token }}
           APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
@@ -266,37 +309,25 @@ jobs:
           APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
         run: bun scripts/sdk-release/registry.ts verify python
 
+  # Pins the docs to the released npm versions. It follows the npm job, so a Python-only release,
+  # which skips that job, skips this one too.
   docs:
-    needs: [candidates, publish-npm, publish-pypi]
-    if: >-
-      !cancelled() && needs.candidates.result == 'success' &&
-      contains(fromJSON('["success", "skipped"]'), needs.publish-npm.result) &&
-      contains(fromJSON('["success", "skipped"]'), needs.publish-pypi.result)
+    needs: publish-npm
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Report the published versions on the request issue
-        id: released
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bun scripts/sdk-release/report.ts released
-      - if: steps.released.outputs.npm != ''
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: next
           path: next
           persist-credentials: false
       - name: Pin the docs to the released npm versions
-        if: steps.released.outputs.npm != ''
-        env:
-          RELEASED: ${{ steps.released.outputs.npm }}
         run: |
           # Run report.ts from the root: next/docs/bunfig.toml preloads docs packages that aren't installed here.
           specs=$(bun scripts/sdk-release/report.ts docs-pins next/docs/package.json)
@@ -310,14 +341,13 @@ jobs:
             sleep 30
           done
           exit 1
-      - if: steps.released.outputs.npm != ''
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         id: app
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+      # Opens nothing when the docs already pin these versions.
       - name: Open the docs pin PR
-        if: steps.released.outputs.npm != ''
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ steps.app.outputs.token }}
@@ -334,13 +364,12 @@ jobs:
 
             Merge after the docs checks pass.
 
-  report-failure:
+  publish-status:
     needs: [candidates, publish-npm, publish-pypi, docs]
-    if: failure() && startsWith(github.ref, 'refs/tags/sdk-release/')
+    if: always() && needs.candidates.result != 'skipped'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: read
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -348,7 +377,12 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Name the failed jobs and the re-run on the request issue
+      - name: Show the publication outcome on the request issue
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: bun scripts/sdk-release/report.ts failed
+          RESULTS: >-
+            {"candidates": "${{ needs.candidates.result }}",
+             "publish-npm": "${{ needs.publish-npm.result }}",
+             "publish-pypi": "${{ needs.publish-pypi.result }}", "docs": "${{ needs.docs.result }}"}
+          ISSUE: ${{ needs.candidates.outputs.issue }}
+        run: bun scripts/sdk-release/report.ts status publish
