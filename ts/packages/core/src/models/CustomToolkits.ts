@@ -120,8 +120,8 @@ export class CustomToolkits {
    * fields keep their current value.
    * **Experimental — custom toolkits are in pilot; shape may change.**
    *
-   * On a project with 2FA enabled, updating a private toolkit requires the
-   * `userId` it is private to.
+   * On a project with connection user binding enabled, updating a private
+   * toolkit requires the `userId` it is private to.
    *
    * @param {string} slug - The custom toolkit slug returned by `create()`
    * @param {CustomToolkitUpdateParams} params - At least one of `name`, `logoFile`, `apiKeyField`
