@@ -1,6 +1,6 @@
 ---
 title: Security Overview
-description: Review Composio's role in your data flow, credential architecture, retention controls, agreements, compliance evidence, and incident history.
+description: Review Composio's role in your data flow, credential architecture, retention controls, agreements, compliance evidence, and security contacts.
 keywords: [security, compliance, SOC 2, trust center, encryption, isolation, HIPAA, BAA, DPA, subprocessor]
 ---
 
@@ -13,22 +13,11 @@ Composio authenticates and executes tool calls on your behalf. Use this section 
 
 ### I'm evaluating Composio
 
-Find the agreements, audit evidence, and incident history you need for a security review.
+Find the data-handling policies, agreements, and audit evidence you need for a security review.
 
 - [Compliance and audit reports](#compliance-and-the-trust-center)
-- [DPA and BAA](#data-processing-addendum)
-- [Incident history](#incident-history)
-
-</SecurityReviewPath>
-<SecurityReviewPath audience="vendor">
-
-### My vendor uses Composio
-
-Found us on a subprocessor list? Understand our role, the data we process, and who handles it next.
-
-- [Composio's role in your vendor's service](/docs/security/composio-as-subprocessor)
 - [Data handling and retention](/docs/security/data-retention)
-- [Composio's downstream providers](https://trust.composio.dev/subprocessors)
+- [DPA and BAA](#data-processing-addendum)
 
 </SecurityReviewPath>
 <SecurityReviewPath audience="build">
@@ -48,6 +37,7 @@ Understand credential handling and the access and retention controls you configu
 
 | Review area | Where to go |
 | --- | --- |
+| Composio on your vendor's subprocessor list | [Composio as your subprocessor](/docs/security/composio-as-subprocessor) |
 | Credentials and execution boundaries | [Credential protection](#credential-protection) and [shared responsibilities](#your-responsibilities) |
 | Logs, files, deletion, and model training | [Data retention and handling](/docs/security/data-retention) |
 | Payload-storage controls and exclusions | [Zero Data Retention](/docs/security/zero-data-retention) |
@@ -55,7 +45,6 @@ Understand credential handling and the access and retention controls you configu
 | Data-processing terms | [Data Processing Addendum (DPA)](https://composio.dev/legal/dpa) |
 | HIPAA terms | [Business Associate Agreement (BAA)](https://composio.dev/legal/baa) and [acceptance guidance](#hipaa-and-the-baa) |
 | Audit evidence and policies | [Trust Center resources](https://trust.composio.dev/) |
-| Incident disclosure and remediation updates | [Composio May 2026 security incident update](https://composio.dev/blog/composio-may-2026-security-incident) |
 | Security review or vulnerability report | [security@composio.dev](mailto:security@composio.dev) |
 
 ## Compliance and the Trust Center
@@ -95,7 +84,7 @@ If your organization is itself a business associate, ask Composio to confirm the
 
 Composio Cloud stores provider credentials and uses them server-side to authenticate requests. Your application sends tool arguments and receives results. Provider credentials are not required in prompts or tool arguments; keep your Composio API key in a trusted backend or client credential store.
 
-- Provider credentials are encrypted at rest using AES-256-GCM, with envelope encryption described in the [credential-security update](https://composio.dev/blog/composio-may-2026-security-incident). Composio API keys and session keys are stored as hashes. Traffic is encrypted in transit using TLS.
+- Provider credentials are encrypted at rest using AES-256-GCM. Composio API keys and session keys are stored as hashes. Traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses for both Composio-managed and custom auth configs. Use [Proxy Execute](/docs/extending-sessions/proxy-execute) to call a provider without retrieving its token.
 - Webhook deliveries are signed. Verify the `webhook-signature` header when handling trigger events. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 
@@ -121,12 +110,8 @@ The [DPA's technical and organizational measures](https://composio.dev/legal/dpa
 
 For published deletion periods, see [logs and account data](/docs/security/data-retention#how-long-logs-are-retained) and [temporary files](/docs/security/data-retention#how-long-files-are-available). BAA section 2.6 separately addresses PHI at termination, including continued protection when return or destruction is infeasible, such as encrypted backups. Confirm backup deletion requirements in your agreement and security review.
 
-## Incident history
-
-[Composio May 2026 security incident update](https://composio.dev/blog/composio-may-2026-security-incident) documents unauthorized access to internal systems and compromised customer credentials. It preserves the original disclosure, impact, timeline, and credential-revocation guidance through its version selector.
-
-Read that disclosure for dated remediation and independent-review updates. Use [Credential protection](#credential-protection) for the current credential controls and the [June 4 security changelog](/docs/changelog/06-04-26-security-reliability-hardening) for the recorded product changes. Contact [security@composio.dev](mailto:security@composio.dev) for the latest remediation evidence.
-
 ## Reporting a vulnerability
 
 Report security issues privately to [security@composio.dev](mailto:security@composio.dev). For account support or deletion requests, contact [support@composio.dev](mailto:support@composio.dev).
+
+See [Previous incidents](/docs/security/previous-incidents) for published disclosures, historical impact, and remediation updates.

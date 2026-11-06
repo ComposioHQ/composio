@@ -194,6 +194,9 @@ describe('Docs product navigation', () => {
     expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
       expect.arrayContaining(securityUrls),
     );
+    expect(source.getPage(['security', 'previous-incidents'])?.url).toBe('/docs/security/previous-incidents');
+    expect(platformUrls).not.toContain('/docs/security/previous-incidents');
+    expect(forYouUrls).not.toContain('/docs/security/previous-incidents');
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       if (url === '/docs/security/overview') expect(forYouUrls).toContain(url);
