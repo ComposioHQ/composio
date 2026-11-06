@@ -66,7 +66,7 @@ jobs:
 
       - name: Check docs for staleness
         if: steps.diff.outputs.has_changes == 'true'
-        uses: anthropics/claude-code-action/base-action@e4a6faad497d33dbc7144135c75e41f82f0bf6c0 # v1.0.255
+        uses: anthropics/claude-code-action/base-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
