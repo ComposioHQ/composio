@@ -539,11 +539,11 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 ## Filtering tools by tags
 
-Every tool has a [tag](/docs/tool-tags) for the type of action it takes: `readOnlyHint`, `createHint`, `updateHint` or `destructiveHint`. Use the tags to set what happens to each type of tool:
+Every tool has a [hint](/docs/governance/tool-hints) for the type of action it takes: `readOnlyHint`, `createHint`, `updateHint` or `destructiveHint`. Use the `tags` configuration to set what happens to each type of tool:
 
-- **Allow:** leave the tag out. This is the default.
-- **Block:** add the tag to `tags.disable`. The agent can't see or call these tools.
-- **Require approval:** add the tag to `tags.require_approval`. These tools wait for the user's approval before they run. See [Approvals](/docs/approvals).
+- **Allow:** leave the hint out. This is the default.
+- **Block:** add the hint to `tags.disable`. The agent can't see or call these tools.
+- **Require approval:** add the hint to `tags.require_approval`. These tools wait for the user's approval before they run. See [Approvals](/docs/governance/approvals).
 
 For example, to block every tool that can delete something:
 
