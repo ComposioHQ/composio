@@ -1030,8 +1030,12 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         in-process; remote tools are sent to the Composio backend.
 
         :param account: Account ID or alias for direct app tool execution in
-            multi-account sessions. Helper/meta tools either ignore this
-            top-level field or define their own account-selection fields.
+            multi-account sessions. Pass ``"instant_account"`` in any session
+            to run the tool on the Composio Instant account for its toolkit,
+            even when the user has connected the toolkit themselves; the call
+            fails rather than falling back to another account. Helper/meta
+            tools either ignore this top-level field or define their own
+            account-selection fields.
         :param input_responses: Experimental. The user's answers to an earlier
             ``ToolInputRequiredError``, keyed by the IDs in its
             ``input_requests``. Repeat the same call (same tool and arguments)

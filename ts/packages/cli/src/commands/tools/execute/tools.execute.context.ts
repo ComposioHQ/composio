@@ -6,7 +6,10 @@ import { resolveCliSessionArtifacts } from 'src/services/cli-session-artifacts';
 import { resolveCommandProject } from 'src/services/command-project';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
-import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
+import {
+  isInstantAccountSelector,
+  resolveConnectedAccountForToolkit,
+} from 'src/services/connected-account-selection';
 import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
@@ -43,6 +46,8 @@ export type ResolvedExecuteContext = {
   readonly args: Record<string, unknown>;
   readonly resolvedUserId: string;
   readonly selectedConnectedAccountId?: string;
+  /** `--account instant_account`: the call runs on the Composio instant account. */
+  readonly useInstantAccount: boolean;
   readonly executeParams: ToolExecuteParams;
   readonly executeOutputDir?: string;
 };
@@ -88,12 +93,16 @@ export const resolveExecuteContext = (
       params.slug,
       toolkitProjectScope(resolvedProject)
     );
-    const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
-      client,
-      toolkitSlug,
-      userId: resolvedUserId,
-      selector: params.account,
-    });
+    // The instant account is not one of the user's accounts, so it is not matched against them.
+    const useInstantAccount = isInstantAccountSelector(params.account);
+    const selectedConnectedAccountId = useInstantAccount
+      ? undefined
+      : yield* resolveConnectedAccountForToolkit({
+          client,
+          toolkitSlug,
+          userId: resolvedUserId,
+          selector: params.account,
+        });
     const args = Option.isSome(params.file)
       ? yield* getOrFetchToolInputDefinition(params.slug, {
           orgId: resolvedProject.orgId,
@@ -134,6 +143,7 @@ export const resolveExecuteContext = (
       args,
       resolvedUserId,
       selectedConnectedAccountId,
+      useInstantAccount,
       executeOutputDir,
       executeParams: {
         userId: resolvedUserId,
@@ -152,6 +162,7 @@ export const resolveExecuteContext = (
                 [toolkitSlug]: selectedConnectedAccountId,
               }
             : undefined,
+        useInstantAccount,
         cacheScope:
           resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
             ? {
