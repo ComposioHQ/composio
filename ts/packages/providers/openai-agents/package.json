@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@openai/agents": "^0.20.0",
+    "@openai/agents": "^0.21.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

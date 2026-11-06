@@ -115,7 +115,7 @@
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
-    "semver": "^7.8.5",
+    "semver": "^7.8.6",
     "undici": "^7.30.1",
     "zod-to-json-schema": "catalog:"
   },
