@@ -1,0 +1,55 @@
+---
+title: Access control and credential protection
+description: Configure permissions and approvals, understand credential decryption and privileged access, and revoke exposed credentials.
+---
+
+Composio authenticates requests and uses provider credentials server-side. Your application determines who can request an action and which accounts and tools they can use.
+
+## Isolation and access control
+
+- Organizations and projects isolate your resources. Data from one project is not visible to another.
+- API keys support scoped permissions and per-key IP allowlisting. [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) distinguish session management, session tool execution, and Proxy Execute access.
+- Multi-factor authentication (MFA) is available for dashboard sign-in and can be enforced by an organization admin.
+- Organization admins can see who changed members, projects, API keys, and other settings in [audit logs](/docs/security/audit-logs).
+
+### Authorization boundaries
+
+Provider permissions, Composio keys, and session controls apply at different points. Configure each for the operations your application needs.
+
+| Control | What it limits | What you configure |
+| --- | --- | --- |
+| Provider permissions | The connected account's access at the destination service. | Request minimum [OAuth scopes](/docs/authentication/controlling-scopes) and restrict the account's permissions at the provider. |
+| Composio API-key permissions | Which Composio API routes a caller can use within a project. | Separate session management, session execution, and direct execution permissions. Grant [Proxy Execute](/reference/authenticating-to-composio/project-api-key-permissions#proxy-execute-legacy) only when needed; it permits raw provider requests beyond predefined tool schemas. |
+| Application identity | Which user and connected account your backend selects. | Derive `user_id` from your authenticated application session and authorize the selected account server-side. Do not trust IDs supplied by a browser or model. A project key is not an end-user identity credential. |
+| Session tool selection | Which tools a session can execute. | Use explicit [tool allowlists](/docs/configuring-sessions). Review direct execution and proxy permissions separately; session configuration is not a project-wide policy. |
+| Approvals | Whether a configured session tool call waits for a user's answer. | Use the [experimental approval flow](/docs/governance/approvals), list sensitive tools explicitly, and handle elicitation in your application or MCP client. |
+
+Approvals require a compatible SDK and client. Keep the default denial behavior for MCP clients without elicitation support. **Always approve** permits later calls to that tool on the same account for the rest of the session. Sandbox approval detection can miss calls; disable the sandbox when approval must never be skipped. Session proxy calls are currently disabled for a toolkit when any of its tools require approval. See [approval limitations](/docs/governance/approvals#current-limitations) before relying on this control.
+
+## Credential protection
+
+Composio Cloud stores provider credentials and uses them server-side to authenticate requests. Your application sends tool arguments and receives results. Provider credentials are not required in prompts or tool arguments; keep your Composio API key in a trusted backend or client credential store.
+
+- Provider credentials are encrypted at rest using AES-256-GCM. Composio API keys and session keys are stored as hashes. Traffic is encrypted in transit using TLS.
+- Connected-account tokens are redacted by default in API responses for both Composio-managed and custom auth configs. Use [Proxy Execute](/docs/extending-sessions/proxy-execute) to call a provider without retrieving its token.
+- Webhook deliveries are signed. Verify the `webhook-signature` header when handling trigger events. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+
+### Decryption and privileged access
+
+In Composio Cloud, the execution runtime decrypts provider credentials to authenticate calls. Encryption at rest and API redaction do not prevent an authorized execution service from using those credentials.
+
+The published [credential architecture](https://composio.dev/blog/two-questions-every-security-review-asks-us) describes:
+
+- Envelope encryption with per-organization keys wrapped by a key in AWS KMS. The wrapping key rotates independently.
+- No standing support or engineering access to customer data. Privileged access, where available, requires approval and logging. Request the access policies and evidence from the [Trust Center](https://trust.composio.dev/).
+- An optional customer-managed key deployment, arranged with Composio, where a proxy in your cloud handles credential plaintext and Composio's control plane lacks the decryption key material.
+
+For a deployment in your cloud, confirm runtime decryption permissions and operator access explicitly. Network placement and ownership of your OAuth app do not establish who can decrypt credentials.
+
+### Revocation and recovery
+
+Protect Composio API keys as credentials that authorize actions, even though they cannot retrieve provider tokens. If a key is exposed, revoke or rotate it and review activity for its project and permissions. Hashing stored keys does not protect a usable key copied from your application.
+
+Deleting a connected account stops calls through that connection. To request provider-side revocation, the [connected-account deletion API](/reference/api-reference/connected-accounts) accepts `revoke_on_delete=true`; this defaults to `false` and depends on provider support. Revoke or rotate credentials directly at the provider when necessary. Deleting the connection alone does not guarantee that a copied provider token becomes invalid.
+
+For a configuration that limits payload storage, follow [Configure a sensitive workload](/docs/security/zero-data-retention#configure-a-sensitive-workload). See [Shared responsibilities](/docs/security/shared-responsibility) for the controls your application owns.

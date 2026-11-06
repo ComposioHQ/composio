@@ -1,0 +1,42 @@
+---
+title: Compliance and evidence
+description: Find Composio's compliance reports, DPA and BAA acceptance guidance, and infrastructure and resilience evidence.
+---
+
+Use these agreements and evidence sources to assess Composio for your workflow. Check the scope and dates of each report and the terms that apply to your organization.
+
+## Compliance and the Trust Center
+
+The [Trust Center](https://trust.composio.dev/) lists Composio's SOC 2 Type II report, ISO 27001 certificate, and security policies. Use **Request access** for restricted evidence and check each report's scope and reporting period. Composio is not FedRAMP authorized.
+
+Open **Subprocessors** for the maintained register of Composio's downstream providers, their purposes, and published processing locations. Select **Subscribe to updates** in the Trust Center to receive updates, including changes to the subprocessor list. The register is separate from [Composio's role on your vendor's subprocessor list](/docs/security/composio-as-subprocessor).
+
+### Data Processing Addendum
+
+The [published DPA](https://composio.dev/legal/dpa) is available to Pro and Enterprise Developer customers through the developer dashboard's [**Organization Settings > Billing**](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=security-overview). It becomes binding only when the customer accepts it through the dashboard. No countersignature is required. You can download the accepted version there.
+
+The DPA describes processing purposes, security measures, deletion, subprocessors, and international transfer mechanisms. For bespoke terms, Enterprise customers can contact their account team.
+
+### HIPAA and the BAA
+
+The [published BAA](https://composio.dev/legal/baa) describes Composio's obligations for protected health information (PHI) in its tool orchestration and integration services. Acceptance is available to **Pro and Enterprise Developer customers** on the developer dashboard's [**billing page**](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=security-overview).
+
+Have the person authorized to accept agreements for your organization review and accept the BAA there. The agreement is between Composio and the customer identified in the applicable Order Form. It is **not binding until accepted through the dashboard**. Upon acceptance, it uses the Effective Date in that Order Form. Download your accepted version from the dashboard.
+
+<Callout type="warn">
+BAA acceptance does not establish that every feature, destination app, model provider, or Instant Tool is suitable for PHI. Confirm the intended workflow, downstream services, and required configuration with [security@composio.dev](mailto:security@composio.dev) before sending PHI. ZDR is a payload-storage control, not a statement of HIPAA eligibility.
+</Callout>
+
+The BAA requires your use of the service and your instructions to comply with HIPAA. It also addresses subcontractor obligations and requires prior written customer consent for access to PHI by people outside the United States or use of subcontractors outside the United States. These contractual restrictions do not establish a location guarantee for every product workflow.
+
+If your organization is itself a business associate, ask Composio to confirm the applicable agreement before sending PHI. The published BAA defines the customer as a **Covered Entity** in section 1.3; it does not expressly describe a customer acting as a business associate to another covered entity.
+
+## Infrastructure, resilience, and testing
+
+Composio uses cloud infrastructure for API execution, credential storage, logs, file staging, and optional sandbox and model processing. The [subprocessor register](https://trust.composio.dev/subprocessors) identifies providers and published locations. A location listed for one provider does not establish residency for the whole workflow. For residency requirements, confirm the execution path and deployment arrangement with [Composio](mailto:security@composio.dev).
+
+The [DPA's technical and organizational measures](https://composio.dev/legal/dpa) describe vulnerability scanning, patch management, secure development, access controls, and safeguards for availability and resilience. The Trust Center lists penetration testing controls and a **Business Continuity and Disaster Recovery Plan**. Request those materials for recovery objectives, backup arrangements, and testing evidence.
+
+For published deletion periods, see [logs and account data](/docs/security/data-retention#how-long-logs-are-retained) and [temporary files](/docs/security/data-retention#how-long-files-are-available). BAA section 2.6 separately addresses PHI at termination, including continued protection when return or destruction is infeasible, such as encrypted backups. Confirm backup deletion requirements in your agreement and security review.
+
+For application configuration and ownership, see [Access control and credential protection](/docs/security/access-control) and [Shared responsibilities](/docs/security/shared-responsibility).

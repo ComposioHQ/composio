@@ -175,6 +175,9 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
+      '/docs/security/compliance',
+      '/docs/security/access-control',
+      '/docs/security/shared-responsibility',
       '/docs/security/audit-logs',
       '/docs/security/composio-as-subprocessor',
       '/docs/security/data-retention',

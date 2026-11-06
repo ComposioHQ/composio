@@ -20,7 +20,7 @@ The [DPA's scope of processing](https://composio.dev/legal/dpa) covers authentic
 
 | Data | Where it goes in Composio Cloud |
 | --- | --- |
-| Provider credentials | Stored encrypted by Composio and used server-side to authenticate requests to the connected provider. Account APIs redact tokens by default. See [Credential protection](/docs/security/overview#credential-protection). |
+| Provider credentials | Stored encrypted by Composio and used server-side to authenticate requests to the connected provider. Account APIs redact tokens by default. See [Credential protection](/docs/security/access-control#credential-protection). |
 | Request arguments and tool results | Pass through Composio's execution infrastructure and the destination provider, with results returned to the caller. Execution logs store payloads by default. |
 | Trigger payloads | Pass through event processing and delivery infrastructure to configured destinations. ZDR omits payloads from trigger logs, but events are still stored for processing and delivery. |
 | Files | Tools can stage uploads and downloads in temporary object storage and return presigned URLs. Sandbox workflows can also process files. URL expiry and object deletion are separate. |
@@ -50,14 +50,14 @@ Those statements do not establish the policy of your own model provider, a conne
 
 ## Responsibilities and review evidence
 
-Your vendor owns its application's authorization, user-to-account mapping, tool selection, approvals, and data handling. Composio owns the hosted processing controls described in its documentation and agreements. Connected third-party services enforce their own permissions and apply their own data policies. See the [shared-responsibility table](/docs/security/overview#your-responsibilities).
+Your vendor owns its application's authorization, user-to-account mapping, tool selection, approvals, and data handling. Composio owns the hosted processing controls described in its documentation and agreements. Connected third-party services enforce their own permissions and apply their own data policies. See the [shared-responsibility table](/docs/security/shared-responsibility#your-responsibilities).
 
 Use these sources for your review:
 
 - [DPA](https://composio.dev/legal/dpa) for processing terms and international transfer mechanisms.
-- [BAA](https://composio.dev/legal/baa) and [HIPAA acceptance guidance](/docs/security/overview#hipaa-and-the-baa) for eligibility, acceptance, and the question of customers who are themselves business associates.
+- [BAA](https://composio.dev/legal/baa) and [HIPAA acceptance guidance](/docs/security/compliance#hipaa-and-the-baa) for eligibility, acceptance, and the question of customers who are themselves business associates.
 - [Subprocessor register](https://trust.composio.dev/subprocessors) for downstream providers, purposes, and published locations. Use **Subscribe to updates** in the Trust Center for changes.
 - [Trust Center](https://trust.composio.dev/) for audit reports and restricted evidence. Use **Request access** to begin a review.
-- [Infrastructure and resilience guidance](/docs/security/overview#infrastructure-resilience-and-testing) for public information and where to request backup and recovery details.
+- [Infrastructure and resilience guidance](/docs/security/compliance#infrastructure-resilience-and-testing) for public information and where to request backup and recovery details.
 
 Contact [security@composio.dev](mailto:security@composio.dev) for Composio security evidence. Ask your vendor to confirm its actual configuration and the agreements that apply to your data.
