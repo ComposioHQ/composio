@@ -1,5 +1,5 @@
 ---
-title: 'Instant triggers for Gmail and Google Calendar'
+title: 'Realtime triggers for Gmail and Google Calendar'
 description: 'Gmail and Google Calendar triggers now fire the moment something changes, instead of on the next poll.'
 date: '2026-11-05'
 ---
@@ -28,8 +28,8 @@ What just happened? The trigger supports both webhooks and polling, so Composio 
 
 ### What's new
 
-- **Instant Gmail triggers.** `GMAIL_NEW_GMAIL_MESSAGE` and `GMAIL_EMAIL_SENT_TRIGGER`.
-- **Instant Google Calendar triggers.** `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CREATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_UPDATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER`, `GOOGLECALENDAR_EVENT_CANCELED_DELETED_TRIGGER`, and `GOOGLECALENDAR_ATTENDEE_RESPONSE_CHANGED_TRIGGER`. `GOOGLECALENDAR_EVENT_STARTING_SOON_TRIGGER` keeps polling, because it fires on a schedule relative to each event's start time.
+- **Realtime Gmail triggers.** `GMAIL_NEW_GMAIL_MESSAGE` and `GMAIL_EMAIL_SENT_TRIGGER`.
+- **Realtime Google Calendar triggers.** `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CREATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_UPDATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER`, `GOOGLECALENDAR_EVENT_CANCELED_DELETED_TRIGGER`, and `GOOGLECALENDAR_ATTENDEE_RESPONSE_CHANGED_TRIGGER`. `GOOGLECALENDAR_EVENT_STARTING_SOON_TRIGGER` keeps polling, because it fires on a schedule relative to each event's start time.
 - **Choose webhook or polling.** Pass `type` as `"webhook"` or `"poll"`. Omit it and Composio uses a webhook whenever it can set one up.
 - **`polling_interval`.** Set the minutes between polls with this top-level parameter (`pollingInterval` in TypeScript). It applies when you pass `type: "poll"`, and when a trigger falls back to polling. When you omit `type` or pass `type: "poll"`, Composio checks it before it sets up the trigger, so a value below the toolkit's minimum fails the request.
 - **`fallback_reason`.** When a trigger polls because Composio couldn't set up its webhook, `fallback_reason` says what's missing.
