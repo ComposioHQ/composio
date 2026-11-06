@@ -19,15 +19,56 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 
 ## Credential protection
 
-See [Token custody architecture](/docs/security/token-custody) for credential boundaries, server-side execution, default API redaction, and deployment options.
-
 - Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
 - Webhook deliveries are signed; verify the `webhook-signature` header when handling trigger events. For custom OAuth webhook setup, see [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 
+## Token boundaries in Composio Cloud
+
+In Composio Cloud, Composio stores provider credentials and uses them to authenticate requests on your behalf. During hosted OAuth, the provider redirects the browser to Composio, which exchanges the authorization code and stores encrypted tokens. Your backend receives connection identifiers and status. Encryption at rest protects stored credentials; the execution service still uses them during execution.
+
+Your backend sends a Composio API key, account or session identifiers, and tool arguments. Composio injects the provider credential server-side and returns the provider response. Your model receives the definitions and results your application or MCP client supplies; provider credentials aren't required in prompts or tool arguments. Keep your Composio API key in a trusted backend or client credential store because it authorizes actions on connected accounts.
+
+## Default redaction is an API boundary
+
+Get Connected Account and List Connected Accounts redact sensitive credential fields before returning API responses, for both Composio-managed and custom auth configs. Fields such as `account.state.val.access_token` can appear in SDK types or response schemas without containing usable secrets. See [credential masking](/docs/auth-configuration/connected-accounts#credential-masking) for the response format. Reading account state is not a supported token-export workflow.
+
+Redaction does not sanitize every provider response, secrets your code supplies, or your application's logs. Tool results can contain sensitive business data even when authentication tokens stay inside the execution service.
+
+## Execution paths
+
+| Path | Where credentials are used |
+| --- | --- |
+| Native tools through sessions, MCP, or direct execution | Composio executes the provider call and supplies the connected account's credential. |
+| [Proxy Execute](/docs/extending-sessions/proxy-execute) | Composio authenticates a provider HTTP request for endpoints or request shapes predefined tools don't cover. |
+| [Session extension tools](/docs/extending-sessions/custom-tools-and-toolkits) | Your function runs in your process. Its proxy call delegates authentication and the provider request to Composio. |
+| [Imported credentials](/docs/authentication/importing-existing-connections) or independent local tools | Your code controls any secrets it reads or supplies. Importing a token means your application handles it before sending it to Composio. |
+
+An LLM is not required for tool execution or proxy requests. Proxy Execute requires its own API-key permission and can access provider operations beyond predefined tool schemas, subject to provider permissions. Absolute URLs must use the connected account's resolved scheme and registrable domain, so sibling subdomains are allowed. Prefer relative provider paths and review proxy permission separately from tool selection.
+
+## OAuth app ownership and token custody
+
+A [custom auth config](/docs/authentication/custom-app-vs-managed-app) changes OAuth app ownership, branding, scopes, and provider quota. In Composio Cloud, Composio still stores and refreshes the resulting connected-account credentials. Owning the OAuth app does not move credential storage into your account or change default API redaction.
+
+## Deployment options
+
+Composio Cloud hosts credential storage and execution. With [Bring your own cloud (BYOC)](/docs/security/byoc), Composio operates the application services in your AWS account, with local credential storage and execution. The BYOC guide covers private access, external dependencies, customer-approved releases, and separately approved support access. It replaces the previous customer-operated Helm offering for new deployments.
+
+BYOC and customer-managed keys are separate architectures. The [customer-managed-key deployment](https://composio.dev/blog/two-questions-every-security-review-asks-us) uses a proxy in your cloud with keys in AWS KMS, Google Cloud KMS, or HashiCorp Vault Transit. In that architecture, Composio's control plane does not hold the key material needed to decrypt credentials. This is arranged with Composio, rather than enabled by a dashboard toggle; it is not a property of BYOC or OAuth app ownership. [Contact Composio](https://composio.dev/contact?utm_source=docs) to establish decryption permissions, key custody, logs, backups, and support access for your requirements.
+
+### Customer-managed keyring transfer keys
+
+If your organization has an active customer-managed keyring, retrieve its public transfer keys with `composio.keyring.list_transfer_keys()` in Python or `await composio.keyring.listTransferKeys()` in TypeScript. Use the key identified by `active_kid` (Python) or `activeKid` (TypeScript) when sealing new secrets for transfer. The API returns `404` if your organization has no active keyring. This API does not enable BYOC or establish its key custody model.
+
 ## Your responsibilities
 
 Composio executes the tools and connections you configure. You control which toolkits are enabled, which accounts are connected, and what your agents are allowed to do. Review the access you grant, and treat connected-account scopes as you would any production credential.
+
+<span id="application-authorization-and-retained-data" className="block scroll-m-28" />
+
+Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/configuring-sessions), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs.
+
+Credential redaction and payload retention are separate controls. Tool arguments and results are stored in execution logs by default. [Zero Data Retention](/docs/security/zero-data-retention) stops storage of new payloads for covered calls while retaining audit metadata. It does not prevent processing during execution, delete existing logs, or govern your own logs and model provider.
 
 ## Reporting a vulnerability
 
@@ -35,6 +76,7 @@ To report a security issue, contact `security@composio.dev`. Please do not discl
 
 ## Related resources
 
+- [Bring your own cloud (BYOC)](/docs/security/byoc): Composio-operated deployment in your AWS account.
 - [Data retention and handling](/docs/security/data-retention): what we store and for how long, on every plan.
 - [Zero Data Retention](/docs/security/zero-data-retention): how to stop storing call payloads, and what ZDR covers.
 - [Composio Trust Center](https://trust.composio.dev): security certifications and compliance.

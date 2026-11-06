@@ -46,7 +46,13 @@ const REDIRECTS = [
   { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
   { from: "/docs/manually-authenticating", to: "/docs/authentication/manually-authenticating" },
   { from: "/docs/security", to: "/docs/security/overview" },
-  { from: "/docs/self-hosting", to: "/docs/security/token-custody#deployment-options" },
+  { from: "/docs/security/token-custody", to: "/docs/security/overview" },
+  { from: "/docs/security/token-custody.md", to: "/docs/security/overview.md" },
+  { from: "/docs/security/token-custody.mdx", to: "/docs/security/overview.mdx" },
+  { from: "/llms.mdx/docs/security/token-custody", to: "/llms.mdx/docs/security/overview" },
+  { from: "/docs/self-hosting", to: "/docs/security/byoc" },
+  { from: "/docs/deployment", to: "/docs/security/byoc" },
+  { from: "/docs/hosting/aws", to: "/docs/security/byoc" },
   { from: "/docs/auth", to: "/docs/authentication" },
   { from: "/docs/auth-management/overview", to: "/docs/authentication" },
   { from: "/docs/managed-auth", to: "/docs/authentication/custom-app-vs-managed-app" },
@@ -104,5 +110,27 @@ describe("Redirects - saved tool tag section links", () => {
     ]) {
       expect(html).toContain(`id="${id}"`);
     }
+  });
+});
+
+describe("Redirects - retired token custody page", () => {
+  test("saved security anchors survive and deployment guidance links to BYOC", async () => {
+    const res = await fetchPage("/docs/security/token-custody", { timeout: 30_000 });
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(new URL(res.url).pathname).toBe("/docs/security/overview");
+    for (const id of [
+      "token-boundaries-in-composio-cloud",
+      "default-redaction-is-an-api-boundary",
+      "execution-paths",
+      "oauth-app-ownership-and-token-custody",
+      "deployment-options",
+      "customer-managed-keyring-transfer-keys",
+      "application-authorization-and-retained-data",
+    ]) {
+      expect(html).toContain(`id="${id}"`);
+    }
+    expect(html).toContain('href="/docs/security/byoc"');
   });
 });

@@ -1158,8 +1158,8 @@
     },
     {
       "slug": "platform-self-hosted-helm",
-      "title": "Self-hosted Helm",
-      "description": "Public support knowledge for Self-hosted Helm.",
+      "title": "Existing self-hosted Helm installations",
+      "description": "Troubleshoot existing customer-operated Helm installations. For new deployments, use Composio-operated BYOC.",
       "articlePath": "platform-self-hosted-helm.md",
       "sources": [
         {
