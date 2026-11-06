@@ -14,7 +14,7 @@ Use a session's MCP endpoint instead: `composio.create(user_id, mcp=True)` retur
 Create a new MCP server configuration with specified toolkits and authentication settings.
 
 ```python
-def create(name: str, toolkits: List[Union[ConfigToolkit, str]], manually_manage_connections: bool = ..., allowed_tools: List[str | None] = ...) -> MCPCreateResponse
+def create(name: str, toolkits: List[Union[ConfigToolkit, str]], manually_manage_connections: bool = ..., allowed_tools: List[str] | None = ...) -> MCPCreateResponse
 ```
 
 **Parameters**
@@ -24,7 +24,7 @@ def create(name: str, toolkits: List[Union[ConfigToolkit, str]], manually_manage
 | `name` | `str` |
 | `toolkits` | `List[Union[ConfigToolkit, str]]` |
 | `manually_manage_connections?` | `bool` |
-| `allowed_tools?` | `List[str \| None]` |
+| `allowed_tools?` | `List[str] \| None` |
 
 **Returns**
 
@@ -75,7 +75,7 @@ def create(name: str, toolkits: List[Union[ConfigToolkit, str]], manually_manage
 List MCP servers with optional filtering and pagination.
 
 ```python
-def list(page_no: int | None = ..., limit: int | None = ..., toolkits: str | None = ..., auth_config_ids: str | None = ..., name: str | None = ..., order_by: Literal['created_at', 'updated_at' | None] = ..., order_direction: Literal['asc', 'desc' | None] = ...) -> MCPListResponse
+def list(page_no: int | None = ..., limit: int | None = ..., toolkits: str | None = ..., auth_config_ids: str | None = ..., name: str | None = ..., order_by: Literal['created_at', 'updated_at'] | None = ..., order_direction: Literal['asc', 'desc'] | None = ...) -> MCPListResponse
 ```
 
 **Parameters**
@@ -87,8 +87,8 @@ def list(page_no: int | None = ..., limit: int | None = ..., toolkits: str | Non
 | `toolkits?` | `str \| None` |
 | `auth_config_ids?` | `str \| None` |
 | `name?` | `str \| None` |
-| `order_by?` | `Literal['created_at', 'updated_at' \| None]` |
-| `order_direction?` | `Literal['asc', 'desc' \| None]` |
+| `order_by?` | `Literal['created_at', 'updated_at'] \| None` |
+| `order_direction?` | `Literal['asc', 'desc'] \| None` |
 
 **Returns**
 
@@ -141,7 +141,7 @@ def get(server_id: str)
 Update an existing MCP server configuration.
 
 ```python
-def update(server_id: str, name: str | None = ..., toolkits: List[Union[ConfigToolkit, str | None]] = ..., manually_manage_connections: bool | None = ..., allowed_tools: List[str | None] = ...)
+def update(server_id: str, name: str | None = ..., toolkits: List[Union[ConfigToolkit, str]] | None = ..., manually_manage_connections: bool | None = ..., allowed_tools: List[str] | None = ...)
 ```
 
 **Parameters**
@@ -150,9 +150,9 @@ def update(server_id: str, name: str | None = ..., toolkits: List[Union[ConfigTo
 |------|------|
 | `server_id` | `str` |
 | `name?` | `str \| None` |
-| `toolkits?` | `List[Union[ConfigToolkit, str \| None]]` |
+| `toolkits?` | `List[Union[ConfigToolkit, str]] \| None` |
 | `manually_manage_connections?` | `bool \| None` |
-| `allowed_tools?` | `List[str \| None]` |
+| `allowed_tools?` | `List[str] \| None` |
 
 **Example**
 
