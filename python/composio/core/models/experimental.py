@@ -177,11 +177,11 @@ class ExperimentalCustomToolkits:
 
         Set ``user_id`` to ``"all"`` to share the toolkit with every user in
         the project, or to a user ID to make it private to that user.
-        ``app_url``, ``auth_schemes`` and ``user_id`` cannot change later:
+        ``mcp_url``, ``auth_schemes`` and ``user_id`` cannot change later:
         delete and re-create the toolkit instead.
 
         :param name: Display name of the toolkit.
-        :param app_url: The MCP server URL. Must use https.
+        :param mcp_url: The MCP server URL. Must use https.
         :param auth_schemes: How users authenticate to the MCP server.
         :param user_id: ``"all"``, or the user ID the toolkit is private to.
         :param logo_file: Optional base64 PNG or JPEG logo.
@@ -193,7 +193,7 @@ class ExperimentalCustomToolkits:
         Example:
             toolkit = composio.experimental.custom_toolkits.create(
                 name="Internal API",
-                app_url="https://mcp.internal.example.com/mcp",
+                mcp_url="https://mcp.internal.example.com/mcp",
                 auth_schemes=[
                     {
                         "mode": "API_KEY",
@@ -249,14 +249,14 @@ class ExperimentalCustomToolkits:
             its name, logo or API key field. ``create`` generates the slug,
             so store the slug it returns.
 
-        ``app_url`` and ``auth_schemes`` cannot change on an existing
+        ``mcp_url`` and ``auth_schemes`` cannot change on an existing
         toolkit: re-sending them unchanged is a no-op, and changing them fails
         with a 409. Delete and re-register the toolkit instead, which revokes
         its connections.
 
         :param slug: Letters, digits, underscores or spaces (max 30). The API
             prefixes it with ``CUSTOM_`` and turns spaces into underscores.
-        :param toolkit_config: ``name``, ``app_url`` (the MCP URL for MCP
+        :param toolkit_config: ``name``, ``mcp_url`` (the MCP URL for MCP
             apps), ``auth_schemes`` and an optional base64 ``logo_file``.
         :return: The toolkit's ``slug``.
 
@@ -265,7 +265,7 @@ class ExperimentalCustomToolkits:
                 slug="INTERNAL_API",
                 toolkit_config={
                     "name": "Internal API",
-                    "app_url": "https://mcp.internal.example.com/mcp",
+                    "mcp_url": "https://mcp.internal.example.com/mcp",
                     "auth_schemes": [
                         {
                             "mode": "API_KEY",

@@ -1,0 +1,36 @@
+name: SDK release
+description: Request a TypeScript and Python SDK release
+title: '[SDK release] Request'
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Any active ComposioHQ member can use this form, including members with repository Read access.
+        The bot prepares one release PR. A repository writer who did not request the release approves its final head, then a person merges it.
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel
+      description: stable publishes to npm `latest` and consumes the changesets. beta publishes a preview such as 0.29.0-beta.<run> (PyPI 0.29.0b<run>) to npm `next` and leaves every changeset for the stable release.
+      options: [stable, beta]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: typescript
+    attributes:
+      label: TypeScript
+      description: auto uses Changesets recommendations; an explicit bump without notes selects core and slim.
+      options: [auto, patch, minor, major, skip]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: python
+    attributes:
+      label: Python
+      description: auto uses Changesets recommendations; an explicit bump selects the synchronized Python train.
+      options: [auto, patch, minor, major, skip]
+      default: 0
+    validations:
+      required: true
