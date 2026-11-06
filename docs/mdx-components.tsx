@@ -42,6 +42,7 @@ import { AuthConfigFlow } from '@/components/auth-config-flow';
 import { WhiteLabelFlow } from '@/components/white-label-flow';
 import { ImportConnectionFlow } from '@/components/import-connection-flow';
 import { HomeSurfaces } from '@/components/home-surfaces';
+import { SecurityReviewPath, SecurityReviewPaths } from '@/components/security-review-paths';
 import { HomeResources } from '@/components/home-resources';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
 import { ApiBaseUrl } from '@/components/api-base-url';
@@ -152,6 +153,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     WhiteLabelFlow,
     ImportConnectionFlow,
     HomeSurfaces,
+    SecurityReviewPath,
+    SecurityReviewPaths,
     HomeResources,
     StepTitle,
     Glossary,
