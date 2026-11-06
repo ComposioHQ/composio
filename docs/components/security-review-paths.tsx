@@ -1,16 +1,15 @@
-import { ClipboardCheck, Code, Network } from 'lucide-react';
+import { ClipboardCheck, Code } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const icons = {
   evaluate: ClipboardCheck,
-  vendor: Network,
   build: Code,
 };
 
 export function SecurityReviewPaths({ children }: { children: ReactNode }) {
   return (
     <div className="not-prose @container my-6">
-      <div className="grid grid-cols-1 gap-4 @min-[38rem]:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 @min-[32rem]:grid-cols-2">
         {children}
       </div>
     </div>
