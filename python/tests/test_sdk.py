@@ -1,5 +1,7 @@
 """Test SDK functionality."""
 
+import inspect
+import json
 import os
 import typing as t
 from unittest.mock import patch
@@ -9,14 +11,62 @@ import httpx
 import pytest
 from composio_client import AutoAuth, ProjectAuth, Scope, UserAuth
 from composio_client import ComposioError as ClientComposioError
+from pydantic import BaseModel
 
-from composio import Composio, exceptions
+from composio import (
+    Composio,
+    ToolRouter,
+    ToolRouterSession,
+    ToolRouterSessionWithMcp,
+    exceptions,
+)
 from composio.client import HttpClient
+from composio.core.models.experimental import ExperimentalAPI
 from composio.core.provider._openai import OpenAIProvider
+from composio.types import (
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionSearchResponse,
+    ToolRouterToolsConfig,
+)
 
 
 class TestComposioSDK:
     """Test cases for Composio SDK."""
+
+    def test_session_signatures_are_inspectable_without_client(self):
+        """Offline help must expose required arguments and toolkit-keyed tools."""
+        with patch.dict(os.environ, {}, clear=True):
+            signature = inspect.signature(Composio.create)
+            assert (
+                signature.parameters["user_id"].kind == inspect.Parameter.KEYWORD_ONLY
+            )
+            assert signature.parameters["user_id"].default is inspect.Parameter.empty
+            signature.bind(
+                None,
+                user_id="user_123",
+                tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS"]}},
+                preload={"tools": ["GMAIL_FETCH_EMAILS"]},
+                manage_connections={"enable": True},
+            )
+            with pytest.raises(TypeError):
+                signature.bind(None)
+            assert (
+                t.get_type_hints(Composio.create)["tools"]
+                == t.Optional[t.Dict[str, ToolRouterToolsConfig]]
+            )
+            assert (
+                t.get_type_hints(ToolRouter.create)["tools"]
+                == t.Optional[t.Dict[str, ToolRouterToolsConfig]]
+            )
+            inspect.signature(Composio.use).bind(None, "session_123", mcp=True)
+            assert (
+                t.get_type_hints(ToolRouterSession.execute)["return"]
+                is ToolRouterSessionExecuteResponse
+            )
+            assert (
+                t.get_type_hints(ToolRouterSession.search)["return"]
+                is ToolRouterSessionSearchResponse
+            )
 
     def test_sdk_requires_api_key(self):
         """Test that SDK requires an API key."""
@@ -224,7 +274,9 @@ class TestComposioSDK:
 MCP_URL = "https://backend.composio.dev/api/v3/tool_router/session/session_123/mcp"
 
 
-def _session_transport() -> t.Tuple[httpx.Client, t.List[httpx.Request]]:
+def _session_transport(
+    *, experimental: t.Optional[t.Dict[str, t.Any]] = None
+) -> t.Tuple[httpx.Client, t.List[httpx.Request]]:
     requests: t.List[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -242,10 +294,110 @@ def _session_transport() -> t.Tuple[httpx.Client, t.List[httpx.Request]]:
                 },
                 "config_version": 3,
                 "warnings": [],
+                "experimental": experimental,
             },
         )
 
     return httpx.Client(transport=httpx.MockTransport(handler)), requests
+
+
+class TestSessionShortcuts:
+    @pytest.mark.parametrize("mcp", [False, True])
+    def test_create_preserves_session_policy(self, mcp):
+        """The public shortcut must retain policy through request serialization."""
+        http_client, requests = _session_transport()
+        with http_client:
+            sdk = Composio(
+                api_key="ak_test",
+                base_url="https://backend.composio.dev",
+                http_client=http_client,
+            )
+            session = sdk.create(
+                user_id="user_123",
+                toolkits=["gmail"],
+                tools={"gmail": ["GMAIL_FETCH_EMAILS"]},
+                tags=["readOnlyHint"],
+                manage_connections={
+                    "enable": False,
+                    "callback_url": "https://app.example.com/callback",
+                    "wait_for_connections": False,
+                },
+                auth_configs={"gmail": "ac_gmail"},
+                connected_accounts={"gmail": "ca_gmail"},
+                sandbox={"enable": False},
+                multi_account={"enable": True, "require_explicit_selection": False},
+                proxy_execute=False,
+                preload={"tools": ["GMAIL_FETCH_EMAILS"]},
+                experimental={"assistive_prompt": {"user_timezone": "UTC"}},
+                instant=False,
+                mcp=mcp,
+            )
+
+        assert json.loads(requests[0].content) == {
+            "user_id": "user_123",
+            "toolkits": {"enable": ["gmail"]},
+            "tools": {"gmail": {"enable": ["GMAIL_FETCH_EMAILS"]}},
+            "tags": {"enable": ["readOnlyHint"]},
+            "manage_connections": {
+                "enable": False,
+                "callback_url": "https://app.example.com/callback",
+                "enable_wait_for_connections": False,
+            },
+            "auth_configs": {"gmail": "ac_gmail"},
+            "connected_accounts": {"gmail": ["ca_gmail"]},
+            "workbench": {"enable": False},
+            "multi_account": {"enable": True, "require_explicit_selection": False},
+            "proxy_execute": {"enable": False},
+            "preload": {"tools": ["GMAIL_FETCH_EMAILS"]},
+            "experimental": {"assistive_prompt_config": {"user_timezone": "UTC"}},
+            "instant": False,
+        }
+        assert type(session) is (ToolRouterSessionWithMcp if mcp else ToolRouterSession)
+        assert session.session_id == "session_123"
+        assert session.config_version == 3
+        assert session.mcp.url == MCP_URL
+        assert session.mcp.headers == {"x-api-key": "ak_test"}
+
+    @pytest.mark.parametrize("mcp", [False, True])
+    def test_use_binds_executable_local_tools(self, mcp):
+        """Reused sessions must retain local execution in either MCP mode."""
+
+        class IncrementInput(BaseModel):
+            value: int
+
+        @ExperimentalAPI().tool(
+            slug="INCREMENT", name="Increment", description="Increment a number"
+        )
+        def increment(input: IncrementInput, ctx):
+            return {"value": input.value + 1, "user_id": ctx.user_id}
+
+        http_client, requests = _session_transport(
+            experimental={
+                "custom_tools": [
+                    {"slug": "LOCAL_INCREMENT", "original_slug": "INCREMENT"}
+                ],
+                "custom_toolkits": [],
+            }
+        )
+        with http_client:
+            sdk = Composio(
+                api_key="ak_test",
+                base_url="https://backend.composio.dev",
+                http_client=http_client,
+            )
+            session = sdk.use("session_123", local_tools=[increment], mcp=mcp)
+            result = session.execute("LOCAL_INCREMENT", arguments={"value": 41})
+
+        # Executing the bound tool stays local: only the initial attach is remote.
+        assert [r.method for r in requests] == ["POST"]
+        assert requests[0].url.path.endswith("/session/session_123/attach")
+        assert type(session) is (ToolRouterSessionWithMcp if mcp else ToolRouterSession)
+        assert session.session_id == "session_123"
+        assert session.config_version == 3
+        assert session.mcp.url == MCP_URL
+        assert session.mcp.headers == {"x-api-key": "ak_test"}
+        assert result.result_type == "completed"
+        assert result.data == {"value": 42, "user_id": "user_123"}
 
 
 class TestUserOnlyInitialization:
