@@ -126,7 +126,7 @@
     "ajv": "^8.20.0",
     "fast-check": "^4.10.2",
     "hono": "catalog:",
-    "mime": "^4.1.1",
+    "mime": "^4.1.2",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.20",
@@ -145,7 +145,7 @@
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
-    "semver": "^7.8.5",
+    "semver": "^7.8.6",
     "undici": "^7.30.1",
     "zod-to-json-schema": "catalog:"
   },
