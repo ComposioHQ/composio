@@ -32,9 +32,9 @@ When users connect through a Connect Link and your agent acts through tools, you
 - **No token export.** Connected-account API responses redact credentials by default, for both Composio-managed and custom auth configs. Reading account state isn't a supported way to retrieve tokens.
 - **Raw API access without the token.** For endpoints a tool doesn't cover, [Proxy Execute](/docs/extending-sessions/proxy-execute) sends an authenticated request to the provider and returns the response. It requires its own API key permission.
 - **Least-privilege keys and sessions.** [Scoped API keys](/reference/authenticating-to-composio/project-api-key-permissions) separate session management from tool execution, and [session configuration](/docs/configuring-sessions) limits which toolkits and tools an agent can call.
-- **Custody you choose.** In the default Composio Cloud deployment, Composio holds the encrypted credentials. Private VPC, self-hosted, and customer-managed key deployments change that boundary. With customer-managed keys, a proxy in your cloud decrypts credentials under your KMS keys, and Composio doesn't hold the key material.
+- **Custody you choose.** In the default Composio Cloud deployment, Composio holds the encrypted credentials. [BYOC](/docs/security/byoc) places credential storage and execution in your AWS account, operated by Composio. Runtime and support permissions determine plaintext access. Customer-managed keys require a separate architecture.
 
-If you [import existing credentials](/docs/authentication/importing-existing-connections), your application handles those tokens once before sending them to Composio. See [Token custody architecture](/docs/security/token-custody) for the full request flow, redaction scope, and [deployment options](/docs/security/token-custody#deployment-options).
+If you [import existing credentials](/docs/authentication/importing-existing-connections), your application handles those tokens once before sending them to Composio. See [token custody and credential isolation](/docs/security/token-custody) for the request flow and redaction scope, and [BYOC](/docs/security/byoc) for deployment in your AWS account.
 
 ## How Composio handles authentication
 

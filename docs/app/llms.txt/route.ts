@@ -39,7 +39,7 @@ If unclear, distinguish application integration from connecting apps to the codi
 - [Authentication](https://docs.composio.dev/docs/authentication.md): Distinguish auth configs from connected accounts and connect your application's users.
 - [Auth for your own tools](https://docs.composio.dev/docs/authentication/managed-auth-for-custom-tools.md): Per-user OAuth without provider tokens, predefined tools, MCP, or an LLM.
 - [B2B agents](https://docs.composio.dev/docs/b2b-agents.md): Tenant/member connection ownership and authorization.
-- [Token custody](https://docs.composio.dev/docs/security/token-custody.md): Credential storage, redaction, VPC, self-hosting, and customer-managed keys.
+- [Token custody](https://docs.composio.dev/docs/security/token-custody.md): Credentials, user isolation, redaction, BYOC, customer-managed keys.
 - [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
 - [Configure sessions](https://docs.composio.dev/docs/configuring-sessions.md): Select toolkits, auth configs, and connected accounts for a user.
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose a framework provider.
