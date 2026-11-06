@@ -5,9 +5,9 @@
   "pages": [
     "[Overview](/docs/security/overview)",
     "audit-logs",
-    "composio-as-subprocessor",
     "token-custody",
     "data-retention",
-    "zero-data-retention"
+    "zero-data-retention",
+    "composio-as-subprocessor"
   ]
 }
