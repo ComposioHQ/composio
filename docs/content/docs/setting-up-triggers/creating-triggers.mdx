@@ -136,6 +136,53 @@ Trigger instances default to the `'latest'` toolkit version. If you parse payloa
 
 The trigger instance is created. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events) and test with a new matching event in the provider. If nothing arrives, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
 
+## Choosing webhook or polling
+
+Some trigger types, including the Gmail and Google Calendar triggers, can receive events by webhook or by polling. Composio uses a webhook whenever it can set one up. Pass `type` as `"webhook"` or `"poll"` to choose yourself, and `polling_interval` to set the minutes between polls.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+trigger = composio.triggers.create(
+    slug="GMAIL_NEW_GMAIL_MESSAGE",
+    user_id="user-id-123435",
+    type="poll",
+    polling_interval=15,
+)
+print(trigger.type, trigger.polling_interval, trigger.fallback_reason)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const trigger = await composio.triggers.create('user-id-123435', 'GMAIL_NEW_GMAIL_MESSAGE', {
+  type: 'poll',
+  pollingInterval: 15,
+});
+console.log(trigger.type, trigger.pollingInterval, trigger.fallbackReason);
+```
+  </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_GMAIL_MESSAGE/upsert \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user-id-123435", "type": "poll", "polling_interval": 15}'
+```
+  </Tab>
+</Tabs>
+
+Omit `type` to let Composio choose. The response reports what the instance uses. Composio sets `fallback_reason` when the instance polls because it couldn't set up a webhook, for example when your own OAuth app has no [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) yet.
+
+When you omit `type` or pass `type: "poll"`, Composio checks `polling_interval` before it sets up the trigger, so a value below the toolkit's minimum fails the request.
+
 ## Next
 
 <Card icon={<Plug />} title="Receiving events" href="/docs/setting-up-triggers/subscribing-to-events" description="Get trigger events locally with the SDK or in production over your webhook URL" />

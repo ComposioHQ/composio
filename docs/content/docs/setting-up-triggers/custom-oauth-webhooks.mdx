@@ -1,12 +1,14 @@
 ---
 title: Custom OAuth webhooks
 description: Register Composio's ingress URL when you bring your own OAuth app
-keywords: [webhook endpoint, ingress, byo oauth, custom oauth, requires_webhook_endpoint_setup]
+keywords: [webhook endpoint, ingress, byo oauth, custom oauth, requires_webhook_endpoint_setup, fallback_reason, gmail pub/sub]
 ---
 
 This page is only for **realtime triggers where you bring your own OAuth app**. With Composio-managed OAuth, ingress is already set up and you can skip this entirely. Create the trigger and events flow.
 
 Some providers only deliver events to URLs you've registered on your OAuth app. When you bring your own app, you register Composio's ingress URL there once, so events can reach Composio. You need this only when the trigger type's `requires_webhook_endpoint_setup` flag is `true`.
+
+Some trigger types, like Gmail's, can receive events by webhook or by polling. For those, the flag describes the webhook only: polling needs no endpoint. Until the endpoint is fully set up, Composio creates these triggers as polling triggers and sets `fallback_reason` to what's missing. Once it's set up, new triggers you create without `type` use the webhook. See [Choosing webhook or polling](/docs/setting-up-triggers/creating-triggers#choosing-webhook-or-polling).
 
 Each OAuth app you bring gets its own ingress URL within a project:
 
@@ -23,7 +25,7 @@ A single OAuth app can serve at most one Composio project: providers accept only
 
 Every inbound event is signature-checked at ingress before any trigger fires:
 
-- **HMAC-SHA256** for Slack, **Ed25519** or shared-token matching for other providers
+- **HMAC-SHA256** for Slack, **Google-signed tokens** for Gmail, and **Ed25519** or shared-token matching for other providers
 - **Timestamp replay protection**: when the provider signs a request timestamp, requests outside the allowed skew window are rejected
 - **Unsigned or tampered requests** are rejected with `400` at ingress, so third parties can't spoof events onto your triggers
 
@@ -33,11 +35,13 @@ Every inbound event is signature-checked at ingress before any trigger fires:
 
 You can also manage ingress endpoints through `composio.webhooks.endpoints` in either SDK. Use `list()` and `get()` to inspect endpoints, `create()` to register one, and `replace()` or `update()` to change its configuration.
 
-The walkthrough below uses Slack as the example and the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack) or [Notion](/toolkits/notion).
+The walkthrough below uses Slack as the example and the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack), [Notion](/toolkits/notion), or [Gmail](/toolkits/gmail).
 
 ## Step 1: Collect the provider credentials
 
 For Slack, collect the **Signing Secret** from your app's Basic Information page and an **App-Level Token** (`xapp-...`) with the `authorizations:read` scope. Keep both secret. The endpoint verification step below uses `webhook_signing_secret` and `app_token`; it does not require a separate Composio schema-discovery request.
+
+Other toolkits take different fields. Gmail, for example, takes `topic_name`, `push_service_account_email`, and `push_audience`.
 
 Use the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints) for the supported create, retrieve, replace, and update operations. The committed API contract does not declare `/webhook_endpoints/schema`.
 
@@ -157,6 +161,7 @@ Paste the `webhook_url` from step 2 into the provider's app dashboard:
 
 - **Slack** → Event Subscriptions → Request URL
 - **Notion** → Webhook Endpoints (in the integration's settings)
+- **Gmail** → a Pub/Sub push subscription on your topic, with the `webhook_url` as both its endpoint URL and its audience
 
 For providers that issue a verification challenge on save (Slack `url_verification`, Notion's verification token, and so on), Composio responds automatically, with no handshake code on your side. Once the provider accepts the URL, go [create your trigger](/docs/setting-up-triggers/creating-triggers).
 
