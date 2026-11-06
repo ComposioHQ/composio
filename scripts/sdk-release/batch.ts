@@ -1,5 +1,6 @@
 import { Cause, Config, Console, Effect, Option, Path, Schema, Stdio, Stream } from 'effect';
 import { Base64 } from 'effect/encoding';
+import { readReleasePull, verifyReleaseGate } from './approval';
 import {
   CONTENT_CONCURRENCY,
   CreatedSha,
@@ -8,6 +9,7 @@ import {
   REPOSITORY_PATH,
   RunId,
   Sha,
+  TagRef,
   commentIssue,
   fileAtOrNull,
   paginateArray,
@@ -24,6 +26,7 @@ import {
   ensure,
   fail,
   readJson,
+  ReleaseError,
   runMain,
   sameJson,
   type ReleaseServices,
@@ -253,6 +256,73 @@ export const openReleasePull = (cwd: string, planned: ReleaseBatch, value: unkno
     return pull.html_url;
   });
 
+// 3. tag ---------------------------------------------------------------------------------------
+
+/**
+ * Explains a merged release that did not pass its gate on the PR and its request issue. Only a
+ * gate verdict asks for a revert; a GitHub or transport error asks for a re-run instead.
+ */
+const reportRefusedRelease = (pull: Pull, batch: ReleaseBatch, cause: Cause.Cause<unknown>) => {
+  const body = (
+    Cause.squash(cause) instanceof ReleaseError
+      ? [
+          `Release PR #${pull.number} merged, but it failed the release gate, so no publication tag was created and nothing was published.`,
+          `Reason: ${causeMessage(cause)}`,
+          'Revert this release PR on next, then request the release again.',
+        ]
+      : [
+          `Release PR #${pull.number} merged, but the release gate could not complete, so no publication tag was created and nothing was published.`,
+          `Error: ${causeMessage(cause)}`,
+          'Use "Re-run failed jobs" on the tag job; creating the tag is safe to repeat.',
+        ]
+  ).join('\n\n');
+  return Effect.gen(function* () {
+    yield* commentIssue(pull.number, body);
+    yield* commentIssue(batch.issue, body);
+  }).pipe(
+    Effect.catchCause(reportCause =>
+      Console.error('Could not report the refused release:', causeMessage(reportCause))
+    )
+  );
+};
+
+/**
+ * Creates the immutable publication tag on the reviewed head. GitHub records that head and the
+ * squash commit separately, so a single-parent squash need not list the head as a parent.
+ */
+export const authorizeSourceTag = (number: number, appSlug: string) =>
+  Effect.gen(function* () {
+    const { pull, batch } = yield* readReleasePull(number);
+    if (!pull.merged || !pull.merge_commit_sha) return yield* fail('Release PR has not merged');
+    yield* verifyReleaseGate(pull, batch, appSlug).pipe(
+      Effect.tapCause(cause => reportRefusedRelease(pull, batch, cause))
+    );
+    const merged = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/git/commits/${pull.merge_commit_sha}`,
+      Commit
+    );
+    yield* ensure(
+      merged.parents.some(parent => parent.sha === pull.head.sha) || merged.parents.length === 1,
+      'Unrecognized release merge topology'
+    );
+    const tag = `sdk-release/${batch.id}`;
+    const existing = yield* requestOptional(`${REPOSITORY_PATH}/git/ref/tags/${tag}`, TagRef);
+    yield* Option.match(existing, {
+      onSome: ref =>
+        ensure(
+          ref.object.type === 'commit' && ref.object.sha === pull.head.sha,
+          'Publication source tag already points to another source'
+        ),
+      onNone: () =>
+        request('POST', `${REPOSITORY_PATH}/git/refs`, CreatedRef, {
+          ref: `refs/tags/${tag}`,
+          sha: pull.head.sha,
+        }),
+    });
+    return tag;
+  });
+
 // entry point ----------------------------------------------------------------------------------
 
 const Environment = Config.all({
@@ -280,7 +350,7 @@ type Mode = (
   envelope: typeof EventEnvelope.Type
 ) => Effect.Effect<void, unknown, GitHub | ReleaseServices>;
 
-const MODES: Record<'plan' | 'release-pr', Mode> = {
+const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
   plan: (env: Environment, event: unknown, envelope: typeof EventEnvelope.Type) =>
     Effect.gen(function* () {
       const cwd = (yield* Path.Path).resolve('.');
@@ -314,12 +384,19 @@ const MODES: Record<'plan' | 'release-pr', Mode> = {
         url ? `Release PR: ${url}\n` : 'Another SDK release is in progress.\n'
       );
     }),
+  tag: (env: Environment, _event: unknown, envelope: typeof EventEnvelope.Type) =>
+    Effect.gen(function* () {
+      if (!envelope.pull_request) return yield* fail('Expected merged release PR event');
+      const appSlug = yield* Config.String('SDK_RELEASE_APP_SLUG');
+      const tag = yield* authorizeSourceTag(envelope.pull_request.number, appSlug);
+      yield* appendFile(env.summaryPath, `Approved publication source: ${tag}\n`);
+    }),
 };
 
-/** `batch.ts plan` or `batch.ts release-pr <patch>`. */
+/** `batch.ts plan`, `batch.ts release-pr <patch>`, or `batch.ts tag`. */
 const main = Effect.gen(function* () {
   const [argument] = yield* (yield* Stdio.Stdio).args;
-  const mode = yield* Schema.decodeUnknownEffect(Schema.Literals(['plan', 'release-pr']))(
+  const mode = yield* Schema.decodeUnknownEffect(Schema.Literals(['plan', 'release-pr', 'tag']))(
     argument
   );
   const env = yield* Environment;

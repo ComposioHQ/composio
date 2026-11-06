@@ -50,6 +50,7 @@ export const releaseFiles = [
 ];
 
 export interface ControllerOptions {
+  readonly deletedReviewer?: boolean;
   readonly oldReview?: boolean;
   readonly reviewer?: string;
   readonly mergeKind?: 'squash' | 'merge';
@@ -123,6 +124,7 @@ export function fakeController(options: ControllerOptions = {}) {
     if (path === '/pulls/9') return response(pull());
     if (path.startsWith('/pulls/9/reviews'))
       return response([
+        ...(options.deletedReviewer ? [{ user: null, state: 'APPROVED', commit_id: head }] : []),
         {
           user: { login: options.reviewer ?? 'reviewer' },
           state: 'APPROVED',
