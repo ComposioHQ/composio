@@ -4,6 +4,8 @@
 
 We take the security of Composio seriously. If you believe you have found a security vulnerability, please report it to us through GitHub Security Advisories or email us at **security@composio.dev**
 
+Composio runs a Vulnerability Disclosure Program (VDP), not a bug bounty. We do not pay monetary rewards for reports. See the full [Vulnerability Disclosure Program](https://docs.composio.dev/docs/security/vulnerability-disclosure) for scope and rules.
+
 ### How to Report
 
 **Please do not report security vulnerabilities through public GitHub issues.**
@@ -61,7 +63,7 @@ Please include as much of the following information as possible:
 
 ## Out-of-Scope Vulnerabilities
 
-Certain vulnerabilities are considered out-of-scope for the Bug Bounty Program. Those out-of-scope vulnerabilities include, but are not limited to:
+Certain vulnerabilities are considered out-of-scope for the Vulnerability Disclosure Program. Those out-of-scope vulnerabilities include, but are not limited to:
 
 - Vulnerabilities not involving product or coding flaws, but solely relying upon possession of stolen or compromised credentials
 - Vulnerabilities dependent on Phishing in a DNS domain that is not in one of our primary service domains

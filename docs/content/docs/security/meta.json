@@ -5,6 +5,7 @@
     "overview",
     "token-custody",
     "data-retention",
-    "zero-data-retention"
+    "zero-data-retention",
+    "vulnerability-disclosure"
   ]
 }
