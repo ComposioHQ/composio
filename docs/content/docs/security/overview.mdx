@@ -12,7 +12,7 @@ If you found Composio on your vendor's subprocessor list, start with [Composio a
 
 | Review area | Where to go |
 | --- | --- |
-| Credentials and execution boundaries | [Token custody architecture](/docs/security/token-custody), including deployment options |
+| Credentials and execution boundaries | [Credential protection](#credential-protection) and [shared responsibilities](#your-responsibilities) |
 | Logs, files, deletion, and model training | [Data retention and handling](/docs/security/data-retention) |
 | Payload-storage controls and exclusions | [Zero Data Retention](/docs/security/zero-data-retention) |
 | Downstream providers and processing locations | [Subprocessor register](https://trust.composio.dev/subprocessors) |
@@ -57,7 +57,7 @@ If your organization is itself a business associate, ask Composio to confirm the
 
 ## Credential protection
 
-Composio Cloud stores provider credentials and uses them server-side to authenticate requests. [Token custody architecture](/docs/security/token-custody) explains API redaction, execution boundaries, and deployment options.
+Composio Cloud stores provider credentials and uses them server-side to authenticate requests. Your application sends tool arguments and receives results. Provider credentials are not required in prompts or tool arguments; keep your Composio API key in a trusted backend or client credential store.
 
 - Provider credentials are encrypted at rest using AES-256-GCM, with envelope encryption described in the [credential-security update](https://composio.dev/blog/composio-may-2026-security-incident). Composio API keys and session keys are stored as hashes. Traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses for both Composio-managed and custom auth configs. Use [Proxy Execute](/docs/extending-sessions/proxy-execute) to call a provider without retrieving its token.
@@ -65,7 +65,7 @@ Composio Cloud stores provider credentials and uses them server-side to authenti
 
 ## Your responsibilities
 
-The following table summarizes responsibilities for the hosted service. Confirm operational ownership separately for [private or self-hosted deployments](/docs/security/token-custody#deployment-options).
+The following table summarizes responsibilities for the hosted service. For a deployment in your own cloud, confirm infrastructure operations, decryption permissions, and support access with [Composio](mailto:security@composio.dev).
 
 | Area | Composio | Your application and organization |
 | --- | --- | --- |
@@ -79,7 +79,7 @@ The following table summarizes responsibilities for the hosted service. Confirm 
 
 ## Infrastructure, resilience, and testing
 
-Composio uses cloud infrastructure for API execution, credential storage, logs, file staging, and optional sandbox and model processing. The [subprocessor register](https://trust.composio.dev/subprocessors) identifies providers and published locations. A location listed for one provider does not establish residency for the whole workflow. For residency requirements, confirm the execution path and [deployment arrangement](/docs/security/token-custody#deployment-options) with Composio.
+Composio uses cloud infrastructure for API execution, credential storage, logs, file staging, and optional sandbox and model processing. The [subprocessor register](https://trust.composio.dev/subprocessors) identifies providers and published locations. A location listed for one provider does not establish residency for the whole workflow. For residency requirements, confirm the execution path and deployment arrangement with [Composio](mailto:security@composio.dev).
 
 The [DPA's technical and organizational measures](https://composio.dev/legal/dpa) describe vulnerability scanning, patch management, secure development, access controls, and safeguards for availability and resilience. The Trust Center lists penetration testing controls and a **Business Continuity and Disaster Recovery Plan**. Request those materials for recovery objectives, backup arrangements, and testing evidence.
 
@@ -89,7 +89,7 @@ For published deletion periods, see [logs and account data](/docs/security/data-
 
 [Composio May 2026 security incident update](https://composio.dev/blog/composio-may-2026-security-incident) documents unauthorized access to internal systems and compromised customer credentials. It preserves the original disclosure, impact, timeline, and credential-revocation guidance through its version selector.
 
-Read that disclosure for dated remediation and independent-review updates. Use [Token custody architecture](/docs/security/token-custody) for the current credential boundaries and the [June 4 security changelog](/docs/changelog/06-04-26-security-reliability-hardening) for the recorded product changes. Contact [security@composio.dev](mailto:security@composio.dev) for the latest remediation evidence.
+Read that disclosure for dated remediation and independent-review updates. Use [Credential protection](#credential-protection) for the current credential controls and the [June 4 security changelog](/docs/changelog/06-04-26-security-reliability-hardening) for the recorded product changes. Contact [security@composio.dev](mailto:security@composio.dev) for the latest remediation evidence.
 
 ## Reporting a vulnerability
 

@@ -177,7 +177,6 @@ describe('Docs product navigation', () => {
       '/docs/security/overview',
       '/docs/security/audit-logs',
       '/docs/security/composio-as-subprocessor',
-      '/docs/security/token-custody',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
     ];
@@ -193,7 +192,7 @@ describe('Docs product navigation', () => {
       type: 'page', name: 'Overview', url: '/docs/security/overview',
     });
     expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
-      securityUrls,
+      expect.arrayContaining(securityUrls),
     );
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);

@@ -40,7 +40,7 @@ Use `JIRA_GET_ATTACHMENT` to retrieve the binary content of a Jira attachment by
 
 ## Jira tool-call payload retention follows the project log-storage setting
 
-For credential handling and payload retention, see [Token custody architecture](/docs/security/token-custody) and [Zero Data Retention](/docs/security/zero-data-retention), including plan and auth-config exclusions. Your application may retain tool outputs separately.
+For credential handling and payload retention, see [Credential protection](/docs/security/overview#credential-protection) and [Zero Data Retention](/docs/security/zero-data-retention), including plan and auth-config exclusions. Your application may retain tool outputs separately.
 
 ## Jira service account use requires customer-owned credentials and scopes
 
