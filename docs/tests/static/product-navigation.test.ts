@@ -186,8 +186,12 @@ describe('Docs product navigation', () => {
     ).find(node => node.type === 'folder' && node.name === 'Security');
     expect(security?.type).toBe('folder');
     expect(platformTree.children.indexOf(security!)).toBeLessThan(5);
-    expect(security?.type === 'folder' && security.defaultOpen).toBe(true);
     if (security?.type !== 'folder') throw new Error('Security folder missing');
+    expect(security.defaultOpen).toBe(false);
+    expect(security.index?.url).toBe('/docs/security/overview');
+    expect(security.children[0]).toMatchObject({
+      type: 'page', name: 'Overview', url: '/docs/security/overview',
+    });
     expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
       securityUrls,
     );
