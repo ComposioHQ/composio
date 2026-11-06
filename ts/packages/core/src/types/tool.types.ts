@@ -16,6 +16,23 @@ export const ToolkitSchema = z.object({
 });
 export type Toolkit = z.infer<typeof ToolkitSchema>;
 
+/** Instant support is present only for eligible tools in the latest toolkit version. */
+export const ToolInstantSchema = z.object({
+  supported: z.literal(true),
+  price: z
+    .object({
+      description: z.string().nullish(),
+      discount: z.string().nullable().optional(),
+    })
+    .nullish(),
+});
+export type ToolInstant = z.infer<typeof ToolInstantSchema>;
+
+const OptionalToolInstantSchema = z.unknown().transform(value => {
+  const instant = ToolInstantSchema.safeParse(value);
+  return instant.success ? instant.data : undefined;
+});
+
 // JSON Schema primitive types
 const JSONSchemaType = z.enum([
   'string',
@@ -196,6 +213,7 @@ export const ToolSchema = z.object({
     .optional(),
   scopes: z.array(z.string()).describe('The scopes of the tool. eg: ["task:add"]').optional(),
   isNoAuth: z.boolean().describe('Do the tool support no auth?').optional(),
+  instant: OptionalToolInstantSchema.describe('Instant support and optional published pricing.'),
 });
 export type Tool = z.infer<typeof ToolSchema>;
 
@@ -258,7 +276,13 @@ export const ToolListParamsSchema = z.object({
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
   important: z.boolean().optional(),
+  includePricing: z.boolean().optional(),
 });
+
+type ToolPricingOption = {
+  /** Request published pricing inside `instant.price` when available. Defaults to false. */
+  includePricing?: boolean;
+};
 
 type BaseParams = {
   limit?: number;
@@ -319,13 +343,15 @@ type AuthConfigIdsOnlyParams = {
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
  */
-export type ToolListParams =
+export type ToolListParams = (
   | ToolsOnlyParams
   | ToolkitsOnlyParams
   | ToolkitScopeOnlyParams
   | SearchOnlyParams
   | TagsOnlyParams
-  | AuthConfigIdsOnlyParams;
+  | AuthConfigIdsOnlyParams
+) &
+  ToolPricingOption;
 
 /**
  * CustomAuthParams is the parameters for the custom authentication.
@@ -448,6 +474,8 @@ export type SchemaModifierOptions = {
  * Options for retrieving tools from Composio API
  */
 export type ToolRetrievalOptions = {
+  /** Request published pricing inside `instant.price` when available. Defaults to false. */
+  includePricing?: boolean;
   /**
    * Optional function to transform the tool schema after retrieval
    */

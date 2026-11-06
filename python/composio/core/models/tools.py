@@ -408,9 +408,15 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             ),
         )
 
-    def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
+    def get_raw_composio_tool_by_slug(
+        self, slug: str, *, include_pricing: bool = False
+    ) -> Tool:
         """
         Returns schema for the given tool slug.
+
+        Set ``include_pricing=True`` to request published display pricing in
+        ``tool.instant.price`` when Instant is supported. Pricing is omitted
+        by default, while ``tool.instant`` may still report support.
 
         :raises ToolNotFoundError: when the backend reports the slug as unknown
             (404, or 400 for a malformed slug). Any other client error, such as
@@ -420,6 +426,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             response = self._client.tools.retrieve(
                 tool_slug=slug,
                 toolkit_versions=none_to_omit(self._toolkit_versions),
+                include_pricing=True if include_pricing else omit,
             )
         except APIStatusError as error:
             if error.status_code in (400, 404):
@@ -434,9 +441,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         toolkits: t.Optional[list[str]] = None,
         scopes: t.Optional[t.List[str]] = None,
         limit: t.Optional[int] = None,
+        *,
+        include_pricing: bool = False,
     ) -> list[Tool]:
         """
         Get a list of tool schemas based on the provided filters.
+
+        Set ``include_pricing=True`` to request published display pricing in
+        each eligible tool's ``instant.price``. Pricing is omitted by default.
         """
         if tools is None and search is None and toolkits is None:
             raise InvalidParams(
@@ -450,6 +462,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     self._client.tools.list(
                         tool_slugs=",".join(tools),
                         toolkit_versions=none_to_omit(self._toolkit_versions),
+                        include_pricing=True if include_pricing else omit,
                     ).items
                 )
 
@@ -462,6 +475,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     scopes=scopes,
                     limit=limit,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
+                    include_pricing=True if include_pricing else omit,
                 ).items
             )
         return [_normalize_tool(tool) for tool in tools_list]
