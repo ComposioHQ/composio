@@ -15,10 +15,10 @@ Composio authenticates and executes tool calls on your behalf. Use this section 
 
 Find the data-handling policies, agreements, and audit evidence you need for a security review.
 
-- [Compliance and audit reports](#compliance-and-the-trust-center)
+- [Compliance and audit reports](/docs/security/compliance)
 - [Data handling and retention](/docs/security/data-retention)
 - [Configure a sensitive workload](/docs/security/zero-data-retention#configure-a-sensitive-workload)
-- [DPA and BAA](#data-processing-addendum)
+- [DPA and BAA](/docs/security/compliance#data-processing-addendum)
 
 </SecurityReviewPath>
 <SecurityReviewPath audience="build">
@@ -27,8 +27,8 @@ Find the data-handling policies, agreements, and audit evidence you need for a s
 
 Understand credential handling and the access and retention controls you configure for your application.
 
-- [Credential protection](#credential-protection)
-- [Your security responsibilities](#your-responsibilities)
+- [Credential protection](/docs/security/access-control#credential-protection)
+- [Your security responsibilities](/docs/security/shared-responsibility)
 - [Configure Zero Data Retention](/docs/security/zero-data-retention)
 
 </SecurityReviewPath>
@@ -36,114 +36,60 @@ Understand credential handling and the access and retention controls you configu
 
 ## Start your review
 
-For a comprehensive security review of Composio, use the resources below to assess data handling, security controls, agreements, and compliance evidence.
+Choose the part of your security review you need to complete.
 
 | Review area | Where to go |
 | --- | --- |
 | Composio on your vendor's subprocessor list | [Composio as your subprocessor](/docs/security/composio-as-subprocessor) |
-| Credentials and execution boundaries | [Credential protection](#credential-protection) and [shared responsibilities](#your-responsibilities) |
+| Credentials and execution boundaries | [Credential protection](/docs/security/access-control#credential-protection) and [shared responsibilities](/docs/security/shared-responsibility) |
 | Logs, files, deletion, and model training | [Data retention and handling](/docs/security/data-retention) |
 | Payload-storage controls and exclusions | [Zero Data Retention](/docs/security/zero-data-retention) |
 | Configuration for sensitive workloads | [Setup and verification guide](/docs/security/zero-data-retention#configure-a-sensitive-workload) |
 | Downstream providers and processing locations | [Subprocessor register](https://trust.composio.dev/subprocessors) |
 | Data-processing terms | [Data Processing Addendum (DPA)](https://composio.dev/legal/dpa) |
-| HIPAA terms | [Business Associate Agreement (BAA)](https://composio.dev/legal/baa) and [acceptance guidance](#hipaa-and-the-baa) |
-| Audit evidence and policies | [Trust Center resources](https://trust.composio.dev/) |
+| HIPAA terms | [Business Associate Agreement (BAA)](https://composio.dev/legal/baa) and [acceptance guidance](/docs/security/compliance#hipaa-and-the-baa) |
+| Audit evidence, infrastructure, and resilience | [Compliance and evidence](/docs/security/compliance) |
 | Security review or vulnerability report | [security@composio.dev](mailto:security@composio.dev) |
 
 ## Compliance and the Trust Center
 
-The [Trust Center](https://trust.composio.dev/) lists Composio's SOC 2 Type II report, ISO 27001 certificate, and security policies. Use **Request access** for restricted evidence and check each report's scope and reporting period. Composio is not FedRAMP authorized.
-
-Open **Subprocessors** for the maintained register of Composio's downstream providers, their purposes, and published processing locations. Select **Subscribe to updates** in the Trust Center to receive updates, including changes to the subprocessor list. The register is separate from [Composio's role on your vendor's subprocessor list](/docs/security/composio-as-subprocessor).
+Review the [compliance reports and evidence](/docs/security/compliance#compliance-and-the-trust-center), including SOC 2 Type II, ISO 27001, and the subprocessor register.
 
 ### Data Processing Addendum
 
-The [published DPA](https://composio.dev/legal/dpa) is available to Pro and Enterprise Developer customers through the developer dashboard's [**Organization Settings > Billing**](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=security-overview). It becomes binding only when the customer accepts it through the dashboard. No countersignature is required. You can download the accepted version there.
-
-The DPA describes processing purposes, security measures, deletion, subprocessors, and international transfer mechanisms. For bespoke terms, Enterprise customers can contact their account team.
+See [DPA eligibility and acceptance](/docs/security/compliance#data-processing-addendum) for the applicable plans, dashboard steps, and processing terms.
 
 ### HIPAA and the BAA
 
-The [published BAA](https://composio.dev/legal/baa) describes Composio's obligations for protected health information (PHI) in its tool orchestration and integration services. Acceptance is available to **Pro and Enterprise Developer customers** on the developer dashboard's [**billing page**](https://dashboard.composio.dev/~/org/settings/billing?utm_source=docs&utm_medium=content&utm_campaign=security-overview).
-
-Have the person authorized to accept agreements for your organization review and accept the BAA there. The agreement is between Composio and the customer identified in the applicable Order Form. It is **not binding until accepted through the dashboard**. Upon acceptance, it uses the Effective Date in that Order Form. Download your accepted version from the dashboard.
-
-<Callout type="warn">
-BAA acceptance does not establish that every feature, destination app, model provider, or Instant Tool is suitable for PHI. Confirm the intended workflow, downstream services, and required configuration with [security@composio.dev](mailto:security@composio.dev) before sending PHI. ZDR is a payload-storage control, not a statement of HIPAA eligibility.
-</Callout>
-
-The BAA requires your use of the service and your instructions to comply with HIPAA. It also addresses subcontractor obligations and requires prior written customer consent for access to PHI by people outside the United States or use of subcontractors outside the United States. These contractual restrictions do not establish a location guarantee for every product workflow.
-
-If your organization is itself a business associate, ask Composio to confirm the applicable agreement before sending PHI. The published BAA defines the customer as a **Covered Entity** in section 1.3; it does not expressly describe a customer acting as a business associate to another covered entity.
+Read the [BAA acceptance and workflow guidance](/docs/security/compliance#hipaa-and-the-baa) before sending PHI. Acceptance alone does not establish that every feature or destination is suitable for PHI.
 
 ## Isolation and access control
 
-- Organizations and projects isolate your resources. Data from one project is not visible to another.
-- API keys support scoped permissions and per-key IP allowlisting. [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) distinguish session management, session tool execution, and Proxy Execute access.
-- Multi-factor authentication (MFA) is available for dashboard sign-in and can be enforced by an organization admin.
+Composio provides project isolation, scoped API-key permissions, IP allowlisting, and dashboard MFA. See [Access control](/docs/security/access-control#isolation-and-access-control) for the controls you configure.
 
 ### Authorization boundaries
 
-Provider permissions, Composio keys, and session controls apply at different points. Configure each for the operations your application needs.
-
-| Control | What it limits | What you configure |
-| --- | --- | --- |
-| Provider permissions | The connected account's access at the destination service. | Request minimum [OAuth scopes](/docs/authentication/controlling-scopes) and restrict the account's permissions at the provider. |
-| Composio API-key permissions | Which Composio API routes a caller can use within a project. | Separate session management, session execution, and direct execution permissions. Grant [Proxy Execute](/reference/authenticating-to-composio/project-api-key-permissions#proxy-execute-legacy) only when needed; it permits raw provider requests beyond predefined tool schemas. |
-| Application identity | Which user and connected account your backend selects. | Derive `user_id` from your authenticated application session and authorize the selected account server-side. Do not trust IDs supplied by a browser or model. A project key is not an end-user identity credential. |
-| Session tool selection | Which tools a session can execute. | Use explicit [tool allowlists](/docs/configuring-sessions). Review direct execution and proxy permissions separately; session configuration is not a project-wide policy. |
-| Approvals | Whether a configured session tool call waits for a user's answer. | Use the [experimental approval flow](/docs/governance/approvals), list sensitive tools explicitly, and handle elicitation in your application or MCP client. |
-
-Approvals require a compatible SDK and client. Keep the default denial behavior for MCP clients without elicitation support. **Always approve** permits later calls to that tool on the same account for the rest of the session. Sandbox approval detection can miss calls; disable the sandbox when approval must never be skipped. Session proxy calls are currently disabled for a toolkit when any of its tools require approval. See [approval limitations](/docs/governance/approvals#current-limitations) before relying on this control.
+Review how [provider permissions, keys, application identity, session tools, and experimental approvals](/docs/security/access-control#authorization-boundaries) limit execution at different points.
 
 ## Credential protection
 
-Composio Cloud stores provider credentials and uses them server-side to authenticate requests. Your application sends tool arguments and receives results. Provider credentials are not required in prompts or tool arguments; keep your Composio API key in a trusted backend or client credential store.
-
-- Provider credentials are encrypted at rest using AES-256-GCM. Composio API keys and session keys are stored as hashes. Traffic is encrypted in transit using TLS.
-- Connected-account tokens are redacted by default in API responses for both Composio-managed and custom auth configs. Use [Proxy Execute](/docs/extending-sessions/proxy-execute) to call a provider without retrieving its token.
-- Webhook deliveries are signed. Verify the `webhook-signature` header when handling trigger events. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+Provider credentials are encrypted at rest and used server-side. Composio API and session keys are stored as hashes. Read [Credential protection](/docs/security/access-control#credential-protection) for encryption, redaction, and webhook verification.
 
 ### Decryption and privileged access
 
-In Composio Cloud, the execution runtime decrypts provider credentials to authenticate calls. Encryption at rest and API redaction do not prevent an authorized execution service from using those credentials.
-
-The published [credential architecture](https://composio.dev/blog/two-questions-every-security-review-asks-us) describes:
-
-- Envelope encryption with per-organization keys wrapped by a key in AWS KMS. The wrapping key rotates independently.
-- No standing support or engineering access to customer data. Privileged access, where available, requires approval and logging. Request the access policies and evidence from the [Trust Center](https://trust.composio.dev/).
-- An optional customer-managed key deployment, arranged with Composio, where a proxy in your cloud handles credential plaintext and Composio's control plane lacks the decryption key material.
-
-For a deployment in your cloud, confirm runtime decryption permissions and operator access explicitly. Network placement and ownership of your OAuth app do not establish who can decrypt credentials.
+The Cloud runtime decrypts credentials during execution. See [decryption and privileged access](/docs/security/access-control#decryption-and-privileged-access) for key separation, operator access, and customer-managed arrangements.
 
 ### Revocation and recovery
 
-Protect Composio API keys as credentials that authorize actions, even though they cannot retrieve provider tokens. If a key is exposed, revoke or rotate it and review activity for its project and permissions. Hashing stored keys does not protect a usable key copied from your application.
-
-Deleting a connected account stops calls through that connection. To request provider-side revocation, the [connected-account deletion API](/reference/api-reference/connected-accounts) accepts `revoke_on_delete=true`; this defaults to `false` and depends on provider support. Revoke or rotate credentials directly at the provider when necessary. Deleting the connection alone does not guarantee that a copied provider token becomes invalid.
+Follow [revocation and recovery guidance](/docs/security/access-control#revocation-and-recovery) if a key is exposed. Deleting a connection does not guarantee provider-side revocation.
 
 ## Your responsibilities
 
-The following table summarizes responsibilities for the hosted service. For a deployment in your own cloud, confirm infrastructure operations, decryption permissions, and support access with [Composio](mailto:security@composio.dev).
-
-| Area | Composio | Your application and organization |
-| --- | --- | --- |
-| Permissions and scopes | Provides API-key permissions and tool-selection controls. Executes with the connected account's provider permissions. | Choose minimum [OAuth scopes](/docs/authentication/controlling-scopes), key permissions, and session tools. Connected services enforce their own account permissions. |
-| User isolation | Associates connections and sessions with the supplied user ID within a project. | Authenticate your users and bind each to the correct `user_id` and accounts. A supplied ID is not proof of identity. |
-| Approvals | Provides [experimental approval controls](/docs/governance/approvals) for configured session tools. | Decide which actions require approval, implement elicitation, and review the documented coverage limits. |
-| Credentials | Stores encrypted provider credentials, injects them during execution, and redacts them in account API responses. | Protect Composio keys, avoid secrets in prompts and logs, and rotate or revoke credentials with the connected provider when needed. |
-| Logs and retention | Applies the [retention policy](/docs/security/data-retention) and [ZDR scope](/docs/security/zero-data-retention). | Configure each project, check exclusions, and set retention for your own logs and model provider. |
-| Downstream providers | Maintains its [subprocessor register](https://trust.composio.dev/subprocessors) and the obligations in your agreements. | Review connected apps, model providers, external MCP servers, and Instant Tools for your data and use case. These services have their own policies. |
-| Incident response | Investigates incidents and provides notices under the applicable agreements. | Maintain security contacts, investigate your application, act on notices, and coordinate revocation and any notifications you owe your customers. |
+You authenticate your users and configure account access, tool selection, approvals, and retention. The [shared-responsibility table](/docs/security/shared-responsibility#your-responsibilities) identifies what Composio operates and what you own.
 
 ## Infrastructure, resilience, and testing
 
-Composio uses cloud infrastructure for API execution, credential storage, logs, file staging, and optional sandbox and model processing. The [subprocessor register](https://trust.composio.dev/subprocessors) identifies providers and published locations. A location listed for one provider does not establish residency for the whole workflow. For residency requirements, confirm the execution path and deployment arrangement with [Composio](mailto:security@composio.dev).
-
-The [DPA's technical and organizational measures](https://composio.dev/legal/dpa) describe vulnerability scanning, patch management, secure development, access controls, and safeguards for availability and resilience. The Trust Center lists penetration testing controls and a **Business Continuity and Disaster Recovery Plan**. Request those materials for recovery objectives, backup arrangements, and testing evidence.
-
-For published deletion periods, see [logs and account data](/docs/security/data-retention#how-long-logs-are-retained) and [temporary files](/docs/security/data-retention#how-long-files-are-available). BAA section 2.6 separately addresses PHI at termination, including continued protection when return or destruction is infeasible, such as encrypted backups. Confirm backup deletion requirements in your agreement and security review.
+Review [infrastructure and resilience evidence](/docs/security/compliance#infrastructure-resilience-and-testing) for processing locations, testing, backups, and recovery questions.
 
 ## Reporting a vulnerability
 

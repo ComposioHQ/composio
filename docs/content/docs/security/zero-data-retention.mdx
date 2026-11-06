@@ -153,7 +153,7 @@ Use this configuration when request arguments and tool results must stay out of 
 4. **Review retained data and downstream services.** Use opaque `user_id` values, review [audit logs and telemetry](#always-stored), and configure your own logs and model provider. ZDR does not erase earlier payload logs, remove stored credentials, or control destination-provider retention. If using [Firewall](/docs/firewall), write conditions that work on the current call; ZDR removes prior-call payload context.
 5. **Verify with synthetic data.** Follow [Verify payload storage](#verify-payload-storage) for each execution path you use. Test account isolation and approval denial through your application. Repeat after creating a project or changing session settings, auth configs, or routing.
 
-This configuration does not establish HIPAA eligibility or end-to-end zero retention. For PHI, follow the [BAA and workflow review](/docs/security/overview#hipaa-and-the-baa) before sending data. If you need a feature excluded above, agree on its processing and retention requirements separately.
+This configuration does not establish HIPAA eligibility or end-to-end zero retention. For PHI, follow the [BAA and workflow review](/docs/security/compliance#hipaa-and-the-baa) before sending data. If you need a feature excluded above, agree on its processing and retention requirements separately.
 
 ## Verify payload storage
 
@@ -162,7 +162,7 @@ After changing ZDR, run a new covered call with synthetic arguments and results,
 ## Related
 
 - [Data retention and handling](/docs/security/data-retention): the standard retention policy for every plan.
-- [Credential protection](/docs/security/overview#credential-protection): where credentials live and how Composio uses them.
+- [Credential protection](/docs/security/access-control#credential-protection): where credentials live and how Composio uses them.
 - [Composio Trust Center](https://trust.composio.dev): compliance reports and the sub-processor list.
 - [Data Processing Addendum](https://composio.dev/legal/dpa) and [Business Associate Agreement](https://composio.dev/legal/baa).
 - [Pricing](https://composio.dev/pricing).

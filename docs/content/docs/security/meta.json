@@ -4,6 +4,9 @@
   "pagesIndex": "overview",
   "pages": [
     "[Overview](/docs/security/overview)",
+    "compliance",
+    "access-control",
+    "shared-responsibility",
     "token-custody",
     "data-retention",
     "zero-data-retention",
