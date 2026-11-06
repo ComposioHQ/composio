@@ -129,6 +129,10 @@ ZDR is not available on the Hobby plan. Projects that already had **Don't store 
 
 ZDR replaces the **Don't store data** option under **Log storage**. Projects that had it on now have ZDR on, and the rest have it off.
 
+## Verify payload storage
+
+After changing ZDR, run a new covered call and inspect its log row. The metadata row remains, but request arguments and response content are not stored. Older rows keep their existing payloads. If payload content appears for a new covered call, contact [support@composio.dev](mailto:support@composio.dev) with the timestamp and log reference. Do not send credentials or sensitive payloads.
+
 ## Related
 
 - [Data retention and handling](/docs/security/data-retention): the standard retention policy for every plan.

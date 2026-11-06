@@ -68,7 +68,28 @@ const config = {
     ];
   },
   async redirects() {
+    // Security has one canonical home. Keep legacy and agent-readable KB URLs useful.
+    const retiredSecurityGuides = [
+      ['/kb/guide/platform-compliance-data-handling', '/docs/security/overview'],
+      ['/kb/sdk-and-api/platform-compliance-data-handling', '/docs/security/overview'],
+      ['/kb/security-and-trust/platform-compliance-data-handling', '/docs/security/overview'],
+      ['/kb/guide/dashboard-log-storage', '/docs/security/zero-data-retention'],
+      ['/kb/errors-and-troubleshooting/dashboard-log-storage', '/docs/security/zero-data-retention'],
+      ['/kb/dashboard-and-projects/don-t-store-data-removes-new-payload-content-not-the-audit-row', '/docs/security/zero-data-retention'],
+    ];
     return [
+      ...retiredSecurityGuides.flatMap(([source, destination]) => [
+        ...['', '.md', '.mdx'].map(extension => ({
+          source: `${source}${extension}`,
+          destination: `${destination}${extension}`,
+          permanent: true,
+        })),
+        {
+          source: `/llms.mdx${source}`,
+          destination: `/llms.mdx${destination}`,
+          permanent: true,
+        },
+      ]),
       // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
       // Renamed/moved pages -> new location
       {

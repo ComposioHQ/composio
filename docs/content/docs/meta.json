@@ -3,6 +3,7 @@
     "---Get Started---",
     "index",
     "quickstart",
+    "security",
     "providers",
     "agent-plugins",
     "using-composio-skill",
@@ -35,8 +36,7 @@
     "sessions-vs-direct-execution",
     "tools-direct",
     "auth-configuration",
-    "---Migration and security---",
-    "migration-guide",
-    "security"
+    "---Migration---",
+    "migration-guide"
   ]
 }

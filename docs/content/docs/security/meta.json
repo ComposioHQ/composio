@@ -1,9 +1,10 @@
 {
-  "title": "Security and data",
-  "defaultOpen": false,
+  "title": "Security",
+  "defaultOpen": true,
   "pages": [
     "overview",
     "audit-logs",
+    "composio-as-subprocessor",
     "token-custody",
     "data-retention",
     "zero-data-retention"

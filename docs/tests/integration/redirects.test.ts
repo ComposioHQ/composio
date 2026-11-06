@@ -21,6 +21,15 @@ const EVIDENCED_REDIRECTS = [
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   ...EVIDENCED_REDIRECTS,
+  { from: "/kb/guide/platform-compliance-data-handling", to: "/docs/security/overview" },
+  { from: "/kb/sdk-and-api/platform-compliance-data-handling", to: "/docs/security/overview" },
+  { from: "/kb/security-and-trust/platform-compliance-data-handling", to: "/docs/security/overview" },
+  { from: "/kb/guide/dashboard-log-storage", to: "/docs/security/zero-data-retention" },
+  { from: "/kb/errors-and-troubleshooting/dashboard-log-storage", to: "/docs/security/zero-data-retention" },
+  { from: "/kb/dashboard-and-projects/don-t-store-data-removes-new-payload-content-not-the-audit-row", to: "/docs/security/zero-data-retention" },
+  { from: "/kb/guide/platform-compliance-data-handling.md", to: "/docs/security/overview.md" },
+  { from: "/kb/guide/dashboard-log-storage.mdx", to: "/docs/security/zero-data-retention.mdx" },
+  { from: "/llms.mdx/kb/guide/dashboard-log-storage", to: "/llms.mdx/docs/security/zero-data-retention" },
   { from: "/", to: "/docs" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },

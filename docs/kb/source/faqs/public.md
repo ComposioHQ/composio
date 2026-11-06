@@ -29,7 +29,7 @@ SEO, recruiting, or sponsorship pitches as toolkit-partnership requests.
 
 ## Security, privacy, data-retention, and compliance information
 
-Direct general security, privacy, data-retention, audit, and compliance questions to https://trust.composio.dev/. Do not infer or restate policy details that are not present in approved public material. If the Trust Center does not answer the customer's question, offer human follow-up. Use the documented Dashboard self-service path for ordinary organization deletion. Substantive vulnerability details, legal data-erasure requests beyond that flow, legal requests, and customer-specific access questions still require specialist review.
+Start with [Security](/docs/security/overview) for data handling, agreements and compliance evidence. For account deletion, see [Data retention and handling](/docs/security/data-retention#your-account-data).
 
 ## Security reporting
 
