@@ -14,11 +14,12 @@ GITHUB_ACTIONS=true bun run build
 ```
 
 - Build-time Twoslash is disabled during `bun dev` to avoid its development memory cost.
-- `source.config.ts` configures collection-level MDX behavior. The reference collection has no Twoslash transformer; its maintained examples are checked by the standalone command instead.
+- `source.config.ts` configures collection-level MDX behavior. The reference and historical changelog collections have no Twoslash transformer. Maintained reference examples are checked by the standalone command; historical release examples remain inventory-only.
 - Plain-Markdown FAQs and canonical/curated KB inputs are checked before their presentation conversion. Generated KB TypeScript stays TypeScript and is also checked when built.
 - Generated SDK symbol-reference signatures/partial fragments and historical changelogs are inventory-only, not certified by the maintained-example gates.
 - `.github/workflows/docs-typescript-check.yml` runs standalone regressions, the standalone gate, lint, type checking, and the production build.
 - Imports resolve to the versions installed from `docs/package.json` and `docs/bun.lock`. This does not type-check against the local TypeScript SDK workspace.
+- Release notes can describe an API newer than the installed docs SDK. Keep their ordinary Markdown, Mermaid, and code themes; do not copy their checking exemption into maintained guides or examples. Merge maintained new-API examples after compatible packages are published and their normal checks pass.
 
 ## Complete examples and hidden setup
 

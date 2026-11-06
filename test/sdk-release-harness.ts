@@ -1,13 +1,14 @@
 import { Effect, FileSystem, Layer, Path } from 'effect';
 import { FetchHttpClient } from 'effect/http';
+import { GitHub } from '../scripts/sdk-release/github';
 import { ReleaseServices, readFile } from '../scripts/sdk-release/runtime';
 
 export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
-const TestServices = ReleaseServices;
+const TestServices = Layer.provideMerge(GitHub.layer('token'), ReleaseServices);
 type TestServices = Layer.Success<typeof TestServices>;
 
-/** Runs a release effect with Bun platform services and an optional fake fetch. */
+/** Runs a release effect with Bun platform services, a test GitHub token, and an optional fake fetch. */
 export const runRelease = <A, E>(
   effect: Effect.Effect<A, E, TestServices>,
   fetch?: Fetch
