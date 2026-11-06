@@ -1,4 +1,17 @@
-import { Config, Data, Effect, FileSystem, Option, Path, Schedule, Schema, Stdio } from 'effect';
+import {
+  Config,
+  Context,
+  Data,
+  Effect,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  Schedule,
+  Schema,
+  Stdio,
+} from 'effect';
+import { ChildProcessSpawner } from 'effect/process';
 import type { Duration } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import semver from 'semver';
@@ -23,6 +36,7 @@ import {
   Language,
   type Language as Lang,
 } from './lanes';
+import { verifyNpmProvenance, verifyPypiProvenance, type ProvenanceWait } from './provenance';
 import { discoverPythonPackages } from './python-metadata';
 import {
   appendFile,
@@ -403,16 +417,37 @@ export const loadOriginalDistributions = (
     });
   });
 
+/** The npm CLI, which publishes through trusted publishing and moves dist-tags. */
+export class NpmCli extends Context.Service<
+  NpmCli,
+  { readonly run: (args: ReadonlyArray<string>) => Effect.Effect<string, unknown> }
+>()('sdk-release/NpmCli') {
+  static readonly layer = (cwd: string) =>
+    Layer.effect(
+      NpmCli,
+      Effect.gen(function* () {
+        const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+        return {
+          run: (args: ReadonlyArray<string>) =>
+            run('npm', args, { cwd, env: withoutReleaseTokens }).pipe(
+              Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner)
+            ),
+        };
+      })
+    );
+}
+
 /**
- * Publishes under a release-only dist-tag, moves the channel's tag once the upload is visible,
- * then drops the release-only tag.
+ * Publishes under a release-only dist-tag, checks that each tarball's provenance names this
+ * release, then moves the channel's tag and drops the release-only tag. A failed check leaves
+ * the channel tag where it was.
  */
 export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distribution>) =>
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const channel = batch.plan.choices.channel;
-    const npm = (args: ReadonlyArray<string>) =>
-      run('npm', args, { cwd, env: withoutReleaseTokens });
+    const cli = yield* NpmCli;
+    const npm = cli.run;
     for (const file of (yield* reconcileRegistry(files, channel)).missing)
       yield* npm([
         'publish',
@@ -423,6 +458,8 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
         `--tag=sdk-release-${batch.id}`,
       ]);
     const visible = yield* waitForRegistry(files, { channelTags: false, channel });
+    // Users only install a version once its channel tag moves, so it moves after the checks.
+    for (const file of files) yield* verifyNpmProvenance(file, batch.id);
     for (const tag of visible.tagsToRepair)
       yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, tag.tag]);
     yield* waitForRegistry(files, { channel });
@@ -436,6 +473,32 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
       if (Option.exists(tags, value => releaseOnly in value))
         yield* npm(['dist-tag', 'rm', file.name, releaseOnly]);
     }
+  });
+
+/** The `name@version` specs of the published tarballs, for a fresh install. */
+export const npmSpecs = (files: ReadonlyArray<Distribution>) =>
+  files.map(file => `${file.name}@${file.version}`).join(' ');
+
+/**
+ * Checks that every PyPI file is attested by this release, and returns the file URLs for the
+ * signature check that `pypi-attestations` runs next.
+ */
+export const verifyPypiFiles = (files: ReadonlyArray<Distribution>, wait: ProvenanceWait = {}) =>
+  Effect.gen(function* () {
+    const urls: string[] = [];
+    for (const file of files) {
+      yield* verifyPypiProvenance(file, wait);
+      const metadata = yield* registryJson(
+        REGISTRY_LANES.python.versionUrl(file.name, file.version),
+        PypiVersion
+      );
+      const served = Option.flatMap(metadata, ({ urls: served }) =>
+        Option.fromNullishOr(served.find(entry => entry.filename === file.file))
+      );
+      if (Option.isNone(served)) return yield* fail(`PyPI does not serve ${file.file}`);
+      urls.push(served.value.url);
+    }
+    return urls;
   });
 
 /** Stages only the missing Python files for the trusted-publisher upload step. */
@@ -459,12 +522,16 @@ const Environment = Config.all({
   approved: Config.schema(Schema.fromJsonString(ApprovedCandidates), 'APPROVED_CANDIDATES'),
 });
 
-const Arguments = Schema.Tuple([Schema.Literals(['publish', 'verify']), Language]);
+const Arguments = Schema.Union([
+  Schema.Tuple([Schema.Literal('publish'), Language]),
+  Schema.Tuple([Schema.Literal('verify'), Schema.Literal('python')]),
+]);
 
 /**
- * `registry.ts publish typescript` uploads to npm and moves `latest`; `publish python` stages
- * the missing PyPI files for the upload action; `verify <language>` waits until every file is
- * served.
+ * `registry.ts publish typescript` uploads to npm, moves the channel tag, checks provenance and
+ * outputs the specs for a signature check; `publish python` stages the missing PyPI files for the
+ * upload action; `verify python` waits until PyPI serves every file, checks each attestation's
+ * publisher and outputs the file URLs for the signature check.
  */
 const main = Effect.gen(function* () {
   const [mode, language] = yield* Schema.decodeUnknownEffect(Arguments)(
@@ -481,10 +548,17 @@ const main = Effect.gen(function* () {
   const files = yield* loadOriginalDistributions(cwd, batch, env.sha, env.approved, language).pipe(
     Effect.provide(GitHub.layer(env.token))
   );
-  if (mode === 'verify')
-    return yield* waitForRegistry(files, { channel: batch.plan.choices.channel });
-  if (language === 'typescript') return yield* publishNpm(cwd, batch, files);
-  yield* stageMissingPython(cwd, files, env.output);
+  yield* Effect.gen(function* () {
+    if (mode === 'verify') {
+      yield* waitForRegistry(files, { channel: batch.plan.choices.channel });
+      return yield* appendFile(env.output, `files=${(yield* verifyPypiFiles(files)).join(' ')}\n`);
+    }
+    if (language === 'typescript') {
+      yield* publishNpm(cwd, batch, files);
+      return yield* appendFile(env.output, `specs=${npmSpecs(files)}\n`);
+    }
+    yield* stageMissingPython(cwd, files, env.output);
+  }).pipe(Effect.provide(NpmCli.layer(cwd)));
 });
 
 if (import.meta.main) runMain(main);

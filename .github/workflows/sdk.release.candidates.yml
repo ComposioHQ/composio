@@ -63,7 +63,8 @@ jobs:
       - name: Build and check the candidate
         env:
           SDK_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bun scripts/sdk-release/candidates.ts ${{ matrix.language }}
+          LANGUAGE: ${{ matrix.language }}
+        run: bun scripts/sdk-release/candidates.ts "$LANGUAGE"
       - name: Retain candidate bytes for publication
         id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -79,7 +80,8 @@ jobs:
           ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
           SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
           SDK_READ_TOKEN: ${{ github.token }}
-        run: bun scripts/sdk-release/candidates.ts report ${{ matrix.language }}
+          LANGUAGE: ${{ matrix.language }}
+        run: bun scripts/sdk-release/candidates.ts report "$LANGUAGE"
 
   # Installs third-party packages from the registries, so it runs apart from the build job and
   # has no upload step. Code it runs still holds this run's runtime token, so the tag run refuses
@@ -113,4 +115,6 @@ jobs:
           name: sdk-candidate-${{ matrix.language }}
           path: sdk-candidate/${{ matrix.language }}
       - name: Install and import the candidate like a user
-        run: bun scripts/sdk-release/consumers.ts sdk-candidate/${{ matrix.language }}
+        env:
+          LANGUAGE: ${{ matrix.language }}
+        run: bun scripts/sdk-release/consumers.ts "sdk-candidate/$LANGUAGE"
