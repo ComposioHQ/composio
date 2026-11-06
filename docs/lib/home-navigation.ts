@@ -86,6 +86,7 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/agent-plugins' },
           { type: 'page', url: '/docs/cli' },
           { type: 'page', url: '/docs/composio-connect', label: 'Connect with MCP' },
+          { type: 'link', url: '/docs/security/overview', label: 'Security' },
         ],
       },
       { label: 'Shared resources', items: SHARED_SIDEBAR_ITEMS },
@@ -156,6 +157,7 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'folder', path: 'agent-setup' },
           { type: 'page', url: '/docs/quickstart' },
+          { type: 'folder', path: 'security', label: 'Security' },
           { type: 'folder', path: 'providers', label: 'SDKs and frameworks' },
         ],
       },
@@ -232,7 +234,6 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
-          { type: 'folder', path: 'security', label: 'Security and data' },
         ],
       },
       {

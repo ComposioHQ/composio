@@ -52,7 +52,7 @@ Use `JIRA_GET_ATTACHMENT` to retrieve the binary content of a Jira attachment by
 
 ## Jira tool-call payload retention follows the project log-storage setting
 
-Composio manages Jira OAuth tokens and returns Jira API responses to the customer's application. Whether request and response payloads are retained in Composio tool logs follows the project's log-storage setting; **Don't store data** omits payload content from new log rows but preserves audit metadata. The customer's own agent or application may retain tool outputs separately.
+For credential handling and payload retention, see [Credential protection](/docs/security/overview#credential-protection) and [Zero Data Retention](/docs/security/zero-data-retention), including plan and auth-config exclusions. Your application may retain tool outputs separately.
 
 ## Jira service account use requires customer-owned credentials and scopes
 

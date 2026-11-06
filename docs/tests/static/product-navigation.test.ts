@@ -175,21 +175,34 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
-      '/docs/security/token-custody',
+      '/docs/security/compliance',
+      '/docs/security/access-control',
+      '/docs/security/shared-responsibility',
+      '/docs/security/composio-as-subprocessor',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
     ];
     const security = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],
-    ).find(node => node.type === 'folder' && node.name === 'Security and data');
+    ).find(node => node.type === 'folder' && node.name === 'Security');
     expect(security?.type).toBe('folder');
-    if (security?.type !== 'folder') throw new Error('Security and data folder missing');
+    expect(platformTree.children.indexOf(security!)).toBeLessThan(5);
+    if (security?.type !== 'folder') throw new Error('Security folder missing');
+    expect(security.defaultOpen).toBe(false);
+    expect(security.index?.url).toBe('/docs/security/overview');
+    expect(security.children[0]).toMatchObject({
+      type: 'page', name: 'Overview', url: '/docs/security/overview',
+    });
     expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
-      securityUrls,
+      expect.arrayContaining(securityUrls),
     );
+    expect(source.getPage(['security', 'previous-incidents'])?.url).toBe('/docs/security/previous-incidents');
+    expect(platformUrls).not.toContain('/docs/security/previous-incidents');
+    expect(forYouUrls).not.toContain('/docs/security/previous-incidents');
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
-      expect(forYouUrls).not.toContain(url);
+      if (url === '/docs/security/overview') expect(forYouUrls).toContain(url);
+      else expect(forYouUrls).not.toContain(url);
     }
 
     const readiness = platformTree.children.flatMap(node =>

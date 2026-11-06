@@ -1,0 +1,22 @@
+---
+title: Shared responsibilities
+description: Understand which security controls Composio operates and which controls your application and organization configure.
+---
+
+Composio operates the hosted processing service. You authenticate your users, choose the access you grant, and configure your application's data handling.
+
+## Your responsibilities
+
+The following table summarizes responsibilities for the hosted service. For a deployment in your own cloud, confirm infrastructure operations, decryption permissions, and support access with [Composio](mailto:security@composio.dev).
+
+| Area | Composio | Your application and organization |
+| --- | --- | --- |
+| Permissions and scopes | Provides API-key permissions and tool-selection controls. Executes with the connected account's provider permissions. | Choose minimum [OAuth scopes](/docs/authentication/controlling-scopes), key permissions, and session tools. Connected services enforce their own account permissions. |
+| User isolation | Associates connections and sessions with the supplied user ID within a project. | Authenticate your users and bind each to the correct `user_id` and accounts. A supplied ID is not proof of identity. |
+| Approvals | Provides [experimental approval controls](/docs/governance/approvals) for configured session tools. | Decide which actions require approval, implement elicitation, and review the documented coverage limits. |
+| Credentials | Stores encrypted provider credentials, injects them during execution, and redacts them in account API responses. | Protect Composio keys, avoid secrets in prompts and logs, and rotate or revoke credentials with the connected provider when needed. |
+| Logs and retention | Applies the [retention policy](/docs/security/data-retention) and [ZDR scope](/docs/security/zero-data-retention). | Configure each project, check exclusions, and set retention for your own logs and model provider. |
+| Downstream providers | Maintains its [subprocessor register](https://trust.composio.dev/subprocessors) and the obligations in your agreements. | Review connected apps, model providers, external MCP servers, and Instant Tools for your data and use case. These services have their own policies. |
+| Incident response | Investigates incidents and provides notices under the applicable agreements. | Maintain security contacts, investigate your application, act on notices, and coordinate revocation and any notifications you owe your customers. |
+
+Use [Access control and credential protection](/docs/security/access-control) to configure execution boundaries and [Configure a sensitive workload](/docs/security/zero-data-retention#configure-a-sensitive-workload) to limit payload storage. Review [Compliance and evidence](/docs/security/compliance) for agreements, reports, and deployment-specific questions.

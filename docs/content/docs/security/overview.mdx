@@ -1,40 +1,98 @@
 ---
-title: Security
-description: How Composio secures your data, credentials, and tool execution, and where to find our compliance reports.
-keywords: [security, compliance, SOC 2, trust center, encryption, isolation]
+title: Security Overview
+description: Review Composio's role in your data flow, credential architecture, retention controls, agreements, compliance evidence, and security contacts.
+keywords: [security, compliance, SOC 2, trust center, encryption, isolation, HIPAA, BAA, DPA, subprocessor]
 ---
 
-Composio is built with security at its core. We use least-privilege defaults, isolate every organization and project, encrypt credentials, and give you controls over what we store.
+Composio authenticates and executes tool calls on your behalf. Use this section to evaluate what Composio processes, configure your application, and find evidence for a vendor-security review.
+
+## What brings you here?
+
+<SecurityReviewPaths>
+<SecurityReviewPath audience="evaluate">
+
+### I'm evaluating Composio
+
+Find the data-handling policies, agreements, and audit evidence you need for a security review.
+
+- [Compliance and audit reports](/docs/security/compliance)
+- [Data handling and retention](/docs/security/data-retention)
+- [Configure a sensitive workload](/docs/security/zero-data-retention#configure-a-sensitive-workload)
+- [DPA and BAA](/docs/security/compliance#data-processing-addendum)
+
+</SecurityReviewPath>
+<SecurityReviewPath audience="build">
+
+### I'm building with Composio
+
+Understand credential handling and the access and retention controls you configure for your application.
+
+- [Credential protection](/docs/security/access-control#credential-protection)
+- [Your security responsibilities](/docs/security/shared-responsibility)
+- [Configure Zero Data Retention](/docs/security/zero-data-retention)
+
+</SecurityReviewPath>
+</SecurityReviewPaths>
+
+## Start your review
+
+Choose the part of your security review you need to complete.
+
+| Review area | Where to go |
+| --- | --- |
+| Composio on your vendor's subprocessor list | [Composio as your subprocessor](/docs/security/composio-as-subprocessor) |
+| Credentials and execution boundaries | [Credential protection](/docs/security/access-control#credential-protection) and [shared responsibilities](/docs/security/shared-responsibility) |
+| Logs, files, deletion, and model training | [Data retention and handling](/docs/security/data-retention) |
+| Payload-storage controls and exclusions | [Zero Data Retention](/docs/security/zero-data-retention) |
+| Configuration for sensitive workloads | [Setup and verification guide](/docs/security/zero-data-retention#configure-a-sensitive-workload) |
+| Downstream providers and processing locations | [Subprocessor register](https://trust.composio.dev/subprocessors) |
+| Data-processing terms | [Data Processing Addendum (DPA)](https://composio.dev/legal/dpa) |
+| HIPAA terms | [Business Associate Agreement (BAA)](https://composio.dev/legal/baa) and [acceptance guidance](/docs/security/compliance#hipaa-and-the-baa) |
+| Audit evidence, infrastructure, and resilience | [Compliance and evidence](/docs/security/compliance) |
+| Security review or vulnerability report | [security@composio.dev](mailto:security@composio.dev) |
 
 ## Compliance and the Trust Center
 
-Composio is SOC 2 Type II compliant. For our latest reports and certifications (the SOC 2 Type II report, our sub-processor list, and more), visit the [Composio Trust Center](https://trust.composio.dev).
+Review the [compliance reports and evidence](/docs/security/compliance#compliance-and-the-trust-center), including SOC 2 Type II, ISO 27001, and the subprocessor register.
+
+### Data Processing Addendum
+
+See [DPA eligibility and acceptance](/docs/security/compliance#data-processing-addendum) for the applicable plans, dashboard steps, and processing terms.
+
+### HIPAA and the BAA
+
+Read the [BAA acceptance and workflow guidance](/docs/security/compliance#hipaa-and-the-baa) before sending PHI. Acceptance alone does not establish that every feature or destination is suitable for PHI.
 
 ## Isolation and access control
 
-- Organizations and projects isolate your resources. Data from one project is not visible to another.
-- API keys are scoped, support per-key IP allowlisting, and can opt in to capabilities such as Proxy Execute at creation.
-- Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, proxy execution, and session-linked MCP access). See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
-- Multi-factor authentication (MFA) is available for Dashboard sign-in and can be enforced by an organization admin.
+Composio provides project isolation, scoped API-key permissions, IP allowlisting, and dashboard MFA. See [Access control](/docs/security/access-control#isolation-and-access-control) for the controls you configure.
+
+### Authorization boundaries
+
+Review how [provider permissions, keys, application identity, session tools, and experimental approvals](/docs/security/access-control#authorization-boundaries) limit execution at different points.
 
 ## Credential protection
 
-See [Token custody architecture](/docs/security/token-custody) for credential boundaries, server-side execution, default API redaction, and deployment options.
+Provider credentials are encrypted at rest and used server-side. Composio API and session keys are stored as hashes. Read [Credential protection](/docs/security/access-control#credential-protection) for encryption, redaction, and webhook verification.
 
-- Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
-- Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
-- Webhook deliveries are signed; verify the `webhook-signature` header when handling trigger events. For custom OAuth webhook setup, see [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+### Decryption and privileged access
+
+The Cloud runtime decrypts credentials during execution. See [decryption and privileged access](/docs/security/access-control#decryption-and-privileged-access) for key separation, operator access, and customer-managed arrangements.
+
+### Revocation and recovery
+
+Follow [revocation and recovery guidance](/docs/security/access-control#revocation-and-recovery) if a key is exposed. Deleting a connection does not guarantee provider-side revocation.
 
 ## Your responsibilities
 
-Composio executes the tools and connections you configure. You control which toolkits are enabled, which accounts are connected, and what your agents are allowed to do. Review the access you grant, and treat connected-account scopes as you would any production credential.
+You authenticate your users and configure account access, tool selection, approvals, and retention. The [shared-responsibility table](/docs/security/shared-responsibility#your-responsibilities) identifies what Composio operates and what you own.
+
+## Infrastructure, resilience, and testing
+
+Review [infrastructure and resilience evidence](/docs/security/compliance#infrastructure-resilience-and-testing) for processing locations, testing, backups, and recovery questions.
 
 ## Reporting a vulnerability
 
-To report a security issue, contact `security@composio.dev`. Please do not disclose vulnerabilities publicly until we have addressed them.
+Report security issues privately to [security@composio.dev](mailto:security@composio.dev). For account support or deletion requests, contact [support@composio.dev](mailto:support@composio.dev).
 
-## Related resources
-
-- [Data retention and handling](/docs/security/data-retention): what we store and for how long, on every plan.
-- [Zero Data Retention](/docs/security/zero-data-retention): how to stop storing call payloads, and what ZDR covers.
-- [Composio Trust Center](https://trust.composio.dev): security certifications and compliance.
+See [Previous incidents](/docs/security/previous-incidents) for published disclosures, historical impact, and remediation updates.

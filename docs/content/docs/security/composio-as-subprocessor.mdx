@@ -1,0 +1,63 @@
+---
+title: Composio as your subprocessor
+description: Why Composio appears on a vendor's subprocessor list, what it processes, and where to find agreements and security evidence.
+keywords: [subprocessor, vendor security review, data processing, downstream providers, BAA, DPA]
+---
+
+Composio may appear on your vendor's subprocessor list because that vendor uses Composio to connect its application or agent to other services and act on your behalf. For example, an agent might read a calendar or update a CRM through Composio. Composio processes the credentials and request data needed to perform those actions.
+
+If you are reviewing your vendor, ask which Composio features and connected services it uses. The vendor determines which accounts, permissions, and data its application sends through Composio. This page describes the available processing paths; it does not establish which ones your vendor has enabled.
+
+## Two different subprocessor relationships
+
+When your vendor processes personal data for you and uses Composio for part of that processing, Composio acts as its subprocessor. The [DPA](https://composio.dev/legal/dpa), Attachment 4, addresses this processor-to-processor relationship through Module Three of the Standard Contractual Clauses. It also addresses direct customers acting as controllers through Module Two.
+
+Separately, **Composio's own subprocessors** provide infrastructure and services used to operate Composio. Their maintained [register is in the Trust Center](https://trust.composio.dev/subprocessors). Connected apps that you or your vendor authorize are a separate part of the data flow; review their agreements and policies too.
+
+## What Composio processes
+
+The [DPA's scope of processing](https://composio.dev/legal/dpa) covers authentication, credential storage, request and response relay, and activity logging for security, debugging, and billing. Data can include account identifiers and personal data contained in connected apps, such as communications, calendar entries, files, and business records.
+
+| Data | Where it goes in Composio Cloud |
+| --- | --- |
+| Provider credentials | Stored encrypted by Composio and used server-side to authenticate requests to the connected provider. Account APIs redact tokens by default. See [Credential protection](/docs/security/access-control#credential-protection). |
+| Request arguments and tool results | Pass through Composio's execution infrastructure and the destination provider, with results returned to the caller. Execution logs store payloads by default. |
+| Trigger payloads | Pass through event processing and delivery infrastructure to configured destinations. ZDR omits payloads from trigger logs, but events are still stored for processing and delivery. |
+| Files | Tools can stage uploads and downloads in temporary object storage and return presigned URLs. Sandbox workflows can also process files. URL expiry and object deletion are separate. |
+| Execution metadata | Retained for operations and audit, including supplied user IDs, connection and project identifiers, tool names, status, and timing. ZDR does not remove these metadata rows. |
+
+[Data retention and handling](/docs/security/data-retention) gives the log, account, and file lifecycles. [Zero Data Retention](/docs/security/zero-data-retention) describes covered calls, retained metadata, and exclusions. ZDR controls storage of new covered payloads; it does not stop processing or erase existing logs.
+
+Ask your vendor to confirm how its configuration compares with the [sensitive-workload setup guide](/docs/security/zero-data-retention#configure-a-sensitive-workload), including each project's ZDR status, enabled execution paths, and retained metadata.
+
+## How execution paths differ
+
+| Path | Processing boundary |
+| --- | --- |
+| Ordinary tool execution | Your application sends arguments through a session, MCP, or direct execution. Composio authenticates the destination request and returns the result. An LLM is not required to execute it. |
+| Proxy Execute | Composio authenticates an HTTP request to the connected provider, including operations beyond predefined tool schemas. Review proxy permissions separately. Binary responses can use temporary file storage. |
+| Sandboxes and Workbench | Submitted code and files can run in an isolated third-party sandbox. Sessions enable the sandbox by default and can offload large results to it. Sandbox processing is outside ZDR coverage. |
+| Model-provider calls | Your application or MCP client controls what it gives its own model. Within Workbench, `invoke_llm` sends the information supplied to it to a model provider. Automatic Python syntax repair can separately send code and error details when enabled. Ordinary valid Python or shell execution does not inherently send sandbox files to a model. |
+| Instant Tools | Supported actions run on Composio's provider accounts instead of accounts connected by your users. Composio does not store their payloads, but the downstream provider may retain data under its own policy. Instant Tools are outside ZDR coverage. |
+
+See [Workbench model processing](/docs/security/data-retention#when-workbench-uses-an-llm), [Instant account selection](/docs/instant-tools#know-which-account-runs-the-tool), and [ZDR exclusions](/docs/security/zero-data-retention#what-zdr-does-not-cover) before choosing a workflow. Tool search can also cache queries. Keep sensitive data out of search queries or use the documented direct-tools configuration.
+
+### Model training and downstream policies
+
+Composio does not use request arguments, responses, or trigger payloads to train or improve models. It may use **de-identified execution metadata** for model training and analytics and retain that de-identified data indefinitely. See [Model training](/docs/security/data-retention#model-training) for the distinction and de-identification rules.
+
+Those statements do not establish the policy of your own model provider, a connected app, or a provider behind an Instant Tool. Review each downstream service's terms. For contractual requirements across the entire workflow, scope them with your vendor and Composio's Enterprise team.
+
+## Responsibilities and review evidence
+
+Your vendor owns its application's authorization, user-to-account mapping, tool selection, approvals, and data handling. Composio owns the hosted processing controls described in its documentation and agreements. Connected third-party services enforce their own permissions and apply their own data policies. See the [shared-responsibility table](/docs/security/shared-responsibility#your-responsibilities).
+
+Use these sources for your review:
+
+- [DPA](https://composio.dev/legal/dpa) for processing terms and international transfer mechanisms.
+- [BAA](https://composio.dev/legal/baa) and [HIPAA acceptance guidance](/docs/security/compliance#hipaa-and-the-baa) for eligibility, acceptance, and the question of customers who are themselves business associates.
+- [Subprocessor register](https://trust.composio.dev/subprocessors) for downstream providers, purposes, and published locations. Use **Subscribe to updates** in the Trust Center for changes.
+- [Trust Center](https://trust.composio.dev/) for audit reports and restricted evidence. Use **Request access** to begin a review.
+- [Infrastructure and resilience guidance](/docs/security/compliance#infrastructure-resilience-and-testing) for public information and where to request backup and recovery details.
+
+Contact [security@composio.dev](mailto:security@composio.dev) for Composio security evidence. Ask your vendor to confirm its actual configuration and the agreements that apply to your data.

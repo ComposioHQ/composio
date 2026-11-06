@@ -102,10 +102,14 @@ See [Disabling the sandbox](/docs/configuring-sessions#disabling-the-sandbox) fo
 
 ## Always stored
 
-Composio stores audit logs and telemetry on every plan, and ZDR does not change them. Neither contains personally identifiable information (PII).
+Composio stores audit logs and telemetry on every plan, and ZDR does not change them. Treat these records as potentially sensitive. ZDR does not establish that retained metadata or telemetry is free of personal data.
 
 - **Audit logs** record who did what and when, including the metadata row for each tool call.
 - **Telemetry** is the metrics, traces, application logs, error reports, and usage metering that Composio uses to run and bill the service. Telemetry can include error messages returned by providers.
+
+Composio stores the `user_id` you supply. Use an opaque identifier instead of an email or name, and account for its link to a person in your own system. Provider error messages can also contain personal data. Credential redaction in account API responses does not establish that every telemetry message is sanitized. Confirm the applicable telemetry fields, redaction controls, and retention with [security@composio.dev](mailto:security@composio.dev) if your requirements depend on them.
+
+The separately [de-identified metadata used for model training](/docs/security/data-retention#model-training) has its own exclusions. Those rules do not describe all operational records.
 
 ## Existing data
 
@@ -129,10 +133,36 @@ ZDR is not available on the Hobby plan. Projects that already had **Don't store 
 
 ZDR replaces the **Don't store data** option under **Log storage**. Projects that had it on now have ZDR on, and the rest have it off.
 
+## Configure a sensitive workload
+
+Use this configuration when request arguments and tool results must stay out of Composio's execution logs. It limits the workload to covered calls and excludes features with separate storage. The destination provider still receives the request, and your application or model still receives the result.
+
+1. **Choose a plan and auth config.** Paid plans offer ZDR for a usage-based price; Enterprise includes it. For OAuth toolkits on non-Enterprise paid plans, use [your own OAuth app](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config). Existing users must reconnect through the new auth config. Composio Managed apps are covered only on Enterprise. API-key connections do not require an OAuth app.
+2. **Enable ZDR for the project before sending sensitive data.** An organization admin enables the add-on in Billing and checks the project's ZDR status. Enterprise projects start with ZDR on. On other paid plans, check and enable it for each new project, even if the organization add-on is already on. Route calls through that project's key, session, or MCP URL.
+3. **Restrict execution to the features below.** Configure every session your application creates. For direct execution, restrict the tools and endpoints your backend permits; session settings do not govern separate direct calls.
+
+| Feature | Configuration for this workload |
+| --- | --- |
+| Tools and accounts | Allow only the required tools and accounts. Use minimum [provider scopes](/docs/authentication/controlling-scopes), [key permissions](/reference/authenticating-to-composio/project-api-key-permissions), and [session tools](/docs/configuring-sessions). |
+| Sandbox and large-response offloading | [Disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox) in each session. Exercise representative response sizes before production and handle failures without re-enabling the sandbox. |
+| Instant Tools | Set `instant=False` in Python or `instant: false` in TypeScript when creating a session. Use accounts you have connected and reviewed. |
+| Tool search | Use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) and keep search disabled. Preload only the tools you need. |
+| Triggers and files | Exclude triggers and operations that upload or download files, including Proxy Execute binary responses. These paths store data outside covered execution logs. |
+| Approvals | Gate sensitive actions through the [experimental approval flow](/docs/governance/approvals). List tools explicitly, keep denial for clients without elicitation support, and review the documented limitations. |
+
+4. **Review retained data and downstream services.** Use opaque `user_id` values, review [audit logs and telemetry](#always-stored), and configure your own logs and model provider. ZDR does not erase earlier payload logs, remove stored credentials, or control destination-provider retention. If using [Firewall](/docs/firewall), write conditions that work on the current call; ZDR removes prior-call payload context.
+5. **Verify with synthetic data.** Follow [Verify payload storage](#verify-payload-storage) for each execution path you use. Test account isolation and approval denial through your application. Repeat after creating a project or changing session settings, auth configs, or routing.
+
+This configuration does not establish HIPAA eligibility or end-to-end zero retention. For PHI, follow the [BAA and workflow review](/docs/security/compliance#hipaa-and-the-baa) before sending data. If you need a feature excluded above, agree on its processing and retention requirements separately.
+
+## Verify payload storage
+
+After changing ZDR, run a new covered call with synthetic arguments and results, then inspect its log row. The metadata row remains, but request arguments and response content are not stored. Test both success and error paths. Older rows keep their existing payloads. This check verifies the visible execution log, not every telemetry or downstream storage system. If payload content appears for a new covered call, contact [support@composio.dev](mailto:support@composio.dev) with the timestamp and log reference. Do not send credentials or sensitive payloads.
+
 ## Related
 
 - [Data retention and handling](/docs/security/data-retention): the standard retention policy for every plan.
-- [Token custody architecture](/docs/security/token-custody): where credentials live and how Composio uses them.
+- [Credential protection](/docs/security/access-control#credential-protection): where credentials live and how Composio uses them.
 - [Composio Trust Center](https://trust.composio.dev): compliance reports and the sub-processor list.
 - [Data Processing Addendum](https://composio.dev/legal/dpa) and [Business Associate Agreement](https://composio.dev/legal/baa).
 - [Pricing](https://composio.dev/pricing).
