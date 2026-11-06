@@ -56,7 +56,7 @@ let _upsertDeprecationWarned = false;
  * ```typescript
  * const { slug } = await composio.experimental.customToolkits.create({
  *   name: 'My Toolkit',
- *   appUrl: 'https://mcp.example.com/mcp',
+ *   mcpUrl: 'https://mcp.example.com/mcp',
  *   authSchemes: [{ mode: 'DCR_OAUTH', discoveryUrl: 'https://mcp.example.com/.well-known/oauth-authorization-server' }],
  *   userId: 'all',
  * });
@@ -76,7 +76,7 @@ export class CustomToolkits {
    * **Experimental — custom toolkits are in pilot; shape may change.**
    *
    * Set `userId` to `'all'` to share the toolkit with every user in the
-   * project, or to a user ID to make it private to that user. `appUrl`,
+   * project, or to a user ID to make it private to that user. `mcpUrl`,
    * `authSchemes` and `userId` cannot change later: delete and re-create the
    * toolkit instead. For a private toolkit, `connectLink` is where to send
    * that user to connect.
@@ -89,7 +89,7 @@ export class CustomToolkits {
    * ```typescript
    * const { slug, connectLink } = await composio.experimental.customToolkits.create({
    *   name: 'Internal API',
-   *   appUrl: 'https://mcp.internal.example.com/mcp',
+   *   mcpUrl: 'https://mcp.internal.example.com/mcp',
    *   authSchemes: [
    *     { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
    *   ],
@@ -160,7 +160,7 @@ export class CustomToolkits {
    * field copy) when the project already owns a toolkit with this slug.
    * **Experimental — custom toolkits are in pilot; shape may change.**
    *
-   * `appUrl` and `authSchemes` cannot change on an existing toolkit:
+   * `mcpUrl` and `authSchemes` cannot change on an existing toolkit:
    * re-sending them unchanged is a no-op, and changing them fails with a 409.
    * Delete and re-register the toolkit instead, which revokes its connections.
    *
@@ -174,7 +174,7 @@ export class CustomToolkits {
    *   slug: 'INTERNAL_API',
    *   toolkitConfig: {
    *     name: 'Internal API',
-   *     appUrl: 'https://mcp.internal.example.com/mcp',
+   *     mcpUrl: 'https://mcp.internal.example.com/mcp',
    *     authSchemes: [
    *       { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
    *     ],
