@@ -9,7 +9,11 @@ import {
   ReportedToolExecutionError,
   ToolExecutionError,
 } from 'src/commands/tools/execute/tools.execute.errors';
-import { LoginSessionError } from 'src/effects/browser-login';
+import {
+  LoginProofNotAcknowledgedError,
+  LoginSessionEndedError,
+  LoginSessionError,
+} from 'src/effects/browser-login';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import { ComposioCorePkgNotFound } from 'src/effects/find-composio-core-generated';
 import {
@@ -62,8 +66,20 @@ const expected = [
     error: new InvalidOrganizationError({ message: 'Invalid organization.', requestedOrg: 'x' }),
   },
   {
-    name: 'login with an expired session',
-    error: new LoginSessionError({ message: 'Session not found.', operation: 'load' }),
+    name: 'login --key --no-wait before the browser step',
+    error: new LoginSessionError({ message: 'Session not yet linked', status: 'pending' }),
+  },
+  {
+    name: 'login ended by the API',
+    error: new LoginSessionEndedError({ message: 'Session not found.', reason: 'not-found' }),
+  },
+  {
+    name: 'login whose proof the API did not acknowledge',
+    error: new LoginProofNotAcknowledgedError({ message: 'Proof not acknowledged.' }),
+  },
+  {
+    name: 'login --poll with a pending login an older CLI started',
+    error: new PendingLoginError({ message: 'Start a new login.', reason: 'outdated' }),
   },
   {
     name: 'login --poll without a pending login',

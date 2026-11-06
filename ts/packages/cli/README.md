@@ -28,7 +28,7 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 
 - `composio version` (also `composio --version` or `-v`): Display the current CLI version.
 - `composio whoami`: Show the currently logged-in user/account.
-- `composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]`: Log in to the Composio CLI session.
+- `composio login [--no-browser] [--no-wait] [--poll] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]`: Log in to the Composio CLI session. `--no-wait` prints the login URL and confirmation code and exits; `composio login --poll` on the same machine completes that login. `--key <id>` completes only the login this machine started and cached; for any other login, use `--poll` or start a new login. Every successful login names the account on stderr, even when stderr is not a terminal.
 - `composio logout`: Log out from the Composio CLI session.
 - `composio orgs list|switch`: Inspect and switch your default organization context.
 - `composio search <query...> [--toolkits text] [--limit integer] [--human]`: Find tools by use case across toolkits/apps.

@@ -79,6 +79,7 @@ import type { CommandRunnerShape } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { SetupSkillInstallerShape } from 'src/services/setup-skill-installer';
 import { FetchHttpClient, HttpClient } from 'effect/http';
+import { Digest, SecureRandom } from 'effect/crypto';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { notFoundError } from '../layers/not-found';
 import { DEFAULT_PAGE_LIMIT } from '../layers/page';
@@ -918,6 +919,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunServices.layer,
+      SecureRandom.layerWebCrypto,
+      Digest.layerWebCrypto,
       MockTerminal.layer,
       BunPath.layer,
       FetchHttpClient.layer,
@@ -1156,6 +1159,7 @@ function setupComposioSessionRepository() {
           code: sessionCode,
           expiresAt,
           status: 'pending',
+          code_challenge_method: 'S256',
         }),
       getSession: () =>
         Effect.succeed({

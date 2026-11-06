@@ -38,7 +38,8 @@ describe('runAgentLogin', () => {
           agent_key: 'cak_existing',
         });
         expect(logins).toEqual([{ apiKey: 'uak_agent', orgId: 'org_agent' }]);
-        expect(yield* MockConsole.getLines({ stripAnsi: true })).toEqual([
+        // stderr is not a terminal here, so the account line is written plainly on stderr.
+        expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
           'Logged in as Composio agent test-agent@agent.composio.ai',
         ]);
         expect(outputs.map(output => JSON.parse(output.data))).toEqual([
