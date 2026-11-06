@@ -4,6 +4,7 @@
   "pages": [
     "overview",
     "audit-logs",
+    "token-custody",
     "byoc",
     "data-retention",
     "zero-data-retention"

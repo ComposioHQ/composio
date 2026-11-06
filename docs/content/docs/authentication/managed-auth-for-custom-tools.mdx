@@ -142,7 +142,7 @@ Keep Composio-managed OAuth apps in production when their consent branding, scop
 ## Understand the boundaries
 
 <Callout type="warn" title="Managed authentication is not token export">
-This is managed authentication for your own tools, not a token-export service. Connected-account reads redact credentials and aren't a supported way to retrieve access or refresh tokens. A custom OAuth app doesn't move token custody out of Composio Cloud. If your local vendor SDK requires a raw token, this proxy pattern doesn't supply one. Review [credential protection](/docs/security/overview#credential-protection) instead of attempting to extract credentials from account state.
+This is managed authentication for your own tools, not a token-export service. Connected-account reads redact credentials and aren't a supported way to retrieve access or refresh tokens. A custom OAuth app doesn't move token custody out of Composio Cloud. If your local vendor SDK requires a raw token, this proxy pattern doesn't supply one. Review [token custody and credential isolation](/docs/security/token-custody) instead of attempting to extract credentials from account state.
 </Callout>
 
 - **Provider scope:** Use relative paths for the connected provider. Proxy Execute is not an arbitrary authenticated HTTP relay; absolute URLs must keep the connected provider's scheme and registrable domain.
@@ -154,5 +154,5 @@ This is managed authentication for your own tools, not a token-export service. C
 <Cards>
   <Card title="Proxy Execute" href="/docs/extending-sessions/proxy-execute" description="Call provider endpoints from a session and understand proxy restrictions." />
   <Card title="Local tools and toolkits" href="/docs/extending-sessions/local-tools-and-toolkits" description="Optionally expose your custom business logic through experimental session extension tools." />
-  <Card title="Credential protection" href="/docs/security/overview#credential-protection" description="Review credential redaction, OAuth app ownership, and deployment boundaries." />
+  <Card title="Token custody and credential isolation" href="/docs/security/token-custody" description="Review credential redaction, OAuth app ownership, and deployment boundaries." />
 </Cards>
