@@ -66,7 +66,7 @@ const composio = new Composio({
 | `toolRouter` | `ToolRouter` | Legacy alias for `composio.sessions`. |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
-| `use` | `(id: string, options: \{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}, requestOptions: ComposioRequestOptions) => Promise<Session>` | Use an existing tool router session |
+| `use` | `(...) => Promise<Session>` | Use an existing tool router session |
 | `webhooks` | `Webhooks` | Manage the project's webhook subscription (`webhooks.subscriptions`) and inbound per-toolkit webhook endpoints (`webhooks.endpoints`). |
 
 ## Methods
