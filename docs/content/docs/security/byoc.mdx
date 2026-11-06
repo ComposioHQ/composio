@@ -20,7 +20,7 @@ Configure your SDK or MCP client to use the endpoint supplied for your deploymen
 
 An internal Application Load Balancer provides private HTTPS ingress for applications, agents, administrators, and OAuth callbacks. Application APIs are not exposed to the internet. The deployment runner also uses the private EKS API endpoint.
 
-You create your own OAuth apps, register the deployment's callback URLs and scopes, and obtain provider administrator consent where required. A private callback works when the user's browser can resolve and reach it through your network or VPN, subject to the provider's rules. The local service exchanges the authorization code and stores encrypted tokens. OAuth app ownership and [credential custody](/docs/security/overview#oauth-app-ownership-and-token-custody) are separate decisions.
+You create your own OAuth apps, register the deployment's callback URLs and scopes, and obtain provider administrator consent where required. A private callback works when the user's browser can resolve and reach it through your network or VPN, subject to the provider's rules. The local service exchanges the authorization code and stores encrypted tokens. OAuth app ownership and [credential custody](/docs/security/token-custody#oauth-app-ownership-and-token-custody) are separate decisions.
 
 If you enable webhook Triggers, provider servers need a reachable public HTTPS endpoint that you control, such as Amazon API Gateway. This gateway routes only approved webhook paths to the internal load balancer through a VPC link. Browser access to an OAuth callback does not establish provider access to this webhook ingress.
 
@@ -79,7 +79,7 @@ Provide a dedicated AWS sub-account in the chosen region. Work with Composio on 
 
 ## Credential redaction and retention
 
-Local storage, OAuth app ownership, API redaction, and retention answer different questions. [Credential protection](/docs/security/overview#credential-protection) explains server-side credential use and default API redaction. Each project can suppress tool request and response bodies in logs while retaining operational metadata. Agree on data-store, backup, diagnostic, and Temporal history retention for your deployment; see [Data retention and handling](/docs/security/data-retention) and [Zero Data Retention](/docs/security/zero-data-retention) for the documented controls and their limits.
+Local storage, OAuth app ownership, API redaction, and retention answer different questions. [Token custody and credential isolation](/docs/security/token-custody) explains server-side credential use and default API redaction. Each project can suppress tool request and response bodies in logs while retaining operational metadata. Agree on data-store, backup, diagnostic, and Temporal history retention for your deployment; see [Data retention and handling](/docs/security/data-retention) and [Zero Data Retention](/docs/security/zero-data-retention) for the documented controls and their limits.
 
 ## Existing customer-operated installations
 
