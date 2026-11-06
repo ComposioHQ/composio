@@ -4,9 +4,9 @@
   "pagesIndex": "overview",
   "pages": [
     "[Overview](/docs/security/overview)",
-    "composio-as-subprocessor",
     "token-custody",
     "data-retention",
-    "zero-data-retention"
+    "zero-data-retention",
+    "composio-as-subprocessor"
   ]
 }
