@@ -1,5 +1,6 @@
 ---
-'@composio/core': patch
+'@composio/core': minor
+'@composio/slim': minor
 ---
 
-Send custom toolkit URLs as `mcp_url` for the Platform API rename while preserving the public TypeScript `appUrl` input.
+Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.
