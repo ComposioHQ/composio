@@ -170,9 +170,43 @@ print(result.result_type, result.data)
 
 ---
 
+### local_tools()
+
+List all local tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
+
+```python
+def local_tools(toolkit: str | None = ...) -> List[RegisteredLocalTool]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit?` | `str \| None` |
+
+**Returns**
+
+`List[RegisteredLocalTool]` — Array of registered local tools
+
+---
+
+### local_toolkits()
+
+List all toolkits of local tools registered in this session.  Returns toolkits with their tools showing final slugs.
+
+```python
+def local_toolkits() -> List[RegisteredLocalToolkit]
+```
+
+**Returns**
+
+`List[RegisteredLocalToolkit]`
+
+---
+
 ### custom_tools()
 
-List all custom tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
+Deprecated alias for `local_tools`.
 
 ```python
 def custom_tools(toolkit: str | None = ...) -> List[RegisteredCustomTool]
@@ -186,13 +220,13 @@ def custom_tools(toolkit: str | None = ...) -> List[RegisteredCustomTool]
 
 **Returns**
 
-`List[RegisteredCustomTool]` — Array of registered custom tools
+`List[RegisteredCustomTool]`
 
 ---
 
 ### custom_toolkits()
 
-List all custom toolkits registered in this session.  Returns toolkits with their tools showing final slugs.
+Deprecated alias for `local_toolkits`.
 
 ```python
 def custom_toolkits() -> List[RegisteredCustomToolkit]
@@ -310,4 +344,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L311)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L322)
