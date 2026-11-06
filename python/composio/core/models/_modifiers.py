@@ -242,6 +242,16 @@ def after_execute(
     tools: t.Optional[t.List[str]] = None,
     toolkits: t.Optional[t.List[str]] = None,
 ) -> Modifier | t.Callable[[AfterExecute], Modifier]:
+    """Build an execution-result modifier.
+
+    Your callback receives ``(tool, toolkit, response)`` and returns a
+    ``ToolExecutionResponse`` dictionary. Check ``response["successful"]``,
+    not the session model's ``result_type`` attribute. Session adapters
+    retain ``log_id`` and ``result_type`` as dictionary keys. Serialize
+    with ``json.dumps(response)`` if needed; it is not a provider message.
+    Register this on tool execution or ``session.tools(modifiers=[...])``.
+    Calling ``session.execute`` directly does not invoke it.
+    """
     if modifier is not None:
         return Modifier(
             modifier=modifier,

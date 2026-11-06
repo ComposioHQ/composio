@@ -74,6 +74,20 @@ Building on the Claude Agent SDK instead? Use [`@composio/claude-agent-sdk`](../
 - `handleToolCalls(session, message)` returns `Anthropic.Messages.MessageParam[]`, not raw strings, so you append the result directly to your message list. Pass a user ID instead of a session for tools fetched with `tools.get()`. For finer control, `executeToolCall(session, toolUseBlock)` runs a single `tool_use` block and returns the result as a JSON string.
 - Claude occasionally emits a tool's `input` as a JSON string instead of an object; the provider normalizes this before execution.
 
+## Execution contracts
+
+| Entry point | Arguments | Return value |
+| --- | --- | --- |
+| `session.execute` | `toolSlug`, `arguments` | Plain object with `resultType`, `data`, `error`, and `logId`. Check `result.resultType === 'completed'`; serialize with `JSON.stringify(result)`. |
+| `composio.tools.execute` | `toolSlug`, `{ arguments, userId }` | `ToolExecuteResponse`; check `result.successful`. |
+| `afterExecute` modifier | `{ toolSlug, toolkitSlug, result }` | Receives and returns `ToolExecuteResponse`; check `result.successful`. |
+| `executeToolCall` | `session, toolUse` or `userId, toolUse, options?, modifiers?` | JSON string: `data` when `error === null`, otherwise `{ error }`. |
+| `handleToolCalls` | `session, message` or `userId, message, options?, modifiers?` | `Anthropic.Messages.MessageParam[]`: a `user` message containing ordered `tool_result` blocks, or `[]` when there are no tool uses. |
+
+`handleToolCalls` sets each block's `tool_use_id` from the original `tool_use.id`. It doesn't include the full execution metadata or an `is_error` flag; its serialized content is **not** an explicit success discriminator. If your application needs to inspect execution outcomes, use `session.execute` or direct execution and retain the model call ID when building your own message blocks. Python's `handle_tool_calls` returns execution dictionaries instead of TypeScript-native messages.
+
+Session adapters derive `successful` from `resultType === 'completed'`. A failed execution can have an empty or `null` error. A log ID is for correlation, not proof of a provider-side side effect. Check the explicit status and tool-specific `data`. Transport/authentication errors can throw; handle authentication recovery separately from returned execution failures. A batch can stop after earlier calls have run, so don't blindly replay it. Retry and idempotency decisions remain yours.
+
 ## Links
 
 - [Anthropic provider docs](https://docs.composio.dev/docs/providers/anthropic)

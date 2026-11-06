@@ -45,6 +45,29 @@ session = composio.use(session_id)
 
 See [how Composio works](https://docs.composio.dev/docs/how-composio-works) for sessions and meta tools, and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting `toolkits`, `tools`, `auth_configs`, and `connected_accounts` on `composio.create()`.
 
+## Execution results
+
+Python session execution takes `tool_slug`, not the direct Tools API's `slug`:
+
+```python
+result = session.execute(
+    tool_slug="COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "find recent emails"}]},
+)
+if result.result_type == "completed":
+    print(result.data)
+else:  # "failed" or "blocked", even if error is empty
+    print(result.result_type, result.error)
+```
+
+`session.execute` returns a Pydantic `ToolRouterSessionExecuteResponse` with `data`, `error`, `log_id`, and `result_type` attributes. Serialize it with `result.model_dump(mode="json")` or `result.model_dump_json()`. It has no `successful` key or model tool-call ID.
+
+In contrast, `composio.tools.execute(slug=..., arguments=..., user_id=...)` and `after_execute` modifiers use `ToolExecutionResponse` dictionaries: check `response["successful"]` and serialize with `json.dumps(response)`. Provider adapters for session execution derive that flag from `result_type == "completed"` and retain `result_type`, `log_id`, and any returned `instant_charge`. Modifiers receive `(tool, toolkit, response)` and must return the dictionary. Calling `session.execute` directly doesn't invoke callbacks supplied to `session.tools(modifiers=...)`.
+
+Provider helpers have provider-specific return contracts. The [Python Anthropic helper](providers/anthropic) returns execution dictionaries with `tool_use_id`; you still build and serialize Anthropic `tool_result` blocks yourself. Don't assume Python returns TypeScript-native message blocks.
+
+Transport/authentication errors and requests for user input can raise instead of returning a result. Keep authentication recovery separate from returned tool failures. A non-throwing call, empty `error`, or execution-log ID isn't proof of a provider-side action. Check the explicit outcome and tool-specific `data`; your application owns retry and idempotency decisions.
+
 ## Use with an agent framework
 
 Provider packages adapt `session.tools()` to your framework's native tool format. With [OpenAI Agents](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai_agents):
