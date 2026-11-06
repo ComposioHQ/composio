@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { Channel } from '../scripts/sdk-release/channel';
 import type { Language } from '../scripts/sdk-release/lanes';
 import {
   loadOriginalDistributions,
@@ -25,8 +26,8 @@ const distribution = async (file: string, language: Language = 'python'): Promis
 const wheel = await distribution('composio-1.0.1-py3-none-any.whl');
 const sdist = await distribution('composio-1.0.1.tar.gz');
 const tarball = await distribution('composio-core-1.0.1.tgz', 'typescript');
-const reconcileRegistry = (files: Distribution[], fetch: Fetch) =>
-  runRelease(reconcileRegistryEffect(files), fetch);
+const reconcileRegistry = (files: Distribution[], fetch: Fetch, channel?: Channel) =>
+  runRelease(reconcileRegistryEffect(files, channel), fetch);
 
 function registry(
   files: Distribution[],
@@ -134,7 +135,7 @@ describe('registry reconciliation', () => {
     ).rejects.toThrow(`after 3 attempts: composio@1.0.1/${sdist.file}`);
     expect(fake.reads.filter(url => url.startsWith('https://pypi.org/'))).toHaveLength(3);
   });
-  test('a fresh npm upload is polled until visible, then its stable tag is left to move', async () => {
+  test('a fresh npm upload is polled until visible, then its channel tag is left to move', async () => {
     const fake = registry([tarball]);
     let lookups = 0;
     const lagging: Fetch = async input => {
@@ -145,11 +146,28 @@ describe('registry reconciliation', () => {
       return fake.fetcher(input);
     };
     const state = await runRelease(
-      waitForRegistry([tarball], { attempts: 3, spacing: '0 millis', stableTags: false }),
+      waitForRegistry([tarball], { attempts: 3, spacing: '0 millis', channelTags: false }),
       lagging
     );
     expect(state.missing).toEqual([]);
-    expect(state.tagsToRepair).toEqual([{ name: tarball.name, version: tarball.version }]);
+    expect(state.tagsToRepair).toEqual([
+      { name: tarball.name, version: tarball.version, tag: 'latest' },
+    ]);
+  });
+  test('a beta moves only npm next forward and never reads or moves latest', async () => {
+    const beta = { ...tarball, version: '1.0.1-beta.8', file: 'composio-core-1.0.1-beta.8.tgz' };
+    const requested: string[] = [];
+    const fetch: Fetch = async input => {
+      const url = String(input);
+      requested.push(url);
+      if (url.endsWith('/next')) return new Response(JSON.stringify({ version: '0.1.36-next.13' }));
+      if (url.endsWith('/1.0.1-beta.8')) return new Response('{}', { status: 404 });
+      throw new Error(`Unexpected registry request: ${url}`);
+    };
+    const state = await reconcileRegistry([beta], fetch, 'beta');
+    expect(state.missing).toEqual([beta]);
+    expect(state.tagsToRepair).toEqual([{ name: beta.name, version: beta.version, tag: 'next' }]);
+    expect(requested.some(url => url.endsWith('/latest'))).toBe(false);
   });
   test('a content conflict fails at once instead of waiting for propagation', async () => {
     const fake = registry([wheel], { conflict: true });

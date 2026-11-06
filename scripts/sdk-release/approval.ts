@@ -10,7 +10,7 @@ import {
 } from './github';
 import { Pull, isReleasePull, releaseBranch } from './release-pr';
 import { ensure, fail } from './runtime';
-import { BATCH_PATH, ReleaseBatch, batchLanguages } from './source';
+import { BATCH_PATH, ReleaseBatch, batchLanguages, channelOf } from './source';
 
 const WRITE_PERMISSIONS = new Set(['write', 'maintain', 'admin']);
 const REVIEW_STATES = new Set(['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED']);
@@ -148,7 +148,7 @@ export const trustedIssue = (pull: Pull, batch: ReleaseBatch, appSlug: string) =
  * - the head is the release App's own commit on the frozen source, so nobody added changes the
  *   release-only diff check did not see;
  * - a writer other than the author and the requester approved that head;
- * - the candidate build, smoke and docs checks passed on it.
+ * - the candidate build and smoke checks passed on it, and the docs check for a stable release.
  */
 export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
   Effect.gen(function* () {
@@ -184,5 +184,6 @@ export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch, appSlug: stri
     for (const language of batchLanguages(batch))
       for (const check of [`SDK candidate (${language})`, `SDK candidate smoke (${language})`])
         yield* ensure(passed(check), `Missing green final-head check: ${check}`);
-    yield* ensure(passed('typescript-check'), 'Missing green final-head docs check');
+    for (const check of channelOf(batch).extraChecks)
+      yield* ensure(passed(check), `Missing green final-head check: ${check}`);
   });

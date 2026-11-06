@@ -9,9 +9,10 @@ import {
   request,
   runUrl,
 } from './github';
+import { REGISTRY_VERSION } from './lanes';
 import { packageLabel } from './release-pr';
 import { appendFile, ensure, readJson, runMain } from './runtime';
-import { BATCH_PATH, ReleaseBatch } from './source';
+import { BATCH_PATH, ReleaseBatch, channelOf } from './source';
 import { DISPLAY, ReleaseState, STATUS_LABELS, Stage, describe, endsStage } from './state';
 
 /** Status comments come from the workflow token, so nobody else's comment is ever edited. */
@@ -104,7 +105,7 @@ const publishedState = (batch: ReleaseBatch) =>
     _tag: 'Published',
     versions: batch.plan.releases.map(release => ({
       name: packageLabel(release.name),
-      version: release.newVersion,
+      version: REGISTRY_VERSION[release.language](release.newVersion),
     })),
   });
 
@@ -172,13 +173,16 @@ const DocsManifest = Schema.Struct({
   devDependencies: Schema.Record(Schema.String, Schema.String),
 });
 
-/** `report.ts docs-pins <docs package.json>` prints the `bun add` specs for this tag's npm release. */
+/**
+ * `report.ts docs-pins <docs package.json>` prints the `bun add` specs for this tag's npm
+ * release. A beta prints nothing: the docs follow stable releases only.
+ */
 const docsPinsMode = (manifestPath: string) =>
   Effect.gen(function* () {
     const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
     const released = Object.fromEntries(
       batch.plan.releases
-        .filter(release => release.language === 'typescript')
+        .filter(release => channelOf(batch).pinsDocs && release.language === 'typescript')
         .map(release => [release.name, release.newVersion])
     );
     const { devDependencies } = yield* readJson(DocsManifest, manifestPath);

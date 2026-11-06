@@ -8,8 +8,8 @@ import {
   readCandidateFiles,
   verifyCandidateFiles,
 } from './artifacts';
-import { tarballName } from './candidates';
-import { NPM_REGISTRY, type Language } from './lanes';
+import { prepareCandidateSource, tarballName } from './candidates';
+import { NPM_REGISTRY, REGISTRY_VERSION, type Language } from './lanes';
 import { discoverPythonPackages } from './python-metadata';
 import {
   ensure,
@@ -218,8 +218,9 @@ const verifyPythonConsumer = (
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const command = inDirectory(directory);
-    const version =
-      batch.plan.releases.find(release => release.language === 'python')?.newVersion ?? '';
+    const version = REGISTRY_VERSION.python(
+      batch.plan.releases.find(release => release.language === 'python')?.newVersion ?? ''
+    );
     const packages = yield* discoverPythonPackages(cwd);
     const python = yield* pythonVersion(cwd);
     const wheels = yield* candidateWheels(candidates);
@@ -323,7 +324,12 @@ export const verifyCandidateConsumers = (cwd: string, batch: ReleaseBatch, candi
       yield* CONSUMERS[manifest.language](cwd, batch, directory, candidates);
       const python = batch.plan.releases.find(release => release.language === 'python');
       if (manifest.language === 'python' && python)
-        yield* verifyPublishedProviders(cwd, candidates, python.newVersion, directory);
+        yield* verifyPublishedProviders(
+          cwd,
+          candidates,
+          REGISTRY_VERSION.python(python.newVersion),
+          directory
+        );
     })
   );
 
@@ -334,6 +340,7 @@ const main = Effect.gen(function* () {
     yield* (yield* Stdio.Stdio).args
   );
   const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
+  yield* prepareCandidateSource(path.resolve('.'), batch);
   yield* verifyCandidateConsumers(path.resolve('.'), batch, path.resolve(candidates));
 });
 

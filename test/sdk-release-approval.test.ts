@@ -105,6 +105,12 @@ describe('source tag', () => {
     expect(await issueOf({ headCommitter: 'writer' })).toEqual(Option.none());
   });
 
+  test('a beta is tagged without the docs check, which never runs on a plan-only PR', async () => {
+    const { fetcher, writes } = fakeController({ beta: true, docs: 'missing' });
+    expect(await tag(fetcher)).toEqual(tagged);
+    expect(writes).toEqual([tagWrite]);
+  });
+
   test('a release PR closed without merging is abandoned and creates no tag', async () => {
     const { fetcher, writes } = fakeController({ closedUnmerged: true });
     expect(await tag(fetcher)).toEqual({ _tag: 'Abandoned', pull });
@@ -124,9 +130,9 @@ describe('source tag', () => {
     ['the head is not on the planned source', { headParent: merge }, 'release App commit'],
     ['the candidate build failed', { failedCandidate: true }, 'SDK candidate (typescript)'],
     ['the smoke test failed', { failedSmoke: true }, 'SDK candidate smoke (typescript)'],
-    ['the docs check failed', { docs: 'failure' }, 'docs check'],
-    ['the docs check is pending', { docs: 'pending' }, 'docs check'],
-    ['the docs check is missing', { docs: 'missing' }, 'docs check'],
+    ['the docs check failed', { docs: 'failure' }, 'typescript-check'],
+    ['the docs check is pending', { docs: 'pending' }, 'typescript-check'],
+    ['the docs check is missing', { docs: 'missing' }, 'typescript-check'],
   ])(
     'when %s, the release is refused, no tag is created and the PR is told to revert',
     async (_name, options, reason) => {

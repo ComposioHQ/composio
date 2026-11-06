@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 import { PositiveInt, SDK_RELEASE_REPOSITORY, Sha, runUrl } from './github';
-import { PYTHON_RELEASE_MARKER } from './lanes';
+import type { Channel } from './channel';
+import { PYTHON_RELEASE_MARKER, REGISTRY_VERSION } from './lanes';
 import { issueUrl, type ReleaseBatch } from './source';
 
 const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
@@ -71,6 +72,36 @@ const changesetLine = (note: Changeset) => {
   return `- \`.changeset/${note.id}.md\` (${bumps || 'no version bump'}): ${headline(note.summary)}`;
 };
 
+/** How a release PR explains its channel to the reviewer. */
+const CHANNEL_COPY: Record<
+  Channel,
+  {
+    readonly title: string;
+    readonly summary: string;
+    readonly notes: string;
+    readonly afterPublish: string;
+  }
+> = {
+  stable: {
+    title: 'chore(release): publish SDK packages',
+    summary: 'A stable release: npm moves `latest` to these versions.',
+    notes: '## Changesets consumed',
+    afterPublish:
+      '5. After publishing, the bot opens a docs PR that pins the released npm versions, so twoslash checks the docs against them.',
+  },
+  beta: {
+    title: 'chore(release): publish SDK beta packages',
+    summary:
+      'A beta release: npm moves `next` to these versions and never touches `latest`, and pip installs them only with `--pre` or an exact pin. This PR commits only the release plan. The candidate checks apply its versions, so `next` keeps its stable versions and every changeset below stays pending for the stable release.',
+    notes: '## Changesets previewed',
+    afterPublish:
+      '5. A beta opens no docs PR: the docs keep following stable releases. The request issue lists the published versions.',
+  },
+};
+
+export const releasePullTitle = (batch: ReleaseBatch) =>
+  CHANNEL_COPY[batch.plan.choices.channel].title;
+
 const packageRows = (plan: Plan) =>
   plan.releases.map(release => {
     const recommended = plan.recommended.find(candidate => candidate.name === release.name);
@@ -79,7 +110,7 @@ const packageRows = (plan: Plan) =>
         ? ''
         : ` (recommended ${recommended?.newVersion ?? 'none'})`;
     const notes = release.changesets.map(id => `\`${id}\``).join(', ') || 'maintenance release';
-    return `| ${packageLabel(release.name)} | ${release.oldVersion} → **${release.newVersion}**${override} | ${release.type} | ${notes} |`;
+    return `| ${packageLabel(release.name)} | ${release.oldVersion} → **${REGISTRY_VERSION[release.language](release.newVersion)}**${override} | ${release.type} | ${notes} |`;
   });
 
 /** Lists what ships, which changesets it consumes, and which changelogs and docs it edits. */
@@ -89,6 +120,7 @@ export const releasePullBody = (
   outputs: ReadonlyArray<string>
 ) => {
   const { plan } = batch;
+  const copy = CHANNEL_COPY[plan.choices.channel];
   const changelogs = outputs.filter(path => path.endsWith('/CHANGELOG.md'));
   const docsChangelog = outputs.filter(path => path.startsWith('docs/content/changelog/'));
   const references = outputs.filter(path =>
@@ -97,13 +129,14 @@ export const releasePullBody = (
   const link = (path: string) => `[\`${path}\`](${fileUrl(branch, path)})`;
   const sections = [
     NOTE_EXEMPT,
+    copy.summary,
     '## What gets released',
     [
       '| Package | Version | Bump | Changesets |',
       '| --- | --- | --- | --- |',
       ...packageRows(plan),
     ].join('\n'),
-    '## Changesets consumed',
+    copy.notes,
     plan.changesets.map(changesetLine).join('\n') || 'None: this is a maintenance release.',
     ...(plan.retainedChangesets.length
       ? [
@@ -124,7 +157,7 @@ export const releasePullBody = (
       `2. Review the diff and approve this head. Approval must come from a writer other than the requester (@${batch.requestedBy}). Do not push to this branch: the tag step only accepts the release bot's commit. To change the notes, fix the changesets on \`next\`, close this PR and request a new release.`,
       `3. After approval and green checks, merge this PR. The release workflow rechecks the approval and tags this exact head \`sdk-release/${batch.id}\`; if the check fails, it creates no tag and asks you to revert this PR and request the release again.`,
       '4. The tag run publishes the exact files the `SDK candidate` checks built and the `SDK candidate smoke` checks installed on this PR. If a publish job fails, use "Re-run failed jobs" on that run.',
-      '5. After publishing, the bot opens a docs PR that pins the released npm versions, so twoslash checks the docs against them.',
+      copy.afterPublish,
     ].join('\n'),
     `Request: ${issueUrl(batch)}\nPlanning run: ${runUrl(batch.id)}`,
   ];

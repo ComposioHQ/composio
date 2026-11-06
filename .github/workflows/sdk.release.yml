@@ -17,6 +17,11 @@ on:
     types: [opened]
   workflow_dispatch:
     inputs:
+      channel:
+        description: stable consumes the changesets; beta publishes a preview to npm next
+        type: choice
+        options: [stable, beta]
+        default: stable
       typescript:
         description: TypeScript bump (auto follows the changesets)
         type: choice

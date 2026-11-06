@@ -1,4 +1,5 @@
 import { Schema } from 'effect';
+import { pythonVersion } from './channel';
 
 export const Language = Schema.Literals(['typescript', 'python']);
 export type Language = typeof Language.Type;
@@ -15,6 +16,12 @@ export const languageOf = (name: string): Language =>
 export const PRIMARY_TARGETS: Record<Language, ReadonlyArray<string>> = {
   typescript: ['@composio/core', '@composio/slim'],
   python: [PYTHON_RELEASE_MARKER],
+};
+
+/** How each language's registry spells a planned version. */
+export const REGISTRY_VERSION: Record<Language, (version: string) => string> = {
+  typescript: version => version,
+  python: pythonVersion,
 };
 
 /** Where each language's registry serves metadata and files. */

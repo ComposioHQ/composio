@@ -6,6 +6,7 @@ import { assembleReleasePlan } from '@changesets/assemble-release-plan';
 import { applyReleasePlan } from '@changesets/apply-release-plan';
 import type { Config, NewChangeset, Packages, ReleasePlan } from '@changesets/types';
 import semver from 'semver';
+import { betaSnapshot, pythonVersion, stableByDefault } from './channel';
 import { LANGUAGES, Language, PRIMARY_TARGETS, PYTHON_RELEASE_MARKER, languageOf } from './lanes';
 import {
   discoverPythonPackages,
@@ -26,9 +27,14 @@ export const autoByDefault = ReleaseChoice.pipe(
   Schema.withDecodingDefaultKey(Effect.succeed('auto' as const))
 );
 
+const PlanningRun = Schema.String.check(Schema.isPattern(/^[1-9][0-9]*$/));
+
 export const ReleaseOptions = Schema.Struct({
   typescript: autoByDefault,
   python: autoByDefault,
+  channel: stableByDefault,
+  /** The run that plans the release; a beta's versions end with it. */
+  run: Schema.optionalKey(PlanningRun),
 });
 export type SdkReleaseOptions = typeof ReleaseOptions.Encoded;
 type Choices = Record<Language, ReleaseChoice>;
@@ -54,7 +60,12 @@ const Release = Schema.Struct({
 export const SdkReleasePlan = Schema.Struct({
   schemaVersion: Schema.Literal(1),
   inputFingerprint: Schema.String,
-  choices: Schema.Struct({ typescript: ReleaseChoice, python: ReleaseChoice }),
+  choices: Schema.Struct({
+    typescript: ReleaseChoice,
+    python: ReleaseChoice,
+    channel: stableByDefault,
+    run: Schema.optionalKey(PlanningRun),
+  }),
   recommended: Schema.Array(Release),
   releases: Schema.Array(Release),
   changesets: Schema.Array(Changeset),
@@ -197,10 +208,23 @@ const maintenanceNotes = (
       })
   );
 
+/**
+ * How Changesets computes versions for a channel: the normal bump for stable, a snapshot of it
+ * for beta. A beta needs its planning run, which makes its versions unique.
+ */
+const versioning = (choices: typeof ReleaseOptions.Type, config: Config) =>
+  Effect.gen(function* () {
+    if (choices.channel === 'stable') return { config, snapshot: undefined };
+    if (choices.run === undefined) return yield* fail('A beta plan needs its planning run');
+    const { config: snapshot, parameters } = betaSnapshot(choices.run);
+    return { config: { ...config, snapshot }, snapshot: parameters };
+  });
+
 export const createSdkReleasePlan = (cwd: string, options: SdkReleaseOptions = {}) =>
   Effect.gen(function* () {
     const choices = yield* Schema.decodeUnknownEffect(ReleaseOptions)(options);
     const inputs = yield* loadInputs(cwd);
+    const { config, snapshot } = yield* versioning(choices, inputs.config);
     for (const pkg of inputs.packages.packages)
       if (inputs.allowed.has(pkg.packageJson.name))
         yield* ensure(
@@ -208,10 +232,10 @@ export const createSdkReleasePlan = (cwd: string, options: SdkReleaseOptions = {
           `SDK version must be stable for ${pkg.packageJson.name}`
         );
     const notes = inputs.changesets;
-    const recommendation = assembleReleasePlan(notes, inputs.packages, inputs.config, undefined);
+    const recommendation = assembleReleasePlan(notes, inputs.packages, config, undefined, snapshot);
     const { selected, retained } = splitNotes(notes, choices);
     selected.push(...(yield* maintenanceNotes(selected, choices, inputs.allowed)));
-    const native = assembleReleasePlan(selected, inputs.packages, inputs.config, undefined);
+    const native = assembleReleasePlan(selected, inputs.packages, config, undefined, snapshot);
     const releases = yield* selectedReleases(native);
     for (const release of releases)
       yield* ensure(
@@ -221,7 +245,12 @@ export const createSdkReleasePlan = (cwd: string, options: SdkReleaseOptions = {
     return yield* decodePlan({
       schemaVersion: 1,
       inputFingerprint: inputs.fingerprint,
-      choices: { typescript: choices.typescript, python: choices.python },
+      choices: {
+        typescript: choices.typescript,
+        python: choices.python,
+        channel: choices.channel,
+        ...(choices.run === undefined ? {} : { run: choices.run }),
+      },
       recommended: yield* selectedReleases(recommendation),
       releases,
       changesets: native.changesets,
@@ -259,18 +288,24 @@ export const applySdkReleasePlan = (
         inputs.allowed.has(release.name) && versionOf(release.name) === release.oldVersion,
         `Invalid release target ${release.name}`
       );
+    const { config, snapshot } = yield* versioning(
+      yield* Schema.decodeUnknownEffect(ReleaseOptions)(plan.choices),
+      inputs.config
+    );
     const native = assembleReleasePlan(
       plan.changesets.map(toNewChangeset),
       inputs.packages,
-      inputs.config,
-      undefined
+      config,
+      undefined,
+      snapshot
     );
     yield* ensure(
       sameJson(yield* selectedReleases(native), plan.releases),
       'Release targets changed from the selected Changesets plan'
     );
+    // A snapshot pins internal dependencies to the exact beta versions.
     yield* fromPromise(() =>
-      applyReleasePlan(native, inputs.packages, inputs.config, undefined, cwd)
+      applyReleasePlan(native, inputs.packages, config, snapshot !== undefined, cwd)
     );
     for (const note of plan.retainedChangesets)
       yield* writeFile(
@@ -281,5 +316,5 @@ export const applySdkReleasePlan = (
     for (const note of plan.changesets.filter(note => !retainedIds.has(note.id)))
       yield* fs.remove(path.resolve(cwd, '.changeset', `${note.id}.md`), { force: true });
     const python = plan.releases.find(release => release.name === PYTHON_RELEASE_MARKER);
-    if (python) yield* synchronizePythonMetadata(cwd, python.newVersion, options);
+    if (python) yield* synchronizePythonMetadata(cwd, pythonVersion(python.newVersion), options);
   });

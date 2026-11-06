@@ -26,8 +26,8 @@ import {
   jobs,
   request,
 } from './github';
-import { Language } from './lanes';
-import type { SdkRelease } from './plan';
+import { Language, REGISTRY_VERSION } from './lanes';
+import { applySdkReleasePlan, type SdkRelease } from './plan';
 import { discoverPythonPackages } from './python-metadata';
 import {
   appendFile,
@@ -41,7 +41,7 @@ import {
   sha256Hex,
   type ReleaseServices,
 } from './runtime';
-import { BATCH_PATH, ReleaseBatch, batchLanguages, releaseTag } from './source';
+import { BATCH_PATH, ReleaseBatch, batchLanguages, channelOf, releaseTag } from './source';
 
 const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
@@ -142,7 +142,7 @@ const LANE_BUILDS: Record<
         const [release] = selected;
         const python = yield* discoverPythonPackages(cwd);
         yield* ensure(
-          python.every(pkg => pkg.version === release.newVersion),
+          python.every(pkg => pkg.version === REGISTRY_VERSION.python(release.newVersion)),
           'Python candidate train differs from the approved target'
         );
       }),
@@ -265,6 +265,14 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
     } satisfies ApprovedCandidate;
   });
 
+/**
+ * Makes the checkout carry the versions the candidate publishes. A stable release PR already
+ * commits them; a beta PR commits only its plan, so its frozen plan is applied here, in the
+ * credential-free build and smoke jobs, and never reaches `next`.
+ */
+export const prepareCandidateSource = (cwd: string, batch: ReleaseBatch) =>
+  channelOf(batch).commitsVersions ? Effect.void : applySdkReleasePlan(cwd, batch.plan);
+
 /** Builds a release-PR candidate. */
 const buildCandidate = (
   env: BuildEnvironment,
@@ -317,6 +325,7 @@ const buildMode = (language: Language) =>
     const batch = yield* readJson(ReleaseBatch, BATCH_PATH);
     const selected = batch.plan.releases.filter(release => release.language === language);
     yield* ensure(selected.length > 0, `This release plans no ${language} packages`);
+    yield* prepareCandidateSource((yield* Path.Path).resolve('.'), batch);
     yield* buildCandidate(env, language, selected);
   });
 

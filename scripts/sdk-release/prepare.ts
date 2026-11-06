@@ -19,9 +19,10 @@ import {
   BATCH_PATH,
   ReleaseBatch,
   ReleasePatch,
+  channelOf,
   issueUrl,
   releaseOutputs,
-  validateReleaseDiff,
+  validateBatchDiff,
 } from './source';
 
 const git = (cwd: string, ...args: ReadonlyArray<string>) =>
@@ -44,6 +45,22 @@ const releaseFile = (cwd: string, inputBase: string, file: string) =>
     };
   });
 
+/** Writes the versions, lockfile, references and changelogs a stable release PR commits. */
+const applyStableRelease = (cwd: string, batch: ReleaseBatch) =>
+  Effect.gen(function* () {
+    yield* applySdkReleasePlan(cwd, batch.plan);
+    yield* run('pnpm', ['install', '--lockfile-only', '--ignore-scripts'], {
+      cwd,
+      env: withoutReleaseTokens,
+    });
+    yield* generateSdkReleaseReferences(cwd, batch.plan);
+    yield* generateSdkReleaseNotes(cwd, batch.plan, {
+      releaseId: batch.id,
+      date: batch.date,
+      requestUrl: issueUrl(batch),
+    });
+  });
+
 /** Applies a planned batch to a clean checkout of its source and returns the changed files. */
 export const prepareRelease = (cwd: string, batch: ReleaseBatch) =>
   Effect.gen(function* () {
@@ -56,17 +73,8 @@ export const prepareRelease = (cwd: string, batch: ReleaseBatch) =>
       (yield* git(cwd, 'status', '--porcelain')).trim() === '',
       'Preparation requires a clean source checkout'
     );
-    yield* applySdkReleasePlan(cwd, batch.plan);
-    yield* run('pnpm', ['install', '--lockfile-only', '--ignore-scripts'], {
-      cwd,
-      env: withoutReleaseTokens,
-    });
-    yield* generateSdkReleaseReferences(cwd, batch.plan);
-    yield* generateSdkReleaseNotes(cwd, batch.plan, {
-      releaseId: batch.id,
-      date: batch.date,
-      requestUrl: issueUrl(batch),
-    });
+    // A beta commits only its plan; its candidate build applies the versions.
+    if (channelOf(batch).commitsVersions) yield* applyStableRelease(cwd, batch);
     yield* writeFile(path.resolve(cwd, BATCH_PATH), formatJson(batch));
     const changed = new Set([
       ...nulSeparated(yield* git(cwd, 'diff', '--name-only', '-z', batch.inputBase)),
@@ -77,7 +85,7 @@ export const prepareRelease = (cwd: string, batch: ReleaseBatch) =>
       file => releaseFile(cwd, batch.inputBase, file),
       { concurrency: 8 }
     );
-    yield* validateReleaseDiff(files, batch.plan, yield* releaseOutputs(cwd, batch));
+    yield* validateBatchDiff(files, batch, yield* releaseOutputs(cwd, batch));
     return yield* Schema.decodeUnknownEffect(ReleasePatch)({ files });
   });
 

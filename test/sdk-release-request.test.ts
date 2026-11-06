@@ -16,7 +16,7 @@ const context = {
 const plan: SdkReleasePlan = {
   schemaVersion: 1,
   inputFingerprint: 'frozen',
-  choices: { typescript: 'auto', python: 'auto' },
+  choices: { typescript: 'auto', python: 'auto', channel: 'stable' },
   recommended: [],
   changesets: [],
   retainedChangesets: [],
@@ -31,7 +31,7 @@ const plan: SdkReleasePlan = {
     },
   ],
 };
-const request: ReleaseRequest = { typescript: 'auto', python: 'auto' };
+const request: ReleaseRequest = { channel: 'stable', typescript: 'auto', python: 'auto' };
 const planned = (value: SdkReleasePlan) => () => Effect.succeed(value);
 const failing = (message: string) => () =>
   Effect.sync((): SdkReleasePlan => {
@@ -103,11 +103,17 @@ function client(
 
 describe('release request parsing', () => {
   test('the issue form and a dispatch read into the same request', () => {
-    const issue = { issue: { body: '### TypeScript\n\nskip\n\n### Python\n\npatch\n' } };
-    expect(parseReleaseRequest('issues', issue)).toEqual({ typescript: 'skip', python: 'patch' });
+    const issue = {
+      issue: { body: '### Channel\n\nbeta\n\n### TypeScript\n\nskip\n\n### Python\n\npatch\n' },
+    };
+    expect(parseReleaseRequest('issues', issue)).toEqual({
+      channel: 'beta',
+      typescript: 'skip',
+      python: 'patch',
+    });
     expect(
       parseReleaseRequest('workflow_dispatch', { inputs: { typescript: 'skip', python: 'patch' } })
-    ).toEqual({ typescript: 'skip', python: 'patch' });
+    ).toEqual({ channel: 'stable', typescript: 'skip', python: 'patch' });
     expect(parseReleaseRequest('workflow_dispatch', { inputs: {} })).toEqual(request);
   });
   test('a hand-written issue body and an unknown bump are refused', () => {
