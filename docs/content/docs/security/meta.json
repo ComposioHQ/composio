@@ -1,8 +1,9 @@
 {
-  "title": "Security and data",
-  "defaultOpen": false,
+  "title": "Security",
+  "defaultOpen": true,
   "pages": [
     "overview",
+    "composio-as-subprocessor",
     "token-custody",
     "data-retention",
     "zero-data-retention"
