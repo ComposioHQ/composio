@@ -382,15 +382,20 @@ describe('ConnectionRequest', () => {
       expect(await result).toHaveProperty('status', ConnectedAccountStatuses.ACTIVE);
     });
 
-    it('stops its own delay at the timeout after a 429', async () => {
-      mockClient.connectedAccounts.retrieve.mockRejectedValue(rateLimited({ 'retry-after': '60' }));
+    it.each(['5', '60'])(
+      'does not repoll at the deadline after Retry-After: %s',
+      async retryAfter => {
+        mockClient.connectedAccounts.retrieve.mockRejectedValue(
+          rateLimited({ 'retry-after': retryAfter })
+        );
 
-      const result = start(5000);
-      await vi.advanceTimersByTimeAsync(5000);
+        const result = start(5000);
+        await vi.advanceTimersByTimeAsync(5000);
 
-      expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
-      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(2);
-    });
+        expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
+        expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(1);
+      }
+    );
 
     it('times out after one poll on a NaN timeout', async () => {
       mockClient.connectedAccounts.retrieve.mockResolvedValue(pending);
@@ -428,35 +433,41 @@ describe('ConnectionRequest', () => {
       await result;
     });
 
-    it('runs past the timeout while the real client retries a 429', async () => {
-      vi.useFakeTimers();
-      const fetch = vi.fn<typeof globalThis.fetch>(
-        async () =>
-          new Response(JSON.stringify({ error: { message: 'slow down' } }), {
-            status: 429,
-            headers: { 'content-type': 'application/json', 'retry-after': '3' },
-          })
-      );
-      const client = new ComposioClient({
-        auth: Auth.project('test-api-key'),
-        baseURL: 'https://backend.invalid',
-        transport: createFetchTransport({ fetch }),
-      });
-      let settled = false;
-      const result = createConnectionRequest(client, connectedAccountId)
-        .waitForConnection(1000)
-        .catch(error => error)
-        .finally(() => {
-          settled = true;
+    it.each([
+      { timeout: 1000, retryAfter: '3', elapsed: 6000 },
+      { timeout: 25000, retryAfter: '10', elapsed: 25000 },
+    ])(
+      'does not restart client retries after a $timeout ms timeout',
+      async ({ timeout, retryAfter, elapsed }) => {
+        vi.useFakeTimers();
+        const fetch = vi.fn<typeof globalThis.fetch>(
+          async () =>
+            new Response(JSON.stringify({ error: { message: 'slow down' } }), {
+              status: 429,
+              headers: { 'content-type': 'application/json', 'retry-after': retryAfter },
+            })
+        );
+        const client = new ComposioClient({
+          auth: Auth.project('test-api-key'),
+          baseURL: 'https://backend.invalid',
+          transport: createFetchTransport({ fetch }),
         });
+        let settled = false;
+        const result = createConnectionRequest(client, connectedAccountId)
+          .waitForConnection(timeout)
+          .catch(error => error)
+          .finally(() => {
+            settled = true;
+          });
 
-      await vi.advanceTimersByTimeAsync(5999);
-      expect(settled).toBe(false);
+        await vi.advanceTimersByTimeAsync(elapsed - 1);
+        expect(settled).toBe(false);
 
-      await vi.advanceTimersByTimeAsync(1);
-      expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
-      expect(fetch).toHaveBeenCalledTimes(3);
-    });
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
+        expect(fetch).toHaveBeenCalledTimes(3);
+      }
+    );
 
     it('keeps its usual delay when a 429 has no usable Retry-After', async () => {
       mockClient.connectedAccounts.retrieve.mockRejectedValue(
@@ -467,7 +478,7 @@ describe('ConnectionRequest', () => {
       await vi.advanceTimersByTimeAsync(1000);
 
       expect(await result).toBeInstanceOf(ConnectionRequestTimeoutError);
-      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(2);
+      expect(mockClient.connectedAccounts.retrieve).toHaveBeenCalledTimes(1);
     });
 
     it('still fails on other API errors', async () => {
