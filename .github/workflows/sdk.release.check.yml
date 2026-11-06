@@ -1,0 +1,61 @@
+name: SDK release checks
+
+on:
+  pull_request:
+    branches: [next]
+    # `edited` re-checks the release-note exemption when the PR description changes.
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - '.changeset/**'
+      - 'python/**'
+      - 'ts/packages/**'
+      - 'ts/scripts/validate-changesets.*'
+      - 'ts/scripts/check-provider-compatibility.ts'
+      - 'scripts/sdk-release/**'
+      - 'test/sdk-release-*'
+      - 'tsconfig.sdk-release.json'
+      - '.github/workflows/sdk.release*.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+# Description edits only re-run the note check, so they must not cancel a code run's tooling.
+concurrency:
+  group: sdk-release-check-${{ github.ref }}-${{ github.event.action == 'edited' && 'description' || 'code' }}
+  cancel-in-progress: true
+
+jobs:
+  release-note:
+    name: SDK release note
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Require a changeset for published SDK behavior
+        env:
+          SDK_RELEASE_NOTE_BASE: ${{ github.event.pull_request.base.sha }}
+          SDK_RELEASE_PR_BODY: ${{ github.event.pull_request.body }}
+        run: pnpm validate:changesets
+
+  tooling:
+    name: SDK release tooling
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run typecheck:sdk-release
+      - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.ts
+      - run: pnpm run test:sdk-release
