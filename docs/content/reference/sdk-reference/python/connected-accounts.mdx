@@ -127,7 +127,7 @@ composio.connected_accounts.update('ca_abc123', alias='')
 Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.  Only valid on SHARED connections; raises `ComposioAclOnlyForSharedError` on a PRIVATE connection. Omit a parameter to leave it unchanged; pass an empty list to clear an allow/deny list. At least one parameter must be provided.
 
 ```python
-def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids: List[str | None] = ..., not_allowed_user_ids: List[str | None] = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids: List[str] | None = ..., not_allowed_user_ids: List[str] | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
 ```
 
 **Parameters**
@@ -136,8 +136,8 @@ def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids
 |------|------|
 | `nanoid` | `str` |
 | `allow_all_users?` | `bool \| None` |
-| `allowed_user_ids?` | `List[str \| None]` |
-| `not_allowed_user_ids?` | `List[str \| None]` |
+| `allowed_user_ids?` | `List[str] \| None` |
+| `not_allowed_user_ids?` | `List[str] \| None` |
 
 **Returns**
 
