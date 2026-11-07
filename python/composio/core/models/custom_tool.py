@@ -244,7 +244,7 @@ def _create_tool(
     if not callable(execute):
         raise ValidationError(f"{context}: execute must be a callable")
 
-    if asyncio.iscoroutinefunction(execute):
+    if inspect.iscoroutinefunction(execute):
         raise ValidationError(
             f"{context}: execute must be a synchronous function, not async. "
             f"The Composio Python SDK is synchronous — use a regular "
@@ -373,7 +373,7 @@ def _infer_tool_from_function(
     #   (input: BaseModel, ctx)     — with session context
     # The first param MUST be annotated with a BaseModel subclass.
     # Reject async before wrapping (wrapper would hide it from _create_tool)
-    if asyncio.iscoroutinefunction(fn):
+    if inspect.iscoroutinefunction(fn):
         raise ValidationError(
             f'experimental.tool: "{fn.__name__}" is async. '
             f"The Composio Python SDK is synchronous — use a regular "
