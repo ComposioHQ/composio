@@ -1,0 +1,61 @@
+name: Docs - Python Snippets
+
+# Checks maintained Python fences for syntax and current SDK-attributed errors
+# against local SDK/provider source. See docs/agent-guidance/context/code-examples.md.
+on:
+  pull_request:
+    paths:
+      # Includes rendered/component-backed sources, package manifests/lockfiles,
+      # parser, checker, fixtures, and Python-free static tests.
+      - 'docs/**'
+      # Includes SDK/provider source, setup.py, and dependency-group metadata.
+      - 'python/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/docs-python-snippets.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  python-snippets:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-python-uv
+
+      - name: Cache bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('docs/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # The checker needs no generated files or native install hooks.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Check real Python helper regressions
+        run: bun scripts/python-snippets/test-helper.ts
+
+      - name: Check Python snippets against the SDK
+        run: bun run check:python-snippets

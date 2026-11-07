@@ -58,6 +58,7 @@ describe("Navigation - meta.json validity", () => {
     expect(separators).toEqual([
       "---Get Started---",
       "---Core concepts---",
+      "---Governance---",
       "---Guides---",
       "---Direct execution (legacy)---",
       "---Migration and security---",
@@ -72,6 +73,17 @@ describe("Navigation - meta.json validity", () => {
       "cli",
       "composio-connect",
       "agent-setup",
+    ]);
+
+    expect(
+      pages.slice(
+        pages.indexOf("---Governance---") + 1,
+        pages.indexOf("---Guides---")
+      )
+    ).toEqual([
+      "governance/tool-hints",
+      "governance/approvals",
+      "firewall",
     ]);
 
     expect(

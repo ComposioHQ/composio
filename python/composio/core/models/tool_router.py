@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+import warnings
 from dataclasses import dataclass
 from enum import Enum
 from urllib.parse import urlsplit
@@ -24,9 +25,10 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
-from composio.core.models.base import Resource, credential_headers, header_value
+from composio.core.models.base import Resource, credential_headers, scope_headers
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
+    LocalToolkit,
     assert_no_custom_tool_slugs_in_preload,
     build_custom_tools_map,
     build_custom_tools_map_from_response,
@@ -38,18 +40,19 @@ from composio.core.models.custom_tool_types import (
     CustomTool,
     CustomToolsMap,
     InlineCustomToolsWirePayload,
+    LocalTool,
 )
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_attach_experimental,
 )
 from composio.core.models.tool_router_constants import (
-    ORG_ID_HEADER,
     PRELOAD_TOOLS_ALL,
-    PROJECT_ID_HEADER,
     SESSION_PRESET_DIRECT_TOOLS,
 )
 from composio.core.models.tool_router_session import (
+    ToolRouterHook,
     ToolRouterInstantConfig,
+    ToolRouterProxyExecuteConfig,
     ToolRouterSession,
     ToolRouterSessionConfig,
     ToolRouterSessionPreloadConfig,
@@ -65,7 +68,11 @@ from composio.core.models.tool_router_session_delete import (
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-from composio.exceptions import InvalidParams, MCPDestinationError
+from composio.exceptions import (
+    ComposioDeprecationWarning,
+    InvalidParams,
+    MCPDestinationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +122,12 @@ def _origin(url: str, role: str) -> str:
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
-    "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
+    "readOnlyHint",
+    "createHint",
+    "updateHint",
+    "destructiveHint",
+    "idempotentHint",
+    "openWorldHint",
 ]
 
 # Type alias for sandbox compute tier on the session sandbox
@@ -140,6 +152,10 @@ class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
     """
 
     enable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Toolkits whose tools need the user's approval before they
+    run. A call that needs approval doesn't run: ``session.execute()`` raises
+    ``ToolInputRequiredError`` with the question to show the user."""
 
 
 class ToolRouterToolkitsDisableConfig(te.TypedDict, total=False):
@@ -150,6 +166,19 @@ class ToolRouterToolkitsDisableConfig(te.TypedDict, total=False):
     """
 
     disable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Toolkits whose tools need the user's approval before they
+    run. A call that needs approval doesn't run: ``session.execute()`` raises
+    ``ToolInputRequiredError`` with the question to show the user."""
+
+
+class ToolRouterToolkitsRequireApprovalConfig(te.TypedDict):
+    """Toolkit policy that only sets which toolkits need the user's approval."""
+
+    require_approval: t.List[str]
+    """Experimental. Toolkits whose tools need the user's approval before they
+    run. A call that needs approval doesn't run: ``session.execute()`` raises
+    ``ToolInputRequiredError`` with the question to show the user."""
 
 
 class ToolRouterToolsEnableConfig(te.TypedDict, total=False):
@@ -160,6 +189,9 @@ class ToolRouterToolsEnableConfig(te.TypedDict, total=False):
     """
 
     enable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
 
 
 class ToolRouterToolsDisableConfig(te.TypedDict, total=False):
@@ -170,6 +202,9 @@ class ToolRouterToolsDisableConfig(te.TypedDict, total=False):
     """
 
     disable: t.List[str]
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
 
 
 class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
@@ -182,6 +217,17 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
     """
 
     tags: ToolRouterConfigTags
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
+
+
+class ToolRouterToolsRequireApprovalConfig(te.TypedDict):
+    """Per-toolkit tool policy that only sets which tools need the user's approval."""
+
+    require_approval: t.List[str]
+    """Experimental. Tools of this toolkit that need the user's approval
+    before they run."""
 
 
 # Type alias for per-toolkit tool configuration
@@ -190,11 +236,14 @@ class ToolRouterToolsTagsConfig(te.TypedDict, total=False):
 # - ToolRouterToolsEnableConfig: Dict with 'enable' key (whitelist)
 # - ToolRouterToolsDisableConfig: Dict with 'disable' key (blacklist)
 # - ToolRouterToolsTagsConfig: Dict with 'tags' key (filter by MCP tags)
+# - ToolRouterToolsRequireApprovalConfig: Dict with only 'require_approval'
+# Each dict can also carry an experimental 'require_approval' list.
 ToolRouterToolsConfig = t.Union[
     t.List[str],
     ToolRouterToolsEnableConfig,
     ToolRouterToolsDisableConfig,
     ToolRouterToolsTagsConfig,
+    ToolRouterToolsRequireApprovalConfig,
 ]
 
 
@@ -208,6 +257,9 @@ class ToolRouterTagsEnableDisableConfig(te.TypedDict, total=False):
 
     enable: t.Optional[t.List[ToolRouterTag]]
     disable: t.Optional[t.List[ToolRouterTag]]
+    require_approval: t.Optional[t.List[ToolRouterTag]]
+    """Experimental. Tools with any of these tags need the user's approval
+    before they run."""
 
 
 # Type alias for tags configuration
@@ -336,6 +388,15 @@ def _preloads_all_custom_tools(
     return tools == PRELOAD_TOOLS_ALL
 
 
+def _proxy_execute_payload(
+    proxy_execute: t.Union[bool, ToolRouterProxyExecuteConfig],
+) -> ToolRouterProxyExecuteConfig:
+    """Expand the ``proxy_execute`` bool shorthand to the API block."""
+    if isinstance(proxy_execute, bool):
+        return {"enable": proxy_execute}
+    return proxy_execute
+
+
 def _apply_session_preset_defaults(
     session_preset: t.Optional[SessionPreset],
     manage_connections: t.Optional[t.Union[bool, ToolRouterManageConnectionsConfig]],
@@ -354,6 +415,34 @@ def _apply_session_preset_defaults(
         {"enable": False} if workbench is None else workbench,
         {"tools": PRELOAD_TOOLS_ALL} if preload is None else preload,
     )
+
+
+_LocalOption = t.TypeVar("_LocalOption")
+
+
+def _resolve_local_option(
+    new_name: str,
+    new_value: t.Optional[_LocalOption],
+    old_name: str,
+    old_value: t.Optional[_LocalOption],
+) -> t.Optional[_LocalOption]:
+    # `custom_*` options were renamed to `local_*` because "custom toolkits"
+    # also names the server-side Custom MCP toolkits.
+    if old_value is None:
+        return new_value
+    if new_value is not None:
+        raise InvalidParams(
+            f"Pass either `{new_name}` or `{old_name}`, not both. "
+            f"`{old_name}` is a deprecated alias for `{new_name}`."
+        )
+    warnings.warn(
+        f"`{old_name}` is deprecated; use `{new_name}`",
+        ComposioDeprecationWarning,
+        # Point at the caller of create()/use(), past this helper and the
+        # Resource tracing wrapper around those methods.
+        stacklevel=4,
+    )
+    return old_value
 
 
 def _prepare_inline_custom_tools(
@@ -410,13 +499,21 @@ class ToolRouterExperimentalConfig(te.TypedDict, total=False):
 
     Attributes:
         assistive_prompt: Configuration for assistive prompt generation.
-        custom_tools: Custom tools to include in the session.
-        custom_toolkits: Custom toolkits with grouped tools.
+        local_tools: Local tools to include in the session.
+        local_toolkits: Local toolkits with grouped tools.
+        custom_tools: Deprecated alias for ``local_tools``.
+        custom_toolkits: Deprecated alias for ``local_toolkits``.
     """
 
     assistive_prompt: ToolRouterAssistivePromptConfig
+    local_tools: t.List[LocalTool]
+    local_toolkits: t.List[LocalToolkit]
     custom_tools: t.List[CustomTool]
     custom_toolkits: t.List[ExperimentalToolkit]
+    no_elicitation_support_fallback: t.Literal["deny", "allow"]
+    """What happens to a call that needs the user's approval when the
+    session's MCP client can't ask the user: ``"deny"`` (the default) or
+    ``"allow"``."""
 
 
 @dataclass
@@ -615,13 +712,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         """
         Create an MCP server config object with authentication headers.
 
-        The headers mirror the effective auth of the underlying client: the
-        ``x-user-api-key`` default header when one is placed (the client sends
-        it and suppresses the configured keys), otherwise its project key as
-        ``x-api-key``, otherwise the resolved ``user_api_key`` option as
-        ``x-user-api-key``, plus ``x-org-id`` / ``x-project-id`` when the
-        client carries an explicit scope. No other default header is copied
-        and the environment is never re-read.
+        The headers mirror the effective auth of the underlying client, read
+        from the ``auth`` and ``scope`` the SDK built it with: its project key
+        as ``x-api-key``, otherwise its user key as ``x-user-api-key`` (see
+        :func:`~composio.core.models.base.credential_headers`), plus
+        ``x-org-id`` / ``x-project-id`` when the client carries an explicit
+        ``scope``. No other default header is copied and the environment is
+        never re-read.
 
         The headers are only attached when the MCP URL has the same origin as
         the client's API base URL, whatever scheme is configured: that origin
@@ -653,12 +750,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
             return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers={})
 
-        default_headers: t.Mapping[str, t.Any] = self._client.default_headers
-        headers: t.Dict[str, t.Optional[str]] = dict(credential_headers(self._client))
-        for scope_header in (ORG_ID_HEADER, PROJECT_ID_HEADER):
-            scope_value = header_value(default_headers, scope_header)
-            if scope_value:
-                headers[scope_header] = scope_value
+        headers: t.Dict[str, t.Optional[str]] = {
+            **credential_headers(self._client),
+            **scope_headers(self._client),
+        }
         return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)
 
     def _transform_tags_params(
@@ -681,24 +776,20 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             # Return value structure matches TagsUnionMember1: {"enable": [...]}
             return {"enable": tags}
         elif isinstance(tags, dict):
-            # Object format with enable/disable
+            # Object format with enable/disable and an approval list
             # Only include keys that are present and not None
             # Return value structure matches TagsUnionMember1
+            result: session_create_params.TagsUnionMember1 = {}
             enable_value = tags.get("enable")
+            if enable_value is not None:
+                result["enable"] = enable_value
             disable_value = tags.get("disable")
-
-            # Build result dict only with non-None values
-            if enable_value is not None and disable_value is not None:
-                return {
-                    "enable": enable_value,
-                    "disable": disable_value,
-                }
-            elif enable_value is not None:
-                return {"enable": enable_value}
-            elif disable_value is not None:
-                return {"disable": disable_value}
-            else:
-                return None
+            if disable_value is not None:
+                result["disable"] = disable_value
+            require_approval_value = tags.get("require_approval")
+            if require_approval_value is not None:
+                result["require_approval"] = require_approval_value
+            return result or None
 
     # Overloads: pass ``mcp=True`` to surface ``session.mcp`` in the returned
     # type (ToolRouterSessionWithMcp). The MCP endpoint exists at runtime on
@@ -713,6 +804,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 t.List[str],
                 ToolRouterToolkitsEnableConfig,
                 ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
@@ -725,6 +817,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -742,6 +836,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 t.List[str],
                 ToolRouterToolkitsEnableConfig,
                 ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
@@ -754,6 +849,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -770,6 +867,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 t.List[str],
                 ToolRouterToolkitsEnableConfig,
                 ToolRouterToolkitsDisableConfig,
+                ToolRouterToolkitsRequireApprovalConfig,
             ]
         ] = None,
         tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
@@ -782,6 +880,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+        hooks: t.Optional[t.List[ToolRouterHook]] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
@@ -799,6 +899,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                           Example: {'enable': ['github', 'slack']}
                         - ToolRouterToolkitsDisableConfig: Dict with 'disable' key.
                           Example: {'disable': ['linear']}
+                        Experimental: any dict can carry 'require_approval', the
+                        toolkits whose tools need the user's approval, or have
+                        only that key. Example: {'require_approval': ['gmail']}
         :param tools: Optional per-toolkit tool configuration. Key is toolkit slug,
                      value is ToolRouterToolsConfig which can be:
                      - List[str]: List of tool slugs (shorthand for enable).
@@ -809,7 +912,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                        Example: {'disable': ['GMAIL_DELETE_EMAIL']}
                      - ToolRouterToolsTagsConfig: Dict with 'tags' key.
                        Tags can be a list (shorthand for enable) or object with enable/disable.
-                       Example: {'tags': ['readOnlyHint', 'idempotentHint']}
+                       Example: {'tags': ['readOnlyHint', 'createHint']}
                        Example: {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
                      Example: {
                          'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
@@ -817,14 +920,20 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                          'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
                          'linear': {'tags': ['readOnlyHint']}
                      }
+                     Experimental: any dict can carry 'require_approval', the
+                     tools that need the user's approval, or have only that key.
+                     Example: {'gmail': {'require_approval': ['GMAIL_SEND_EMAIL']}}
         :param tags: Optional global MCP tags to filter tools by.
                     Can be:
                     - List[str]: List of tag literals (shorthand for enable).
-                      Example: ['readOnlyHint', 'idempotentHint']
+                      Example: ['readOnlyHint', 'createHint']
                     - ToolRouterTagsEnableDisableConfig: Dict with 'enable' and/or 'disable' keys.
                       Example: {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}
-                    Available tag values: 'readOnlyHint', 'destructiveHint',
-                    'idempotentHint', 'openWorldHint'.
+                    Tag values: 'readOnlyHint', 'createHint',
+                    'updateHint', 'destructiveHint'.
+                    Experimental: the dict can also carry 'require_approval',
+                    tags whose tools need the user's approval.
+                    Example: {'require_approval': ['destructiveHint']}
                     Toolkit-level tags override this global setting.
         :param manage_connections: Optional connection management configuration. Can be:
                                   - bool: Simple boolean to enable/disable.
@@ -888,14 +997,35 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                             - 'assistive_prompt' (dict): Configuration for assistive prompt generation.
                               - 'user_timezone' (str): IANA timezone identifier
                                 (e.g., "America/New_York", "Europe/London").
-                            - 'custom_tools' / 'custom_toolkits': SDK custom tools.
-                              Set preload=True on a custom tool or toolkit to expose
-                              it directly from session.tools(); otherwise custom tools
+                            - 'local_tools' / 'local_toolkits': local tools that
+                              run in-process. 'custom_tools' / 'custom_toolkits'
+                              are deprecated aliases.
+                            - 'no_elicitation_support_fallback' ('deny' or 'allow'):
+                              what happens to a call that needs approval when the
+                              session's MCP client can't ask the user.
+                              Set preload=True on a local tool or toolkit to expose
+                              it directly from session.tools(); otherwise local tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param proxy_execute: Optional proxy execute configuration: a bool or
+                        ``ToolRouterProxyExecuteConfig``; ``True`` is shorthand for
+                        ``{"enable": True}``. ``True`` exposes the
+                        ``COMPOSIO_PROXY_EXECUTE`` meta tool. ``False`` also turns off
+                        the sandbox ``proxy_execute()`` helper, and the API rejects it
+                        together with ``sandbox={"enable_proxy_execution": True}``.
+                        Leaving it out keeps the meta tool off.
+        :param hooks: Optional hooks that run on this session's tool calls. A
+                        ``before_execute`` hook can block a call before it runs;
+                        an ``after_execute`` hook can block its result before the
+                        agent sees it. A blocked call comes back with
+                        ``result_type="blocked"``. Cannot be combined with
+                        ``experimental={"session_config_id": ...}``.
         :param instant: Experimental Instant usage policy. The project
                         must allow Instant usage. ``False`` disables it for this
                         Session; a policy can restrict eligible toolkits and tools.
+                        ``return_instant_charge`` returns the charge with each
+                        call, and ``return_prices_in_search`` shows each Instant
+                        tool's price in ``session.search()`` results.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
                     the type (returns ToolRouterSessionWithMcp). The endpoint
@@ -944,7 +1074,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             # Create a session with global tag filtering
             session = tool_router.create(
                 user_id='user_123',
-                tags=['readOnlyHint', 'idempotentHint']
+                tags=['readOnlyHint', 'createHint']
             )
 
             # Create a session with toolkit-specific tag filtering (array format)
@@ -952,7 +1082,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 user_id='user_123',
                 tools={
                     'gmail': {'tags': ['readOnlyHint']},
-                    'github': {'tags': ['readOnlyHint', 'idempotentHint']}
+                    'github': {'tags': ['readOnlyHint', 'createHint']}
                 }
             )
 
@@ -1064,6 +1194,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                         # config is ToolRouterToolsDisableConfig when "disable" is present
                         disable_config = t.cast(ToolRouterToolsDisableConfig, config)
                         transformed_config["disable"] = disable_config["disable"]
+                    if "require_approval" in config:
+                        approval_config = t.cast(
+                            ToolRouterToolsRequireApprovalConfig, config
+                        )
+                        transformed_config["require_approval"] = approval_config[
+                            "require_approval"
+                        ]
                     # Use type guard to narrow the type when "tags" is present
                     if _is_tools_tags_config(config):
                         # Type narrowed: config is now ToolRouterToolsTagsConfig
@@ -1091,6 +1228,20 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         }
         if instant is not None:
             create_params["instant"] = instant
+        if proxy_execute is not None:
+            create_params["proxy_execute"] = _proxy_execute_payload(proxy_execute)
+        if hooks is not None:
+            if (
+                experimental is not None
+                and t.cast(t.Dict[str, t.Any], experimental).get("session_config_id")
+                is not None
+            ):
+                raise InvalidParams(
+                    "`hooks` cannot be combined with "
+                    "`experimental={'session_config_id': ...}`; create the session "
+                    "from the saved config and add hooks in a separate update() call"
+                )
+            create_params["hooks"] = hooks
 
         # Build connections config
         connections_config: t.Dict[str, t.Any] = {
@@ -1172,9 +1323,23 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                         "user_timezone": user_timezone,
                     }
 
-            # Serialize custom tools and toolkits for the backend
-            custom_tools = experimental.get("custom_tools")
-            custom_toolkits = experimental.get("custom_toolkits")
+            fallback = experimental.get("no_elicitation_support_fallback")
+            if fallback is not None:
+                experimental_payload["no_elicitation_support_fallback"] = fallback
+
+            # Serialize local tools and toolkits for the backend
+            custom_tools = _resolve_local_option(
+                "local_tools",
+                experimental.get("local_tools"),
+                "custom_tools",
+                experimental.get("custom_tools"),
+            )
+            custom_toolkits = _resolve_local_option(
+                "local_toolkits",
+                experimental.get("local_toolkits"),
+                "custom_toolkits",
+                experimental.get("custom_toolkits"),
+            )
 
         inline_custom_tools_payload = _prepare_inline_custom_tools(
             custom_tools=custom_tools,
@@ -1264,6 +1429,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self,
         session_id: str,
         *,
+        local_tools: t.Optional[t.List[LocalTool]] = None,
+        local_toolkits: t.Optional[t.List[LocalToolkit]] = None,
         custom_tools: t.Optional[t.List[CustomTool]] = None,
         custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
         mcp: t.Literal[True],
@@ -1274,6 +1441,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self,
         session_id: str,
         *,
+        local_tools: t.Optional[t.List[LocalTool]] = None,
+        local_toolkits: t.Optional[t.List[LocalToolkit]] = None,
         custom_tools: t.Optional[t.List[CustomTool]] = None,
         custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
         mcp: t.Literal[False] = False,
@@ -1283,6 +1452,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self,
         session_id: str,
         *,
+        local_tools: t.Optional[t.List[LocalTool]] = None,
+        local_toolkits: t.Optional[t.List[LocalToolkit]] = None,
         custom_tools: t.Optional[t.List[CustomTool]] = None,
         custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
         mcp: bool = False,
@@ -1290,17 +1461,19 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         """
         Use an existing tool router session.
 
-        Provide ``custom_tools`` or ``custom_toolkits`` to bind SDK-local tools
+        Provide ``local_tools`` or ``local_toolkits`` to bind local tools
         to the session for search and execution.
 
         If the existing session has ``preload.tools = "all"``, every bound
-        custom tool is also exposed via ``session.tools()`` and re-injected
-        with ``preload=True`` on subsequent search/execute calls. A custom tool
+        local tool is also exposed via ``session.tools()`` and re-injected
+        with ``preload=True`` on subsequent search/execute calls. A local tool
         with explicit ``preload=False`` still opts out.
 
         :param session_id: The session ID to use.
-        :param custom_tools: Optional custom tools to bind to the session.
-        :param custom_toolkits: Optional custom toolkits to bind to the session.
+        :param local_tools: Optional local tools to bind to the session.
+        :param local_toolkits: Optional local toolkits to bind to the session.
+        :param custom_tools: Deprecated alias for ``local_tools``.
+        :param custom_toolkits: Deprecated alias for ``local_toolkits``.
         :param mcp: When True, the returned session surfaces its hosted MCP
                     endpoint in the type (returns ToolRouterSessionWithMcp).
                     The session credential is exported in ``session.mcp.headers``
@@ -1324,11 +1497,11 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             # Use an existing session
             session = composio.use('session_123')
 
-            # Use an existing session with custom tools
+            # Use an existing session with local tools
             session = composio.use(
                 'session_123',
-                custom_tools=[my_tool],
-                custom_toolkits=[my_toolkit],
+                local_tools=[my_tool],
+                local_toolkits=[my_toolkit],
             )
             ```
         """
@@ -1338,6 +1511,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 "Please initialize ToolRouter with a provider."
             )
 
+        custom_tools = _resolve_local_option(
+            "local_tools", local_tools, "custom_tools", custom_tools
+        )
+        custom_toolkits = _resolve_local_option(
+            "local_toolkits", local_toolkits, "custom_toolkits", custom_toolkits
+        )
         has_customs = bool(custom_tools or custom_toolkits)
         attach_inline_custom_tools_payload = _prepare_inline_custom_tools(
             custom_tools=custom_tools,

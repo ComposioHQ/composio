@@ -50,3 +50,6 @@ jobs:
 
       - name: Run Typecheck
         run: pnpm run typecheck
+
+      - name: Check Effect diagnostics in the CLI
+        run: pnpm --filter @composio/cli run lint:effect

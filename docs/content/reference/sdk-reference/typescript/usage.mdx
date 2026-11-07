@@ -20,7 +20,7 @@ Usage for one metering entity type, grouped by a dimension.
 **Experimental — shape may change in future releases.**
 
 ```typescript
-async breakdown(entityType: string, params?: { filters?: { sessionId?: string[] | null; userId?: string[] | null }; from?: number; groupBy?: string; limit?: number; orderBy?: 'key' | 'total_quantity' | 'event_count'; orderDirection?: 'asc' | 'desc'; to?: number }, requestOptions?: ComposioRequestOptions): Promise<{ entityType: string; eventCount: number; groups: { eventCount: number; key: string; totalQuantity: string }[]; totalQuantity: string; unit: string }>
+async breakdown(entityType: string, params?: UsageBreakdownParams, requestOptions?: ComposioRequestOptions): Promise<UsageBreakdownResponse>
 ```
 
 **Parameters**
@@ -28,12 +28,12 @@ async breakdown(entityType: string, params?: { filters?: { sessionId?: string[] 
 | Name | Type | Description |
 |------|------|-------------|
 | `entityType` | `string` | Entity type to break down (e.g. `tool_calls`, `sessions`) |
-| `params?` | `\{ filters?: \{ sessionId?: string[] \| null; userId?: string[] \| null \}; from?: number; groupBy?: string; limit?: number; orderBy?: 'key' \| 'total_quantity' \| 'event_count'; orderDirection?: 'asc' \| 'desc'; to?: number \}` | Optional range, `groupBy`, ordering, `limit` and filters |
+| `params?` | `UsageBreakdownParams` | Optional range, `groupBy`, ordering, `limit` and filters |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ entityType: string; eventCount: number; groups: \{ eventCount: number; key: string; totalQuantity: string \}[]; totalQuantity: string; unit: string \}>` — Totals plus per-group rows
+`Promise<UsageBreakdownResponse>` — Totals plus per-group rows
 
 **Example**
 
@@ -52,19 +52,19 @@ Usage totals per metering entity type for a time range.
 **Experimental — shape may change in future releases.**
 
 ```typescript
-async summary(params?: { entityTypes?: string[]; filters?: { sessionId?: string[] | null; userId?: string[] | null }; from?: number; to?: number }, requestOptions?: ComposioRequestOptions): Promise<...>
+async summary(params?: UsageSummaryParams, requestOptions?: ComposioRequestOptions): Promise<UsageSummaryResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params?` | `\{ entityTypes?: string[]; filters?: \{ sessionId?: string[] \| null; userId?: string[] \| null \}; from?: number; to?: number \}` | Optional range, `entityTypes` and filters |
+| `params?` | `UsageSummaryParams` | Optional range, `entityTypes` and filters |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — Totals keyed by entity type and the exact USD Instant charge
+`Promise<UsageSummaryResponse>` — Totals keyed by entity type and the exact USD Instant charge
 
 **Example**
 

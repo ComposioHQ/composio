@@ -1,8 +1,6 @@
 import ComposioClient, { APIError } from '@composio/client';
-import {
-  TriggersTypeRetrieveEnumResponse,
-  type TriggerInstanceUpsertParams as ClientTriggerInstanceUpsertParams,
-} from '@composio/client/resources/index';
+import type { TriggerInstanceUpsertParams as ClientTriggerInstanceUpsertParams } from '@composio/client/resources/trigger-instances';
+import { TriggersTypeRetrieveEnumResponse } from '@composio/client/resources/triggers-types';
 import {
   TriggerInstanceUpsertResponse,
   TriggerInstanceUpsertParamsSchema,
@@ -60,6 +58,7 @@ import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { invokeUserCallback } from '../utils/userCallback';
 
 /**
  * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
@@ -157,7 +156,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     this.client = client;
-    this.pusherService = new PusherService(client, { defaultHeaders: config?.defaultHeaders });
+    this.pusherService = new PusherService(client, {
+      apiKey: config?.apiKey,
+      userApiKey: config?.userApiKey,
+      orgApiKey: config?.orgApiKey,
+      defaultHeaders: config?.defaultHeaders,
+    });
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     telemetry.instrument(this, 'Triggers');
   }
@@ -232,10 +236,14 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Create a new trigger instance for a user
    * If the connected account id is not provided, the first connected account for the user and toolkit will be used
    *
+   * For a trigger that supports both webhook and polling, `body.type` picks one; omit it to let Composio choose.
+   * `body.pollingInterval` sets the minutes between polls and wins over `triggerConfig.interval`.
+   *
    * @param {string} userId - The user id of the trigger instance
    * @param {string} slug - The slug of the trigger instance
    * @param {TriggerInstanceUpsertParams} body - The parameters to create the trigger instance
-   * @returns {Promise<TriggerInstanceUpsertResponse>} The created trigger instance
+   * @returns {Promise<TriggerInstanceUpsertResponse>} The trigger instance, with the type it uses, why it polls
+   * when it fell back from a webhook, and its polling interval
    */
   async create(
     userId: string,
@@ -282,6 +290,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     const upsertParams: ClientTriggerInstanceUpsertParams = {
       connected_account_id: parsedBody.data.connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
+      type: parsedBody.data.type,
+      polling_interval: parsedBody.data.pollingInterval,
       toolkit_versions: this.toolkitVersions,
       user_id: userId,
     };
@@ -292,6 +302,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
     return {
       triggerId: result.trigger_id,
+      type: result.type,
+      fallbackReason: result.fallback_reason,
+      pollingInterval: result.polling_interval,
     };
   }
 
@@ -525,7 +538,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   /**
    * Subscribe to all the triggers
    *
-   * @param fn - The function to call when a trigger is received
+   * @param fn - The function to call when a trigger is received. It may be `async`. Errors
+   * thrown from — or promises rejected by — the function are contained and logged.
    * @param filters - The filters to apply to the triggers
    * @param onSubscriptionError - Optional callback invoked with the raw Pusher payload when
    * the underlying subscription fails (for example on auth or permission rejection). The
@@ -563,11 +577,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       const parsedData = this.parsePusherPayload(_data);
 
       if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData)) {
-        try {
-          fn(parsedData);
-        } catch (error) {
-          logger.error('❌ Error in trigger callback:', error);
-        }
+        invokeUserCallback('❌ Error in trigger callback:', () => fn(parsedData));
       } else {
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
@@ -699,6 +709,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
   /**
    * Unsubscribe from all the triggers
+   *
+   * Ends every subscription made with {@link subscribe} on this instance, including one that is
+   * still connecting, and closes the realtime connection so that a script can exit. A later
+   * `subscribe()` opens a new connection.
    *
    * @returns {Promise<void>}
    *

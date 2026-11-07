@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, assert } from 'vitest';
-import ComposioClient from '@composio/client';
+import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { z } from 'zod/v3';
 import { Tools } from '../../src/models/Tools';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
 import { inspect, format } from 'node:util';
-import { ComposioError, ComposioToolInputRequiredError } from '../../src/errors';
+import { ComposioError, ComposioToolInputRequiredError, ValidationError } from '../../src/errors';
 import logger from '../../src/utils/logger';
 import { buildCustomToolsMap, createCustomTool } from '../../src/models/CustomTool';
 import type { CustomToolsMap, SessionContext } from '../../src/types/customTool.types';
@@ -52,9 +52,9 @@ const createClient = (body: unknown) => {
       })
   );
   const client = new ComposioClient({
-    apiKey: 'test-api-key',
+    auth: Auth.project('test-api-key'),
     baseURL: 'https://backend.invalid',
-    fetch,
+    transport: createFetchTransport({ fetch }),
   });
   return { client, fetch };
 };
@@ -92,6 +92,14 @@ const executionPaths: Array<{
     run: client => createSession(client).execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' }),
   },
   {
+    name: 'session.executeMeta',
+    subject: 'Tool COMPOSIO_MULTI_EXECUTE_TOOL',
+    run: client =>
+      createSession(client).executeMeta('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [{ tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'test@test.com' } }],
+      }),
+  },
+  {
     name: 'session.proxyExecute',
     subject: 'POST proxy call for toolkit github',
     run: client => createSession(client).proxyExecute(proxyParams),
@@ -123,7 +131,7 @@ describe('execution that requires user input', () => {
       assert(error instanceof ComposioToolInputRequiredError);
       expect(error.code).toBe('TS-SDK::TOOL_INPUT_REQUIRED');
       expect(error.message).toContain(`${subject} requires user input`);
-      expect(error.message).toContain('request_state');
+      expect(error.message).toContain('inputResponses');
       // The opaque state and the proxied URL stay out of the message.
       expect(error.message).not.toContain('opaque-state-token');
       expect(error.message).not.toContain('secret');
@@ -216,10 +224,79 @@ describe('execution that requires user input', () => {
     });
 
     await expect(createSession(client).proxyExecute(proxyParams)).resolves.toEqual({
+      resultType: 'completed',
       status: 201,
       data: { id: 1 },
       headers: { 'x-request-id': 'req_1' },
     });
+  });
+});
+
+// The answers to an `input_required` call travel on the repeated call as
+// `input_responses`, with the `request_state` it returned.
+const answers = {
+  approval_1: { action: 'accept' as const, content: { decision: 'approve' } },
+};
+
+const answeringPaths: Array<{
+  name: string;
+  run: (session: ToolRouterSession) => Promise<unknown>;
+}> = [
+  {
+    name: 'session.execute',
+    run: session =>
+      session.execute(
+        'GMAIL_SEND_EMAIL',
+        { to: 'test@test.com' },
+        { inputResponses: answers, requestState: 'opaque-state-token' }
+      ),
+  },
+  {
+    name: 'session.executeMeta',
+    run: session =>
+      session.executeMeta(
+        'COMPOSIO_MULTI_EXECUTE_TOOL',
+        { tools: [] },
+        { inputResponses: answers, requestState: 'opaque-state-token' }
+      ),
+  },
+];
+
+const sentBody = (fetch: ReturnType<typeof createClient>['fetch']): Record<string, unknown> => {
+  const init = fetch.mock.calls[0]?.[1];
+  assert(typeof init?.body === 'string');
+  return z.record(z.unknown()).parse(JSON.parse(init.body));
+};
+
+describe('answering a call that required user input', () => {
+  it.each(answeringPaths)('$name sends the answers and the request state', async ({ run }) => {
+    const { client, fetch } = createClient({
+      result_type: 'completed',
+      data: { id: 'msg_1' },
+      error: null,
+      log_id: 'log_1',
+    });
+
+    await run(createSession(client));
+
+    expect(sentBody(fetch)).toMatchObject({
+      input_responses: answers,
+      request_state: 'opaque-state-token',
+    });
+  });
+
+  it('session.execute sends neither field without answers', async () => {
+    const { client, fetch } = createClient({
+      result_type: 'completed',
+      data: {},
+      error: null,
+      log_id: 'log_1',
+    });
+
+    await createSession(client).execute('GMAIL_SEND_EMAIL', {});
+
+    expect(sentBody(fetch)).not.toHaveProperty('input_responses');
+    expect(sentBody(fetch)).not.toHaveProperty('request_state');
   });
 });
 
@@ -326,11 +403,10 @@ describe('custom tool whose body requires user input', () => {
 });
 
 // `result_type` says whether a tool that ran succeeded. A failed execution can
-// carry a `null` or empty `error`, so success is read from `result_type` and
-// only falls back to the error text when the API sent no `result_type`.
+// carry a `null` or empty `error`, so success is read from `result_type` alone.
 const executedAnswers: Array<{
   name: string;
-  result_type?: 'completed' | 'failed';
+  result_type: 'completed' | 'failed';
   error: string | null;
   successful: boolean;
 }> = [
@@ -338,12 +414,10 @@ const executedAnswers: Array<{
   { name: 'failed with an empty error', result_type: 'failed', error: '', successful: false },
   { name: 'failed with a message', result_type: 'failed', error: 'Boom', successful: false },
   { name: 'completed', result_type: 'completed', error: null, successful: true },
-  { name: 'no result_type and no error', error: null, successful: true },
-  { name: 'no result_type and an error', error: 'Boom', successful: false },
 ];
 
 const wireBody = ({ result_type, error }: (typeof executedAnswers)[number]) => ({
-  ...(result_type !== undefined && { result_type }),
+  result_type,
   data: {},
   error,
   log_id: 'log',
@@ -411,17 +485,39 @@ describe('session execution success', () => {
       expect(result.error).toBe(answer.error);
     }
   );
+});
 
-  it('falls back to the error text when result_type is a value the SDK does not know', async () => {
-    const { client } = createClient({
-      result_type: 'deferred',
-      data: {},
-      error: null,
-      log_id: 'l',
-    });
+// Every session execute answer carries a `result_type`. One without it, or with
+// a value this SDK does not know, is not a result: reading it as a success or
+// as a failure would be a guess, so each path raises instead.
+const invalidAnswers = [
+  { name: 'no result_type', body: { data: {}, error: null, log_id: 'log' } },
+  {
+    name: 'an unknown result_type',
+    body: { result_type: 'deferred', data: {}, error: null, log_id: 'log' },
+  },
+];
 
-    const result = await createSession(client).execute('GMAIL_SEND_EMAIL', {});
+const executePaths = executionPaths.filter(path => !path.name.includes('proxyExecute'));
 
-    expect(result.resultType).toBeUndefined();
+describe.each(invalidAnswers)('session execute answer with $name', ({ body }) => {
+  it.each(executePaths)('$name raises ValidationError', async ({ run, subject }) => {
+    const { client, fetch } = createClient(body);
+
+    const error = await run(client).catch((caught: unknown) => caught);
+
+    assert(error instanceof ValidationError);
+    expect(error.message).toContain(
+      `${subject} returned an execute response without a known result_type`
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('provider tool call bound to a session raises ValidationError', async () => {
+    const { client } = createClient(body);
+
+    await expect(new TargetProvider().executeFor(createSession(client))).rejects.toBeInstanceOf(
+      ValidationError
+    );
   });
 });

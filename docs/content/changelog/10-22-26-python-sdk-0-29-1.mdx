@@ -1,0 +1,24 @@
+---
+title: 'Python SDK 0.29.1: certificate and dependency hardening'
+description: 'Require a CA bundle without the compromised eMudhra root, and cap third-party dependency ranges.'
+date: '2026-10-22'
+---
+
+This patch release hardens how the Python SDK and its providers resolve dependencies. It has no API changes.
+
+### Release versions
+
+| SDK               | Version  |
+| ----------------- | -------- |
+| Python `composio` | `0.29.1` |
+
+All 13 Python provider packages are released at `0.29.1`.
+
+### What's changed
+
+- **`certifi>=2026.10.19` is now required.** That bundle removes the emSign ECC Root CA - G3 root after eight eMudhra intermediate keys were compromised. Older bundles still trust certificates issued under it.
+- **Third-party dependencies have upper bounds.** Each range stops before the first major version that wasn't released yet when the cap was set, or before `1.0` for packages still on `0.x`. A future major line can't install until the SDK raises the cap. Ranges can still span majors that already exist: `openai>=2.48.0,<4` allows 2.x and 3.x, and `anthropic>=0.120.0,<3` allows 0.x through 2.x. `certifi` stays uncapped so CA bundle updates always install.
+- **`pysher` is pinned to `1.0.8`.** The trigger client depends on it, and it has had no release since 2022. Its transport is capped at `websocket-client<2`.
+- **Releases come from a locked build.** Packages are built only from locked dependencies and published with PyPI trusted publishing, so each file on PyPI carries an attestation linking it to the GitHub workflow that built it.
+
+Every cap sits above the newest release available today, so existing installs resolve the same versions as before.

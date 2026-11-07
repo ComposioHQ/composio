@@ -2,10 +2,9 @@ import Ajv from 'ajv';
 import { format } from '@cfworker/json-schema';
 import { describe, expect, it } from 'vitest';
 
-import { z } from 'zod/v3';
-
-import { jsonSchemaToZod, jsonSchemaToZodShape } from '../src/index';
 import type { JsonSchema } from '../src/types';
+import { builders } from './support/builders';
+import { testFor } from './support/divergences';
 
 type RejectionCase = {
   readonly name: string;
@@ -194,16 +193,20 @@ const acceptanceCases: ReadonlyArray<AcceptanceCase> = [
   },
 ];
 
-describe('whole-schema semantic regressions', () => {
-  it.each(rejectionCases)('$name', ({ schema, value }) => {
-    expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
-    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(false);
-  });
+describe.each(builders)('whole-schema semantic regressions ($name)', builder => {
+  for (const { name, schema, value } of rejectionCases) {
+    testFor(builder, name)(name, () => {
+      expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
+      expect(builder.convert(schema).safeParse(value).success).toBe(false);
+    });
+  }
 
-  it.each(acceptanceCases)('$name', ({ schema, value }) => {
-    expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
-    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(true);
-  });
+  for (const { name, schema, value } of acceptanceCases) {
+    testFor(builder, name)(name, () => {
+      expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
+      expect(builder.convert(schema).safeParse(value).success).toBe(true);
+    });
+  }
 
   it('resolves local references from a raw shape against the enclosing document', () => {
     const schema: JsonSchema = {
@@ -212,7 +215,7 @@ describe('whole-schema semantic regressions', () => {
       required: ['name'],
       $defs: { name: { type: 'string' } },
     };
-    const shape = z.object(jsonSchemaToZodShape(schema));
+    const shape = builder.objectFromShape(builder.convertShape(schema));
 
     expect(shape.safeParse({ name: 'Ada' }).success).toBe(true);
     expect(shape.safeParse({ name: 1 }).success).toBe(false);
@@ -227,7 +230,7 @@ describe('whole-schema semantic regressions', () => {
       },
       $defs: { n: { type: 'string' } },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.parse({ name: 'Ada' })).toEqual({ name: 'Ada', enabled: true });
     expect(parsed.safeParse({ name: 1 }).success).toBe(false);
@@ -240,7 +243,7 @@ describe('whole-schema semantic regressions', () => {
         { type: 'object', properties: { b: { type: 'string', default: 'set' } } },
       ],
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.parse({ a: 'ready' })).toEqual({ a: 'ready', b: 'set' });
     expect(parsed.safeParse({ a: 'ready', c: 1 }).success).toBe(false);
@@ -252,7 +255,7 @@ describe('whole-schema semantic regressions', () => {
       propertyNames: { pattern: '^[a-z]+$' },
       properties: { v: { type: 'number', minimum: 0, exclusiveMinimum: true } },
     } as unknown as JsonSchema;
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ v: 0.5 }).success).toBe(true);
     expect(parsed.safeParse({ v: 0 }).success).toBe(false);
@@ -269,7 +272,7 @@ describe('whole-schema semantic regressions', () => {
     // Ajv intentionally cannot serve as the oracle for the Draft 4 boolean
     // bound. This value isolates `contains`, which remains a Draft 7 assertion
     // even when an OpenAPI 3.0 exporter emits the older bound spelling nearby.
-    expect(jsonSchemaToZod(schema).safeParse([2]).success).toBe(false);
+    expect(builder.convert(schema).safeParse([2]).success).toBe(false);
   });
 
   it('accepts every valid prefix of a closed Draft 7 tuple', () => {
@@ -278,7 +281,7 @@ describe('whole-schema semantic regressions', () => {
       items: [{ type: 'string' }, { type: 'integer' }],
       additionalItems: false,
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     for (const value of [[], ['ready'], ['ready', 2]]) {
       expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
@@ -301,7 +304,7 @@ describe('whole-schema semantic regressions', () => {
     const value = ['ready', 2, { extra: true }];
 
     expect(ajv.compile(schema)(value), 'Draft 7 oracle must accept the fixture').toBe(true);
-    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(true);
+    expect(builder.convert(schema).safeParse(value).success).toBe(true);
   });
 
   it('validates trailing tuple values against schema-valued additionalItems', () => {
@@ -310,7 +313,7 @@ describe('whole-schema semantic regressions', () => {
       items: [{ type: 'string' }],
       additionalItems: { type: 'integer' },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse(['ready', 1, 2]).success).toBe(true);
     expect(parsed.safeParse(['ready', 'wrong']).success).toBe(false);
@@ -321,7 +324,17 @@ describe('whole-schema semantic regressions', () => {
     const value = 2 ** -1022;
 
     expect(ajv.compile(schema)(value), 'Draft 7 oracle must reject the fixture').toBe(false);
-    expect(jsonSchemaToZod(schema).safeParse(value).success).toBe(false);
+    expect(builder.convert(schema).safeParse(value).success).toBe(false);
+  });
+
+  it('does not treat a subnormal as an integer multiple', () => {
+    const schema: JsonSchema = { type: 'number', multipleOf: 5 };
+    const value = -5e-324;
+
+    // Ajv divides in floating point and `-5e-324 / 5` underflows to `-0`, so the
+    // oracle accepts; the property suite skips this case for that reason.
+    expect(ajv.compile(schema)(value), 'the oracle underflows on this fixture').toBe(true);
+    expect(builder.convert(schema).safeParse(value).success).toBe(false);
   });
 
   it('keeps a guarded object root a ZodObject with its shape', () => {
@@ -333,10 +346,10 @@ describe('whole-schema semantic regressions', () => {
       },
       required: ['q'],
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
-    expect(parsed).toBeInstanceOf(z.ZodObject);
-    expect(Object.keys((parsed as z.AnyZodObject).shape)).toEqual(['q', 'limit']);
+    expect(builder.kind(parsed)).toBe('object');
+    expect(Object.keys(builder.shape(parsed))).toEqual(['q', 'limit']);
     expect(parsed.safeParse({ q: 'cats', limit: null }).success).toBe(true);
     expect(parsed.safeParse({ q: 'cats', limit: 'ten' }).success).toBe(false);
     expect(parsed.describe('Search').safeParse({ q: 'cats', limit: 'ten' }).success).toBe(false);
@@ -352,7 +365,7 @@ describe('whole-schema semantic regressions', () => {
       },
       $defs: { handle: { type: 'string', pattern: '^\\@[a-z\\-]+$' } },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ slug: 'a_b', ref: '@a-b' }).success).toBe(true);
     expect(parsed.safeParse({ slug: 'A' }).success).toBe(false);
@@ -368,7 +381,7 @@ describe('whole-schema semantic regressions', () => {
       properties: { handle: { $ref: '#/$defs/handle' } },
       $defs: { handle: { type: 'string', pattern } },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ handle: valid }).success).toBe(true);
     expect(parsed.safeParse({ handle: invalid }).success).toBe(false);
@@ -380,7 +393,7 @@ describe('whole-schema semantic regressions', () => {
       properties: { handle: { $ref: '#/$defs/handle' } },
       $defs: { handle: { type: 'string', pattern: '^leak-check-\\d+$' } },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ handle: 'leak-check-1' }).success).toBe(true);
     expect(parsed.safeParse({ handle: 'wrong' }).success).toBe(false);
@@ -395,7 +408,7 @@ describe('whole-schema semantic regressions', () => {
         '^\\k_$': { type: 'string' },
       },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ a_b: 12, k_: 'ok' }).success).toBe(true);
     expect(parsed.safeParse({ a_b: 2 }).success).toBe(false);
@@ -408,7 +421,7 @@ describe('whole-schema semantic regressions', () => {
       patternProperties: { '^x\\_': { $ref: '#/$defs/label' } },
       $defs: { label: { type: 'string' } },
     };
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ x_1: 'ok' }).success).toBe(true);
     expect(parsed.safeParse({ x_1: 1 }).success).toBe(false);
@@ -420,7 +433,7 @@ describe('whole-schema semantic regressions', () => {
       properties: { v: { $ref: `#/$defs/patternProperties/${encodeURI('^a\\_b$')}` } },
       $defs: { patternProperties: { '^a\\_b$': { type: 'string', minLength: 2 } } },
     } as unknown as JsonSchema;
-    const parsed = jsonSchemaToZod(schema);
+    const parsed = builder.convert(schema);
 
     expect(parsed.safeParse({ v: 'ok' }).success).toBe(true);
     expect(parsed.safeParse({ v: 'x' }).success).toBe(false);
@@ -428,6 +441,6 @@ describe('whole-schema semantic regressions', () => {
 
   it('compares decimal multiples by their JSON number spelling', () => {
     const schema: JsonSchema = { type: 'number', multipleOf: 0.1 };
-    expect(jsonSchemaToZod(schema).safeParse(0.3).success).toBe(true);
+    expect(builder.convert(schema).safeParse(0.3).success).toBe(true);
   });
 });

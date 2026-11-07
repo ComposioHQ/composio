@@ -1,15 +1,6 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import {
-  Config,
-  ConfigProvider,
-  Effect,
-  Exit,
-  FileSystem,
-  Layer,
-  Path,
-  PlatformError,
-} from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
+import { Config, ConfigProvider, Effect, FileSystem, Layer, Path, PlatformError } from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/http';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import * as tempy from 'tempy';
@@ -25,7 +16,7 @@ import {
   SkillInstallError,
   type SkillReleaseChannel,
 } from 'src/effects/install-skill';
-import { GITHUB_CONFIG } from 'src/effects/github-config';
+import { GITHUB_CONFIG } from 'src/config';
 import { CliReleaseResolutionError } from 'src/effects/resolve-cli-release';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 
@@ -54,9 +45,9 @@ const makeInstallEffect = (
         ConfigProvider.layer(
           ConfigProvider.fromEnv({
             env: {
-              GITHUB_API_BASE_URL: apiBaseUrl,
-              GITHUB_OWNER: 'test-owner',
-              GITHUB_REPO: 'test-repo',
+              COMPOSIO_GITHUB_API_BASE_URL: apiBaseUrl,
+              COMPOSIO_GITHUB_OWNER: 'test-owner',
+              COMPOSIO_GITHUB_REPO: 'test-repo',
             },
           })
         )
@@ -143,7 +134,7 @@ const makeResolveEffect = (
 ) =>
   Effect.gen(function* () {
     const httpClient = yield* HttpClient.HttpClient;
-    const githubConfig = yield* Config.all(GITHUB_CONFIG);
+    const githubConfig = yield* GITHUB_CONFIG;
 
     return yield* resolveSkillReleaseTag({
       channel: options.channel,
@@ -229,9 +220,12 @@ describe('install-skill', () => {
 
   it.effect('prefers the configured release tag over packaged metadata', () =>
     Effect.gen(function* () {
-      const tag = yield* makeResolveEffect([['GITHUB_TAG', '@composio/cli@0.2.34-beta.1']], {
-        installedReleaseTag: '@composio/cli@0.2.33',
-      });
+      const tag = yield* makeResolveEffect(
+        [['COMPOSIO_GITHUB_TAG', '@composio/cli@0.2.34-beta.1']],
+        {
+          installedReleaseTag: '@composio/cli@0.2.33',
+        }
+      );
 
       expect(tag).toBe('@composio/cli@0.2.34-beta.1');
     })
@@ -331,9 +325,9 @@ describe('install-skill', () => {
       });
 
       const tag = yield* makeResolveEffect([
-        ['GITHUB_API_BASE_URL', apiBaseUrl],
-        ['GITHUB_OWNER', 'test-owner'],
-        ['GITHUB_REPO', 'test-repo'],
+        ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+        ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+        ['COMPOSIO_GITHUB_REPO', 'test-repo'],
       ]);
 
       expect(tag).toBe('@composio/cli@0.2.33');
@@ -350,19 +344,16 @@ describe('install-skill', () => {
       const error = yield* Effect.flip(
         makeResolveEffect(
           [
-            ['GITHUB_API_BASE_URL', apiBaseUrl],
-            ['GITHUB_OWNER', 'test-owner'],
-            ['GITHUB_REPO', 'test-repo'],
+            ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+            ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+            ['COMPOSIO_GITHUB_REPO', 'test-repo'],
           ],
           { channel: 'stable' }
         )
       );
 
       expect(error).toBeInstanceOf(CliReleaseResolutionError);
-      if (error instanceof CliReleaseResolutionError) {
-        expect(error.reason).toBe('decode');
-        expect(error.cause).toBeDefined();
-      }
+      expect(error).toMatchObject({ reason: 'decode', cause: expect.anything() });
     })
   );
 
@@ -377,10 +368,7 @@ describe('install-skill', () => {
       const error = yield* Effect.flip(makeInstallEffect(home, apiBaseUrl));
 
       expect(error).toBeInstanceOf(SkillInstallError);
-      if (error instanceof SkillInstallError) {
-        expect(error.phase).toBe('release');
-        expect(error.cause).toBeDefined();
-      }
+      expect(error).toMatchObject({ phase: 'release', cause: expect.anything() });
     })
   );
 
@@ -410,9 +398,10 @@ describe('install-skill', () => {
     Effect.gen(function* () {
       const apiBaseUrl = yield* startSkillReleaseServer(new TextEncoder().encode('not a zip'));
       const home = tempy.temporaryDirectory();
-      const exit = yield* Effect.exit(makeInstallEffect(home, apiBaseUrl));
+      const error = yield* Effect.flip(makeInstallEffect(home, apiBaseUrl));
 
-      expect(Exit.isFailure(exit)).toBe(true);
+      expect(error).toBeInstanceOf(SkillInstallError);
+      expect(error).toMatchObject({ phase: 'extract' });
 
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
@@ -466,9 +455,9 @@ describe('install-skill', () => {
 
       const tag = yield* makeResolveEffect(
         [
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
+          ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+          ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+          ['COMPOSIO_GITHUB_REPO', 'test-repo'],
         ],
         { channel: 'stable' }
       );
@@ -523,9 +512,9 @@ describe('install-skill', () => {
 
       const tag = yield* makeResolveEffect(
         [
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
+          ['COMPOSIO_GITHUB_API_BASE_URL', apiBaseUrl],
+          ['COMPOSIO_GITHUB_OWNER', 'test-owner'],
+          ['COMPOSIO_GITHUB_REPO', 'test-repo'],
         ],
         { channel: 'beta' }
       );

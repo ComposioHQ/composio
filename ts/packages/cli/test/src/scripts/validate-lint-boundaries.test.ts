@@ -13,9 +13,9 @@ import {
 const temporaryDirectories: string[] = [];
 
 afterEach(() => {
-  for (const directory of temporaryDirectories.splice(0)) {
-    fs.rmSync(directory, { force: true, recursive: true });
-  }
+  temporaryDirectories
+    .splice(0)
+    .forEach(directory => fs.rmSync(directory, { force: true, recursive: true }));
 });
 
 describe('lint boundary manifest', () => {

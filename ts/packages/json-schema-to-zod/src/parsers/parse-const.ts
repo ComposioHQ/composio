@@ -1,10 +1,15 @@
 import { parseLiteralValues } from './parse-literal-values';
 import { parseSchema } from './parse-schema';
-import type { JsonSchemaObject, Refs, Serializable } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject, Serializable } from '../types';
 
-export const parseConst = (jsonSchema: JsonSchemaObject & { const: Serializable }, refs: Refs) => {
+export const parseConst = <S>(
+  jsonSchema: JsonSchemaObject & { const: Serializable },
+  ctx: ParseContext<S>
+): S => {
   const { const: value, ...baseSchema } = jsonSchema;
-  return parseSchema(baseSchema, { ...refs, seen: new Map(refs.seen) }, true).and(
-    parseLiteralValues([value])
+  return ctx.backend.intersection(
+    parseSchema(baseSchema, { ...ctx, seen: new Map(ctx.seen) }, true),
+    parseLiteralValues([value], ctx.backend)
   );
 };

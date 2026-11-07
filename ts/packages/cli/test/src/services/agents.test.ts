@@ -76,10 +76,11 @@ describe('agent service response boundaries', () => {
       const error = yield* fetchAgentInbox({ agentKey: 'expired_key' }).pipe(Effect.flip);
 
       expect(error).toBeInstanceOf(AgentRequestError);
-      if (!(error instanceof AgentRequestError)) return;
-      expect(error.message).toBe('Agent key expired');
-      expect(error.status).toBe(401);
-      expect(error.pathname).toBe('/api/mail?limit=50');
+      expect(error).toMatchObject({
+        message: 'Agent key expired',
+        status: 401,
+        pathname: '/api/mail?limit=50',
+      });
     })
   );
 });

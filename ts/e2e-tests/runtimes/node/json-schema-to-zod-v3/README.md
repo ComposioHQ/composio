@@ -1,10 +1,10 @@
 # json-schema-to-zod + Zod v3 Compatibility Test
 
-Verifies that `@composio/json-schema-to-zod` works correctly with `zod@3.25.76`.
+Verifies that `@composio/json-schema-to-zod` works correctly for a consumer that depends on `zod@3.25.76` and `zod-to-json-schema`.
 
 ## Why This Exists
 
-The `@composio/json-schema-to-zod` package must support both Zod v3 and v4. This suite ensures:
+The `@composio/json-schema-to-zod` package must support both Zod v3 and v4. The workspace link resolves the converter's own zod copy from the package, so this suite exercises the root entry's Zod v3 output against a consumer on the oldest supported release; coverage of the converter running on `zod@3.25.76` itself lives in the package's `zod-3.25` Vitest project. This suite ensures:
 
 - JSON Schema to Zod conversion works with Zod v3
 - All schema types (string, object, array, anyOf) convert correctly
@@ -36,7 +36,7 @@ Tests use `bun:test` assertions to verify schema conversion and round-trip behav
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: 22.22.3, 24.17.0, 25.9.0.
+**Docker** with Node.js versions: 22.23.4, 24.22.1, 26.12.1.
 
 ## Running
 

@@ -322,9 +322,13 @@ class ApiKeyNotProvidedError(ApiKeyError, NotFoundError):
     def __init__(self) -> None:
         super().__init__(
             message=(
-                "API Key not provided, either provide API key "
-                f"or export it as `{ENV_COMPOSIO_API_KEY}` "
-                "or run `composio login`"
+                f"API key not provided. Set `{ENV_COMPOSIO_API_KEY}` or pass "
+                "`api_key` to `Composio(api_key=...)`. Get a project API key "
+                "from your project's Settings > API Keys: "
+                "https://docs.composio.dev/docs/quickstart. "
+                "Optional: `composio login` requires installing the CLI separately "
+                "(https://docs.composio.dev/docs/cli#install). CLI login alone "
+                f"does not set `{ENV_COMPOSIO_API_KEY}` for your application."
             ),
         )
 
@@ -406,8 +410,9 @@ class ToolInputRequiredError(ComposioClientError):
 
     ``input_requests`` holds the questions, keyed by the ID the answers must
     reuse. ``request_state`` is the opaque state the API returned; when present
-    it must be sent back unchanged together with the answers. The SDK does not
-    submit answers yet, so nothing was executed and the call is not retried.
+    it must be sent back unchanged together with the answers. Nothing was
+    executed and the call is not retried: to answer, repeat the same call with
+    ``input_responses`` and ``request_state``.
 
     ``request_state`` is continuation state, so it is kept out of logs: read it
     as an attribute. ``str()``, ``repr()``, ``args`` and a formatted traceback
@@ -425,8 +430,9 @@ class ToolInputRequiredError(ComposioClientError):
         super().__init__(
             f"{subject} requires user input before it can run "
             f"({count} input request{'' if count == 1 else 's'}) and was not "
-            "executed. The questions are on `input_requests` and the opaque "
-            "`request_state` to send back with the answers is on `request_state`."
+            "executed. The questions are on `input_requests`. Repeat the call "
+            "with the answers in `input_responses` and this error's "
+            "`request_state`."
         )
         self.input_requests = input_requests
         self.request_state = request_state

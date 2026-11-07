@@ -98,19 +98,15 @@ jobs:
           - target: bun-linux-x64
             artifact: composio-linux-x64
             runner: ubuntu-latest
-            codex_target: linux-x64
           - target: bun-linux-arm64
             artifact: composio-linux-aarch64
             runner: ubuntu-latest
-            codex_target: linux-arm64
           - target: bun-darwin-x64
             artifact: composio-darwin-x64
             runner: macos-15-intel
-            codex_target: darwin-x64
           - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
             runner: macos-15
-            codex_target: darwin-arm64
 
     steps:
       - name: Checkout
@@ -166,16 +162,15 @@ jobs:
         working-directory: ts/packages/cli
         run: unzip -p dist/binaries/${{ matrix.artifact }}.zip ${{ matrix.artifact }}/release-tag.txt | grep -Fx '${{ needs.prepare.outputs.release_tag }}'
 
-      - name: Verify companion adapters in archive
+      - name: Verify companion layout in archive
         working-directory: ts/packages/cli
         env:
           ARCHIVE: dist/binaries/${{ matrix.artifact }}.zip
           ARTIFACT: ${{ matrix.artifact }}
-          HOST_CODEX_TARGET: ${{ matrix.codex_target }}
         run: bash "${{ github.workspace }}/.github/scripts/cli-release/verify-archive-companions.sh"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.artifact }}
           path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
@@ -220,7 +215,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download all artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: ts/packages/cli/dist/binaries
           merge-multiple: true
@@ -375,7 +370,7 @@ jobs:
           sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
       - name: Upload install instructions
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: install-instructions
           path: INSTALL.md

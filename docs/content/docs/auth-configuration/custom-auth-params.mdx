@@ -16,27 +16,32 @@ If you already manage OAuth tokens or API keys yourself and want Composio to exe
 
 Pass `customAuthParams` in the `tools.execute()` call to inject your own token as a header or query parameter.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
 ```python
+import os
+
 from composio import Composio
+from composio.client.types import tool_execute_params
 
 composio = Composio(toolkit_versions={"googlecalendar": "latest"})
+
+auth_params: tool_execute_params.CustomAuthParams = {
+    "parameters": [
+        {
+            "name": "Authorization",
+            "value": f"Bearer {os.environ['GOOGLE_ACCESS_TOKEN']}",
+            "in_": "header",  # Python field name; serialized as "in" on the wire
+        }
+    ],
+}
 
 result = composio.tools.execute(
     slug="GOOGLECALENDAR_LIST_EVENTS",
     user_id="user_123",
     arguments={},
     dangerously_skip_version_check=True,  # required when running "latest"
-    custom_auth_params={
-        "parameters": [
-            {
-                "name": "Authorization",
-                "value": "Bearer YOUR_ACCESS_TOKEN",
-                "in": "header",
-            }
-        ],
-    },
+    custom_auth_params=auth_params,
 )
 print(result)
 ```
@@ -71,6 +76,23 @@ const result = await composio.tools.execute(
 console.log(JSON.stringify(result, null, 2));
 ```
   </Tab>
+  <Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GOOGLECALENDAR_LIST_EVENTS \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "version": "latest",
+    "arguments": {},
+    "custom_auth_params": {
+      "parameters": [
+        {"name": "Authorization", "value": "Bearer '"$GOOGLE_ACCESS_TOKEN"'", "in": "header"}
+      ]
+    }
+  }'
+```
+  </Tab>
 </Tabs>
 
 <Callout type="warn">
@@ -97,29 +119,32 @@ For more control — such as conditionally injecting credentials based on toolki
 Before Execute Modifiers are a way to modify the parameters of a tool before it is executed. In this case, they are useful for adding custom authentication headers or parameters to a tool.
 </Card>
 
+{/* code-example: no-api reason="beforeExecute modifier runs client-side in the SDK; the REST equivalent is passing custom_auth_params directly, shown above" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
+import os
+
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
 
 composio = Composio(toolkit_versions={"notion": "latest"})
 
 
-@before_execute(toolkits=["NOTION"])
+@before_execute(toolkits=["notion"])
 def add_custom_auth(
     tool: str,
     toolkit: str,
     params: ToolExecuteParams,
 ) -> ToolExecuteParams:
-    if params["custom_auth_params"] is None:
+    if params.get("custom_auth_params") is None:
         params["custom_auth_params"] = {"parameters": []}
 
     params["custom_auth_params"]["parameters"].append(
         {
             "name": "x-api-key",
-            "value": os.getenv("NOTION_API_KEY"),
-            "in": "header",
+            "value": os.environ["NOTION_API_KEY"],
+            "in_": "header",
         }
     )
     return params
@@ -128,7 +153,7 @@ def add_custom_auth(
 result = composio.tools.execute(
     slug="NOTION_GET_DATABASE_ITEMS",
     user_id="user_123",
-    arguments={},
+    arguments={"database_id": "1234567890"},
     dangerously_skip_version_check=True,  # required when running "latest"
     modifiers=[
         add_custom_auth,
@@ -139,19 +164,23 @@ print(result)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const authModifier = ({ toolSlug, toolkitSlug, params }: { toolSlug: string; toolkitSlug: string; params: any }) => {
-  if (toolkitSlug === "NOTION") {
+import { Composio, type beforeExecuteModifier } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolkitVersions: { notion: "latest" },
+});
+
+const addCustomAuth: beforeExecuteModifier = ({ toolkitSlug, params }) => {
+  if (toolkitSlug === "notion") {
     if (!params.customAuthParams) {
       params.customAuthParams = { parameters: [] };
     }
 
     params.customAuthParams.parameters.push({
       in: "header",
-      name: "X-API-Key",
-      value: process.env.CUSTOM_API_KEY,
+      name: "x-api-key",
+      value: process.env.NOTION_API_KEY!,
     });
   }
   return params;
@@ -164,9 +193,10 @@ const result = await composio.tools.execute(
     arguments: {
       database_id: "1234567890",
     },
+    dangerouslySkipVersionCheck: true, // required when running "latest"
   },
   {
-    beforeExecute: authModifier,
+    beforeExecute: addCustomAuth,
   }
 );
 

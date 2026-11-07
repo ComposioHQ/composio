@@ -400,7 +400,7 @@ compute_inherited_resolution() {
 # is only ever emitted inside double quotes -- `export PATH="<dir>:$PATH"` for
 # bash/zsh and `set --export PATH "<dir>" $PATH` for fish -- so the set is
 # deliberately narrow and mirrors UNSAFE_PATH_CHARS in
-# ts/packages/cli/src/commands/install.cmd.ts, keeping this inline fallback and
+# ts/packages/cli/src/services/shell-config.ts, keeping this inline fallback and
 # `composio install` on one contract:
 #
 #   ` $ " \  the only characters bash and zsh still expand inside double
@@ -424,7 +424,7 @@ is_unsafe_path() {
 }
 
 # Renders the home directory itself and paths under it with a literal $HOME
-# prefix. Must stay in lockstep with the CLI's renderWithHome (install.cmd.ts):
+# prefix. Must stay in lockstep with the CLI's renderWithHome (shell-config.ts):
 # delegated_setup_verified compares the CLI-written line against this rendering
 # byte for byte, so any disagreement makes every delegated install look stale
 # and forces a needless inline rewrite.

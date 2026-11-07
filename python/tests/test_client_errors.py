@@ -16,6 +16,7 @@ from unittest.mock import Mock
 import composio_client
 import httpx
 import pytest
+from composio_client import ProjectAuth
 
 from composio import exceptions
 from composio.client import HttpClient
@@ -50,7 +51,7 @@ def _client_returning(
 
     return HttpClient(
         provider="test",
-        api_key="sk-test",
+        auth=ProjectAuth("sk-test"),
         base_url="https://backend.invalid",
         max_retries=max_retries,
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),

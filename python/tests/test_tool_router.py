@@ -5,11 +5,25 @@ import logging
 import os
 import traceback
 import typing as t
+import warnings
 from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-from composio_client import ConflictError, omit
+from composio_client import (
+    Auth,
+    AutoAuth,
+    ConflictError,
+    NoAuth,
+    ProjectAuth,
+    Scope,
+    UserAuth,
+    omit,
+)
+from composio_client import ComposioError as ClientComposioError
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteResponse,
+)
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
@@ -17,6 +31,8 @@ from pydantic import BaseModel, Field
 
 from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
+from composio.core.models.session_context import SessionContextImpl
+from composio.core.provider import get_execution_target
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -33,10 +49,12 @@ from composio.core.models.tool_router import (
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
     ToolRouterSession,
+    ToolRouterSessionExecuteResponse,
+    ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
-from composio.core.models.session_context import SessionContextImpl
 from composio.exceptions import (
+    ComposioDeprecationWarning,
     InvalidParams,
     MCPDestinationError,
     SessionConfigConflictError,
@@ -56,8 +74,8 @@ class GrepInput(BaseModel):
 def mock_client():
     """Create a mock HTTP client."""
     client = mock_http_client(MagicMock)
-    client.api_key = "test-api-key"
-    client.user_api_key = None
+    client.sdk_auth = ProjectAuth("test-api-key")
+    client.scope = None
     client.base_url = httpx.URL("https://backend.composio.dev")
     client.default_headers = {}
 
@@ -183,12 +201,32 @@ class TestToolRouter:
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
 
+    @pytest.mark.parametrize(
+        ("proxy_execute", "expected"),
+        [
+            ({"enable": True}, {"enable": True}),
+            ({"enable": False}, {"enable": False}),
+            (True, {"enable": True}),
+            (False, {"enable": False}),
+        ],
+    )
+    def test_create_sends_proxy_execute_block(
+        self, tool_router, mock_client, proxy_execute, expected
+    ):
+        tool_router.create(user_id="user_123", proxy_execute=proxy_execute)
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["proxy_execute"] == expected
+
+    def test_create_omits_proxy_execute_by_default(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123")
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "proxy_execute" not in kwargs
+
     def test_create_with_instant_policy(self, tool_router, mock_client):
         policy = {"toolkits": {"enable": ["exa"]}, "return_instant_charge": True}
         tool_router.create(user_id="user_123", instant=policy)
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
         assert kwargs["instant"] == policy
-        assert "premium_usage" not in kwargs
 
         mock_client.tool_router.session.create.reset_mock()
         tool_router.create(user_id="user_123")
@@ -243,38 +281,31 @@ class TestToolRouter:
 
     def test_delete_session_by_id(self, tool_router, mock_client):
         """delete() removes a session by ID."""
-        mock_client.delete.return_value = {
-            "session_id": "session_123",
-            "deleted": True,
-        }
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=True
+        )
 
         result = tool_router.delete("session_123")
 
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session_123",
-            cast_to=t.Dict[str, t.Any],
-        )
+        mock_client.tool_router.session.delete.assert_called_once_with("session_123")
         assert result == {
             "session_id": "session_123",
             "deleted": True,
         }
 
-    def test_delete_session_by_id_escapes_session_id(self, tool_router, mock_client):
-        """delete() URL-encodes session IDs before calling the raw endpoint."""
-        mock_client.delete.return_value = {
-            "session_id": "session/with spaces",
-            "deleted": True,
-        }
-
-        tool_router.delete("session/with spaces")
-
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session%2Fwith%20spaces",
-            cast_to=t.Dict[str, t.Any],
+    def test_delete_session_by_id_rejects_unconfirmed_response(
+        self, tool_router, mock_client
+    ):
+        """delete() raises when the response does not confirm the deletion."""
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=False
         )
 
-    def test_delete_session_by_id_calls_raw_http_endpoint(self):
-        """delete() works with the low-level Stainless HTTP client."""
+        with pytest.raises(ValidationError):
+            tool_router.delete("session_123")
+
+    def test_delete_session_by_id_calls_http_endpoint(self):
+        """delete() sends one DELETE with the session ID URL-encoded."""
         requests: t.List[httpx.Request] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -289,7 +320,7 @@ class TestToolRouter:
 
         client = HttpClient(
             provider="test",
-            api_key="sk-test",
+            auth=ProjectAuth("sk-test"),
             base_url="https://backend.invalid",
             http_client=httpx.Client(transport=httpx.MockTransport(handler)),
         )
@@ -862,7 +893,7 @@ class TestToolRouter:
             tool_router.create(
                 user_id="user_123",
                 preload={"tools": ["GREP"]},
-                experimental={"custom_tools": [grep]},
+                experimental={"local_tools": [grep]},
             )
 
         mock_client.tool_router.session.create.assert_not_called()
@@ -954,7 +985,7 @@ class TestToolRouter:
             session_preset=SESSION_PRESET_DIRECT_TOOLS,
             toolkits=["github"],
             preload={"tools": ["GITHUB_CREATE_ISSUE"]},
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
@@ -1214,18 +1245,14 @@ class TestToolRouter:
 
     def test_session_delete(self, tool_router, mock_client):
         """Session delete removes the current session."""
-        mock_client.delete.return_value = {
-            "session_id": "session_123",
-            "deleted": True,
-        }
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=True
+        )
         session = tool_router.use(session_id="session_123")
 
         result = session.delete()
 
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session_123",
-            cast_to=t.Dict[str, t.Any],
-        )
+        mock_client.tool_router.session.delete.assert_called_once_with("session_123")
         assert result == {
             "session_id": "session_123",
             "deleted": True,
@@ -1252,7 +1279,7 @@ class TestToolRouter:
         mock_custom_tool.extends_toolkit = None
         mock_response.experimental.custom_tools = [mock_custom_tool]
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
 
         mock_client.tool_router.session.attach.assert_called_once()
         kwargs = mock_client.tool_router.session.attach.call_args.kwargs
@@ -1260,8 +1287,8 @@ class TestToolRouter:
         assert "custom_toolkits" not in kwargs["experimental"]
         mock_client.tool_router.session.retrieve.assert_not_called()
         mock_client.post.assert_not_called()
-        assert session.custom_tools()[0].slug == "SERVER_GREP"
-        assert session.custom_tools()[0].name == "Grep"
+        assert session.local_tools()[0].slug == "SERVER_GREP"
+        assert session.local_tools()[0].name == "Grep"
 
     @patch("composio.core.models.tools.Tools")
     def test_use_session_attaches_preloaded_custom_tools(
@@ -1304,7 +1331,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
 
         mock_client.tool_router.session.attach.assert_called_once()
@@ -1360,7 +1387,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
         session.search(query="search local text")
 
@@ -1411,6 +1438,7 @@ class TestToolRouter:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"ok": True}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_execute_response.log_id = "log_123"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
@@ -1426,6 +1454,8 @@ class TestToolRouter:
             tool_slug="GMAIL_FETCH_EMAILS",
             arguments={"max_results": 1},
             account="work",
+            input_responses=omit,
+            request_state=omit,
             experimental=omit,
         )
 
@@ -1705,7 +1735,7 @@ class TestToolRouter:
 
         session = tool_router.create(
             user_id="user_123",
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
         result = session.tools()
 
@@ -1719,6 +1749,9 @@ class TestToolRouter:
         assert result == "mocked-custom-tools"
 
         execute_tool = mock_provider.wrap_tools.call_args.kwargs["execute_tool"]
+        # Gemini's manual handle_response(session=...) finds this routing
+        # executor by the session recorded on it.
+        assert get_execution_target(execute_tool) is session
         local_result = execute_tool(slug="SERVER_GREP", arguments={"pattern": "needle"})
         assert local_result == {
             "data": {"matches": ["needle"]},
@@ -1871,6 +1904,192 @@ class TestToolRouter:
         mock_client.post.assert_not_called()
 
 
+def _local_grep_tool():
+    @experimental_api.tool(slug="GREP", name="Grep", description="Search local text")
+    def grep(input: GrepInput, ctx):
+        return {"matches": []}
+
+    return grep
+
+
+def _local_role_toolkit():
+    toolkit = experimental_api.Toolkit(
+        slug="ROLES", name="Roles", description="Manage roles"
+    )
+
+    @toolkit.tool(slug="SET_ROLE")
+    def set_role(input: GrepInput, ctx):
+        """Set a role."""
+        return {"ok": True}
+
+    return toolkit
+
+
+def _mock_local_tools_response(response):
+    response.experimental = MagicMock()
+    response.experimental.assistive_prompt = None
+    server_tool = MagicMock()
+    server_tool.slug = "LOCAL_GREP"
+    server_tool.original_slug = "GREP"
+    server_tool.extends_toolkit = None
+    response.experimental.custom_tools = [server_tool]
+    server_toolkit = MagicMock()
+    server_toolkit.slug = "ROLES"
+    server_toolkit.tools = [
+        MagicMock(slug="LOCAL_ROLES_SET_ROLE", original_slug="SET_ROLE")
+    ]
+    response.experimental.custom_toolkits = [server_toolkit]
+
+
+class TestLocalToolsOptions:
+    """`local_tools`/`local_toolkits` and their deprecated `custom_*` aliases."""
+
+    def test_create_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "local_tools": [tool],
+                    "local_toolkits": [toolkit],
+                },
+            )
+
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+        assert [tk.slug for tk in session.local_toolkits()] == ["ROLES"]
+
+    def test_create_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "custom_tools": [tool],
+                    "custom_toolkits": [toolkit],
+                },
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert session.local_tools()[0].slug == "LOCAL_GREP"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_create_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.create(
+                user_id="user_123",
+                experimental=t.cast(
+                    ToolRouterExperimentalConfig,
+                    {new_name: [value()], old_name: [value()]},
+                ),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    def test_use_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.use(
+                "session_123",
+                local_tools=[tool],
+                local_toolkits=[toolkit],
+            )
+
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+
+    def test_use_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.use(
+                "session_123",
+                custom_tools=[tool],
+                custom_toolkits=[toolkit],
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert session.local_toolkits()[0].slug == "ROLES"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_use_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.use("session_123", **{new_name: [value()], old_name: [value()]})
+
+        mock_client.tool_router.session.attach.assert_not_called()
+        mock_client.tool_router.session.retrieve.assert_not_called()
+
+
 class TestToolRouterTypes:
     """Test type definitions for ToolRouter."""
 
@@ -2017,10 +2236,16 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Test that session execute is called for agentic tool execution."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "completed",
+                    "data": {"result": "success"},
+                    "error": None,
+                    "log_id": "log_123",
+                }
+            )
+        )
 
         # Create a real Tools instance to test the execute function
         from composio.core.models.tools import Tools as RealTools
@@ -2066,6 +2291,7 @@ class TestToolRouterExecution:
         mock_client.tool_router.session.execute.return_value = (
             SessionExecuteResponse.model_validate(
                 {
+                    "result_type": "completed",
                     "data": {"result": "success"},
                     "error": None,
                     "log_id": "log_123",
@@ -2093,6 +2319,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         from composio.core.models.tools import Tools as RealTools
@@ -2134,6 +2361,7 @@ class TestToolRouterExecution:
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
+        mock_execute_response.result_type = "completed"
         mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create modifier functions
@@ -2184,10 +2412,16 @@ class TestToolRouterExecution:
 
     def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
         """Test that tool execution errors are handled correctly."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {}
-        mock_execute_response.error = "Authentication failed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "failed",
+                    "data": {},
+                    "error": "Authentication failed",
+                    "log_id": "log_123",
+                }
+            )
+        )
 
         # Create a real execute function
         from composio.core.models.tools import Tools as RealTools
@@ -2280,7 +2514,10 @@ def _session_json(mcp_url: str) -> t.Dict[str, t.Any]:
         "mcp": {"type": "http", "url": mcp_url},
         "config": {
             "user_id": "user_123",
-            "instant": {"return_instant_charge": True},
+            "instant": {
+                "return_instant_charge": True,
+                "return_prices_in_search": True,
+            },
             "execute": {},
             "search": {},
             "preload": {"tools": []},
@@ -2302,7 +2539,10 @@ def _search_json() -> t.Dict[str, t.Any]:
                 "description": "Search",
                 "has_active_connection": True,
                 "status_message": "Instant account available",
-                "instant_account": {"allowed_tool_slugs": ["EXA_SEARCH"]},
+                "instant_account": {
+                    "allowed_tool_slugs": ["EXA_SEARCH"],
+                    "prices": {"EXA_SEARCH": {"description": "$0.01 per call"}},
+                },
             }
         ],
         "next_steps_guidance": [],
@@ -2319,23 +2559,29 @@ class TestInstantContractTransport:
     """Exercise new wire fields through the pinned generated client."""
 
     @pytest.mark.parametrize(
-        "policy", [False, {}, {"return_instant_charge": True}, None]
+        "policy",
+        [
+            False,
+            {},
+            {"return_instant_charge": True},
+            {"return_prices_in_search": True},
+            None,
+        ],
     )
     def test_create_and_patch_send_new_policy(self, policy):
         client, requests = _transport_client(
-            api_key="ak_test", base_url="https://backend.composio.dev"
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
         )
         router = ToolRouter(client=client, provider=MagicMock())
         session = router.create(user_id="user_123", instant=policy)
         body = json.loads(requests[0].content)
-        assert "premium_usage" not in body
         if policy is None:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
-        assert "premium_usage" not in session.config.model_dump()
+        assert session.config.instant.return_prices_in_search is True
 
         if policy is None:
             session.update(expected_config_version=3)
@@ -2343,14 +2589,13 @@ class TestInstantContractTransport:
             session.update(instant=policy, expected_config_version=3)
         body = json.loads(requests[-1].content)
         assert body["expected_config_version"] == 3
-        assert "premium_usage" not in body
         if policy is None:
             assert "instant" not in body
         else:
             assert body["instant"] == policy
         assert not isinstance(session.config.instant, bool)
         assert session.config.instant.return_instant_charge is True
-        assert "premium_usage" not in session.config.model_dump()
+        assert session.config.instant.return_prices_in_search is True
 
         attached = router.use(session_id="session_123")
         assert not isinstance(attached.config.instant, bool)
@@ -2366,6 +2611,7 @@ class TestInstantContractTransport:
                 return httpx.Response(
                     200,
                     json={
+                        "result_type": "completed",
                         "data": {},
                         "error": None,
                         "log_id": "log_123",
@@ -2378,7 +2624,7 @@ class TestInstantContractTransport:
 
         client = HttpClient(
             provider="test",
-            api_key="ak_test",
+            auth=ProjectAuth("ak_test"),
             base_url="https://backend.composio.dev",
             http_client=httpx.Client(transport=httpx.MockTransport(handler)),
         )
@@ -2390,10 +2636,13 @@ class TestInstantContractTransport:
         assert result.instant_charge is not None
         assert result.instant_charge.amount == "0.012"
         assert result.instant_charge.model_dump() == charge
-        assert "premium_charge" not in result.model_dump()
         status = session.search(query="search").toolkit_connection_statuses[0]
         assert status.instant_account is not None
         assert status.instant_account.allowed_tool_slugs == ["EXA_SEARCH"]
+        assert status.instant_account.prices is not None
+        assert status.instant_account.prices["EXA_SEARCH"].description == (
+            "$0.01 per call"
+        )
         assert "hosted_account" not in status.model_dump()
 
     def test_search_keeps_lenient_generated_response(self):
@@ -2408,7 +2657,7 @@ class TestInstantContractTransport:
 
         client = HttpClient(
             provider="test",
-            api_key="ak_test",
+            auth=ProjectAuth("ak_test"),
             base_url="https://backend.composio.dev",
             http_client=httpx.Client(transport=httpx.MockTransport(handler)),
         )
@@ -2457,14 +2706,14 @@ def _answering_client(
     requests: t.List[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith(("/execute", "/proxy_execute")):
+        if request.url.path.endswith(("/execute", "/execute_meta", "/proxy_execute")):
             requests.append(request)
             return httpx.Response(200, json=body)
         return httpx.Response(200, json=_session_json(MCP_SAME_ORIGIN_URL))
 
     client = HttpClient(
         provider="test",
-        api_key="ak_test",
+        auth=ProjectAuth("ak_test"),
         base_url="https://backend.composio.dev",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -2473,6 +2722,128 @@ def _answering_client(
 
 def _created_session(client: HttpClient) -> ToolRouterSession:
     return ToolRouter(client=client, provider=MagicMock()).create(user_id="user_123")
+
+
+_APPROVAL_ANSWERS: t.Dict[str, t.Any] = {
+    "approval_1": {"action": "accept", "content": {"decision": "approve"}},
+}
+
+_COMPLETED_JSON: t.Dict[str, t.Any] = {
+    "result_type": "completed",
+    "data": {"id": "msg_1"},
+    "error": None,
+    "log_id": "log_1",
+}
+
+
+class TestAnsweringInputRequired:
+    """The answers to an ``input_required`` call travel on the repeated call
+    as ``input_responses``, with the ``request_state`` it returned."""
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda session: session.execute(
+                    "GMAIL_SEND_EMAIL",
+                    arguments={"to": "test@test.com"},
+                    input_responses=_APPROVAL_ANSWERS,
+                    request_state="opaque-state-token",
+                ),
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda session: session.execute_meta(
+                    "COMPOSIO_MULTI_EXECUTE_TOOL",
+                    arguments={"tools": []},
+                    input_responses=_APPROVAL_ANSWERS,
+                    request_state="opaque-state-token",
+                ),
+                id="session.execute_meta",
+            ),
+        ],
+    )
+    def test_sends_the_answers_and_the_request_state(self, run):
+        client, requests = _answering_client(_COMPLETED_JSON)
+
+        run(_created_session(client))
+
+        body = json.loads(requests[0].content)
+        assert body["input_responses"] == _APPROVAL_ANSWERS
+        assert body["request_state"] == "opaque-state-token"
+
+    def test_sends_neither_field_without_answers(self):
+        client, requests = _answering_client(_COMPLETED_JSON)
+
+        _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+        body = json.loads(requests[0].content)
+        assert "input_responses" not in body
+        assert "request_state" not in body
+
+
+class TestApprovalRules:
+    """``require_approval`` lists and the no-elicitation fallback reach the
+    API next to the filters they belong to."""
+
+    def test_create_sends_approval_lists_and_fallback(self):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+
+        ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123",
+            toolkits={"enable": ["gmail", "github"], "require_approval": ["github"]},
+            tools={
+                "gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]},
+                "notion": {
+                    "enable": ["NOTION_CREATE_PAGE"],
+                    "require_approval": ["NOTION_CREATE_PAGE"],
+                },
+                "slack": {"tags": {"require_approval": ["destructiveHint"]}},
+            },
+            tags={
+                "disable": ["openWorldHint"],
+                "require_approval": ["destructiveHint"],
+            },
+            experimental={"no_elicitation_support_fallback": "allow"},
+        )
+
+        body = json.loads(requests[0].content)
+        assert body["toolkits"] == {
+            "enable": ["gmail", "github"],
+            "require_approval": ["github"],
+        }
+        assert body["tools"] == {
+            "gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]},
+            "notion": {
+                "enable": ["NOTION_CREATE_PAGE"],
+                "require_approval": ["NOTION_CREATE_PAGE"],
+            },
+            "slack": {"tags": {"require_approval": ["destructiveHint"]}},
+        }
+        assert body["tags"] == {
+            "disable": ["openWorldHint"],
+            "require_approval": ["destructiveHint"],
+        }
+        assert body["experimental"] == {"no_elicitation_support_fallback": "allow"}
+
+    def test_update_sends_approval_lists_and_fallback(self):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123"
+        )
+
+        session.update(
+            toolkits={"require_approval": ["gmail"]},
+            experimental={"no_elicitation_support_fallback": "deny"},
+        )
+
+        body = json.loads(requests[-1].content)
+        assert body["toolkits"] == {"require_approval": ["gmail"]}
+        assert body["experimental"] == {"no_elicitation_support_fallback": "deny"}
 
 
 class TestExecutionRequiresUserInput:
@@ -2492,6 +2863,14 @@ class TestExecutionRequiresUserInput:
                 ),
                 "Tool GMAIL_SEND_EMAIL",
                 id="session.execute",
+            ),
+            pytest.param(
+                lambda client: _created_session(client).execute_meta(
+                    "COMPOSIO_MULTI_EXECUTE_TOOL",
+                    arguments={"tools": [{"tool_slug": "GMAIL_SEND_EMAIL"}]},
+                ),
+                "Tool COMPOSIO_MULTI_EXECUTE_TOOL",
+                id="session.execute_meta",
             ),
             pytest.param(
                 lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
@@ -2613,10 +2992,290 @@ class TestExecutionRequiresUserInput:
         result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
 
         assert result == {
+            "result_type": "completed",
             "status": 201,
             "data": {"id": 1},
             "headers": {"x-request-id": "req_1"},
         }
+
+
+_BLOCKED_CALL_JSON: t.Dict[str, t.Any] = {
+    "result_type": "blocked",
+    "reason": {"type": "request_blocked", "hook_id": "no_external_email"},
+    "message": "Blocked by session policy: No external email",
+    "log_id": "",
+    "hook_results": [
+        {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+    ],
+}
+
+
+class TestSessionHooks:
+    """A session hook can block a call before it runs, or block its result
+    before the agent sees it. The API answers ``result_type: "blocked"``,
+    which has no data and no HTTP response.
+
+    The cases run a real client over a stub transport so they cover the wire
+    shape the generated client hands to the SDK.
+    """
+
+    _HOOKS: t.List[t.Any] = [
+        {
+            "type": "before_execute",
+            "id": "no_external_email",
+            "name": "No external email",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "Sending email to anyone outside example.org",
+                "action": "block",
+            },
+        },
+        {
+            "type": "after_execute",
+            "id": "block_injection",
+            "applies_to": "all",
+            "handler": {"type": "prompt_injection_check", "action": "block"},
+        },
+    ]
+
+    def test_create_sends_hooks(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123", hooks=self._HOOKS)
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["hooks"] == self._HOOKS
+
+    def test_create_omits_hooks_by_default(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123")
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "hooks" not in kwargs
+
+    @pytest.mark.parametrize(
+        ("hooks", "expected"),
+        [
+            pytest.param(_HOOKS, _HOOKS, id="replace"),
+            pytest.param(None, None, id="remove"),
+        ],
+    )
+    def test_update_sends_hooks(self, hooks, expected):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = _created_session(client)
+
+        session.update(hooks=hooks)
+
+        body = json.loads(requests[-1].content)
+        assert body["hooks"] == expected
+
+    @pytest.mark.parametrize(
+        "hooks",
+        [
+            pytest.param(_HOOKS, id="replace"),
+            pytest.param(None, id="remove"),
+        ],
+    )
+    def test_update_rejects_hooks_with_session_config_id(self, hooks):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = _created_session(client)
+        requests.clear()
+
+        with pytest.raises(InvalidParams):
+            session.update(hooks=hooks, experimental={"session_config_id": "sc_1"})
+
+        assert requests == []
+
+    def test_create_rejects_hooks_with_session_config_id(
+        self, tool_router, mock_client
+    ):
+        with pytest.raises(InvalidParams):
+            tool_router.create(
+                user_id="user_123",
+                hooks=self._HOOKS,
+                experimental=t.cast(t.Any, {"session_config_id": "sc_1"}),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda client: _created_session(client).execute(
+                    "GMAIL_SEND_EMAIL", arguments={"to": "ceo@rival.com"}
+                ),
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).execute("GMAIL_SEND_EMAIL", {"to": "ceo@rival.com"}),
+                id="custom tool context execute",
+            ),
+        ],
+    )
+    def test_execute_returns_a_blocked_result(self, run):
+        client, _ = _answering_client(_BLOCKED_CALL_JSON)
+
+        result = run(client)
+
+        assert result.result_type == "blocked"
+        assert result.data == {}
+        assert result.error == "Blocked by session policy: No external email"
+        assert result.log_id == ""
+        assert result.block_reason == {
+            "type": "request_blocked",
+            "hook_id": "no_external_email",
+        }
+        assert result.hook_results == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+        ]
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            pytest.param(_BLOCKED_CALL_JSON, id="blocked"),
+            pytest.param(
+                {
+                    "data": {"sent": True},
+                    "error": None,
+                    "log_id": "log_1",
+                    "result_type": "completed",
+                    "hook_results": [
+                        {"id": "block_injection", "status": "unavailable"}
+                    ],
+                },
+                id="completed",
+            ),
+        ],
+    )
+    def test_a_result_dumps_its_hook_results_as_the_dicts_it_holds(self, body):
+        """The client types ``hook_results`` as models and the SDK's result
+        holds them as its own dicts, so dumping it must not warn."""
+        client, _ = _answering_client(body)
+        result = _created_session(client).execute(
+            "GMAIL_SEND_EMAIL", arguments={"to": "ceo@rival.com"}
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            dumped = result.model_dump()
+
+        assert dumped["hook_results"] == body["hook_results"]
+
+    def test_blocked_call_reaches_the_agent_as_a_failed_call(self):
+        """Every provider hands the agent ``data``, ``error`` and
+        ``successful``, so this is what the agent sees in any framework."""
+        client, _ = _answering_client(_BLOCKED_CALL_JSON)
+
+        result = _session_tool_execute_fn(client)(
+            "GMAIL_SEND_EMAIL", {"to": "ceo@rival.com"}
+        )
+
+        assert result["successful"] is False
+        assert result["data"] == {}
+        assert result["error"] == "Blocked by session policy: No external email"
+
+    def test_blocked_response_keeps_its_charge_for_the_agent(self):
+        """The tool ran before an ``after_execute`` hook blocked its result, so
+        the provider result still reports the charge."""
+        client, _ = _answering_client(
+            {
+                **_BLOCKED_CALL_JSON,
+                "reason": {"type": "response_blocked", "hook_id": "no_outside_data"},
+                "log_id": "log_456",
+                "instant_charge": {
+                    "amount": "0.01",
+                    "currency": "USD",
+                    "charged_by": "composio",
+                },
+            }
+        )
+
+        result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        assert result["successful"] is False
+        assert result["instant_charge"] == {
+            "amount": "0.01",
+            "currency": "USD",
+            "charged_by": "composio",
+        }
+
+    def test_unavailable_hook_does_not_block(self):
+        """A hook that could not be evaluated is reported, and the call still
+        returns its normal result."""
+        client, _ = _answering_client(
+            {
+                **_COMPLETED_JSON,
+                "hook_results": [{"id": "block_injection", "status": "unavailable"}],
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+        assert result.result_type == "completed"
+        assert result.data == {"id": "msg_1"}
+        assert result.hook_results == [
+            {"id": "block_injection", "status": "unavailable"}
+        ]
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
+                id="session.proxy_execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).proxy_execute(**_PROXY_PARAMS),
+                id="custom tool context proxy_execute",
+            ),
+        ],
+    )
+    def test_proxy_execute_returns_a_blocked_result(self, run):
+        client, _ = _answering_client(
+            {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "log_id"}
+        )
+
+        assert run(client) == {
+            "result_type": "blocked",
+            "block_reason": {"type": "request_blocked", "hook_id": "no_external_email"},
+            "message": "Blocked by session policy: No external email",
+            "hook_results": [
+                {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+            ],
+        }
+
+    def test_proxy_execute_returns_the_hook_results_of_a_sent_request(self):
+        client, _ = _answering_client(
+            {
+                "result_type": "completed",
+                "status": 200,
+                "data": {"id": 1},
+                "headers": {},
+                "hook_results": [
+                    {
+                        "id": "no_external_email",
+                        "status": "evaluated",
+                        "outcome": "continue",
+                    },
+                    {"id": "block_injection", "status": "unavailable"},
+                ],
+            }
+        )
+
+        result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
+
+        assert result["result_type"] == "completed"
+        assert result.get("hook_results") == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "continue"},
+            {"id": "block_injection", "status": "unavailable"},
+        ]
 
 
 class _NoInput(BaseModel):
@@ -2710,30 +3369,69 @@ class TestCustomToolBodyRequiresUserInput:
         assert result.result_type == "failed"
 
 
+class TestMixedMultiExecuteRequiresUserInput:
+    """A ``COMPOSIO_MULTI_EXECUTE_TOOL`` batch that mixes local and remote
+    tools turns a raised backend error into per-tool failures. An input request
+    is not one: the caller needs the questions and the request state.
+    """
+
+    def test_remote_half_input_required_raises(self):
+        from composio.core.models.tools import Tools
+
+        client, requests = _answering_client(_INPUT_REQUIRED_JSON)
+        local_calls: t.List[bool] = []
+        session = _session_with_custom_tools(
+            client, _custom_tool_calling(lambda ctx: local_calls.append(True))
+        )
+        tools = Tools(
+            client=client,
+            provider=MagicMock(),
+            dangerously_allow_auto_upload_download_files=False,
+        )
+        # Keep the (read) tool-schema lookup off the transport.
+        tools._tool_schemas["COMPOSIO_MULTI_EXECUTE_TOOL"] = MagicMock()
+
+        with pytest.raises(ToolInputRequiredError) as raised:
+            session._route_multi_execute(
+                {
+                    "tools": [
+                        {"tool_slug": "SEND_WELCOME_EMAIL", "arguments": {}},
+                        {"tool_slug": "GMAIL_SEND_EMAIL", "arguments": {}},
+                    ]
+                },
+                tools,
+            )
+
+        error = raised.value
+        assert "Tool COMPOSIO_MULTI_EXECUTE_TOOL requires user input" in error.message
+        assert list(error.input_requests) == ["approval_1"]
+        assert error.request_state == "opaque-state-token"
+        # Only the remote half reached the API, once.
+        assert len(requests) == 1
+        assert [
+            tool["tool_slug"]
+            for tool in json.loads(requests[0].content)["arguments"]["tools"]
+        ] == ["GMAIL_SEND_EMAIL"]
+        # The local tool had already run; its result is discarded by the raise.
+        assert local_calls == [True]
+
+
 _EXECUTED_ANSWERS = [
     pytest.param("failed", None, False, id="failed with a null error"),
     pytest.param("failed", "", False, id="failed with an empty error"),
     pytest.param("failed", "Boom", False, id="failed with a message"),
     pytest.param("completed", None, True, id="completed"),
-    pytest.param(None, None, True, id="no result_type and no error"),
-    pytest.param(None, "Boom", False, id="no result_type and an error"),
 ]
 
 
-def _executed_json(
-    result_type: t.Optional[str], error: t.Optional[str]
-) -> t.Dict[str, t.Any]:
-    body: t.Dict[str, t.Any] = {"data": {}, "error": error, "log_id": "log"}
-    if result_type is not None:
-        body["result_type"] = result_type
-    return body
+def _executed_json(result_type: str, error: t.Optional[str]) -> t.Dict[str, t.Any]:
+    return {"result_type": result_type, "data": {}, "error": error, "log_id": "log"}
 
 
 class TestSessionExecutionSuccess:
     """``result_type`` says whether a tool that ran succeeded. A failed
     execution can carry a ``None`` or empty ``error``, so success is read from
-    ``result_type`` and only falls back to the error text when the API sent no
-    ``result_type``.
+    ``result_type`` alone.
     """
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
@@ -2782,6 +3480,59 @@ class TestSessionExecutionSuccess:
         assert result.error == error
 
 
+_INVALID_ANSWERS = [
+    pytest.param({"data": {}, "error": None, "log_id": "log"}, id="no result_type"),
+    pytest.param(
+        {"result_type": "deferred", "data": {}, "error": None, "log_id": "log"},
+        id="an unknown result_type",
+    ),
+]
+
+
+@pytest.mark.parametrize("body", _INVALID_ANSWERS)
+class TestSessionExecuteAnswerWithoutAKnownResultType:
+    """Every session execute answer carries a ``result_type``. One without it,
+    or with a value this SDK does not know, is not a result: reading it as a
+    success or as a failure would be a guess, so each path raises instead.
+    """
+
+    _MESSAGE = (
+        "Tool GMAIL_SEND_EMAIL returned an execute response without a known result_type"
+    )
+
+    def test_provider_wrapped_session_tool_raises(self, body):
+        client, requests = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        assert len(requests) == 1
+
+    def test_provider_tool_call_bound_to_a_session_raises(self, body):
+        from composio.core.provider._openai import OpenAIProvider
+
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            OpenAIProvider().execute_tool_for_target(
+                target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
+            )
+
+    def test_session_execute_raises(self, body):
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            _created_session(client).execute("GMAIL_SEND_EMAIL")
+
+    def test_custom_tool_context_execute_raises(self, body):
+        client, _ = _answering_client(body)
+
+        with pytest.raises(ValidationError, match=self._MESSAGE):
+            SessionContextImpl(client, "user_123", "session_123").execute(
+                "GMAIL_SEND_EMAIL", {}
+            )
+
+
 def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
     """The execute function providers wrap session tools with."""
     from composio.core.models.tools import Tools
@@ -2798,10 +3549,9 @@ def _session_tool_execute_fn(client: HttpClient) -> t.Callable[..., t.Any]:
 
 def _transport_client(
     *,
-    api_key: t.Optional[str],
+    auth: Auth,
     base_url: str,
-    disable_api_key: bool = False,
-    user_api_key: t.Optional[str] = None,
+    scope: t.Optional[Scope] = None,
     default_headers: t.Optional[t.Dict[str, str]] = None,
     mcp_url: str = MCP_SAME_ORIGIN_URL,
 ) -> t.Tuple[HttpClient, t.List[httpx.Request]]:
@@ -2813,9 +3563,8 @@ def _transport_client(
 
     client = HttpClient(
         provider="test",
-        api_key=api_key,
-        disable_api_key=disable_api_key,
-        user_api_key=user_api_key,
+        auth=auth,
+        scope=scope,
         base_url=base_url,
         default_headers=default_headers,
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
@@ -2829,7 +3578,7 @@ class TestMcpAuthContext:
     def test_project_key_session_exports_only_the_project_key(self):
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
-                api_key="ak_project_key",
+                auth=ProjectAuth("ak_project_key"),
                 base_url="https://backend.composio.dev",
                 default_headers={"x-request-id": "req-1"},
             )
@@ -2843,9 +3592,7 @@ class TestMcpAuthContext:
     def test_user_key_option_session_exports_only_the_user_key(self):
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
-                api_key=None,
-                disable_api_key=True,
-                user_api_key="uak_user_key",
+                auth=UserAuth("uak_user_key"),
                 base_url="https://backend.composio.dev",
                 default_headers={"x-request-id": "r"},
             )
@@ -2858,10 +3605,10 @@ class TestMcpAuthContext:
         assert session.mcp.headers == {"x-user-api-key": "uak_user_key"}
 
     def test_user_key_header_session_exports_only_the_user_key(self):
+        """Under ``NoAuth`` a caller-placed user key header is the credential."""
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_foreign_env_key"}):
             client, requests = _transport_client(
-                api_key=None,
-                disable_api_key=True,
+                auth=NoAuth(),
                 base_url="https://backend.composio.dev",
                 default_headers={"x-user-api-key": "uak_user_key", "x-request-id": "r"},
             )
@@ -2875,15 +3622,10 @@ class TestMcpAuthContext:
 
     def test_scope_headers_are_exported_with_the_user_key(self):
         client, requests = _transport_client(
-            api_key=None,
-            disable_api_key=True,
-            user_api_key="uak_user_key",
+            auth=UserAuth("uak_user_key"),
+            scope=Scope(organization_id="org_nano_abc", project_id="proj_nano_xyz"),
             base_url="https://backend.composio.dev",
-            default_headers={
-                "x-org-id": "org_nano_abc",
-                "x-project-id": "proj_nano_xyz",
-                "x-request-id": "r",
-            },
+            default_headers={"x-request-id": "r"},
         )
         session = ToolRouter(client=client, provider=MagicMock()).use(
             "session_123", mcp=True
@@ -2900,8 +3642,7 @@ class TestMcpAuthContext:
     def test_retrieve_preserves_the_user_key_after_environment_changes(self):
         with patch.dict(os.environ, {}, clear=True):
             client, requests = _transport_client(
-                api_key=None,
-                disable_api_key=True,
+                auth=NoAuth(),
                 base_url="https://backend.composio.dev",
                 default_headers={"X-User-Api-Key": "uak_user_key"},
             )
@@ -2916,7 +3657,7 @@ class TestMcpAuthContext:
     def test_no_credential_exports_no_headers_without_reading_the_environment(
         self, tool_router, mock_client
     ):
-        mock_client.api_key = None
+        mock_client.sdk_auth = NoAuth()
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "ak_ambient"}):
             session = tool_router.create(user_id="user_123", mcp=True)
 
@@ -2996,23 +3737,49 @@ class TestMcpAuthContext:
         assert "The MCP URL has an opaque origin" in caplog.text
         assert "test-api-key" not in caplog.text
 
-    def test_user_key_default_header_wins_over_the_configured_project_key(self):
+    def test_user_key_default_header_beside_a_project_key_is_refused(self):
+        """A second credential next to ``auth`` cannot be configured at all, so
+        the request and the MCP export can never disagree about it."""
+        with pytest.raises(ClientComposioError, match="`x-user-api-key`"):
+            _transport_client(
+                auth=ProjectAuth("ak_project_key"),
+                base_url="https://backend.composio.dev",
+                default_headers={"x-user-api-key": "uak_header_key"},
+            )
+
+    def test_project_key_beside_a_user_key_exports_the_project_key(self):
         client, requests = _transport_client(
-            api_key="ak_project_key",
+            auth=AutoAuth(project="ak_project_key", user="uak_user_key"),
             base_url="https://backend.composio.dev",
-            default_headers={"x-user-api-key": "uak_header_key"},
         )
         session = ToolRouter(client=client, provider=MagicMock()).create(
             user_id="user_123", mcp=True
         )
 
-        assert "x-api-key" not in requests[0].headers
-        assert requests[0].headers["x-user-api-key"] == "uak_header_key"
-        assert session.mcp.headers == {"x-user-api-key": "uak_header_key"}
+        assert requests[0].headers["x-api-key"] == "ak_project_key"
+        assert "x-user-api-key" not in requests[0].headers
+        assert session.mcp.headers == {"x-api-key": "ak_project_key"}
+
+    def test_scope_without_an_organization_exports_only_the_project_id(self):
+        client, requests = _transport_client(
+            auth=UserAuth("uak_user_key"),
+            scope=Scope(project_id="proj_nano_xyz"),
+            base_url="https://backend.composio.dev",
+        )
+        session = ToolRouter(client=client, provider=MagicMock()).create(
+            user_id="user_123", mcp=True
+        )
+
+        assert "x-org-id" not in requests[0].headers
+        assert requests[0].headers["x-project-id"] == "proj_nano_xyz"
+        assert session.mcp.headers == {
+            "x-user-api-key": "uak_user_key",
+            "x-project-id": "proj_nano_xyz",
+        }
 
     def test_invalid_port_in_mcp_url_raises_the_typed_error(self):
         client, _ = _transport_client(
-            api_key="ak_project_key",
+            auth=ProjectAuth("ak_project_key"),
             base_url="https://backend.composio.dev",
             mcp_url="https://backend.composio.dev:bad/mcp",
         )
@@ -3025,7 +3792,7 @@ class TestMcpAuthContext:
 
     def test_malformed_mcp_url_is_not_echoed_in_the_error(self):
         client, _ = _transport_client(
-            api_key="ak_project_key",
+            auth=ProjectAuth("ak_project_key"),
             base_url="https://backend.composio.dev",
             mcp_url="not-a-url?token=secret_value",
         )
@@ -3046,7 +3813,7 @@ class TestMcpAuthContext:
 
     def test_same_origin_plain_http_base_url_exports_credentials(self):
         client, requests = _transport_client(
-            api_key="ak_project_key",
+            auth=ProjectAuth("ak_project_key"),
             base_url="http://localhost:3000",
             mcp_url="http://localhost:3000/api/v3/tool_router/session/session_123/mcp",
         )
@@ -3092,6 +3859,28 @@ class TestSessionUpdateContract:
     def test_session_tracks_config_version(self, session):
         assert session.config_version == 7
 
+    @pytest.mark.parametrize(
+        ("proxy_execute", "expected"),
+        [
+            ({"enable": True}, {"enable": True}),
+            ({"enable": False}, {"enable": False}),
+            (True, {"enable": True}),
+            (False, {"enable": False}),
+            (None, None),
+        ],
+    )
+    def test_proxy_execute_is_sent_as_block(
+        self, session, mock_client, proxy_execute, expected
+    ):
+        session.update(proxy_execute=proxy_execute)
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["proxy_execute"] == expected
+
+    def test_proxy_execute_is_omitted_by_default(self, session, mock_client):
+        session.update(toolkits={"enable": ["gmail"]})
+        kwargs = mock_client.tool_router.session.patch.call_args.kwargs
+        assert kwargs["proxy_execute"] is omit
+
     def test_instant_policy_is_sent(self, session, mock_client):
         session.update(
             instant={
@@ -3104,7 +3893,6 @@ class TestSessionUpdateContract:
             "toolkits": {"enable": ["exa"]},
             "return_instant_charge": True,
         }
-        assert "premium_usage" not in kwargs
 
     def test_instant_can_be_disabled(self, session, mock_client):
         session.update(instant=False)
@@ -3259,3 +4047,86 @@ class TestSessionUpdateContract:
             "expected_config_version": 8
         }
         assert reread.config_version == 9
+
+
+class TestSessionExecuteMeta:
+    """``session.execute_meta`` runs a Composio meta tool through the meta
+    endpoint and answers in the same shape as ``session.execute``.
+    """
+
+    def test_sends_the_slug_and_arguments_to_the_meta_endpoint(self):
+        client, requests = _answering_client(_executed_json("completed", None))
+
+        _created_session(client).execute_meta(
+            "COMPOSIO_SEARCH_TOOLS",
+            arguments={"queries": [{"use_case": "send an email"}]},
+        )
+
+        assert len(requests) == 1
+        assert requests[0].url.path == (
+            "/api/v3.1/tool_router/session/session_123/execute_meta"
+        )
+        assert json.loads(requests[0].content) == {
+            "slug": "COMPOSIO_SEARCH_TOOLS",
+            "arguments": {"queries": [{"use_case": "send an email"}]},
+        }
+
+    def test_omits_arguments_when_not_passed(self):
+        client, requests = _answering_client(_executed_json("completed", None))
+
+        _created_session(client).execute_meta("COMPOSIO_MANAGE_CONNECTIONS")
+
+        assert json.loads(requests[0].content) == {
+            "slug": "COMPOSIO_MANAGE_CONNECTIONS"
+        }
+
+    @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
+    def test_returns_the_session_execute_response(self, result_type, error, successful):
+        client, _ = _answering_client(
+            {
+                **_executed_json(result_type, error),
+                "data": {"results": []},
+                "instant_charge": {
+                    "amount": "0.01",
+                    "currency": "USD",
+                    "charged_by": "composio",
+                },
+            }
+        )
+
+        result = _created_session(client).execute_meta("COMPOSIO_SEARCH_TOOLS")
+
+        assert isinstance(result, ToolRouterSessionExecuteResponse)
+        assert result.result_type == result_type
+        assert result.error == error
+        assert result.data == {"results": []}
+        assert result.log_id == "log"
+        assert result.instant_charge is not None
+        assert result.instant_charge.amount == "0.01"
+
+    @pytest.mark.parametrize("body", _INVALID_ANSWERS)
+    def test_raises_without_a_known_result_type(self, body):
+        client, requests = _answering_client(body)
+
+        with pytest.raises(
+            ValidationError,
+            match="Tool COMPOSIO_SEARCH_TOOLS returned an execute response "
+            "without a known result_type",
+        ):
+            _created_session(client).execute_meta("COMPOSIO_SEARCH_TOOLS")
+
+        assert len(requests) == 1
+
+    def test_slugs_match_the_generated_client(self):
+        from composio_client.resources.tool_router.session import SessionResource
+
+        slug_hint = t.get_type_hints(SessionResource.execute_meta)["slug"]
+        client_slugs = {
+            slug
+            for member in t.get_args(slug_hint)
+            for slug in t.get_args(member)
+            if isinstance(slug, str)
+        }
+
+        assert client_slugs
+        assert set(t.get_args(ToolRouterSessionMetaToolSlug)) == client_slugs

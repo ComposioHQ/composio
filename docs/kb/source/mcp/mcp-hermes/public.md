@@ -15,6 +15,8 @@ Use this for Hermes / Nous Hermes Agent customers reporting Composio MCP connect
 
 ## Production MCP API paths and direct transport tests
 
+**Warning:** For consumer connections, use `https://connect.composio.dev/mcp`, not this URL.
+
 Use HTTPS and the full production API path:
 
 ```text

@@ -1,4 +1,4 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { Command, Flag } from 'effect/cli';
 import { Effect } from 'effect';
 import { getVersion } from 'src/effects/version';
 import { getUpdateStatus } from 'src/services/update-check';

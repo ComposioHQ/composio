@@ -48,7 +48,7 @@ const PROVIDER_CONTRACTS: Record<
   '@composio/llamaindex': {
     agentic: true,
     exportName: 'LlamaindexProvider',
-    verifiedMinimumCore: '0.11.0',
+    verifiedMinimumCore: '0.14.0',
   },
   '@composio/mastra': {
     agentic: true,
@@ -387,9 +387,30 @@ async function packWorkspaceArtifacts(
   );
 
   for (const provider of providers) {
+    const packedProvider = await packPackage(
+      provider.directory,
+      provider.name,
+      provider.version,
+      artifactDirectory
+    );
+    const providerManifest = await readJsonFile(
+      path.join(provider.directory, 'package.json'),
+      PackageManifestSchema
+    );
+    // A provider that imports the helper directly needs the workspace build too: the
+    // registry copy of the same version may predate the entry point it imports.
     tarballs.set(
       provider.name,
-      await packPackage(provider.directory, provider.name, provider.version, artifactDirectory)
+      providerManifest.dependencies[JSON_SCHEMA_TO_ZOD]
+        ? await repackCoreTarball(packedProvider, provider.name, {
+            version: provider.version,
+            jsonSchemaTarball,
+            artifactDirectory: path.join(
+              artifactDirectory,
+              `provider-${path.basename(provider.directory)}`
+            ),
+          })
+        : packedProvider
     );
   }
 

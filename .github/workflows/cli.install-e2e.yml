@@ -13,6 +13,7 @@ on:
       - 'ts/e2e-tests/cli/install/**'
       - 'ts/e2e-tests/_utils/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/build-e2e-image/action.yml'
       - '.github/workflows/cli.install-e2e.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -61,6 +62,22 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Build the image here rather than inside the test's beforeAll hook, so
+      # its layers come from the GitHub Actions cache and a registry failure
+      # surfaces as a visible, retryable step failure.
+      - name: Pre-build installer image
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ts/e2e-tests/_utils/Dockerfile.install
+          tag: composio-e2e-install:${{ matrix.shell }}
+          cache-scope: e2e-install-${{ matrix.shell }}
+          build-args: |
+            INSTALL_SHELL=${{ matrix.shell }}
+          labels: |
+            composio.e2e=true
+            composio.runtime=cli-install
+            composio.install_shell=${{ matrix.shell }}
 
       - name: Test production installer
         env:
@@ -132,7 +149,7 @@ jobs:
           test "$("$verify_dir/composio-linux-x64/composio" --version)" = 98.0.0
 
       - name: Upload local fixture
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cli-install-linux-x64
           path: ${{ runner.temp }}/cli-install-fixture
@@ -162,10 +179,26 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download local fixture
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: cli-install-linux-x64
           path: ${{ runner.temp }}/cli-install-fixture
+
+      # Build the image here rather than inside the test's beforeAll hook, so
+      # its layers come from the GitHub Actions cache and a registry failure
+      # surfaces as a visible, retryable step failure.
+      - name: Pre-build installer image
+        uses: ./.github/actions/build-e2e-image
+        with:
+          dockerfile: ts/e2e-tests/_utils/Dockerfile.install
+          tag: composio-e2e-install:${{ matrix.shell }}
+          cache-scope: e2e-install-${{ matrix.shell }}
+          build-args: |
+            INSTALL_SHELL=${{ matrix.shell }}
+          labels: |
+            composio.e2e=true
+            composio.runtime=cli-install
+            composio.install_shell=${{ matrix.shell }}
 
       - name: Test local installer
         env:

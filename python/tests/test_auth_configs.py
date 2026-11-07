@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import httpx
 import pytest
+from composio_client import ProjectAuth
 from composio.client import HttpClient
 from composio.client.types import (
     auth_config_create_response,
@@ -436,8 +437,7 @@ def test_mutation_response_through_generated_client(
 
     with HttpClient(
         provider="test",
-        api_key="test",
-        _environment_variables={},
+        auth=ProjectAuth("test"),
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     ) as client:
         auth_configs = AuthConfigs(client)

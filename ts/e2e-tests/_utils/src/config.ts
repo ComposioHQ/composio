@@ -5,8 +5,6 @@ import { execFileSync } from 'node:child_process';
 import type {
   NodeVersionMeta,
   NodeVersionFromUser,
-  DenoVersionMeta,
-  DenoVersionFromUser,
   CliVersionMeta,
   CliVersionFromUser,
   SkipInCI,
@@ -28,7 +26,6 @@ declare module 'bun' {
   interface Env {
     CI?: string;
     COMPOSIO_E2E_NODE_VERSION?: string;
-    COMPOSIO_E2E_DENO_VERSION?: string;
     COMPOSIO_E2E_CLI_VERSION?: string;
     COMPOSIO_INSTALL_E2E_MODE?: string;
     COMPOSIO_INSTALL_E2E_SHELL?: string;
@@ -178,7 +175,7 @@ function computeSkipForVersion(envVersion: string | undefined, versionValue: str
  * Read a tool version from mise.toml.
  * Used to determine the version for 'current' tests.
  */
-export function getMiseVersion(tool: 'node' | 'deno'): string {
+export function getMiseVersion(tool: 'node'): string {
   try {
     return execFileSync('mise', ['current', tool], {
       cwd: getRepoRoot(),
@@ -209,24 +206,6 @@ export function getCliPackageVersion(): string {
 }
 
 /**
- * Compute skip state for a Deno version in CI mode.
- */
-function computeSkipForDenoVersion(envVersion: string | undefined, versionValue: string): SkipInCI {
-  if (!isCI() || !envVersion) {
-    return { value: false };
-  }
-
-  if (versionValue !== envVersion) {
-    return {
-      value: true,
-      reason: `Deno ${versionValue} not selected (running ${envVersion})`,
-    };
-  }
-
-  return { value: false };
-}
-
-/**
  * Compute skip state for a CLI version in CI mode.
  */
 function computeSkipForCliVersion(envVersion: string | undefined, versionValue: string): SkipInCI {
@@ -242,51 +221,6 @@ function computeSkipForCliVersion(envVersion: string | undefined, versionValue: 
   }
 
   return { value: false };
-}
-
-/**
- * Resolve the Deno versions to test against, with CI skip state.
- *
- * The `'current'` version always resolves to the value in mise.toml.
- *
- * In CI mode (CI env var set + COMPOSIO_E2E_DENO_VERSION set):
- * - Versions not matching COMPOSIO_E2E_DENO_VERSION are marked to skip
- *
- * In local mode:
- * - COMPOSIO_E2E_DENO_VERSION overrides everything (single version, no skip)
- * - Otherwise returns all configured versions (no skip)
- */
-export function resolveDenoVersionMetaList(
-  configDenoVersions?: readonly DenoVersionFromUser[]
-): NonEmptyArray<DenoVersionMeta> {
-  const envVersion = Bun.env.COMPOSIO_E2E_DENO_VERSION;
-
-  // Local mode with env override: single version, no skip
-  // Check this BEFORE calling mise so env override works without the local toolchain installed.
-  if (!isCI() && envVersion) {
-    return [{ kind: 'overridden', value: envVersion, skip: { value: false } }];
-  }
-
-  // Only read mise.toml after env override check.
-  const miseDenoVersion = getMiseVersion('deno');
-
-  // No config provided: use mise.toml version
-  if (configDenoVersions === undefined || configDenoVersions.length === 0) {
-    return [{ kind: 'current', value: miseDenoVersion, skip: { value: false } }];
-  }
-
-  const resolvedVersions = configDenoVersions.map((v): DenoVersionMeta => {
-    if (v === 'current') {
-      return {
-        kind: 'current',
-        value: miseDenoVersion,
-        skip: computeSkipForDenoVersion(envVersion, miseDenoVersion),
-      };
-    }
-    return { kind: 'static', value: v, skip: computeSkipForDenoVersion(envVersion, v) };
-  });
-
-  return resolvedVersions as NonEmptyArray<DenoVersionMeta>;
 }
 
 /**

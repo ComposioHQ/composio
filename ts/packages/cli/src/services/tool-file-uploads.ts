@@ -1,29 +1,82 @@
-// This module's upload pipeline is plain async/await around the raw
-// @composio/client promise API. The Effect caller resolves the platform
-// FileSystem and Path services and passes the instances in as parameters;
-// `readLocalFileBytes` below is the single point where a FileSystem effect
-// is run to completion inside this promise pipeline.
+// The upload pipeline runs in the caller's fiber: the FileSystem read and the
+// presigned-URL request are effects of their own, and the core SDK's
+// promise-based helpers (the path and URL guards, the body reader, the upload
+// transport) are wrapped at each call. The caller resolves the platform
+// services and the Composio client and passes the instances in as parameters.
 import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
-import type { Composio as RawComposioClient } from '@composio/client';
-import { Cause, Data, Effect, Exit, Predicate } from 'effect';
+import type { ComposioClientShape, ComposioError } from '@composio/client/effect';
+import { Data, Effect, Predicate, Schema } from 'effect';
+import mime from 'mime';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { isPlainRecord } from 'src/utils/parse-json';
+import { idempotent } from 'src/services/composio-request';
 
 type JsonSchema = Record<string, unknown>;
+/**
+ * Local path -> the name and MIME type to upload it under, for files their caller
+ * staged (`composio run` writes each script File to a generated path). Labels
+ * only: the path is still read, and checked against the denylist, as given.
+ */
+type StagedFiles = ReadonlyMap<string, { readonly name: string; readonly mimetype?: string }>;
 
-// The three core helpers below are only reached once an execute actually carries
+// The core helpers below are only reached once an execute actually carries
 // a file input, so they are imported on that path rather than at module scope:
 // `@composio/core`'s root entry evaluates the whole SDK, which every command
 // would otherwise pay for at startup. The module registry memoizes the import.
-const loadCoreFileUploadHelpers = () => import('@composio/core');
-const loadSsrfSafeFetch = () => import('@composio/core/utils/ssrf-guard');
+const loadCoreFileUploadHelpers = Effect.promise(() => import('@composio/core'));
+const loadSsrfSafeFetch = Effect.promise(() => import('@composio/core/utils/ssrf-guard'));
 
 export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUploadError')<{
   readonly cause?: unknown;
   readonly message: string;
-  readonly reason: 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
+  readonly reason:
+    'not-uploadable' | 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
   readonly status?: number;
 }> {}
+
+/**
+ * Every failure of {@link uploadToolInputFiles}: reading or uploading a file,
+ * or the presigned-URL request, as the client's own error.
+ */
+export type ToolInputUploadError = ToolFileUploadError | ComposioError;
+
+// What a thrown value from the core SDK's helpers, or a platform error of the
+// local read, becomes: the file could not be read as a source. An error this
+// module raised itself passes through.
+const asSourceReadError = (cause: unknown): ToolFileUploadError =>
+  cause instanceof ToolFileUploadError
+    ? cause
+    : new ToolFileUploadError({
+        cause,
+        message: cause instanceof Error ? cause.message : String(cause),
+        reason: 'source-read',
+      });
+
+const decodeRunStagedFiles = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(
+    Schema.Record(
+      Schema.String,
+      Schema.Struct({ name: Schema.String, mimetype: Schema.optional(Schema.String) })
+    )
+  )
+);
+
+/** Read the per-execute labels without putting the file batch in the environment. */
+export const readRunStagedFiles = (
+  fs: FileSystem.FileSystem,
+  manifestPath: string | undefined
+): Effect.Effect<StagedFiles, ToolFileUploadError> =>
+  Effect.gen(function* () {
+    if (!manifestPath) return new Map();
+    const content = yield* fs.readFileString(manifestPath).pipe(Effect.mapError(asSourceReadError));
+    const labels = yield* decodeRunStagedFiles(content).pipe(Effect.mapError(asSourceReadError));
+    return new Map(Object.entries(labels));
+  });
+
+// Releases a body this module does not read, ignoring a cancellation failure.
+const discardBody = (response: Response) =>
+  Effect.ignore(Effect.tryPromise(() => response.body?.cancel() ?? Promise.resolve()));
 
 const isFileLike = (value: unknown): value is File =>
   typeof File !== 'undefined' && value instanceof File;
@@ -32,6 +85,12 @@ const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isObje
 
 const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
   Array.isArray(value) ? value.filter(isSchemaRecord) : [];
+
+// `items` is either one schema for every element or a tuple of per-index schemas.
+const itemSchemaAt = (items: unknown, index: number): JsonSchema | undefined => {
+  const itemSchema = Array.isArray(items) ? items[index] : items;
+  return isSchemaRecord(itemSchema) ? itemSchema : undefined;
+};
 
 const getSchemaVariants = (schema: JsonSchema | undefined): ReadonlyArray<JsonSchema> => [
   ...getSchemaVariant(schema?.anyOf),
@@ -112,10 +171,29 @@ export const schemaHasFileUploadable = (schema: JsonSchema | undefined): boolean
   return false;
 };
 
+// Where a value sits in the tool arguments: object keys and array indices.
+export type ArgumentPath = ReadonlyArray<string | number>;
+
+// Whether a branch can describe the value, judged by its `const` properties.
+// A supplied property with another value rules the branch out, as does a
+// required one the caller left out; an omitted optional one rules nothing out.
+const matchesDiscriminants = (schema: JsonSchema, value: unknown): boolean => {
+  if (!isSchemaRecord(schema.properties) || !isSchemaRecord(value)) return true;
+  const required = Array.isArray(schema.required) ? schema.required : [];
+  return Object.entries(schema.properties).every(([key, property]) => {
+    if (!isSchemaRecord(property) || !Object.hasOwn(property, 'const')) return true;
+    if (!Object.hasOwn(value, key)) return !required.includes(key);
+    return value[key] === property.const;
+  });
+};
+
+// Bind array schemas to the caller's existing items. A schema-only path loses
+// the index and would cause --file to replace the array with an object.
 export const findFileUploadablePaths = (
   schema: JsonSchema | undefined,
-  basePath: ReadonlyArray<string> = []
-): ReadonlyArray<ReadonlyArray<string>> => {
+  basePath: ArgumentPath = [],
+  value?: unknown
+): ReadonlyArray<ArgumentPath> => {
   if (!schema) return [];
 
   if (schema.file_uploadable === true) {
@@ -124,109 +202,341 @@ export const findFileUploadablePaths = (
 
   const directPropertyPaths = isSchemaRecord(schema.properties)
     ? Object.entries(schema.properties).flatMap(([key, property]) =>
-        isSchemaRecord(property) ? findFileUploadablePaths(property, [...basePath, key]) : []
+        isSchemaRecord(property)
+          ? findFileUploadablePaths(
+              property,
+              [...basePath, key],
+              isSchemaRecord(value) ? value[key] : undefined
+            )
+          : []
       )
     : [];
 
-  const variantPaths = getSchemaVariants(schema).flatMap(variant =>
-    findFileUploadablePaths(variant, basePath)
-  );
+  const variantPaths = getSchemaVariants(schema)
+    .filter(variant => matchesDiscriminants(variant, value))
+    .flatMap(variant => findFileUploadablePaths(variant, basePath, value));
 
-  const itemPaths = Array.isArray(schema.items)
-    ? schema.items.flatMap(item =>
-        isSchemaRecord(item) ? findFileUploadablePaths(item, basePath) : []
+  const itemPaths = Array.isArray(value)
+    ? value.flatMap((item, index) =>
+        findFileUploadablePaths(itemSchemaAt(schema.items, index), [...basePath, index], item)
       )
-    : isSchemaRecord(schema.items)
-      ? findFileUploadablePaths(schema.items, basePath)
-      : [];
+    : [];
 
   const seen = new Set<string>();
   return [...directPropertyPaths, ...variantPaths, ...itemPaths].filter(pathParts => {
-    const key = pathParts.join('.');
+    const key = JSON.stringify(pathParts);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 };
 
-const readFileFromUrl = async (path: Path.Path, url: string) => {
-  const { ssrfSafeFetch } = await loadSsrfSafeFetch();
-  const response = await ssrfSafeFetch(url);
-  if (!response.ok) {
-    await response.body?.cancel().catch(() => undefined);
-    throw new ToolFileUploadError({
-      message: `Failed to fetch file: ${response.statusText}`,
-      reason: 'source-fetch',
-      status: response.status,
-    });
-  }
+// Wording of inputs that take a file on the caller's machine, as the tool
+// catalog writes it: "Path to the local file to attach", "Local filesystem path
+// to the file to upload", "Path to the file to upload".
+const LOCAL_FILE_DESCRIPTION =
+  /\blocal(?:ly)?[\s-]+(?:file|path|filesystem|file\s*system|disk)\b|\bpath\b[^.]{0,40}\bfile\b[^.]{0,40}\bupload/i;
 
-  // Same cap as the core SDK's URL uploads: a remote server must not be able
-  // to exhaust memory with an oversized or never-ending body. Copied into a
-  // fresh ArrayBuffer-backed view for the same reason as readFileFromDisk.
-  const { readResponseBodyWithLimit } = await loadCoreFileUploadHelpers();
-  const bytes = new Uint8Array(await readResponseBodyWithLimit(response));
-  const parsedUrl = new URL(url);
-  const fileName = path.basename(parsedUrl.pathname) || `file-${Date.now()}`;
-
-  return {
-    bytes,
-    fileName,
-    mimeType: response.headers.get('content-type') || 'application/octet-stream',
-  };
-};
-
-// Runs the FileSystem read to completion for the plain-async pipeline above.
-// A failed read rejects with the underlying platform error (not a FiberFailure
-// wrapper), matching this module's throw-based error contract.
-const readLocalFileBytes = (fs: FileSystem.FileSystem, filePath: string): Promise<Uint8Array> =>
-  Effect.runPromiseExit(fs.readFile(filePath)).then(exit =>
-    Exit.match(exit, {
-      onFailure: cause => Promise.reject<Uint8Array>(Cause.squash(cause)),
-      onSuccess: bytes => Promise.resolve(bytes),
-    })
+const describesLocalFile = (schema: JsonSchema): boolean =>
+  [schema.title, schema.description].some(
+    text => Predicate.isString(text) && LOCAL_FILE_DESCRIPTION.test(text)
   );
 
-const readFileFromDisk = async (fs: FileSystem.FileSystem, path: Path.Path, filePath: string) => {
-  // Enforce the sensitive-path denylist at the lowest-level local read, so any
-  // caller of this reader (not just `uploadToolInputFiles`) is protected. This
-  // is the single canonical guard shared with `@composio/core`; without it the
-  // CLI's upload path would silently exfiltrate ~/.ssh/id_rsa, ~/.aws/credentials,
-  // .env files, etc. (issue #3746 / GHSA-hp3h-89pf-5q58). URLs and File objects
-  // are intentionally not path-checked, matching the core SDK.
-  //
-  // The CLI intentionally exposes NO opt-out for this guard (unlike the core/Python
-  // SDKs' `sensitiveFileUploadProtection` flag): the primary attack vector is an
-  // agent that has been prompt-injected into supplying its own tool arguments, so a
-  // `--force`/env override would hand that attacker a trivial bypass. Pass a
-  // CLI-appropriate remediation so the error does not advertise an SDK-only opt-out.
-  const { assertSafeFileUploadPath } = await loadCoreFileUploadHelpers();
-  assertSafeFileUploadPath(filePath, {
-    remediation:
-      'The Composio CLI always enforces this denylist and has no opt-out. To upload this ' +
-      'file, copy it to a location outside sensitive directories (e.g. ~/.ssh, ~/.aws) and ' +
-      'pass the copy instead.',
-  });
-  return {
-    // Copy into a fresh ArrayBuffer-backed view: `fetch` bodies reject the
-    // wider ArrayBufferLike-backed Uint8Array that FileSystem returns.
-    bytes: new Uint8Array(await readLocalFileBytes(fs, filePath)),
-    fileName: path.basename(filePath),
-    mimeType: 'application/octet-stream',
-  };
+// A path-shaped value: a separator or an extension, and no URL scheme. Keeps a
+// bare word such as "claude_code" from matching a file of that name.
+const looksLikeFilePath = (path: Path.Path, value: string): boolean =>
+  !/^[a-z][a-z0-9+.-]*:\/\//i.test(value) &&
+  (value.includes('/') || value.includes('\\') || path.extname(value) !== '');
+
+type LocalPathArgument = {
+  readonly argumentPath: ArgumentPath;
+  readonly value: string;
 };
 
-const readUploadSource = async (
+type UploadSite = {
+  readonly argumentPath: ArgumentPath;
+  readonly source: string | File;
+};
+
+/**
+ * The schema and every `anyOf`/`oneOf`/`allOf` branch under it, at any depth:
+ * all the schemas that can describe one value. Schemas are parsed JSON, so the
+ * walk ends, as `findFileUploadablePaths` does on the same schema.
+ */
+const schemasForValue = (schema: JsonSchema): ReadonlyArray<JsonSchema> => [
+  schema,
+  ...getSchemaVariants(schema).flatMap(schemasForValue),
+];
+
+const collectUploadSites = (
+  value: unknown,
+  schema: JsonSchema | undefined,
+  argumentPath: ArgumentPath
+): ReadonlyArray<UploadSite> => {
+  if (schema?.file_uploadable === true) {
+    return Predicate.isString(value) || isFileLike(value) ? [{ argumentPath, source: value }] : [];
+  }
+
+  const uploadableVariants = getSchemaVariants(schema).filter(schemaHasFileUploadable);
+  if (uploadableVariants.length > 0) {
+    return uploadableVariants.flatMap(variant => collectUploadSites(value, variant, argumentPath));
+  }
+
+  const properties = schema?.properties;
+  if (isSchemaRecord(properties) && Predicate.isObject(value)) {
+    return Object.entries(value).flatMap(([key, entry]) =>
+      collectUploadSites(entry, isSchemaRecord(properties[key]) ? properties[key] : undefined, [
+        ...argumentPath,
+        key,
+      ])
+    );
+  }
+
+  if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
+    return value.flatMap((item, index) =>
+      collectUploadSites(item, itemSchemaAt(schema.items, index), [...argumentPath, index])
+    );
+  }
+
+  return [];
+};
+
+/**
+ * Every argument `uploadToolInputFiles` uploads, once per location even when
+ * several branches mark it uploadable. The upload and the local-file guard
+ * both read this one walk, so the guard exempts exactly what is uploaded.
+ */
+const findUploadSites = (value: unknown, schema: JsonSchema): ReadonlyArray<UploadSite> => {
+  const seen = new Set<string>();
+  return collectUploadSites(value, schema, []).filter(site => {
+    const key = JSON.stringify(site.argumentPath);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+/**
+ * A copy of `record` with `value` at `argumentPath`, creating the objects on
+ * the way. An index into anything but an existing array changes nothing.
+ */
+export const setArgumentAt = (
+  record: Record<string, unknown>,
+  argumentPath: ArgumentPath,
+  value: unknown
+): Record<string, unknown> => {
+  const set = (current: unknown, remaining: ArgumentPath): unknown => {
+    const [key, ...rest] = remaining;
+    if (key === undefined) return value;
+    if (typeof key === 'number') {
+      if (!Array.isArray(current)) return current;
+      const copy = [...current];
+      copy[key] = set(copy[key], rest);
+      return copy;
+    }
+    const copy = isPlainRecord(current) ? { ...current } : {};
+    copy[key] = set(copy[key], rest);
+    return copy;
+  };
+  const updated = set(record, argumentPath);
+  return isPlainRecord(updated) ? updated : record;
+};
+
+const collectLocalPathCandidates = (
+  value: unknown,
+  schemas: ReadonlyArray<JsonSchema>,
+  argumentPath: ArgumentPath
+): ReadonlyArray<LocalPathArgument> => {
+  const nodes = schemas.flatMap(schemasForValue);
+
+  if (Predicate.isString(value)) {
+    return nodes.some(describesLocalFile) ? [{ argumentPath, value }] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      collectLocalPathCandidates(
+        item,
+        nodes.flatMap(node => {
+          const itemSchema = itemSchemaAt(node.items, index);
+          return itemSchema ? [itemSchema] : [];
+        }),
+        [...argumentPath, index]
+      )
+    );
+  }
+
+  if (Predicate.isObject(value)) {
+    return Object.entries(value).flatMap(([key, entry]) =>
+      collectLocalPathCandidates(
+        entry,
+        nodes.flatMap(node => {
+          const property = isSchemaRecord(node.properties) ? node.properties[key] : undefined;
+          return isSchemaRecord(property) ? [property] : [];
+        }),
+        [...argumentPath, key]
+      )
+    );
+  }
+
+  return [];
+};
+
+/**
+ * The string arguments a schema describes as a local file without marking
+ * them `file_uploadable`. Composio runs the tool remotely and only uploads
+ * `file_uploadable` inputs, so such an argument reaches the tool as the text of
+ * the path, never as the file. Every branch that applies to a value is read
+ * for the description, and a value that is uploaded is never returned.
+ */
+export const findLocalPathArguments = (
+  value: unknown,
+  schema: JsonSchema | undefined
+): ReadonlyArray<LocalPathArgument> => {
+  if (!schema) return [];
+  const uploaded = new Set(
+    findUploadSites(value, schema).map(site => JSON.stringify(site.argumentPath))
+  );
+  return collectLocalPathCandidates(value, [schema], []).filter(
+    candidate => !uploaded.has(JSON.stringify(candidate.argumentPath))
+  );
+};
+
+/**
+ * Fails when an argument the schema describes as a local file names a file
+ * that exists on this machine but the input is not `file_uploadable`: the tool
+ * would get the path text instead of the file and still report success
+ * (issue #4965). A path that does not exist here is left alone, since it may
+ * name a file on the remote side.
+ */
+export const rejectLocalFilesWithoutUpload = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly path: Path.Path;
+  readonly toolSlug: string;
+  readonly arguments_: Record<string, unknown>;
+  readonly inputSchema: JsonSchema;
+}) =>
+  Effect.gen(function* () {
+    const candidates = findLocalPathArguments(params.arguments_, params.inputSchema).filter(
+      candidate => looksLikeFilePath(params.path, candidate.value)
+    );
+    const localFiles = yield* Effect.filter(candidates, candidate =>
+      params.fs.stat(candidate.value).pipe(
+        Effect.map(info => info.type === 'File'),
+        Effect.orElseSucceed(() => false)
+      )
+    );
+    if (localFiles.length === 0) return;
+
+    const named = localFiles
+      .map(({ argumentPath, value }) => `"${argumentPath.join('.')}" (${value})`)
+      .join(', ');
+    return yield* new ToolFileUploadError({
+      reason: 'not-uploadable',
+      message:
+        `${params.toolSlug} cannot upload local files: ${named} names a file on this machine, ` +
+        'but the tool does not mark that input as a file upload, so Composio would receive the ' +
+        'path text instead of the file content. Nothing was executed. Use a URL input if the ' +
+        'tool has one, or report the tool schema to Composio.',
+    });
+  });
+
+const readFileFromUrl = (path: Path.Path, url: string) =>
+  Effect.gen(function* () {
+    const { ssrfSafeFetch } = yield* loadSsrfSafeFetch;
+    const response = yield* Effect.tryPromise({
+      try: signal => ssrfSafeFetch(url, { signal }),
+      catch: asSourceReadError,
+    });
+    if (!response.ok) {
+      yield* discardBody(response);
+      return yield* new ToolFileUploadError({
+        message: `Failed to fetch file: ${response.statusText}`,
+        reason: 'source-fetch',
+        status: response.status,
+      });
+    }
+
+    // Same cap as the core SDK's URL uploads: a remote server must not be able
+    // to exhaust memory with an oversized or never-ending body. Copied into a
+    // fresh ArrayBuffer-backed view for the same reason as readFileFromDisk.
+    const { readResponseBodyWithLimit } = yield* loadCoreFileUploadHelpers;
+    const body = yield* Effect.tryPromise({
+      try: () => readResponseBodyWithLimit(response),
+      catch: asSourceReadError,
+    });
+    const bytes = new Uint8Array(body);
+    const parsedUrl = new URL(url);
+    const fileName = path.basename(parsedUrl.pathname) || `file-${Date.now()}`;
+
+    return {
+      bytes,
+      fileName,
+      mimeType: response.headers.get('content-type') || 'application/octet-stream',
+    };
+  });
+
+const readFileFromDisk = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
-  file: string | File
+  filePath: string,
+  stagedFiles: StagedFiles
+) =>
+  Effect.gen(function* () {
+    // Enforce the sensitive-path denylist at the lowest-level local read, so any
+    // caller of this reader (not just `uploadToolInputFiles`) is protected. This
+    // is the single canonical guard shared with `@composio/core`; without it the
+    // CLI's upload path would silently exfiltrate ~/.ssh/id_rsa, ~/.aws/credentials,
+    // .env files, etc. (issue #3746 / GHSA-hp3h-89pf-5q58). URLs and File objects
+    // are intentionally not path-checked, matching the core SDK.
+    //
+    // The CLI intentionally exposes NO opt-out for this guard (unlike the core/Python
+    // SDKs' `sensitiveFileUploadProtection` flag): the primary attack vector is an
+    // agent that has been prompt-injected into supplying its own tool arguments, so a
+    // `--force`/env override would hand that attacker a trivial bypass. Pass a
+    // CLI-appropriate remediation so the error does not advertise an SDK-only opt-out.
+    const { assertSafeFileUploadPath } = yield* loadCoreFileUploadHelpers;
+    yield* Effect.try({
+      try: () =>
+        assertSafeFileUploadPath(filePath, {
+          remediation:
+            'The Composio CLI always enforces this denylist and has no opt-out. To upload this ' +
+            'file, copy it to a location outside sensitive directories (e.g. ~/.ssh, ~/.aws) and ' +
+            'pass the copy instead.',
+        }),
+      catch: asSourceReadError,
+    });
+    const bytes = yield* fs.readFile(filePath).pipe(Effect.mapError(asSourceReadError));
+    // A staged file is uploaded under the name and type its caller declared. A
+    // local file carries no Content-Type, so otherwise the type is inferred from
+    // the name's extension. Tools validate it (Canva's import rejects a .pptx
+    // labelled `application/octet-stream`, #4984).
+    const staged = stagedFiles.get(filePath);
+    const stagedName = path.basename(staged?.name ?? '');
+    const fileName = stagedName.length > 0 ? stagedName : path.basename(filePath);
+    return {
+      // Copy into a fresh ArrayBuffer-backed view: `fetch` bodies reject the
+      // wider ArrayBufferLike-backed Uint8Array that FileSystem returns.
+      bytes: new Uint8Array(bytes),
+      fileName,
+      mimeType: staged?.mimetype ?? mime.getType(fileName) ?? 'application/octet-stream',
+    };
+  });
+
+const readUploadSource = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  file: string | File,
+  stagedFiles: StagedFiles
 ) => {
   if (isFileLike(file)) {
-    return {
-      bytes: new Uint8Array(await file.arrayBuffer()),
-      fileName: file.name || `file-${Date.now()}`,
-      mimeType: file.type || 'application/octet-stream',
-    };
+    return Effect.tryPromise({ try: () => file.arrayBuffer(), catch: asSourceReadError }).pipe(
+      Effect.map(buffer => ({
+        bytes: new Uint8Array(buffer),
+        fileName: file.name || `file-${Date.now()}`,
+        mimeType: file.type || 'application/octet-stream',
+      }))
+    );
   }
 
   if (typeof file === 'string' && /^https?:\/\//i.test(file)) {
@@ -234,145 +544,122 @@ const readUploadSource = async (
   }
 
   if (typeof file === 'string') {
-    return readFileFromDisk(fs, path, file);
+    return readFileFromDisk(fs, path, file, stagedFiles);
   }
 
-  throw new ToolFileUploadError({
-    message: 'Unsupported upload source',
-    reason: 'unsupported-source',
-  });
+  return Effect.fail(
+    new ToolFileUploadError({
+      message: 'Unsupported upload source',
+      reason: 'unsupported-source',
+    })
+  );
 };
 
-const uploadFile = async (params: {
+const uploadFile = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly file: string | File;
   readonly toolSlug: string;
   readonly toolkitSlug: string;
-  readonly client: RawComposioClient;
-}) => {
-  const fileData = await readUploadSource(params.fs, params.path, params.file);
-  // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
-  const { createHash } = await import('node:crypto');
-  const md5 = createHash('md5').update(fileData.bytes).digest('hex');
-  const presigned = await params.client.files.createPresignedURL({
-    filename: fileData.fileName,
-    mimetype: fileData.mimeType,
-    md5,
-    tool_slug: params.toolSlug,
-    toolkit_slug: params.toolkitSlug,
-  });
-
-  const { ssrfSafeFetch } = await loadSsrfSafeFetch();
-  const uploadResponse = await ssrfSafeFetch(presigned.new_presigned_url, {
-    method: 'PUT',
-    body: fileData.bytes,
-    headers: {
-      'Content-Type': fileData.mimeType,
-      'Content-Length': fileData.bytes.byteLength.toString(),
-    },
-  });
-
-  if (!uploadResponse.ok) {
-    await uploadResponse.body?.cancel().catch(() => undefined);
-    throw new ToolFileUploadError({
-      message: `Failed to upload file to S3: ${uploadResponse.statusText}`,
-      reason: 'upload',
-      status: uploadResponse.status,
-    });
-  }
-  await uploadResponse.body?.cancel().catch(() => undefined);
-
-  return {
-    name: fileData.fileName,
-    mimetype: fileData.mimeType,
-    s3key: presigned.key,
-  };
-};
-
-const hydrateFileUploads = async (
-  value: unknown,
-  schema: JsonSchema | undefined,
-  ctx: {
-    readonly fs: FileSystem.FileSystem;
-    readonly path: Path.Path;
-    readonly toolSlug: string;
-    readonly toolkitSlug: string;
-    readonly client: RawComposioClient;
-  }
-): Promise<unknown> => {
-  if (schema?.file_uploadable === true) {
-    if (typeof value !== 'string' && !isFileLike(value)) {
-      return value;
-    }
-
-    return uploadFile({
-      fs: ctx.fs,
-      path: ctx.path,
-      file: value,
-      toolSlug: ctx.toolSlug,
-      toolkitSlug: ctx.toolkitSlug,
-      client: ctx.client,
-    });
-  }
-
-  const uploadableVariants = getSchemaVariants(schema).filter(schemaHasFileUploadable);
-  if (uploadableVariants.length > 0) {
-    let nextValue = value;
-    for (const variant of uploadableVariants) {
-      nextValue = await hydrateFileUploads(nextValue, variant, ctx);
-    }
-    return nextValue;
-  }
-
-  if (isSchemaRecord(schema?.properties) && Predicate.isObject(value)) {
-    const properties = schema.properties;
-    const entries = await Promise.all(
-      Object.entries(value).map(async ([key, entryValue]) => [
-        key,
-        await hydrateFileUploads(
-          entryValue,
-          isSchemaRecord(properties[key]) ? properties[key] : undefined,
-          ctx
-        ),
-      ])
+  readonly client: ComposioClientShape;
+  readonly stagedFiles: StagedFiles;
+}) =>
+  Effect.gen(function* () {
+    const fileData = yield* readUploadSource(
+      params.fs,
+      params.path,
+      params.file,
+      params.stagedFiles
     );
-    return Object.fromEntries(entries);
-  }
+    // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
+    const { createHash } = yield* Effect.promise(() => import('node:crypto'));
+    const md5 = createHash('md5').update(fileData.bytes).digest('hex');
+    // Issuing an upload URL changes nothing until the upload, so a retry is safe.
+    const presigned = yield* params.client.files.createPresignedURL(
+      {
+        filename: fileData.fileName,
+        mimetype: fileData.mimeType,
+        md5,
+        tool_slug: params.toolSlug,
+        toolkit_slug: params.toolkitSlug,
+      },
+      idempotent
+    );
 
-  if (schema?.type === 'array' && Array.isArray(value) && schema.items) {
-    const itemSchema = Array.isArray(schema.items)
-      ? schema.items.find(isSchemaRecord)
-      : isSchemaRecord(schema.items)
-        ? schema.items
-        : undefined;
+    const { ssrfSafeFetch } = yield* loadSsrfSafeFetch;
+    const uploadResponse = yield* Effect.tryPromise({
+      try: signal =>
+        ssrfSafeFetch(presigned.new_presigned_url, {
+          method: 'PUT',
+          body: fileData.bytes,
+          headers: {
+            'Content-Type': fileData.mimeType,
+            'Content-Length': fileData.bytes.byteLength.toString(),
+          },
+          signal,
+        }),
+      catch: asSourceReadError,
+    });
 
-    return Promise.all(value.map(item => hydrateFileUploads(item, itemSchema, ctx)));
-  }
+    yield* discardBody(uploadResponse);
+    if (!uploadResponse.ok) {
+      return yield* new ToolFileUploadError({
+        message: `Failed to upload file to S3: ${uploadResponse.statusText}`,
+        reason: 'upload',
+        status: uploadResponse.status,
+      });
+    }
 
-  return value;
-};
+    return {
+      name: fileData.fileName,
+      mimetype: fileData.mimeType,
+      s3key: presigned.key,
+    };
+  });
 
-export const uploadToolInputFiles = async (params: {
+// Uploads every upload site and puts the uploaded file's reference in place of
+// its source.
+const hydrateFileUploads = (
+  arguments_: Record<string, unknown>,
+  schema: JsonSchema,
+  ctx: Omit<Parameters<typeof uploadFile>[0], 'file'>
+): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
+  Effect.forEach(
+    findUploadSites(arguments_, schema),
+    site =>
+      uploadFile({ ...ctx, file: site.source }).pipe(
+        Effect.map(uploaded => [site.argumentPath, uploaded] as const)
+      ),
+    { concurrency: 'unbounded' }
+  ).pipe(
+    Effect.map(uploads =>
+      uploads.reduce(
+        (args, [argumentPath, uploaded]) => setArgumentAt(args, argumentPath, uploaded),
+        arguments_
+      )
+    )
+  );
+
+export const uploadToolInputFiles = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly toolSlug: string;
   readonly arguments_: Record<string, unknown>;
   readonly inputSchema: JsonSchema;
-  readonly client: RawComposioClient;
+  readonly client: ComposioClientShape;
   readonly toolkitSlug?: string;
-}): Promise<Record<string, unknown>> => {
-  if (!schemaHasFileUploadable(params.inputSchema)) {
-    return params.arguments_;
-  }
+  /** Local path -> name and MIME type its caller staged it under. */
+  readonly stagedFiles?: StagedFiles;
+}): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
+  Effect.gen(function* () {
+    yield* rejectLocalFilesWithoutUpload(params);
 
-  const hydrated = await hydrateFileUploads(params.arguments_, params.inputSchema, {
-    fs: params.fs,
-    path: params.path,
-    toolSlug: params.toolSlug,
-    toolkitSlug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug) ?? 'unknown',
-    client: params.client,
+    return yield* hydrateFileUploads(params.arguments_, params.inputSchema, {
+      fs: params.fs,
+      path: params.path,
+      toolSlug: params.toolSlug,
+      toolkitSlug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug) ?? 'unknown',
+      client: params.client,
+      stagedFiles: params.stagedFiles ?? new Map(),
+    });
   });
-
-  return Predicate.isObject(hydrated) ? hydrated : params.arguments_;
-};

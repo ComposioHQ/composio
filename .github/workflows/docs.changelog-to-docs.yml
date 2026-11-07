@@ -27,7 +27,7 @@ jobs:
       # token for exactly this reason.
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
@@ -50,6 +50,9 @@ jobs:
             FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
           fi
 
+          # Skip generated SDK release entries (frontmatter `sdkRelease:`); their release PR covers them.
+          FILES=$(printf '%s\n' "$FILES" | bash scripts/sdk-release/changelog-filter.sh)
+
           if [ -z "$FILES" ]; then
             echo "found=false" >> $GITHUB_OUTPUT
           else
@@ -61,7 +64,7 @@ jobs:
 
       - name: Codex updates docs
         if: steps.detect.outputs.found == 'true'
-        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e # v1.12
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1.13
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write

@@ -1,5 +1,5 @@
 import { DateTime, Effect } from 'effect';
-import * as Arbitrary from 'effect/unstable/arbitrary/Arbitrary';
+import * as Arbitrary from 'effect/Arbitrary';
 import { Toolkit } from 'src/models/toolkits';
 
 /**

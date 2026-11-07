@@ -1,11 +1,15 @@
-import { Command, Flag } from 'effect/unstable/cli';
+import { withCommandMeta } from 'src/invocation/command-identity';
+import { reportFailure } from 'src/effects/report-failure';
+import { eventCount, finishAcceptedEvents, makeSinkFailures } from '../sink-failures';
+import { Command, Flag } from 'effect/cli';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { Deferred, Effect, Option } from 'effect';
-import { APP_CONFIG } from 'src/effects/app-config';
-import { requireAuth } from 'src/effects/require-auth';
+import { Deferred, Effect, FiberSet, Option } from 'effect';
+import { APP_CONFIG } from 'src/config';
+import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { matchesTriggerListenFilters } from '../filter';
 import {
   formatTriggerListenSummary,
@@ -15,10 +19,6 @@ import {
 import { parseCsv } from '../parse-csv';
 import { parseTriggerListenEvent } from '../parse';
 import type { TriggerListenFilters } from '../types';
-import {
-  resolveCommandProject,
-  formatResolveCommandProjectError,
-} from 'src/services/command-project';
 
 const toolkits = Flag.String('toolkits').pipe(
   Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
@@ -37,11 +37,6 @@ const connectedAccountId = Flag.String('connected-account-id').pipe(
 
 const triggerSlug = Flag.String('trigger-slug').pipe(
   Flag.withDescription('Filter by trigger slug, comma-separated (e.g. "GMAIL_NEW_GMAIL_MESSAGE")'),
-  Flag.optional
-);
-
-const userId = Flag.String('user-id').pipe(
-  Flag.withDescription('Filter by user id'),
   Flag.optional
 );
 
@@ -73,6 +68,16 @@ const out = Flag.String('out').pipe(
   Flag.withDescription('Append each matching event to this file'),
   Flag.optional
 );
+
+const failFast = Flag.Boolean('fail-fast').pipe(
+  Flag.withDescription(
+    'Stop at the first event that fails to forward or to append to --out, and exit 1'
+  ),
+  Flag.withDefault(false)
+);
+
+/** Runs one event's callback on a fiber the listener interrupts when it stops. */
+type RunEvent = (effect: Effect.Effect<void>) => unknown;
 
 const randomUUID = () => crypto.randomUUID();
 
@@ -150,36 +155,34 @@ export const triggersCmd$Listen = Command.make(
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
     forward,
     out,
+    failFast,
   },
   ({
     toolkits,
     triggerId,
     connectedAccountId,
     triggerSlug,
-    userId,
     json,
     table,
     maxEvents,
     forward,
     out,
+    failFast,
   }) =>
     Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
-
+      const surface = yield* CommandSurface;
+      const { userId } = surface;
       const ui = yield* TerminalUI;
-      yield* resolveCommandProject({ mode: 'developer' }).pipe(
-        Effect.mapError(formatResolveCommandProjectError)
-      );
+      const project = yield* resolveSurfaceProject('developer');
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
-      const services = yield* Effect.context<never>();
+      const shutdown = yield* ShutdownSignal;
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
       const configuredWebhookSecret = yield* APP_CONFIG.WEBHOOK_SECRET;
@@ -203,8 +206,28 @@ export const triggersCmd$Listen = Command.make(
       };
 
       const maxEventsLimit = Option.getOrUndefined(maxEvents);
-      const stopWhenDone = yield* Deferred.make<void>();
+      const stopWhenDone = yield* Deferred.make<'max-events' | 'failed'>();
       let matchingEvents = 0;
+      // Its own signal, so a --fail-fast failure also ends finishAcceptedEvents' wait.
+      const failed = yield* Deferred.make<void>();
+      const stopOnFailure = Effect.andThen(
+        Deferred.succeed(failed, undefined),
+        Deferred.succeed(stopWhenDone, 'failed')
+      ).pipe(Effect.asVoid);
+      const forwardFailures = makeSinkFailures({
+        ui,
+        failFast,
+        stop: stopOnFailure,
+        summary: count =>
+          `${eventCount(count)} failed to forward to ${forwardUrl} while listening.`,
+      });
+      const outputWriteFailures = makeSinkFailures({
+        ui,
+        failFast,
+        stop: stopOnFailure,
+        summary: count =>
+          `${eventCount(count)} failed to append to ${outputFilePath} while listening.`,
+      });
       let tableHeaderPrinted = false;
 
       yield* ui.intro('composio dev triggers listen');
@@ -233,8 +256,8 @@ export const triggersCmd$Listen = Command.make(
         yield* ui.log.info(`Auto-stop after ${maxEventsLimit} matching events.`);
       }
 
-      const onEvent = (eventData: Record<string, unknown>) => {
-        Effect.runForkWith(services)(
+      const onEvent = (runEvent: RunEvent) => (eventData: Record<string, unknown>) => {
+        runEvent(
           Effect.gen(function* () {
             const parsed = parseTriggerListenEvent(eventData);
             if (!matchesTriggerListenFilters(filters, parsed)) {
@@ -273,7 +296,7 @@ export const triggersCmd$Listen = Command.make(
             if (outputFilePath) {
               yield* fs
                 .writeFileString(outputFilePath, logLine, { flag: 'a' })
-                .pipe(Effect.catch(error => ui.log.warn(String(error))));
+                .pipe(Effect.catch(error => outputWriteFailures.record(String(error))));
             }
 
             if (forwardUrl && webhookSecret) {
@@ -315,43 +338,71 @@ export const triggersCmd$Listen = Command.make(
                   catch: error =>
                     new Error(`Failed forwarding event to ${forwardUrl}: ${String(error)}`),
                 });
-              }).pipe(Effect.catch(error => ui.log.warn(String(error))));
+              }).pipe(Effect.catch(error => forwardFailures.record(String(error))));
             }
 
             if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
-              yield* Deferred.succeed(stopWhenDone, undefined).pipe(Effect.ignore);
+              yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
             }
           })
         );
       };
 
-      const listenEffect = realtime
-        .listen(onEvent)
-        .pipe(
+      // From the subscription on, Ctrl-C and SIGTERM stop the listener instead of interrupting it.
+      const listenOptions = { onSubscribed: shutdown.cooperate(LISTENER_STOP) };
+      // The default credentials serve the configured project; a named one needs its own.
+      const listenEffect = (runEvent: RunEvent) =>
+        (Option.isSome(surface.projectName)
+          ? realtime.listenInProject(
+              { orgId: project.orgId, projectId: project.projectId },
+              onEvent(runEvent),
+              listenOptions
+            )
+          : realtime.listen(onEvent(runEvent), listenOptions)
+        ).pipe(
           Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
         );
 
       yield* Effect.gen(function* () {
-        if (maxEventsLimit === undefined) {
-          yield* listenEffect;
-          return;
+        // Scoped below: a stop other than --max-events interrupts the event callbacks still
+        // running before the summaries print.
+        const events = yield* FiberSet.make();
+        const runEvent = yield* FiberSet.runtime(events)();
+        // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
+        // the listener until Ctrl-C or SIGTERM stops it or another signal interrupts it.
+        const stopReason = yield* Effect.raceAllFirst([
+          listenEffect(runEvent),
+          Deferred.await(stopWhenDone),
+          shutdown.requested,
+        ]);
+        if (stopReason === 'max-events') {
+          yield* finishAcceptedEvents(events, failed);
+          yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
-
-        yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
-        yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
       }).pipe(
-        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+        Effect.scoped,
+        // An onExit finalizer, so the summaries print on every stop — including an
+        // interruption (a signal before the subscription, or SIGHUP), where the code after this
+        // block would not run. With --fail-fast a summary fails the command, so the second one
+        // still prints after it.
+        Effect.onExit(() =>
           Effect.gen(function* () {
-            yield* ui.log.error(
-              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
-            );
-            process.exitCode = 1;
+            const forwarded = yield* Effect.exit(forwardFailures.report);
+            yield* outputWriteFailures.report;
+            yield* forwarded;
           })
+        ),
+        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+          reportFailure(
+            ui,
+            `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          )
         )
       );
     })
 ).pipe(
   Command.withDescription(
     'Listen to realtime trigger events for your developer project and optionally forward them into your local dev environment.'
-  )
+  ),
+  withCommandMeta({ requiresLogin: true })
 );

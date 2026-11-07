@@ -11,19 +11,16 @@ import {
   storeCliSessionArtifact,
 } from 'src/services/cli-session-artifacts';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TestLive } from 'test/__utils__';
 
 // Backed by the live `process.env` record so `vi.stubEnv` calls made inside a test are
 // observed by later config reads; `ConfigProvider.fromEnv()` would snapshot the environment.
-const environmentTestConfigProvider = ConfigProvider.fromEnvRecord(process.env).pipe(
-  extendConfigProvider
-);
+const environmentTestConfigProvider = ConfigProvider.fromEnvRecord(process.env);
 
 const cacheEnabledTestConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE: 'false',
-}).pipe(ConfigProvider.orElse(ConfigProvider.fromEnvRecord(process.env)), extendConfigProvider);
+}).pipe(ConfigProvider.orElse(ConfigProvider.fromEnvRecord(process.env)));
 
 describe('CLI session artifacts', () => {
   beforeEach(() => {
@@ -78,12 +75,8 @@ describe('CLI session artifacts', () => {
           name: 'github issue output',
           extension: '.json',
           directoryPath,
-        });
+        }).pipe(Effect.flatMap(Effect.fromNullishOr));
 
-        expect(filePath).toBeDefined();
-        if (filePath === undefined) {
-          return yield* Effect.die('Expected the session artifact to be stored');
-        }
         expect(path.dirname(filePath)).toBe(directoryPath);
         expect(path.basename(filePath)).toMatch(/^github_issue_output_[a-f0-9]{8}\.json$/i);
         expect(yield* fs.readFileString(filePath)).toBe('{"ok":true}');
@@ -114,12 +107,8 @@ describe('CLI session artifacts', () => {
         const filePath = yield* storeCliSessionArtifact({
           contents: '{}',
           name: 'adhoc output',
-        });
+        }).pipe(Effect.flatMap(Effect.fromNullishOr));
 
-        expect(filePath).toBeDefined();
-        if (filePath === undefined) {
-          return yield* Effect.die('Expected an adhoc artifact');
-        }
         const directoryPath = path.dirname(filePath);
         expect(path.dirname(directoryPath)).toBe(artifactsRoot);
         expect(path.basename(directoryPath)).toMatch(/^adhoc_[a-f0-9]{12}$/i);
@@ -143,12 +132,8 @@ describe('CLI session artifacts', () => {
           contents: '{"session":true}',
           name: 'session output',
           ...sessionScope,
-        });
+        }).pipe(Effect.flatMap(Effect.fromNullishOr));
 
-        expect(filePath).toBeDefined();
-        if (filePath === undefined) {
-          return yield* Effect.die('Expected a session-backed artifact');
-        }
         const directoryPath = path.dirname(filePath);
         expect(path.dirname(directoryPath)).toBe(artifactsRoot);
         expect(path.basename(directoryPath)).toMatch(/^cli_s_[a-z0-9]+_[a-f0-9]{10}$/i);
@@ -163,19 +148,16 @@ describe('CLI session artifacts', () => {
 
         yield* appendCliSessionHistory({ entry: { sequence: 1 }, ...sessionScope });
         yield* appendCliSessionHistory({ entry: { sequence: 2 }, ...sessionScope });
-        const artifacts = yield* resolveCliSessionArtifacts(sessionScope);
-
-        expect(Option.isSome(artifacts)).toBe(true);
-        if (Option.isNone(artifacts)) {
-          return yield* Effect.die('Expected session artifacts');
-        }
-        const lines = (yield* fs.readFileString(artifacts.value.historyFilePath, 'utf8'))
+        const artifacts = yield* resolveCliSessionArtifacts(sessionScope).pipe(
+          Effect.flatMap(Effect.fromOption)
+        );
+        const lines = (yield* fs.readFileString(artifacts.historyFilePath, 'utf8'))
           .trim()
           .split('\n')
           .map(line => JSON.parse(line) as { sessionId: string; sequence: number });
         expect(lines).toEqual([
-          expect.objectContaining({ sessionId: artifacts.value.sessionId, sequence: 1 }),
-          expect.objectContaining({ sessionId: artifacts.value.sessionId, sequence: 2 }),
+          expect.objectContaining({ sessionId: artifacts.sessionId, sequence: 1 }),
+          expect.objectContaining({ sessionId: artifacts.sessionId, sequence: 2 }),
         ]);
       })
     );

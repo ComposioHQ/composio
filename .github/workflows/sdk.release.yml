@@ -1,0 +1,426 @@
+name: SDK release
+run-name: SDK release (${{ github.event_name }}, ${{ github.actor }})
+
+# One release, three stages, each started by its own event. scripts/sdk-release/state.ts lists
+# the states every stage can end in; each stage's last job shows that state on the request issue.
+#   1. request   a ComposioHQ member opens an `[SDK release]` issue or dispatches this workflow;
+#                the bot plans versions on protected next and opens one release PR.
+#                sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
+#                a writer who did not request the release approves, and a person merges.
+#   2. review    when the release PR closes, the bot re-checks approval and checks, then tags the
+#                reviewed head. A PR closed without merging is abandoned.
+#   3. publish   the tag run uploads the reviewed files to npm and PyPI, then opens a docs PR
+#                that pins the released versions so twoslash checks against them.
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: stable consumes the changesets; beta publishes a preview to npm next
+        type: choice
+        options: [stable, beta]
+        default: stable
+      typescript:
+        description: TypeScript bump (auto follows the changesets)
+        type: choice
+        options: [auto, patch, minor, major, skip]
+        default: auto
+      python:
+        description: Python bump (auto follows the changesets)
+        type: choice
+        options: [auto, patch, minor, major, skip]
+        default: auto
+  # The tag job checks out the base commit, never the PR, and its gate only reads the PR.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    branches: [next]
+    types: [closed]
+  push:
+    tags: ['sdk-release/*']
+
+permissions:
+  contents: read
+
+jobs:
+  # 1. request ---------------------------------------------------------------------------------
+
+  plan:
+    if: >-
+      github.repository == 'ComposioHQ/composio' && github.ref == 'refs/heads/next' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issues' && startsWith(github.event.issue.title, '[SDK release]')))
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    # Queued, not replaced: a newer request never cancels one that is already waiting.
+    concurrency:
+      group: sdk-release-controller
+      queue: max
+    outputs:
+      batch: ${{ steps.plan.outputs.batch }}
+      issue: ${{ steps.plan.outputs.issue }}
+      state: ${{ steps.plan.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # A dedicated release App, installed with only the permissions the runbook lists.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+        id: app
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Check membership and plan versions
+        id: plan
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+        run: bun scripts/sdk-release/batch.ts plan
+
+  # Runs the docs generators, which install third-party packages, so it gets no credentials.
+  prepare:
+    needs: plan
+    if: needs.plan.outputs.batch != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Apply versions, changelogs and SDK reference docs
+        env:
+          SDK_RELEASE_BATCH: ${{ needs.plan.outputs.batch }}
+        run: bun scripts/sdk-release/prepare.ts /tmp/sdk-release-patch.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sdk-release-patch
+          path: /tmp/sdk-release-patch.json
+          retention-days: 7
+          if-no-files-found: error
+
+  release-pr:
+    needs: [plan, prepare]
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    outputs:
+      state: ${{ steps.open.outputs.state }}
+    # Queued, not replaced: a newer request never cancels one that is already waiting.
+    concurrency:
+      group: sdk-release-controller
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: sdk-release-patch
+          path: /tmp/sdk-release
+      # A dedicated release App, installed with only the permissions the runbook lists.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+        id: app
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      # The batch comes from the plan job's output, which the credential-free prepare job
+      # cannot change; the patch is checked against it before anything is committed.
+      - name: Check the release-only diff and open the release PR
+        id: open
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_BATCH: ${{ needs.plan.outputs.batch }}
+        run: bun scripts/sdk-release/batch.ts release-pr /tmp/sdk-release/sdk-release-patch.json
+
+  request-status:
+    needs: [plan, prepare, release-pr]
+    if: always() && needs.plan.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Show the request outcome on the request issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESULTS: >-
+            {"plan": "${{ needs.plan.result }}", "prepare": "${{ needs.prepare.result }}",
+             "release-pr": "${{ needs.release-pr.result }}"}
+          OUTCOME: ${{ needs.release-pr.outputs.state || needs.plan.outputs.state }}
+          ISSUE: ${{ needs.plan.outputs.issue }}
+        run: bun scripts/sdk-release/report.ts status request
+
+  # 3. tag -------------------------------------------------------------------------------------
+
+  # Runs next as it was before this merge, so the merged release PR cannot change the gate.
+  # Every release-PR closure runs it: an unmerged PR is recorded as abandoned.
+  tag:
+    if: >-
+      github.repository == 'ComposioHQ/composio' && github.event_name == 'pull_request_target' &&
+      startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
+    runs-on: ubuntu-latest
+    environment: sdk-release-control
+    outputs:
+      issue: ${{ steps.tag.outputs.issue }}
+      state: ${{ steps.tag.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # A dedicated release App, installed with only the permissions the runbook lists.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+        id: app
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Check approval and candidate checks, then tag the reviewed head
+        id: tag
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+        run: bun scripts/sdk-release/batch.ts tag
+
+  review-status:
+    needs: tag
+    if: always() && needs.tag.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Show the review outcome on the request issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESULTS: '{"tag": "${{ needs.tag.result }}"}'
+          OUTCOME: ${{ needs.tag.outputs.state }}
+          ISSUE: ${{ needs.tag.outputs.issue }}
+        run: bun scripts/sdk-release/report.ts status review
+
+  # 3. publish ---------------------------------------------------------------------------------
+
+  # Pins the release-PR artifacts once by ID and digest. "Re-run failed jobs" keeps this
+  # output, so every attempt publishes the same reviewed bytes.
+  candidates:
+    if: github.repository == 'ComposioHQ/composio' && startsWith(github.ref, 'refs/tags/sdk-release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      approved: ${{ steps.approve.outputs.approved }}
+      typescript: ${{ steps.approve.outputs.typescript }}
+      python: ${{ steps.approve.outputs.python }}
+      issue: ${{ steps.approve.outputs.issue }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Pin the approved release-PR candidates
+        id: approve
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+        run: bun scripts/sdk-release/candidates.ts approve
+
+  publish-npm:
+    needs: candidates
+    if: needs.candidates.outputs.typescript == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    # One npm publisher at a time, so an older retry cannot move `latest` back over a newer release.
+    concurrency:
+      group: sdk-release-npm
+      queue: max
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Pin npm with native dist-tag OIDC support
+        run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
+      - name: Upload missing npm files, move the channel tag and check their provenance
+        id: publish
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
+        run: bun scripts/sdk-release/registry.ts publish typescript
+      - name: Check registry signatures on a fresh install, as a user would
+        env:
+          SPECS: ${{ steps.publish.outputs.specs }}
+        run: |
+          cd "$(mktemp -d)"
+          npm init --yes > /dev/null
+          # The registry CDN can serve a stale package document right after publishing.
+          for attempt in 1 2 3 4 5; do
+            # shellcheck disable=SC2086 # one argument per package
+            npm install --ignore-scripts --registry=https://registry.npmjs.org $SPECS && break
+            [ "$attempt" -lt 5 ] || exit 1
+            echo "npm install failed (attempt $attempt); retrying in 30 seconds"
+            sleep 30
+          done
+          npm audit signatures
+
+  publish-pypi:
+    needs: candidates
+    if: needs.candidates.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi-release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Stage the PyPI files that are still missing
+        id: stage
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
+        run: bun scripts/sdk-release/registry.ts publish python
+      - name: Upload missing PyPI files
+        if: steps.stage.outputs.missing == 'true'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
+        with:
+          packages-dir: sdk-publication/missing-python/
+      - name: Wait until PyPI serves every file, then check each attestation's publisher
+        id: verify
+        env:
+          SDK_READ_TOKEN: ${{ github.token }}
+          APPROVED_CANDIDATES: ${{ needs.candidates.outputs.approved }}
+        run: bun scripts/sdk-release/registry.ts verify python
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+      - name: Check the attestation signatures, as a user would
+        env:
+          FILES: ${{ steps.verify.outputs.files }}
+        run: |
+          for url in $FILES; do
+            uvx pypi-attestations==0.0.30 verify pypi \
+              --repository https://github.com/ComposioHQ/composio "$url"
+          done
+
+  # Pins the docs to the released npm versions. It follows the npm job, so a Python-only release,
+  # which skips that job, skips this one too.
+  docs:
+    needs: publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: next
+          path: next
+          persist-credentials: false
+      - name: Pin the docs to the released npm versions
+        run: |
+          # Run report.ts from the root: next/docs/bunfig.toml preloads docs packages that aren't installed here.
+          specs=$(bun scripts/sdk-release/report.ts docs-pins next/docs/package.json)
+          [ -n "$specs" ] || exit 0
+          cd next/docs
+          # The registry CDN can serve a stale package document right after publishing.
+          for attempt in 1 2 3 4 5; do
+            # shellcheck disable=SC2086 # one argument per package
+            bun add --dev --exact --ignore-scripts $specs && exit 0
+            echo "bun add failed (attempt $attempt); retrying in 30 seconds"
+            sleep 30
+          done
+          exit 1
+      # A dedicated release App, installed with only the permissions the runbook lists.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+        id: app
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+      # Opens nothing when the docs already pin these versions.
+      - name: Open the docs pin PR
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.app.outputs.token }}
+          path: next
+          base: next
+          branch: docs/${{ github.ref_name }}
+          add-paths: |
+            docs/package.json
+            docs/bun.lock
+          commit-message: 'docs: pin the SDK packages released in ${{ github.ref_name }}'
+          title: 'docs: pin the SDK packages released in ${{ github.ref_name }}'
+          body: |
+            Pins the docs to the npm versions published by ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}, so twoslash type-checks every snippet against the released types.
+
+            Merge after the docs checks pass.
+
+  publish-status:
+    needs: [candidates, publish-npm, publish-pypi, docs]
+    if: always() && needs.candidates.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Show the publication outcome on the request issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESULTS: >-
+            {"candidates": "${{ needs.candidates.result }}",
+             "publish-npm": "${{ needs.publish-npm.result }}",
+             "publish-pypi": "${{ needs.publish-pypi.result }}", "docs": "${{ needs.docs.result }}"}
+          ISSUE: ${{ needs.candidates.outputs.issue }}
+        run: bun scripts/sdk-release/report.ts status publish

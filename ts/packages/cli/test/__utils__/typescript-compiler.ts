@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Effect, Path, Stream, String } from 'effect';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
+import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import ts from 'typescript';
 import {
   buildVirtualFileMap,

@@ -71,10 +71,6 @@ export const TriggerType = Schema.Struct({
 }).annotate({ identifier: 'TriggerType' });
 export type TriggerType = Schema.Schema.Type<typeof TriggerType>;
 
-export const TriggerTypeJSON = JSONTransformSchema(TriggerType);
-export const TriggerTypeFromJSON = Schema.decodeEffect(TriggerTypeJSON);
-export const TriggerTypeToJSON = Schema.encodeEffect(TriggerTypeJSON);
-
 export const TriggerTypes = Schema.Array(TriggerType).annotate({
   identifier: 'Array<TriggerType>',
   title: 'TriggerTypes',

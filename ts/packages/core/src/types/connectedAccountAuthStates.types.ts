@@ -222,7 +222,8 @@ const S2SOauth2ConnectionDataSchema = z.discriminatedUnion('status', [
   }).catchall(z.unknown()),
 ]);
 const CustomS2SOauth2ConnectionDataSchema = BaseSchemeRaw.extend({
-  access_token: z.string().optional(),
+  // Required by the API: custom connection data supplies the token itself.
+  access_token: z.string(),
   id_token: z.string().optional(),
   token_type: z.string().optional(),
   refresh_token: z.string().nullish().optional(),

@@ -22,4 +22,4 @@ Auto-generated SDK documentation from source code.
 
 ## CI Integration
 
-CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**` via `.github/workflows/generate-sdk-docs.yml`.
+The SDK release workflow (`.github/workflows/sdk.release.yml`) regenerates both references in each release PR, so the published reference always matches the released packages.

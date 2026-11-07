@@ -56,6 +56,34 @@ The semantic artifact covers both regular docs and KB articles, so edits to eith
 
 The `Docs - Rebuild KB Semantic Artifact` workflow can rebuild it for eligible same-repository PRs after `Docs - Tests` runs. The scheduled support-knowledge refresh also proposes stale-artifact repairs. If you rebuild locally with `bun run build:kb-semantic`, use an authorized `OPENAI_API_KEY`: the generator sends the indexed docs content to the embeddings service. Run `bun run check:kb-semantic` without `--allow-stale` to verify a rebuild. Never edit embedding values or content hashes by hand.
 
+## Agent-readable representations
+
+Request a page with `Accept: text/markdown` (or `text/plain`), append `.md` or `.mdx`, or use its `/llms.mdx/` route. HTML pages with a Markdown representation advertise it with `<link rel="alternate" type="text/markdown">`. Negotiated responses include `Vary: Accept` so caches distinguish HTML from Markdown.
+
+Next.js `16.3.8` replaces middleware's `Vary` header in its Node HTML response template. The docs package carries a two-line dependency patch that appends Next's cache dimensions instead. The upstream regression is tracked in [Next.js issue #85852](https://github.com/vercel/next.js/issues/85852). Keep the live negotiation test when upgrading Next. Remove the patch once an unpatched production build passes that test.
+
+Per-page Markdown starts with YAML front matter. For example, `/reference/authenticating-to-composio.md` identifies its HTML and Markdown URLs independently of the URL you requested:
+
+```yaml
+---
+canonical_url: "https://docs.composio.dev/reference/authenticating-to-composio"
+markdown_url: "https://docs.composio.dev/reference/authenticating-to-composio.md"
+product: "platform"
+version: "3.1"
+last_updated: null
+---
+```
+
+`product` uses the URL-based docs product, `platform` or `for-you`, without reading your product cookie. Shared pages default to `platform`. `version` is the documented REST version (`3.1` or legacy `3.0`), or `null` for pages that don't document a REST version. It isn't an SDK package version. `last_updated` is a UTC ISO 8601 timestamp, or `null` when freshness can't be established. The example uses `null`, not an invented update time.
+
+The sitemap's `lastmod` and Markdown's `last_updated` use the same build-generated source freshness data. They never use build time or filesystem modification time. Missing pages return Markdown discovery and search links with HTTP `404`; error responses don't claim a content update time.
+
+The prebuild, predev, and type-check steps generate `.generated/content-freshness.json` from each page's backing files. Deployed routes read that artifact without Git. Freshness is limited to authored pages and dated changelog entries. Generated API and toolkit pages, KB guides, and browse pages return `last_updated: null` and omit sitemap `lastmod`. Their shared specifications, catalogs, or manifests can change without changing the page. Add timestamps for these pages only when changes can be attributed to each page.
+
+You can declare `last_updated: YYYY-MM-DD` or a timezone-qualified ISO timestamp in authored front matter. A date-only value means midnight UTC; an invalid value fails generation. Otherwise, freshness uses the source file's last Git commit. Dated changelog pages use the latest known update across entries for that date. A source commit records an edit, not a review or a guarantee that the guidance is current.
+
+Docs CI fetches full history. The Vercel build command fetches missing history before running `bun run build`. If that fetch fails, the deployment fails instead of silently publishing incomplete freshness. For other CI/CD builds, provide full history (`fetch-depth: 0` with `actions/checkout`) for complete freshness coverage. A shallow checkout retains dates for changes proven within its history but omits unknown shallow-boundary dates. Source archives without history also omit unknown dates. Neither case substitutes the checkout or build time.
+
 ## Request review and verify publication
 
 Describe the reader's problem, the resulting behavior, and the checks you ran. Include screenshots for visual changes and list checks that failed or could not run. Link the Linear issue when one exists. Docs-only changes do not need a Changeset.

@@ -1,5 +1,5 @@
 import type { SessionRetrieveInfoResponse } from '@composio/client/resources/auth';
-import type { OrgProject } from 'src/services/composio-clients';
+import type { OrgProject } from 'src/services/composio-account';
 
 export const TIMESTAMP = '2026-01-01T00:00:00.000Z';
 
@@ -15,7 +15,6 @@ export const makeSessionInfo = (
     readonly projectNanoId?: string;
     readonly projectName?: string;
     readonly orgMemberId?: string;
-    readonly userId?: string;
     readonly email?: string;
     readonly name?: string;
     readonly apiKey?: string;
@@ -64,8 +63,6 @@ export const makeSessionInfo = (
       name: params.name ?? 'CLI User',
       role: 'admin',
       metadata: {},
-      // Sent by the backend although the v3.1 spec omits it.
-      ...(params.userId === undefined ? {} : { user_id: params.userId }),
     },
   };
 };

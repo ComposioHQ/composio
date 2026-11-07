@@ -14,6 +14,11 @@ const OPENAPI_SPEC_FILES = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  experimental: {
+    // Toolkit pages hold megabytes of tool and trigger data during generation.
+    // GitHub Actions needs fewer workers than Vercel's larger build machine.
+    cpus: process.env.GITHUB_ACTIONS === 'true' ? 2 : 15,
+  },
   turbopack: {
     root: __dirname,
     resolveAlias: {
@@ -36,9 +41,10 @@ const config = {
   // manifest data, so relying on automatic tracing would make those bundles
   // fragile if their path construction changes.
   outputFileTracingIncludes: {
+    '/sitemap.xml': ['./.generated/content-freshness.json'],
     '/reference/**': [...OPENAPI_SPEC_FILES],
     '/reference/v3/**': [...OPENAPI_SPEC_FILES],
-    '/llms.mdx/**': [...OPENAPI_SPEC_FILES],
+    '/llms.mdx/**': [...OPENAPI_SPEC_FILES, './.generated/content-freshness.json'],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
@@ -86,8 +92,13 @@ const config = {
         permanent: true,
       },
       {
-        source: '/toolkits/premium-tools',
-        destination: '/toolkits/pro-tools',
+        source: '/toolkits/:legacy(pro-tools|premium-tools)',
+        destination: '/docs/instant-tools',
+        permanent: true,
+      },
+      {
+        source: '/toolkits/:legacy(pro-tools|premium-tools).:format(md|mdx)',
+        destination: '/docs/instant-tools.md',
         permanent: true,
       },
       // Deleted/merged pages -> closest surviving page (semantically resolved + verified)
@@ -182,6 +193,27 @@ const config = {
         permanent: true,
       },
       // === end docs v3 reorganization redirects ===
+      // Governance guides moved to a shared route namespace.
+      {
+        source: '/docs/tool-tags',
+        destination: '/docs/governance/tool-hints',
+        permanent: true,
+      },
+      {
+        source: '/docs/tool-tags.:format(md|mdx)',
+        destination: '/docs/governance/tool-hints.md',
+        permanent: true,
+      },
+      {
+        source: '/docs/approvals',
+        destination: '/docs/governance/approvals',
+        permanent: true,
+      },
+      {
+        source: '/docs/approvals.:format(md|mdx)',
+        destination: '/docs/governance/approvals.md',
+        permanent: true,
+      },
       {
         source: '/',
         destination: '/docs',
@@ -829,6 +861,11 @@ const config = {
       },
       // Docs pages that moved or don't exist
       {
+        source: '/docs/getting-started',
+        destination: '/docs/quickstart',
+        permanent: true,
+      },
+      {
         source: '/docs/resources/:path*',
         destination: '/docs',
         permanent: true,
@@ -1109,6 +1146,88 @@ const config = {
       {
         source: '/docs/white-labeling',
         destination: '/docs/authentication/white-labeling-authentication',
+        permanent: true,
+      },
+      // Auth, security, and deployment paths coding agents guess while
+      // evaluating Composio. Each source returned 404 in Gauge agent sessions.
+      {
+        source: '/docs/security',
+        destination: '/docs/security/overview',
+        permanent: true,
+      },
+      {
+        source: '/docs/security-and-compliance',
+        destination: '/docs/security/overview',
+        permanent: true,
+      },
+      {
+        source: '/guides/security',
+        destination: '/docs/security/overview',
+        permanent: true,
+      },
+      {
+        source: '/docs/:legacy(self-hosting|deployment)',
+        destination: '/docs/security/token-custody#deployment-options',
+        permanent: true,
+      },
+      {
+        source: '/docs/hosting/:path*',
+        destination: '/docs/security/token-custody#deployment-options',
+        permanent: true,
+      },
+      {
+        source: '/docs/:legacy(oauth|auth-overview|auth-integration|auth-and-connected-accounts|how-authentication-works)',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/auth/:path*',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/auth-management/:path*',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/authentication/:legacy(overview|introduction|intro)',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/:legacy(managed-auth|hosted-auth)',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
+        permanent: true,
+      },
+      {
+        source: '/docs/authentication/managed-auth',
+        destination: '/docs/authentication/custom-app-vs-managed-app',
+        permanent: true,
+      },
+      {
+        source: '/docs/authentication/:legacy(connected-accounts|connected_accounts)',
+        destination: '/docs/auth-configuration/connected-accounts',
+        permanent: true,
+      },
+      {
+        source: '/docs/overview',
+        destination: '/docs',
+        permanent: true,
+      },
+      {
+        source: '/docs/sessions',
+        destination: '/docs/configuring-sessions',
+        permanent: true,
+      },
+      {
+        source: '/quickstart',
+        destination: '/docs/quickstart',
+        permanent: true,
+      },
+      {
+        source: '/cli',
+        destination: '/docs/cli',
         permanent: true,
       },
     ];

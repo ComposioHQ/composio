@@ -8,10 +8,12 @@ Covers:
 - Custom tool execution (validation, defaults, errors)
 - Routing map building and lookup
 - SessionContextImpl sibling routing
-- ToolRouterSession integration (execute routing, custom_tools(), custom_toolkits())
+- ToolRouterSession integration (execute routing, local_tools(), local_toolkits())
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+import sys
+import warnings
 from dataclasses import replace
 from unittest.mock import MagicMock
 
@@ -39,13 +41,18 @@ from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
 )
+from composio.core.models.custom_tool_types import (
+    CustomTool,
+    RegisteredCustomTool,
+    RegisteredCustomToolkit,
+)
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionExecuteResponse,
 )
-from composio.exceptions import ValidationError
+from composio.exceptions import ComposioDeprecationWarning, ValidationError
 from tests.conftest import mock_http_client
 
 # ────────────────────────────────────────────────────────────────
@@ -312,6 +319,150 @@ def future_tool(input: FutureInput, ctx):
 
         local_tool, local_input = build_tool()
         assert local_tool.input_params is local_input
+
+    def test_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # https://github.com/ComposioHQ/composio/issues/5022
+        with pytest.raises(
+            ValidationError,
+            match=(
+                r"could not resolve the annotation 'LaterInput' .*"
+                r"NameError: name 'LaterInput' is not defined.*"
+                r"Define LaterInput before the tool"
+            ),
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+@exp.tool()
+def later_tool(input: LaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LaterInput(BaseModel):
+    query: str
+""",
+                {"exp": exp},
+            )
+
+    def test_input_model_imported_under_type_checking_names_unresolved_annotation(
+        self,
+    ):
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'GrepInput' .*TYPE_CHECKING",
+        ):
+            exec(
+                """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tests.test_custom_tools import GrepInput
+
+
+@exp.tool()
+def type_checking_tool(input: GrepInput, ctx):
+    '''Input model only imported for type checkers.'''
+    return {}
+""",
+                {"exp": exp},
+            )
+
+    def test_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        namespace = {"exp": exp}
+        exec(
+            """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class TypedInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def typed_ctx_tool(input: TypedInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            namespace,
+        )
+
+        assert namespace["typed_ctx_tool"].input_params is namespace["TypedInput"]
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_input_model_defined_after_tool_names_unresolved_annotation(self):
+        # dont_inherit keeps this module's compiler flags out, so the
+        # annotations stay lazy instead of becoming strings.
+        code = compile(
+            """
+from pydantic import BaseModel
+
+
+@exp.tool()
+def lazy_later_tool(input: LazyLaterInput, ctx):
+    '''Input model defined below the tool.'''
+    return {}
+
+
+class LazyLaterInput(BaseModel):
+    query: str
+""",
+            "<lazy_later_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        with pytest.raises(
+            ValidationError,
+            match=r"could not resolve the annotation 'LazyLaterInput' .*NameError",
+        ):
+            exec(code, {"exp": exp})
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 14), reason="lazy annotations need Python 3.14"
+    )
+    def test_lazy_unresolvable_ctx_and_return_annotations_are_ignored(self):
+        code = compile(
+            """
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from composio.core.models.custom_tool import SessionContext
+
+
+class LazyInput(BaseModel):
+    query: str
+
+
+@exp.tool()
+def lazy_ctx_tool(input: LazyInput, ctx: SessionContext) -> ToolResult:
+    '''ctx and return annotations exist only for type checkers.'''
+    return {}
+""",
+            "<lazy_ctx_tool>",
+            "exec",
+            dont_inherit=True,
+        )
+        namespace = {"exp": exp}
+        exec(code, namespace)
+
+        assert namespace["lazy_ctx_tool"].input_params is namespace["LazyInput"]
 
     def test_async_function_rejected(self):
         with pytest.raises(ValidationError, match="async"):
@@ -789,7 +940,7 @@ class TestSessionContextImpl:
         m = build_custom_tools_map([grep_tool])
         mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         ctx = SessionContextImpl(
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
@@ -805,7 +956,7 @@ class TestSessionContextImpl:
     def test_remote_fallback_passes_inline_custom_tools(self):
         mock_client = mock_http_client(MagicMock)
         mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"remote": True}, error=None, log_id="log_123"
+            data={"remote": True}, error=None, log_id="log_123", result_type="completed"
         )
         inline_payload = {
             "custom_tools": [
@@ -842,7 +993,12 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
         assert "binary_data" not in result
 
     def test_proxy_execute_narrows_status_to_int(self):
@@ -861,8 +1017,14 @@ class TestSessionContextImpl:
         result = ctx.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
-        assert result == {"status": 200, "data": None, "headers": None}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": None,
+            "headers": None,
+        }
 
     def test_proxy_execute_projects_binary_data(self):
         mock_client = mock_http_client(MagicMock)
@@ -884,6 +1046,7 @@ class TestSessionContextImpl:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -989,7 +1152,7 @@ class TestToolRouterSessionCustomTools:
 
     def test_execute_remote(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -1015,6 +1178,7 @@ class TestToolRouterSessionCustomTools:
         ].tool_router.session.execute.return_value = (
             SessionExecuteResponse.model_validate(
                 {
+                    "result_type": "completed",
                     "data": {"sent": True},
                     "error": None,
                     "log_id": "log_123",
@@ -1037,7 +1201,7 @@ class TestToolRouterSessionCustomTools:
         mock_session_deps[
             "client"
         ].tool_router.session.execute.return_value = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         s = _session(mock_session_deps)
 
@@ -1047,7 +1211,7 @@ class TestToolRouterSessionCustomTools:
 
     def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
         mock_response = SessionExecuteResponse(
-            data={"sent": True}, error=None, log_id="log_123"
+            data={"sent": True}, error=None, log_id="log_123", result_type="completed"
         )
         mock_session_deps[
             "client"
@@ -1078,7 +1242,13 @@ class TestToolRouterSessionCustomTools:
         result = s.proxy_execute(
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
-        assert result == {"status": 200, "data": {"ok": True}, "headers": {}}
+        assert result == {
+            "result_type": "completed",
+            "status": 200,
+            "data": {"ok": True},
+            "headers": {},
+        }
+        assert result["result_type"] == "completed"
         assert isinstance(result["status"], int)
         assert "binary_data" not in result
 
@@ -1101,6 +1271,7 @@ class TestToolRouterSessionCustomTools:
             toolkit="gmail", endpoint="https://example.com", method="GET"
         )
         assert result == {
+            "result_type": "completed",
             "status": 200,
             "data": {"ok": True},
             "headers": {"content-type": "application/pdf"},
@@ -1115,15 +1286,15 @@ class TestToolRouterSessionCustomTools:
 
     def test_custom_tools_list(self, mock_session_deps):
         s = _session(mock_session_deps)
-        assert len(s.custom_tools()) == 3
+        assert len(s.local_tools()) == 3
 
     def test_custom_tools_filter(self, mock_session_deps):
         s = _session(mock_session_deps)
-        assert len(s.custom_tools(toolkit="gmail")) == 1
+        assert len(s.local_tools(toolkit="gmail")) == 1
 
     def test_custom_toolkits_list(self, mock_session_deps):
         s = _session(mock_session_deps)
-        tks = s.custom_toolkits()
+        tks = s.local_toolkits()
         assert len(tks) == 1
         assert tks[0].slug == "ROLE_MANAGER"
 
@@ -1147,7 +1318,7 @@ class TestToolRouterSessionCustomTools:
             user_id="u",
         )
 
-        toolkits = s.custom_toolkits()
+        toolkits = s.local_toolkits()
 
         assert [tk.tools[0].slug for tk in toolkits] == [
             "LOCAL_ALPHA_GREP",
@@ -1186,7 +1357,7 @@ class TestToolRouterSessionCustomTools:
             user_id="u",
         )
 
-        assert [tk.tools[0].slug for tk in s.custom_toolkits()] == [
+        assert [tk.tools[0].slug for tk in s.local_toolkits()] == [
             "LOCAL_ALPHA_GREP",
             "GREP",
         ]
@@ -1230,7 +1401,62 @@ class TestToolRouterSessionCustomTools:
             mcp=MagicMock(),
             experimental=MagicMock(),
         )
-        assert s.custom_tools() == []
+        assert s.local_tools() == []
+
+    def test_deprecated_custom_tools_matches_local_tools(self, mock_session_deps):
+        s = _session(mock_session_deps)
+
+        with pytest.warns(
+            ComposioDeprecationWarning,
+            match=r"^`session\.custom_tools\(\)` is deprecated; use `session\.local_tools\(\)`$",
+        ) as record:
+            deprecated = s.custom_tools(toolkit="gmail")
+
+        assert record[0].filename == __file__
+        assert deprecated == s.local_tools(toolkit="gmail")
+        assert len(deprecated) == 1
+
+    def test_deprecated_custom_toolkits_matches_local_toolkits(self, mock_session_deps):
+        s = _session(mock_session_deps)
+
+        with pytest.warns(
+            ComposioDeprecationWarning,
+            match=r"^`session\.custom_toolkits\(\)` is deprecated; use `session\.local_toolkits\(\)`$",
+        ) as record:
+            deprecated = s.custom_toolkits()
+
+        assert record[0].filename == __file__
+        assert deprecated == s.local_toolkits()
+        assert [tk.slug for tk in deprecated] == ["ROLE_MANAGER"]
+
+
+class TestLocalToolTypeNames:
+    def test_new_names_import_without_warning(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            from composio import LocalTool, LocalToolkit
+            from composio.core.models import (
+                RegisteredLocalTool,
+                RegisteredLocalToolkit,
+            )
+
+        assert LocalTool is CustomTool
+        assert LocalToolkit is ExperimentalToolkit
+        assert RegisteredLocalTool is RegisteredCustomTool
+        assert RegisteredLocalToolkit is RegisteredCustomToolkit
+
+    def test_deprecated_type_names_stay_plain_aliases(self):
+        # Type names don't warn, so `from composio import *` stays quiet;
+        # the deprecated options and session methods carry the warning.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            import composio
+            from composio.core import models
+
+        assert composio.CustomTool is composio.LocalTool
+        assert models.CustomTool is models.LocalTool
+        assert models.RegisteredCustomTool is models.RegisteredLocalTool
+        assert models.RegisteredCustomToolkit is models.RegisteredLocalToolkit
 
 
 # ────────────────────────────────────────────────────────────────

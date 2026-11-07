@@ -66,7 +66,10 @@ def _function_call_response() -> Any:
 def _session() -> Mock:
     session = Mock()
     session.execute.return_value = SimpleNamespace(
-        data={"results": []}, error=None, log_id="log-session"
+        data={"results": []},
+        error=None,
+        log_id="log-session",
+        result_type="completed",
     )
     return session
 

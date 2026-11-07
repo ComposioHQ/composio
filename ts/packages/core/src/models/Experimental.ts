@@ -144,7 +144,7 @@ export class Experimental {
   usage: Usage;
 
   /**
-   * Register and manage project-owned custom toolkits (`upsert()` / `sync()` / `delete()`).
+   * Register and manage project-owned custom toolkits (`create()` / `update()` / `sync()` / `delete()`).
    * **Experimental — custom toolkits are in pilot; shape may change.**
    *
    * @example

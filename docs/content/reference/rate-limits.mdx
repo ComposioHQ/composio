@@ -1,10 +1,20 @@
 ---
 title: Rate Limits
-description: Composio API rate limits by plan, rate limit headers, and best practices
-keywords: [API rate limits, rate limiting, throttling, 429 too many requests, API quotas, request limits]
+description: Distinguish Composio API limits from provider quotas and recover from 429 errors
+keywords: [API rate limits, rate limiting, throttling, 429 too many requests, API quotas, request limits, provider quotas, managed auth]
 ---
 
-Composio enforces rate limits **per organization** over a fixed one-minute window. Every authenticated endpoint draws from the same budget — tool execution, connected accounts, triggers, and the rest — so the limit below is your organization's total across all API calls.
+Composio enforces API rate limits **per organization** over a fixed one-minute window. Every authenticated endpoint draws from the same budget, including tool execution, connected accounts, and triggers.
+
+A tool call can also hit the connected app's own quota. Check the full error before changing your Composio plan:
+
+| Limit | What it measures | Where to look |
+| --- | --- | --- |
+| Composio API rate limit | Requests across your organization in one minute | The rate limit response and headers below |
+| Composio plan usage | Your plan's tool-call allowance | Your Composio usage and billing |
+| Provider quota | Requests or operations allowed by the connected app | The provider error in the tool result, including its quota name and request ID |
+
+Unused Composio allowance does not prevent a provider from rejecting a request.
 
 ## Rate limits by plan
 
@@ -37,15 +47,37 @@ When you exceed the rate limit, you'll receive a `429 Too Many Requests` respons
 
 ## Best practices
 
-1. **Watch `X-RateLimit-Remaining`** — read it on each response to know how much headroom you have left in the window.
+1. **Watch `X-RateLimit-Remaining`.** Read it on each response to know how much headroom you have left in the window.
 
-2. **Honor `Retry-After`** — on a `429`, wait the number of seconds it gives you before retrying instead of hammering the endpoint.
+2. **Honor `Retry-After`.** On a Composio `429`, wait the number of seconds it gives you before retrying.
 
-3. **Cache what doesn't change** — keep tool definitions and other static data client-side so you don't spend requests re-fetching them.
+3. **Cache what doesn't change.** Keep tool definitions and other static data client-side so you don't spend requests re-fetching them.
+
+## Provider quota errors
+
+Providers can limit an OAuth app, developer token, workspace, account, or individual API operation. With managed auth, some of those quotas are shared across connections using Composio's provider credentials.
+
+These errors identify provider limits:
+
+| Error detail | Quota to investigate |
+| --- | --- |
+| Google Ads `RESOURCE_EXHAUSTED` with `rateScope: DEVELOPER` | The Google Ads developer token |
+| YouTube `Video Uploads per day` with a Google `project_number` | The Google API project's upload quota |
+| QuickBooks `ThrottleExceeded` | The Intuit limit named in the full provider response |
+
+Follow the provider's retry or reset window. A short burst limit and an exhausted daily or monthly quota need different recovery steps. Repeated retries do not increase the available quota.
+
+Upgrading your Composio plan alone does not move an existing managed connection to a different provider app or dedicated quota. Reconnecting the same managed connection does not switch it to your own OAuth app either.
+
+On the Developer Platform, you can [create a custom auth config](/docs/authentication/custom-app-vs-managed-app) with your own provider credentials where supported. Authorize a new connected account under that config and select it in your workflow. The provider's approval requirements and limits still apply. Google Ads, for example, uses a developer token in addition to an OAuth client ID and secret.
+
+Auth configs belong to a project. A custom config in your Developer Platform project does not change an existing Composio For You connection.
+
+If you need help tracing a limit, include the UTC timestamp, tool slug, Composio execution or request ID, provider request ID, exact error, and whether you use managed or custom auth. Keep credentials out of the report.
 
 ## Need higher limits?
 
-If you hit these limits regularly, upgrade your plan or [talk to us](https://composio.dev/contact?utm_source=docs&cta_placement=docs-rate-limits) about custom limits for your use case.
+If you regularly hit Composio's organization API limit, upgrade your plan or [talk to us](https://composio.dev/contact?utm_source=docs&cta_placement=docs-rate-limits) about custom limits. For a provider quota, use the provider recovery steps above.
 
 <Cards>
   <Card title="Errors" href="/reference/errors">

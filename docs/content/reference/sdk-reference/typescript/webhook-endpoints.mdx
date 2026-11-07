@@ -20,19 +20,19 @@ Create a webhook endpoint for a toolkit + OAuth app pair. Returns the
 existing endpoint when one already exists for that pair.
 
 ```typescript
-async create(params: { clientId: string; toolkitSlug: string }, requestOptions?: ComposioRequestOptions): Promise<...>
+async create(params: WebhookEndpointCreateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params` | `\{ clientId: string; toolkitSlug: string \}` | `toolkitSlug` and `clientId` |
+| `params` | `WebhookEndpointCreateParams` | `toolkitSlug` and `clientId` |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — The endpoint; register `webhookUrl` with the provider
+`Promise<WebhookEndpoint>` — The endpoint; register `webhookUrl` with the provider
 
 **Example**
 
@@ -50,7 +50,7 @@ const endpoint = await composio.webhooks.endpoints.create({
 Retrieve a webhook endpoint by its nano id.
 
 ```typescript
-async get(nanoId: string, requestOptions?: ComposioRequestOptions): Promise<...>
+async get(nanoId: string, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
 **Parameters**
@@ -62,7 +62,7 @@ async get(nanoId: string, requestOptions?: ComposioRequestOptions): Promise<...>
 
 **Returns**
 
-`Promise<...>` — The endpoint, with secret setup values masked
+`Promise<WebhookEndpoint>` — The endpoint, with secret setup values masked
 
 **Example**
 
@@ -78,19 +78,19 @@ console.log(endpoint.webhookUrl);
 List webhook endpoints, optionally filtered by toolkit.
 
 ```typescript
-async list(query?: { toolkitSlug?: string }, requestOptions?: ComposioRequestOptions): Promise<{ items: { clientId: string | null; id: string; toolkitSlug: string }[] }>
+async list(query?: WebhookEndpointListParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpointListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `\{ toolkitSlug?: string \}` | Optional `toolkitSlug` filter |
+| `query?` | `WebhookEndpointListParams` | Optional `toolkitSlug` filter |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<\{ items: \{ clientId: string \| null; id: string; toolkitSlug: string \}[] \}>` — The endpoints
+`Promise<WebhookEndpointListResponse>` — The endpoints
 
 **Example**
 
@@ -106,7 +106,7 @@ Replace the setup fields of a webhook endpoint. All required setup fields
 for the toolkit must be provided — this is the initial configuration.
 
 ```typescript
-async replace(nanoId: string, params: { data: Record<string, string> }, requestOptions?: ComposioRequestOptions): Promise<...>
+async replace(nanoId: string, params: WebhookEndpointReplaceParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
 **Parameters**
@@ -114,12 +114,12 @@ async replace(nanoId: string, params: { data: Record<string, string> }, requestO
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoId` | `string` | The endpoint nano id |
-| `params` | `\{ data: Record<string, string> \}` | `data` with every required setup field |
+| `params` | `WebhookEndpointReplaceParams` | `data` with every required setup field |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — The configured endpoint
+`Promise<WebhookEndpoint>` — The configured endpoint
 
 **Example**
 
@@ -136,7 +136,7 @@ await composio.webhooks.endpoints.replace('we_abc123', {
 Merge setup fields into a webhook endpoint. Omitted fields are preserved.
 
 ```typescript
-async update(nanoId: string, params: { data: Record<string, string> }, requestOptions?: ComposioRequestOptions): Promise<...>
+async update(nanoId: string, params: WebhookEndpointUpdateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
 **Parameters**
@@ -144,12 +144,12 @@ async update(nanoId: string, params: { data: Record<string, string> }, requestOp
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoId` | `string` | The endpoint nano id |
-| `params` | `\{ data: Record<string, string> \}` | `data` with the fields to change |
+| `params` | `WebhookEndpointUpdateParams` | `data` with the fields to change |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — The updated endpoint
+`Promise<WebhookEndpoint>` — The updated endpoint
 
 **Example**
 

@@ -4,7 +4,7 @@ TypeScript runtime and CLI end-to-end test guidance.
 
 ## Scope
 
-`ts/e2e-tests/` contains Docker-based runtime tests for Node.js, Deno, Cloudflare Workers, and CLI suites.
+`ts/e2e-tests/` contains Docker-based runtime tests for Node.js, Cloudflare Workers, and CLI suites.
 
 ## Skill Routing
 
@@ -17,7 +17,6 @@ Run from the repository root:
 ```bash
 pnpm test:e2e
 pnpm test:e2e:node
-pnpm test:e2e:deno
 pnpm test:e2e:cloudflare
 pnpm test:e2e:cli
 ```

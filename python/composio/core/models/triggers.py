@@ -861,15 +861,32 @@ class TriggerSubscription(Resource):
         return self._alive
 
     def has_errored(self) -> bool:
-        """Check if the connection errored and disconnected."""
-        return self._connection.socket is None or self._connection.socket.has_errored
+        """Check if the connection errored and disconnected.
+
+        This follows pysher's own lifecycle instead of websocket-client's
+        ``has_errored`` flag. That flag stays set through pysher's reconnect
+        backoff (and, on websocket-client 1.9.0 and older, for the rest of
+        the reused socket), so it cannot tell a drop pysher will recover
+        from apart from a connection pysher has given up on. pysher's
+        connection thread stays alive across reconnects and exits once the
+        connection is dead for good (unrecoverable ``pusher:error``, or
+        ``stop()``), which is exactly when ``wait_forever`` should return.
+        """
+        connection = getattr(self, "_connection", None)
+        if connection is None:
+            return True
+        return not connection.is_alive()
 
     def set_alive(self) -> None:
         """Set `_alive` to True."""
         self._alive = True
 
     def wait_forever(self) -> None:
-        """Wait infinitely."""
+        """Wait until stopped or the connection worker exits.
+
+        Recoverable connection failures keep waiting while pysher retries,
+        including throughout an extended network outage.
+        """
         while self.is_alive() and not self.has_errored():
             time.sleep(1)
 
@@ -896,9 +913,10 @@ class TriggerSubscription(Resource):
         thread.start()
 
     def restart(self) -> None:
-        """Restart the subscription connection"""
-        self._connection.disconnect()
-        self._connection._connect()  # pylint: disable=protected-access
+        """Request a reconnect on the running subscription worker."""
+        # Disconnect joins the worker; calling _connect afterwards runs the
+        # socket on the caller while has_errored sees a terminated worker.
+        self._connection.reconnect(reconnect_interval=0)
 
 
 def _silent_pysher_logger() -> logging.Logger:
@@ -1011,7 +1029,6 @@ class _SubcriptionBuilder(WithLogger):
         """Initialize pusher client."""
         super().__init__()
         self._client = client
-        self.api_key = self._client.api_key
         self.base_url = self._client.base_url
         self.internal = Internal(client=self._client)
         self.subscription = TriggerSubscription(client=self._client)
@@ -1257,6 +1274,8 @@ class Triggers(Resource):
         *,
         connected_account_id: str,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+        type: t.Optional[t.Literal["webhook", "poll"]] = None,
+        polling_interval: t.Optional[int] = None,
     ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse: ...
 
     @t.overload
@@ -1266,6 +1285,8 @@ class Triggers(Resource):
         *,
         user_id: str,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+        type: t.Optional[t.Literal["webhook", "poll"]] = None,
+        polling_interval: t.Optional[int] = None,
     ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse: ...
 
     def create(
@@ -1275,6 +1296,8 @@ class Triggers(Resource):
         user_id: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
         trigger_config: t.Optional[t.Dict[str, t.Any]] = None,
+        type: t.Optional[t.Literal["webhook", "poll"]] = None,
+        polling_interval: t.Optional[int] = None,
     ) -> trigger_instance_upsert_response.TriggerInstanceUpsertResponse:
         """
         Create a trigger instance
@@ -1285,7 +1308,13 @@ class Triggers(Resource):
             active connection for this user and the trigger's toolkit.
         :param connected_account_id: The ID of the connected account to pin
         :param trigger_config: The configuration of the trigger
-        :return: The trigger instance
+        :param type: ``webhook`` or ``poll``, for a trigger that supports both.
+            Omit it to let Composio choose.
+        :param polling_interval: Minutes between polls, for an instance that polls.
+            Wins over ``trigger_config["interval"]``.
+        :return: The trigger instance, with the ``type`` it uses, the
+            ``fallback_reason`` when it polls after a webhook was unavailable, and
+            its ``polling_interval``
         """
         # Treat blank strings as missing so an empty or whitespace-only
         # `user_id` / `connected_account_id` does not slip past the guard below
@@ -1320,6 +1349,8 @@ class Triggers(Resource):
             connected_account_id=none_to_omit(connected_account_id),
             toolkit_versions=self._toolkit_versions,
             body_trigger_config_1=none_to_omit(trigger_config),
+            type=none_to_omit(type),
+            polling_interval=none_to_omit(polling_interval),
             user_id=none_to_omit(user_id),
         )
 

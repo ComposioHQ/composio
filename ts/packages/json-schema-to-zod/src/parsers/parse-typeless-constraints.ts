@@ -1,8 +1,7 @@
-import { z } from 'zod/v3';
-
 import { parseNumber } from './parse-number';
 import { parseString } from './parse-string';
-import type { JsonSchemaObject, Refs } from '../types';
+import type { ParseContext } from '../context';
+import type { JsonSchemaObject } from '../types';
 
 const SCALAR_CONSTRAINT_KEYS = [
   'minLength',
@@ -23,14 +22,15 @@ export const hasTypelessScalarConstraints = (schema: JsonSchemaObject): boolean 
  * schema declares no `type`: `{ "minLength": 2 }` restricts strings while
  * leaving every non-string value untouched.
  */
-export const parseTypelessConstraints = (
+export const parseTypelessConstraints = <S>(
   schema: JsonSchemaObject,
-  refs: Pick<Refs, 'path'>
-): z.ZodTypeAny => {
-  const stringSchema = parseString({ ...schema, type: 'string' }, refs);
-  const numberSchema = parseNumber({ ...schema, type: 'number' });
+  ctx: Pick<ParseContext<S>, 'path' | 'backend'>
+): S => {
+  const { backend } = ctx;
+  const stringSchema = parseString({ ...schema, type: 'string' }, ctx);
+  const numberSchema = parseNumber({ ...schema, type: 'number' }, backend);
 
-  return z.any().superRefine((value, ctx) => {
+  return backend.superRefine<unknown>(backend.any(), (value, issues) => {
     const applicable =
       typeof value === 'string'
         ? stringSchema
@@ -39,11 +39,9 @@ export const parseTypelessConstraints = (
           : undefined;
     if (applicable === undefined) return;
 
-    const result = applicable.safeParse(value);
+    const result = backend.run(applicable, value);
     if (!result.success) {
-      for (const issue of result.error.issues) {
-        ctx.addIssue(issue);
-      }
+      issues.forward(result.failure);
     }
   });
 };

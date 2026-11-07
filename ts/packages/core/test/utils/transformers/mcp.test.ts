@@ -15,20 +15,29 @@ describe('MCP Transformers', () => {
       const snakeCaseResponse = {
         id: 'mcp_123',
         name: 'test-server',
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-02T00:00:00Z',
-        status: 'active',
+        auth_config_ids: ['ac_1'],
+        allowed_tools: ['GMAIL_SEND_EMAIL'],
+        mcp_url: 'https://mcp.example.com/server',
+        commands: { claude: 'claude', cursor: 'cursor', windsurf: 'windsurf' },
       } as unknown;
 
       const result = transformMcpCreateResponse(snakeCaseResponse);
 
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         id: 'mcp_123',
         name: 'test-server',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-02T00:00:00Z',
-        status: 'active',
       });
+    });
+
+    it('does not read timestamps or a status the create response never carries', () => {
+      const result = transformMcpCreateResponse({
+        id: 'mcp_123',
+        name: 'test-server',
+        created_at: '2024-01-01T00:00:00Z',
+        status: 'active',
+      } as unknown);
+
+      expect(result).toStrictEqual({ id: 'mcp_123', name: 'test-server' });
     });
 
     it('should handle missing optional fields', () => {
@@ -67,14 +76,12 @@ describe('MCP Transformers', () => {
             name: 'server-1',
             created_at: '2024-01-01T00:00:00Z',
             updated_at: '2024-01-01T00:00:00Z',
-            status: 'active',
           },
           {
             id: 'mcp_456',
             name: 'server-2',
             created_at: '2024-01-02T00:00:00Z',
             updated_at: '2024-01-02T00:00:00Z',
-            status: 'inactive',
           },
         ],
       } as unknown;
@@ -88,14 +95,12 @@ describe('MCP Transformers', () => {
             name: 'server-1',
             createdAt: '2024-01-01T00:00:00Z',
             updatedAt: '2024-01-01T00:00:00Z',
-            status: 'active',
           },
           {
             id: 'mcp_456',
             name: 'server-2',
             createdAt: '2024-01-02T00:00:00Z',
             updatedAt: '2024-01-02T00:00:00Z',
-            status: 'inactive',
           },
         ],
       });
@@ -131,9 +136,8 @@ describe('MCP Transformers', () => {
         name: 'test-server',
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-02T00:00:00Z',
-        status: 'active',
         toolkits: ['gmail', 'github'],
-        tools: undefined,
+        allowed_tools: ['GMAIL_SEND_EMAIL'],
         managed_auth_via_composio: true,
         mcp_url: 'https://mcp.example.com/server',
         commands: {
@@ -150,9 +154,8 @@ describe('MCP Transformers', () => {
         name: 'test-server',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-02T00:00:00Z',
-        status: 'active',
         toolkits: ['gmail', 'github'],
-        tools: undefined,
+        tools: ['GMAIL_SEND_EMAIL'],
         managedAuthViaComposio: true,
         mcpUrl: 'https://mcp.example.com/server',
         commands: {
@@ -204,15 +207,13 @@ describe('MCP Transformers', () => {
       const snakeCaseResponse = {
         id: 'mcp_123',
         deleted: true,
-        message: 'Server deleted successfully',
       } as unknown;
 
       const result = transformMcpDeleteResponse(snakeCaseResponse);
 
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         id: 'mcp_123',
         deleted: true,
-        message: 'Server deleted successfully',
       });
     });
 
@@ -236,9 +237,8 @@ describe('MCP Transformers', () => {
         name: 'updated-server',
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-03T00:00:00Z',
-        status: 'active',
         toolkits: ['gmail', 'slack'],
-        tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE'],
+        allowed_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE'],
       } as unknown;
 
       const result = transformMcpUpdateResponse(snakeCaseResponse);
@@ -248,7 +248,6 @@ describe('MCP Transformers', () => {
         name: 'updated-server',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-03T00:00:00Z',
-        status: 'active',
         toolkits: ['gmail', 'slack'],
         tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE'],
       });
@@ -366,12 +365,10 @@ describe('MCP Transformers', () => {
 
       const result = transformMcpCreateResponse(responseWithNulls);
 
-      expect(result).toEqual({
+      // The create response carries no timestamps or status; they are not read.
+      expect(result).toStrictEqual({
         id: 'mcp_123',
         name: 'test-server',
-        createdAt: null,
-        updatedAt: null,
-        status: null,
       });
     });
 
@@ -404,10 +401,9 @@ describe('MCP Transformers', () => {
       const result = transformMcpCreateResponse(responseWithExtraFields);
 
       // Should only include known fields
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         id: 'mcp_123',
         name: 'test-server',
-        createdAt: '2024-01-01T00:00:00Z',
       });
       expect(result).not.toHaveProperty('some_unknown_field');
       expect(result).not.toHaveProperty('nested_object');

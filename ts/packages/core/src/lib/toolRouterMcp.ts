@@ -71,6 +71,8 @@ export type MCPServerConfigInput = {
   apiKey: string | null | undefined;
   /** The user API key the client resolved (`userApiKey` option or `COMPOSIO_USER_API_KEY`). */
   userApiKey: string | null | undefined;
+  /** The organization API key the client resolved (`orgApiKey` option or `COMPOSIO_ORG_API_KEY`). */
+  orgApiKey?: string | null;
   /** The default headers configured on the SDK instance; only `x-user-api-key` is consulted. */
   defaultHeaders: ComposioRequestHeaders | undefined;
   /** Organization nano ID the instance is scoped to, if any. */

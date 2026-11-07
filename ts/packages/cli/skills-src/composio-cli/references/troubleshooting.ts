@@ -88,7 +88,7 @@ cat payload.json | composio execute GITHUB_CREATE_AN_ISSUE --skip-connection-che
         '- the user wants to run multiple unrelated tools in one step',
         '- the user is about to write a script only to execute a few independent calls',
         'Fix:',
-        'Escalate to `composio run` only when the user needs control flow, loops, `Promise.all`, `search()` inside a script, `proxy()`, or `experimental_subAgent()`.',
+        'Escalate to `composio run` only when the user needs control flow, loops, `Promise.all`, `search()` inside a script, or `proxy()`.',
       ],
       commands: [
         {

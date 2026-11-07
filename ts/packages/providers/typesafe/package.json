@@ -54,7 +54,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@composio/google": "workspace:*",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.4",
     "@typesafe-ai/sdk": "0.6.0",
     "fast-check": "^4.10.2",
     "tsdown": "catalog:",

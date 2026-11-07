@@ -1,3 +1,4 @@
+import { markdownAlternates } from '@/lib/markdown-alternates';
 import { DocsBody, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
@@ -64,7 +65,7 @@ export function createGenerateMetadata(source: Source, section: string = 'docs')
     return {
       title: page.data.title,
       description,
-      alternates: { canonical: page.url },
+      alternates: markdownAlternates(page.url),
       openGraph: {
         images: [ogImage],
       },

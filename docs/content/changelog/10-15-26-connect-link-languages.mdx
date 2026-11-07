@@ -1,0 +1,9 @@
+---
+title: "Show the Connect Link in Spanish or Simplified Chinese"
+description: "Add a locale parameter to the Connect Link URL to show the hosted connection page in your user's language."
+date: "2026-10-15"
+---
+
+The Connect Link can now show its text in Spanish or Simplified Chinese. Add `?locale=es` or `?locale=zh-CN` to the `redirect_url` before you send it to the user, and the whole flow, including the success and failure screens, uses that language.
+
+For now, only `en`, `es`, and `zh-CN` are supported. Links without `locale`, or with any other value, show English. See [White-labeling authentication → Language](/docs/authentication/white-labeling-authentication#language) for examples.

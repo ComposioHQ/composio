@@ -1,8 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, assert } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
-import { createCustomTool, buildCustomToolsMap } from '../../src/models/CustomTool';
+import {
+  createCustomTool,
+  createCustomToolkit,
+  buildCustomToolsMap,
+} from '../../src/models/CustomTool';
+import { ComposioToolInputRequiredError, ValidationError } from '../../src/errors';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import ComposioClient from '@composio/client';
 import type { CustomTool, SessionContext } from '../../src/types/customTool.types';
@@ -85,21 +90,23 @@ beforeEach(() => {
 
 // ── Fixtures ─────────────────────────────────────────────────────
 
+const sessionCreateResponse = {
+  session_id: 'sess_123',
+  config: {
+    preload: { tools: [] },
+    user_id: 'user_1',
+  },
+  config_version: 1,
+  mcp: { type: 'http', url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123' },
+  tool_router_tools: [],
+};
+
 const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
   toolRouter: {
     session: {
-      create: vi.fn().mockResolvedValue({
-        session_id: 'sess_123',
-        config: {
-          preload: { tools: [] },
-          user_id: 'user_1',
-        },
-        config_version: 1,
-        mcp: { type: 'http', url: 'https://api.composio.dev/api/v3/tool_router/session/sess_123' },
-        tool_router_tools: [],
-      }),
+      create: vi.fn().mockResolvedValue(sessionCreateResponse),
       retrieve: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
@@ -110,6 +117,7 @@ const createMockClient = () => ({
         headers: { 'x-test': '1' },
       }),
       execute: vi.fn().mockResolvedValue({
+        result_type: 'completed',
         data: { remote_result: true },
         error: null,
         log_id: 'log_remote',
@@ -281,6 +289,109 @@ describe('ToolRouter.create() with customTools', () => {
   });
 });
 
+describe('ToolRouter.create() with localTools', () => {
+  let mockClient: ReturnType<typeof createMockClient>;
+  let router: ToolRouter<unknown, unknown, MockProvider>;
+
+  const devToolkit = createCustomToolkit('DEV_TOOLS', {
+    name: 'Dev Tools',
+    description: 'Local dev utilities',
+    tools: [
+      createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: async () => ({ matches: [] }),
+      }),
+    ],
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockClient = createMockClient();
+    mockClient.toolRouter.session.create.mockResolvedValue({
+      ...sessionCreateResponse,
+      experimental: {
+        custom_tools: [{ slug: 'LOCAL_GET_USER_CONTEXT', original_slug: 'GET_USER_CONTEXT' }],
+        custom_toolkits: [
+          { slug: 'DEV_TOOLS', tools: [{ slug: 'LOCAL_DEV_TOOLS_GREP', original_slug: 'GREP' }] },
+        ],
+      },
+    });
+    router = new ToolRouter(mockClient as unknown as ComposioClient, {
+      apiKey: 'test-key',
+      provider: new MockProvider(),
+    });
+  });
+
+  it('sends the same custom_tools/custom_toolkits wire payload as the deprecated names', async () => {
+    await router.create('user_1', {
+      experimental: { localTools: [customToolHandle], localToolkits: [devToolkit] },
+    });
+    await router.create('user_1', {
+      experimental: { customTools: [customToolHandle], customToolkits: [devToolkit] },
+    });
+
+    const [[localPayload], [customPayload]] = mockClient.toolRouter.session.create.mock.calls;
+    expect(localPayload.experimental).toEqual({
+      custom_tools: [expect.objectContaining({ slug: 'GET_USER_CONTEXT' })],
+      custom_toolkits: [expect.objectContaining({ slug: 'DEV_TOOLS' })],
+    });
+    expect(customPayload).toEqual(localPayload);
+  });
+
+  it('routes local tools passed via localTools in-process', async () => {
+    const session = await router.create('user_1', {
+      experimental: { localTools: [customToolHandle] },
+    });
+
+    const result = await session.execute('GET_USER_CONTEXT', { category: 'all' });
+
+    expect(result.error).toBeNull();
+    expect(localExecute).toHaveBeenCalled();
+    expect(mockClient.toolRouter.session.execute).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'experimental.localTools or experimental.customTools',
+      { localTools: [customToolHandle], customTools: [customToolHandle] },
+    ],
+    [
+      'experimental.localToolkits or experimental.customToolkits',
+      { localToolkits: [devToolkit], customToolkits: [] },
+    ],
+  ])('rejects passing both %s without calling the API', async (fields, experimental) => {
+    const error = await router.create('user_1', { experimental }).catch(e => e);
+
+    expect(error).toBeInstanceOf(ValidationError);
+    expect(error.message).toContain(`Pass either ${fields}, not both`);
+    expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+  });
+
+  it('returns the same registrations from localTools()/localToolkits() and the deprecated methods', async () => {
+    const session = await router.create('user_1', {
+      experimental: { localTools: [customToolHandle], localToolkits: [devToolkit] },
+    });
+
+    expect(session.localTools()).toEqual([
+      expect.objectContaining({ slug: 'LOCAL_GET_USER_CONTEXT' }),
+      expect.objectContaining({ slug: 'LOCAL_DEV_TOOLS_GREP', toolkit: 'DEV_TOOLS' }),
+    ]);
+    expect(session.customTools()).toEqual(session.localTools());
+    expect(session.customTools({ toolkit: 'dev_tools' })).toEqual(
+      session.localTools({ toolkit: 'dev_tools' })
+    );
+    expect(session.localToolkits()).toEqual([
+      expect.objectContaining({
+        slug: 'DEV_TOOLS',
+        tools: [expect.objectContaining({ slug: 'LOCAL_DEV_TOOLS_GREP' })],
+      }),
+    ]);
+    expect(session.customToolkits()).toEqual(session.localToolkits());
+  });
+});
+
 // ────────────────────────────────────────────────────────────────
 // ToolRouterSession — execution routing
 // ────────────────────────────────────────────────────────────────
@@ -408,6 +519,7 @@ describe('ToolRouterSession execution routing', () => {
         { maxRetries: 0 }
       );
       expect(result).toEqual({
+        resultType: 'completed',
         status: 200,
         data: { ok: true },
         headers: { 'x-test': '1' },
@@ -838,6 +950,40 @@ describe('ToolRouterSession execution routing', () => {
         response: { successful: false, error: 'remote unavailable' },
         error: 'remote unavailable',
       });
+    });
+
+    it('should rethrow an input request from the remote half of a mixed batch', async () => {
+      const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
+
+      // What `executeSessionTool` throws when the API answers `input_required`.
+      const inputRequired = new ComposioToolInputRequiredError('Tool COMPOSIO_MULTI_EXECUTE_TOOL', {
+        inputRequests: {
+          approval_1: {
+            type: 'elicitation',
+            mode: 'form',
+            message: 'Allow GMAIL_SEND_EMAIL to send this email?',
+            requestedSchema: { type: 'object' },
+          },
+        },
+        requestState: 'opaque-state-token',
+      });
+      toolsInstance.executeSessionTool.mockRejectedValueOnce(inputRequired);
+
+      const error = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [
+          { tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'approval' } },
+          { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'a@b.com' } },
+        ],
+        sync_response_to_workbench: false,
+      }).catch((caught: unknown) => caught);
+
+      // The caller gets the questions and the state, not per-tool failure strings.
+      expect(error).toBe(inputRequired);
+      assert(error instanceof ComposioToolInputRequiredError);
+      expect(Object.keys(error.inputRequests)).toEqual(['approval_1']);
+      expect(error.requestState).toBe('opaque-state-token');
+      // The local tool had already run; its result is discarded by the throw.
+      expect(localExecute).toHaveBeenCalledTimes(1);
     });
 
     it('should recompute remote counters when local results are merged', async () => {

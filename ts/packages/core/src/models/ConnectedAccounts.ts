@@ -6,6 +6,7 @@
  * @module ConnectedAccounts
  */
 import ComposioClient, { BadRequestError, ConflictError } from '@composio/client';
+import type { APIPromise } from '@composio/client';
 import {
   ConnectedAccountCreateResponse,
   ConnectedAccountDeleteResponse,
@@ -126,11 +127,7 @@ export class ConnectedAccounts {
         cursor: parsedQuery.data.cursor?.toString(),
         limit: parsedQuery.data.limit,
         order_by: parsedQuery.data.orderBy,
-        // Cast widens to match the Stainless-generated client params, which
-        // lag behind the live API enum. Apollo accepts the union value at
-        // runtime (`z.nativeEnum(ConnectionStatusEnum)` on the query param);
-        // remove the cast once `@composio/client` is regenerated.
-        statuses: parsedQuery.data.statuses as ConnectedAccountListParamsRaw['statuses'],
+        statuses: parsedQuery.data.statuses,
         toolkit_slugs: parsedQuery.data.toolkitSlugs,
         user_ids: parsedQuery.data.userIds,
         ...(parsedQuery.data.accountType !== undefined && {
@@ -256,7 +253,7 @@ export class ConnectedAccounts {
       connection: {
         callback_url: options?.callbackUrl,
         user_id: userId,
-        state: state as ConnectedAccountCreateParamsRaw.Connection['state'],
+        state: state as NonNullable<ConnectedAccountCreateParamsRaw['connection']>['state'],
         ...(options?.alias != null && { alias: options.alias }),
       },
     };
@@ -271,18 +268,12 @@ export class ConnectedAccounts {
       // caller needs to migrate. Custom auth configs and non-OAuth schemes
       // never see the header, eliminating the false-positive warning that
       // an `auth_scheme`-only check produced for `link()`-unaffected callers.
-      const apiCall = this.client.connectedAccounts.create(createParams, requestOptions);
-      if (typeof (apiCall as { withResponse?: unknown }).withResponse === 'function') {
+      const apiCall: APIPromise<ConnectedAccountCreateResponse> =
+        this.client.connectedAccounts.create(createParams, requestOptions);
+      // Checked at runtime: test mocks may return a plain Promise.
+      if (typeof apiCall.withResponse === 'function') {
         const resolved = await withCancellation(
-          () =>
-            (
-              apiCall as unknown as {
-                withResponse: () => Promise<{
-                  data: ConnectedAccountCreateResponse;
-                  response: Response;
-                }>;
-              }
-            ).withResponse(),
+          () => apiCall.withResponse(),
           requestOptions?.signal
         );
         response = resolved.data;
@@ -465,8 +456,8 @@ export class ConnectedAccounts {
   /**
    * Waits for a connection request to complete and become active.
    *
-   * This method continuously polls the Composio API to check the status of a connection
-   * until it either becomes active, enters a terminal error state, or times out.
+   * This method polls the Composio API, backing off from 1 second to 5 seconds between polls,
+   * to check the status of a connection until it either becomes active, enters a terminal error state, or times out.
    *
    * @param {string} connectedAccountId - The ID of the connected account to wait for
    * @param {number} [timeout=60000] - Maximum time to wait in milliseconds (default: 60 seconds)

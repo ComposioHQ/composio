@@ -44,3 +44,6 @@ next-env.d.ts.cache
 /docs-graph.dot
 /docs-graph.html
 /docs-graph.json
+
+# Source-history manifest (generated before dev/build/typecheck; bundled for runtime).
+/.generated/

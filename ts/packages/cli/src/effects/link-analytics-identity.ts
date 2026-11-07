@@ -3,7 +3,7 @@ import {
   analyticsIdentityLinkingEnabled,
   linkApolloIdentityForAnalytics,
 } from 'src/analytics/dispatch';
-import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-account';
 
 type KnownOrgIdentity = {
   readonly orgId: string;

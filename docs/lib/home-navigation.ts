@@ -129,8 +129,12 @@ export const DOCS_PRODUCTS = {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
+      '/docs/session-configs',
+      '/docs/governance/approvals',
+      '/docs/firewall',
       '/docs/instant-tools',
       '/docs/toolkits',
+      '/docs/governance/tool-hints',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -164,7 +168,7 @@ export const DOCS_PRODUCTS = {
             links: [
               { url: '/docs/how-composio-works', label: 'What is a Session?' },
               { url: '/docs/configuring-sessions' },
-
+              { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
             ],
           },
@@ -175,9 +179,19 @@ export const DOCS_PRODUCTS = {
           },
           {
             type: 'group',
+            label: 'Governance',
+            links: [
+              { url: '/docs/governance/tool-hints' },
+              { url: '/docs/governance/approvals' },
+              { url: '/docs/firewall' },
+            ],
+          },
+          {
+            type: 'group',
             label: 'Authentication',
             links: [
               { url: '/docs/authentication', label: 'Authentication with Composio' },
+              { url: '/docs/authentication/managed-auth-for-custom-tools' },
               {
                 url: '/docs/authentication/managing-multiple-connected-accounts',
                 label: 'Multiple connected accounts',

@@ -13,7 +13,7 @@
  */
 
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, References } from 'effect';
-import { ChildProcess as Command } from 'effect/unstable/process';
+import { ChildProcess as Command } from 'effect/process';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';

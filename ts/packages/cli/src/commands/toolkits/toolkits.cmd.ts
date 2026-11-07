@@ -1,8 +1,11 @@
-import { Command } from 'effect/unstable/cli';
-import { toolkitsCmd$List } from './commands/toolkits.list.cmd';
-import { toolkitsCmd$Info } from './commands/toolkits.info.cmd';
-import { toolkitsCmd$Search } from './commands/toolkits.search.cmd';
-import { toolkitsCmd$Version } from './commands/toolkits.version.cmd';
+import { withCommandMeta } from 'src/invocation/command-identity';
+import { Command } from 'effect/cli';
+import { NO_SHARED_FLAGS } from 'src/commands/surface';
+import { toolkitsCmd$List } from './list/toolkits.list.cmd';
+import { toolkitsCmd$Info } from './info/toolkits.info.cmd';
+import { toolkitsCmd$Search } from './search/toolkits.search.cmd';
+import { toolkitsCmd$Version } from './version/toolkits.version.cmd';
+import { withRegisteredSubcommands } from 'src/commands/registration';
 
 /**
  * CLI entry point for toolkit discovery commands.
@@ -14,10 +17,11 @@ import { toolkitsCmd$Version } from './commands/toolkits.version.cmd';
  */
 export const toolkitsCmd = Command.make('toolkits').pipe(
   Command.withDescription('Discover and inspect Composio toolkits.'),
-  Command.withSubcommands([
+  withRegisteredSubcommands([
     toolkitsCmd$List,
     toolkitsCmd$Info,
-    toolkitsCmd$Search,
-    toolkitsCmd$Version,
-  ])
+    toolkitsCmd$Search.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    toolkitsCmd$Version.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+  ]),
+  withCommandMeta({ requiresLogin: true })
 );

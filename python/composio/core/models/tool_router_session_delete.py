@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import typing as t
-from urllib.parse import quote
 
 import typing_extensions as te
 
@@ -23,13 +22,10 @@ def delete_tool_router_session(
     session_id: str,
 ) -> ToolRouterSessionDeleteResponse:
     """Delete a tool router session by ID."""
-    response = client.delete(
-        f"/api/v3.1/tool_router/session/{quote(session_id, safe='')}",
-        cast_to=t.Dict[str, t.Any],
-    )
+    response = client.tool_router.session.delete(session_id)
 
-    response_session_id = response.get("session_id")
-    deleted = response.get("deleted")
+    response_session_id = getattr(response, "session_id", None)
+    deleted = getattr(response, "deleted", None)
     if not isinstance(response_session_id, str) or deleted is not True:
         raise ValidationError("Invalid tool router session delete response")
 

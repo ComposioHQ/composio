@@ -1,0 +1,161 @@
+{
+  "libraryId": "/composiohq/composio",
+  "queries": [
+    {
+      "id": "python-install-current-sdk",
+      "query": "How do I install the current Composio Python SDK for OpenAI Agents, and which Python version is required?",
+      "source": "https://docs.composio.dev/docs/quickstart.md",
+      "expect": [
+        ["pip install", "uv add"],
+        ["composio"],
+        ["composio-openai-agents"],
+        ["openai-agents"],
+        ["Python 3.10"]
+      ]
+    },
+    {
+      "id": "typescript-install-current-sdk",
+      "query": "How do I install Composio for the OpenAI Agents SDK in TypeScript, and what Node.js version and module format does it require?",
+      "source": "https://docs.composio.dev/docs/quickstart.md",
+      "expect": [
+        [
+          "npm install @composio/core @composio/openai-agents @openai/agents",
+          "pnpm add @composio/core @composio/openai-agents @openai/agents",
+          "bun add @composio/core @composio/openai-agents @openai/agents",
+          "yarn add @composio/core @composio/openai-agents @openai/agents"
+        ],
+        ["Node.js 22.22.3"],
+        ["ESM-only"]
+      ]
+    },
+    {
+      "id": "python-initialize-api-key",
+      "query": "How do I import and initialize Composio in Python with an explicit project API key?",
+      "source": "https://docs.composio.dev/docs/authentication/manually-authenticating.md",
+      "expect": [["from composio import Composio"], ["Composio(api_key="]]
+    },
+    {
+      "id": "typescript-initialize-api-key",
+      "query": "How do I import and initialize the Composio TypeScript client with an explicit project API key?",
+      "source": "https://docs.composio.dev/docs/configuring-sessions.md",
+      "expect": [
+        [
+          "import { Composio } from '@composio/core'",
+          "import { Composio } from \"@composio/core\""
+        ],
+        ["new Composio({ apiKey:"]
+      ]
+    },
+    {
+      "id": "project-api-key-environment",
+      "query": "Which environment variable configures the Composio project API key, and how do I initialize the Python OpenAI Agents provider after loading dotenv?",
+      "source": "https://docs.composio.dev/docs/quickstart.md",
+      "expect": [
+        ["COMPOSIO_API_KEY"],
+        ["load_dotenv()"],
+        ["Composio(provider=OpenAIAgentsProvider())"]
+      ]
+    },
+    {
+      "id": "auth-config-versus-connected-account",
+      "query": "What is the difference between a toolkit auth config and a user's connected account, and how does the session manage connections?",
+      "source": "https://docs.composio.dev/docs/authentication.md",
+      "expect": [
+        ["auth config"],
+        ["credentials"],
+        ["connected account"],
+        ["COMPOSIO_MANAGE_CONNECTIONS"]
+      ]
+    },
+    {
+      "id": "python-connect-user-account",
+      "query": "How do I manually connect a user's Gmail account in a Python Composio session, display the Connect Link, and wait for authorization?",
+      "source": "https://docs.composio.dev/docs/authentication/manually-authenticating.md",
+      "expect": [
+        ["session.authorize(\"gmail\")"],
+        ["connection_request.redirect_url"],
+        ["connection_request.wait_for_connection("]
+      ]
+    },
+    {
+      "id": "typescript-connect-user-account",
+      "query": "How do I manually connect a user's Gmail account in a TypeScript Composio session, display the Connect Link, and wait for authorization?",
+      "source": "https://docs.composio.dev/docs/authentication/manually-authenticating.md",
+      "expect": [
+        ["await session.authorize(\"gmail\")"],
+        ["connectionRequest.redirectUrl"],
+        ["connectionRequest.waitForConnection("]
+      ]
+    },
+    {
+      "id": "python-create-session-tools",
+      "query": "How do I create a Composio tool-router session for my application's user in Python and obtain the session's framework-formatted tools?",
+      "source": "https://docs.composio.dev/docs/how-composio-works.md",
+      "expect": [
+        ["composio.sessions.create(user_id=", "composio.create(user_id="],
+        ["tools = session.tools()"]
+      ]
+    },
+    {
+      "id": "typescript-create-session-tools",
+      "query": "How do I create a Composio tool-router session for my application's user in TypeScript and obtain the session's framework-formatted tools?",
+      "source": "https://docs.composio.dev/docs/how-composio-works.md",
+      "expect": [["await composio.create("], ["await session.tools()"]]
+    },
+    {
+      "id": "execute-tools-through-session",
+      "query": "How should Python and TypeScript execute COMPOSIO_SEARCH_TOOLS through the session tool router rather than the direct tools execution path?",
+      "source": "https://docs.composio.dev/docs/how-composio-works.md",
+      "expect": [
+        ["session.execute(\"COMPOSIO_SEARCH_TOOLS\", arguments="],
+        ["await session.execute(\"COMPOSIO_SEARCH_TOOLS\","],
+        ["can only be called inside a tool-router session"]
+      ]
+    },
+    {
+      "id": "select-session-toolkits",
+      "query": "How do I restrict a Composio session to GitHub, Gmail, and Slack instead of exposing every toolkit, in Python and TypeScript?",
+      "source": "https://docs.composio.dev/docs/configuring-sessions.md",
+      "expect": [
+        [
+          "toolkits=[\"github\", \"gmail\", \"slack\"]",
+          "toolkits={\"enable\": [\"github\", \"gmail\", \"slack\"]}"
+        ],
+        [
+          "toolkits: [\"github\", \"gmail\", \"slack\"]",
+          "toolkits: { enable: [\"github\", \"gmail\", \"slack\"] }"
+        ]
+      ]
+    },
+    {
+      "id": "current-rest-api-base",
+      "query": "What is the current Composio REST API base URL for new integrations, and which header authenticates a project API key?",
+      "source": "https://docs.composio.dev/reference.md",
+      "expect": [["https://backend.composio.dev/api/v3.1"], ["x-api-key"]]
+    },
+    {
+      "id": "rest-latest-version-defaults",
+      "query": "On Composio REST v3.1, what happens when the toolkit version is omitted on GET /tools, GET /tools/{tool_slug}, POST /tools/execute/{tool_slug}, POST /tools/execute/{tool_slug}/input, and POST /tools/scopes/required?",
+      "source": "https://docs.composio.dev/reference.md",
+      "expect": [
+        ["latest toolkit version"],
+        ["v3.1"],
+        ["GET /tools/{tool_slug}"],
+        ["POST /tools/execute/{tool_slug}/input"],
+        ["POST /tools/scopes/required"],
+        ["toolkit_versions"]
+      ]
+    },
+    {
+      "id": "rest-explicit-pinned-version",
+      "query": "How do I preserve the old Composio REST v3 pinned toolkit version when calling v3.1, and does the previous v3 API remain supported?",
+      "source": "https://docs.composio.dev/reference.md",
+      "expect": [
+        ["00000000_00"],
+        ["remains supported"],
+        ["/api/v3"],
+        ["version", "toolkit_versions"]
+      ]
+    }
+  ]
+}

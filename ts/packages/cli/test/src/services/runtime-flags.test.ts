@@ -4,7 +4,6 @@ import { ConfigProvider, Effect } from 'effect';
 import {
   cliDebugFlagsLayer,
   debugFlagsToChildEnv,
-  isAcpOnlyEnabled,
   isPerfDebugEnabled,
   isTelemetryDebugEnabled,
   isToolDebugEnabled,
@@ -13,8 +12,7 @@ import {
   telemetryDebugModeLayer,
   TELEMETRY_DEBUG_FLAG,
 } from 'src/services/runtime-flags';
-import { extendConfigProvider } from 'src/services/config';
-import { TestLive } from 'test/__utils__';
+import { liveEnvConfigProvider, TestLive } from 'test/__utils__';
 
 describe('debugFlagsToChildEnv', () => {
   it('[Given] resolved debug flags [Then] every flag serializes into the child environment', () => {
@@ -22,13 +20,11 @@ describe('debugFlagsToChildEnv', () => {
       debugFlagsToChildEnv({
         perfDebug: true,
         toolDebug: false,
-        acpOnly: true,
         telemetryDebug: false,
       })
     ).toEqual({
       COMPOSIO_PERF_DEBUG: '1',
       COMPOSIO_TOOL_DEBUG: '0',
-      COMPOSIO_RUN_ACP_ONLY: '1',
       COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
     });
   });
@@ -59,12 +55,11 @@ const enabledDebugConfig = ConfigProvider.fromEnvRecord({
   COMPOSIO_PERF_DEBUG: '1',
   COMPOSIO_TOOL_DEBUG: '1',
   COMPOSIO_RUN_ACP_ONLY: '1',
-}).pipe(extendConfigProvider);
+});
 
 const readAllDebugFlags = Effect.all({
   perfDebug: isPerfDebugEnabled,
   toolDebug: isToolDebugEnabled,
-  acpOnly: isAcpOnlyEnabled,
 });
 
 describe('debug flag precedence', () => {
@@ -74,7 +69,6 @@ describe('debug flag precedence', () => {
         expect(yield* readAllDebugFlags).toEqual({
           perfDebug: true,
           toolDebug: true,
-          acpOnly: true,
         });
       }).pipe(
         Effect.provide(cliDebugFlagsLayer(NO_CLI_DEBUG_FLAG_OVERRIDES)),
@@ -87,10 +81,9 @@ describe('debug flag precedence', () => {
         expect(yield* readAllDebugFlags).toEqual({
           perfDebug: false,
           toolDebug: false,
-          acpOnly: false,
         });
       }).pipe(
-        Effect.provide(cliDebugFlagsLayer({ perfDebug: false, toolDebug: false, acpOnly: false })),
+        Effect.provide(cliDebugFlagsLayer({ perfDebug: false, toolDebug: false })),
         Effect.provideService(ConfigProvider.ConfigProvider, enabledDebugConfig)
       )
     );
@@ -117,6 +110,6 @@ describe('telemetry debug mode', () => {
 
       vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DEBUG', '');
       expect(yield* isTelemetryDebugEnabled).toBe(false);
-    })
+    }).pipe(Effect.provide(ConfigProvider.layer(liveEnvConfigProvider)))
   );
 });

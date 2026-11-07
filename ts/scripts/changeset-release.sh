@@ -2,10 +2,9 @@
 set -euo pipefail
 
 # changesets/action v2 reads Changesets v3's NDJSON events from
-# CHANGESETS_OUTPUT. The CLI binary workflow owns @composio/cli GitHub Releases
-# because those releases must include platform binary assets. Remove only that
-# package's git-tag event so changesets/action publishes and releases every
-# other package without creating an empty @composio/cli GitHub Release.
+# CHANGESETS_OUTPUT. Keep @composio/cli tags owned by the CLI binary workflow.
+# Public SDK package tags still accompany npm publication; the SDK workflow
+# disables GitHub Release creation, and Changesets does not tag private packages.
 
 filtered_output_file=$(mktemp)
 trap 'rm -f "$filtered_output_file"' EXIT

@@ -4,32 +4,37 @@
 import type {
   SessionExecuteResponse,
   SessionProxyExecuteResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import z from 'zod/v3';
 import { ComposioToolInputRequiredError } from '../../errors/ToolRouterErrors';
-import type { ToolRouterSessionExecuteResponse } from '../../types/toolRouter.types';
+import { ValidationError } from '../../errors/ValidationErrors';
+import type {
+  ToolRouterBlockReason,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionProxyExecuteResponse,
+} from '../../types/toolRouter.types';
 
 /**
- * The `result_type` values that describe a call that ran. A server that
- * predates `result_type` sends none, and a value this SDK does not know is
- * treated the same way, so both fall back to the error-based rule in
- * {@link isExecutionSuccessful}.
+ * The `result_type` values of a call that ran. `input_required` and `blocked`
+ * are handled before this is read.
  */
-const ExecutedResultTypeSchema = z.enum(['completed', 'failed']).optional().catch(undefined);
+const ExecutedResponseSchema = z.object({
+  result_type: z.enum(['completed', 'failed']),
+});
+
+/** The `reason` of a call a session hook blocked, in camelCase. */
+const toBlockReason = (
+  reason: Extract<SessionExecuteResponse, { result_type: 'blocked' }>['reason']
+): ToolRouterBlockReason => ({ type: reason.type, hookId: reason.hook_id });
 
 /**
- * Whether a session tool execution succeeded.
- *
- * `resultType` decides when the API sent one: a `failed` execution is not
- * successful even when its `error` is `null` or empty. Without it, for example
- * from a server that predates `result_type`, an execution is successful when
- * it carries no error text.
+ * Whether a session tool execution succeeded. `resultType` decides: a `failed`
+ * execution is not successful even when its `error` is `null` or empty.
  */
 export function isExecutionSuccessful(
-  result: Pick<ToolRouterSessionExecuteResponse, 'resultType' | 'error'>
+  result: Pick<ToolRouterSessionExecuteResponse, 'resultType'>
 ): boolean {
-  if (result.resultType !== undefined) return result.resultType === 'completed';
-  return !result.error;
+  return result.resultType === 'completed';
 }
 
 type InputRequiredResponse = Extract<
@@ -112,7 +117,10 @@ interface RawToolkitConnectionStatus {
   status_message: string;
   connection_details?: Record<string, unknown>;
   current_user_info?: Record<string, unknown>;
-  instant_account?: { allowed_tool_slugs: string[] };
+  instant_account?: {
+    allowed_tool_slugs: string[];
+    prices?: Record<string, { description?: string; discount?: string | null }>;
+  };
 }
 
 interface RawSearchResponse {
@@ -171,7 +179,10 @@ function transformToolkitConnectionStatus(raw: RawToolkitConnectionStatus) {
     connectionDetails: raw.connection_details,
     currentUserInfo: raw.current_user_info,
     ...(raw.instant_account !== undefined && {
-      instantAccount: { allowedToolSlugs: raw.instant_account.allowed_tool_slugs },
+      instantAccount: {
+        allowedToolSlugs: raw.instant_account.allowed_tool_slugs,
+        ...(raw.instant_account.prices !== undefined && { prices: raw.instant_account.prices }),
+      },
     }),
   };
 }
@@ -211,15 +222,74 @@ export function transformSearchResponse(raw: RawSearchResponse) {
  * Transforms a raw session execute API response to camelCase.
  *
  * @throws {ComposioToolInputRequiredError} If the tool asked for user input instead of running
+ * @throws {ValidationError} If the response carries no `result_type`, or one this SDK does not know
  */
-export function transformExecuteResponse(raw: SessionExecuteResponse, toolSlug: string) {
+export function transformExecuteResponse(
+  raw: SessionExecuteResponse,
+  toolSlug: string
+): ToolRouterSessionExecuteResponse {
   assertNotInputRequired(raw, `Tool ${toolSlug}`);
-  const resultType = ExecutedResultTypeSchema.parse(raw.result_type);
+  if (raw.result_type === 'blocked') {
+    // The agent reads `error`, so a blocked call reaches it as a failed call
+    // with the hook's message.
+    return {
+      data: {},
+      error: raw.message,
+      logId: raw.log_id ?? '',
+      resultType: 'blocked',
+      blockReason: toBlockReason(raw.reason),
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+      ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    };
+  }
+  const executed = ExecutedResponseSchema.safeParse(raw);
+  if (!executed.success) {
+    throw new ValidationError(
+      `Tool ${toolSlug} returned an execute response without a known result_type`,
+      { cause: executed.error }
+    );
+  }
   return {
     data: raw.data,
     error: raw.error,
     logId: raw.log_id,
-    ...(resultType !== undefined && { resultType }),
+    resultType: executed.data.result_type,
     ...(raw.instant_charge !== undefined && { instantCharge: raw.instant_charge }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+  };
+}
+
+/**
+ * Projects a session proxy execute response onto the SDK's shape: a request a
+ * session hook blocked comes back as `resultType: 'blocked'` with no HTTP
+ * response.
+ */
+export function transformProxyExecuteResponse(
+  raw: SessionProxyExecuteResponse,
+  subject: string
+): ToolRouterSessionProxyExecuteResponse {
+  assertNotInputRequired(raw, subject);
+  if (raw.result_type === 'blocked') {
+    return {
+      resultType: 'blocked',
+      blockReason: toBlockReason(raw.reason),
+      message: raw.message,
+      ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
+    };
+  }
+  return {
+    resultType: 'completed',
+    status: raw.status,
+    data: raw.data,
+    headers: raw.headers,
+    ...(raw.binary_data && {
+      binaryData: {
+        contentType: raw.binary_data.content_type,
+        size: raw.binary_data.size,
+        url: raw.binary_data.url,
+        expiresAt: raw.binary_data.expires_at,
+      },
+    }),
+    ...(raw.hook_results !== undefined && { hookResults: raw.hook_results }),
   };
 }

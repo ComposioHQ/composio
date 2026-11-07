@@ -2,9 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   transformToolRouterTagsParams,
   transformToolRouterMultiAccountParams,
+  transformToolRouterToolsParams,
   transformToolRouterUpdateParams,
 } from '../../src/lib/toolRouterParams';
-import { ToolRouterConfigTags } from '../../src/types/toolRouter.types';
+import {
+  ToolRouterConfigTags,
+  ToolRouterConfigToolsSchema,
+} from '../../src/types/toolRouter.types';
 
 describe('transformToolRouterMultiAccountParams', () => {
   it('should return undefined when params is undefined', () => {
@@ -186,12 +190,87 @@ describe('transformToolRouterUpdateParams', () => {
   it('maps the experimental Instant usage policy without changing other session settings', () => {
     expect(
       transformToolRouterUpdateParams({
-        instant: { toolkits: { disable: ['exa'] }, returnInstantCharge: true },
+        instant: {
+          toolkits: { disable: ['exa'] },
+          returnInstantCharge: true,
+          returnPricesInSearch: true,
+        },
       })
-    ).toEqual({ instant: { toolkits: { disable: ['exa'] }, return_instant_charge: true } });
+    ).toEqual({
+      instant: {
+        toolkits: { disable: ['exa'] },
+        return_instant_charge: true,
+        return_prices_in_search: true,
+      },
+    });
     expect(transformToolRouterUpdateParams({ instant: false })).toEqual({
       instant: false,
     });
+  });
+
+  it('maps proxyExecute as given, expands a boolean, and null clears it', () => {
+    expect(transformToolRouterUpdateParams({ proxyExecute: { enable: true } })).toEqual({
+      proxy_execute: { enable: true },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: { enable: false } })).toEqual({
+      proxy_execute: { enable: false },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: true })).toEqual({
+      proxy_execute: { enable: true },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: false })).toEqual({
+      proxy_execute: { enable: false },
+    });
+    expect(transformToolRouterUpdateParams({ proxyExecute: null })).toEqual({
+      proxy_execute: null,
+    });
+  });
+
+  it('maps hooks to snake_case, and null removes every hook', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        hooks: [
+          {
+            type: 'before_execute',
+            id: 'no_external_email',
+            name: 'No external email',
+            appliesTo: { toolkits: ['gmail'] },
+            handler: {
+              type: 'condition_check',
+              condition: 'Sending email to anyone outside example.org',
+              action: 'block',
+            },
+          },
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            appliesTo: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      })
+    ).toEqual({
+      hooks: [
+        {
+          type: 'before_execute',
+          id: 'no_external_email',
+          name: 'No external email',
+          applies_to: { toolkits: ['gmail'] },
+          handler: {
+            type: 'condition_check',
+            condition: 'Sending email to anyone outside example.org',
+            action: 'block',
+          },
+        },
+        {
+          type: 'after_execute',
+          id: 'block_injection',
+          applies_to: 'all',
+          handler: { type: 'prompt_injection_check', action: 'block' },
+        },
+      ],
+    });
+    expect(transformToolRouterUpdateParams({ hooks: null })).toEqual({ hooks: null });
   });
 
   it('keeps an empty toolkit allowlist in the request', () => {
@@ -414,5 +493,70 @@ describe('transformToolRouterUpdateParams', () => {
     const mc = result.manage_connections as Record<string, unknown>;
     expect(mc).toHaveProperty('enable', false);
     expect(mc).toHaveProperty('callback_url', 'https://example.com');
+  });
+});
+
+describe('approval lists', () => {
+  it('maps requireApproval next to each toolkit, tool and tag filter', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        toolkits: { disable: ['slack'], requireApproval: ['github'] },
+        tools: {
+          gmail: { enable: ['GMAIL_SEND_EMAIL'], requireApproval: ['GMAIL_SEND_EMAIL'] },
+          github: { disable: ['GITHUB_DELETE_A_REPOSITORY'], requireApproval: ['GITHUB_MERGE'] },
+          notion: { tags: ['readOnlyHint'], requireApproval: ['NOTION_CREATE_PAGE'] },
+        },
+        tags: { disable: ['openWorldHint'], requireApproval: ['destructiveHint'] },
+      })
+    ).toEqual({
+      toolkits: { disable: ['slack'], require_approval: ['github'] },
+      tools: {
+        gmail: { enable: ['GMAIL_SEND_EMAIL'], require_approval: ['GMAIL_SEND_EMAIL'] },
+        github: { disable: ['GITHUB_DELETE_A_REPOSITORY'], require_approval: ['GITHUB_MERGE'] },
+        notion: { tags: { enable: ['readOnlyHint'] }, require_approval: ['NOTION_CREATE_PAGE'] },
+      },
+      tags: { disable: ['openWorldHint'], require_approval: ['destructiveHint'] },
+    });
+  });
+
+  it('maps a toolkit or tool entry that only has an approval list', () => {
+    expect(
+      transformToolRouterUpdateParams({
+        toolkits: { requireApproval: ['gmail'] },
+        tools: { gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] } },
+      })
+    ).toEqual({
+      toolkits: { require_approval: ['gmail'] },
+      tools: { gmail: { require_approval: ['GMAIL_SEND_EMAIL'] } },
+    });
+  });
+
+  it('leaves require_approval out when no list is given', () => {
+    expect(transformToolRouterToolsParams({ gmail: { enable: ['GMAIL_SEND_EMAIL'] } })).toEqual({
+      gmail: { enable: ['GMAIL_SEND_EMAIL'] },
+    });
+    expect(transformToolRouterTagsParams({ enable: ['readOnlyHint'] })).toEqual({
+      enable: ['readOnlyHint'],
+      disable: undefined,
+    });
+  });
+
+  it('allows requireApproval next to one of enable, disable and tags, but not two of them', () => {
+    expect(
+      ToolRouterConfigToolsSchema.safeParse({ enable: ['A'], requireApproval: ['A'] }).success
+    ).toBe(true);
+    expect(
+      ToolRouterConfigToolsSchema.safeParse({
+        enable: ['A'],
+        disable: ['B'],
+        requireApproval: ['A'],
+      }).success
+    ).toBe(false);
+  });
+
+  it('maps noElicitationSupportFallback to its wire name', () => {
+    expect(
+      transformToolRouterUpdateParams({ experimental: { noElicitationSupportFallback: 'deny' } })
+    ).toEqual({ experimental: { no_elicitation_support_fallback: 'deny' } });
   });
 });

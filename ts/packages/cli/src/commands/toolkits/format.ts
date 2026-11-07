@@ -3,7 +3,10 @@ import type { SessionToolkitsResponse } from '@composio/client/resources/tool-ro
 import { bold, gray, green, dim } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-type SessionToolkitItem = SessionToolkitsResponse.Item;
+type SessionToolkitItem = SessionToolkitsResponse['items'][number];
+
+/** The next-step hint the toolkit commands print when a toolkit cannot be found or fetched. */
+export const BROWSE_TOOLKITS_HINT = 'Browse available toolkits:\n> composio dev toolkits list';
 
 const formatAuthConfigField = (field: {
   name: string;

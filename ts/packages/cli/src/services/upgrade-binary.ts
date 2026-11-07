@@ -1,7 +1,6 @@
 import {
   Data,
   Effect,
-  Config,
   Match,
   Option,
   Predicate,
@@ -11,12 +10,11 @@ import {
   Context,
   Layer,
 } from 'effect';
-import { HttpClient, HttpClientResponse } from 'effect/unstable/http';
+import { HttpClient, HttpClientResponse } from 'effect/http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { APP_VERSION } from '../constants';
-import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
-import { GITHUB_CONFIG } from 'src/effects/github-config';
+import { DEBUG_CONFIG, GITHUB_CONFIG, type GitHubConfig } from 'src/config';
 import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
 import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
@@ -27,6 +25,8 @@ import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-rep
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
+import type { NodeOs } from './node-os';
+import { recordLatestStableRelease } from './update-check';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
@@ -53,15 +53,13 @@ const getBinaryAssetName = (platformArch: PlatformArch) =>
 const hasPlatformBinaryAsset = (release: GitHubRelease, platformArch: PlatformArch) =>
   release.assets.some(asset => asset.name === getBinaryAssetName(platformArch));
 
-const GITHUB_CONFIG_ALL = Config.all(GITHUB_CONFIG);
-
 // Dependencies resolved once at service construction time and threaded
 // through the module-level helpers below.
 interface UpgradeBinaryContext {
   readonly httpClient: HttpClient.HttpClient;
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
-  readonly githubConfig: Config.Success<typeof GITHUB_CONFIG_ALL>;
+  readonly githubConfig: GitHubConfig;
 }
 
 /**
@@ -73,7 +71,7 @@ const fetchGitHubRelease = (
 ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
   Effect.gen(function* () {
     const encodedTag = encodeURIComponent(tag);
-    const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
+    const url = `${githubConfig.apiBaseUrl}/repos/${githubConfig.owner}/${githubConfig.repo}/releases/tags/${encodedTag}`;
     const fetchErrorMessage = `Failed to fetch tags/${tag} release from GitHub`;
     yield* Effect.logDebug(`GET ${url}`);
 
@@ -122,11 +120,11 @@ const fetchLatestRelease = (
     prerelease?: boolean;
     tag?: string;
   } = {}
-): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+): Effect.Effect<GitHubRelease, UpgradeBinaryError, NodeOs> =>
   Effect.gen(function* () {
     const { githubConfig, httpClient } = ctx;
     const prerelease = options.prerelease ?? false;
-    const explicitTag = options.tag ? Option.some(options.tag) : githubConfig.TAG;
+    const explicitTag = Option.fromNullishOr(options.tag ?? githubConfig.tag);
     const release = yield* explicitTag.pipe(
       Option.match({
         onNone: Effect.fn(function* () {
@@ -165,6 +163,10 @@ const fetchLatestRelease = (
           );
 
           yield* Effect.logDebug(`Resolved latest CLI release tag: ${latest.tag_name}`);
+          // Only an unpinned stable lookup answers what the update-check cache stores.
+          if (!prerelease) {
+            yield* provideFsAndPath(ctx, recordLatestStableRelease(latest.tag_name));
+          }
           return latest;
         }),
         onSome: Effect.fn(function* (tag) {
@@ -628,7 +630,7 @@ const upgrade = (
 ) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const upgradeTargetOpt = yield* DEBUG_OVERRIDE_CONFIG['UPGRADE_TARGET'];
+    const upgradeTarget = yield* DEBUG_CONFIG.UPGRADE_TARGET;
     const currentPath = yield* getCurrentExecutablePath();
     const prerelease = options.prerelease ?? false;
     const explicitTag = options.tag;
@@ -639,9 +641,9 @@ const upgrade = (
     yield* ui.intro('composio upgrade');
 
     // If local binary path is provided (for testing), use it directly
-    if (Option.isSome(upgradeTargetOpt)) {
+    if (upgradeTarget !== undefined) {
       yield* ui.log.info(`New local version available (current: ${currentReleaseIdentifier})`);
-      yield* replaceBinary(ctx, upgradeTargetOpt.value, currentPath, {
+      yield* replaceBinary(ctx, upgradeTarget, currentPath, {
         releaseTag: explicitTag,
       });
       yield* ui.outro('Upgrade completed');
@@ -725,7 +727,7 @@ const makeUpgradeBinary = Effect.gen(function* () {
     httpClient: yield* HttpClient.HttpClient,
     fs: yield* FileSystem.FileSystem,
     path: yield* Path.Path,
-    githubConfig: yield* GITHUB_CONFIG_ALL,
+    githubConfig: yield* GITHUB_CONFIG,
   };
 
   return {

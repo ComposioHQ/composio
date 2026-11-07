@@ -8,7 +8,7 @@ import type {
 import type {
   SessionCreateParams,
   SessionCreateResponse,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 
 export type AnyZodSchema = z.ZodType | z4.ZodType;
 export type InferZodSchema<T extends AnyZodSchema> = T extends z.ZodType
@@ -46,17 +46,20 @@ export interface SessionContext {
 }
 
 /**
- * Execute function for custom tools.
+ * Execute function for local tools.
  * Just return the result data, or throw an error. The SDK wraps it internally.
  *
  * Supports two call patterns:
  * - `(input) => data` — for tools that don't need session context
  * - `(input, ctx) => data` — for tools that need to call other tools or proxy APIs
  */
-export type CustomToolExecuteFn<T extends AnyZodSchema> = (
+export type LocalToolExecuteFn<T extends AnyZodSchema> = (
   input: InferZodSchema<T>,
   ctx: SessionContext
 ) => Promise<Record<string, unknown>>;
+
+/** @deprecated Use `LocalToolExecuteFn` instead; local tools were previously called custom tools. */
+export type CustomToolExecuteFn<T extends AnyZodSchema> = LocalToolExecuteFn<T>;
 
 /**
  * Zod schema for validating a custom tool slug.
@@ -101,8 +104,8 @@ export const CreateCustomToolBaseSchema = z.object({
     ),
 });
 
-/** Options for creating a custom tool via `createCustomTool()`. */
-export type CreateCustomToolParams<T extends AnyZodSchema> = z.infer<
+/** Options for creating local tools via `experimental_createTool()`. */
+export type CreateLocalToolParams<T extends AnyZodSchema> = z.infer<
   typeof CreateCustomToolBaseSchema
 > & {
   /** Zod schema for input parameters */
@@ -110,14 +113,17 @@ export type CreateCustomToolParams<T extends AnyZodSchema> = z.infer<
   /** Optional Zod schema for output parameters (sent to backend for documentation) */
   outputParams?: AnyZodSchema;
   /** The function that executes the tool */
-  execute: CustomToolExecuteFn<T>;
+  execute: LocalToolExecuteFn<T>;
 };
 
+/** @deprecated Use `CreateLocalToolParams` instead; local tools were previously called custom tools. */
+export type CreateCustomToolParams<T extends AnyZodSchema> = CreateLocalToolParams<T>;
+
 /**
- * Custom tool definition returned from `createCustomTool()`.
- * Pass to `composio.create(userId, { experimental: { customTools: [...] } })` to bind to a session.
+ * One of your local tools, returned from `experimental_createTool()`; it runs in your process.
+ * Pass to `composio.create(userId, { experimental: { localTools: [...] } })` to bind to a session.
  */
-export interface CustomTool {
+export interface LocalTool {
   readonly slug: string;
   readonly name: string;
   readonly description: string;
@@ -138,11 +144,16 @@ export interface CustomTool {
   /** @internal Original Zod schema — used for runtime input validation (defaults, coercions, transforms) */
   readonly inputParams: AnyZodSchema;
   /** Direct reference to the execute function — useful for testing */
-  readonly execute: CustomToolExecuteFn<AnyZodSchema>;
+  readonly execute: LocalToolExecuteFn<AnyZodSchema>;
 }
 
+/** @deprecated Use `LocalTool` instead; local tools were previously called custom tools. */
+export type CustomTool = LocalTool;
+
 /** Serialized tool definition sent to backend for search indexing. Uses official client type. */
-export type CustomToolDefinition = SessionCreateParams.Experimental.CustomTool;
+export type CustomToolDefinition = NonNullable<
+  NonNullable<SessionCreateParams['experimental']>['custom_tools']
+>[number];
 
 export type CustomToolWireDefinition = CustomToolDefinition;
 
@@ -165,17 +176,20 @@ export const CreateCustomToolkitBaseSchema = z.object({
     ),
 });
 
-/** Options for creating a custom toolkit via `createCustomToolkit()`. */
-export type CreateCustomToolkitParams = z.infer<typeof CreateCustomToolkitBaseSchema> & {
+/** Options for grouping local tools into a toolkit via `experimental_createToolkit()`. */
+export type CreateLocalToolkitParams = z.infer<typeof CreateCustomToolkitBaseSchema> & {
   /** Tools to include in this toolkit. Must not have `extendsToolkit` set. */
-  tools: CustomTool[];
+  tools: LocalTool[];
 };
 
+/** @deprecated Use `CreateLocalToolkitParams` instead; local toolkits were previously called custom toolkits. */
+export type CreateCustomToolkitParams = CreateLocalToolkitParams;
+
 /**
- * Custom toolkit definition returned from `createCustomToolkit()`.
- * Pass to `composio.create(userId, { experimental: { customToolkits: [...] } })`.
+ * A toolkit of local tools returned from `experimental_createToolkit()`.
+ * Pass to `composio.create(userId, { experimental: { localToolkits: [...] } })`.
  */
-export interface CustomToolkit {
+export interface LocalToolkit {
   readonly slug: string;
   readonly name: string;
   readonly description: string;
@@ -184,11 +198,16 @@ export interface CustomToolkit {
    * Tool-level preload values override this default.
    */
   readonly preload?: boolean;
-  readonly tools: readonly CustomTool[];
+  readonly tools: readonly LocalTool[];
 }
 
+/** @deprecated Use `LocalToolkit` instead; local toolkits were previously called custom toolkits. */
+export type CustomToolkit = LocalToolkit;
+
 /** Serialized toolkit definition sent to backend. Uses official client type. */
-export type CustomToolkitDefinition = SessionCreateParams.Experimental.CustomToolkit;
+export type CustomToolkitDefinition = NonNullable<
+  NonNullable<NonNullable<SessionCreateParams['experimental']>['custom_toolkits']>[number]
+>;
 
 export type CustomToolkitWireDefinition = CustomToolkitDefinition;
 
@@ -203,7 +222,7 @@ export interface InlineCustomToolsWirePayload {
 
 /** @internal Entry in the per-session custom tools routing map. */
 export type CustomToolsMapEntry = {
-  handle: CustomTool;
+  handle: LocalTool;
   /** @internal The final slug assigned by the prefixing rules (e.g. LOCAL_GREP, LOCAL_GMAIL_GET_EMAILS) */
   finalSlug: string;
   /** Resolved toolkit — from extendsToolkit, parent custom toolkit, or undefined for standalone */
@@ -220,42 +239,52 @@ export type CustomToolsMap = {
   byToolkitAndOriginalSlug?: Map<string, CustomToolsMapEntry>;
   /** Original slugs that appear in multiple toolkits and cannot be resolved safely without the final slug */
   ambiguousOriginalSlugs?: Set<string>;
-  /** The original custom toolkits passed at session creation — used for session.customToolkits() */
-  toolkits?: CustomToolkit[];
-  /** The original standalone custom tools passed at session creation — kept for inline re-injection on later requests. */
-  tools?: CustomTool[];
+  /** The original local toolkits passed at session creation — used for session.localToolkits() */
+  toolkits?: LocalToolkit[];
+  /** The original standalone local tools passed at session creation — kept for inline re-injection on later requests. */
+  tools?: LocalTool[];
 };
 
 // ────────────────────────────────────────────────────────────────
-// Registered custom tool types (returned by session.customTools())
+// Registered local tool types (returned by session.localTools())
 // ────────────────────────────────────────────────────────────────
 
-/** A custom tool as registered in a session, with its final resolved slug. */
-export interface RegisteredCustomTool {
+/** One of your local tools as registered in a session, with its final resolved slug. */
+export interface RegisteredLocalTool {
   /** The final slug as registered with the backend (e.g. LOCAL_GREP, LOCAL_GMAIL_GET_EMAILS) */
   slug: string;
   name: string;
   description: string;
-  /** Resolved toolkit — extendsToolkit value, custom toolkit slug, or undefined for standalone */
+  /** Resolved toolkit — extendsToolkit value, local toolkit slug, or undefined for standalone */
   toolkit?: string;
   inputSchema: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
 }
 
-/** A custom toolkit as registered in a session, with final slugs on nested tools. */
-export interface RegisteredCustomToolkit {
+/** A toolkit of local tools as registered in a session, with final slugs on nested tools. */
+export interface RegisteredLocalToolkit {
   slug: string;
   name: string;
   description: string;
-  tools: RegisteredCustomTool[];
+  tools: RegisteredLocalTool[];
 }
+
+/** @deprecated Use `RegisteredLocalTool` instead; local tools were previously called custom tools. */
+export type RegisteredCustomTool = RegisteredLocalTool;
+
+/** @deprecated Use `RegisteredLocalToolkit` instead; local toolkits were previously called custom toolkits. */
+export type RegisteredCustomToolkit = RegisteredLocalToolkit;
 
 // ────────────────────────────────────────────────────────────────
 // Response types from the backend (slug + original_slug mapping)
 // ────────────────────────────────────────────────────────────────
 
 /** Custom tool as returned in the session create response (has prefixed slug + original_slug). */
-export type CustomToolResponse = SessionCreateResponse.Experimental.CustomTool;
+export type CustomToolResponse = NonNullable<
+  NonNullable<SessionCreateResponse['experimental']>['custom_tools']
+>[number];
 
 /** Custom toolkit as returned in the session create response (has prefixed slugs + original_slugs). */
-export type CustomToolkitResponse = SessionCreateResponse.Experimental.CustomToolkit;
+export type CustomToolkitResponse = NonNullable<
+  NonNullable<NonNullable<SessionCreateResponse['experimental']>['custom_toolkits']>[number]
+>;

@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { listOrganizations, type OrganizationSummary } from 'src/services/composio-clients';
+import { listOrganizations, type OrganizationSummary } from 'src/services/composio-account';
 import { clampLimit } from 'src/ui/clamp-limit';
 
 const DEFAULT_LIMIT = 50;

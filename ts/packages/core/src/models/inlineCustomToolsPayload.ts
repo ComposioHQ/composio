@@ -1,12 +1,12 @@
 import type {
   SessionExecuteParams,
   SessionSearchParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import type { InlineCustomToolsWirePayload } from '../types/customTool.types';
 
 type InlineCustomToolsExperimental =
-  | SessionExecuteParams.Experimental
-  | SessionSearchParams.Experimental;
+  | NonNullable<SessionExecuteParams['experimental']>
+  | NonNullable<SessionSearchParams['experimental']>;
 
 export function inlineCustomToolsExperimental<TExperimental extends InlineCustomToolsExperimental>(
   payload?: InlineCustomToolsWirePayload

@@ -1,7 +1,7 @@
 import http from 'node:http';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import type { Composio as RawComposioClient } from '@composio/client';
+import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import {
   Data,
@@ -22,16 +22,17 @@ import {
   isInteractivePermissionUiDisabled,
   type PermissionCallerAgent,
 } from 'src/services/permission-ui';
-import { ComposioClientSingleton, type ClientError } from 'src/services/composio-clients';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { type ClientError } from 'src/services/composio-errors';
 import { ComposioUserContext } from 'src/services/user-context';
+import { idempotent } from 'src/services/composio-request';
 
 export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhanced';
 
 const CACHE_FILE_NAME = 'tool-permissions-cache.json';
 const PERMISSION_SNAPSHOT_CACHE_TTL_MS = 5 * 60 * 1000;
 
-// Each path is passed once for the request and once for the error payload, so
-// they live in constants to keep those uses in sync.
+// The path a `ToolPermissionsRequestError` names for each consumer request.
 const ORG_CONSUMER_CONFIG_PATH = '/api/v3.1/org/consumer/config';
 const CONSUMER_PERMISSIONS_RESOLVE_PATH = '/api/v3.1/consumer/permissions/resolve';
 const ALLOW_FOR_DURATION_LABEL = '1 hr';
@@ -103,7 +104,6 @@ const PermissionResolveResponseSchema = Schema.Struct({
 });
 const ConsumerConfigResponseSchema = Schema.Struct({
   enhanced_controls: Schema.optional(Schema.Boolean),
-  enhancedControls: Schema.optional(Schema.Boolean),
 });
 
 export type PermissionDefaultMode = typeof PermissionDefaultModeSchema.Type;
@@ -299,29 +299,22 @@ const isFreshForAccounts = (
 };
 
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
-  payload.enhanced_controls === true || payload.enhancedControls === true;
+  payload.enhanced_controls === true;
 
-// These two consumer endpoints are absent from the v3.1 spec, so they go
-// through the client's generic escape hatch rather than a typed resource. The
-// client still supplies credentials, retries, and redirect handling.
-const requestJson = async <S extends Schema.ConstraintDecoder<unknown>>(
-  responseSchema: S,
-  {
-    client,
-    path,
-    method = 'GET',
-    body,
-  }: {
-    readonly client: RawComposioClient;
-    readonly path: string;
-    readonly method?: 'GET' | 'POST';
-    readonly body?: unknown;
-  }
-): Promise<S['Type']> => {
-  const responseBody: unknown =
-    method === 'GET' ? await client.get(path) : await client.post(path, { body });
-  return Schema.decodeUnknownPromise(responseSchema)(responseBody);
-};
+// The responses are decoded with the CLI's schemas, not the client's: an
+// unknown permission mode decodes to its safe equivalent instead of failing
+// the whole policy. Every failure, of the request or of the decode, is a
+// `ToolPermissionsRequestError`: the callers fail closed on that tag.
+const decodeResponse =
+  <S extends Schema.ConstraintDecoder<unknown>>(
+    responseSchema: S,
+    { path, message }: { readonly path: string; readonly message: string }
+  ) =>
+  <E>(request: Effect.Effect<unknown, E>): Effect.Effect<S['Type'], ToolPermissionsRequestError> =>
+    request.pipe(
+      Effect.flatMap(Schema.decodeUnknownEffect(responseSchema)),
+      Effect.mapError(cause => new ToolPermissionsRequestError({ path, message, cause }))
+    );
 
 /**
  * The client for the caller's org and project, with a failure the permission
@@ -332,7 +325,7 @@ const permissionsClient = (params: {
   readonly orgId: string;
   readonly projectId: string;
   readonly path: string;
-}): Effect.Effect<RawComposioClient, ToolPermissionsRequestError, ComposioClientSingleton> =>
+}): Effect.Effect<ComposioClientShape, ToolPermissionsRequestError, ComposioClientSingleton> =>
   Effect.gen(function* () {
     const clientSingleton = yield* ComposioClientSingleton;
     return yield* clientSingleton
@@ -353,20 +346,24 @@ const permissionsClient = (params: {
       );
   });
 
-const fetchConsumerConfig = (client: RawComposioClient) =>
-  Effect.tryPromise({
-    try: () =>
-      requestJson(ConsumerConfigResponseSchema, {
-        client,
-        path: ORG_CONSUMER_CONFIG_PATH,
-      }),
-    catch: cause =>
-      new ToolPermissionsRequestError({
-        path: ORG_CONSUMER_CONFIG_PATH,
-        message: 'Failed to fetch the org consumer config.',
-        cause,
-      }),
-  });
+const fetchConsumerConfig = (client: ComposioClientShape) =>
+  client._internal.org.consumer.retrieveConfig(idempotent).pipe(
+    decodeResponse(ConsumerConfigResponseSchema, {
+      path: ORG_CONSUMER_CONFIG_PATH,
+      message: 'Failed to fetch the org consumer config.',
+    })
+  );
+
+// A read, though it is a POST, so it is retried like one.
+const resolveConsumerPermissions = (client: ComposioClientShape, connectedAccountIds: string[]) =>
+  client._internal.consumer.permissions
+    .resolve({ connected_account_ids: connectedAccountIds, default: 'ask_every_call' }, idempotent)
+    .pipe(
+      decodeResponse(PermissionResolveResponseSchema, {
+        path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
+        message: 'Failed to resolve consumer permissions.',
+      })
+    );
 
 export const refreshConsumerPermissionSnapshot = (params: {
   readonly orgId: string;
@@ -401,24 +398,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
       remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
     const resolved =
       enhancedControlsEnabled && connectedAccountIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              requestJson(PermissionResolveResponseSchema, {
-                client,
-                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
-                method: 'POST',
-                body: {
-                  connected_account_ids: connectedAccountIds,
-                  default: 'ask_every_call',
-                },
-              }),
-            catch: cause =>
-              new ToolPermissionsRequestError({
-                path: CONSUMER_PERMISSIONS_RESOLVE_PATH,
-                message: 'Failed to resolve consumer permissions.',
-                cause,
-              }),
-          }).pipe(
+        ? yield* resolveConsumerPermissions(client, connectedAccountIds).pipe(
             Effect.map(response => ({
               permissions: response.experimental?.permissions,
               resolveFailed: false,
@@ -925,6 +905,12 @@ const COMPLETION_COPY: Readonly<
   },
 };
 
+const DECISION_BY_APPROVAL_PATH: ReadonlyMap<string, PermissionDecision> = new Map([
+  ['/allow-session', 'allow_session'],
+  ['/allow-once', 'allow_once'],
+  ['/deny', 'deny'],
+]);
+
 const completionHtml = (decision: PermissionDecision) => {
   const { title, body } = COMPLETION_COPY[decision];
   return `<!doctype html>
@@ -1004,14 +990,7 @@ const requestPermissionInBrowser = (params: {
         return;
       }
 
-      const decision =
-        url.pathname === '/allow-session'
-          ? 'allow_session'
-          : url.pathname === '/allow-once'
-            ? 'allow_once'
-            : url.pathname === '/deny'
-              ? 'deny'
-              : undefined;
+      const decision = DECISION_BY_APPROVAL_PATH.get(url.pathname);
       if (!decision) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
         return;

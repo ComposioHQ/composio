@@ -1,9 +1,7 @@
 import type { BaseComposioProvider } from '../provider/BaseProvider';
 // Resolve against the installed package, including slim's copy of the core build.
-import identity from '#client_identity' with { type: 'json' };
-import { z } from 'zod';
-import { VERSION as clientLibraryVersion } from '@composio/client';
-import type { ComposioRequestHeaders } from '../types/composio.types';
+import manifest from '#client_identity' with { type: 'json' };
+import type { ClientIdentity } from '@composio/client';
 
 /**
  * Extended globalThis interface for runtime detection
@@ -93,51 +91,31 @@ function detectRuntime(): string {
 
 // Detect once at module initialization
 const RUNTIME_ENV = detectRuntime();
-const RuntimeVersionsSchema = z.object({
-  Bun: z.object({ version: z.string() }).optional(),
-  Deno: z.object({ version: z.object({ deno: z.string() }) }).optional(),
-});
-const runtimeVersions = RuntimeVersionsSchema.safeParse(globalThis);
-const detectRuntimeVersion = (): string | undefined => {
-  switch (RUNTIME_ENV) {
-    case 'BUN':
-      return runtimeVersions.success ? runtimeVersions.data.Bun?.version : undefined;
-    case 'DENO':
-      return runtimeVersions.success ? runtimeVersions.data.Deno?.version.deno : undefined;
-    case 'NODEJS':
-      return process.versions.node;
-    default:
-      return undefined;
-  }
-};
-const RUNTIME_VERSION = detectRuntimeVersion();
 
-export function getSessionHeaders(
+/**
+ * An identity value is sent as a header, so the client accepts only non-empty
+ * printable ASCII with no leading or trailing whitespace.
+ */
+const HEADER_SAFE = /^[\x21-\x7e](?:[\x20-\x7e]*[\x21-\x7e])?$/;
+
+/**
+ * The identity the API client reports for this SDK: its product headers
+ * (`x-client-provenance`, `x-client-version`, `x-sdk-version`) and the legacy
+ * `x-source`, `x-framework` and `x-runtime` labels. The client adds the
+ * library headers and detects the runtime and its version itself.
+ *
+ * A custom provider whose name cannot be sent as a header value is reported
+ * as `unknown` rather than making the SDK fail to construct.
+ */
+export function getClientIdentity(
   provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
-) {
+): ClientIdentity {
+  const framework = provider?.name;
   return {
-    'x-framework': provider?.name || 'unknown',
-    'x-source': 'TYPESCRIPT_SDK',
-    'x-runtime': RUNTIME_ENV,
-    'x-client-runtime':
-      RUNTIME_ENV === 'CLOUDFLARE_WORKERS' ? 'cloudflare' : RUNTIME_ENV.toLowerCase(),
-    'x-sdk-version': identity.version,
-    'x-client-provenance': identity.name,
-    'x-client-version': identity.version,
-    'x-client-language': 'typescript',
-    'x-client-library': '@composio/client',
-    'x-client-library-version': clientLibraryVersion,
-    ...(RUNTIME_VERSION ? { 'x-runtime-version': RUNTIME_VERSION } : {}),
+    product: manifest.name,
+    version: manifest.version,
+    source: 'TYPESCRIPT_SDK',
+    framework: framework && HEADER_SAFE.test(framework) ? framework : 'unknown',
+    runtime: RUNTIME_ENV,
   };
 }
-
-export const getDefaultHeaders = (
-  headers: ComposioRequestHeaders | undefined,
-  provider: BaseComposioProvider<unknown, unknown, unknown> | undefined
-) => {
-  const sessionHeaders = getSessionHeaders(provider);
-  return {
-    ...(headers || {}),
-    ...sessionHeaders,
-  };
-};

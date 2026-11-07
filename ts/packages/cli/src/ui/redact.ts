@@ -1,11 +1,10 @@
 import { Effect } from 'effect';
-import { UNPREFIXED_CONFIG } from 'src/effects/app-config';
-import { loadHostConfig } from 'src/services/config';
+import { HOST_CONFIG } from 'src/config';
 
 // Read once at import time, like `ui/colors.ts`: `redact` runs per formatted
 // value, and spinning up a fiber per call to read a single environment
 // variable is pure overhead.
-const ciRedactionEnabled = Effect.runSync(loadHostConfig(UNPREFIXED_CONFIG.CI_REDACTION_ENABLED));
+const ciRedactionEnabled = Effect.runSync(HOST_CONFIG.CI_REDACTION_ENABLED);
 
 /**
  * Redact a value when running in CI (e.g., CLI recordings).

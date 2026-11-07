@@ -9,13 +9,11 @@ import {
 
 describe('command-hints', () => {
   it('has no dangling linked command ids', () => {
-    const ids = new Set(Record.keys(COMMAND_HINTS));
+    const ids = Record.keys(COMMAND_HINTS);
+    const linkedIds = ids.flatMap(id => commandHintLinks(id));
 
-    for (const id of ids) {
-      for (const linkedId of commandHintLinks(id)) {
-        expect(ids.has(linkedId)).toBe(true);
-      }
-    }
+    expect(linkedIds.length).toBeGreaterThan(0);
+    expect(ids).toEqual(expect.arrayContaining(linkedIds));
   });
 
   it('renders examples from the registry', () => {

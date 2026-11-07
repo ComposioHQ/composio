@@ -10,7 +10,6 @@ import type {
   E2ETestResultWithSetup,
   E2ETestResultWithFiles,
   NodeVersionMeta,
-  DenoVersionMeta,
   CliVersionMeta,
   NonEmptyString,
   RunFixtureOptions,
@@ -21,15 +20,12 @@ import type {
 import {
   getRepoRoot,
   resolveNodeVersionMetaList,
-  resolveDenoVersionMetaList,
   resolveCliVersionMetaList,
 } from './config';
 import type { ExecResult } from './image-lifecycle';
 import {
   ensureNodeImage,
   runNodeContainer,
-  ensureDenoImage,
-  runDenoContainer,
   ensureCliImage,
   runCliContainer,
 } from './image-lifecycle';
@@ -142,7 +138,7 @@ class DebugLogManager {
   private formatVersionSection(result: VersionResult): string {
     const dividerHeavy = '#'.repeat(80);
     const runtimeLabel =
-      result.runtime === 'node' ? 'Node.js' : result.runtime === 'deno' ? 'Deno' : 'CLI';
+      result.runtime === 'node' ? 'Node.js' : 'CLI';
     const lines: string[] = [
       '',
       dividerHeavy,
@@ -201,7 +197,7 @@ class DebugLogManager {
 
     for (const result of this.versionResults) {
       const runtimeLabel =
-        result.runtime === 'node' ? 'Node.js' : result.runtime === 'deno' ? 'Deno' : 'CLI';
+        result.runtime === 'node' ? 'Node.js' : 'CLI';
       if (result.status === 'skipped') {
         lines.push(`${runtimeLabel} ${result.version}: SKIPPED`);
       } else {
@@ -354,7 +350,7 @@ interface VersionExecutionContext {
 
 /**
  * A function that runs a command inside a Docker container.
- * All runtime-specific container runners (Node, Deno, CLI) share this signature
+ * All runtime-specific container runners (Node, CLI) share this signature
  * for the subset of options used by `createRunCmd`.
  */
 type ContainerRunner = (options: {
@@ -513,7 +509,7 @@ function createNodeDockerExecutors(
 
     try {
       await createVolume(volumeName);
-      await initializeVolumeOwnership(volumeName, imageTag, 'node');
+      await initializeVolumeOwnership(volumeName, imageTag);
 
       const setupContainerName = `${containerBaseName}-setup`;
       const setupStartTime = Date.now();
@@ -580,127 +576,6 @@ function createNodeDockerExecutors(
 }
 
 // ============================================================================
-// Deno Docker Executors
-// ============================================================================
-
-/**
- * Creates Docker execution utilities for a specific Deno version.
- */
-function createDenoDockerExecutors(
-  config: RunE2EInternalConfig,
-  denoVersion: string,
-  imageTag: string,
-  repoRoot: string,
-  logManager: DebugLogManager
-) {
-  const { cwd, suiteName, env, usesFixtures } = config;
-  const containerEnv = buildContainerEnv(env);
-  const effectiveCwd = usesFixtures ? `${cwd}/fixtures` : cwd;
-
-  const context: VersionExecutionContext = {
-    phases: [],
-    versionStartTime: Date.now(),
-    imageTag,
-  };
-
-  const containerPrefix = `e2e-${suiteName}-deno-${denoVersion.replace(/\./g, '-')}`;
-
-  const runCmd = createRunCmd({
-    runContainer: runDenoContainer,
-    containerPrefix,
-    effectiveCwd,
-    containerEnv,
-    imageTag,
-    context,
-  });
-
-  function runFixture(options: { filename: string }): Promise<E2ETestResult>;
-  function runFixture(options: { filename: string; setup: string }): Promise<E2ETestResultWithSetup>;
-  async function runFixture(options: RunFixtureOptions): Promise<E2ETestResult | E2ETestResultWithSetup> {
-    const { filename, setup } = options;
-    // Deno scripts need explicit 'deno run' with permissions
-    const denoRunCmd = `deno run --allow-all ${filename}`;
-
-    // For Deno without setup, just run the file directly
-    if (!setup) {
-      return runCmd(denoRunCmd);
-    }
-
-    // Deno with setup: use Docker volumes for caching
-    const volumeName = generateVolumeName(suiteName, denoVersion);
-    const containerBaseName = `${containerPrefix}-${Date.now()}`;
-    // Deno caches to DENO_DIR, but we also support node_modules for npm packages
-    const volumeTarget = `${effectiveCwd.startsWith('/') ? effectiveCwd : `/app/${effectiveCwd}`}/node_modules`;
-
-    try {
-      await createVolume(volumeName);
-      await initializeVolumeOwnership(volumeName, imageTag, 'deno');
-
-      const setupContainerName = `${containerBaseName}-setup`;
-      const setupStartTime = Date.now();
-      const setupResult = await runDenoContainer({
-        imageTag,
-        cmd: setup,
-        cwd: effectiveCwd,
-        env: containerEnv,
-        name: setupContainerName,
-        volumes: [{ volume: volumeName, target: volumeTarget, readonly: false }],
-      });
-      const setupDurationMs = Date.now() - setupStartTime;
-
-      context.phases.push({
-        phase: 'setup',
-        phaseIndex: 1,
-        totalPhases: 2,
-        command: setup,
-        containerName: setupContainerName,
-        durationMs: setupDurationMs,
-        exitCode: setupResult.exitCode,
-        stdout: setupResult.stdout,
-        stderr: setupResult.stderr,
-      });
-
-      const fixtureContainerName = `${containerBaseName}-fixture`;
-      const fixtureStartTime = Date.now();
-      const fixtureResult = await runDenoContainer({
-        imageTag,
-        cmd: denoRunCmd,
-        cwd: effectiveCwd,
-        env: containerEnv,
-        name: fixtureContainerName,
-        volumes: [{ volume: volumeName, target: volumeTarget, readonly: true }],
-      });
-      const fixtureDurationMs = Date.now() - fixtureStartTime;
-
-      context.phases.push({
-        phase: 'fixture',
-        phaseIndex: 2,
-        totalPhases: 2,
-        command: denoRunCmd,
-        containerName: fixtureContainerName,
-        durationMs: fixtureDurationMs,
-        exitCode: fixtureResult.exitCode,
-        stdout: fixtureResult.stdout,
-        stderr: fixtureResult.stderr,
-      });
-
-      return { ...fixtureResult, setup: setupResult };
-    } finally {
-      await removeVolume(volumeName);
-    }
-  }
-
-  const finalizeVersionLog = createFinalizeVersionLog({
-    runtime: 'deno',
-    version: denoVersion,
-    context,
-    logManager,
-  });
-
-  return { runCmd, runFixture, finalizeVersionLog, context };
-}
-
-// ============================================================================
 // CLI Docker Executors
 // ============================================================================
 
@@ -758,8 +633,8 @@ function normalizeVersionConfig(config: E2EConfig): RuntimeVersions {
   if (config.versions) {
     return config.versions;
   }
-  // Default: use current version for Node.js and Deno (CLI is opt-in)
-  return { node: ['current'], deno: ['current'] };
+  // Default: use current version for Node.js (CLI is opt-in)
+  return { node: ['current'] };
 }
 
 /**
@@ -773,20 +648,6 @@ function renderNodeVersionMeta({ kind, value }: NodeVersionMeta): string {
       return `Node.js ${value} [overridden]`;
     case 'static':
       return `Node.js ${value}`;
-  }
-}
-
-/**
- * Render a Deno version meta for display in test names.
- */
-function renderDenoVersionMeta({ kind, value }: DenoVersionMeta): string {
-  switch (kind) {
-    case 'current':
-      return `Deno ${value} [current]`;
-    case 'overridden':
-      return `Deno ${value} [overridden]`;
-    case 'static':
-      return `Deno ${value}`;
   }
 }
 
@@ -823,7 +684,7 @@ const IMAGE_ENSURE_TIMEOUT_MS = 1_200_000;
  * Runs e2e tests using bun:test.
  * Creates a describe block per runtime version and passes test utilities to defineTests.
  *
- * Supports Node.js, Deno, and CLI runtimes.
+ * Supports Node.js and CLI runtimes.
  * In CI mode, versions not matching their respective env vars are skipped.
  */
 export function runE2E(config: RunE2EInternalConfig): void {
@@ -837,13 +698,11 @@ export function runE2E(config: RunE2EInternalConfig): void {
 
   // Resolve versions for each runtime
   const nodeVersionMetaList = versions.node ? resolveNodeVersionMetaList(versions.node) : [];
-  const denoVersionMetaList = versions.deno ? resolveDenoVersionMetaList(versions.deno) : [];
   const cliVersionMetaList = versions.cli ? resolveCliVersionMetaList(versions.cli) : [];
 
   // Build runtime version labels for logging
   const allRuntimeVersions = [
     ...nodeVersionMetaList.map(v => `Node.js ${v.value}`),
-    ...denoVersionMetaList.map(v => `Deno ${v.value}`),
     ...cliVersionMetaList.map(v => `CLI ${v.value}`),
   ];
 
@@ -895,50 +754,6 @@ export function runE2E(config: RunE2EInternalConfig): void {
 
         defineTests({
           runtime: 'node',
-          runCmd: ((cmd: RunCmdInput) => executors.runCmd(cmd)) as DefineTestsContext['runCmd'],
-          runFixture: ((opts: RunFixtureOptions) => executors.runFixture(opts)) as DefineTestsContext['runFixture'],
-        });
-
-        afterAll(async () => {
-          if (executors) {
-            await executors.finalizeVersionLog();
-          }
-        });
-      });
-    }
-
-    // =========== Deno Tests ===========
-    for (const denoVersionMeta of denoVersionMetaList) {
-      const testName = renderDenoVersionMeta(denoVersionMeta);
-
-      // Skip this version in CI if not selected
-      if (denoVersionMeta.skip.value) {
-        describe(`${testName} - skipped: ${denoVersionMeta.skip.reason}`, () => {
-          beforeAll(async () => {
-            await logManager.writeVersionSection({
-              runtime: 'deno',
-              version: denoVersionMeta.value,
-              status: 'skipped',
-              reason: denoVersionMeta.skip.reason || 'Skipped in CI',
-              phases: [],
-            });
-          });
-
-          it('this version should not run in this CI matrix job', () => {});
-        });
-        continue;
-      }
-
-      describe(testName, () => {
-        let executors: ReturnType<typeof createDenoDockerExecutors>;
-
-        beforeAll(async () => {
-          const imageTag = await ensureDenoImage(denoVersionMeta.value, { repoRoot });
-          executors = createDenoDockerExecutors(config, denoVersionMeta.value, imageTag, repoRoot, logManager);
-        }, IMAGE_ENSURE_TIMEOUT_MS);
-
-        defineTests({
-          runtime: 'deno',
           runCmd: ((cmd: RunCmdInput) => executors.runCmd(cmd)) as DefineTestsContext['runCmd'],
           runFixture: ((opts: RunFixtureOptions) => executors.runFixture(opts)) as DefineTestsContext['runFixture'],
         });

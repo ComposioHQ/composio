@@ -61,11 +61,45 @@ jobs:
       - name: Check Python helpers codegen is up to date
         run: pnpm --filter @composio/experimental run check:python-helpers
 
+      # Mirrors the root `test` script (package.json) with the turbo segment
+      # re-scoped to exclude @composio/cli: its suite runs in the dedicated
+      # `test-cli` job below so one flaky CLI test cannot fail the umbrella.
+      # Keep this chain in sync with package.json `scripts.test`.
       - name: Run Tests
-        run: pnpm run test
+        run: >-
+          pnpm run test:toolchain
+          && pnpm run test:install-sh
+          && pnpm run test:release-workflow
+          && pnpm run test:issue-triage
+          && pnpm run test:provider-compatibility
+          && pnpm run test:context7
+          && pnpm exec turbo run test --filter='./ts/packages/**' --filter='!@e2e-tests/*' --filter='!@composio/cli'
+          && pnpm run test:examples
 
       - name: Build packages for consumer compatibility
         run: pnpm run build:packages
 
       - name: Check packed provider compatibility
         run: pnpm run check:provider-compatibility
+
+  test-cli:
+    name: Test CLI (@composio/cli)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Package-scoped turbo invocation so the CLI's dependency builds
+      # (test dependsOn ^build) still run before its vitest suite.
+      - name: Run CLI Tests
+        run: pnpm exec turbo run test --filter=@composio/cli

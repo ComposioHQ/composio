@@ -746,6 +746,507 @@
       ]
     },
     {
+      "id": "string-format-outside-accepted-list-stripped",
+      "description": "A string `format` the API rejects is stripped and reported, including on a schema without `type` and for an accepted value in the wrong case; formats on numbers and a property named `format` stay.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "file": {
+            "type": ["string", "null"],
+            "format": "path"
+          },
+          "repos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "repo.nwo"
+            }
+          },
+          "untyped": {
+            "format": "uri"
+          },
+          "shouted": {
+            "type": "string",
+            "format": "DATE-TIME"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["json", "csv"]
+          }
+        },
+        "required": ["url", "file", "repos", "untyped", "shouted", "count", "format"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "file": {
+              "type": ["string", "null"]
+            },
+            "repos": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "untyped": {},
+            "shouted": {
+              "type": "string"
+            },
+            "count": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "format": {
+              "type": "string",
+              "enum": ["json", "csv"]
+            }
+          },
+          "required": ["url", "file", "repos", "untyped", "shouted", "count", "format"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.url",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.file",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.repos.items",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.shouted",
+          "reason": "unsupported-keyword-stripped"
+        }
+      ]
+    },
+    {
+      "id": "accepted-string-formats-kept",
+      "description": "Every string `format` the API accepts is kept unchanged.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "date-time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "time": {
+            "type": "string",
+            "format": "time"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "duration": {
+            "type": "string",
+            "format": "duration"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "hostname": {
+            "type": "string",
+            "format": "hostname"
+          },
+          "ipv4": {
+            "type": "string",
+            "format": "ipv4"
+          },
+          "ipv6": {
+            "type": "string",
+            "format": "ipv6"
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "date-time",
+          "time",
+          "date",
+          "duration",
+          "email",
+          "hostname",
+          "ipv4",
+          "ipv6",
+          "uuid"
+        ],
+        "additionalProperties": false
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "date-time": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "time": {
+              "type": "string",
+              "format": "time"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "duration": {
+              "type": "string",
+              "format": "duration"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "hostname": {
+              "type": "string",
+              "format": "hostname"
+            },
+            "ipv4": {
+              "type": "string",
+              "format": "ipv4"
+            },
+            "ipv6": {
+              "type": "string",
+              "format": "ipv6"
+            },
+            "uuid": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "date-time",
+            "time",
+            "date",
+            "duration",
+            "email",
+            "hostname",
+            "ipv4",
+            "ipv6",
+            "uuid"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "id": "openapi-nullable-folded",
+      "description": "OpenAPI `nullable`, which Anthropic rejects on an object, is removed; `true` widens the node to accept null the way the Zod conversion reads it, including on a typed enum, and `false` is dropped.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": ["a"]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "nullable": true
+          },
+          "untyped": {
+            "nullable": true,
+            "description": "anything"
+          },
+          "count": {
+            "type": "integer",
+            "nullable": false
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "nullable": true,
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": ["cfg", "mode", "count", "rows"]
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "type": ["object", "null"],
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": ["a"],
+              "additionalProperties": false
+            },
+            "note": {
+              "type": ["string", "null"]
+            },
+            "mode": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "untyped": {
+              "description": "anything"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": ["object", "null"],
+                "properties": {
+                  "id": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["id"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["cfg", "note", "mode", "untyped", "count", "rows"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.note",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.mode",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.count",
+          "reason": "unsupported-keyword-stripped"
+        },
+        {
+          "path": "properties.rows.items.properties.id",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.rows.items",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "properties.note",
+          "reason": "optional-property-nullable"
+        },
+        {
+          "path": "properties.untyped",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null,
+            "note": null,
+            "mode": null,
+            "untyped": null,
+            "count": null,
+            "rows": [
+              null,
+              {
+                "id": null
+              }
+            ]
+          },
+          "output": {
+            "cfg": null,
+            "note": null,
+            "mode": null,
+            "untyped": null,
+            "rows": [null, {}]
+          }
+        }
+      ]
+    },
+    {
+      "id": "recursive-nullable-union-gets-null-branch",
+      "description": "A `nullable: true` union that refers back to itself, or a nullable reference to the root, gains a null branch, because a reference never counts as accepting null here; a reference that does accept null costs a redundant branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/A"
+          },
+          "b": {
+            "$ref": "#/$defs/B"
+          },
+          "self": {
+            "$ref": "#",
+            "nullable": true
+          }
+        },
+        "required": ["a", "b", "self"],
+        "$defs": {
+          "A": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/A"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "B": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Nullable"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "Nullable": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/A"
+            },
+            "b": {
+              "$ref": "#/$defs/B"
+            },
+            "self": {
+              "anyOf": [
+                {
+                  "$ref": "#"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["a", "b", "self"],
+          "$defs": {
+            "A": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/A"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "B": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Nullable"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "Nullable": {
+              "type": ["string", "null"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.self",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "$defs.A",
+          "reason": "nullable-converted"
+        },
+        {
+          "path": "$defs.B",
+          "reason": "nullable-converted"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "a": null,
+            "b": null,
+            "self": null
+          },
+          "output": {
+            "a": null,
+            "b": null,
+            "self": null
+          }
+        }
+      ]
+    },
+    {
       "id": "enum-values-are-data-not-keywords",
       "description": "Keys inside enum/const values are data and must not be treated as keywords.",
       "schema": {
@@ -2984,6 +3485,484 @@
             "a": null
           },
           "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-typed-enum-wrapped",
+      "description": "A typed enum is wrapped whole: adding null to its type would leave the enum rejecting it.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "description": "sort order"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "description": "sort order",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        },
+        {
+          "input": {
+            "direction": "asc"
+          },
+          "output": {
+            "direction": "asc"
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-nullable-typed-enum-wrapped",
+      "description": "A null in `type` does not make an enum without null nullable.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": ["string", "null"],
+            "enum": ["asc", "desc"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "anyOf": [
+                {
+                  "type": ["string", "null"],
+                  "enum": ["asc", "desc"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-typed-const-wrapped",
+      "description": "A typed const is wrapped whole, like a typed enum.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "asc"
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "asc"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["mode"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.mode",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "mode": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-typed-enum-with-null-unchanged",
+      "description": "A typed enum that lists null under a nullable type already accepts null.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": ["string", "null"],
+            "enum": ["asc", null]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "type": ["string", "null"],
+              "enum": ["asc", null]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {
+            "direction": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-any-of-with-sibling-enum-wrapped",
+      "description": "A null branch in anyOf does not lift a sibling enum, so the node is wrapped.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "enum": ["asc", "desc"],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "anyOf": [
+                {
+                  "enum": ["asc", "desc"],
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-with-sibling-type-wrapped",
+      "description": "Keywords beside a $ref apply together with its target.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "$ref": "#/$defs/Direction",
+            "type": "string"
+          }
+        },
+        "$defs": {
+          "Direction": {
+            "enum": ["asc", null]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Direction",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "$defs": {
+            "Direction": {
+              "enum": ["asc", null]
+            }
+          },
+          "required": ["direction"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.direction",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "direction": null
+          },
+          "output": {}
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-to-nullable-definition-unchanged",
+      "description": "A $ref whose target accepts null needs no extra null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "$ref": "#/$defs/Note"
+          }
+        },
+        "$defs": {
+          "Note": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "note": {
+              "$ref": "#/$defs/Note"
+            }
+          },
+          "$defs": {
+            "Note": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["note"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.note",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "note": null
+          },
+          "output": {
+            "note": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "optional-ref-to-typeless-object-wrapped",
+      "description": "A definition with properties but no type is typed as an object by the rewrite, so a $ref to it needs a null branch.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "$ref": "#/$defs/Config"
+          }
+        },
+        "$defs": {
+          "Config": {
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["url"]
+          }
+        }
+      },
+      "strict": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cfg": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Config"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "$defs": {
+            "Config": {
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": ["url"],
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "required": ["cfg"],
+          "additionalProperties": false
+        }
+      },
+      "changes": [
+        {
+          "path": "properties.cfg",
+          "reason": "optional-property-nullable"
+        }
+      ],
+      "arguments": [
+        {
+          "input": {
+            "cfg": null
+          },
+          "output": {
+            "cfg": null
+          }
+        },
+        {
+          "input": {
+            "cfg": {
+              "url": "u"
+            }
+          },
+          "output": {
+            "cfg": {
+              "url": "u"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref-into-wrapped-property-unsupported",
+      "description": "Wrapping a property moves what is nested in it; a $ref into it would dangle.",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "enum": ["asc"],
+            "$defs": {
+              "Text": {
+                "type": "string"
+              }
+            }
+          },
+          "alias": {
+            "$ref": "#/properties/value/$defs/Text"
+          }
+        },
+        "required": ["alias"]
+      },
+      "strict": {
+        "unsupported": [
+          {
+            "path": "properties.alias",
+            "keyword": "$ref"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "path": "properties.value",
+          "reason": "optional-property-nullable"
         }
       ]
     }

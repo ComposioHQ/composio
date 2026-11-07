@@ -1,12 +1,10 @@
-import { Effect, Option } from 'effect';
-import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
+import { Effect } from 'effect';
+import { DEBUG_CONFIG } from 'src/config';
 import * as constants from 'src/constants';
 import { resolveRunningCliVersion } from 'src/services/run-companion-modules';
 
-export const getVersion = Effect.flatMap(
-  DEBUG_OVERRIDE_CONFIG.VERSION,
-  Option.match({
-    onNone: () => resolveRunningCliVersion(process.execPath, constants.APP_VERSION),
-    onSome: version => Effect.succeed(version),
-  })
+export const getVersion = Effect.flatMap(DEBUG_CONFIG.VERSION, version =>
+  version === undefined
+    ? resolveRunningCliVersion(process.execPath, constants.APP_VERSION)
+    : Effect.succeed(version)
 );

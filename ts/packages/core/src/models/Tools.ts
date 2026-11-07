@@ -43,6 +43,7 @@ import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
   ComposioInvalidModifierError,
   ComposioToolFetchError,
+  ComposioToolFetchRateLimitError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
   ComposioToolVersionRequiredError,
@@ -52,7 +53,7 @@ import { telemetry } from '../telemetry/Telemetry';
 import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
-import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import {
@@ -68,11 +69,12 @@ import {
   transformExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { isRateLimitResponse } from '../utils/rateLimit';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
 type ToolRouterSessionExecuteOptions = {
-  experimental?: SessionExecuteParams.Experimental;
+  experimental?: NonNullable<SessionExecuteParams['experimental']>;
 };
 
 type RawToolParameters =
@@ -97,6 +99,13 @@ function normalizeRawToolParameters(
   if (params == null || Object.keys(params).length === 0) return undefined;
   return params;
 }
+
+/** How long `execute()` reuses a schema fetched for `latest`, which can change at any release. */
+const LATEST_TOOL_SCHEMA_TTL_MS = 5 * 60 * 1000;
+/** How long `execute()` reuses a schema fetched for a pinned toolkit version. */
+const PINNED_TOOL_SCHEMA_TTL_MS = 60 * 60 * 1000;
+/** Most schemas `execute()` keeps per `Tools` instance; the oldest is dropped first. */
+const MAX_CACHED_TOOL_SCHEMAS = 500;
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -123,6 +132,12 @@ export class Tools<
    * Scoped per-instance so a fresh `Composio` starts with a clean slate.
    */
   private readonly warnedAutoUploadDisabledForTool = new Set<string>();
+  /**
+   * Schemas `execute()` already fetched, so repeated executions don't each spend a request.
+   * Holds what `getRawComposioToolBySlug` returned with no `modifySchema`, so a caller's schema
+   * modifiers never reach it.
+   */
+  private readonly executeToolSchemas = new Map<string, { tool: Tool; expiresAt: number }>();
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
@@ -409,9 +424,9 @@ export class Tools<
    * Lists Composio API tools available to the SDK.
    *
    * This method fetches remote Composio tools from the API in raw format. The response can be
-   * filtered and modified as needed. Local experimental custom tools are session-scoped; attach
+   * filtered and modified as needed. Experimental local tools are session-scoped; attach
    * them when creating or reusing a Tool Router session, then use `session.tools()`,
-   * `session.customTools()`, or `session.execute()`.
+   * `session.localTools()`, or `session.execute()`.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
@@ -628,8 +643,8 @@ export class Tools<
    * This method fetches a single tool in raw format without provider-specific wrapping,
    * providing direct access to the tool's schema and metadata. Tool versions are controlled
    * at the Composio SDK initialization level through the `toolkitVersions` configuration.
-   * Local experimental custom tools are session-scoped; attach them when creating or reusing a
-   * Tool Router session, then use `session.tools()`, `session.customTools()`, or
+   * Experimental local tools are session-scoped; attach them when creating or reusing a
+   * Tool Router session, then use `session.tools()`, `session.localTools()`, or
    * `session.execute()`.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
@@ -691,6 +706,13 @@ export class Tools<
     } catch (error) {
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
+      }
+      if (isRateLimitResponse(error)) {
+        throw new ComposioToolFetchRateLimitError(
+          `Rate limited while retrieving tool with slug ${slug}`,
+          error,
+          { slug }
+        );
       }
       // The tools endpoint reports an unknown slug as 404 (or 400 for a
       // malformed one). Anything else (401, 5xx, network) is not "not found",
@@ -992,8 +1014,7 @@ export class Tools<
          * @deprecated The `customConnectionData` execute param is deprecated and will be
          * removed in a future release. Use `customAuthParams` instead.
          */
-        custom_connection_data:
-          body.customConnectionData as ComposioToolExecuteParams['custom_connection_data'],
+        custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
         version: toolkitVersion,
@@ -1154,14 +1175,38 @@ export class Tools<
     const requestOptions: ComposioRequestOptions | undefined =
       options?.signal != null ? { signal: options.signal } : undefined;
 
-    const tool = await this.getRawComposioToolBySlug(
-      slug,
-      {
-        version: executeParams.version,
-      },
-      requestOptions
-    );
+    const tool = await this.getToolSchemaForExecute(slug, executeParams.version, requestOptions);
     return this.executeWithTool(slug, executeParams, options, tool);
+  }
+
+  /** The tool's schema for `execute()`, fetched only if no unexpired copy is cached. Failures aren't cached. */
+  private async getToolSchemaForExecute(
+    slug: string,
+    version: string | undefined,
+    requestOptions: ComposioRequestOptions | undefined
+  ): Promise<Tool> {
+    const key = `${slug}\0${version ?? ''}`;
+    const cached = this.executeToolSchemas.get(key);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.tool;
+    }
+
+    const tool = await this.getRawComposioToolBySlug(slug, { version }, requestOptions);
+
+    const resolvedVersion =
+      version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions);
+    const ttlMs =
+      resolvedVersion === 'latest' ? LATEST_TOOL_SCHEMA_TTL_MS : PINNED_TOOL_SCHEMA_TTL_MS;
+    // Re-insert so a refreshed entry counts as the newest.
+    this.executeToolSchemas.delete(key);
+    if (this.executeToolSchemas.size >= MAX_CACHED_TOOL_SCHEMAS) {
+      const oldestKey = this.executeToolSchemas.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.executeToolSchemas.delete(oldestKey);
+      }
+    }
+    this.executeToolSchemas.set(key, { tool, expiresAt: Date.now() + ttlMs });
+    return tool;
   }
 
   /**
@@ -1246,7 +1291,7 @@ export class Tools<
     let result: ToolExecuteResponse = {
       data,
       error,
-      successful: isExecutionSuccessful({ resultType, error }),
+      successful: isExecutionSuccessful({ resultType }),
       logId,
       ...(instantCharge !== undefined && { instantCharge }),
     };
@@ -1336,6 +1381,7 @@ export class Tools<
    * @param {string} body.endpoint - Path relative to the toolkit's base URL, or an absolute URL
    * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'} body.method - HTTP method
    * @param {string} [body.connectedAccountId] - The connected account to authenticate as
+   * @param {string} [body.userId] - The user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it
    * @param {unknown} [body.body] - JSON request body
    * @param {Array<{ in: 'query' | 'header'; name: string; value: string | number }>} [body.parameters] - Extra query parameters or headers
    * @returns {Promise<ToolProxyResponse>} The upstream status, headers, and parsed body
@@ -1362,7 +1408,7 @@ export class Tools<
     }
     // convert the headers and query to the composio format
     // { name: string, type: 'header' | 'query', value: string }
-    const parameters: ComposioToolProxyParams.Parameter[] = [];
+    const parameters: NonNullable<ComposioToolProxyParams['parameters']>[number][] = [];
     const parameterTypes = {
       header: 'header',
       query: 'query',
@@ -1383,13 +1429,12 @@ export class Tools<
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
+      user_id: toolProxyParams.data.userId,
       parameters: parameters,
       /**
        * @deprecated The `customConnectionData` proxy param is deprecated and will be
        * removed in a future release. Use `customAuthParams` instead.
        */
-      // oxlint-disable-next-line typescript/ban-ts-comment -- generated client versions disagree about this deprecated field
-      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
     return withCancellation(

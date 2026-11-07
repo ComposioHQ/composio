@@ -49,10 +49,10 @@ const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
   post: vi.fn(),
-  delete: vi.fn(),
   toolRouter: {
     session: {
       create: vi.fn(),
+      delete: vi.fn(),
       retrieve: vi.fn(),
       attach: vi.fn(),
       patch: vi.fn(),
@@ -60,6 +60,7 @@ const createMockClient = () => ({
       toolkits: vi.fn(),
       search: vi.fn(),
       execute: vi.fn(),
+      executeMeta: vi.fn(),
       configHistory: vi.fn(),
     },
   },
@@ -219,6 +220,98 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       await toolRouter.create(userId);
       expect(mockClient.toolRouter.session.create.mock.calls[2]?.[0]).not.toHaveProperty('instant');
+    });
+
+    it('sends proxyExecute as given, expands the boolean shorthand, and omits the block otherwise', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
+
+      await toolRouter.create(userId, { proxyExecute: { enable: true } });
+      await toolRouter.create(userId, { proxyExecute: { enable: false } });
+      await toolRouter.create(userId, { proxyExecute: true });
+      await toolRouter.create(userId, { proxyExecute: false });
+      await toolRouter.create(userId);
+
+      const bodies = mockClient.toolRouter.session.create.mock.calls.map(call => call[0]);
+      expect(bodies[0]).toMatchObject({ proxy_execute: { enable: true } });
+      expect(bodies[1]).toMatchObject({ proxy_execute: { enable: false } });
+      expect(bodies[2]).toMatchObject({ proxy_execute: { enable: true } });
+      expect(bodies[3]).toMatchObject({ proxy_execute: { enable: false } });
+      expect(bodies[4]).not.toHaveProperty('proxy_execute');
+    });
+
+    it('sends hooks in snake_case, and omits them otherwise', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
+
+      await toolRouter.create(userId, {
+        hooks: [
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            appliesTo: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      });
+      await toolRouter.create(userId);
+
+      const bodies = mockClient.toolRouter.session.create.mock.calls.map(call => call[0]);
+      expect(bodies[0]).toMatchObject({
+        hooks: [
+          {
+            type: 'after_execute',
+            id: 'block_injection',
+            applies_to: 'all',
+            handler: { type: 'prompt_injection_check', action: 'block' },
+          },
+        ],
+      });
+      expect(bodies[1]).not.toHaveProperty('hooks');
+    });
+
+    it('rejects a prompt injection check on a before_execute hook, as the API does', async () => {
+      await expect(
+        toolRouter.create(userId, {
+          hooks: [
+            {
+              type: 'before_execute',
+              id: 'block_injection',
+              appliesTo: 'all',
+              // @ts-expect-error a before_execute hook only takes a condition_check handler
+              handler: { type: 'prompt_injection_check', action: 'block' },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects hooks together with a saved session config', async () => {
+      await expect(
+        toolRouter.create(
+          userId,
+          // @ts-expect-error hooks cannot be combined with sessionConfigId
+          {
+            hooks: [
+              {
+                type: 'after_execute',
+                id: 'block_injection',
+                appliesTo: 'all',
+                handler: { type: 'prompt_injection_check', action: 'block' },
+              },
+            ],
+            experimental: { sessionConfigId: 'sc_1' },
+          }
+        )
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a proxyExecute block without enable', async () => {
+      await expect(
+        // @ts-expect-error enable is required
+        toolRouter.create(userId, { proxyExecute: {} })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
     });
 
     describe('basic session creation', () => {
@@ -1827,6 +1920,44 @@ describe('ToolRouter', () => {
       });
     });
 
+    describe('approval rules', () => {
+      const createPayload = () => mockClient.toolRouter.session.create.mock.calls[0][0];
+
+      it('sends requireApproval lists as require_approval', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: { enable: ['gmail', 'github'], requireApproval: ['github'] },
+          tools: {
+            gmail: { requireApproval: ['GMAIL_SEND_EMAIL'] },
+            slack: { tags: { requireApproval: ['destructiveHint'] } },
+          },
+          tags: { requireApproval: ['destructiveHint'] },
+        });
+
+        expect(createPayload()).toMatchObject({
+          toolkits: { enable: ['gmail', 'github'], require_approval: ['github'] },
+          tools: {
+            gmail: { require_approval: ['GMAIL_SEND_EMAIL'] },
+            slack: { tags: { require_approval: ['destructiveHint'] } },
+          },
+          tags: { require_approval: ['destructiveHint'] },
+        });
+      });
+
+      it('sends noElicitationSupportFallback as experimental.no_elicitation_support_fallback', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: { requireApproval: ['gmail'] },
+          experimental: { noElicitationSupportFallback: 'allow' },
+        });
+
+        expect(createPayload().toolkits).toEqual({ require_approval: ['gmail'] });
+        expect(createPayload().experimental).toEqual({ no_elicitation_support_fallback: 'allow' });
+      });
+    });
+
     describe('session configs', () => {
       const createPayload = () => mockClient.toolRouter.session.create.mock.calls[0][0];
 
@@ -1923,9 +2054,12 @@ describe('ToolRouter', () => {
         ['toolkits', { toolkits: { disable: ['x'] } }],
         ['tools', { tools: { github: ['GITHUB_GET_REPO'] } }],
         ['tags', { tags: ['readOnlyHint'] }],
+        ['experimental.localTools', { experimental: { localTools: [customTool] } }],
+        ['experimental.localToolkits', { experimental: { localToolkits: [customToolkit] } }],
         ['experimental.customTools', { experimental: { customTools: [customTool] } }],
         ['experimental.customToolkits', { experimental: { customToolkits: [customToolkit] } }],
         ['toolkits', { toolkits: [] }],
+        ['experimental.localTools', { experimental: { localTools: [] } }],
         ['experimental.customTools', { experimental: { customTools: [] } }],
       ])(
         'rejects sessionConfigId combined with %s (%j) without calling the API',
@@ -2874,6 +3008,7 @@ describe('ToolRouter', () => {
     const sessionId = 'session_123';
 
     const mockExecuteResponse = {
+      result_type: 'completed',
       data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
       error: null,
       log_id: 'log_abc',
@@ -2993,6 +3128,106 @@ describe('ToolRouter', () => {
         {
           tool_slug: 'GMAIL_SEND_EMAIL',
           arguments: { to: 'user@example.com' },
+          experimental: {
+            custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+          },
+        },
+        { maxRetries: 0 }
+      );
+    });
+  });
+
+  describe('executeMeta function', () => {
+    const userId = 'user_123';
+    const sessionId = 'session_123';
+
+    const mockExecuteMetaResponse = {
+      result_type: 'completed',
+      data: { results: [] },
+      error: null,
+      log_id: 'log_abc',
+    };
+
+    it('should call executeMeta with correct params and return camelCase response', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce(mockExecuteMetaResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+        queries: [{ use_case: 'send an email' }],
+      });
+
+      expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(
+        sessionId,
+        {
+          slug: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: { queries: [{ use_case: 'send an email' }] },
+        },
+        { maxRetries: 0 }
+      );
+      expect(mockClient.toolRouter.session.execute).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        data: { results: [] },
+        error: null,
+        logId: 'log_abc',
+        resultType: 'completed',
+      });
+    });
+
+    it('should default arguments to empty object when omitted', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce(mockExecuteMetaResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.executeMeta('COMPOSIO_MANAGE_CONNECTIONS');
+
+      expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(
+        sessionId,
+        { slug: 'COMPOSIO_MANAGE_CONNECTIONS', arguments: {} },
+        { maxRetries: 0 }
+      );
+    });
+
+    it('should propagate executeMeta API errors', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(new Error('Execute failed'));
+
+      const session = await toolRouter.create(userId);
+
+      await expect(session.executeMeta('COMPOSIO_SEARCH_TOOLS')).rejects.toThrow('Execute failed');
+    });
+
+    it('should pass inline custom tools to executeMeta when custom tools are bound', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      mockClient.toolRouter.session.create.mockResolvedValueOnce({
+        ...mockSessionCreateResponse,
+        experimental: {
+          custom_tools: [
+            {
+              slug: 'LOCAL_GREP',
+              original_slug: 'GREP',
+              extends_toolkit: null,
+            },
+          ],
+        },
+      });
+      mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce(mockExecuteMetaResponse);
+
+      const session = await toolRouter.create(userId, {
+        experimental: { customTools: [grepTool] },
+      });
+      await session.executeMeta('COMPOSIO_SEARCH_TOOLS', { queries: [{ use_case: 'grep' }] });
+
+      expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(
+        sessionId,
+        {
+          slug: 'COMPOSIO_SEARCH_TOOLS',
+          arguments: { queries: [{ use_case: 'grep' }] },
           experimental: {
             custom_tools: [expect.objectContaining({ slug: 'GREP' })],
           },
@@ -3602,15 +3837,15 @@ describe('ToolRouter', () => {
 
   describe('delete method', () => {
     it('should delete a session by ID and return a camelCase response', async () => {
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: 'trs_delete_123',
         deleted: true,
       });
 
       const result = await toolRouter.delete('trs_delete_123');
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/trs_delete_123',
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(
+        'trs_delete_123',
         undefined
       );
       expect(result).toEqual({
@@ -3621,15 +3856,15 @@ describe('ToolRouter', () => {
 
     it('should forward request options when deleting by ID', async () => {
       const requestOptions = { signal: new AbortController().signal };
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: 'trs_delete_123',
         deleted: true,
       });
 
       await toolRouter.delete('trs_delete_123', requestOptions);
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/trs_delete_123',
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(
+        'trs_delete_123',
         requestOptions
       );
     });
@@ -3709,6 +3944,51 @@ describe('ToolRouter', () => {
         }),
       ]);
     });
+
+    it('should attach local tools passed as localTools with the same wire payload', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      const attachResponse = {
+        ...mockSessionRetrieveResponse,
+        experimental: {
+          custom_tools: [{ slug: 'LOCAL_GREP', original_slug: 'GREP', extends_toolkit: null }],
+        },
+      };
+      mockClient.toolRouter.session.attach
+        .mockResolvedValueOnce(attachResponse)
+        .mockResolvedValueOnce(attachResponse);
+
+      const session = await toolRouter.use(sessionId, { localTools: [grepTool] });
+      await toolRouter.use(sessionId, { customTools: [grepTool] });
+
+      const [[, localBody], [, customBody]] = mockClient.toolRouter.session.attach.mock.calls;
+      expect(localBody).toEqual({
+        experimental: { custom_tools: [expect.objectContaining({ slug: 'GREP' })] },
+      });
+      expect(customBody).toEqual(localBody);
+      expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      expect(session.localTools()).toEqual([expect.objectContaining({ slug: 'LOCAL_GREP' })]);
+      expect(session.customTools()).toEqual(session.localTools());
+    });
+
+    it.each([
+      ['localTools or customTools', { localTools: [], customTools: [] }],
+      ['localToolkits or customToolkits', { localToolkits: [], customToolkits: [] }],
+    ])(
+      'should reject passing both %s to use() without calling the API',
+      async (fields, options) => {
+        const error = await toolRouter.use(sessionId, options).catch(e => e);
+
+        expect(error).toBeInstanceOf(ValidationError);
+        expect(error.message).toContain(`Pass either ${fields}, not both`);
+        expect(mockClient.toolRouter.session.attach).not.toHaveBeenCalled();
+        expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      }
+    );
 
     it('should return a session with correct session ID', async () => {
       const customResponse = {
@@ -3794,7 +4074,7 @@ describe('ToolRouter', () => {
 
     it('should return a session with working delete function', async () => {
       mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
-      mockClient.delete.mockResolvedValueOnce({
+      mockClient.toolRouter.session.delete.mockResolvedValueOnce({
         session_id: sessionId,
         deleted: true,
       });
@@ -3802,10 +4082,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.use(sessionId);
       const result = await session.delete();
 
-      expect(mockClient.delete).toHaveBeenCalledWith(
-        '/api/v3.1/tool_router/session/session_123',
-        undefined
-      );
+      expect(mockClient.toolRouter.session.delete).toHaveBeenCalledWith(sessionId, undefined);
       expect(result).toEqual({
         sessionId,
         deleted: true,
@@ -4258,6 +4535,34 @@ describe('ToolRouter', () => {
         expect(patchCall().body.manage_connections).toEqual({ callback_url: null });
       });
 
+      it('sends proxyExecute as given, expands the boolean shorthand, and null removes the block', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await session.update({ proxyExecute: { enable: true } });
+        await session.update({ proxyExecute: { enable: false } });
+        await session.update({ proxyExecute: true });
+        await session.update({ proxyExecute: false });
+        await session.update({ proxyExecute: null });
+        await session.update({ toolkits: ['gmail'] });
+
+        expect(patchCall(0).body.proxy_execute).toEqual({ enable: true });
+        expect(patchCall(1).body.proxy_execute).toEqual({ enable: false });
+        expect(patchCall(2).body.proxy_execute).toEqual({ enable: true });
+        expect(patchCall(3).body.proxy_execute).toEqual({ enable: false });
+        expect(patchCall(4).body.proxy_execute).toBeNull();
+        expect(patchCall(5).body).not.toHaveProperty('proxy_execute');
+      });
+
+      it('rejects a proxyExecute block without enable', async () => {
+        const session = await toolRouter.use(sessionId);
+
+        await expect(
+          // @ts-expect-error enable is required
+          session.update({ proxyExecute: {} })
+        ).rejects.toThrow();
+        expect(mockClient.toolRouter.session.patch).not.toHaveBeenCalled();
+      });
+
       it('preserves an empty toolkit allowlist instead of omitting it', async () => {
         const session = await toolRouter.use(sessionId);
 
@@ -4578,6 +4883,7 @@ describe('ToolRouter', () => {
           },
         });
         mockClient.toolRouter.session.execute.mockResolvedValueOnce({
+          result_type: 'completed',
           data: {},
           error: null,
           log_id: 'log_1',

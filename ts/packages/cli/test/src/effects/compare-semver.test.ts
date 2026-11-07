@@ -270,24 +270,19 @@ describe('compare-semver.ts', () => {
     describe('Array.sort Compatibility', () => {
       it.effect('should work as Array.sort comparator for ascending order', () =>
         Effect.gen(function* () {
-          const versions = ['2.0.0', '1.0.0', '3.0.0'];
-          const comparisons: Array<{ versions: [string, string]; result: number }> = [];
-
-          // Simulate Array.sort behavior
-          for (let i = 0; i < versions.length - 1; i++) {
-            for (let j = i + 1; j < versions.length; j++) {
-              const result = yield* semverComparator(versions[i], versions[j]);
-              comparisons.push({ versions: [versions[i], versions[j]], result });
-            }
-          }
+          const pairs = [
+            ['2.0.0', '1.0.0'],
+            ['2.0.0', '3.0.0'],
+            ['1.0.0', '3.0.0'],
+          ] as const;
 
           // Since we can't actually use the Effect in Array.sort, verify each
           // pairwise result carries the polarity an ascending sort relies on
-          expect(comparisons).toEqual([
-            { versions: ['2.0.0', '1.0.0'], result: 1 },
-            { versions: ['2.0.0', '3.0.0'], result: -1 },
-            { versions: ['1.0.0', '3.0.0'], result: -1 },
-          ]);
+          const results = yield* Effect.forEach(pairs, ([left, right]) =>
+            semverComparator(left, right)
+          );
+
+          expect(results).toEqual([1, -1, -1]);
         })
       );
     });

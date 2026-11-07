@@ -96,7 +96,7 @@ Deleted sessions immediately stop being retrievable or executable. Deleting
 a missing or already-deleted session surfaces the backend 404.
 
 ```typescript
-async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<{ deleted: true; sessionId: string }>
+async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
 ```
 
 **Parameters**
@@ -108,7 +108,7 @@ async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<{ del
 
 **Returns**
 
-`Promise<\{ deleted: true; sessionId: string \}>`
+`Promise<ToolRouterSessionDeleteResponse>`
 
 ---
 
@@ -126,7 +126,7 @@ origins is logged, so native tools keep working.
 **Overload 1**
 
 ```typescript
-async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
+async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -134,7 +134,7 @@ async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?:
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options` | `\{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}` |  |
+| `options` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -144,7 +144,7 @@ async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?:
 **Overload 2**
 
 ```typescript
-async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -152,7 +152,7 @@ async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options?` | `\{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean \}` |  |
+| `options?` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean \}` |  |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

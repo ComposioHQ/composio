@@ -1,7 +1,7 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, FileSystem, Layer, Path } from 'effect';
+import { Effect, FileSystem, Layer, Path } from 'effect';
 import * as tempy from 'tempy';
 import { discoverSkillRoots } from 'src/effects/discover-skill-roots';
 import { cli, TestLive } from 'test/__utils__';
@@ -116,16 +116,15 @@ describe('config experimental skill discovery', () => {
 layer(TestLive())('config experimental state validation', it => {
   it.effect('reports an invalid state as a structured domain failure', () =>
     Effect.gen(function* () {
-      const exit = yield* Effect.exit(cli(['config', 'experimental', 'listen', 'sometimes']));
+      const failure = yield* cli(['config', 'experimental', 'listen', 'sometimes']).pipe(
+        Effect.flip
+      );
 
-      expect(Exit.isFailure(exit)).toBe(true);
-      if (Exit.isFailure(exit)) {
-        const failure = Cause.squash(exit.cause);
-        expect(failure).toMatchObject({
-          _tag: 'commands/ConfigOptionError',
-          message: 'Invalid state "sometimes". Use "on" or "off".',
-        });
-      }
+      expect(failure).toMatchObject({
+        _tag: 'commands/CommandInputError',
+        option: '<state>',
+        message: 'Invalid state "sometimes". Use "on" or "off".',
+      });
     })
   );
 });

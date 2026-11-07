@@ -11,12 +11,10 @@ if t.TYPE_CHECKING:
 
 # TODO: Maybe use `te.Unpack` in tools.execute?
 class ToolExecuteParams(te.TypedDict):
-    allow_tracing: te.NotRequired[t.Optional[bool]]
     arguments: t.Dict[str, t.Optional[t.Any]]
     connected_account_id: te.NotRequired[str]
     custom_auth_params: te.NotRequired["tool_execute_params.CustomAuthParams"]
     custom_connection_data: te.NotRequired["tool_execute_params.CustomConnectionData"]
-    entity_id: te.NotRequired[str]
     text: te.NotRequired[str]
     user_id: te.NotRequired[str]
     version: te.NotRequired[str]

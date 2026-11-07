@@ -1,7 +1,6 @@
 import { Context, Effect, Layer, Option } from 'effect';
-import { Flag, GlobalFlag } from 'effect/unstable/cli';
-import { APP_CONFIG, UNPREFIXED_CONFIG } from 'src/effects/app-config';
-import { loadHostConfig } from 'src/services/config';
+import { Flag, GlobalFlag } from 'effect/cli';
+import { DEBUG_CONFIG } from 'src/config';
 
 export const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 
@@ -20,7 +19,7 @@ export const readTelemetryDebugOverride = (argv: ReadonlyArray<string>): boolean
 };
 
 /**
- * Values parsed from the hidden `--perf-debug` / `--tool-debug` / `--acp-only` flags.
+ * Values parsed from the hidden `--perf-debug` / `--tool-debug` flags.
  *
  * `undefined` means "the flag was absent", which is what lets the corresponding `COMPOSIO_*`
  * config value through; an explicit `true`/`false` always wins over it.
@@ -28,13 +27,11 @@ export const readTelemetryDebugOverride = (argv: ReadonlyArray<string>): boolean
 export type CliDebugFlagOverrides = {
   readonly perfDebug: boolean | undefined;
   readonly toolDebug: boolean | undefined;
-  readonly acpOnly: boolean | undefined;
 };
 
 export const NO_CLI_DEBUG_FLAG_OVERRIDES: CliDebugFlagOverrides = {
   perfDebug: undefined,
   toolDebug: undefined,
-  acpOnly: undefined,
 };
 
 /**
@@ -57,7 +54,6 @@ const debugSetting = <const Name extends string>(name: Name) =>
 const debugSettings = {
   'perf-debug': debugSetting('perf-debug'),
   'tool-debug': debugSetting('tool-debug'),
-  'acp-only': debugSetting('acp-only'),
   'telemetry-debug': debugSetting('telemetry-debug'),
 };
 export const CLI_DEBUG_FLAG_NAMES = Object.keys(debugSettings);
@@ -78,19 +74,13 @@ const debugFlagOr = <const Name extends string>(
 export const isPerfDebugEnabled = debugFlagOr(
   debugSettings['perf-debug'],
   overrides => overrides.perfDebug,
-  Effect.orDie(APP_CONFIG.PERF_DEBUG)
+  Effect.orDie(DEBUG_CONFIG.PERF_DEBUG)
 );
 
 export const isToolDebugEnabled = debugFlagOr(
   debugSettings['tool-debug'],
   overrides => overrides.toolDebug,
-  Effect.orDie(APP_CONFIG.TOOL_DEBUG)
-);
-
-export const isAcpOnlyEnabled = debugFlagOr(
-  debugSettings['acp-only'],
-  overrides => overrides.acpOnly,
-  Effect.orDie(APP_CONFIG.RUN_ACP_ONLY)
+  Effect.orDie(DEBUG_CONFIG.TOOL_DEBUG)
 );
 
 /**
@@ -104,14 +94,12 @@ export const isAcpOnlyEnabled = debugFlagOr(
 export type ChildProcessDebugFlags = {
   readonly perfDebug: boolean;
   readonly toolDebug: boolean;
-  readonly acpOnly: boolean;
   readonly telemetryDebug: boolean;
 };
 
 export const debugFlagsToChildEnv = (flags: ChildProcessDebugFlags): Record<string, string> => ({
   COMPOSIO_PERF_DEBUG: flags.perfDebug ? '1' : '0',
   COMPOSIO_TOOL_DEBUG: flags.toolDebug ? '1' : '0',
-  COMPOSIO_RUN_ACP_ONLY: flags.acpOnly ? '1' : '0',
   COMPOSIO_CLI_TELEMETRY_DEBUG: flags.telemetryDebug ? '1' : '0',
 });
 
@@ -127,7 +115,8 @@ export const isTelemetryDebugEnabled: Effect.Effect<boolean> = Effect.gen(functi
   const parsed = Option.flatten(yield* Effect.serviceOption(debugSettings['telemetry-debug']));
   if (Option.isSome(parsed)) return parsed.value;
   const bootstrap = yield* Effect.serviceOption(TelemetryDebugMode);
-  return Option.isSome(bootstrap)
-    ? bootstrap.value
-    : yield* loadHostConfig(UNPREFIXED_CONFIG.TELEMETRY_DEBUG);
+  return yield* Option.match(bootstrap, {
+    onSome: Effect.succeed,
+    onNone: () => Effect.orDie(DEBUG_CONFIG.TELEMETRY_DEBUG),
+  });
 });

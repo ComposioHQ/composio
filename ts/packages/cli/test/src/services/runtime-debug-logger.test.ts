@@ -6,13 +6,12 @@ import {
   NO_CLI_DEBUG_FLAG_OVERRIDES,
   type CliDebugFlagOverrides,
 } from 'src/services/runtime-flags';
-import { extendConfigProvider } from 'src/services/config';
 import { MockConsole, TestLive } from 'test/__utils__';
 
 const configuredDebugFlags = ConfigProvider.fromEnvRecord({
   COMPOSIO_PERF_DEBUG: '1',
   COMPOSIO_TOOL_DEBUG: '1',
-}).pipe(extendConfigProvider);
+});
 
 const withDebugFlags = (overrides: Partial<CliDebugFlagOverrides>) =>
   Effect.provide(cliDebugFlagsLayer({ ...NO_CLI_DEBUG_FLAG_OVERRIDES, ...overrides }));
