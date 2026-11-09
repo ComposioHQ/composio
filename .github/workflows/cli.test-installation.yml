@@ -93,8 +93,8 @@ jobs:
           - os: macos-15-intel
             name: 'macOS 15 (Intel, zsh)'
             shell: zsh
-          - os: macos-14
-            name: 'macOS 14 (Sonoma)'
+          - os: macos-26
+            name: 'macOS 26 (Apple Silicon)'
             shell: bash
           - os: macos-15
             name: 'macOS 15 (Apple Silicon)'
@@ -629,6 +629,6 @@ jobs:
           echo "- **Linux x64**: Ubuntu 22.04, Latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS ARM64**: macOS 14, macOS 15 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS ARM64**: macOS 15, macOS 26 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
           echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY
