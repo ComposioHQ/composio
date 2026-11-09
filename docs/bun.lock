@@ -50,7 +50,7 @@
         "@anthropic-ai/sdk": "^0.115.0",
         "@composio/anthropic": "^0.11.6",
         "@composio/claude-agent-sdk": "^0.13.0",
-        "@composio/core": "^0.28.0",
+        "@composio/core": "0.29.0",
         "@composio/google": "^0.12.0",
         "@composio/langchain": "^0.11.2",
         "@composio/llamaindex": "^0.11.2",
@@ -225,9 +225,9 @@
 
     "@composio/claude-agent-sdk": ["@composio/claude-agent-sdk@0.13.0", "", { "dependencies": { "@composio/json-schema-to-zod": "0.4.0", "zod": "^4.5.4" }, "peerDependencies": { "@anthropic-ai/claude-agent-sdk": "^0.3.199", "@composio/core": ">=0.10.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0" } }, "sha512-HYEkahUuRlj7WL1m0WJQO9SVuhdTcu/Zg3DA/B5XijRDgY5luFST/otocg4VQ21xLcuo9fMvTYXVN3jQUugv6Q=="],
 
-    "@composio/client": ["@composio/client@2.0.1", "", { "peerDependencies": { "effect": "*" }, "optionalPeers": ["effect"] }, "sha512-1+Azl8W/grinmXVt6KhDKy5UlvTiv7MCMgjqBDxd8TqndjM92/HotxLabnB63A285bvo5Lcu4kbOz413uaPmEQ=="],
+    "@composio/client": ["@composio/client@2.1.0", "", { "peerDependencies": { "effect": "*" }, "optionalPeers": ["effect"] }, "sha512-tAHMxlv4rfeWBCuyNbs9g7eUJ8eCwpJ+Hdv7MSGVvT1LTbIu/O9reUaL7XC5Oqa84UO/+SPJZhqx4YKK10UKGg=="],
 
-    "@composio/core": ["@composio/core@0.28.0", "", { "dependencies": { "@composio/client": "2.0.1", "@composio/json-schema-to-zod": "0.4.0", "@types/json-schema": "^7.0.15", "is-fs-case-sensitive": "^2.0.0", "openai": "^7.39.0", "picocolors": "^1.1.1", "pusher-js": "^8.6.0", "semver": "^7.8.5", "undici": "^7.30.1", "zod-to-json-schema": "^3.25.2" }, "peerDependencies": { "zod": ">=3.25.76 <5" } }, "sha512-OF2vC9Bc3uBmTPQKeq43QNWqmsVHHu0AKQJfNaQqM3h8fE8bvG3mUrisJ285mCkVSyY7tAr/dC+ONothQtQRDQ=="],
+    "@composio/core": ["@composio/core@0.29.0", "", { "dependencies": { "@composio/client": "2.1.0", "@composio/json-schema-to-zod": "0.4.0", "@types/json-schema": "^7.0.15", "is-fs-case-sensitive": "^2.0.0", "openai": "^7.39.0", "picocolors": "^1.1.1", "pusher-js": "^8.6.0", "semver": "^7.8.5", "undici": "^7.30.1", "zod-to-json-schema": "^3.25.2" }, "peerDependencies": { "zod": ">=3.25.76 <5" } }, "sha512-AihaXem2Evh/elvoJ6FqKaspUS9WZeGcBirY8Dj+L+0j5cTncm5FfLSOy1n3oqcQQetW0A6s5IzzbDT+7UfF7Q=="],
 
     "@composio/google": ["@composio/google@0.12.0", "", { "peerDependencies": { "@composio/core": ">=0.16.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0", "@google/genai": "^1.1.0" } }, "sha512-VYVd7F3Nu0b/bxZgQLMb2mR8A2bPNTSKBx3SqJtMOZsJ7Gayu7JE+ZmZtJq8fFXGUmGRoqpwoopwudNpq7GS+w=="],
 
