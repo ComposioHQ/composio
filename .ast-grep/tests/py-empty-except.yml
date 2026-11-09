@@ -1,0 +1,34 @@
+id: py-empty-except
+valid:
+  - |
+    try:
+        work()
+    except FileNotFoundError:
+        pass
+  - |
+    try:
+        work()
+    except Exception:
+        logger.exception("Failed to complete work")
+  - |
+    try:
+        work()
+    except Exception:
+        raise
+invalid:
+  - |
+    try:
+        work()
+    except:
+        pass
+  - |
+    try:
+        work()
+    except Exception as error:
+        pass
+  - |
+    try:
+        work()
+    except BaseException:
+        # Best effort
+        pass

@@ -1,0 +1,29 @@
+id: py-empty-except
+language: Python
+severity: error
+message: Handle or propagate the exception; a broad except with only pass discards every failure.
+files: ['python/**', 'scripts/**', '.github/scripts/**']
+ignores:
+  - '**/node_modules/**'
+  - '**/.venv/**'
+  - '**/.nox/**'
+  - '**/build/**'
+  - '**/dist/**'
+  - '**/test/**'
+  - '**/tests/**'
+  - '**/integration_test/**'
+  - '**/test_*.py'
+  - '**/*_test.py'
+rule:
+  kind: except_clause
+  regex: '^except(\s+(Exception|BaseException)(\s+as\s+\w+)?)?\s*:'
+  has:
+    kind: block
+    has:
+      kind: pass_statement
+    not:
+      has:
+        not:
+          any:
+            - kind: pass_statement
+            - kind: comment

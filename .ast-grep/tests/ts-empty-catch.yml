@@ -1,0 +1,8 @@
+id: ts-empty-catch
+valid:
+  - 'try { work(); } catch (error) { throw error; }'
+  - 'try { work(); } catch { return undefined; }'
+invalid:
+  - 'try { work(); } catch {}'
+  - 'try { work(); } catch (error) {}'
+  - 'try { work(); } catch { /* ignore */ }'
