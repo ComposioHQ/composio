@@ -20,6 +20,14 @@ export interface MetaToolOverride {
 }
 
 export const META_TOOL_OVERRIDES: Record<string, MetaToolOverride> = {
+  COMPOSIO_PROXY_EXECUTE: {
+    summary:
+      "Sends a raw HTTP request to a connected app's own API, authenticated with your connected account, for endpoints no Composio tool covers.",
+    whenToUse:
+      'Use `COMPOSIO_PROXY_EXECUTE` when no tool from `COMPOSIO_SEARCH_TOOLS` covers the endpoint you need. The toolkit needs an active connection first; call `COMPOSIO_MANAGE_CONNECTIONS` if it has none.',
+    usageNote:
+      'Enable it with `proxyExecute: true` in TypeScript or `proxy_execute=True` in Python. Compared with `session.proxyExecute()`, pass `toolkit_slug` instead of `toolkit`, use `type` instead of `in` for each parameter\'s location, and `method` also accepts `HEAD`. Composio attaches credentials. If the request cannot be sent, the tool returns `successful: false` with an `error`; an upstream non-2xx response returns normally in `data`, with its HTTP `status` and body. Large responses can be offloaded to the sandbox.',
+  },
   COMPOSIO_SEARCH_TOOLS: {
     summary:
       'Discovers the right tools across 500+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together.',

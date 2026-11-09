@@ -2,7 +2,7 @@
  * CLI `composio dev toolkits info` e2e test
  *
  * Verifies that the info subcommand returns detailed toolkit JSON in piped mode,
- * handles invalid slugs gracefully, and supports stdout redirection.
+ * reports an invalid or missing slug on stderr with exit 1, and supports stdout redirection.
  */
 
 import {
@@ -120,30 +120,34 @@ e2e(import.meta.url, {
     });
 
     describe('composio dev toolkits info nonexistent_toolkit_xyz12345 (invalid slug)', () => {
-      it('exits successfully (graceful error handling)', () => {
-        expect(invalidResult.exitCode).toBe(0);
+      it('exits 1', () => {
+        expect(invalidResult.exitCode).toBe(1);
       });
 
       it('stdout is empty (no data on error)', () => {
         expect(sanitizeOutput(invalidResult.stdout)).toBe('');
       });
 
-      it('stderr is empty (piped mode suppresses decoration)', () => {
-        expect(invalidResult.stderr).toBe('');
+      it('stderr names the toolkit and the browse hint as plain lines', () => {
+        expect(invalidResult.stderr).toBe(
+          'Toolkit "nonexistent_toolkit_xyz12345" not found.\nBrowse available toolkits:\n> composio dev toolkits list\n'
+        );
       });
     });
 
     describe('composio dev toolkits info (missing slug)', () => {
-      it('exits successfully (optional arg, handler guards)', () => {
-        expect(missingSlugResult.exitCode).toBe(0);
+      it('exits 1 (usage error)', () => {
+        expect(missingSlugResult.exitCode).toBe(1);
       });
 
       it('stdout is empty', () => {
         expect(sanitizeOutput(missingSlugResult.stdout)).toBe('');
       });
 
-      it('stderr is empty', () => {
-        expect(missingSlugResult.stderr).toBe('');
+      it('stderr asks for the slug with an example', () => {
+        expect(missingSlugResult.stderr).toBe(
+          'Missing required argument: <slug>\nTry specifying a toolkit slug, e.g.:\n> composio dev toolkits info "gmail"\n'
+        );
       });
     });
 

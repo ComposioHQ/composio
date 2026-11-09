@@ -11,11 +11,13 @@ export type TriggersDisableParams = {
   readonly dangerouslyAllow: boolean;
 };
 
-const notAllowed = commandInputError('dev triggers disable');
+const invalidInput = commandInputError('dev triggers disable');
 
 /**
  * Disable an existing trigger instance. A developer-destructive command: it runs only when
- * `developer.destructive_actions` is enabled and `--dangerously-allow` is passed.
+ * `developer.destructive_actions` is enabled and `--dangerously-allow` is passed. A missing `<id>`
+ * fails with a `CommandInputError` before any request; an API failure is reported with a hint and
+ * exits 1.
  *
  * @example
  * ```bash
@@ -26,12 +28,12 @@ export const runTriggersDisable = ({ id, dangerouslyAllow }: TriggersDisablePara
   Effect.gen(function* () {
     const config = yield* ComposioCliUserConfig;
     if (!config.areDeveloperDangerousCommandsEnabled()) {
-      return yield* notAllowed(
+      return yield* invalidInput(
         'This developer command is disabled by config. Set developer.destructive_actions to true in ~/.composio/config.json to allow it.'
       );
     }
     if (!dangerouslyAllow) {
-      return yield* notAllowed(
+      return yield* invalidInput(
         'This developer command requires explicit acknowledgement. Re-run with --dangerously-allow.',
         '--dangerously-allow'
       );
@@ -40,29 +42,22 @@ export const runTriggersDisable = ({ id, dangerouslyAllow }: TriggersDisablePara
     const repo = yield* ComposioToolkitsRepository;
 
     if (Option.isNone(id)) {
-      yield* ui.log.warn('Missing required argument: <id>');
-      yield* ui.log.step(
-        'Try specifying a trigger ID, e.g.:\n> composio dev triggers disable "trg_123"\n\nTo find trigger IDs:\n> composio dev triggers status'
+      return yield* invalidInput(
+        'Missing required argument: <id>\nTry specifying a trigger ID, e.g.:\n> composio dev triggers disable "trg_123"\n\nTo find trigger IDs:\n> composio dev triggers status',
+        '<id>'
       );
-      return;
     }
 
     const idValue = id.value;
-    const disabled = yield* ui
-      .withSpinner(`Disabling trigger "${idValue}"...`, repo.disableTrigger(idValue))
-      .pipe(
-        Effect.as(true),
-        Effect.catchTag(
-          CLIENT_API_ERROR_TAGS,
-          handleClientApiError(ui, {
-            fallbackMessage: `Failed to disable trigger "${idValue}".`,
-            hint: 'Browse available triggers:\n> composio dev triggers status',
-            fallbackValue: false,
-          })
-        )
-      );
-
-    if (!disabled) return;
+    yield* ui.withSpinner(`Disabling trigger "${idValue}"...`, repo.disableTrigger(idValue)).pipe(
+      Effect.catchTag(
+        CLIENT_API_ERROR_TAGS,
+        handleClientApiError(ui, {
+          fallbackMessage: `Failed to disable trigger "${idValue}".`,
+          hint: 'Browse available triggers:\n> composio dev triggers status',
+        })
+      )
+    );
 
     yield* ui.log.success(`Trigger "${idValue}" disabled.`);
   });

@@ -1298,6 +1298,74 @@ class TestBooleanDefaultCoercion:
 
     @pytest.mark.unit
     @pytest.mark.schema
+    def test_type_list_with_string_default(self):
+        """A list-valued `type` (e.g. ["string", "null"]) must not crash default coercion."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "order": {
+                    "type": ["string", "null"],
+                    "default": "asc",
+                    "description": "Sort order",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["order"]
+
+        # String is an expected type, so the default stays a string
+        assert prop.get("default") == "asc"
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_type_list_boolean_null_with_string_default_coerced(self):
+        """Stringified defaults are coerced when `type` is a list."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": ["boolean", "null"],
+                    "default": "false",
+                    "description": "Enable feature.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["enabled"]
+
+        assert prop.get("default") is False
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize("combiner", ["anyOf", "oneOf", "allOf"])
+    def test_type_list_inside_combiner_with_string_default_coerced(self, combiner):
+        """A list-valued `type` inside a combiner branch also drives coercion."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "limit": {
+                    combiner: [{"type": ["integer", "null"]}],
+                    "default": "5",
+                    "description": "Page size.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["limit"]
+
+        assert prop.get("default") == 5
+
+    @pytest.mark.unit
+    @pytest.mark.schema
     def test_float_with_string_default_coerced(self):
         """Test that string float defaults are coerced."""
         json_schema = {

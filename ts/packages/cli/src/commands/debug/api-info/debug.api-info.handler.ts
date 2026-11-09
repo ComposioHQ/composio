@@ -22,7 +22,7 @@ export const consumerUserIdOf = (project: Option.Option<ResolvedCommandProject>)
 
 /**
  * The consumer project, when there is one. A project the user has not set up yet is a legitimate
- * "none" here; a failed lookup is not, and keeps its typed error so cli-main prints it and exits
+ * "none" here; a failed lookup is not, and keeps its typed error so the invocation prints it and exits
  * non-zero.
  */
 const resolveConsumerProject = resolveCommandProject({ mode: 'consumer' }).pipe(

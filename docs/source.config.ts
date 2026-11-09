@@ -117,8 +117,20 @@ export const docs = defineDocs({
   },
 });
 
-// Reference docs use defineCollections with custom mdxOptions to exclude twoslash
-// (SDK reference docs are auto-generated and don't need type checking)
+// No twoslash for generated SDK reference docs and changelog entries: a release's changelog can
+// describe APIs newer than the SDK versions the docs pin until the docs pin PR merges.
+const historicalMdxOptions = applyMdxPreset({
+  // Match the global remark plugins so mermaid diagrams in merged
+  // api-overviews render (applyMdxPreset replaces, not merges).
+  remarkPlugins: [remarkMdxMermaid],
+  rehypeCodeOptions: {
+    themes: {
+      light: 'github-light',
+      dark: 'github-dark',
+    },
+  },
+});
+
 export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
@@ -126,18 +138,7 @@ export const reference = defineDocs({
     postprocess: {
       includeProcessedMarkdown: true,
     },
-    mdxOptions: applyMdxPreset({
-      // Match the global remark plugins so mermaid diagrams in merged
-      // api-overviews render (applyMdxPreset replaces, not merges).
-      remarkPlugins: [remarkMdxMermaid],
-      rehypeCodeOptions: {
-        themes: {
-          light: 'github-light',
-          dark: 'github-dark',
-        },
-        // No twoslash transformer - SDK reference docs skip type checking
-      },
-    }),
+    mdxOptions: historicalMdxOptions,
   },
   meta: {
     schema: metaSchema,
@@ -187,10 +188,13 @@ export const knowledgeBase = defineDocs({
 export const changelog = defineCollections({
   type: 'doc',
   dir: 'content/changelog',
+  mdxOptions: historicalMdxOptions,
   postprocess: {
     includeProcessedMarkdown: true,
   },
   schema: frontmatterSchema.extend({
+    sdkRelease: z.string().optional(),
+    sdkReleaseTargets: z.record(z.string(), z.string()).optional(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
       message: 'Date must be in YYYY-MM-DD format (e.g., "2025-12-29")',
     }),

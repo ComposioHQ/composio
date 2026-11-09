@@ -1,7 +1,16 @@
 from composio.client.types import Tool
 from composio.core.models.connected_accounts import auth_scheme
+from composio.core.models.custom_tool_types import (
+    ToolRouterBlockReason,
+    ToolRouterHookResult,
+    ToolRouterSessionProxyExecuteBlocked,
+    ToolRouterSessionProxyExecuteCompleted,
+)
 from composio.core.models.experimental import UsageSummaryResponse
 from composio.core.models.tool_router_session import (
+    ToolRouterAfterExecuteHook,
+    ToolRouterBeforeExecuteHook,
+    ToolRouterHook,
     ToolRouterInstantConfig,
     ToolRouterProxyExecuteConfig,
     ToolRouterSessionConfig,
@@ -30,6 +39,13 @@ __all__ = [
     "InstantCharge",
     "ToolRouterInstantConfig",
     "ToolRouterProxyExecuteConfig",
+    "ToolRouterHook",
+    "ToolRouterBeforeExecuteHook",
+    "ToolRouterAfterExecuteHook",
+    "ToolRouterHookResult",
+    "ToolRouterBlockReason",
+    "ToolRouterSessionProxyExecuteCompleted",
+    "ToolRouterSessionProxyExecuteBlocked",
     "ToolRouterSessionConfig",
     "ToolRouterSessionSearchResponse",
     "ToolExecuteParams",

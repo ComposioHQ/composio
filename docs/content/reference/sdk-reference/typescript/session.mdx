@@ -7,7 +7,7 @@ description: "A Composio session — the object returned by `composio.sessions.c
 
 | Name | Type | Description |
 |------|------|-------------|
-| `config` | `Config` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
+| `config` | `\{ auth_configs?: object; connected_accounts?: object; execute: \{ enable_multi_execute?: boolean \}; hooks?: \{ applies_to: 'all' \| \{ toolkits: ... \}; handler: \{ action: 'block'; condition: string; type: 'condition_check' \}; id: string; name?: string; type: 'before_execute' \} \| \{ applies_to: 'all' \| \{ toolkits: ... \}; handler: \{ action: ...; condition: ...; type: ... \} \| \{ action: ...; type: ... \}; id: string; name?: string; type: 'after_execute' \}[]; instant: false \| \{ return_instant_charge: boolean; return_prices_in_search: boolean; toolkits?: \{ enabled: ...[] \} \| \{ disabled: ...[] \}; tools?: object \}; manage_connections?: \{ callback_url?: string; enable_connection_removal?: boolean; enable_wait_for_connections?: boolean; enabled?: boolean \}; multi_account?: \{ enable?: boolean; max_accounts_per_toolkit?: number; require_explicit_selection?: boolean \}; preload: \{ tools: string[] \| 'all' \}; proxy_execute?: \{ enable: boolean \}; search: \{ enable?: boolean \}; tags?: \{ disabled?: 'readOnlyHint' \| 'createHint' \| 'updateHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; enabled?: 'readOnlyHint' \| 'createHint' \| 'updateHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; require_approval?: 'readOnlyHint' \| 'createHint' \| 'updateHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \}; toolkits?: \{ enabled: string[]; require_approval?: string[] \} \| \{ disabled: string[]; require_approval?: string[] \} \| \{ require_approval: string[] \}; tools?: object; user_id: string; workbench?: \{ auto_offload_threshold?: number; enable?: boolean; proxy_execution_enabled?: boolean; sandbox_size?: 'standard' \| 'medium' \| 'large' \| 'xlarge'; tool_execution_enabled?: boolean \} \}` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
 | `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to make an update conditional. |
 | `experimental` | `SessionExperimental` |  |
 | `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
@@ -52,28 +52,30 @@ async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: strin
 
 ---
 
-### customToolkits()
+### customToolkits() (deprecated)
 
-List all custom toolkits registered in this session.
-Returns toolkits with their tools showing final slugs.
+<Callout type="warn" title="Deprecated">
+Use `localToolkits()` instead.
+</Callout>
 
 ```typescript
-customToolkits(): RegisteredCustomToolkit[]
+customToolkits(): RegisteredLocalToolkit[]
 ```
 
 **Returns**
 
-`RegisteredCustomToolkit[]` — Array of registered custom toolkits
+`RegisteredLocalToolkit[]`
 
 ---
 
-### customTools()
+### customTools() (deprecated)
 
-List all custom tools registered in this session.
-Returns tools with their final slugs, schemas, and resolved toolkit.
+<Callout type="warn" title="Deprecated">
+Use `localTools()` instead.
+</Callout>
 
 ```typescript
-customTools(options?: { toolkit?: string }): RegisteredCustomTool[]
+customTools(options?: { toolkit?: string }): RegisteredLocalTool[]
 ```
 
 **Parameters**
@@ -84,7 +86,7 @@ customTools(options?: { toolkit?: string }): RegisteredCustomTool[]
 
 **Returns**
 
-`RegisteredCustomTool[]` — Array of registered custom tools
+`RegisteredLocalTool[]`
 
 ---
 
@@ -176,7 +178,7 @@ async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: 
 
 **Returns**
 
-`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result
+`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result. `resultType: 'blocked'` means a session hook blocked the call; `error` then holds the hook's message
 
 ---
 
@@ -247,6 +249,42 @@ console.log(items[1].config.toolkits);
 
 ---
 
+### localToolkits()
+
+List all toolkits of local tools registered in this session.
+Returns toolkits with their tools showing final slugs.
+
+```typescript
+localToolkits(): RegisteredLocalToolkit[]
+```
+
+**Returns**
+
+`RegisteredLocalToolkit[]` — Array of registered toolkits of local tools
+
+---
+
+### localTools()
+
+List all local tools registered in this session.
+Returns tools with their final slugs, schemas, and resolved toolkit.
+
+```typescript
+localTools(options?: { toolkit?: string }): RegisteredLocalTool[]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `options?` | `\{ toolkit?: string \}` |
+
+**Returns**
+
+`RegisteredLocalTool[]` — Array of registered local tools
+
+---
+
 ### proxyExecute()
 
 Proxy an API call through Composio's auth layer using the session's connected account.
@@ -265,7 +303,7 @@ async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioR
 
 **Returns**
 
-`Promise<ToolRouterSessionProxyExecuteResponse>` — The proxied API response with status, data, headers
+`Promise<ToolRouterSessionProxyExecuteResponse>` — The proxied API response with status, data and headers (`resultType: 'completed'`), or `resultType: 'blocked'` with the hook's message when a session hook blocked the request
 
 ---
 

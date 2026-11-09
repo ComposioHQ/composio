@@ -1,3 +1,4 @@
+import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { Command, Flag } from 'effect/cli';
 import { runLogin } from './login.handler';
 
@@ -77,7 +78,7 @@ const agentOpt = Flag.Boolean('agent').pipe(
  * composio login -y
  * ```
  */
-export const loginCmd = Command.make(
+const loginCmdBase = Command.make(
   'login',
   {
     noBrowser,
@@ -92,3 +93,18 @@ export const loginCmd = Command.make(
   },
   runLogin
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));
+
+export const loginCmd = withCommandTelemetry(loginCmdBase, input =>
+  telemetry.fields({
+    no_browser: telemetry.flag('--no-browser', input.noBrowser),
+    no_wait: telemetry.flag('--no-wait', input.noWait),
+    has_key: {
+      value: telemetry.present(input.key) || telemetry.present(input.userApiKey),
+      flags: [
+        ...(telemetry.present(input.key) ? ['--key'] : []),
+        ...(telemetry.present(input.userApiKey) ? ['--user-api-key'] : []),
+      ],
+    },
+    skip_org_picker: telemetry.flag('--yes', input.yes),
+  })
+);

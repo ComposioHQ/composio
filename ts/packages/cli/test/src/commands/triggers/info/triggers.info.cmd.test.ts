@@ -1,6 +1,8 @@
-import { afterEach, describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
@@ -54,10 +56,6 @@ const testConfigProvider = ConfigProvider.fromEnv({
 });
 
 describe('CLI: composio dev triggers info', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] root triggers info [Then] displays trigger info with root-level hint',
     it => {
@@ -99,15 +97,34 @@ describe('CLI: composio dev triggers info', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] no slug [Then] warns missing argument',
+    '[Given] no slug [Then] fails with a usage error',
     it => {
-      it.effect('shows missing argument warning', () =>
+      it.effect('raises a CommandInputError naming <slug>', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'info']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const failure = yield* cli(['dev', 'triggers', 'info']).pipe(Effect.flip);
 
-          expect(output).toContain('Missing required argument');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev triggers info',
+            option: '<slug>',
+            message:
+              'Missing required argument: <slug>\nTry specifying a trigger slug, e.g.:\n> composio dev triggers info "GMAIL_NEW_GMAIL_MESSAGE"',
+          });
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
+        })
+      );
+
+      it.effect('names the root command on the root tree', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['triggers', 'info']).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'triggers info',
+            message: expect.stringContaining('> composio triggers info "GMAIL_NEW_GMAIL_MESSAGE"'),
+          });
         })
       );
     }
@@ -118,20 +135,18 @@ describe('CLI: composio dev triggers info', () => {
     it => {
       it.effect('shows not found fallback hint', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'info', 'NONEXISTENT_TRIGGER']);
+          const exit = yield* Effect.exit(cli(['dev', 'triggers', 'info', 'NONEXISTENT_TRIGGER']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev triggers list "<toolkit>"');
-          // Once plainly for a captured stderr, once through the decorated log.
+          // One plain stderr emission: the message, then the hint.
           expect(lines).toEqual([
             'Trigger "NONEXISTENT_TRIGGER" not found.',
             'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
-            'Trigger "NONEXISTENT_TRIGGER" not found.',
-            'Browse available trigger types:\n> composio dev triggers list "<toolkit>"',
           ]);
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

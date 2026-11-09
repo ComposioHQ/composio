@@ -15,26 +15,28 @@ Check the target version's npm publish timestamp
 pin — bumping too early makes `pnpm install` fail to resolve, not silently ignore the
 constraint.
 
-## 2. Bump the exact pins together
+## 2. Bump the dependency ranges together
 
-Every one of these must move to the same new exact version in the same change — never
+Every one of these must move to the same new range in the same change — never
 upgrade one and leave the others behind:
 
 - `pnpm-workspace.yaml` catalog: `effect`, `@effect/platform-bun`,
   `@effect/vitest`.
-- `ts/packages/cli-keyring/package.json`: its `effect` peer dependency uses an exact
-  version (not `catalog:`); update that pin too.
+- `ts/packages/cli-keyring/package.json`: its `effect` peer dependency uses an explicit
+  range (not `catalog:`); update that range too.
 - Any other package pinning `effect` outside the catalog — grep for `"effect":` across
   `ts/packages/*/package.json` before assuming the catalog covers everything.
 
-Keep every pin an exact version string (no `^`, no `@next`, no range).
+The workspace currently uses `^4.1.0`. Use matching ranges for the runtime and
+satellites, and keep the example-check matrix in `versions.json` on their exact
+lockfile resolution.
 Confirm the lockfile resolves matching versions.
 
 ## 3. Advance the vendored source oracle
 
 `ts/vendor/effect` is a git submodule pinned at a commit on the canonical
 `Effect-TS/effect` repo, currently
-`967a7dc5963a23d3705259d60ccac1ce9f060a3b` (tagged `effect@4.0.3`
+`bc492f0965dc0f6a83cefd141071c5ead10f7efa` (tagged `effect@4.1.1`
 at the time of writing — confirm with `git submodule status ts/vendor/effect`). Advance
 it to the commit/tag matching the new npm version:
 

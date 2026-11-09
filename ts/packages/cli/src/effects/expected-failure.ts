@@ -2,7 +2,7 @@ import { Predicate } from 'effect';
 
 /**
  * Marks an error class as an expected failure: the user fixes it by changing the invocation or
- * their setup, or a remote service reported it clearly. `cli-main.ts` prints its `message` on
+ * their setup, or a remote service reported it clearly. the invocation (`src/invocation/invocation.ts`) prints its `message` on
  * stderr and exits 1, with no defect banner. Anything unmarked is a defect.
  *
  * An error class opts in where it is defined, with a getter, so no central list needs updating:
@@ -24,7 +24,7 @@ import { Predicate } from 'effect';
  */
 export const ExpectedFailure: unique symbol = Symbol.for('@composio/cli/ExpectedFailure');
 
-/** An error `cli-main.ts` prints as its message alone. */
+/** An error the invocation prints as its message alone. */
 export interface ExpectedFailure {
   readonly [ExpectedFailure]: boolean;
   readonly message: string;

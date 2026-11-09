@@ -9,6 +9,9 @@ import {
   type ComposioClientShape,
   type ConfigurationError,
 } from '@composio/client/effect';
+// Types `client._internal`: the CLI-only operations the spec tags `x-internal`
+// (login sessions, realtime credentials, logs, consumer projects).
+import type {} from '@composio/client/effect/internal';
 import { Toolkit, Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools } from 'src/models/tools';
 import {
@@ -279,7 +282,7 @@ export class ComposioClientSingleton extends Context.Service<
   // The singleton and its transport share one metrics collector, created
   // when the layer is built. The transport is a fresh `FetchHttpClient.layer`
   // rather than the memoized one an application may already have built
-  // (`cli-main.ts` provides its own), because that one calls
+  // (`InvocationLive` provides its own), because that one calls
   // `globalThis.fetch` directly and counts nothing; this one is built over
   // the counting `fetch`.
   static readonly Default = Layer.unwrap(
@@ -502,7 +505,7 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     createSession: (params?: { scope?: 'user' | 'project' }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.createSession({ scope: params?.scope ?? 'user' })),
+        Effect.flatMap(c => c._internal.cli.createSession({ scope: params?.scope ?? 'user' })),
         Effect.flatMap(decode(Session))
       ),
     /**
@@ -510,13 +513,15 @@ const makeComposioSessionRepository = Effect.gen(function* () {
      */
     getSession: (session: { id: string }) =>
       client.pipe(
-        Effect.flatMap(c => c.cli.getSession({ id: session.id }, idempotent)),
+        Effect.flatMap(c => c._internal.cli.getSession({ id: session.id }, idempotent)),
         Effect.flatMap(decode(RetrievedSession))
       ),
     getRealtimeCredentials: () =>
-      Effect.flatMap(client, c => c.cli.realtime.credentials({ ...idempotent, ...validated })),
+      Effect.flatMap(client, c =>
+        c._internal.cli.realtime.credentials({ ...idempotent, ...validated })
+      ),
     authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
-      Effect.flatMap(client, c => c.cli.realtime.auth(params, idempotent)),
+      Effect.flatMap(client, c => c._internal.cli.realtime.auth(params, idempotent)),
   };
 });
 

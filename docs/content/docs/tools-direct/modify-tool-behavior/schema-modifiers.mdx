@@ -26,12 +26,14 @@ Schema modifiers transform a tool's schema before the tool is seen by an agent.
 Below we modify the schema of `HACKERNEWS_GET_LATEST_POSTS` to make the `size` argument required and remove the `page` argument.
 </Callout>
 
+{/* code-example: no-api reason="Schema modifier rewrites tool schemas client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio, schema_modifier
 from composio.types import Tool
 
+composio = Composio()
 user_id = "your@email.com"
 
 @schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
@@ -51,6 +53,8 @@ tools = composio.tools.get(
         modify_schema,
     ]
 )
+
+print(tools)
 ```
   </Tab>
   <Tab value="TypeScript">
@@ -86,6 +90,7 @@ With the modified tool schema, the `page` argument is removed and `size` is requ
 
 <Accordions>
   <Accordion title="Full example with LLM">
+{/* code-example: no-api reason="Schema modifier runs client-side in an OpenAI tool-call loop" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -106,7 +111,8 @@ def modify_schema(
 
 # Initialize tools
 openai_client = OpenAI()
-composio = Composio(provider=OpenAIProvider())
+provider = OpenAIProvider()
+composio = Composio(provider=provider)
 
 # Define task
 task = "Get the latest posts from Hacker News"
@@ -132,7 +138,7 @@ response = openai_client.chat.completions.create(
 print(response)
 
 # Execute the function calls
-result = composio.provider.handle_tool_calls(response=response, user_id="default")
+result = provider.handle_tool_calls(response=response, user_id="default")
 print(result)
 ```
   </Tab>
@@ -142,15 +148,16 @@ print(result)
 import { Composio } from '@composio/core';
 import { OpenAI } from 'openai';
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-});
+// Initialize tools (OpenAIProvider is the default provider)
 const openai = new OpenAI();
+const composio = new Composio();
 
-const userId = 'your@email.com';
+// Define task
+const task = 'Get the latest posts from Hacker News';
 
+// Get tools with modifier
 const tools = await composio.tools.get(
-  userId,
+  'default',
   {
     tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
   },
@@ -168,22 +175,20 @@ const tools = await composio.tools.get(
   }
 );
 
-console.log(JSON.stringify(tools, null, 2));
-
+// Get response from the LLM
 const response = await openai.chat.completions.create({
   model: 'gpt-5.4',
-  messages: [
-    {
-      role: 'system',
-      content: 'You are a helpful assistant that can help with tasks.',
-    },
-    { role: 'user', content: 'Get the latest posts from Hacker News' },
-  ],
   tools: tools,
-  tool_choice: 'auto',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: task },
+  ],
 });
+console.log(response);
 
-console.log(response.choices[0].message.tool_calls);
+// Execute the function calls
+const result = await composio.provider.handleToolCalls('default', response);
+console.log(result);
 ```
   </Tab>
 </Tabs>
@@ -203,18 +208,16 @@ In this example:
 - The modified description tells the agent to use `composiohq/composio` as the default repository
 - This helps prevent errors when the agent forgets to specify a repository parameter
 
+{/* code-example: no-api reason="Schema modifier rewrites the tool description client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
 from composio import Composio, schema_modifier
 from composio.types import Tool
-from composio_google import GoogleProvider
-from google import genai
 from uuid import uuid4
 
-composio = Composio(provider=GoogleProvider())
-client = genai.Client()
-user_id = uuid4()
+composio = Composio()
+user_id = str(uuid4())
 
 @schema_modifier(tools=["GITHUB_LIST_REPOSITORY_ISSUES"])
 def append_repository(
@@ -238,18 +241,14 @@ print(tools)
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
 import { v4 as uuidv4 } from 'uuid';
 
 const userId = uuidv4();
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
+const composio = new Composio();
 
 const addDescription = ({ toolSlug, toolkitSlug, schema }) => {
   if (toolSlug === 'GITHUB_LIST_REPOSITORY_ISSUES') {
-    schema.description += 'If not specified, use the `composiohq/composio` repository';
+    schema.description += ' When not specified, use the `composiohq/composio` repository';
   }
   return schema;
 };

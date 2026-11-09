@@ -424,13 +424,11 @@ describe('CLI: composio login', () => {
             ? makeSessionInfo({
                 orgId: 'org_default',
                 orgMemberId: 'member_default',
-                userId: 'user_123',
               })
             : makeSessionInfo({
                 orgId: scope.orgId,
                 orgName: 'Selected Org',
                 orgMemberId: 'member_selected',
-                userId: 'user_123',
               }),
         onRequest: request => directLoginRequests.push(request),
       },
@@ -509,7 +507,6 @@ describe('CLI: composio login', () => {
                 orgId: 'org_home',
                 orgName: 'Home Org',
                 orgMemberId: 'member_home',
-                userId: 'user_123',
                 email: 'poll@example.com',
                 name: 'Poll User',
               })
@@ -517,7 +514,6 @@ describe('CLI: composio login', () => {
                 orgId: scope.orgId,
                 orgName: 'Selected Org',
                 orgMemberId: 'member_selected',
-                userId: 'user_123',
                 email: 'poll@example.com',
                 name: 'Poll User',
               });

@@ -63,10 +63,10 @@ export type DashboardExecutionResult = Exclude<
 
 // The backend's answer is relayed as the backend sent it. Like the backend
 // transport, the CLI checks only what tells a result from a request for input:
-// the tool has already run, so a missing field must not turn its result into
-// an error.
+// the tool has already run (or a session hook blocked it), so a missing field
+// must not turn its result into an error.
 const ExecutionResult = Schema.StructWithRest(
-  Schema.Struct({ result_type: Schema.Literals(['completed', 'failed']) }),
+  Schema.Struct({ result_type: Schema.Literals(['completed', 'failed', 'blocked']) }),
   [JsonObject]
 );
 

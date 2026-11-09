@@ -11,6 +11,7 @@ import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
 import { ssrfSafeFetch } from './ssrfGuard.node';
 import { readResponseBodyWithLimit } from './readResponseBody';
+import { getMimeTypeFromFileName } from './mime';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -66,6 +67,7 @@ const getExtensionFromMimeType = (mimeType: string): string => {
     'text/plain': 'txt',
     'text/html': 'html',
     'text/css': 'css',
+    'text/csv': 'csv',
     'text/javascript': 'js',
     'application/json': 'json',
     'application/xml': 'xml',
@@ -102,7 +104,8 @@ const getExtensionFromMimeType = (mimeType: string): string => {
   const cleanMimeType = mimeType.split(';')[0].toLowerCase().trim();
 
   // Try exact match first
-  if (mimeToExt[cleanMimeType]) {
+  // An own property only: `constructor` or `__proto__` must not reach Object.prototype.
+  if (Object.hasOwn(mimeToExt, cleanMimeType)) {
     return mimeToExt[cleanMimeType];
   }
 
@@ -160,7 +163,7 @@ const readFileContent = async (
         content instanceof Uint8Array
           ? uint8ArrayToBase64(content)
           : uint8ArrayToBase64(new TextEncoder().encode(content)),
-      mimeType: 'application/octet-stream',
+      mimeType: getMimeTypeFromFileName(filePath),
     };
   } catch (error) {
     throw new Error(`Error reading file at ${filePath}: ${error}`);

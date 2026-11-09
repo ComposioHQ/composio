@@ -3,13 +3,13 @@ import type { OrganizationSummary } from 'src/services/composio-account';
 
 // --- stderr -----------------------------------------------------------------------------------
 
-/** The intro both trees print; `orgs list` is reachable from the root as well. */
-export const ORGS_LIST_INTRO = 'composio dev orgs list';
+/** The intro `orgs list` prints; `orgs` is a root command only. */
+export const ORGS_LIST_INTRO = 'composio orgs list';
 export const LOADING_ORGANIZATIONS_MESSAGE = 'Loading organizations...';
 export const FETCH_ORGANIZATIONS_FAILED_MESSAGE = 'Failed to fetch organizations';
 export const NO_ORGANIZATIONS_MESSAGE = 'No organizations found.';
 export const ORGS_LIST_OUTRO =
-  'Hint: run `composio dev orgs switch` to switch the default global org/project.';
+  'Hint: run `composio orgs switch` to switch the default global org/project.';
 
 export const loadedOrganizationsMessage = (count: number) => `Loaded ${count} orgs`;
 

@@ -23,7 +23,8 @@ Install the [TypeSafe provider](/docs/providers/typesafe#install), then export `
 
 Save the following script. `username` represents a value supplied by your application or a user form. The request asks Jev to choose among three tools, and `knownArguments` supplies values only for the tool they belong to.
 
-<Tabs items={['Python', 'TypeScript']}>
+{/* code-example: no-api reason="TypeSafe provider selects and completes the tool call client-side" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
 ```python title="select-tool.py"
@@ -161,7 +162,8 @@ If you already use an LLM to choose arguments, ask Jev to narrow its tool list f
 
 Install the OpenAI provider alongside the packages above:
 
-<Tabs items={['Python', 'TypeScript']}>
+{/* code-example: no-api reason="TypeSafe provider shortlists tools client-side for an OpenAI provider" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
 <PackageInstall packages="composio-openai" ecosystem="python" />

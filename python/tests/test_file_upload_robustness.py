@@ -53,7 +53,7 @@ def _s3_client(presigned_url: str = "https://s3.example.com/upload") -> MagicMoc
     s3meta = MagicMock()
     s3meta.key = "s3-key-123"
     s3meta.new_presigned_url = presigned_url
-    client.post.return_value = s3meta
+    client.files.create_presigned_url.return_value = s3meta
     return client
 
 
@@ -120,7 +120,9 @@ class TestPresignedUploadContentType:
             toolkit="test_toolkit",
         )
 
-        presigned_mimetype = client.post.call_args.kwargs["body"]["mimetype"]
+        presigned_mimetype = client.files.create_presigned_url.call_args.kwargs[
+            "mimetype"
+        ]
         assert presigned_mimetype == mimetypes.guess(file=source)
         assert mock_safe_request.call_args.kwargs["headers"] == {
             "Content-Type": presigned_mimetype

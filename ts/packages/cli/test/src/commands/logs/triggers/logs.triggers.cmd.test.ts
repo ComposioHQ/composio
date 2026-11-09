@@ -25,7 +25,7 @@ describe('CLI: composio dev logs triggers', () => {
     it.effect('[Then] it warns and prints the empty page as the API returned it', () =>
       Effect.gen(function* () {
         const page = { data: [] };
-        const stub = stubClientResources(['logs'], () => Response.json(page));
+        const stub = stubClientResources(['_internal'], () => Response.json(page));
         yield* cli(['dev', 'logs', 'triggers']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
@@ -42,7 +42,7 @@ describe('CLI: composio dev logs triggers', () => {
   layer(testLayer)('[Given] every filter flag', it => {
     it.effect('[Then] each is sent as search params in a fixed order and the limit is clamped', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        const stub = stubClientResources(['_internal'], () => Response.json({ data: [] }));
         yield* cli([
           'dev',
           'logs',
@@ -102,7 +102,7 @@ describe('CLI: composio dev logs triggers', () => {
     it.effect('[Then] it lists the logs, hints at the first one, and prints the cursor', () =>
       Effect.gen(function* () {
         const page = { data: [log], nextCursor: 'cur_2' };
-        const stub = stubClientResources(['logs'], () => Response.json(page));
+        const stub = stubClientResources(['_internal'], () => Response.json(page));
         yield* cli(['dev', 'logs', 'triggers']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
@@ -119,7 +119,7 @@ describe('CLI: composio dev logs triggers', () => {
   layer(testLayer)('[Given] a log id argument', it => {
     it.effect('[Then] it fetches that log alone and prints it as the API returned it', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json(log));
+        const stub = stubClientResources(['_internal'], () => Response.json(log));
         yield* cli(['dev', 'logs', 'triggers', 'log_1']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
@@ -134,7 +134,7 @@ describe('CLI: composio dev logs triggers', () => {
   layer(testLayer)('[Given] an empty log id argument', it => {
     it.effect('[Then] it lists logs instead of fetching one', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        const stub = stubClientResources(['_internal'], () => Response.json({ data: [] }));
         yield* cli(['dev', 'logs', 'triggers', '']).pipe(Effect.provide(stub.layer));
 
         expect(stub.requests).toMatchObject([{ method: 'POST' }]);
@@ -145,7 +145,7 @@ describe('CLI: composio dev logs triggers', () => {
   layer(testLayer)('[Given] the API rejects the list request', it => {
     it.effect('[Then] the command fails with TriggerLogsRequestError', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () =>
+        const stub = stubClientResources(['_internal'], () =>
           Response.json(
             { error: { message: 'Not allowed', code: 1403, slug: 'Forbidden', status: 403 } },
             { status: 403 }
@@ -167,7 +167,7 @@ describe('CLI: composio dev logs triggers', () => {
   layer(testLayer)('[Given] the API rejects the request for one log', it => {
     it.effect('[Then] the failure names the log id', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () =>
+        const stub = stubClientResources(['_internal'], () =>
           Response.json(
             { error: { message: 'Not found', code: 1404, slug: 'Not_Found', status: 404 } },
             { status: 404 }

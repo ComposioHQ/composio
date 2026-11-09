@@ -1,6 +1,9 @@
 import { Array as Arr, Effect, Option } from 'effect';
 import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
-import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
+import {
+  CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+  decodeConnectedAccountList,
+} from 'src/effects/decode-connected-account-list';
 import { failedWith } from 'src/effects/request-error';
 import type { KnownConnectedAccountStatus } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -9,7 +12,6 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { ConnectedAccountsListRequestError } from './connected-accounts.list.errors';
 import {
-  CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE,
   FETCHING_CONNECTED_ACCOUNTS_MESSAGE,
   LIST_CONNECTED_ACCOUNTS_FAILED_MESSAGE,
   formatConnectedAccountsJson,
@@ -61,20 +63,11 @@ export const runConnectedAccountsList = ({
         )
         .pipe(failedWith(ConnectedAccountsListRequestError, LIST_CONNECTED_ACCOUNTS_FAILED_MESSAGE))
     );
-    const result = yield* decodeConnectedAccountListWithFallback(rawResult);
-    // The decode fallback returns the raw payload when the response shape drifts; `items`
-    // may then not be a list at all. Fail loudly instead of reporting an empty page,
-    // which would tell a piped consumer there are no connected accounts.
-    const items = Array.isArray(result.items)
-      ? result.items
-      : yield* Effect.fail(
-          new ConnectedAccountsListRequestError({
-            message: CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE,
-            cause: `response.items was ${typeof result.items}, expected an array`,
-          })
-        );
+    const result = yield* decodeConnectedAccountList(rawResult).pipe(
+      failedWith(ConnectedAccountsListRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
+    );
 
-    yield* Arr.match(items, {
+    yield* Arr.match(result.items, {
       onEmpty: () => ui.log.warn(noConnectedAccountsMessage({ toolkits, userId, status })),
       onNonEmpty: nonEmptyItems =>
         Effect.gen(function* () {

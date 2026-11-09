@@ -27,11 +27,19 @@ Below we use the `afterExecute` modifier to truncate the output of `HACKERNEWS_G
 
 Since completion providers don't have a function execution step, Composio executes the tool call directly. The modifier is configured on the `tools.execute` method.
 
+{/* code-example: no-api reason="After-execute modifier runs client-side in the SDK around an LLM tool-call loop" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
+from openai import OpenAI
 from composio import Composio, after_execute
 from composio.types import ToolExecutionResponse
+from composio_openai import OpenAIProvider
+
+openai_client = OpenAI()
+provider = OpenAIProvider()
+composio = Composio(provider=provider, toolkit_versions={"hackernews": "latest"})
+messages = [{"role": "user", "content": "What is the karma of user pg on Hacker News?"}]
 
 @after_execute(tools=["HACKERNEWS_GET_USER"])
 def after_execute_modifier(
@@ -46,7 +54,7 @@ def after_execute_modifier(
         },
     }
 
-tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
+tools = composio.tools.get(user_id="default", slug="HACKERNEWS_GET_USER")
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
@@ -57,7 +65,7 @@ response = openai_client.chat.completions.create(
 print(response)
 
 # Execute the function calls
-result = composio.provider.handle_tool_calls(
+result = provider.handle_tool_calls(
   response=response,
   user_id="default",
   modifiers=[
@@ -70,44 +78,43 @@ print(result)
   <Tab value="TypeScript">
 ```typescript
 // @noErrors
+import { Composio } from "@composio/core";
+import { OpenAI } from "openai";
+
+const openai = new OpenAI();
+const composio = new Composio({ toolkitVersions: { hackernews: "latest" } });
+const messages = [
+  { role: "user" as const, content: "What is the karma of user pg on Hacker News?" },
+];
+
+const tools = await composio.tools.get("default", "HACKERNEWS_GET_USER");
+
+// Get response from the LLM
 const response = await openai.chat.completions.create({
   model: "gpt-5.4",
-  messages,
   tools,
-  tool_choice: "auto",
+  messages,
 });
+console.log(response);
 
-const { tool_calls } = response.choices[0].message;
-console.log(tool_calls);
-
-if (tool_calls) {
-  const {
-    function: { arguments: toolArgs },
-  } = tool_calls[0];
-
-  const result = await composio.tools.execute(
-    "HACKERNEWS_GET_USER",
-    {
-      userId,
-      arguments: JSON.parse(toolArgs),
-      dangerouslySkipVersionCheck: true, // required when running "latest"
+// Execute the function calls
+const result = await composio.provider.handleToolCalls(
+  "default",
+  response,
+  undefined,
+  {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+      if (toolSlug === "HACKERNEWS_GET_USER") {
+        return {
+          ...result,
+          data: { karma: result.data.karma },
+        };
+      }
+      return result;
     },
-    {
-      afterExecute: ({ toolSlug, toolkitSlug, result }) => {
-        if (toolSlug === "HACKERNEWS_GET_USER") {
-          const { data } = result;
-          const { karma } = data.response_data as { karma: number };
-          return {
-            ...result,
-            data: { karma },
-          };
-        }
-        return result;
-      },
-    }
-  );
-  console.log(JSON.stringify(result, null, 2));
-}
+  }
+);
+console.log(result);
 ```
   </Tab>
 </Tabs>
@@ -116,6 +123,7 @@ if (tool_calls) {
 
 Agentic providers have a function execution step. The modifier is configured on the `tools.get` method which modifies the execution logic within the framework.
 
+{/* code-example: no-api reason="After-execute modifier runs client-side inside the agentic framework's tool execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -155,7 +163,6 @@ tools = composio.tools.get(
 // @noErrors
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { v4 as uuidv4 } from "uuid";
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -163,7 +170,7 @@ const composio = new Composio({
   toolkitVersions: { hackernews: "latest" },
 });
 
-const userId = uuidv4();
+const userId = "default";
 
 const agenticTools = await composio.tools.get(
   userId,
@@ -173,9 +180,7 @@ const agenticTools = await composio.tools.get(
   {
     afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       if (toolSlug === "HACKERNEWS_GET_USER") {
-        const {
-          data: { response_data: { karma } = {} } = {},
-        } = result;
+        const { karma } = result.data;
         return {
           ...result,
           data: { karma },

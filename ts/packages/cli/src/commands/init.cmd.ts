@@ -21,6 +21,8 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { browserLogin } from 'src/effects/browser-login';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
+import { commandInputError } from 'src/commands/errors';
+import { printFailure, ReportedFailure } from 'src/effects/report-failure';
 import {
   describeDecodeError,
   isClientConnectionError,
@@ -289,9 +291,9 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     const orgIdValue = Option.getOrUndefined(ctx.data.orgId);
     const projectIdValue = Option.getOrUndefined(ctx.data.projectId);
     if (!globalApiKey || !orgIdValue) {
-      yield* ui.log.warn('No global API key or org ID found. Please try `composio login` first.');
-      yield* ui.outro('');
-      return;
+      return yield* commandInputError('dev init')(
+        'No global API key or org ID found. Please try `composio login` first.'
+      );
     }
 
     const orgProjects = yield* listOrgProjects({
@@ -325,12 +327,14 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     );
 
     if (orgProjects.data.length === 0) {
-      yield* ui.log.warn('No projects found for your organization.');
-      yield* ui.log.info(
+      const message = 'No projects found for your organization.';
+      yield* printFailure(
+        ui,
+        message,
         'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
       );
       yield* ui.outro('');
-      return;
+      return yield* new ReportedFailure({ message });
     }
 
     // 3. Select a developer project

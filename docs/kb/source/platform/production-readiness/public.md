@@ -39,10 +39,11 @@ apps, scopes, or provider credentials differ.
 
 ## Switch from managed auth only when production requirements call for it
 
-Composio managed auth is suitable for development, internal tools, and early
-prototypes. Create a custom auth config when users must see the application's
-own OAuth brand, the integration needs custom scopes or a dedicated provider
-quota, polling requirements differ, or the provider uses a custom instance.
+Keep Composio-managed OAuth apps in production when their consent branding,
+scopes, and shared provider quotas fit your product. Create a custom auth
+config when you need your application's own OAuth brand, custom scopes, a
+dedicated provider quota, different polling requirements, or a custom instance.
+Both options keep connected-account credential storage and refresh in Composio.
 Pass the resulting auth config ID to the session; creating the config alone
 does not make the session use it.
 

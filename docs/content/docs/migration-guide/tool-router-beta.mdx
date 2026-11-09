@@ -18,6 +18,7 @@ If you never used `composio.experimental.tool_router`, you can skip this guide a
 
 Upgrade to the latest stable version:
 
+{/* code-example: no-api reason="installing SDK packages is a local package-manager operation" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```bash
@@ -33,28 +34,51 @@ pip install --upgrade composio
 <Step>
 <StepTitle>Update session creation</StepTitle>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+Beta (before):
+
+{/* code-example: no-api reason="historical experimental SDK names are shown for migration; the stable session creation HTTP equivalent is in the next group" */}
+<Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
+<Tab value="Python (previous)">
+```python
+session = composio.experimental.tool_router.create_session(
+    user_id="user_123"
+)
+```
+</Tab>
+<Tab value="TypeScript (previous)">
+```typescript
+// @noErrors
+const session = await composio.experimental.toolRouter.createSession('user_123');
+```
+</Tab>
+</Tabs>
+
+Stable (after):
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-# Beta (before)
-session = composio.experimental.tool_router.create_session(
-    user_id="user@example.com"
-)
+from composio import Composio
 
-# Stable (after)
-session = composio.create(
-    user_id="user@example.com"
-)
+composio = Composio()
+session = composio.create(user_id="user_123")
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
-// Beta (before)
-const session = await composio.experimental.toolRouter.createSession('user_123');
+import { Composio } from '@composio/core';
 
-// Stable (after)
+const composio = new Composio();
 const session = await composio.create('user_123');
+```
+</Tab>
+<Tab value="API">
+```bash
+# Stable (after)
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}'
 ```
 </Tab>
 </Tabs>
@@ -70,7 +94,7 @@ If you have existing users on tool router and you don't want them to authenticat
     - While creating a session configure to use this Auth config.
     - You need to repeat this for each toolkit you want to enable for that session.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
@@ -95,6 +119,17 @@ const session = await composio.create('user_123',
         },
     }
 );
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config", "slack": "ac_your_slack_config"}
+  }'
 ```
 </Tab>
 </Tabs>

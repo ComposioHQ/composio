@@ -124,8 +124,8 @@ const session = await composio.create('preload-example-user', {
   },
   manageConnections: false,
   experimental: {
-    customTools: [lookupInternalUser, searchInternalUsers],
-    customToolkits: [internalAdmin],
+    localTools: [lookupInternalUser, searchInternalUsers],
+    localToolkits: [internalAdmin],
   },
 });
 

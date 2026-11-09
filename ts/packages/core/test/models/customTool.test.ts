@@ -896,6 +896,7 @@ describe('SessionContextImpl', () => {
       { maxRetries: 0 }
     );
     expect(result).toEqual({
+      resultType: 'completed',
       status: 200,
       data: { proxy_result: true },
     });

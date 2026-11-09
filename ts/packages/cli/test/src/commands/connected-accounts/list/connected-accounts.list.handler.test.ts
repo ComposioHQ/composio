@@ -6,11 +6,9 @@ import {
   runConnectedAccountsList,
   type ConnectedAccountsListParams,
 } from 'src/commands/connected-accounts/list/connected-accounts.list.handler';
-import {
-  CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE,
-  viewDetailsHint,
-} from 'src/commands/connected-accounts/list/connected-accounts.list.format';
+import { viewDetailsHint } from 'src/commands/connected-accounts/list/connected-accounts.list.format';
 import { CommandSurface } from 'src/commands/surface';
+import { CONNECTED_ACCOUNTS_SHAPE_MESSAGE } from 'src/effects/decode-connected-account-list';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { ProjectKeys } from 'src/models/project-keys';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -310,7 +308,7 @@ describe('runConnectedAccountsList', () => {
   );
 
   it.effect(
-    '[Given] a raw response whose items are not an array [Then] fails instead of listing zero',
+    '[Given] a response whose items are not an array [Then] fails instead of listing zero',
     () => {
       const { layer, outputs } = listTest({
         rawListResponse: { items: { pages: 2 }, total_items: 3 },
@@ -320,7 +318,11 @@ describe('runConnectedAccountsList', () => {
 
         expect(error).toMatchObject({
           _tag: 'commands/ConnectedAccountsListRequestError',
-          message: CONNECTED_ACCOUNTS_LIST_SHAPE_MESSAGE,
+          message: CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+          cause: {
+            _tag: 'effects/ConnectedAccountListShapeError',
+            message: expect.stringContaining('items'),
+          },
         });
         expect(outputs).toEqual([]);
       }).pipe(Effect.provide(layer));

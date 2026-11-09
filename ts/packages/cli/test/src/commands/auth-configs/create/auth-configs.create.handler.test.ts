@@ -8,6 +8,7 @@ import {
 } from 'src/commands/auth-configs/create/auth-configs.create.handler';
 import { isUsageFailure } from 'src/commands/errors';
 import { MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { AuthConfigsHandlerTest } from 'test/__utils__/layers/auth-configs';
 import { notFoundError } from 'test/__utils__/layers/not-found';
 
@@ -108,7 +109,7 @@ describe('buildAuthConfigCreateRequest', () => {
 
 describe('runAuthConfigsCreate', () => {
   it.effect('[Given] a successful create [Then] prints the API response JSON to stdout', () => {
-    const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+    const { layer, outputs } = AuthConfigsHandlerTest({
       authConfigsData: { createResponse },
     });
     return Effect.gen(function* () {
@@ -118,7 +119,6 @@ describe('runAuthConfigsCreate', () => {
       const decoration = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
       expect(decoration).toContain('Auth config created.');
       expect(decoration).toContain('[New Auth Config]');
-      expect(exitCode()).toBeUndefined();
     }).pipe(Effect.provide(layer));
   });
 
@@ -128,7 +128,7 @@ describe('runAuthConfigsCreate', () => {
   ])(
     '[Given] $name in --custom-credentials [Then] fails with a usage error before any request',
     ({ customCredentials }) => {
-      const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+      const { layer, outputs } = AuthConfigsHandlerTest({
         repository: { createAuthConfig: () => Effect.die('createAuthConfig must not be called') },
       });
       return Effect.gen(function* () {
@@ -146,23 +146,22 @@ describe('runAuthConfigsCreate', () => {
             /^Invalid JSON in --custom-credentials\. Please provide valid JSON\.\nExample:\n> composio dev auth-configs create /
           ),
         });
-        // `cli-main.ts` prints a usage failure on stderr and exits 1.
+        // The invocation prints a usage failure on stderr and exits 1.
         expect(isUsageFailure(failure)).toBe(true);
         expect(yield* MockConsole.getLines()).toEqual([]);
         expect(outputs).toEqual([]);
-        expect(exitCode()).toBeUndefined();
       }).pipe(Effect.provide(layer));
     }
   );
 
   it.effect('[Given] the API rejects the create [Then] hints at the toolkit and exits 1', () => {
-    const { layer, outputs, exitCode } = AuthConfigsHandlerTest({
+    const { layer, outputs } = AuthConfigsHandlerTest({
       repository: {
         createAuthConfig: () => Effect.fail(notFoundError('Toolkit not found')),
       },
     });
     return Effect.gen(function* () {
-      yield* runAuthConfigsCreate({ ...params, toolkit: 'nope' });
+      const exit = yield* Effect.exit(runAuthConfigsCreate({ ...params, toolkit: 'nope' }));
 
       const stderr = (yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).join(
         '\n'
@@ -172,7 +171,7 @@ describe('runAuthConfigsCreate', () => {
         'Check available auth schemes for "nope":\n> composio dev toolkits info "nope"'
       );
       expect(outputs).toEqual([]);
-      expect(exitCode()).toBe(1);
+      expect(exitCodeOf(exit)).toBe(1);
     }).pipe(Effect.provide(layer));
   });
 });

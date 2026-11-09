@@ -253,7 +253,7 @@ export class ConnectedAccounts {
       connection: {
         callback_url: options?.callbackUrl,
         user_id: userId,
-        state: state as ConnectedAccountCreateParamsRaw.Connection['state'],
+        state: state as NonNullable<ConnectedAccountCreateParamsRaw['connection']>['state'],
         ...(options?.alias != null && { alias: options.alias }),
       },
     };
@@ -456,8 +456,8 @@ export class ConnectedAccounts {
   /**
    * Waits for a connection request to complete and become active.
    *
-   * This method continuously polls the Composio API to check the status of a connection
-   * until it either becomes active, enters a terminal error state, or times out.
+   * This method polls the Composio API, backing off from 1 second to 5 seconds between polls,
+   * to check the status of a connection until it either becomes active, enters a terminal error state, or times out.
    *
    * @param {string} connectedAccountId - The ID of the connected account to wait for
    * @param {number} [timeout=60000] - Maximum time to wait in milliseconds (default: 60 seconds)

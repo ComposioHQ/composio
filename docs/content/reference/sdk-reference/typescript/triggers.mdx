@@ -19,6 +19,9 @@ const result = await composio.triggers.list();
 Create a new trigger instance for a user
 If the connected account id is not provided, the first connected account for the user and toolkit will be used
 
+For a trigger that supports both webhook and polling, `body.type` picks one; omit it to let Composio choose.
+`body.pollingInterval` sets the minutes between polls and wins over `triggerConfig.interval`.
+
 ```typescript
 async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceUpsertResponse>
 ```
@@ -34,7 +37,8 @@ async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams, r
 
 **Returns**
 
-`Promise<TriggerInstanceUpsertResponse>` — The created trigger instance
+`Promise<TriggerInstanceUpsertResponse>` — The trigger instance, with the type it uses, why it polls
+when it fell back from a webhook, and its polling interval
 
 ---
 

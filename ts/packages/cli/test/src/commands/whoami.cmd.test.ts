@@ -1,9 +1,26 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 
 describe('CLI: composio whoami', () => {
+  layer(TestLive())('without a login', it => {
+    it.effect('[Given] no API key [Then] fails with NotLoggedInError and prints its message', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['whoami']).pipe(Effect.flip);
+
+        expect(failure).toMatchObject({
+          _tag: 'commands/NotLoggedInError',
+          message: 'You are not logged in yet. Please run `composio login`.',
+        });
+        // The invocation prints the message on stderr, and nothing else.
+        assert(isUsageFailure(failure));
+        expect(yield* MockConsole.getLines()).toEqual([failure.message]);
+      })
+    );
+  });
+
   const testConfigProvider = ConfigProvider.fromEnv({
     env: { COMPOSIO_USER_API_KEY: 'api_key_from_test_config_provider' },
   });
