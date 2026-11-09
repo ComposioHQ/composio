@@ -5,7 +5,21 @@
    The runner's decisions are not written here. run-main.model.test.ts builds
    RunMainTransition from runnerTransition in src/run-main-transition.ts, so
    this model checks the code the CLI runs. Transition(received, finished, event)
-   is <<received', finished', command, signal>>. *)
+   is <<received', finished', command, signal>>.
+
+   Assumptions about the platform (src/run-main.ts processPlatform). Revisit
+   the model when one of them changes:
+   - Each handler, timer and fiber observer runs to completion before the next
+     event, as on one JavaScript thread, so every event is one atomic step.
+   - Once the runner removes its handlers, signals no longer reach it; the
+     signal's default action ends the process instead.
+   - A cancelled deadline never fires, and a fired one never fires again.
+   - Ending is not assumed to stop the process at once: a re-raise ends it
+     asynchronously, so the fiber may still report its exit afterwards.
+   - Which signals a command cooperates on is fixed for the run. A command that
+     registers later behaves, before that, like one that cooperates on none.
+   - Exit codes are outside the model; the replay in run-main.model.test.ts
+     checks them against the real runner. *)
 EXTENDS Naturals, RunMainTransition
 
 Signals == {"SIGINT", "SIGTERM", "SIGHUP"}
