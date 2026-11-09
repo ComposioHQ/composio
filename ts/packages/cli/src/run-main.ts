@@ -14,6 +14,12 @@ import process from 'node:process';
 import { Cause, Data, Duration, Exit, Option, Runtime } from 'effect';
 import { ChildProcessSignaled } from 'src/effects/child-process-exited';
 import {
+  initialRunnerState,
+  runnerTransition,
+  type RunnerCommand,
+  type RunnerEvent,
+} from 'src/run-main-transition';
+import {
   STOP_SIGNALS,
   signalExitCode,
   type ShutdownController,
@@ -103,56 +109,65 @@ export const makeCliRunMain = (
   platform: RunnerPlatform = processPlatform
 ) =>
   Runtime.makeRunMain(({ fiber, teardown }) => {
-    let received = Option.none<StopSignal>();
-    let finished = false;
+    // Every decision goes through `runnerTransition`, which test/src/run-main.model.test.ts
+    // model checks; this closure only performs the commands it returns.
+    let state = initialRunnerState;
     let cancelDeadline = () => {};
+    const step = (event: RunnerEvent): RunnerCommand => {
+      const transition = runnerTransition(state, event);
+      state = transition.state;
+      return transition.command;
+    };
 
-    const listeners = STOP_SIGNALS.map(signal => ({ signal, listener: () => onSignal(signal) }));
+    const listeners = STOP_SIGNALS.map(signal => ({
+      signal,
+      listener: () => perform(step({ kind: 'Signal', signal })),
+    }));
     const release = () => {
       cancelDeadline();
       listeners.forEach(({ signal, listener }) => platform.off(signal, listener));
     };
-    const finish = (action: ExitAction) => {
-      if (finished) {
-        return;
-      }
-      finished = true;
+    const end = (action: ExitAction) => {
       release();
       ExitAction.$match(action, {
         ExitWith: ({ code }) => platform.exit(code),
         Reraise: ({ signal }) => platform.raise(signal),
       });
     };
-    // Kill what cooperating commands started, then end now: a forced `composio run` re-raises
-    // the signal like the child it supervises would have died; anything else exits 128 + n.
-    const force = (signal: StopSignal) =>
-      finish(
-        controller.force().reraise
-          ? ExitAction.Reraise({ signal })
-          : ExitAction.ExitWith({ code: signalExitCode(signal) })
-      );
-    const onSignal = (signal: StopSignal) => {
-      if (Option.isSome(received)) {
-        force(signal);
-        return;
-      }
-      received = Option.some(signal);
-      cancelDeadline = platform.schedule(Duration.toMillis(SHUTDOWN_DEADLINE), () => force(signal));
-      if (!controller.offer(signal)) {
-        fiber.interruptUnsafe(fiber.id);
+    const perform = (command: RunnerCommand, exitAction?: ExitAction) => {
+      switch (command.kind) {
+        case 'Stop':
+          cancelDeadline = platform.schedule(Duration.toMillis(SHUTDOWN_DEADLINE), () =>
+            perform(step({ kind: 'Deadline' }))
+          );
+          if (!controller.offer(command.signal)) {
+            fiber.interruptUnsafe(fiber.id);
+          }
+          return;
+        case 'Force':
+          // Kill what cooperating commands started, then end now: a forced `composio run`
+          // re-raises the signal like the child it supervises would have died; anything else
+          // exits 128 + n.
+          return end(
+            controller.force().reraise
+              ? ExitAction.Reraise({ signal: command.signal })
+              : ExitAction.ExitWith({ code: signalExitCode(command.signal) })
+          );
+        case 'End':
+          return exitAction === undefined ? undefined : end(exitAction);
+        case 'Drain':
+          // Like `BunRuntime.runMain`: a clean success nobody signalled ends when the event
+          // loop drains, so pending output is flushed.
+          return release();
+        case 'Ignore':
+          return;
       }
     };
 
     listeners.forEach(({ signal, listener }) => platform.on(signal, listener));
     fiber.addObserver(exit => {
-      const action = exitActionFor(exit, received, teardown);
-      // Like `BunRuntime.runMain`: a clean success nobody signalled ends when the event loop
-      // drains, so pending output is flushed.
-      if (Option.isNone(received) && ExitAction.$is('ExitWith')(action) && action.code === 0) {
-        finished = true;
-        release();
-        return;
-      }
-      finish(action);
+      const action = exitActionFor(exit, Option.fromUndefinedOr(state.received), teardown);
+      const cleanSuccess = ExitAction.$is('ExitWith')(action) && action.code === 0;
+      perform(step({ kind: 'Exited', cleanSuccess }), action);
     });
   });

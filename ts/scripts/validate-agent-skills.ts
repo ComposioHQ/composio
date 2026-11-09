@@ -32,13 +32,6 @@ const expectedSkills = [
   'typescript-sdk',
   'typescript-testing',
   'verify-change',
-  'verify-cli-execution',
-  'verify-cli-invocation',
-  'verify-cli-link',
-  'verify-cli-listener',
-  'verify-cli-login',
-  'verify-cli-routing',
-  'verify-cli-shutdown',
 ];
 
 const requiredAgentFiles = [
