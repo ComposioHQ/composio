@@ -20,6 +20,7 @@ jobs:
       github.repository == 'ComposioHQ/composio' &&
       startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       languages: ${{ steps.select.outputs.languages }}
     steps:
@@ -44,6 +45,7 @@ jobs:
     name: SDK candidate (${{ matrix.language }})
     needs: select-candidates
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -91,6 +93,7 @@ jobs:
     name: SDK candidate smoke (${{ matrix.language }})
     needs: [select-candidates, candidate]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       actions: read

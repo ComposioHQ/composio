@@ -51,6 +51,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'issues' && startsWith(github.event.issue.title, '[SDK release]')))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: sdk-release-control
     # Queued, not replaced: a newer request never cancels one that is already waiting.
     concurrency:
@@ -86,6 +87,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.batch != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -115,6 +117,7 @@ jobs:
   release-pr:
     needs: [plan, prepare]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: sdk-release-control
     outputs:
       state: ${{ steps.open.outputs.state }}
@@ -153,6 +156,7 @@ jobs:
     needs: [plan, prepare, release-pr]
     if: always() && needs.plan.result != 'skipped'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write
@@ -181,6 +185,7 @@ jobs:
       github.repository == 'ComposioHQ/composio' && github.event_name == 'pull_request_target' &&
       startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: sdk-release-control
     outputs:
       issue: ${{ steps.tag.outputs.issue }}
@@ -211,6 +216,7 @@ jobs:
     needs: tag
     if: always() && needs.tag.result != 'skipped'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write
@@ -236,6 +242,7 @@ jobs:
   candidates:
     if: github.repository == 'ComposioHQ/composio' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       actions: read
@@ -263,6 +270,7 @@ jobs:
     needs: candidates
     if: needs.candidates.outputs.typescript == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: npm-release
     # One npm publisher at a time, so an older retry cannot move `latest` back over a newer release.
     concurrency:
@@ -306,6 +314,7 @@ jobs:
     needs: candidates
     if: needs.candidates.outputs.python == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: pypi-release
     permissions:
       contents: read
@@ -351,6 +360,7 @@ jobs:
   docs:
     needs: publish-npm
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -406,6 +416,7 @@ jobs:
     needs: [candidates, publish-npm, publish-pypi, docs]
     if: always() && needs.candidates.result != 'skipped'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write

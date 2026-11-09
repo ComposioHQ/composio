@@ -1,5 +1,5 @@
-import { Context, Data, Effect, Layer, Option, Schema, Stream } from 'effect';
-import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
+import { Context, Data, Duration, Effect, Layer, Option, Schema, Stream } from 'effect';
+import { FetchHttpClient, HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http';
 import { ensure } from './runtime';
 
 export const SDK_RELEASE_REPOSITORY = 'ComposioHQ/composio';
@@ -55,6 +55,7 @@ export const JobsPage = Schema.Struct({ jobs: Schema.Array(ReleaseJob) });
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
+/** GitHub refused or failed a request; `message` carries GitHub's own reason and request ID. */
 export class GitHubApiError extends Data.TaggedError('GitHubApiError')<{
   readonly status: number;
   readonly method: HttpMethod;
@@ -92,18 +93,98 @@ const decodeBody = <S extends Schema.Top>(
     )
   );
 
-const makeGitHub = (token: string) =>
+/** How long one request may take, and how often and how long a failed one is retried. */
+export interface RetryPolicy {
+  /** Attempts per request, the first one included. */
+  readonly attempts: number;
+  /** The first backoff; each later one doubles it. */
+  readonly baseDelayMs: number;
+  /** The longest single wait, including one GitHub asks for; a longer request gives up instead. */
+  readonly maxDelayMs: number;
+  /** Per-attempt timeout. */
+  readonly timeout: Duration.Input;
+}
+
+const DEFAULT_RETRY: RetryPolicy = {
+  attempts: 5,
+  baseDelayMs: 1_000,
+  maxDelayMs: 60_000,
+  timeout: '30 seconds',
+};
+
+const ErrorBody = Schema.Struct({
+  message: Schema.optionalKey(Schema.String),
+  errors: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        message: Schema.optionalKey(Schema.String),
+        code: Schema.optionalKey(Schema.String),
+      })
+    )
+  ),
+});
+
+/** GitHub's own explanation from an error body, such as "Validation Failed (already_exists)". */
+const githubReason = (text: string) => {
+  const parsed = Schema.decodeUnknownOption(Schema.fromJsonString(ErrorBody))(text);
+  if (Option.isNone(parsed)) return text.trim().slice(0, 300);
+  const details = (parsed.value.errors ?? []).flatMap(error => error.message ?? error.code ?? []);
+  return [parsed.value.message, details.length ? `(${details.join('; ')})` : '']
+    .filter(Boolean)
+    .join(' ');
+};
+
+const failure = (
+  method: HttpMethod,
+  path: string,
+  response: HttpClientResponse.HttpClientResponse,
+  text: string
+) => {
+  const reason = githubReason(text);
+  return new GitHubApiError({
+    status: response.status,
+    method,
+    path,
+    message: `GitHub ${method} ${path} failed (${response.status})${reason ? `: ${reason}` : ''} [request ${response.headers['x-github-request-id'] ?? 'unknown'}, API ${GITHUB_API_VERSION}]`,
+  });
+};
+
+/**
+ * A rate limit, which GitHub did not process. Secondary limits answer 403 or 429 with
+ * `retry-after`, an exhausted primary limit `x-ratelimit-remaining: 0`.
+ */
+const isRateLimited = (response: HttpClientResponse.HttpClientResponse, text: string) =>
+  response.status === 429 ||
+  (response.status === 403 &&
+    (response.headers['retry-after'] !== undefined ||
+      response.headers['x-ratelimit-remaining'] === '0' ||
+      /rate limit/i.test(text)));
+
+/** The wait GitHub asked for, from `retry-after` or the primary limit's reset time. */
+const requestedDelayMs = (response: HttpClientResponse.HttpClientResponse, now: number) => {
+  const retryAfter = Number(response.headers['retry-after']);
+  if (Number.isFinite(retryAfter) && retryAfter >= 0) return retryAfter * 1_000;
+  const reset = Number(response.headers['x-ratelimit-reset']);
+  if (response.headers['x-ratelimit-remaining'] === '0' && Number.isFinite(reset))
+    return Math.max(0, reset * 1_000 - now);
+  return undefined;
+};
+
+type Attempt =
+  | { readonly _tag: 'Done'; readonly response: HttpClientResponse.HttpClientResponse }
+  | { readonly _tag: 'Retry'; readonly error: GitHubApiError; readonly delayMs?: number };
+
+const makeGitHub = (token: string, policy: RetryPolicy) =>
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
-    const send = (
+    const sendOnce = (
       method: HttpMethod,
       path: string,
       body: unknown,
       redirect: RequestRedirect,
-      accept = 'application/vnd.github+json'
+      accept: string
     ) =>
       Effect.gen(function* () {
-        yield* ensure(path.startsWith('/') && !path.startsWith('//'), 'Expected a GitHub API path');
         const base = HttpClientRequest.make(method)(`https://api.github.com${path}`, {
           headers: {
             accept,
@@ -114,14 +195,80 @@ const makeGitHub = (token: string) =>
         return yield* client.execute(
           body === undefined ? base : HttpClientRequest.bodyJsonUnsafe(base, body)
         );
-      }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect }));
-    const failure = (method: HttpMethod, path: string, status: number) =>
-      new GitHubApiError({
-        status,
-        method,
-        path,
-        message: `GitHub ${method} ${path} failed (${status})`,
+      }).pipe(
+        Effect.provideService(FetchHttpClient.RequestInit, { redirect }),
+        Effect.timeout(policy.timeout)
+      );
+    /**
+     * One attempt, classified. Rate limits are retried for every method. Server errors and
+     * timeouts are retried only for GET: GitHub sometimes applies a write before answering 502,
+     * and repeating it would duplicate an issue or comment, or fail on a ref that now exists.
+     */
+    const attempt = (
+      method: HttpMethod,
+      path: string,
+      body: unknown,
+      redirect: RequestRedirect,
+      accept: string
+    ) =>
+      sendOnce(method, path, body, redirect, accept).pipe(
+        Effect.matchEffect({
+          onFailure: (cause): Effect.Effect<Attempt, GitHubApiError> => {
+            const error = new GitHubApiError({
+              status: 0,
+              method,
+              path,
+              message: `GitHub ${method} ${path} did not answer: ${cause.message}`,
+            });
+            return method === 'GET' ? Effect.succeed({ _tag: 'Retry', error }) : Effect.fail(error);
+          },
+          onSuccess: response =>
+            Effect.gen(function* () {
+              const retryable =
+                response.status === 429 ||
+                response.status === 403 ||
+                (response.status >= 500 && method === 'GET');
+              if (!retryable) return { _tag: 'Done', response } satisfies Attempt;
+              const text = yield* response.text.pipe(Effect.orElseSucceed(() => ''));
+              if (response.status === 403 && !isRateLimited(response, text))
+                return yield* failure(method, path, response, text);
+              return {
+                _tag: 'Retry',
+                error: failure(method, path, response, text),
+                delayMs: requestedDelayMs(response, Date.now()),
+              } satisfies Attempt;
+            }),
+        })
+      );
+    const send = (
+      method: HttpMethod,
+      path: string,
+      body: unknown,
+      redirect: RequestRedirect,
+      accept = 'application/vnd.github+json'
+    ) =>
+      Effect.gen(function* () {
+        yield* ensure(path.startsWith('/') && !path.startsWith('//'), 'Expected a GitHub API path');
+        for (let tries = 1; ; tries++) {
+          const outcome = yield* attempt(method, path, body, redirect, accept);
+          if (outcome._tag === 'Done') return outcome.response;
+          const delayMs = outcome.delayMs ?? policy.baseDelayMs * 2 ** (tries - 1);
+          if (tries >= policy.attempts || delayMs > policy.maxDelayMs)
+            return yield* new GitHubApiError({
+              ...outcome.error,
+              message: `${outcome.error.message}; gave up after ${tries} attempt${tries === 1 ? '' : 's'}`,
+            });
+          yield* Effect.sleep(delayMs);
+        }
       });
+    const fail = (
+      method: HttpMethod,
+      path: string,
+      response: HttpClientResponse.HttpClientResponse
+    ) =>
+      Effect.flatMap(response.text.pipe(Effect.orElseSucceed(() => '')), text =>
+        Effect.fail(failure(method, path, response, text))
+      );
     return {
       request: <S extends Schema.Top>(
         method: HttpMethod,
@@ -132,7 +279,7 @@ const makeGitHub = (token: string) =>
         Effect.gen(function* () {
           const response = yield* send(method, path, body, 'error');
           if (response.status < 200 || response.status >= 300)
-            return yield* failure(method, path, response.status);
+            return yield* fail(method, path, response);
           return yield* decodeBody(schema, yield* response.text, method, path);
         }),
       /** A file's raw contents, or `None` on 404. Raw media works for files over 1 MB. */
@@ -147,14 +294,14 @@ const makeGitHub = (token: string) =>
           );
           if (response.status === 404) return Option.none<string>();
           if (response.status < 200 || response.status >= 300)
-            return yield* failure('GET', path, response.status);
+            return yield* fail('GET', path, response);
           return Option.some(yield* response.text);
         }),
       /** Resolves an endpoint that answers with a 302 to short-lived storage, such as an artifact archive. */
       redirectLocation: (path: string) =>
         Effect.gen(function* () {
           const response = yield* send('GET', path, undefined, 'manual');
-          if (response.status !== 302) return yield* failure('GET', path, response.status);
+          if (response.status !== 302) return yield* fail('GET', path, response);
           return Option.fromNullishOr(response.headers.location);
         }),
     };
@@ -165,7 +312,8 @@ export class GitHub extends Context.Service<
   GitHub,
   Effect.Success<ReturnType<typeof makeGitHub>>
 >()('sdk-release/GitHub') {
-  static readonly layer = (token: string) => Layer.effect(GitHub, makeGitHub(token));
+  static readonly layer = (token: string, retry: Partial<RetryPolicy> = {}) =>
+    Layer.effect(GitHub, makeGitHub(token, { ...DEFAULT_RETRY, ...retry }));
 }
 
 export const request = <S extends Schema.Top>(

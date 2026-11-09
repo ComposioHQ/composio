@@ -5,7 +5,8 @@ import { ReleaseServices, readFile } from '../scripts/sdk-release/runtime';
 
 export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
-const TestServices = Layer.provideMerge(GitHub.layer('token'), ReleaseServices);
+// Retries back off for a millisecond, so a test of a failing request does not wait seconds.
+const TestServices = Layer.provideMerge(GitHub.layer('token', { baseDelayMs: 1 }), ReleaseServices);
 type TestServices = Layer.Success<typeof TestServices>;
 
 /** Runs a release effect with Bun platform services, a test GitHub token, and an optional fake fetch. */
