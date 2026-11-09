@@ -19,7 +19,7 @@ Under the hood, Composio learns about events in one of two ways. You don't confi
 | Kind | How Composio learns about the event | Latency | Examples |
 |---|---|---|---|
 | **Realtime** | The provider pushes the event to Composio the moment it happens. | Near-instant | Slack, Asana, Notion, Outlook |
-| **Polling** | Composio checks the provider on a schedule. | Up to ~15 min on Composio-managed auth | Gmail, Google Calendar |
+| **Polling** | Composio checks the provider on a schedule. | Up to the trigger's polling interval. On Composio-managed auth, the shortest allowed interval is 2 min | Gmail, Google Calendar |
 
 Either way, the event lands in the same place: your subscription or webhook URL, in the same payload shape.
 

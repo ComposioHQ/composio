@@ -31,25 +31,17 @@ export const runAuthConfigsInfo = ({ id }: AuthConfigsInfoParams) =>
     const idValue = id.value;
 
     // Auth config IDs are opaque nanoids — "Did you mean?" suggestions would not be useful
-    const itemOpt = yield* ui
+    const item = yield* ui
       .withSpinner(`Fetching auth config "${idValue}"...`, repo.getAuthConfig(idValue))
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: `Failed to fetch auth config "${idValue}".`,
             hint: 'Browse available auth configs:\n> composio dev auth-configs list',
-            fallbackValue: Option.none(),
           })
         )
       );
-
-    if (Option.isNone(itemOpt)) {
-      return;
-    }
-
-    const item = itemOpt.value;
 
     yield* ui.note(formatAuthConfigInfo(item), `Auth Config: ${item.name}`);
 

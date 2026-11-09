@@ -5,7 +5,6 @@ import {
 } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import * as MockConsole from '../services/mock-console';
-import { recordingNodeProcess } from '../services/node-process-test';
 import { makeToolkitsRepositoryStub } from '../services/toolkits-repository-stub';
 import {
   authConfigRepositoryMethods,
@@ -24,13 +23,11 @@ export interface AuthConfigsHandlerFixture {
 
 /**
  * What an `auth-configs` handler needs without argv or `TestLive`: a headless terminal whose
- * stdout payloads land in `outputs` (decoration goes to `MockConsole`), a `NodeProcess` that
- * records the exit code, and a repository serving only the auth-config methods. Any other
- * repository method dies.
+ * stdout payloads land in `outputs` (decoration goes to `MockConsole`), and a repository
+ * serving only the auth-config methods. Any other repository method dies.
  */
 export const AuthConfigsHandlerTest = (fixture: AuthConfigsHandlerFixture = {}) => {
   const outputs: Array<string> = [];
-  const proc = recordingNodeProcess();
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
     Layer.succeed(
@@ -43,7 +40,6 @@ export const AuthConfigsHandlerTest = (fixture: AuthConfigsHandlerFixture = {}) 
           }),
       })
     ),
-    proc.layer,
     Layer.succeed(
       ComposioToolkitsRepository,
       makeToolkitsRepositoryStub({
@@ -54,5 +50,5 @@ export const AuthConfigsHandlerTest = (fixture: AuthConfigsHandlerFixture = {}) 
       })
     )
   );
-  return { layer, outputs, exitCode: proc.exitCode };
+  return { layer, outputs };
 };

@@ -1,6 +1,6 @@
 name: Dead Code
 
-# Surfaces likely-dead code on every PR so orphaned files/exports/deps get
+# Surfaces likely-dead code once a week so orphaned files/exports/deps get
 # noticed instead of rotting (see the root Dockerfile cleanup, #3783).
 #
 # Report-only by design: every job writes findings to the run's Step Summary
@@ -8,40 +8,18 @@ name: Dead Code
 # surface, dynamic imports, import-map targets), so a red X here would train
 # people to ignore it. Tighten a job to blocking only once its config is
 # refined enough that a clean run is the steady state.
+#
+# It runs weekly rather than on every PR because nobody acts on a per-PR
+# report-only result. Run it on demand to check a branch.
 
 on:
-  push:
-    branches: [master, next, main]
-    paths:
-      - 'ts/**'
-      - 'python/**'
-      - '.github/actions/**'
-      - '.github/workflows/**'
-      - '.github/scripts/check-orphan-ci.sh'
-      - 'knip.json'
-      - 'package.json'
-      - 'pnpm-workspace.yaml'
-      - 'pnpm-lock.yaml'
-      - 'mise.toml'
-      - 'mise.lock'
-  pull_request:
-    branches: [master, next, main]
-    paths:
-      - 'ts/**'
-      - 'python/**'
-      - '.github/actions/**'
-      - '.github/workflows/**'
-      - '.github/scripts/check-orphan-ci.sh'
-      - 'knip.json'
-      - 'package.json'
-      - 'pnpm-workspace.yaml'
-      - 'pnpm-lock.yaml'
-      - 'mise.toml'
-      - 'mise.lock'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

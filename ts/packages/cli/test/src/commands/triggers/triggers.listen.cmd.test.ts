@@ -1,10 +1,11 @@
 import type { ServerResponse } from 'node:http';
-import { afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
+import { makeShutdownController, ShutdownSignal } from 'src/services/shutdown-signal';
 import { cli, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
 import { failingFileWrites } from 'test/__utils__/services/failing-file-writes';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
@@ -33,10 +34,6 @@ const failingRealtime = Layer.succeed(
 );
 
 describe('CLI: composio dev listen', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] the realtime subscription fails',
     it => {
@@ -44,14 +41,16 @@ describe('CLI: composio dev listen', () => {
         Effect.gen(function* () {
           yield* enableListen;
           const terminal = redirectedTerminalUI();
-          yield* cli(['dev', 'listen', '--max-events', '1']).pipe(
-            Effect.provide(Layer.merge(failingRealtime, terminal.layer))
+          const exit = yield* Effect.exit(
+            cli(['dev', 'listen', '--max-events', '1']).pipe(
+              Effect.provide(Layer.merge(failingRealtime, terminal.layer))
+            )
           );
 
           expect(terminal.stderr()).toContain(
             'Could not subscribe to realtime trigger events: socket closed. Check your network connection or run `composio login`.\n'
           );
-          expect(process.exitCode).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }
@@ -95,8 +94,6 @@ describe('CLI: composio dev listen', () => {
         expect(terminal.stderr()).toContain(
           '1 event failed to forward to http://127.0.0.1:9/composio while listening.'
         );
-        // Recovered per-event failures, not a failed command.
-        expect(process.exitCode).toBeUndefined();
       })
     );
 
@@ -105,18 +102,16 @@ describe('CLI: composio dev listen', () => {
       Effect.gen(function* () {
         yield* enableListen;
         const terminal = redirectedTerminalUI();
-        yield* cli([
-          'dev',
-          'listen',
-          '--forward',
-          'http://127.0.0.1:9/composio',
-          '--fail-fast',
-        ]).pipe(Effect.provide(terminal.layer));
+        const exit = yield* Effect.exit(
+          cli(['dev', 'listen', '--forward', 'http://127.0.0.1:9/composio', '--fail-fast']).pipe(
+            Effect.provide(terminal.layer)
+          )
+        );
 
         expect(terminal.stderr()).toContain(
           '1 event failed to forward to http://127.0.0.1:9/composio while listening.'
         );
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
 
@@ -137,14 +132,44 @@ describe('CLI: composio dev listen', () => {
         expect(terminal.stderr()).toContain(
           `1 event failed to append to ${outFile} while listening.`
         );
-        // Recovered per-event failures, not a failed command.
-        expect(process.exitCode).toBeUndefined();
       })
     );
 
-    // Ctrl+C/SIGTERM: runMain interrupts the listener fiber; the onExit finalizer must run the
-    // summary anyway. The forwarding failure logs its warn only after the failure was counted,
-    // so awaiting the latch is an ordered count-is-set signal — no polling, no sleeps.
+    // Ctrl+C or SIGTERM once subscribed: the listener stops itself, sums up, and succeeds. The
+    // forwarding failure logs its warn only after the failure was counted, so awaiting the latch
+    // is an ordered count-is-set signal — no polling, no sleeps.
+    it.effect.each(['SIGINT', 'SIGTERM'] as const)(
+      '[When] %s arrives after the subscription [Then] it stops cleanly, sums up, and exits 0',
+      signal =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const shutdown = makeShutdownController();
+          const forwardFailed = Latch.makeUnsafe(false);
+          const terminal = redirectedTerminalUI({
+            onWarn: message => {
+              if (message.includes('Failed forwarding event to')) forwardFailed.openUnsafe();
+            },
+          });
+          const fiber = yield* Effect.forkChild(
+            cli(['dev', 'listen', '--forward', 'http://']).pipe(
+              Effect.provide(terminal.layer),
+              Effect.provideService(ShutdownSignal, shutdown.service)
+            )
+          );
+
+          yield* forwardFailed.await;
+          expect(shutdown.offer(signal)).toBe(true);
+          const exit = yield* Fiber.await(fiber);
+
+          expect(terminal.stderr()).toContain(
+            '1 event failed to forward to http:// while listening.'
+          );
+          expect(exitCodeOf(exit)).toBe(0);
+        })
+    );
+
+    // A signal the listener does not take (before the subscription, or SIGHUP): the runner
+    // interrupts the listener fiber; the onExit finalizer must run the summary anyway.
     it.effect('[Then] sums the failures up even when the listener is interrupted mid-run', () =>
       Effect.gen(function* () {
         yield* enableListen;
@@ -160,12 +185,13 @@ describe('CLI: composio dev listen', () => {
 
         yield* forwardFailed.await;
         yield* Fiber.interrupt(fiber);
+        const exit = yield* Fiber.await(fiber);
 
         expect(terminal.stderr()).toContain(
           '1 event failed to forward to http:// while listening.'
         );
-        // Recovered per-event failures, not a failed command.
-        expect(process.exitCode).toBeUndefined();
+        // Recovered per-event failures, not a failed command: interrupted, so 130.
+        expect(exitCodeOf(exit)).toBe(130);
       })
     );
   });
@@ -288,7 +314,7 @@ describe('CLI: composio dev listen', () => {
         const terminal = redirectedTerminalUI();
         const held: Array<ServerResponse> = [];
         let requests = 0;
-        yield* withHttpServerEffect(
+        const exit = yield* withHttpServerEffect(
           (_req, res) => {
             requests += 1;
             if (requests === 1) res.end();
@@ -298,14 +324,15 @@ describe('CLI: composio dev listen', () => {
           url =>
             cli(['dev', 'listen', '--forward', url, '--max-events', '3', '--fail-fast']).pipe(
               Effect.provide(terminal.layer),
-              Effect.ensuring(Effect.sync(() => held.forEach(res => res.end())))
+              Effect.ensuring(Effect.sync(() => held.forEach(res => res.end()))),
+              Effect.exit
             )
         );
 
         expect(terminal.stderr()).toMatch(
           /1 event failed to forward to http:\/\/127\.0\.0\.1:\d+ while listening\./
         );
-        expect(process.exitCode).toBe(1);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });

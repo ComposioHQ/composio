@@ -16,7 +16,7 @@ bun = "http:bun"
 [tools]
 "npm:pnpm" = "11.8.0"
 node = "24.22.1"
-python = "3.12"
+python = "3.12.13"
 uv = "0.13.5"
 
 # These immutable npm platform packages contain Bun's stable release binaries;

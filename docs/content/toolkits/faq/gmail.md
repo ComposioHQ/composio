@@ -34,93 +34,14 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ## How do I send an email with an attachment?
 
-Save the attachment as `report.pdf` in the directory you run the example from. Automatic file upload is off by default, so the SDK examples enable it and allow uploads only from that directory; the API option shows the same staging requests explicitly. The `user-123` identity must already have an active Gmail connection.
+Use a [session](/docs/quickstart) so your agent discovers the email tool at runtime instead of hard-coding an action slug.
 
-These examples deliberately use `latest` and opt out of the SDK version guard. Pin a tested [toolkit version](/docs/tools-direct/toolkit-versioning) in production.
+1. [Connect Gmail for your user](/docs/authentication/manually-authenticating), then create a session for the same user and give your agent the session tools.
+2. Upload `./report.pdf` to that session with the experimental `session.experimental.files` API. See [sandbox files and mounts](/docs/sandbox/remote#files-and-mounts) for Python, TypeScript, and API examples. The agent can read the uploaded file in the remote sandbox, not from your application's local filesystem.
+3. Ask the agent to send the email with your recipient, subject, body, and the uploaded file's sandbox path. For a file mounted at `/mnt/files/report.pdf`, instruct it to use the sandbox's `get_mount_file_s3_key("report.pdf")` helper and pass the returned key to the discovered email tool in a file object with `name`, `mimetype`, and `s3key`. A sandbox path is not a storage key. See [session files and toolkit attachments](/kb/guide/mcp-tool-router-files).
+4. Check the tool result before reporting that the email was sent. If the tool fails, report the error.
 
-### Python
-```python
-import os
-
-from composio import Composio
-
-composio = Composio(
-    dangerously_allow_auto_upload_download_files=True,
-    file_upload_dirs=[os.getcwd()],
-)
-
-result = composio.tools.execute(
-    slug="GMAIL_SEND_EMAIL",
-    user_id="user-123",
-    version="latest",
-    dangerously_skip_version_check=True,
-    arguments={
-        "recipient_email": "recipient@example.com",
-        "subject": "Report attached",
-        "body": "See attached.",
-        "attachment": "./report.pdf",
-    },
-)
-```
-
-### TypeScript
-```typescript
-import { Composio } from "@composio/core";
-
-const composio = new Composio({
-  dangerouslyAllowAutoUploadDownloadFiles: true,
-  fileUploadDirs: [process.cwd()],
-});
-
-const result = await composio.tools.execute("GMAIL_SEND_EMAIL", {
-  userId: "user-123",
-  version: "latest",
-  dangerouslySkipVersionCheck: true,
-  arguments: {
-    recipient_email: "recipient@example.com",
-    subject: "Report attached",
-    body: "See attached.",
-    attachment: "./report.pdf",
-  },
-});
-```
-
-### API
-
-```bash
-MD5=$(openssl dgst -md5 -r report.pdf | cut -d ' ' -f 1)
-UPLOAD=$(curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/files/upload/request \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"toolkit_slug":"gmail","tool_slug":"GMAIL_SEND_EMAIL","filename":"report.pdf","mimetype":"application/pdf","md5":"'"$MD5"'"}')
-UPLOAD_URL=$(echo "$UPLOAD" | jq -r '.new_presigned_url')
-KEY=$(echo "$UPLOAD" | jq -r '.key')
-BACKEND=$(echo "$UPLOAD" | jq -r '.metadata.storage_backend')
-if [ "$BACKEND" = "azure_blob_storage" ]; then
-  curl --fail-with-body -X PUT "$UPLOAD_URL" --data-binary @report.pdf \
-    -H "Content-Type: application/pdf" -H "x-ms-blob-type: BlockBlob"
-else
-  curl --fail-with-body -X PUT "$UPLOAD_URL" --data-binary @report.pdf \
-    -H "Content-Type: application/pdf"
-fi
-curl --fail-with-body -X POST https://backend.composio.dev/api/v3.1/tools/execute/GMAIL_SEND_EMAIL \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id":"user-123",
-    "version":"latest",
-    "arguments":{
-      "recipient_email":"recipient@example.com",
-      "subject":"Report attached",
-      "body":"See attached.",
-      "attachment":{"name":"report.pdf","mimetype":"application/pdf","s3key":"'"$KEY"'"}
-    }
-  }'
-```
-
-<!-- end-languages -->
-
-This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
+Automatic file upload is off by default. This workflow uploads the file explicitly and does not require enabling automatic file handling. The session files API is experimental and may change.
 
 ## Why can Gmail filter setup show an app-blocked error?
 

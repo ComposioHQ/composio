@@ -1,6 +1,7 @@
 import {
   Array as Arr,
   Data,
+  Deferred,
   Effect,
   Result,
   Option,
@@ -8,6 +9,7 @@ import {
   Schema,
   Context,
   Layer,
+  type Scope,
 } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import type {
@@ -35,6 +37,15 @@ export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
   readonly message: string;
   readonly cause?: unknown;
 }> {}
+
+export interface ListenOptions {
+  /**
+   * Runs once Pusher confirmed the subscription (`pusher:subscription_succeeded`), in a scope
+   * that stays open while it does: the place to register for a cooperative stop
+   * (`ShutdownSignal.cooperate`).
+   */
+  readonly onSubscribed?: Effect.Effect<void, never, Scope.Scope>;
+}
 
 const subscriptionError = (message: string) => (cause: unknown) =>
   new TriggerRealtimeSubscriptionError({ message, cause });
@@ -101,6 +112,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
       socket_id: string;
     }) => Effect.Effect<CliRealtimeAuthResponse, TriggerRealtimeSubscriptionError>;
     onEvent: (data: RawRealtimeEvent) => void;
+    options?: ListenOptions;
   }) =>
     Effect.acquireUseRelease(
       Effect.gen(function* () {
@@ -153,6 +165,20 @@ const makeTriggersRealtime = Effect.gen(function* () {
         });
 
         const channel = pusher.subscribe(channelName);
+
+        // Pusher confirms or rejects the subscription later, once the socket is connected and the
+        // channel is authorized. pusher-js does not catch listener exceptions, so these callbacks
+        // only complete the Deferred and never throw.
+        const subscribed = Deferred.makeUnsafe<void, TriggerRealtimeSubscriptionError>();
+        channel.bind('pusher:subscription_succeeded', () => {
+          Deferred.doneUnsafe(subscribed, Effect.void);
+        });
+        channel.bind('pusher:subscription_error', (status: unknown) => {
+          Deferred.doneUnsafe(
+            subscribed,
+            Effect.fail(subscriptionError('Failed to subscribe to realtime trigger events')(status))
+          );
+        });
 
         // Pusher has a 10 KB per-message limit.  When the Composio backend
         // produces a trigger payload that exceeds this, it splits the JSON
@@ -256,6 +282,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
         });
 
         return {
+          subscribed: Deferred.await(subscribed),
           shutdown: async () => {
             clearInterval(cleanupInterval);
             channel.unbind_all?.();
@@ -264,7 +291,12 @@ const makeTriggersRealtime = Effect.gen(function* () {
           },
         };
       }),
-      () => Effect.never,
+      resource =>
+        resource.subscribed.pipe(
+          Effect.andThen(params.options?.onSubscribed ?? Effect.void),
+          Effect.andThen(Effect.never),
+          Effect.scoped
+        ),
       resource =>
         Effect.tryPromise({
           try: () => resource.shutdown(),
@@ -272,7 +304,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
         }).pipe(Effect.catch(() => Effect.void))
     );
 
-  const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
+  const listen = (onEvent: (data: RawRealtimeEvent) => void, options?: ListenOptions) =>
     listenWith({
       getRealtimeCredentials: () =>
         sessionRepo
@@ -283,11 +315,13 @@ const makeTriggersRealtime = Effect.gen(function* () {
           .authRealtimeChannel(params)
           .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
       onEvent,
+      options,
     });
 
   const listenInProject = (
     scope: { orgId: string; projectId: string },
-    onEvent: (data: RawRealtimeEvent) => void
+    onEvent: (data: RawRealtimeEvent) => void,
+    options?: ListenOptions
   ) =>
     Effect.gen(function* () {
       const client = yield* clientSingleton.getFor({
@@ -305,6 +339,7 @@ const makeTriggersRealtime = Effect.gen(function* () {
             .auth(params, idempotent)
             .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
         onEvent,
+        options,
       });
     });
 

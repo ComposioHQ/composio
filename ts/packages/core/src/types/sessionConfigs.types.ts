@@ -6,7 +6,10 @@ import { ToolRouterTagsParamSchema } from './toolRouter.types';
  * active configs only, 20 per page, at most 100.
  */
 export const SessionConfigListParamsSchema = z.object({
-  /** Case-insensitive substring match against the config name. */
+  /**
+   * @deprecated The Composio API no longer accepts this field. It is ignored
+   *   and `list()` logs a warning when it is set; filter `items` by name instead.
+   */
   search: z.string().optional(),
   /** `true` returns only archived configs. Omitted returns active configs. */
   archived: z.boolean().optional(),

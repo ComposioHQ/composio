@@ -48,25 +48,32 @@ export function transformIncomingTriggerPayload(response: TriggerData): Incoming
     }));
 }
 
+function toTriggerType(
+  response: RawTriggersTypeRetrieveResponse | RawTriggersTypeListResponse['items'][number]
+): TriggersTypeRetrieveResponse {
+  return {
+    slug: response.slug,
+    name: response.name,
+    description: response.description,
+    instructions: response.instructions,
+    toolkit: {
+      logo: response.toolkit.logo,
+      slug: response.toolkit.slug,
+      name: response.toolkit.name,
+    },
+    version: response.version,
+    payload: response.payload,
+    config: response.config,
+    type: response.type,
+    types: response.types,
+    requiresWebhookEndpointSetup: response.requires_webhook_endpoint_setup,
+  };
+}
+
 export function transformTriggerTypeRetrieveResponse(
   response: RawTriggersTypeRetrieveResponse
 ): TriggersTypeRetrieveResponse {
-  return transform(response)
-    .with(TriggerTypeSchema)
-    .using(response => ({
-      slug: response.slug,
-      name: response.name,
-      description: response.description,
-      instructions: response.instructions,
-      toolkit: {
-        logo: response.toolkit.logo,
-        slug: response.toolkit.slug,
-        name: response.toolkit.name,
-      },
-      version: response.version,
-      payload: response.payload,
-      config: response.config,
-    }));
+  return transform(response).with(TriggerTypeSchema).using(toTriggerType);
 }
 
 export function transformTriggerTypeListResponse(
@@ -75,7 +82,7 @@ export function transformTriggerTypeListResponse(
   return transform(response)
     .with(TriggersTypeListResponseSchema)
     .using(response => ({
-      items: response.items,
+      items: response.items.map(toTriggerType),
       nextCursor: response.next_cursor ?? null,
       totalPages: response.total_pages,
     }));
@@ -102,6 +109,9 @@ export function transformTriggerInstanceListActiveItem(
       updatedAt: response.updated_at,
       triggerData: response.trigger_data,
       uuid: response.uuid,
+      type: response.type,
+      fallbackReason: response.fallback_reason,
+      pollingInterval: response.polling_interval,
     }));
 }
 

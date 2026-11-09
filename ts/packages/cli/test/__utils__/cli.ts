@@ -1,7 +1,14 @@
 import { Effect } from 'effect';
-import * as Cli from 'src/commands';
+import { runInvocation } from 'src/invocation/invocation';
+import { exitCodeOf } from './exit-code';
 
-// Run CLI in test environment. `bootstrap` stands in for the values `cli-main.ts` resolves before
-// routing the root command (currently the `composio run` id).
-export const cli = (args: ReadonlyArray<string>, bootstrap?: Cli.RootCommandBootstrap) =>
-  Effect.flatMap(Cli.runWithConfig, run => run(['node', '<CMD>', ...args], bootstrap));
+/**
+ * Runs the CLI with `args` (no executable prefix) through the full invocation, the one the binary
+ * runs: invocation hooks, lifecycle telemetry, the command, and its failure on stderr. Fails with
+ * the command's own error, so `Effect.flip` and tag matching see it.
+ */
+export const cli = (args: ReadonlyArray<string>) => runInvocation(['node', '<CMD>', ...args]);
+
+/** Runs `cli(args)` and reports how it ended, with the code the process would exit with. */
+export const cliExit = (args: ReadonlyArray<string>) =>
+  Effect.map(Effect.exit(cli(args)), exit => ({ exit, exitCode: exitCodeOf(exit) }));

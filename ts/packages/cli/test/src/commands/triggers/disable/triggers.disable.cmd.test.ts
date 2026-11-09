@@ -1,9 +1,10 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
 const testConfigProvider = ConfigProvider.fromEnv({
@@ -44,7 +45,9 @@ describe('CLI: composio dev triggers disable', () => {
               /^Missing required argument: <id>\nTry specifying a trigger ID, e\.g\.:\n> composio dev triggers disable "trg_123"/
             ),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }
@@ -94,22 +97,23 @@ describe('CLI: composio dev triggers disable', () => {
     it => {
       it.effect('prints the fallback message and the status hint', () =>
         Effect.gen(function* () {
-          const proc = recordingNodeProcess();
           const repository = Layer.succeed(
             ComposioToolkitsRepository,
             makeToolkitsRepositoryStub({
               disableTrigger: () => Effect.fail(notFoundError('Trigger not found')),
             })
           );
-          yield* cli(['dev', 'triggers', 'disable', 'trg_missing', '--dangerously-allow']).pipe(
-            Effect.provide(Layer.merge(repository, proc.layer))
+          const exit = yield* Effect.exit(
+            cli(['dev', 'triggers', 'disable', 'trg_missing', '--dangerously-allow']).pipe(
+              Effect.provide(repository)
+            )
           );
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
           expect(output).toContain('Failed to disable trigger "trg_missing".');
           expect(output).toContain('composio dev triggers status');
           expect(output).not.toContain('Trigger "trg_missing" disabled.');
-          expect(proc.exitCode()).toBe(1);
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

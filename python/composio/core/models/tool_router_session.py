@@ -2,13 +2,14 @@
 ToolRouterSession class for managing a single tool router session.
 
 Provides methods for tools, authorize, toolkits, search, execute, and files.
-When custom tools are bound to the session, execution is routed: local tools
+When local tools are bound to the session, execution is routed: local tools
 run in-process, remote tools are sent to the backend.
 """
 
 from __future__ import annotations
 
 import typing as t
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
@@ -52,14 +53,11 @@ from composio.core.models.custom_tool_types import (
     InlineCustomToolsWirePayload,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
+    RegisteredLocalTool,
+    RegisteredLocalToolkit,
     ToolRouterSessionProxyExecuteResponse,
 )
 from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
-from composio.core.models.inline_custom_tools_payload import (
-    inline_custom_tools_execute_experimental,
-    inline_custom_tools_execute_meta_experimental,
-    inline_custom_tools_search_experimental,
-)
 from composio.core.models.session_context import (
     SessionContextImpl,
     proxy_execute_impl,
@@ -72,7 +70,6 @@ from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
     ToolRouterSessionExecuteResponse,
-    require_execute_meta_result,
     require_execute_result,
 )
 from composio.core.provider import TTool, TToolCollection
@@ -308,6 +305,14 @@ class ToolRouterUpdateExperimentalConfig(te.TypedDict, total=False):
     session's MCP client can't ask the user: ``"deny"`` or ``"allow"``."""
 
 
+_CUSTOM_TOOLS_DEPRECATION = (
+    "`session.custom_tools()` is deprecated; use `session.local_tools()`"
+)
+_CUSTOM_TOOLKITS_DEPRECATION = (
+    "`session.custom_toolkits()` is deprecated; use `session.local_toolkits()`"
+)
+
+
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
     A Composio session — the object returned by ``composio.create(...)`` /
@@ -439,7 +444,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         in-process, remote tools are sent to the backend.
         """
         from composio.core.models.tools import Tools as ToolsModel
-        from composio.core.provider import AgenticProvider, NonAgenticProvider
+        from composio.core.provider import (
+            AgenticProvider,
+            NonAgenticProvider,
+            bind_execution_target,
+        )
 
         if self._provider is None:
             raise ValueError(
@@ -490,7 +499,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             TToolCollection,
             t.cast(AgenticProvider[TTool, TToolCollection], self._provider).wrap_tools(
                 tools=router_tools,
-                execute_tool=execute_fn,
+                execute_tool=bind_execution_target(execute_fn, self),
             ),
         )
 
@@ -992,9 +1001,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             session_id=self.session_id,
             queries=[{"use_case": query}],
             model=model if model else omit,
-            experimental=inline_custom_tools_search_experimental(
-                self._inline_custom_tools_payload
-            ),
+            experimental=self._inline_custom_tools_payload
+            if self._inline_custom_tools_payload is not None
+            else omit,
         )
 
     def execute(
@@ -1064,9 +1073,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     input_responses if input_responses is not None else omit
                 ),
                 request_state=request_state if request_state is not None else omit,
-                experimental=inline_custom_tools_execute_experimental(
-                    self._inline_custom_tools_payload
-                ),
+                experimental=self._inline_custom_tools_payload
+                if self._inline_custom_tools_payload is not None
+                else omit,
             ),
             tool_slug,
         )
@@ -1110,7 +1119,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        return require_execute_meta_result(
+        return require_execute_result(
             self._client.without_retries.tool_router.session.execute_meta(
                 session_id=self.session_id,
                 slug=slug,
@@ -1119,22 +1128,22 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     input_responses if input_responses is not None else omit
                 ),
                 request_state=request_state if request_state is not None else omit,
-                experimental=inline_custom_tools_execute_meta_experimental(
-                    self._inline_custom_tools_payload
-                ),
+                experimental=self._inline_custom_tools_payload
+                if self._inline_custom_tools_payload is not None
+                else omit,
             ),
             slug,
         )
 
-    def custom_tools(
+    def local_tools(
         self, *, toolkit: t.Optional[str] = None
-    ) -> t.List[RegisteredCustomTool]:
-        """List all custom tools registered in this session.
+    ) -> t.List[RegisteredLocalTool]:
+        """List all local tools registered in this session.
 
         Returns tools with their final slugs, schemas, and resolved toolkit.
 
         :param toolkit: Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
-        :returns: Array of registered custom tools
+        :returns: Array of registered local tools
         """
         if not self._custom_tools_map:
             return []
@@ -1157,8 +1166,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             for entry in entries
         ]
 
-    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
-        """List all custom toolkits registered in this session.
+    def local_toolkits(self) -> t.List[RegisteredLocalToolkit]:
+        """List all toolkits of local tools registered in this session.
 
         Returns toolkits with their tools showing final slugs.
         """
@@ -1202,6 +1211,28 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 )
             )
         return result
+
+    @te.deprecated(_CUSTOM_TOOLS_DEPRECATION, category=None)
+    def custom_tools(
+        self, *, toolkit: t.Optional[str] = None
+    ) -> t.List[RegisteredCustomTool]:
+        """Deprecated alias for :meth:`local_tools`."""
+        warnings.warn(
+            _CUSTOM_TOOLS_DEPRECATION,
+            exceptions.ComposioDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.local_tools(toolkit=toolkit)
+
+    @te.deprecated(_CUSTOM_TOOLKITS_DEPRECATION, category=None)
+    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
+        """Deprecated alias for :meth:`local_toolkits`."""
+        warnings.warn(
+            _CUSTOM_TOOLKITS_DEPRECATION,
+            exceptions.ComposioDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.local_toolkits()
 
     def proxy_execute(
         self,

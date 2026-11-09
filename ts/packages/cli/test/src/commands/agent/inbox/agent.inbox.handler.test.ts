@@ -6,6 +6,7 @@ import { writeStoredAgentIdentity } from 'src/services/agents';
 import { MockConsole } from 'test/__utils__';
 import { AgentHandlerTest } from 'test/__utils__/layers/agents';
 import { agentsJsonResponse, makeAgentIdentity } from 'test/__utils__/models/agent';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 
 const inbox = {
   count: 1,
@@ -24,7 +25,6 @@ const inbox = {
 describe('runAgentInbox', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    process.exitCode = undefined;
   });
 
   it.effect(
@@ -59,13 +59,13 @@ describe('runAgentInbox', () => {
       yield* writeStoredAgentIdentity(makeAgentIdentity());
       const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-      yield* runAgentInbox({ limit: 50 });
+      const exit = yield* Effect.exit(runAgentInbox({ limit: 50 }));
 
       expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
         'This CLI is currently signed in to Composio as a regular user, not an agent.',
         expect.stringMatching(/^Next steps:\n/),
       ]);
-      expect(process.exitCode).toBe(1);
+      expect(exitCodeOf(exit)).toBe(1);
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(outputs).toEqual([]);
     }).pipe(Effect.provide(layer));

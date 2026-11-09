@@ -11,6 +11,7 @@ from composio_client.types.tool_router.session_execute_meta_response import (
     SessionExecuteMetaBlockedResponse,
     SessionExecuteMetaInputRequiredResponse,
     SessionExecuteMetaResult,
+    SessionExecuteMetaResponse,
 )
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteBlockedResponse,
@@ -37,11 +38,12 @@ from composio.core.models.custom_tool_types import (
     InlineCustomToolsWirePayload,
     ToolRouterHookResult,
 )
-from composio.core.models.inline_custom_tools_payload import (
-    inline_custom_tools_execute_experimental,
-)
 from composio.core.provider import TTool, TToolCollection
-from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
+from composio.core.provider.agentic import (
+    AgenticProvider,
+    AgenticProviderExecuteFn,
+    bind_execution_target,
+)
 from composio.core.provider.base import BaseProvider, ExecuteToolFn
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
@@ -241,10 +243,10 @@ def _blocked_execute_result(
 
 
 def require_execute_result(
-    response: SessionExecuteResult,
+    response: t.Union[SessionExecuteResult, SessionExecuteMetaResult],
     slug: str,
 ) -> ToolRouterSessionExecuteResponse:
-    """Narrow a session execute response to a tool that ran.
+    """Normalize a session execute or execute_meta response to the SDK's result.
 
     Every session execute response carries a ``result_type``. A ``blocked``
     call (a session hook blocked it) is returned as a result with empty
@@ -257,9 +259,15 @@ def require_execute_result(
         running.
     :raises ValidationError: If ``result_type`` is missing or unknown.
     """
-    if isinstance(response, SessionExecuteBlockedResponse):
+    if isinstance(
+        response, (SessionExecuteBlockedResponse, SessionExecuteMetaBlockedResponse)
+    ):
         return _blocked_execute_result(response)
-    executed = require_executed(response, f"Tool {slug}")
+    # The completed client models share a contract but no common typed base.
+    executed = t.cast(
+        t.Union[SessionExecuteResponse, SessionExecuteMetaResponse],
+        require_executed(response, f"Tool {slug}"),
+    )
     if executed.result_type not in ("completed", "failed"):
         raise ValidationError(
             f"Tool {slug} returned an execute response without a known result_type"
@@ -267,33 +275,6 @@ def require_execute_result(
     return _session_execute_result(
         {**dict(executed), "hook_results": hook_results_of(executed.hook_results)},
         executed.model_fields_set,
-    )
-
-
-def require_execute_meta_result(
-    response: SessionExecuteMetaResult,
-    slug: str,
-) -> ToolRouterSessionExecuteResponse:
-    """Narrow a session execute_meta response to a meta tool that ran.
-
-    The meta endpoint answers in the same shape as session execute, so the
-    result is returned as the session execute response and follows the rules of
-    :func:`require_execute_result`.
-
-    :raises ToolInputRequiredError: If the tool asked for user input instead of
-        running.
-    :raises ValidationError: If ``result_type`` is missing or unknown.
-    """
-    if isinstance(response, SessionExecuteMetaBlockedResponse):
-        return _blocked_execute_result(response)
-    executed = require_executed(response, f"Tool {slug}")
-    # Carry the fields over as the client parsed them instead of validating
-    # them a second time.
-    return require_execute_result(
-        SessionExecuteResponse.model_construct(
-            _fields_set=executed.model_fields_set, **dict(executed)
-        ),
-        slug,
     )
 
 
@@ -670,7 +651,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         user_id: t.Optional[str] = None,
     ) -> AgenticProviderExecuteFn:
         """Wrap the execute tool function"""
-        return t.cast(
+        execute_tool = t.cast(
             AgenticProviderExecuteFn,
             functools.partial(
                 self.execute,
@@ -681,6 +662,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 dangerously_skip_version_check=True,
             ),
         )
+        if user_id is None:
+            return execute_tool
+        return bind_execution_target(execute_tool, user_id)
 
     def _wrap_execute_tool_for_tool_router(
         self,
@@ -767,9 +751,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     # Provider-wrapped session tools are agentic calls, so they opt into
                     # direct tool offload when the backend session workbench allows it.
                     enable_auto_workbench_offload=True,
-                    experimental=inline_custom_tools_execute_experimental(
-                        inline_custom_tools_payload
-                    ),
+                    experimental=inline_custom_tools_payload
+                    if inline_custom_tools_payload is not None
+                    else omit,
                 ),
                 slug,
             )

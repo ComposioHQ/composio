@@ -46,7 +46,7 @@ const session = await composio.create("user_123");
 const tools = await session.tools();
 
 const { text } = await generateText({
-  model: anthropic("claude-opus-4-6"),
+  model: anthropic("claude-opus-5-5"),
   tools,
   prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
   stopWhen: stepCountIs(10),

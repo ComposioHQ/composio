@@ -1,363 +1,46 @@
 ---
 title: White-labeling (direct execution)
-description: Remove Composio branding from your auth flows
+description: Choose branded hosted authentication or an app-owned UI with custom OAuth apps
 keywords: [branding, own oauth, custom redirect, white label]
 llmGuardrails: "direct-execution"
 legacy: true
 ---
 
-<Callout type="info">
-If you're building an agent with sessions, see [White-labeling authentication](/docs/authentication/white-labeling-authentication) instead.
-</Callout>
-
-There are four places where Composio branding shows up during authentication:
-
-| Where | What users see | How to fix |
-|-------|---------------|------------|
-| [**Connect Link page**](#customizing-the-connect-link) | Composio logo, name, and styling on the hosted auth page | Set your logo, app title, and theme in the dashboard |
-| [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
-| [**Outgoing redirect**](#sending-users-directly-to-the-oauth-provider) | `backend.composio.dev` in browser before reaching OAuth provider | Use `long_redirect_url` option |
-| [**Return redirect**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes when OAuth provider redirects back | Proxy the redirect through your domain |
+The [White-labeling authentication guide](/docs/authentication/white-labeling-authentication) covers both hosted Connect Link branding and app-owned connection UI. The same OAuth app and callback rules apply whether you use direct tool execution or sessions.
 
 ## Customizing the Connect Link
 
-The Connect Link is the hosted page your users see when connecting their accounts. By default it shows Composio branding on a neutral light theme. You can swap in your logo and name, then restyle the whole page to match your product.
+Use `composio.connectedAccounts.link(userId, authConfigId, { callbackUrl })` in TypeScript or `composio.connected_accounts.link(user_id=..., auth_config_id=..., callback_url=...)` in Python to start a hosted flow without a session. The [server-side cURL example](/docs/authentication/white-labeling-authentication#choose-your-connection-ui) shows the equivalent API request.
 
-Everything here lives in **Project Settings** → [**White Labeling**](https://dashboard.composio.dev/~/project/settings/auth-screen?utm_source=docs&utm_medium=content&utm_campaign=docs-auth-configuration-white-labeling). Changes apply to every Connect Link flow across all toolkits. Each project has one branding and one theme, so if you need a different look per product, use separate projects.
-
-### Logo and name
-
-1. Go to **Project Settings** → **White Labeling**, and open the **Branding** tab.
-2. Set your **App Title** and upload your **Logo** (a square JPEG or PNG, 256×256 to 1024×1024 pixels).
-
-The logo replaces the Composio mark at the top of the page, and the app title replaces "Composio" in the "...wants to connect to your account" heading.
-
-<Callout>
-This only changes the Composio-hosted page. For OAuth toolkits like Gmail, Google Sheets, GitHub, and Slack, users still see a consent screen saying "Composio wants to access your account." To change that, and to remove the "Secured by Composio" badge, set up your own OAuth app as described [below](#using-your-own-oauth-apps).
-</Callout>
-
-### Colors, fonts, and per-element styling
-
-Open the **Styling** tab to restyle the entire Connect Link page. A live preview sits beside the controls and updates as you edit, and you can preview each state of the flow with the **Welcome**, **Form**, **Success**, and **Error** tabs.
-
-<Figure src="/images/auth-screen-theme-editor.png" alt="The White Labeling editor with a live preview on the left and styling controls on the right" caption="Editing colors, fonts, and per-element styling with a live preview of the Connect Link" />
-
-Set the page-wide defaults first:
-
-- **Seed colours** for the page background, card, foreground text, and primary accent, plus secondary and tertiary accents for decorative touches.
-- **Typefaces**: a display font for headings and a body font, each chosen from a curated set. The default is ABC Diatype.
-- **Geometry**: corner radius and border width, which set the roundness and outline weight of cards, buttons, and inputs.
-
-For finer control, select any element in the preview to style just that element. Editable elements cover the page and card surfaces, the heading, body, and field labels, the primary and secondary buttons, the input, the error notice, links, and the logo. Depending on the element you can set its colour, background, border, corner radius, shadow, and text size, weight, letter spacing, and case.
-
-<Callout type="info" title="Contrast is enforced">
-Text has to stay legible against its background. The editor shows the contrast ratio for each text element and disables **Save Changes** until every element passes, so you can't ship an unreadable page by accident.
-</Callout>
-
-Prefer to work in code? Flip the **JSON** toggle to edit the theme as a single object you can paste, review, or generate. Your logo and app title stay in the **Branding** tab, since the logo has no JSON representation.
-
-### Language
-
-The Connect Link shows English by default. To show it in your user's language, add a `locale` parameter to the Connect Link URL before you send it to the user. The Connect Link supports these languages:
-
-| Language | `locale` value |
-|----------|----------------|
-| English | `en` (default) |
-| Spanish | `es` |
-| Simplified Chinese | `zh-CN` |
-
-Use these values exactly as written. Any other value, including variants such as `es-MX` or `zh-cn`, shows English. The language stays the same for the whole flow, including the success or failure screen after the user returns from the OAuth provider.
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-from urllib.parse import urlencode
-
-connection_request = composio.connected_accounts.link(
-    user_id="user_123",
-    auth_config_id="ac_abc",
-)
-
-if connection_request.redirect_url:
-    # Show the Connect Link in Spanish
-    connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
-    print(connect_url)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const connectionRequest = await composio.connectedAccounts.link('user_123', 'ac_abc');
-
-if (connectionRequest.redirectUrl) {
-  // Show the Connect Link in Spanish
-  const connectUrl = new URL(connectionRequest.redirectUrl);
-  connectUrl.searchParams.set("locale", "es");
-  console.log(connectUrl.toString());
-}
-```
-</Tab>
-<Tab value="API">
-```bash
-# Show the Connect Link in Spanish
-curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "user_123", "auth_config_id": "ac_abc"}' \
-  | jq -r '.redirect_url + "?locale=es"'
-```
-</Tab>
-</Tabs>
-
-The `locale` parameter changes only the Connect Link's own text. Field names and help text on API key forms, error details from the provider, and the provider's own sign-in and consent screens keep their original language. If you pass `long_redirect_url`, users go straight to the OAuth provider and never see the Connect Link, so `locale` has no effect.
-
-<Callout type="warn" title="Troubleshooting">
-- **"Secured by Composio" badge won't go away:** this badge is removed when you use your own OAuth app. See [Using your own OAuth apps](#using-your-own-oauth-apps).
-- **Logo doesn't appear after uploading:** clear your browser cache or try incognito.
-- **Upload fails with "failed to fetch":** retry or use a smaller image.
-- **You see the Branding tab but no Styling tab:** theming is still rolling out. If it isn't enabled for your project yet, reach out. The logo and app title keep working in the meantime.
-</Callout>
+Set your project's logo, app title, theme, and language as described in [Customizing the Connect Link](/docs/authentication/white-labeling-authentication#customizing-the-connect-link). Branding changes the hosted page, not its `connect.composio.dev` domain or the provider's consent screen.
 
 ## Using your own OAuth apps
 
-OAuth toolkits like Google and GitHub show a consent screen that says which app is requesting access. By default this reads "Composio wants to connect to your account." To show your app name instead, register your own OAuth app and tell Composio to use it. This is done by creating a [custom auth config](/docs/auth-configuration/custom-auth-configs) with your own credentials. See [when to use your own OAuth apps](#when-to-use-your-own-oauth-apps).
-
-<Callout type="info" title="You don't need this for every toolkit">
-Only white-label toolkits where users see a consent screen (Google, GitHub, Slack, etc.). Toolkits that use API keys don't show consent screens, so there's nothing to white-label. You can mix and match freely.
-</Callout>
-
-<Steps>
-<Step>
-<StepTitle>Create an OAuth app in the toolkit's developer portal</StepTitle>
-
-Register a new OAuth app with the toolkit. Set the callback URL to:
-
-```
-https://backend.composio.dev/api/v3/toolkits/auth/callback
-```
-
-You'll get a **Client ID** and **Client Secret**.
-
-Step-by-step guides: [Google](https://composio.dev/auth/googleapps) | [Slack](https://composio.dev/auth/slack) | [HubSpot](https://composio.dev/auth/hubspot) | [All toolkits](https://composio.dev/auth)
-</Step>
-
-<Step>
-<StepTitle>Create an auth config in Composio</StepTitle>
-
-In the [Composio dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-auth-configuration-white-labeling):
-
-1. Go to **Authentication management** → **Create Auth Config**
-2. Select the toolkit (e.g., GitHub)
-3. Choose **OAuth2** scheme
-4. Toggle on **Use your own developer credentials**
-5. Enter your **Client ID** and **Client Secret**
-6. Set **Redirect URI** to the same callback URL you registered with the provider
-7. Click **Create**
-
-Copy the auth config ID (e.g., `ac_1234abcd`).
-
-</Step>
-
-<Step>
-<StepTitle>Pass the auth config ID when initiating a connection</StepTitle>
-
-Pass your custom auth config ID when initiating a connection:
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio(api_key="your_api_key")
-
-# White-labeled: users see your brand on the consent screen
-github_conn = composio.connected_accounts.initiate(
-    user_id="user_123",
-    auth_config_id="ac_your_github_config",
-)
-print(f"Redirect to: {github_conn.redirect_url}")
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-// White-labeled: users see your brand on the consent screen
-const githubConn = await composio.connectedAccounts.initiate(
-  "user_123",
-  "ac_your_github_config",
-);
-console.log("Redirect to:", githubConn.redirectUrl);
-```
-</Tab>
-<Tab value="API">
-```bash
-# White-labeled: users see your brand on the consent screen
-curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"auth_config": {"id": "ac_your_github_config"}, "connection": {"user_id": "user_123"}}' \
-  | jq -r '.redirect_url'
-```
-</Tab>
-</Tabs>
-
-For toolkits you haven't white-labeled, use the auth config ID from **Authentication management** in your dashboard.
-</Step>
-</Steps>
+[Create a custom auth config](/docs/authentication/white-labeling-authentication#using-your-own-oauth-apps) with your provider's client credentials to show your app identity on the consent screen. Pass that config's ID when starting the connection. The provider's registered redirect URI must exactly match `oauth_redirect_uri` in the auth config.
 
 ### When to use your own OAuth apps
 
-- **Production apps** where end users see consent screens. They should see your brand, not Composio's.
-- **Enterprise customers** who require your branding end-to-end.
-- **Toolkits where you need custom scopes** beyond what Composio's default app provides.
-
-For development and testing, Composio's managed auth works fine. No OAuth app setup required.
+Use custom credentials when your product needs its own consent-screen identity, scopes, or quotas, or when you need the supported direct-initiation path for an app-owned UI. API-key toolkits don't have an OAuth consent screen.
 
 ### Switching from Composio-managed to your own OAuth app
 
-Existing connected accounts are permanently tied to the auth config they were created with. Switching to a custom auth config does not affect them.
-
-- Existing connections keep working. Tokens continue refreshing using the original auth config's credentials.
-- New connections use your custom auth config. Users who connect after the switch will see your app name on the consent screen.
-- To fully migrate a user, delete their old connected account and have them re-authenticate through your OAuth app.
+Existing connected accounts remain tied to their original auth config. New connections can use the custom config; a branding change doesn't migrate existing accounts. See [Switching auth configs](/docs/authentication/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
 
 ## Sending users directly to the OAuth provider
 
-By default, when you initiate a connection, Composio returns a shortened redirect URL (`backend.composio.dev/api/v3/s/...`). The user's browser hits this URL first, then gets redirected to the OAuth provider. This means `backend.composio.dev` briefly appears in the browser.
+For supported custom OAuth2 configs, `connectedAccounts.initiate()` accepts `config.val.long_redirect_url: true` to request an unshortened authorization URL. Your app can render the connect button, required fields, progress, and result screens instead of using Connect Link. Follow [Build an app-owned connection UI](/docs/authentication/white-labeling-authentication#build-an-app-owned-connection-ui) for cURL and SDK examples.
 
-To skip this and send users directly to the OAuth provider, pass `long_redirect_url: true` when initiating the connection:
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio(api_key="your_api_key")
-
-github_conn = composio.connected_accounts.initiate(
-    user_id="user_123",
-    auth_config_id="ac_your_github_config",
-    config={
-        "auth_scheme": "OAUTH2",
-        "val": {"status": "INITIALIZING", "long_redirect_url": True},
-    },
-)
-print(f"Redirect to: {github_conn.redirect_url}")
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const githubConn = await composio.connectedAccounts.initiate(
-  "user_123",
-  "ac_your_github_config",
-  {
-    config: {
-      authScheme: "OAUTH2",
-      // val fields use snake_case; they're sent to the API as-is
-      val: { status: "INITIALIZING", long_redirect_url: true },
-    },
-  },
-);
-console.log("Redirect to:", githubConn.redirectUrl);
-```
-</Tab>
-<Tab value="API">
-```bash
-curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "auth_config": {"id": "ac_your_github_config"},
-    "connection": {
-      "user_id": "user_123",
-      "state": {"authScheme": "OAUTH2", "val": {"status": "INITIALIZING", "long_redirect_url": true}}
-    }
-  }' | jq -r '.redirect_url'
-```
-</Tab>
-</Tabs>
-
-The redirect URL returned will point directly to the OAuth provider (e.g., `accounts.google.com/o/oauth2/auth?...`) instead of going through Composio first.
+`long_redirect_url` controls URL shortening. It doesn't remove Composio's return callback or guarantee that every toolkit skips every intermediate page. Inspect the actual URL chain for each toolkit. The Composio-managed OAuth path of `initiate()` has been retired; use `link()` for managed OAuth. See [Migrating from initiate to link](/docs/auth-configuration/migrating-initiate-to-link).
 
 ## Routing the callback through your domain
 
-After the user authorizes, the OAuth provider redirects back through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.
+A custom provider callback endpoint can forward the browser to Composio with a 302 response where the toolkit supports it. This **does not hide `backend.composio.dev`**: the browser still visits Composio after your endpoint. Your endpoint receives the authorization `code` and `state`, so its query string must not be captured in application, CDN, analytics, or error logs.
 
-If you need to hide Composio's domain from this return redirect, you can proxy it through your own domain.
+See [Callback domains and forwarding](/docs/authentication/white-labeling-authentication#routing-the-callback-through-your-domain) for the supported response shape and the difference between the provider's `redirect_uri` and your application's `callbackUrl`. Use the latter to return to your own result page after authentication, not to replace the provider callback.
 
-<Steps>
-<Step>
-<StepTitle>Set the redirect URI to your domain</StepTitle>
+## Verify before enabling access
 
-In your OAuth app's settings, set the authorized redirect URI to your own endpoint:
-
-```
-https://yourdomain.com/api/composio-redirect
-```
-</Step>
-
-<Step>
-<StepTitle>Create a proxy endpoint</StepTitle>
-
-This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:
-
-{/* code-example: no-api reason="web-server callback handler that 302-redirects the browser; not a Composio API call" */}
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
-
-app = FastAPI()
-
-@app.get("/api/composio-redirect")
-def composio_redirect(request: Request):
-    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
-    return RedirectResponse(url=f"{composio_url}?{request.url.query}")
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// pages/api/composio-redirect.ts (Next.js)
-import type { NextApiRequest, NextApiResponse } from "next";
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
-  const params = new URLSearchParams(req.query as Record<string, string>);
-  res.redirect(302, `${composioUrl}?${params.toString()}`);
-}
-```
-</Tab>
-</Tabs>
-
-<Callout type="warn">
-Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.
-</Callout>
-</Step>
-
-<Step>
-<StepTitle>Update your auth config</StepTitle>
-
-In the Composio dashboard, update your auth config to use your custom redirect URI.
-
-<Figure src="/images/custom-redirect-uri.png" alt="Auth Config Settings" caption="Setting the custom redirect URI in your auth config" size="sm" />
-</Step>
-</Steps>
-
-Here's how the redirect flow works. Your proxy just forwards the browser redirect to Composio. It never touches the authorization code or token.
-
-<WhiteLabelFlow />
-
-<Callout type="info">
-For FAQs and setup guides for individual toolkits, browse the [toolkits page](/toolkits).
-</Callout>
+Save each connection attempt against the authenticated application user on your server. Don't trust callback query parameters alone. [Verify the saved account ID, user binding, auth config, toolkit, and active status](/docs/authentication/white-labeling-authentication#verify-the-connection-on-your-server) before using it for direct tool execution. Apply any provider-identity policy separately, and complete the [deployment checklist](/docs/authentication/white-labeling-authentication#deployment-checklist).
 
 ## Next
 

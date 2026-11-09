@@ -3,10 +3,10 @@
  * to Bun: slug extraction for definition warming, and the two wrappers that turn
  * a trailing expression into a return value.
  *
- * These live outside `run.cmd.ts` because they are the CLI's only consumer of
- * the TypeScript compiler, which costs roughly 95ms to evaluate. `run.cmd.ts`
- * imports this module dynamically from inside its handler, so a `composio
- * execute` or `composio whoami` invocation never pays for it.
+ * These live outside `run/run.handler.ts` because they are the CLI's only
+ * consumer of the TypeScript compiler, which costs roughly 95ms to evaluate. The
+ * handler imports this module dynamically, so a `composio execute` or `composio
+ * whoami` invocation never pays for it.
  */
 import ts from 'typescript';
 

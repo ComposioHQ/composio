@@ -131,7 +131,10 @@ describe('CLI: composio dev projects list', () => {
           const stderr = yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
           expect(noOrgRequests).toEqual([]);
           expect(stdout).toEqual([]);
-          expect(stderr).toEqual(['-- composio dev projects list --']);
+          expect(stderr).toEqual([
+            '-- composio dev projects list --',
+            'No current org is configured.\nHint: run `composio orgs switch` first, or pass `--org-id`.',
+          ]);
         })
     );
   });

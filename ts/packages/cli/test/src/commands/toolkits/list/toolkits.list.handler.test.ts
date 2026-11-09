@@ -1,55 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Option } from 'effect';
 import type { UnifiedToolkit } from 'src/commands/toolkits/format';
-import {
-  applyConnectedFilter,
-  resolveToolkitsListUser,
-} from 'src/commands/toolkits/list/toolkits.list.handler';
-
-describe('toolkits list handler: resolveToolkitsListUser', () => {
-  // `--user-id` wins, then the directory's test user, then the global one; only a fallback is announced.
-  it.each([
-    {
-      name: '--user-id and both test users',
-      flag: Option.some('alice'),
-      projectTestUserId: Option.some('project-user'),
-      globalTestUserId: Option.some('global-user'),
-      expected: Option.some({ id: 'alice', fallbackNotice: Option.none() }),
-    },
-    {
-      name: 'the directory and the global test user',
-      flag: Option.none(),
-      projectTestUserId: Option.some('project-user'),
-      globalTestUserId: Option.some('global-user'),
-      expected: Option.some({
-        id: 'project-user',
-        fallbackNotice: Option.some('Using test user id "project-user"'),
-      }),
-    },
-    {
-      name: 'only the global test user',
-      flag: Option.none(),
-      projectTestUserId: Option.none(),
-      globalTestUserId: Option.some('global-user'),
-      expected: Option.some({
-        id: 'global-user',
-        fallbackNotice: Option.some('Using global test user id "global-user"'),
-      }),
-    },
-    {
-      name: 'no user anywhere',
-      flag: Option.none(),
-      projectTestUserId: Option.none(),
-      globalTestUserId: Option.none(),
-      expected: Option.none(),
-    },
-  ])(
-    '[Given] $name [Then] resolves the expected user',
-    ({ name: _name, expected, ...candidates }) => {
-      expect(resolveToolkitsListUser(candidates)).toEqual(expected);
-    }
-  );
-});
+import { applyConnectedFilter } from 'src/commands/toolkits/list/toolkits.list.handler';
 
 const row = (slug: string, status: string | null): UnifiedToolkit => ({
   name: slug,

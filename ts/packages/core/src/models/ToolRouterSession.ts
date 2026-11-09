@@ -67,8 +67,8 @@ import type {
   CustomToolsMap,
   CustomToolsMapEntry,
   SessionContext,
-  RegisteredCustomTool,
-  RegisteredCustomToolkit,
+  RegisteredLocalTool,
+  RegisteredLocalToolkit,
 } from '../types/customTool.types';
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
@@ -78,7 +78,6 @@ import type {
   SessionLinkParams,
   SessionPatchParams,
   SessionPatchResponse,
-  SessionSearchParams,
 } from '@composio/client/resources/tool-router/session';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
@@ -92,7 +91,6 @@ import {
   findCustomToolMapEntryByToolkitAndOriginalSlug,
 } from './CustomTool';
 import { transformProxyParams } from './proxyParamsTransform';
-import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
@@ -384,13 +382,13 @@ export class ToolRouterSession<
   }
 
   /**
-   * List all custom tools registered in this session.
+   * List all local tools registered in this session.
    * Returns tools with their final slugs, schemas, and resolved toolkit.
    *
    * @param options.toolkit - Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
-   * @returns Array of registered custom tools
+   * @returns Array of registered local tools
    */
-  customTools(options?: { toolkit?: string }): RegisteredCustomTool[] {
+  localTools(options?: { toolkit?: string }): RegisteredLocalTool[] {
     if (!this.customToolsMap) return [];
 
     const entries = Array.from(this.customToolsMap.byFinalSlug.values());
@@ -409,12 +407,19 @@ export class ToolRouterSession<
   }
 
   /**
-   * List all custom toolkits registered in this session.
+   * @deprecated Use `localTools()` instead.
+   */
+  customTools(options?: { toolkit?: string }): RegisteredLocalTool[] {
+    return this.localTools(options);
+  }
+
+  /**
+   * List all toolkits of local tools registered in this session.
    * Returns toolkits with their tools showing final slugs.
    *
-   * @returns Array of registered custom toolkits
+   * @returns Array of registered toolkits of local tools
    */
-  customToolkits(): RegisteredCustomToolkit[] {
+  localToolkits(): RegisteredLocalToolkit[] {
     const toolkits = this.customToolsMap?.toolkits;
     if (!toolkits?.length) return [];
 
@@ -442,6 +447,13 @@ export class ToolRouterSession<
         };
       }),
     }));
+  }
+
+  /**
+   * @deprecated Use `localToolkits()` instead.
+   */
+  customToolkits(): RegisteredLocalToolkit[] {
+    return this.localToolkits();
   }
 
   /**
@@ -667,13 +679,10 @@ export class ToolRouterSession<
     },
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionSearchResponse> {
-    const experimental = inlineCustomToolsExperimental<
-      NonNullable<SessionSearchParams['experimental']>
-    >(this.inlineCustomToolsPayload);
     const searchParams = {
       queries: [{ use_case: params.query }],
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
-      ...(experimental ? { experimental } : {}),
+      ...(this.inlineCustomToolsPayload && { experimental: this.inlineCustomToolsPayload }),
     };
     const response = await withCancellation(
       () => this.client.toolRouter.session.search(this.sessionId, searchParams, requestOptions),
@@ -738,11 +747,8 @@ export class ToolRouterSession<
     if (options?.account) {
       executeParams.account = options.account;
     }
-    const experimental = inlineCustomToolsExperimental<
-      NonNullable<SessionExecuteParams['experimental']>
-    >(this.inlineCustomToolsPayload);
-    if (experimental) {
-      executeParams.experimental = experimental;
+    if (this.inlineCustomToolsPayload) {
+      executeParams.experimental = this.inlineCustomToolsPayload;
     }
 
     const response = await withCancellation(
@@ -790,11 +796,8 @@ export class ToolRouterSession<
       arguments: arguments_ ?? {},
       ...inputResponseParams(options),
     };
-    const experimental = inlineCustomToolsExperimental<
-      NonNullable<SessionExecuteMetaParams['experimental']>
-    >(this.inlineCustomToolsPayload);
-    if (experimental) {
-      executeMetaParams.experimental = experimental;
+    if (this.inlineCustomToolsPayload) {
+      executeMetaParams.experimental = this.inlineCustomToolsPayload;
     }
 
     const response = await withCancellation(
@@ -1011,11 +1014,10 @@ export class ToolRouterSession<
     tool?: Tool
   ): Promise<ToolExecuteResponse> {
     const body = { sessionId: this.sessionId, arguments: input };
-    const experimental = inlineCustomToolsExperimental<
-      NonNullable<SessionExecuteParams['experimental']>
-    >(this.inlineCustomToolsPayload);
-    if (experimental) {
-      return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool, { experimental });
+    if (this.inlineCustomToolsPayload) {
+      return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool, {
+        experimental: this.inlineCustomToolsPayload,
+      });
     }
     return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool);
   }

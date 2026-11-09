@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Exit, Fiber, Latch } from 'effect';
+import { Effect, Exit, Fiber, Latch, Redacted } from 'effect';
 import { TestClock } from 'effect/testing';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import { afterEach, vi } from 'vitest';
@@ -71,7 +71,10 @@ const commandParts = (command: ChildProcess.Command): ReadonlyArray<string> => {
   if (!ChildProcess.isStandardCommand(command)) {
     throw new Error('Expected a standard command');
   }
-  return [command.command, ...command.args];
+  return [
+    command.command,
+    ...command.args.map(arg => (Redacted.isRedacted(arg) ? Redacted.value(arg) : arg)),
+  ];
 };
 
 const makeRunner = (
@@ -234,7 +237,6 @@ describe('CLI: composio setup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
-    process.exitCode = undefined;
   });
 
   const freshClaude = makeFakeHosts({ claude: { available: true } });
@@ -1250,10 +1252,6 @@ const REASON_CODE_CASES: ReadonlyArray<{
 ];
 
 describe('CLI: composio setup failure reason codes', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   describe.each(REASON_CODE_CASES)('$hosts', ({ hosts, cases }) => {
     layer(TestLive({ commandRunner: REASON_CODE_FIXTURES[hosts]().runner }))(it => {
       it.effect.each(cases)('codes `setup $args` as $expected', ({ args, expected }) =>
@@ -1269,10 +1267,6 @@ describe('CLI: composio setup failure reason codes', () => {
 });
 
 describe('CLI: composio setup rerun hints stay non-interactive safe', () => {
-  afterEach(() => {
-    process.exitCode = undefined;
-  });
-
   layer(TestLive({ commandRunner: REASON_CODE_FIXTURES['only Claude Code installed']().runner }))(
     'targeted host missing',
     it => {

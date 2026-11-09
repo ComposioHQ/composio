@@ -111,25 +111,17 @@ export const runAuthConfigsCreate = ({
       customCredentials: parsedCustomCredentials.success,
     });
 
-    const resultOpt = yield* ui
+    const result = yield* ui
       .withSpinner('Creating auth config...', repo.createAuthConfig(request))
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: 'Failed to create auth config.',
             hint: `Check available auth schemes for "${toolkit}":\n> composio dev toolkits info "${toolkit}"`,
-            fallbackValue: Option.none(),
           })
         )
       );
-
-    if (Option.isNone(resultOpt)) {
-      return;
-    }
-
-    const result = resultOpt.value;
 
     yield* ui.log.success('Auth config created.');
     yield* ui.note(formatAuthConfigCreated(result), 'New Auth Config');

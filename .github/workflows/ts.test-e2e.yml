@@ -215,6 +215,9 @@ jobs:
           echo "available=true" >> "$GITHUB_OUTPUT"
           echo "✅ API keys are configured"
 
+      - name: Verify CLI image reuse policy
+        run: pnpm --filter @e2e-tests/utils test
+
       - name: Read CLI version
         id: cli-version
         run: |
@@ -240,6 +243,7 @@ jobs:
             composio.e2e=true
             composio.runtime=cli
             composio.cli_version=${{ steps.cli-version.outputs.value }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Run CLI E2E Tests
         if: steps.api-keys.outputs.available == 'true'

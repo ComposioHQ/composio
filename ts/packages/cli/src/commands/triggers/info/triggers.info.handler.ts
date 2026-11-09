@@ -51,23 +51,17 @@ export const runTriggersInfo = ({ slug }: TriggersInfoParams) =>
 
     const slugValue = slug.value;
 
-    const triggerTypeOpt = yield* ui
+    const triggerType = yield* ui
       .withSpinner('Fetching trigger type details...', repo.getTriggerTypeDetailed(slugValue))
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: `Trigger "${slugValue}" not found.`,
             hint: `Browse available trigger types:\n> ${listCommandPlaceholder}`,
-            fallbackValue: Option.none(),
           })
         )
       );
-
-    if (Option.isNone(triggerTypeOpt)) return;
-
-    const triggerType = triggerTypeOpt.value;
 
     yield* ui.note(formatTriggerTypeInfo(triggerType), `Trigger: ${triggerType.name}`);
 

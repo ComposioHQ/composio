@@ -7,9 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { reportFailure } from 'src/effects/report-failure';
 import { commandInputError } from 'src/commands/errors';
-import { ProjectContext } from 'src/services/project-context';
-import { ComposioUserContext } from 'src/services/user-context';
-import { CommandSurface, directoryTestUserId, namedProject } from 'src/commands/surface';
+import { actingUserOption } from 'src/commands/surface';
 import { BROWSE_TOOLKITS_HINT, formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
@@ -28,10 +26,7 @@ const invalidInput = commandInputError('dev toolkits info');
  */
 export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
   Effect.gen(function* () {
-    const { userId } = yield* CommandSurface;
     const ui = yield* TerminalUI;
-    const projectContext = yield* ProjectContext;
-    const userContext = yield* ComposioUserContext;
     const clientSingleton = yield* ComposioClientSingleton;
 
     if (Option.isNone(slug)) {
@@ -43,38 +38,32 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
 
     const slugValue = slug.value;
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const project = yield* namedProject;
+    const acting = yield* actingUserOption();
     const repo = yield* ComposioToolkitsRepository;
-    const resolvedProjectContext = yield* projectContext.resolve;
-    const testUserId = directoryTestUserId(
-      resolvedProjectContext,
-      Option.map(project, named => named.projectId)
+    // The client of the project --project-name names; none keeps the default client.
+    const namedClient = yield* Effect.transposeOption(
+      Option.map(
+        Option.flatMap(acting, found => found.project),
+        project => clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
+      )
     );
-    const globalTestUserId = userContext.data.testUserId;
-    const resolvedUserId = Option.match(userId, {
-      onSome: value => Option.some(value),
-      onNone: () => Option.orElse(testUserId, () => globalTestUserId),
-    });
+    const resolvedUserId = Option.map(acting, found => found.userId);
 
-    if (Option.isNone(userId) && Option.isSome(testUserId)) {
-      yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
-    } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
-      yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
-    } else if (Option.isNone(userId)) {
+    if (Option.isNone(acting)) {
       yield* ui.log.info(
         'No test user id found; showing toolkit details without connection status.'
       );
     }
 
-    const resultOpt = yield* ui
+    const result = yield* ui
       .withSpinner(
         `Fetching toolkit "${slugValue}"...`,
         Effect.gen(function* () {
           const detailedToolkitOpt = yield* repo.getToolkitDetailed(slugValue).pipe(Effect.option);
 
           if (Option.isSome(resolvedUserId)) {
-            const client = Option.isSome(project)
-              ? project.value.client
+            const client = Option.isSome(namedClient)
+              ? namedClient.value
               : yield* clientSingleton.get();
             const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
             const sessionToolkits = yield* client.toolRouter.session
@@ -105,22 +94,15 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
         })
       )
       .pipe(
-        Effect.asSome,
         Effect.catch(error =>
           Effect.gen(function* () {
             const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
             yield* Effect.logDebug('Toolkit info error:', error);
-            yield* reportFailure(ui, message, BROWSE_TOOLKITS_HINT);
-            return Option.none();
+            return yield* reportFailure(ui, message, BROWSE_TOOLKITS_HINT);
           })
         )
       );
 
-    if (Option.isNone(resultOpt)) {
-      return;
-    }
-
-    const result = resultOpt.value;
     const toolkit = result.toolkit;
     const detailedToolkit = Option.getOrUndefined(result.detailedToolkitOpt);
 
@@ -140,8 +122,7 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
       const hint = first
         ? `Did you mean?\n${suggestions.map(s => `  ${s.label}`).join('\n')}\n\n${first.command}`
         : BROWSE_TOOLKITS_HINT;
-      yield* reportFailure(ui, `Toolkit "${slugValue}" not found.`, hint);
-      return;
+      return yield* reportFailure(ui, `Toolkit "${slugValue}" not found.`, hint);
     }
 
     yield* ui.log.message(

@@ -34,17 +34,17 @@ def get_raw_composio_tool_by_slug(slug: str) -> Tool
 Get a list of tool schemas based on the provided filters.
 
 ```python
-def get_raw_composio_tools(tools: list[str | None] = ..., search: str | None = ..., toolkits: list[str | None] = ..., scopes: List[str | None] = ..., limit: int | None = ...) -> list[Tool]
+def get_raw_composio_tools(tools: list[str] | None = ..., search: str | None = ..., toolkits: list[str] | None = ..., scopes: List[str] | None = ..., limit: int | None = ...) -> list[Tool]
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `tools?` | `list[str \| None]` |
+| `tools?` | `list[str] \| None` |
 | `search?` | `str \| None` |
-| `toolkits?` | `list[str \| None]` |
-| `scopes?` | `List[str \| None]` |
+| `toolkits?` | `list[str] \| None` |
+| `scopes?` | `List[str] \| None` |
 | `limit?` | `int \| None` |
 
 **Returns**
@@ -106,7 +106,7 @@ meta_tools = tools_model.get_raw_tool_router_meta_tools(
 Get a tool or list of tools based on the provided arguments.  The return type is automatically inferred based on the provider's generic parameters. For example: - OpenAIProvider -> list[ChatCompletionToolParam] - AnthropicProvider -> list[ToolParam] - CustomProvider[MyTool, list[MyTool]] -> list[MyTool]
 
 ```python
-def get(user_id: str, slug: str | None = ..., tools: list[str | None] = ..., search: str | None = ..., toolkits: list[str | None] = ..., scopes: List[str | None] = ..., modifiers: Modifiers | None = ..., limit: int | None = ...) -> TToolCollection
+def get(user_id: str, slug: str | None = ..., tools: list[str] | None = ..., search: str | None = ..., toolkits: list[str] | None = ..., scopes: List[str] | None = ..., modifiers: Modifiers | None = ..., limit: int | None = ...) -> TToolCollection
 ```
 
 **Parameters**
@@ -115,10 +115,10 @@ def get(user_id: str, slug: str | None = ..., tools: list[str | None] = ..., sea
 |------|------|
 | `user_id` | `str` |
 | `slug?` | `str \| None` |
-| `tools?` | `list[str \| None]` |
+| `tools?` | `list[str] \| None` |
 | `search?` | `str \| None` |
-| `toolkits?` | `list[str \| None]` |
-| `scopes?` | `List[str \| None]` |
+| `toolkits?` | `list[str] \| None` |
+| `scopes?` | `List[str] \| None` |
 | `modifiers?` | `Modifiers \| None` |
 | `limit?` | `int \| None` |
 
@@ -162,7 +162,7 @@ def execute(slug: str, arguments: Dict, connected_account_id: str | None = ..., 
 Proxy a tool call to the Composio API.  `user_id` is the user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it.
 
 ```python
-def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: object | None = ..., connected_account_id: str | None = ..., parameters: List[tool_proxy_params.Parameter | None] = ..., custom_connection_data: tool_proxy_params.CustomConnectionData | None = ..., user_id: str | None = ...) -> tool_proxy_response.ToolProxyResponse
+def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: object | None = ..., connected_account_id: str | None = ..., parameters: List[tool_proxy_params.Parameter] | None = ..., custom_connection_data: tool_proxy_params.CustomConnectionData | None = ..., user_id: str | None = ...) -> tool_proxy_response.ToolProxyResponse
 ```
 
 **Parameters**
@@ -173,7 +173,7 @@ def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'
 | `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']` |
 | `body?` | `object \| None` |
 | `connected_account_id?` | `str \| None` |
-| `parameters?` | `List[tool_proxy_params.Parameter \| None]` |
+| `parameters?` | `List[tool_proxy_params.Parameter] \| None` |
 | `custom_connection_data?` | `tool_proxy_params.CustomConnectionData \| None` |
 | `user_id?` | `str \| None` |
 
@@ -183,4 +183,4 @@ def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py#L327)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tools.py#L331)

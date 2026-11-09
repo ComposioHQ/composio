@@ -49,21 +49,15 @@ export const runTriggersDisable = ({ id, dangerouslyAllow }: TriggersDisablePara
     }
 
     const idValue = id.value;
-    const disabled = yield* ui
-      .withSpinner(`Disabling trigger "${idValue}"...`, repo.disableTrigger(idValue))
-      .pipe(
-        Effect.as(true),
-        Effect.catchTag(
-          CLIENT_API_ERROR_TAGS,
-          handleClientApiError(ui, {
-            fallbackMessage: `Failed to disable trigger "${idValue}".`,
-            hint: 'Browse available triggers:\n> composio dev triggers status',
-            fallbackValue: false,
-          })
-        )
-      );
-
-    if (!disabled) return;
+    yield* ui.withSpinner(`Disabling trigger "${idValue}"...`, repo.disableTrigger(idValue)).pipe(
+      Effect.catchTag(
+        CLIENT_API_ERROR_TAGS,
+        handleClientApiError(ui, {
+          fallbackMessage: `Failed to disable trigger "${idValue}".`,
+          hint: 'Browse available triggers:\n> composio dev triggers status',
+        })
+      )
+    );
 
     yield* ui.log.success(`Trigger "${idValue}" disabled.`);
   });

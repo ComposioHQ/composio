@@ -49,28 +49,25 @@ export const runToolkitsVersion = ({ slug }: ToolkitsVersionParams) =>
     const clientSingleton = yield* ComposioClientSingleton;
     const client = yield* clientSingleton.get();
 
-    const toolkitOpt = yield* ui
+    const versions = yield* ui
       .withSpinner(
         `Fetching versions for toolkit "${slug}"...`,
         client.toolkits.retrieve(slug, undefined, idempotent)
       )
       .pipe(
-        Effect.map(toolkit => Option.some(toolkitVersionsOf(toolkit))),
+        Effect.map(toolkitVersionsOf),
         Effect.catch(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Toolkit version error:', error);
-            yield* reportFailure(
+            return yield* reportFailure(
               ui,
               extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`,
               BROWSE_TOOLKITS_HINT
             );
-            return Option.none<ToolkitVersions>();
           })
         )
       );
 
-    if (Option.isNone(toolkitOpt)) return;
-
-    yield* ui.log.message(formatToolkitVersions(toolkitOpt.value));
-    yield* ui.output(formatToolkitVersionsJson(toolkitOpt.value));
+    yield* ui.log.message(formatToolkitVersions(versions));
+    yield* ui.output(formatToolkitVersionsJson(versions));
   });

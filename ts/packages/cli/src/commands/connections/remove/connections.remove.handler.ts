@@ -1,21 +1,18 @@
-import { Effect } from 'effect';
+import { Effect, Match } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import {
   CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
-  decodeConnectedAccountList,
+  decodeAllConnectedAccountPages,
 } from 'src/effects/decode-connected-account-list';
 import { failedWith } from 'src/effects/request-error';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { resolveCommandProject } from 'src/services/command-project';
+import { actingUser } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
-import { idempotent } from 'src/services/composio-request';
-import {
-  ConnectionsRemovalRequestError,
-  MissingConnectionRemovalConsumerUserIdError,
-} from './connections.remove.errors';
+import { listAllConnectedAccounts } from 'src/services/list-all-connected-accounts';
+import { ConnectionsRemovalRequestError } from './connections.remove.errors';
 
 /** The flags of `composio connections remove`. */
 export type ConnectionsRemoveParams = {
@@ -105,31 +102,34 @@ export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) 
       return yield* invalidInput(NEEDS_YES_MESSAGE, '--yes');
     }
     const clientSingleton = yield* ComposioClientSingleton;
-    const resolvedProject = yield* resolveCommandProject({
-      mode: 'consumer',
-    });
-
-    const consumerUserId = resolvedProject.consumerUserId;
-    if (!consumerUserId) {
-      return yield* new MissingConnectionRemovalConsumerUserIdError({
-        message: 'Missing consumer user id. Run `composio login` and try again.',
-      });
-    }
+    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
 
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const rawResult = yield* ui.withSpinner(
+    const rawItems = yield* ui.withSpinner(
       'Fetching connections...',
-      client.connectedAccounts
-        .list({ user_ids: [consumerUserId], limit: 1000 }, idempotent)
-        .pipe(failedWith(ConnectionsRemovalRequestError, 'Failed to list connections.'))
+      listAllConnectedAccounts(client, { user_ids: [consumerUserId] }).pipe(
+        Effect.mapError(
+          cause =>
+            new ConnectionsRemovalRequestError({
+              message: Match.value(cause).pipe(
+                Match.tag(
+                  'effects/ConnectedAccountListShapeError',
+                  () => CONNECTED_ACCOUNTS_SHAPE_MESSAGE
+                ),
+                Match.orElse(() => 'Failed to list connections.')
+              ),
+              cause,
+            })
+        )
+      )
     );
-    const result = yield* decodeConnectedAccountList(rawResult).pipe(
+    const accounts = yield* decodeAllConnectedAccountPages(rawItems).pipe(
       failedWith(ConnectionsRemovalRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
     );
-    const resolved = resolveAccount({ accounts: result.items, selector: account });
+    const resolved = resolveAccount({ accounts, selector: account });
 
     if ('error' in resolved) {
       return yield* invalidInput(resolved.error, '<account>');

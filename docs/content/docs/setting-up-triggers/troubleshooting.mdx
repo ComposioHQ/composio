@@ -38,7 +38,7 @@ With Composio-managed OAuth, Composio manages provider ingress. If matching even
 
 ## Test Gmail polling with a new message
 
-Gmail polling on Composio-managed auth can take up to about 15 minutes. An empty legacy `last_synced_at` field alone does not establish that polling has stopped. Gmail polling uses a mailbox history cursor, and its first successful poll establishes a baseline. Messages that existed before that baseline are not a backfill.
+A new message can take up to one full polling interval to appear. That's the `interval` set on the trigger. On Composio-managed auth, the shortest allowed interval is 2 minutes. A trigger with a longer interval waits that long. An empty legacy `last_synced_at` field alone does not establish that polling has stopped. Gmail polling uses a mailbox history cursor, and its first successful poll establishes a baseline. Messages that existed before that baseline are not a backfill.
 
 Wait for the first successful poll to establish the baseline, then send one new message to the connected mailbox. Keep its Gmail message ID and UTC arrival time, then check the intended trigger instance and your webhook delivery logs after another full polling interval. If you need older messages, fetch them separately with Gmail tools.
 

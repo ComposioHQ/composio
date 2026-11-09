@@ -33,21 +33,15 @@ export const runTriggersEnable = ({ id }: TriggersEnableParams) =>
     }
 
     const idValue = id.value;
-    const enabled = yield* ui
-      .withSpinner(`Enabling trigger "${idValue}"...`, repo.enableTrigger(idValue))
-      .pipe(
-        Effect.as(true),
-        Effect.catchTag(
-          CLIENT_API_ERROR_TAGS,
-          handleClientApiError(ui, {
-            fallbackMessage: `Failed to enable trigger "${idValue}".`,
-            hint: 'Browse available triggers:\n> composio dev triggers status --show-disabled',
-            fallbackValue: false,
-          })
-        )
-      );
-
-    if (!enabled) return;
+    yield* ui.withSpinner(`Enabling trigger "${idValue}"...`, repo.enableTrigger(idValue)).pipe(
+      Effect.catchTag(
+        CLIENT_API_ERROR_TAGS,
+        handleClientApiError(ui, {
+          fallbackMessage: `Failed to enable trigger "${idValue}".`,
+          hint: 'Browse available triggers:\n> composio dev triggers status --show-disabled',
+        })
+      )
+    );
 
     yield* ui.log.success(`Trigger "${idValue}" enabled.`);
   });

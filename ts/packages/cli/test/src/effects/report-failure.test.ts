@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Effect } from 'effect';
-import { reportFailure } from 'src/effects/report-failure';
+import { Effect, Runtime } from 'effect';
+import { printFailure, reportFailure, ReportedFailure } from 'src/effects/report-failure';
 import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
-import { recordingNodeProcess } from 'test/__utils__/services/node-process-test';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
@@ -33,45 +33,73 @@ describe('reportFailure', () => {
     '[Given] a redirected stderr [Then] prints the message and hint plainly and exits 1',
     () => {
       const terminal = redirectedTerminalUI();
-      const proc = recordingNodeProcess();
       return Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
-        yield* reportFailure(ui, 'Failed to fetch toolkit "gmail".', 'Browse available toolkits');
+        const exit = yield* Effect.exit(
+          reportFailure(ui, 'Failed to fetch toolkit "gmail".', 'Browse available toolkits')
+        );
 
         expect(terminal.stderr()).toBe(
           'Failed to fetch toolkit "gmail".\nBrowse available toolkits\n'
         );
         expect(terminal.stdout()).toBe('');
-        expect(proc.exitCode()).toBe(1);
-      }).pipe(Effect.provide(terminal.layer), Effect.provide(proc.layer));
+        expect(exitCodeOf(exit)).toBe(1);
+      }).pipe(Effect.provide(terminal.layer));
     }
   );
 
   it.effect('[Given] no hint [Then] prints only the message', () => {
     const terminal = redirectedTerminalUI();
-    const proc = recordingNodeProcess();
     return Effect.gen(function* () {
       const ui = yield* TerminalUI;
 
-      yield* reportFailure(ui, 'The link response is incomplete.');
+      const exit = yield* Effect.exit(reportFailure(ui, 'The link response is incomplete.'));
 
       expect(terminal.stderr()).toBe('The link response is incomplete.\n');
-      expect(proc.exitCode()).toBe(1);
-    }).pipe(Effect.provide(terminal.layer), Effect.provide(proc.layer));
+      expect(exitCodeOf(exit)).toBe(1);
+    }).pipe(Effect.provide(terminal.layer));
   });
 
   it.effect('[Given] a terminal [Then] renders a decorated error and step, once', () => {
     const { ui, lines } = decoratingUI();
-    const proc = recordingNodeProcess();
     return Effect.gen(function* () {
-      yield* reportFailure(ui, 'Failed to fetch toolkit "gmail".', 'Browse available toolkits');
+      const exit = yield* Effect.exit(
+        reportFailure(ui, 'Failed to fetch toolkit "gmail".', 'Browse available toolkits')
+      );
 
       expect(lines).toEqual([
         'log.error: Failed to fetch toolkit "gmail".',
         'log.step: Browse available toolkits',
       ]);
-      expect(proc.exitCode()).toBe(1);
-    }).pipe(Effect.provide(proc.layer));
+      expect(exitCodeOf(exit)).toBe(1);
+    });
+  });
+
+  // `BunRuntime.runMain` logs a failure unless it carries `[Runtime.errorReported] = false`, so
+  // the marker is what keeps the report from printing twice.
+  it.effect('[Given] a report [Then] fails with a ReportedFailure the runtime does not log', () => {
+    const { ui } = decoratingUI();
+    return Effect.gen(function* () {
+      const failure = yield* Effect.flip(reportFailure(ui, 'Toolkit "gmail" not found.'));
+
+      expect(failure).toBeInstanceOf(ReportedFailure);
+      expect(failure.message).toBe('Toolkit "gmail" not found.');
+      expect(Runtime.getErrorReported(failure)).toBe(false);
+      expect(Runtime.getErrorExitCode(failure)).toBe(1);
+    });
+  });
+});
+
+describe('printFailure', () => {
+  it.effect('[Given] a failure [Then] prints it like reportFailure and succeeds', () => {
+    const terminal = redirectedTerminalUI();
+    return Effect.gen(function* () {
+      const ui = yield* TerminalUI;
+
+      yield* printFailure(ui, 'Failed to fetch toolkits.', 'Retry later');
+
+      expect(terminal.stderr()).toBe('Failed to fetch toolkits.\nRetry later\n');
+    }).pipe(Effect.provide(terminal.layer));
   });
 });

@@ -126,7 +126,7 @@ describe('runProjectsList', () => {
         option: '--org-id',
         message: `${NO_CURRENT_ORG_MESSAGE}\n${NO_CURRENT_ORG_OUTRO}`,
       });
-      // `cli-main.ts` prints a usage failure on stderr and exits 1.
+      // The invocation prints a usage failure on stderr and exits 1.
       expect(isUsageFailure(failure)).toBe(true);
       expect(requests).toEqual([]);
       expect(outputs).toEqual([]);
