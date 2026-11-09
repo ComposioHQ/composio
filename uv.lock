@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <3.16"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -490,7 +490,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python" }
 dependencies = [
     { name = "certifi" },
@@ -523,6 +523,9 @@ dev = [
     { name = "tomli" },
     { name = "twine" },
 ]
+docs-reference = [
+    { name = "griffe" },
+]
 docs-snippets = [
     { name = "mypy" },
 ]
@@ -534,7 +537,7 @@ release = [
 [package.metadata]
 requires-dist = [
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "composio-client", specifier = "==2.0.0" },
+    { name = "composio-client", specifier = "==2.1.0" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11,<1" },
     { name = "jsonschema", specifier = ">=4.23.0,<5" },
     { name = "openai", specifier = ">=2.48.0,<4" },
@@ -563,6 +566,7 @@ dev = [
     { name = "tomli", specifier = ">=2.0.2,<2.1" },
     { name = "twine", specifier = ">=6.2.0" },
 ]
+docs-reference = [{ name = "griffe", specifier = "==2.3.0" }]
 docs-snippets = [{ name = "mypy", specifier = "==2.3.1" }]
 release = [
     { name = "build", specifier = "==1.6.1" },
@@ -571,7 +575,7 @@ release = [
 
 [[package]]
 name = "composio-anthropic"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
@@ -586,21 +590,21 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.0.0"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c8/7b/be475ecbab35280d6f565b689724d350c06491d3412d65b7f69b4b48c76a/composio_client-2.0.0.tar.gz", hash = "sha256:78d852ace33f6c330bf66628f2e794e8f6a333eeed20f740d162160ec0466944", size = 588293, upload-time = "2026-11-03T08:31:56.577Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/ab/d3d66a62c13db1c6dfac59630ee26171d1b038f3d4894310abbf82c2d8d4/composio_client-2.1.0.tar.gz", hash = "sha256:58bfa5cd3cd6da1dd9a70692ca795f1a88074f64c5d853d1c219cce4df346234", size = 592013, upload-time = "2026-11-05T12:11:37.958Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5e/be/2ce8fe148ffaa6ad343a8eea6a4f8558c740fca2308970980e7874f6dbf5/composio_client-2.0.0-py3-none-any.whl", hash = "sha256:4de6ef10ae4b731857dd70b6edbf0fd62c4fd41169e5f8d3f21655637c53cfe6", size = 471648, upload-time = "2026-11-03T08:31:54.624Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/8f/9e64de6f670dbefbec7aaa03b3fca52c28b44b204478861475062a683be7/composio_client-2.1.0-py3-none-any.whl", hash = "sha256:6b1a57ead7fecae314b65b3f10c6f2e537e51de3c9013151f6888208d4997fe4", size = 478016, upload-time = "2026-11-05T12:11:36.218Z" },
 ]
 
 [[package]]
 name = "composio-gemini"
-version = "0.30.0"
+version = "0.32.0"
 source = { virtual = "python/providers/gemini" }
 dependencies = [
     { name = "composio" },
@@ -615,7 +619,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python/providers/google" }
 dependencies = [
     { name = "composio" },
@@ -630,7 +634,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-google-adk"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
@@ -645,7 +649,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-langchain"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
@@ -660,7 +664,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
@@ -675,7 +679,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai-agents"
-version = "0.30.0"
+version = "0.32.0"
 source = { editable = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },
@@ -1070,6 +1074,32 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f8/b3/3ac91e9be6b761a4b30d66ff165e54439dcd48b83f4e20d644867215f6ca/graphviz-0.21.tar.gz", hash = "sha256:20743e7183be82aaaa8ad6c93f8893c923bd6658a04c32ee115edb3c8a835f78", size = 200434, upload-time = "2025-06-15T09:35:05.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl", hash = "sha256:54f33de9f4f911d7e84e4191749cac8cc5653f815b06738c54db9a15ab8b1e42", size = 47300, upload-time = "2025-06-15T09:35:04.433Z" },
+]
+
+[[package]]
+name = "griffe"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "griffecli" },
+    { name = "griffelib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d5/03/75ca4d08a7eff164292d42cf72c7c510423b3414e66205f0ba5b35ad3034/griffe-2.3.0.tar.gz", hash = "sha256:aa5634c0d7802583ecd29a7fe335c02d462ffdf5ce8f51426a3d326f374e6d93", size = 247493, upload-time = "2026-09-04T15:08:15.364Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/f9/8bfacdb992aed404a3a53694689759841635bce93b86ddb621c1d7f2558c/griffe-2.3.0-py3-none-any.whl", hash = "sha256:92a41ff72eb1eb316cdcb7248a608f1313f9fbc6e35d5cffa5cf7c813b7db70b", size = 5072, upload-time = "2026-09-04T15:08:14.074Z" },
+]
+
+[[package]]
+name = "griffecli"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama" },
+    { name = "griffelib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/15/f70539f7efb44f27d209b43e386b1a5397bd476879ff19a206b75454f58e/griffecli-2.3.0.tar.gz", hash = "sha256:916fdc851cf51d38e9b5ab82550305df45e5981d5dfe65d346544464abedb3ec", size = 59676, upload-time = "2026-09-04T15:08:16.426Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/06/8c/8ffa4272d6bf85a0abe8898ef74ef41d505317bb4103e14a11d45d799dce/griffecli-2.3.0-py3-none-any.whl", hash = "sha256:f94653edcb52ebcac21eaeb3b7121b065a636174eddf2bd558b5935e72a553e8", size = 11593, upload-time = "2026-09-04T15:08:11.739Z" },
 ]
 
 [[package]]

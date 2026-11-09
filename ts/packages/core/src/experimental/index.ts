@@ -19,10 +19,15 @@ export {
   createCustomToolkit as experimental_createToolkit,
 } from '../models/CustomTool';
 export type {
+  LocalTool,
+  CreateLocalToolParams,
+  LocalToolExecuteFn,
+  SessionContext,
+  LocalToolkit,
+  CreateLocalToolkitParams,
   CustomTool,
   CreateCustomToolParams,
   CustomToolExecuteFn,
-  SessionContext,
   CustomToolkit,
   CreateCustomToolkitParams,
 } from '../types/customTool.types';

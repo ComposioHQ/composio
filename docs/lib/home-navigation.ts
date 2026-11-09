@@ -130,11 +130,11 @@ export const DOCS_PRODUCTS = {
       '/docs/how-composio-works',
       '/docs/configuring-sessions',
       '/docs/session-configs',
-      '/docs/approvals',
+      '/docs/governance/approvals',
       '/docs/firewall',
       '/docs/instant-tools',
       '/docs/toolkits',
-      '/docs/tool-tags',
+      '/docs/governance/tool-hints',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
@@ -170,18 +170,26 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/configuring-sessions' },
               { url: '/docs/session-configs' },
               { url: '/docs/sessions-via-mcp' },
-              { url: '/docs/approvals' },
             ],
           },
           {
             type: 'group',
             label: 'Toolkits & Tools',
-            links: [{ url: '/docs/toolkits' }, { url: '/docs/tool-tags' }, { url: '/docs/instant-tools' }],
+            links: [
+              { url: '/docs/toolkits' },
+              { url: '/docs/instant-tools' },
+              { url: '/docs/extending-sessions/local-tools-and-toolkits' },
+              { url: '/docs/extending-sessions/custom-mcp' },
+            ],
           },
           {
             type: 'group',
             label: 'Governance',
-            links: [{ url: '/docs/firewall' }],
+            links: [
+              { url: '/docs/governance/tool-hints' },
+              { url: '/docs/governance/approvals' },
+              { url: '/docs/firewall' },
+            ],
           },
           {
             type: 'group',
@@ -210,7 +218,14 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Customize',
         items: [
-          { type: 'folder', path: 'extending-sessions' },
+          {
+            type: 'group',
+            label: 'Extend sessions',
+            links: [
+              { url: '/docs/extending-sessions/proxy-execute' },
+              { url: '/docs/extending-sessions/shared-connections' },
+            ],
+          },
           { type: 'folder', path: 'sandbox' },
           {
             type: 'group',

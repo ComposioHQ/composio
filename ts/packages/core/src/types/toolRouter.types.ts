@@ -13,11 +13,11 @@ import type {
   SessionExecuteParams,
 } from '@composio/client/resources/tool-router/session';
 import type {
-  CustomTool,
-  CustomToolkit,
+  LocalTool,
+  LocalToolkit,
   InlineCustomToolsWirePayload,
-  RegisteredCustomTool,
-  RegisteredCustomToolkit,
+  RegisteredLocalTool,
+  RegisteredLocalToolkit,
 } from './customTool.types';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { addSessionConfigConflictIssue } from '../lib/sessionConfigConflict';
@@ -517,24 +517,34 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           })
           .optional()
           .describe('Configuration for assistive prompt generation'),
+        localTools: z
+          .array(z.custom<LocalTool>())
+          .optional()
+          .describe(
+            'Local tools to include in this session. They run in your process. Created via experimental_createTool() from @composio/core.'
+          ),
+        localToolkits: z
+          .array(z.custom<LocalToolkit>())
+          .optional()
+          .describe(
+            'Toolkits of local tools to include in this session. Created via experimental_createToolkit() from @composio/core.'
+          ),
+        /** @deprecated Use `localTools` instead. */
         customTools: z
-          .array(z.custom<CustomTool>())
+          .array(z.custom<LocalTool>())
           .optional()
-          .describe(
-            'Custom tools to include in this session. Created via createCustomTool() from @composio/core/experimental.'
-          ),
+          .describe('Deprecated alias for localTools. Accepted for backwards compatibility.'),
+        /** @deprecated Use `localToolkits` instead. */
         customToolkits: z
-          .array(z.custom<CustomToolkit>())
+          .array(z.custom<LocalToolkit>())
           .optional()
-          .describe(
-            'Custom toolkits to include in this session. Created via createCustomToolkit() from @composio/core/experimental.'
-          ),
+          .describe('Deprecated alias for localToolkits. Accepted for backwards compatibility.'),
         sessionConfigId: z
           .string()
           .min(1)
           .optional()
           .describe(
-            'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits.'
+            'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, localTools or localToolkits.'
           ),
         /**
          * What happens to a call that needs the user's approval when the
@@ -558,6 +568,8 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           config.tools !== undefined && 'tools',
           config.tags !== undefined && 'tags',
           config.hooks !== undefined && 'hooks',
+          config.experimental.localTools !== undefined && 'experimental.localTools',
+          config.experimental.localToolkits !== undefined && 'experimental.localToolkits',
           config.experimental.customTools !== undefined && 'experimental.customTools',
           config.experimental.customToolkits !== undefined && 'experimental.customToolkits',
         ].filter((field): field is string => field !== false)
@@ -626,7 +638,11 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
  * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
- * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `hooks`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
+ * @param {LocalTool[]} [experimental.localTools] - Local tools to include in this session, created with `experimental_createTool()`. They run in your process.
+ * @param {LocalToolkit[]} [experimental.localToolkits] - Toolkits of local tools to include in this session, created with `experimental_createToolkit()`.
+ * @param {LocalTool[]} [experimental.customTools] - Deprecated alias for `experimental.localTools`.
+ * @param {LocalToolkit[]} [experimental.customToolkits] - Deprecated alias for `experimental.localToolkits`.
+ * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `hooks`, `experimental.localTools` or `experimental.localToolkits` (or their deprecated aliases `experimental.customTools` / `experimental.customToolkits`). Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
 export type ToolRouterCreateSessionConfig =
   InlineAccessCreateSessionConfig | SavedConfigCreateSessionConfig;
@@ -652,9 +668,11 @@ type SavedConfigCreateSessionConfig = Omit<
   hooks?: never;
   experimental: Omit<
     ParsedCreateSessionExperimental,
-    'sessionConfigId' | 'customTools' | 'customToolkits'
+    'sessionConfigId' | 'localTools' | 'localToolkits' | 'customTools' | 'customToolkits'
   > & {
     sessionConfigId: string;
+    localTools?: never;
+    localToolkits?: never;
     customTools?: never;
     customToolkits?: never;
   };
@@ -1468,10 +1486,14 @@ export interface Session<
   listConfigHistory: ToolRouterSessionListConfigHistoryFn;
   /** Proxy an API call through Composio's auth layer using the session's connected account */
   proxyExecute: ToolRouterSessionProxyExecuteFn;
-  /** List custom tools registered in this session, with their final slugs and schemas */
-  customTools: (options?: { toolkit?: string }) => RegisteredCustomTool[];
-  /** List custom toolkits registered in this session, with final slugs on nested tools */
-  customToolkits: () => RegisteredCustomToolkit[];
+  /** List local tools registered in this session, with their final slugs and schemas */
+  localTools: (options?: { toolkit?: string }) => RegisteredLocalTool[];
+  /** List toolkits of local tools registered in this session, with final slugs on nested tools */
+  localToolkits: () => RegisteredLocalToolkit[];
+  /** @deprecated Use `localTools()` instead. */
+  customTools: (options?: { toolkit?: string }) => RegisteredLocalTool[];
+  /** @deprecated Use `localToolkits()` instead. */
+  customToolkits: () => RegisteredLocalToolkit[];
   /** Experimental features (files, assistive prompt, etc.) */
   experimental: SessionExperimental;
 }
