@@ -36,6 +36,8 @@ make build
 
 ## Rules
 
+- Public Python SDK/provider behavior changes need a Changesets note targeting the private `@composio/python-sdk` marker. Stable core and providers release together through the unified SDK request workflow.
+
 - Use Ruff for formatting/linting and mypy for type checks.
 - Add pytest coverage for behavior changes.
 - Keep provider-specific changes under the relevant `python/providers/<provider>/` package.

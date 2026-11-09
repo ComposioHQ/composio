@@ -4,6 +4,8 @@ Composio provider for the [Vercel AI SDK](https://sdk.vercel.ai) (`ai`). It conv
 
 ## Installation
 
+You need **Node.js 22.22.3 or newer**. The SDK is **ESM-only**: use `import` rather than CommonJS `require()`, and set `"type": "module"` in your project's `package.json`.
+
 ```bash
 npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 ```
@@ -14,6 +16,10 @@ Set two environment variables:
 
 - `COMPOSIO_API_KEY` from the [Composio dashboard](https://dashboard.composio.dev/settings)
 - `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys) (or the key for your chosen model provider)
+
+### Verified SDK versions
+
+The published packages `@composio/core@0.28.0`, `@composio/vercel@0.13.0`, and `ai@7.0.162` pass a consumer typecheck on Node.js 24.22.1 with TypeScript 6.0.2. The check passes session tools to both `generateText` and `streamText` and loads the compiled ESM imports. This verifies the TypeScript integration, not live model or tool execution.
 
 ## Quickstart
 

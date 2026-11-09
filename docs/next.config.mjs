@@ -637,12 +637,23 @@ const config = {
       // Custom tools and proxy execute moved under the Extending sessions section.
       {
         source: '/docs/custom-tools-and-toolkits',
-        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/toolkits/custom-tools-and-toolkits',
-        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
+        permanent: true,
+      },
+      // Custom Tools and Toolkits was renamed to Local Tools and Toolkits.
+      {
+        source: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/extending-sessions/custom-tools-and-toolkits.:format(md|mdx)',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits.md',
         permanent: true,
       },
       {
@@ -652,17 +663,17 @@ const config = {
       },
       {
         source: '/docs/custom-tools',
-        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/tools-direct/custom-tools',
-        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/tools-direct/custom-tools/:path*',
-        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
         permanent: true,
       },
       {
@@ -731,7 +742,7 @@ const config = {
       },
       {
         source: '/custom-tools/:path*',
-        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/local-tools-and-toolkits',
         permanent: true,
       },
       // Error handling redirect (old fern URL)
