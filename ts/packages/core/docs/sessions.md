@@ -32,7 +32,7 @@ This snippet only declares configuration and types. It does not create a session
 
 ## Creation and configuration
 
-`composio.create(userId, options?)` creates a session. `composio.use(sessionId, options?)` retrieves one. Both return promises. Read `src/composio.ts` for their overloads, including the `mcp: true` return type and provider-specific tool collection types.
+`composio.create(userId, options?)` creates a session. `composio.use(sessionId, options?)` retrieves one. Both return promises. Read `src/models/ToolRouter.ts` for their overloads, including the `mcp: true` return type and provider-specific tool collection types.
 
 Use `ToolRouterCreateSessionConfig` for input. The main options are:
 
@@ -76,6 +76,6 @@ Read `src/models/ToolRouterSession.ts` for implementations and `src/types/toolRo
 
 - `README.md` and this `docs/sessions.md` ship in the npm tarball.
 - `dist/index.d.mts` is the public declaration entry point from the package export map. Follow its imports to shared declaration files; hashed filenames are build details.
-- `src/types/toolRouter.types.ts`, `src/composio.ts`, and `src/models/ToolRouterSession.ts` are readable distributed source, not supported deep-import entry points.
+- `src/types/toolRouter.types.ts`, `src/composio.ts`, `src/models/ToolRouter.ts`, and `src/models/ToolRouterSession.ts` are readable distributed source, not supported deep-import entry points.
 
 Provider packages have their own file lists. In particular, `@composio/openai-agents` ships `dist/index.d.mts` and its README, not `src/index.ts`. Read session configuration in the separately installed `@composio/core` package and import session types from `@composio/core`.
