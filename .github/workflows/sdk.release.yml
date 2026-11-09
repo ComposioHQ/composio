@@ -318,7 +318,9 @@ jobs:
     needs: candidates
     if: needs.candidates.outputs.typescript == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Room for the 20-minute registry waits after the upload, after the channel tag moves and in
+    # the fresh install, so a wait that runs out names what is missing before the job times out.
+    timeout-minutes: 75
     environment: npm-release
     # One npm publisher at a time, so an older retry cannot move `latest` back over a newer release.
     concurrency:
@@ -346,15 +348,19 @@ jobs:
       - name: Check registry signatures on a fresh install, as a user would
         env:
           SPECS: ${{ steps.publish.outputs.specs }}
+          WAIT_SECONDS: ${{ steps.publish.outputs.wait_seconds }}
         run: |
           cd "$(mktemp -d)"
           npm init --yes > /dev/null
-          # The registry CDN can serve a stale package document right after publishing.
-          for attempt in 1 2 3 4 5; do
-            # shellcheck disable=SC2086 # one argument per package
-            npm install --ignore-scripts --registry=https://registry.npmjs.org $SPECS && break
-            [ "$attempt" -lt 5 ] || exit 1
-            echo "npm install failed (attempt $attempt); retrying in 30 seconds"
+          # The registry CDN can serve a stale package document after npm's publish-time scan, so
+          # the install revalidates and retries for as long as the registry wait in registry-wait.ts.
+          # shellcheck disable=SC2086 # one argument per package
+          until npm install --prefer-online --ignore-scripts --registry=https://registry.npmjs.org $SPECS; do
+            if [ "$SECONDS" -ge "$WAIT_SECONDS" ]; then
+              echo "::error::npm still does not install $SPECS after ${SECONDS}s"
+              exit 1
+            fi
+            echo "npm install failed after ${SECONDS}s; retrying in 30 seconds"
             sleep 30
           done
           npm audit signatures
