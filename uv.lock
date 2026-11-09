@@ -688,7 +688,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio" },
+    { name = "composio", specifier = ">=0.32.0" },
     { name = "openai-agents", specifier = ">=0.18.3,<1" },
 ]
 
