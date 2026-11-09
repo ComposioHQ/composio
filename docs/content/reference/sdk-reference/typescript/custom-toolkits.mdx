@@ -20,7 +20,7 @@ Creates a custom MCP toolkit and returns its generated slug.
 **Experimental — custom toolkits are in pilot; shape may change.**
 
 Set `userId` to `'all'` to share the toolkit with every user in the
-project, or to a user ID to make it private to that user. `mcpUrl`,
+project, or to a user ID to make it private to that user. `appUrl`,
 `authSchemes` and `userId` cannot change later: delete and re-create the
 toolkit instead. For a private toolkit, `connectLink` is where to send
 that user to connect.
@@ -45,7 +45,7 @@ async create(params: CustomToolkitCreateParams, requestOptions?: ComposioRequest
 ```typescript
 const { slug, connectLink } = await composio.experimental.customToolkits.create({
   name: 'Internal API',
-  mcpUrl: 'https://mcp.internal.example.com/mcp',
+  appUrl: 'https://mcp.internal.example.com/mcp',
   authSchemes: [
     { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
   ],
@@ -169,7 +169,7 @@ Creates a custom toolkit, or updates its display metadata (name, API key
 field copy) when the project already owns a toolkit with this slug.
 **Experimental — custom toolkits are in pilot; shape may change.**
 
-`mcpUrl` and `authSchemes` cannot change on an existing toolkit:
+`appUrl` and `authSchemes` cannot change on an existing toolkit:
 re-sending them unchanged is a no-op, and changing them fails with a 409.
 Delete and re-register the toolkit instead, which revokes its connections.
 
@@ -195,7 +195,7 @@ await composio.experimental.customToolkits.upsert({
   slug: 'INTERNAL_API',
   toolkitConfig: {
     name: 'Internal API',
-    mcpUrl: 'https://mcp.internal.example.com/mcp',
+    appUrl: 'https://mcp.internal.example.com/mcp',
     authSchemes: [
       { mode: 'API_KEY', headers: { Authorization: 'Bearer {{generic_api_key}}' } },
     ],

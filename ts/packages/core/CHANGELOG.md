@@ -1,17 +1,5 @@
 # @composio/core
 
-## 0.29.0
-
-### Minor Changes
-
-- ab90421: Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.
-- b53b07a: Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.customToolkits`. Pass `experimental.localTools` and `experimental.localToolkits` to `composio.create()`, and `localTools` and `localToolkits` to `composio.use()`. List them with `session.localTools()` and `session.localToolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool`, `RegisteredLocalToolkit`, `CreateLocalToolParams`, `CreateLocalToolkitParams` and `LocalToolExecuteFn`. The `customTools` and `customToolkits` options, the `session.customTools()` and `session.customToolkits()` methods, and the `Custom*` type names are deprecated and keep working. Passing both a new option and its deprecated alias throws `ValidationError`. The request sent to the API is unchanged.
-- c7ee771: Handle rate limits better: `tools.execute()` reuses tool schemas instead of fetching one per call, `waitForConnection()` backs off between polls and waits out a 429, and tool fetches and executions rejected with a 429 throw `ComposioToolFetchRateLimitError` or `ComposioToolExecutionRateLimitError` (check with `isComposioRateLimitError`).
-
-### Patch Changes
-
-- ab90421: Update @composio/client to 2.1.0 to include the latest API changes.
-
 ## 0.28.0
 
 ### Minor Changes
