@@ -11,10 +11,13 @@ export const REGISTRY_WAIT = {
   maxDelay: '1 minute',
 } as const satisfies Record<string, Duration.Input>;
 
-/** The instant, in epoch milliseconds, after which a registry wait stops polling. */
+export const isSuccess = (status: number) => status >= 200 && status < 300;
+
+/** Answers that waiting can fix: not served yet, rate limited, or a registry outage. */
+export const isPending = (status: number) => status === 404 || status === 429 || status >= 500;
+
 export type RegistryDeadline = number;
 
-/** The registry wait deadline, counted from now. */
 export const registryDeadline: Effect.Effect<RegistryDeadline> = Effect.map(
   Clock.currentTimeMillis,
   now => now + Duration.toMillis(REGISTRY_WAIT.deadline)

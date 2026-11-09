@@ -166,7 +166,6 @@ const isSourceTag = (ref: string) => ref.startsWith('refs/tags/sdk-release/');
 const CANDIDATES_WORKFLOW = 'sdk.release.candidates.yml';
 const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
 
-/** One page of a workflow's runs. */
 export const WorkflowRuns = Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) });
 
 /** GitHub reports step and artifact times to the second, so an artifact can land on either boundary second. */

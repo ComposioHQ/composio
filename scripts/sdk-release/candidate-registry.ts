@@ -20,11 +20,9 @@ import { BATCH_PATH, ReleaseBatch } from './source';
 
 type PlannedPackage = Pick<ReleaseBatch['plan']['releases'][number], 'name' | 'newVersion'>;
 
-/** A planned npm package as the job-local registry serves it. */
 export interface CandidatePackage {
   readonly manifest: typeof PackedManifest.Type;
   readonly bytes: Uint8Array;
-  /** The npm `dist.integrity` of the candidate tarball. */
   readonly integrity: string;
 }
 
@@ -122,11 +120,12 @@ export const serveCandidateRegistry = (
   });
 
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies'] as const;
+const Dependencies = Schema.optionalKey(Schema.Record(Schema.String, Schema.String));
 const DocsManifest = Schema.StructWithRest(
   Schema.Struct({
-    dependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
-    devDependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
-    optionalDependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+    dependencies: Dependencies,
+    devDependencies: Dependencies,
+    optionalDependencies: Dependencies,
     overrides: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
   }),
   [Schema.Record(Schema.String, Schema.Unknown)]
@@ -165,7 +164,6 @@ export const pinCandidateVersions = (
 
 const Versioned = Schema.Struct({ version: Schema.String });
 
-/** Every installed copy of the named packages below `nodeModules`, nested ones included. */
 const installedCopies = (nodeModules: string, names: ReadonlySet<string>) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;

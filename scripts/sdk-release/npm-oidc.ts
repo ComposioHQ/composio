@@ -2,6 +2,7 @@ import { Config, Console, Effect, Option, Redacted, Schema } from 'effect';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import { NPM_REGISTRY } from './lanes';
 import { RELEASE_PUBLISHER } from './provenance';
+import { isSuccess } from './registry-wait';
 import { fail } from './runtime';
 
 /** The runbook section on npm trusted publishers, linked from every npm login failure. */
@@ -31,8 +32,6 @@ const IdTokenRequest = Config.all({
 const IdToken = Schema.fromJsonString(Schema.Struct({ value: Schema.NonEmptyString }));
 const ExchangedToken = Schema.fromJsonString(Schema.Struct({ token: Schema.NonEmptyString }));
 const NpmErrorBody = Schema.fromJsonString(Schema.Struct({ message: Schema.String }));
-
-const isSuccess = (status: number) => status >= 200 && status < 300;
 
 /**
  * Sends one request and returns its status and body. Transport failures become a fixed message,

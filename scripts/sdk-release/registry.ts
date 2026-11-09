@@ -39,6 +39,8 @@ import {
 import { verifyNpmProvenance, verifyPypiProvenance } from './provenance';
 import {
   REGISTRY_WAIT,
+  isPending,
+  isSuccess,
   pollRegistry,
   registryDeadline,
   type RegistryDeadline,
@@ -94,10 +96,6 @@ const Url = Schema.String.check(
   Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
 );
 
-const isSuccess = (status: number) => status >= 200 && status < 300;
-/** Answers that waiting can fix: not served yet, rate limited, or a registry outage. */
-const isPending = (status: number) => status === 404 || status === 429 || status >= 500;
-
 const registryGet = (url: string) =>
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
@@ -111,7 +109,7 @@ class RegistryIncomplete extends Data.TaggedError('RegistryIncomplete')<{
 const incomplete = (condition: boolean, message: string) =>
   condition ? Effect.void : Effect.fail(new RegistryIncomplete({ message }));
 /** Fails at once on an answer waiting cannot fix, and as still pending on any other failure. */
-const served = (status: number, pending: string, failed: string) =>
+const served = (status: number, pending: string, failed = pending) =>
   isSuccess(status)
     ? Effect.void
     : isPending(status)
@@ -134,7 +132,7 @@ const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
 const registryBytes = (url: string, failure: (status: number) => string) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
-    yield* served(response.status, failure(response.status), failure(response.status));
+    yield* served(response.status, failure(response.status));
     return new Uint8Array(yield* response.arrayBuffer);
   }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
 

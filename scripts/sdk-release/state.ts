@@ -81,7 +81,6 @@ export const STATUS_LABELS: ReadonlyArray<string> = Object.values(DISPLAY).map(
   display => display.label
 );
 
-/** The runbook's recovery steps for a release that did not finish. */
 export const RECOVERY_RUNBOOK =
   'https://github.com/ComposioHQ/composio/blob/next/ts/docs/internal/release.md#recover-a-failed-release';
 

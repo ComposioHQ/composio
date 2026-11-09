@@ -313,7 +313,6 @@ const CONSUMERS: Record<Language, typeof verifyNpmConsumer | typeof verifyPython
   python: verifyPythonConsumer,
 };
 
-/** Reads a downloaded candidate and checks every file against its manifest. */
 export const readVerifiedCandidate = (candidates: string) =>
   Effect.gen(function* () {
     const manifest = yield* readJson(CandidateManifest, `${candidates}/${CANDIDATE_MANIFEST}`);

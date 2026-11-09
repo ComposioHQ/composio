@@ -50,7 +50,6 @@ export const ReleaseJob = Schema.Struct({
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
 });
 
-/** One page of a run's jobs. */
 export const JobsPage = Schema.Struct({ jobs: Schema.Array(ReleaseJob) });
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -261,7 +260,7 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
           yield* Effect.sleep(delayMs);
         }
       });
-    const fail = (
+    const failResponse = (
       method: HttpMethod,
       path: string,
       response: HttpClientResponse.HttpClientResponse
@@ -279,7 +278,7 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
         Effect.gen(function* () {
           const response = yield* send(method, path, body, 'error');
           if (response.status < 200 || response.status >= 300)
-            return yield* fail(method, path, response);
+            return yield* failResponse(method, path, response);
           return yield* decodeBody(schema, yield* response.text, method, path);
         }),
       /** A file's raw contents, or `None` on 404. Raw media works for files over 1 MB. */
@@ -294,14 +293,14 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
           );
           if (response.status === 404) return Option.none<string>();
           if (response.status < 200 || response.status >= 300)
-            return yield* fail('GET', path, response);
+            return yield* failResponse('GET', path, response);
           return Option.some(yield* response.text);
         }),
       /** Resolves an endpoint that answers with a 302 to short-lived storage, such as an artifact archive. */
       redirectLocation: (path: string) =>
         Effect.gen(function* () {
           const response = yield* send('GET', path, undefined, 'manual');
-          if (response.status !== 302) return yield* fail('GET', path, response);
+          if (response.status !== 302) return yield* failResponse('GET', path, response);
           return Option.fromNullishOr(response.headers.location);
         }),
     };

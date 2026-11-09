@@ -5,7 +5,7 @@ import { FetchHttpClient, HttpClient } from 'effect/http';
 import { SDK_RELEASE_REPOSITORY } from './github';
 import { NPM_REGISTRY } from './lanes';
 import type { Distribution } from './registry';
-import { REGISTRY_WAIT, pollRegistry, type RegistryDeadline } from './registry-wait';
+import { REGISTRY_WAIT, isPending, pollRegistry, type RegistryDeadline } from './registry-wait';
 import { ensure, fail } from './runtime';
 import { releaseTag } from './source';
 
@@ -61,8 +61,6 @@ class ProvenancePending extends Data.TaggedError('ProvenancePending')<{
   readonly url: string;
   readonly status: number;
 }> {}
-
-const isPending = (status: number) => status === 404 || status === 429 || status >= 500;
 
 const provenanceJson = <S extends Schema.Top>(
   url: string,
