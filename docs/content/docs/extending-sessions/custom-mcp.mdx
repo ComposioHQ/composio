@@ -11,7 +11,7 @@ Custom MCP lets you add your own remote MCP server to Composio and use its tools
 Custom MCP is experimental. The APIs may change.
 </Callout>
 
-This is different from [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits), which run inside your app. A Custom MCP server runs on its own public HTTPS URL.
+This is different from [Local Tools and Toolkits](/docs/extending-sessions/local-tools-and-toolkits), which run inside your app. A Custom MCP server runs on its own public HTTPS URL.
 
 ## How it works
 
@@ -47,7 +47,7 @@ const composio = new Composio();
 // ---cut---
 const result = await composio.experimental.customToolkits.create({
   name: 'Acme',
-  appUrl: 'https://mcp.acme.com/mcp',
+  mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [{ mode: 'NO_AUTH' }],
   userId: 'all',
 });
@@ -123,7 +123,7 @@ const composio = new Composio();
 // ---cut---
 const result = await composio.experimental.customToolkits.create({
   name: 'Acme',
-  appUrl: 'https://mcp.acme.com/mcp',
+  mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [
     {
       mode: 'DCR_OAUTH',
@@ -413,7 +413,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 <Cards>
 <Card title="Using sessions via MCP" href="/docs/sessions-via-mcp" description="Connect an MCP client to a Composio-hosted session" />
-<Card title="Custom Tools and Toolkits" href="/docs/extending-sessions/custom-tools-and-toolkits" description="Run your own tools inside your application process" />
+<Card title="Local Tools and Toolkits" href="/docs/extending-sessions/local-tools-and-toolkits" description="Run your own tools inside your application process" />
 <Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Configure toolkit and tool filtering" />
 <Card title="Managing Multiple Connected Accounts" href="/docs/authentication/managing-multiple-connected-accounts" description="Select a connected account explicitly" />
 </Cards>

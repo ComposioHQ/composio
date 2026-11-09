@@ -50,6 +50,9 @@ jobs:
             FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
           fi
 
+          # Skip generated SDK release entries (frontmatter `sdkRelease:`); their release PR covers them.
+          FILES=$(printf '%s\n' "$FILES" | bash scripts/sdk-release/changelog-filter.sh)
+
           if [ -z "$FILES" ]; then
             echo "found=false" >> $GITHUB_OUTPUT
           else
