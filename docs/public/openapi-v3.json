@@ -9611,6 +9611,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -9772,6 +9786,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -10594,8 +10610,25 @@
                         "properties": {
                           "mode": {
                             "type": "string",
-                            "description": "The type of authentication mode (e.g., oauth2, basic_auth, api_key)",
-                            "example": "oauth2"
+                            "enum": [
+                              "OAUTH2",
+                              "OAUTH1",
+                              "API_KEY",
+                              "BASIC",
+                              "BILLCOM_AUTH",
+                              "BEARER_TOKEN",
+                              "GOOGLE_SERVICE_ACCOUNT",
+                              "NO_AUTH",
+                              "BASIC_WITH_JWT",
+                              "CALCOM_AUTH",
+                              "SERVICE_ACCOUNT",
+                              "SAML",
+                              "DCR_OAUTH",
+                              "CIMD_OAUTH",
+                              "S2S_OAUTH2"
+                            ],
+                            "description": "The type of authentication mode (e.g., OAUTH2, BASIC, API_KEY)",
+                            "example": "OAUTH2"
                           },
                           "required_scopes": {
                             "type": "array",
@@ -11661,6 +11694,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -11822,6 +11869,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -18886,6 +18935,11 @@
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session. Unlike fast_mode, tool search quality is unaffected. Defaults to false.",
+                        "x-experimental": true
+                      },
                       "submit_feedback": {
                         "type": "object",
                         "properties": {
@@ -22816,6 +22870,11 @@
                       "fast_mode": {
                         "type": "boolean",
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
+                        "x-experimental": true
+                      },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session, false to return them again. Unlike fast_mode, tool search quality is unaffected.",
                         "x-experimental": true
                       },
                       "submit_feedback": {

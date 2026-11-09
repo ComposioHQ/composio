@@ -9,7 +9,10 @@ import typing as t
 from dataclasses import dataclass, field
 
 import typing_extensions as te
-from composio_client.types.tool_router import session_create_params
+from composio_client.types.tool_router import (
+    session_create_params,
+    session_execute_params,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -211,9 +214,7 @@ CustomToolWireDefinition = session_create_params.ExperimentalCustomTool
 CustomToolkitWireDefinition = session_create_params.ExperimentalCustomToolkit
 
 
-class InlineCustomToolsWirePayload(te.TypedDict, total=False):
-    custom_tools: t.List[CustomToolWireDefinition]
-    custom_toolkits: t.List[CustomToolkitWireDefinition]
+InlineCustomToolsWirePayload = session_execute_params.Experimental
 
 
 # ────────────────────────────────────────────────────────────────

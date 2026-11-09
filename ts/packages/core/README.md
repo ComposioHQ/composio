@@ -6,6 +6,8 @@ Full documentation lives at [docs.composio.dev](https://docs.composio.dev). This
 
 ## Installation
 
+You need **Node.js 22.22.3 or newer**. The SDK is **ESM-only**: use `import` rather than CommonJS `require()`, and set `"type": "module"` in your project's `package.json`. See the [SDK quickstart](https://docs.composio.dev/docs/quickstart) for framework setup.
+
 ```bash
 npm install @composio/core
 ```

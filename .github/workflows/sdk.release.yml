@@ -8,7 +8,9 @@ run-name: SDK release (${{ github.event_name }}, ${{ github.actor }})
 #                sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
 #                a writer who did not request the release approves, and a person merges.
 #   2. review    when the release PR closes, the bot re-checks approval and checks, then tags the
-#                reviewed head. A PR closed without merging is abandoned.
+#                reviewed head. A PR closed without merging is abandoned. A `regate` dispatch
+#                from next re-runs that gate, as next has it now, for a merged release that a
+#                since-fixed gate bug left untagged.
 #   3. publish   the tag run uploads the reviewed files to npm and PyPI, then opens a docs PR
 #                that pins the released versions so twoslash checks against them.
 
@@ -17,6 +19,11 @@ on:
     types: [opened]
   workflow_dispatch:
     inputs:
+      action:
+        description: request plans a release; regate re-checks and tags the merged, untagged release on next
+        type: choice
+        options: [request, regate]
+        default: request
       channel:
         description: stable consumes the changesets; beta publishes a preview to npm next
         type: choice
@@ -48,9 +55,10 @@ jobs:
   plan:
     if: >-
       github.repository == 'ComposioHQ/composio' && github.ref == 'refs/heads/next' &&
-      (github.event_name == 'workflow_dispatch' ||
+      ((github.event_name == 'workflow_dispatch' && inputs.action == 'request') ||
        (github.event_name == 'issues' && startsWith(github.event.issue.title, '[SDK release]')))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: sdk-release-control
     # Queued, not replaced: a newer request never cancels one that is already waiting.
     concurrency:
@@ -86,6 +94,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.batch != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -115,6 +124,7 @@ jobs:
   release-pr:
     needs: [plan, prepare]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: sdk-release-control
     outputs:
       state: ${{ steps.open.outputs.state }}
@@ -153,6 +163,7 @@ jobs:
     needs: [plan, prepare, release-pr]
     if: always() && needs.plan.result != 'skipped'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write
@@ -181,7 +192,12 @@ jobs:
       github.repository == 'ComposioHQ/composio' && github.event_name == 'pull_request_target' &&
       startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: sdk-release-control
+    # Shared with regate, so a re-gate and a closing release PR never tag at the same time.
+    concurrency:
+      group: sdk-release-tag
+      queue: max
     outputs:
       issue: ${{ steps.tag.outputs.issue }}
       state: ${{ steps.tag.outputs.state }}
@@ -207,26 +223,64 @@ jobs:
           SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/batch.ts tag
 
-  review-status:
-    needs: tag
-    if: always() && needs.tag.result != 'skipped'
+  # Recovers a merged release that a gate bug left untagged, once the fix is on next. It finds the
+  # release from the untagged plan on next, so it cannot be pointed at another PR or commit, and
+  # applies the same gate. The new tag's push starts publishing as usual.
+  regate:
+    if: >-
+      github.repository == 'ComposioHQ/composio' && github.event_name == 'workflow_dispatch' &&
+      inputs.action == 'regate' && github.ref == 'refs/heads/next'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-tag
+      queue: max
+    outputs:
+      issue: ${{ steps.regate.outputs.issue }}
+      state: ${{ steps.regate.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # A dedicated release App, installed with only the permissions the runbook lists.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+        id: app
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Re-check the merged release on next, then tag its reviewed head
+        id: regate
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+        run: bun scripts/sdk-release/batch.ts regate
+
+  review-status:
+    needs: [tag, regate]
+    if: always() && (needs.tag.result != 'skipped' || needs.regate.result != 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Show the review outcome on the request issue
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          RESULTS: '{"tag": "${{ needs.tag.result }}"}'
-          OUTCOME: ${{ needs.tag.outputs.state }}
-          ISSUE: ${{ needs.tag.outputs.issue }}
+          RESULTS: '{"tag": "${{ needs.tag.result }}", "regate": "${{ needs.regate.result }}"}'
+          OUTCOME: ${{ needs.tag.outputs.state || needs.regate.outputs.state }}
+          ISSUE: ${{ needs.tag.outputs.issue || needs.regate.outputs.issue }}
         run: bun scripts/sdk-release/report.ts status review
 
   # 3. publish ---------------------------------------------------------------------------------
@@ -236,6 +290,7 @@ jobs:
   candidates:
     if: github.repository == 'ComposioHQ/composio' && startsWith(github.ref, 'refs/tags/sdk-release/')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       actions: read
@@ -263,6 +318,9 @@ jobs:
     needs: candidates
     if: needs.candidates.outputs.typescript == 'true'
     runs-on: ubuntu-latest
+    # Room for the 20-minute registry waits after the upload, after the channel tag moves and in
+    # the fresh install, so a wait that runs out names what is missing before the job times out.
+    timeout-minutes: 75
     environment: npm-release
     # One npm publisher at a time, so an older retry cannot move `latest` back over a newer release.
     concurrency:
@@ -280,7 +338,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Pin npm with native dist-tag OIDC support
         run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
-      - name: Upload missing npm files, move the channel tag and check their provenance
+      # Checks npm's trusted-publishing login for every planned package before uploading anything.
+      - name: Check the npm login, upload missing npm files, move the channel tag and check their provenance
         id: publish
         env:
           SDK_READ_TOKEN: ${{ github.token }}
@@ -289,15 +348,19 @@ jobs:
       - name: Check registry signatures on a fresh install, as a user would
         env:
           SPECS: ${{ steps.publish.outputs.specs }}
+          WAIT_SECONDS: ${{ steps.publish.outputs.wait_seconds }}
         run: |
           cd "$(mktemp -d)"
           npm init --yes > /dev/null
-          # The registry CDN can serve a stale package document right after publishing.
-          for attempt in 1 2 3 4 5; do
-            # shellcheck disable=SC2086 # one argument per package
-            npm install --ignore-scripts --registry=https://registry.npmjs.org $SPECS && break
-            [ "$attempt" -lt 5 ] || exit 1
-            echo "npm install failed (attempt $attempt); retrying in 30 seconds"
+          # The registry CDN can serve a stale package document after npm's publish-time scan, so
+          # the install revalidates and retries for as long as the registry wait in registry-wait.ts.
+          # shellcheck disable=SC2086 # one argument per package
+          until npm install --prefer-online --ignore-scripts --registry=https://registry.npmjs.org $SPECS; do
+            if [ "$SECONDS" -ge "$WAIT_SECONDS" ]; then
+              echo "::error::npm still does not install $SPECS after ${SECONDS}s"
+              exit 1
+            fi
+            echo "npm install failed after ${SECONDS}s; retrying in 30 seconds"
             sleep 30
           done
           npm audit signatures
@@ -306,6 +369,7 @@ jobs:
     needs: candidates
     if: needs.candidates.outputs.python == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: pypi-release
     permissions:
       contents: read
@@ -351,6 +415,7 @@ jobs:
   docs:
     needs: publish-npm
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -386,7 +451,7 @@ jobs:
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
       # Opens nothing when the docs already pin these versions.
       - name: Open the docs pin PR
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
         with:
           token: ${{ steps.app.outputs.token }}
           path: next
@@ -406,6 +471,7 @@ jobs:
     needs: [candidates, publish-npm, publish-pypi, docs]
     if: always() && needs.candidates.result != 'skipped'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write

@@ -1,16 +1,19 @@
 import { describe, expect, test } from 'bun:test';
+import { Effect } from 'effect';
 import type { Channel } from '../scripts/sdk-release/channel';
 import type { Language } from '../scripts/sdk-release/lanes';
 import {
+  NpmCli,
   loadOriginalDistributions,
+  npmDistTag,
   reconcileRegistry as reconcileRegistryEffect,
   waitForRegistry,
   type Distribution,
 } from '../scripts/sdk-release/registry';
 import { docsPinSpecs } from '../scripts/sdk-release/report';
-import { sha256Hex } from '../scripts/sdk-release/runtime';
+import { CommandError, sha256Hex } from '../scripts/sdk-release/runtime';
 import { batch, head } from './sdk-release-controller-fixture';
-import { runRelease, type Fetch } from './sdk-release-harness';
+import { runOnTestClock, runRelease, type Fetch } from './sdk-release-harness';
 
 const distribution = async (file: string, language: Language = 'python'): Promise<Distribution> => {
   const bytes = new TextEncoder().encode(`original ${file}`);
@@ -125,16 +128,6 @@ describe('registry reconciliation', () => {
     const result = await reconcileRegistry([tarball], registry([tarball], { newer: true }).fetcher);
     expect(result.tagsToRepair).toEqual([]);
   });
-  test('bounded propagation ends with the exact incomplete file inventory', async () => {
-    const fake = registry([wheel]);
-    await expect(
-      runRelease(
-        waitForRegistry([wheel, sdist], { attempts: 3, spacing: '0 millis' }),
-        fake.fetcher
-      )
-    ).rejects.toThrow(`after 3 attempts: composio@1.0.1/${sdist.file}`);
-    expect(fake.reads.filter(url => url.startsWith('https://pypi.org/'))).toHaveLength(3);
-  });
   test('a fresh npm upload is polled until visible, then its channel tag is left to move', async () => {
     const fake = registry([tarball]);
     let lookups = 0;
@@ -145,9 +138,9 @@ describe('registry reconciliation', () => {
         return new Response('{}', { status: 404 });
       return fake.fetcher(input);
     };
-    const state = await runRelease(
-      waitForRegistry([tarball], { attempts: 3, spacing: '0 millis', channelTags: false }),
-      lagging
+    const state = await runOnTestClock(
+      waitForRegistry([tarball], { channelTags: false }),
+      () => lagging
     );
     expect(state.missing).toEqual([]);
     expect(state.tagsToRepair).toEqual([
@@ -172,10 +165,7 @@ describe('registry reconciliation', () => {
   test('a content conflict fails at once instead of waiting for propagation', async () => {
     const fake = registry([wheel], { conflict: true });
     await expect(
-      runRelease(
-        waitForRegistry([wheel, sdist], { attempts: 3, spacing: '0 millis' }),
-        fake.fetcher
-      )
+      runOnTestClock(waitForRegistry([wheel, sdist]), () => fake.fetcher)
     ).rejects.toThrow(`Registry content conflict: composio@1.0.1/${wheel.file}`);
     expect(fake.reads.filter(url => url.startsWith('https://pypi.org/'))).toHaveLength(1);
   });
@@ -191,6 +181,77 @@ describe('registry reconciliation', () => {
     await expect(reconcileRegistry([wheel, sdist], sameLength)).rejects.toThrow(
       `Registry content conflict: composio@1.0.1/${wheel.file}`
     );
+  });
+});
+
+describe('waiting out npm’s publish-time scan', () => {
+  const MINUTE = 60_000;
+  const openai = { ...tarball, name: '@composio/openai', file: 'composio-openai-1.0.1.tgz' };
+  const versionUrl = 'https://registry.npmjs.org/%40composio%2Fcore/1.0.1';
+
+  /** npm answers 404 for each version until `served` says it has finished scanning. */
+  const scanning = (served: (reads: number, now: number) => boolean) => {
+    const reads: string[] = [];
+    let clock = () => 0;
+    const fake = registry([tarball]);
+    const fetch = (now: () => number): Fetch => {
+      clock = now;
+      return async input => {
+        const url = String(input);
+        if (url.endsWith('/latest')) return new Response(JSON.stringify({ version: '1.0.0' }));
+        if (url.startsWith('https://registry.npmjs.org/%40')) {
+          reads.push(url);
+          if (!served(reads.filter(read => read === url).length - 1, now()))
+            return new Response('{}', { status: 404 });
+        }
+        return fake.fetcher(input);
+      };
+    };
+    return { reads, fetch, elapsed: () => clock() };
+  };
+
+  test('a version npm serves after 8 polls of 404 is accepted within the deadline', async () => {
+    const npm = scanning(reads => reads >= 8);
+    const state = await runOnTestClock(
+      waitForRegistry([tarball], { channelTags: false }),
+      npm.fetch
+    );
+    expect(state.missing).toEqual([]);
+    expect(npm.reads.filter(url => url === versionUrl)).toHaveLength(9);
+    expect(npm.elapsed()).toBeLessThan(20 * MINUTE);
+  });
+
+  test('a 15-minute scan is waited out', async () => {
+    const npm = scanning((_reads, now) => now >= 15 * MINUTE);
+    const state = await runOnTestClock(
+      waitForRegistry([tarball], { channelTags: false }),
+      npm.fetch
+    );
+    expect(state.missing).toEqual([]);
+    expect(npm.elapsed()).toBeGreaterThanOrEqual(15 * MINUTE);
+  });
+
+  test('a registry error that waiting cannot fix fails at once', async () => {
+    const npm = scanning(() => false);
+    const unauthorized =
+      (now: () => number): Fetch =>
+      async input =>
+        String(input) === versionUrl ? new Response('{}', { status: 401 }) : npm.fetch(now)(input);
+    await expect(
+      runOnTestClock(waitForRegistry([tarball], { channelTags: false }), unauthorized)
+    ).rejects.toThrow(`Registry lookup failed: ${versionUrl} (401)`);
+    expect(npm.elapsed()).toBeLessThan(MINUTE);
+  });
+
+  test('versions still missing at the 20-minute deadline fail naming each one', async () => {
+    const npm = scanning(() => false);
+    await expect(
+      runOnTestClock(waitForRegistry([tarball, openai], { channelTags: false }), npm.fetch)
+    ).rejects.toThrow(
+      `when the registry wait (20 minutes) ended: @composio/core@1.0.1/${tarball.file}, @composio/openai@1.0.1/${openai.file}`
+    );
+    expect(npm.elapsed()).toBeGreaterThanOrEqual(20 * MINUTE);
+    expect(npm.elapsed()).toBeLessThan(22 * MINUTE);
   });
 });
 
@@ -231,6 +292,32 @@ describe('pinned candidate download', () => {
         throw new Error('no request expected');
       })
     ).rejects.toThrow('No approved typescript candidate was pinned');
+  });
+});
+
+describe('npm dist-tag moves', () => {
+  // The E403 npm printed when the trusted publisher of @composio/slim lacked the dist-tag permission.
+  const refusal = [
+    'npm failed: npm error code E403',
+    'npm error 403 403 Forbidden - PUT https://registry.npmjs.org/-/package/@composio%2fslim/dist-tags/latest - This trusted publisher cannot manage dist-tags. Ask a package maintainer to enable Allow npm dist-tag.',
+  ].join('\n');
+  test('a dist-tag refusal names the trusted-publisher setting to enable', async () => {
+    const commands: string[][] = [];
+    await expect(
+      runRelease(
+        npmDistTag(['add', '@composio/slim@1.0.1', 'latest'], '@composio/slim').pipe(
+          Effect.provideService(NpmCli, {
+            run: args => {
+              commands.push([...args]);
+              return Effect.fail(new CommandError({ message: refusal, exitCode: 1 }));
+            },
+          })
+        )
+      )
+    ).rejects.toThrow(
+      /@composio\/slim.*Allow npm dist-tag.*Settings → Trusted publishing.*ts\/docs\/internal\/release\.md#npm-trusted-publishing/s
+    );
+    expect(commands).toEqual([['dist-tag', 'add', '@composio/slim@1.0.1', 'latest']]);
   });
 });
 

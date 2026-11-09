@@ -5,7 +5,7 @@ Python SDK Documentation Generator
 Generates MDX documentation from Python source code using griffe.
 Output is written to the docs content directory.
 
-Run: cd python && uv run --with griffe python scripts/generate-docs.py
+Run: cd python && uv run --frozen --only-group docs-reference python scripts/generate-docs.py
 """
 
 from __future__ import annotations
@@ -32,7 +32,10 @@ def load_griffe() -> Any:
         try:
             import griffe as griffe_module
         except ImportError:
-            print("Error: griffe not installed. Run: pip install griffe")
+            print(
+                "Error: griffe not installed. Run: "
+                "uv run --frozen --only-group docs-reference python scripts/generate-docs.py"
+            )
             raise SystemExit(1)
         _griffe = griffe_module
     return _griffe
@@ -143,6 +146,53 @@ def get_source_link(obj: griffe_t.Object) -> str | None:
     return f"{GITHUB_BASE}/{rel_path}#L{line}"
 
 
+def _matching_bracket(text: str, open_index: int) -> int | None:
+    """Return the index of the ``]`` closing the ``[`` at ``open_index``.
+
+    Brackets inside quoted strings, such as ``Literal['[']``, are ignored.
+    """
+    depth = 0
+    quote: str | None = None
+    escaped = False
+    for index in range(open_index, len(text)):
+        char = text[index]
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+        elif char in ("'", '"'):
+            quote = char
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                return index
+    return None
+
+
+def _rewrite_subscript(type_str: str, name: str, render: t.Callable[[str], str]) -> str:
+    """Replace every ``name[...]`` with ``render(...)``, honoring nested brackets.
+
+    The outermost occurrence is rewritten first, and the search restarts from
+    the beginning so occurrences nested in its arguments are rewritten too.
+    """
+    pattern = re.compile(rf"(?<!\w){re.escape(name)}\[")
+    while match := pattern.search(type_str):
+        open_index = match.end() - 1
+        close_index = _matching_bracket(type_str, open_index)
+        if close_index is None:
+            break
+        inner = type_str[open_index + 1 : close_index]
+        type_str = (
+            type_str[: match.start()] + render(inner) + type_str[close_index + 1 :]
+        )
+    return type_str
+
+
 def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
     """Format a type annotation to readable string.
 
@@ -159,9 +209,9 @@ def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
     type_str = type_str.replace("composio.client.types.", "")
     type_str = re.sub(r"\bt\.", "", type_str)
     type_str = re.sub(r"\bte\.", "", type_str)  # typing_extensions alias
-    type_str = re.sub(r"Optional\[([^\]]+)\]", r"\1 | None", type_str)
+    type_str = _rewrite_subscript(type_str, "Optional", lambda inner: f"{inner} | None")
     # Clean up Unpack to just show the type
-    type_str = re.sub(r"Unpack\[([^\]]+)\]", r"\1", type_str)
+    type_str = _rewrite_subscript(type_str, "Unpack", lambda inner: inner)
 
     # Truncate very long types
     if max_length is not None and len(type_str) > max_length:

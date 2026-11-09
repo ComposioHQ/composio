@@ -14,7 +14,7 @@ Composio gives your AI agents 1000+ pre-authenticated toolkits, per-user session
 - [Documentation](https://docs.composio.dev)
 - [Quickstart](https://docs.composio.dev/docs/quickstart)
 - [Changelog](https://docs.composio.dev/reference/changelog)
-- [Dashboard](https://dashboard.composio.dev) (grab your `COMPOSIO_API_KEY` from [Settings](https://dashboard.composio.dev/settings))
+- [Dashboard](https://dashboard.composio.dev) (project keys: Settings > API Keys)
 
 ## Install
 
@@ -23,6 +23,22 @@ Requires Python 3.11 through 3.15.
 ```bash
 pip install composio
 ```
+
+## Configure your API key
+
+Get a project API key from your project's **Settings > API Keys** in the dashboard. The [quickstart](https://docs.composio.dev/docs/quickstart) shows the setup.
+
+Set the key in the shell that starts your application:
+
+```bash
+export COMPOSIO_API_KEY="your_composio_api_key"
+```
+
+`Composio()` reads `COMPOSIO_API_KEY`. You can instead load the key from your secret store and pass it with `Composio(api_key=project_api_key)`. Keep keys out of source control and logs.
+
+Without a project key, `Composio()` raises `ApiKeyNotProvidedError` before making API requests. Passing `api_key=None` or `api_key=""` explicitly does not fall back to the environment.
+
+The CLI is optional and installed separately. `pip install composio` provides neither a `composio` executable nor a `python -m composio` entry point. If you want to use `composio login`, follow the [CLI installation instructions](https://docs.composio.dev/docs/cli#install). CLI login alone does not configure your application's API key; you still need to set `COMPOSIO_API_KEY` or pass `api_key`.
 
 ## Quickstart
 

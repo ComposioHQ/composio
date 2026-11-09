@@ -20,8 +20,10 @@ jobs:
       github.repository == 'ComposioHQ/composio' &&
       startsWith(github.event.pull_request.head.ref, 'sdk-release/batch-')
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       languages: ${{ steps.select.outputs.languages }}
+      channel: ${{ steps.select.outputs.channel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -36,7 +38,9 @@ jobs:
           const languages = [...new Set(batch.plan.releases.map(release => release.language))];
           // Languages reach shell steps through the matrix, so accept only known values.
           if (!languages.every(language => ['typescript', 'python'].includes(language))) throw new Error('Unknown release language');
-          appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\n`);
+          const channel = batch.plan.choices.channel ?? 'stable';
+          if (!['stable', 'beta'].includes(channel)) throw new Error('Unknown release channel');
+          appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\nchannel=${channel}\n`);
           JS
 
   candidate:
@@ -44,6 +48,7 @@ jobs:
     name: SDK candidate (${{ matrix.language }})
     needs: select-candidates
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -91,6 +96,7 @@ jobs:
     name: SDK candidate smoke (${{ matrix.language }})
     needs: [select-candidates, candidate]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       actions: read
@@ -118,3 +124,48 @@ jobs:
         env:
           LANGUAGE: ${{ matrix.language }}
         run: bun scripts/sdk-release/consumers.ts "sdk-candidate/$LANGUAGE"
+
+  # Type-checks and builds the docs against the packages this release publishes, not the published
+  # ones the pull-request docs workflows install. Like the smoke job it runs third-party code with
+  # this run's runtime token, so it has no upload step and no credentials.
+  docs:
+    # The release merge requires this check name to pass on the approved head of a stable release.
+    name: SDK candidate docs
+    needs: [select-candidates, candidate]
+    # Runs even when the Python candidate fails, so its result still reaches the reviewers.
+    if: ${{ !cancelled() && needs.select-candidates.outputs.channel == 'stable' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - if: contains(fromJSON(needs.select-candidates.outputs.languages), 'typescript')
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: sdk-candidate-typescript
+          path: sdk-candidate/typescript
+      - name: Install the docs against the candidate packages
+        run: bun scripts/sdk-release/candidate-registry.ts sdk-candidate/typescript
+      - name: Lint TypeScript
+        working-directory: docs
+        run: bun run lint
+      - name: TypeScript type check
+        working-directory: docs
+        run: bun run types:check
+      - name: Check TypeScript snippet and KB language-option regressions
+        working-directory: docs
+        run: bun test tests/static/typescript-snippets.test.ts tests/static/kb-generation.test.ts
+      - name: Check authored TypeScript outside Twoslash build coverage
+        working-directory: docs
+        run: bun run check:typescript-snippets
+      - name: Build (validates Twoslash TypeScript code blocks)
+        working-directory: docs
+        run: bun run build
