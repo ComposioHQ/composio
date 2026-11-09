@@ -41,6 +41,7 @@ Use the smallest relevant skill:
 - `cli-command`, `cli-e2e`: CLI design/implementation or CLI end-to-end tests.
 - `cli-release`: first-party CLI beta builds, stable promotion, release verification, or recovery.
 - `python-sdk`, `python-testing`, `python-providers`, `python-release`: Python SDK/provider/testing/release work.
+- `verify-cli-login`, `verify-cli-link`, `verify-cli-routing`, `verify-cli-execution`, `verify-cli-listener`, `verify-cli-shutdown`, `verify-cli-invocation`: source-bound formal models and mutation checks for the corresponding CLI subsystem. See [CLI state machines](ts/packages/cli/docs/state-machines/README.md).
 
 ## Repository Map
 

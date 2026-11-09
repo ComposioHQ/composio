@@ -1,0 +1,34 @@
+---
+title: "Parse a command and report its outcome once"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: success
+    lg1: active
+  }
+  class lg0 teal
+  class lg1 blue
+  s0: Parse argv and identify registration
+  s1: Start the selected command
+  s2: Record command invoked
+  s3: Validate login and run the handler or help
+  s4: Record success or failure
+  s5: Print only an unreported failure
+  s6: Preserve exit markers for the runner
+  s7: Invocation ended
+  [*] --> s0
+  s0 --> s1: effect/cli selects a registration or effect/cli prints the parse error and names its command
+  s1 --> s2: run enabled hooks for parsed input or help, version, bare group, or parse error skips hooks
+  s2 --> s3: record invoked after hooks
+  s3 --> s4: handler or help succeeds or keep the parse failure already printed by effect/cli or handler fails before printing or parser or handler already reports the failure
+  s4 --> s5: record the same command outcome
+  s5 --> s6: nothing remains to print or print failure and preserve its cause
+  s6 --> s7: runner uses the marked outcome
+  class s0 blue
+  class s1 blue
+  class s2 blue
+  class s3 blue
+  class s4 blue
+  class s5 blue
+  class s6 blue
+  class s7 teal
