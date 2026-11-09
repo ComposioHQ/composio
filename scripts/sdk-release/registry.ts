@@ -95,6 +95,8 @@ const Url = Schema.String.check(
 );
 
 const isSuccess = (status: number) => status >= 200 && status < 300;
+/** Answers that waiting can fix: not served yet, rate limited, or a registry outage. */
+const isPending = (status: number) => status === 404 || status === 429 || status >= 500;
 
 const registryGet = (url: string) =>
   Effect.gen(function* () {
@@ -108,15 +110,23 @@ class RegistryIncomplete extends Data.TaggedError('RegistryIncomplete')<{
 }> {}
 const incomplete = (condition: boolean, message: string) =>
   condition ? Effect.void : Effect.fail(new RegistryIncomplete({ message }));
+/** Fails at once on an answer waiting cannot fix, and as still pending on any other failure. */
+const served = (status: number, pending: string, failed: string) =>
+  isSuccess(status)
+    ? Effect.void
+    : isPending(status)
+      ? Effect.fail(new RegistryIncomplete({ message: pending }))
+      : fail(failed);
 
 /** Registry metadata at `url`, or `None` when the registry answers 404. */
 const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
     if (response.status === 404) return Option.none<S['Type']>();
-    yield* incomplete(
-      isSuccess(response.status),
-      `Registry lookup incomplete: ${url} (${response.status})`
+    yield* served(
+      response.status,
+      `Registry lookup incomplete: ${url} (${response.status})`,
+      `Registry lookup failed: ${url} (${response.status})`
     );
     return Option.some(yield* parseJson(schema, yield* response.text));
   }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
@@ -124,7 +134,7 @@ const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
 const registryBytes = (url: string, failure: (status: number) => string) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
-    yield* incomplete(isSuccess(response.status), failure(response.status));
+    yield* served(response.status, failure(response.status), failure(response.status));
     return new Uint8Array(yield* response.arrayBuffer);
   }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
 

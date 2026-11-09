@@ -231,6 +231,18 @@ describe('waiting out npm’s publish-time scan', () => {
     expect(npm.elapsed()).toBeGreaterThanOrEqual(15 * MINUTE);
   });
 
+  test('a registry error that waiting cannot fix fails at once', async () => {
+    const npm = scanning(() => false);
+    const unauthorized =
+      (now: () => number): Fetch =>
+      async input =>
+        String(input) === versionUrl ? new Response('{}', { status: 401 }) : npm.fetch(now)(input);
+    await expect(
+      runOnTestClock(waitForRegistry([tarball], { channelTags: false }), unauthorized)
+    ).rejects.toThrow(`Registry lookup failed: ${versionUrl} (401)`);
+    expect(npm.elapsed()).toBeLessThan(MINUTE);
+  });
+
   test('versions still missing at the 20-minute deadline fail naming each one', async () => {
     const npm = scanning(() => false);
     await expect(
