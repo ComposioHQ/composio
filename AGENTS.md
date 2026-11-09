@@ -64,6 +64,7 @@ Do not hand-edit these. They are regenerated or vendored, and edits will be over
 - `ts/vendor/**` — vendored read-only snapshots of Effect and Clack (git submodules); reference only.
 - `ts/packages/core/generated/**`, `ts/packages/core/pack/generated/**` — generated SDK surfaces produced by `composio generate` / the build pipeline.
 - `pnpm-lock.yaml`, `uv.lock`, `**/bun.lock` — package-manager lockfiles; change them by running the package manager, never by hand.
+- `test/fixtures/sdk-release/github/**` — recorded GitHub API responses; re-record with `scripts/sdk-release/record-github-fixtures.ts`.
 
 ## Common Commands
 
