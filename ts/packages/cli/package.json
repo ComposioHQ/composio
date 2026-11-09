@@ -60,6 +60,7 @@
     "@types/bun": "catalog:",
     "@types/semver": "^7.8.0",
     "tempy": "^3.2.0",
+    "tla-ts": "0.0.8",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:ts6",
