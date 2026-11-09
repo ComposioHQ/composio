@@ -33,6 +33,9 @@ The skill routes the agent based on what you are building:
 | Add app integrations to a product | Composio SDK and sessions |
 | Use apps from your own coding agent | Agent plugin, CLI, or MCP |
 | Add Composio to an existing MCP client | Composio Connect |
+| Ask the user before tools run | [Approvals](/docs/approvals) |
+| Block risky tool calls, sensitive results, or prompt injection | [Firewall](/docs/firewall) |
+| Use tools from your own remote MCP server | [Custom MCP](/docs/extending-sessions/custom-mcp) |
 | Diagnose a connection or tool-call error | Current docs and public support knowledge |
 
 For product integrations, the agent should preserve your framework and application identity model rather than replacing them with a standalone demo. It should use your stable application user ID when creating Composio sessions and keep your Composio API key on the server.
