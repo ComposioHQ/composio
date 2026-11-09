@@ -1,0 +1,560 @@
+{
+  "contract": "Jobs",
+  "method": "GET",
+  "path": "/repos/ComposioHQ/composio/actions/runs/42590485836/jobs?filter=all&per_page=100&page=1",
+  "status": 200,
+  "apiVersion": "2026-03-10",
+  "body": {
+    "total_count": 5,
+    "jobs": [
+      {
+        "id": 129070621554,
+        "run_id": 42590485836,
+        "workflow_name": "SDK release candidates (sdk-release/batch-42589989280)",
+        "head_branch": "sdk-release/batch-42589989280",
+        "run_url": "https://api.github.com/repos/ComposioHQ/composio/actions/runs/42590485836",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOLW_YDM8AAAAeDTVjcg",
+        "head_sha": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+        "url": "https://api.github.com/repos/ComposioHQ/composio/actions/jobs/129070621554",
+        "html_url": "https://github.com/ComposioHQ/composio/actions/runs/42590485836/job/129070621554",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-11-09T09:03:47Z",
+        "started_at": "2026-11-09T09:03:50Z",
+        "completed_at": "2026-11-09T09:03:59Z",
+        "name": "select-candidates",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-11-09T09:03:50Z",
+            "completed_at": "2026-11-09T09:03:51Z"
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-11-09T09:03:51Z",
+            "completed_at": "2026-11-09T09:03:56Z"
+          },
+          {
+            "name": "Select planned language lanes",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-11-09T09:03:56Z",
+            "completed_at": "2026-11-09T09:03:57Z"
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-11-09T09:03:57Z",
+            "completed_at": "2026-11-09T09:03:57Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-11-09T09:03:57Z",
+            "completed_at": "2026-11-09T09:03:57Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/ComposioHQ/composio/check-runs/129070621554",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1001814300,
+        "runner_name": "GitHub Actions 1001814300",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 129070707354,
+        "run_id": 42590485836,
+        "workflow_name": "SDK release candidates (sdk-release/batch-42589989280)",
+        "head_branch": "sdk-release/batch-42589989280",
+        "run_url": "https://api.github.com/repos/ComposioHQ/composio/actions/runs/42590485836",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOLW_YDM8AAAAeDTaymg",
+        "head_sha": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+        "url": "https://api.github.com/repos/ComposioHQ/composio/actions/jobs/129070707354",
+        "html_url": "https://github.com/ComposioHQ/composio/actions/runs/42590485836/job/129070707354",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-11-09T09:04:00Z",
+        "started_at": "2026-11-09T09:04:01Z",
+        "completed_at": "2026-11-09T09:04:49Z",
+        "name": "SDK candidate (typescript)",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-11-09T09:04:02Z",
+            "completed_at": "2026-11-09T09:04:02Z"
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-11-09T09:04:02Z",
+            "completed_at": "2026-11-09T09:04:07Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-11-09T09:04:07Z",
+            "completed_at": "2026-11-09T09:04:16Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-11-09T09:04:16Z",
+            "completed_at": "2026-11-09T09:04:23Z"
+          },
+          {
+            "name": "Run pnpm install --frozen-lockfile --ignore-scripts",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-11-09T09:04:23Z",
+            "completed_at": "2026-11-09T09:04:36Z"
+          },
+          {
+            "name": "Build and check the candidate",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-11-09T09:04:36Z",
+            "completed_at": "2026-11-09T09:04:45Z"
+          },
+          {
+            "name": "Retain candidate bytes for publication",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-11-09T09:04:45Z",
+            "completed_at": "2026-11-09T09:04:46Z"
+          },
+          {
+            "name": "Report candidate identity",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8,
+            "started_at": "2026-11-09T09:04:46Z",
+            "completed_at": "2026-11-09T09:04:46Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-11-09T09:04:46Z",
+            "completed_at": "2026-11-09T09:04:46Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-11-09T09:04:46Z",
+            "completed_at": "2026-11-09T09:04:47Z"
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16,
+            "started_at": "2026-11-09T09:04:47Z",
+            "completed_at": "2026-11-09T09:04:47Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17,
+            "started_at": "2026-11-09T09:04:47Z",
+            "completed_at": "2026-11-09T09:04:47Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/ComposioHQ/composio/check-runs/129070707354",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1001814314,
+        "runner_name": "GitHub Actions 1001814314",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 129070707359,
+        "run_id": 42590485836,
+        "workflow_name": "SDK release candidates (sdk-release/batch-42589989280)",
+        "head_branch": "sdk-release/batch-42589989280",
+        "run_url": "https://api.github.com/repos/ComposioHQ/composio/actions/runs/42590485836",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOLW_YDM8AAAAeDTaynw",
+        "head_sha": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+        "url": "https://api.github.com/repos/ComposioHQ/composio/actions/jobs/129070707359",
+        "html_url": "https://github.com/ComposioHQ/composio/actions/runs/42590485836/job/129070707359",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-11-09T09:04:00Z",
+        "started_at": "2026-11-09T09:04:02Z",
+        "completed_at": "2026-11-09T09:05:00Z",
+        "name": "SDK candidate (python)",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-11-09T09:04:03Z",
+            "completed_at": "2026-11-09T09:04:03Z"
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-11-09T09:04:03Z",
+            "completed_at": "2026-11-09T09:04:08Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-11-09T09:04:08Z",
+            "completed_at": "2026-11-09T09:04:19Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-11-09T09:04:19Z",
+            "completed_at": "2026-11-09T09:04:27Z"
+          },
+          {
+            "name": "Run pnpm install --frozen-lockfile --ignore-scripts",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-11-09T09:04:27Z",
+            "completed_at": "2026-11-09T09:04:40Z"
+          },
+          {
+            "name": "Build and check the candidate",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-11-09T09:04:40Z",
+            "completed_at": "2026-11-09T09:04:55Z"
+          },
+          {
+            "name": "Retain candidate bytes for publication",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-11-09T09:04:55Z",
+            "completed_at": "2026-11-09T09:04:57Z"
+          },
+          {
+            "name": "Report candidate identity",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8,
+            "started_at": "2026-11-09T09:04:57Z",
+            "completed_at": "2026-11-09T09:04:57Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-11-09T09:04:57Z",
+            "completed_at": "2026-11-09T09:04:57Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-11-09T09:04:57Z",
+            "completed_at": "2026-11-09T09:04:58Z"
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16,
+            "started_at": "2026-11-09T09:04:58Z",
+            "completed_at": "2026-11-09T09:04:58Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17,
+            "started_at": "2026-11-09T09:04:58Z",
+            "completed_at": "2026-11-09T09:04:58Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/ComposioHQ/composio/check-runs/129070707359",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1001814315,
+        "runner_name": "GitHub Actions 1001814315",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 129071119317,
+        "run_id": 42590485836,
+        "workflow_name": "SDK release candidates (sdk-release/batch-42589989280)",
+        "head_branch": "sdk-release/batch-42589989280",
+        "run_url": "https://api.github.com/repos/ComposioHQ/composio/actions/runs/42590485836",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOLW_YDM8AAAAeDTz71Q",
+        "head_sha": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+        "url": "https://api.github.com/repos/ComposioHQ/composio/actions/jobs/129071119317",
+        "html_url": "https://github.com/ComposioHQ/composio/actions/runs/42590485836/job/129071119317",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-11-09T09:05:00Z",
+        "started_at": "2026-11-09T09:05:02Z",
+        "completed_at": "2026-11-09T09:05:52Z",
+        "name": "SDK candidate smoke (typescript)",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-11-09T09:05:03Z",
+            "completed_at": "2026-11-09T09:05:03Z"
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-11-09T09:05:03Z",
+            "completed_at": "2026-11-09T09:05:08Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-11-09T09:05:08Z",
+            "completed_at": "2026-11-09T09:05:18Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-11-09T09:05:18Z",
+            "completed_at": "2026-11-09T09:05:25Z"
+          },
+          {
+            "name": "Run pnpm install --frozen-lockfile --ignore-scripts",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-11-09T09:05:25Z",
+            "completed_at": "2026-11-09T09:05:39Z"
+          },
+          {
+            "name": "Run actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-11-09T09:05:39Z",
+            "completed_at": "2026-11-09T09:05:40Z"
+          },
+          {
+            "name": "Install and import the candidate like a user",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-11-09T09:05:40Z",
+            "completed_at": "2026-11-09T09:05:49Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12,
+            "started_at": "2026-11-09T09:05:49Z",
+            "completed_at": "2026-11-09T09:05:49Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13,
+            "started_at": "2026-11-09T09:05:49Z",
+            "completed_at": "2026-11-09T09:05:49Z"
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-11-09T09:05:49Z",
+            "completed_at": "2026-11-09T09:05:50Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-11-09T09:05:50Z",
+            "completed_at": "2026-11-09T09:05:50Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/ComposioHQ/composio/check-runs/129071119317",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1001814318,
+        "runner_name": "GitHub Actions 1001814318",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 129071119337,
+        "run_id": 42590485836,
+        "workflow_name": "SDK release candidates (sdk-release/batch-42589989280)",
+        "head_branch": "sdk-release/batch-42589989280",
+        "run_url": "https://api.github.com/repos/ComposioHQ/composio/actions/runs/42590485836",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOLW_YDM8AAAAeDTz76Q",
+        "head_sha": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+        "url": "https://api.github.com/repos/ComposioHQ/composio/actions/jobs/129071119337",
+        "html_url": "https://github.com/ComposioHQ/composio/actions/runs/42590485836/job/129071119337",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-11-09T09:05:00Z",
+        "started_at": "2026-11-09T09:05:03Z",
+        "completed_at": "2026-11-09T09:09:52Z",
+        "name": "SDK candidate smoke (python)",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-11-09T09:05:04Z",
+            "completed_at": "2026-11-09T09:05:05Z"
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-11-09T09:05:05Z",
+            "completed_at": "2026-11-09T09:05:09Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-11-09T09:05:09Z",
+            "completed_at": "2026-11-09T09:05:21Z"
+          },
+          {
+            "name": "Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-11-09T09:05:21Z",
+            "completed_at": "2026-11-09T09:05:30Z"
+          },
+          {
+            "name": "Run pnpm install --frozen-lockfile --ignore-scripts",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-11-09T09:05:30Z",
+            "completed_at": "2026-11-09T09:05:44Z"
+          },
+          {
+            "name": "Run actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-11-09T09:05:44Z",
+            "completed_at": "2026-11-09T09:05:46Z"
+          },
+          {
+            "name": "Install and import the candidate like a user",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-11-09T09:05:46Z",
+            "completed_at": "2026-11-09T09:09:48Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-python-uv",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12,
+            "started_at": "2026-11-09T09:09:48Z",
+            "completed_at": "2026-11-09T09:09:49Z"
+          },
+          {
+            "name": "Post Run ./.github/actions/setup-node-pnpm-bun",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13,
+            "started_at": "2026-11-09T09:09:49Z",
+            "completed_at": "2026-11-09T09:09:49Z"
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-11-09T09:09:49Z",
+            "completed_at": "2026-11-09T09:09:49Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-11-09T09:09:49Z",
+            "completed_at": "2026-11-09T09:09:49Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/ComposioHQ/composio/check-runs/129071119337",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1001814319,
+        "runner_name": "GitHub Actions 1001814319",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      }
+    ]
+  }
+}

@@ -68,6 +68,7 @@ describe('source tag', () => {
   test('required checks on a later page of more than 100 check runs still tag the head', async () => {
     const { fetcher, writes } = fakeController();
     const unrelated = Array.from({ length: 100 }, (_, index) => ({
+      id: 100 + index,
       name: `matrix job ${index}`,
       head_sha: head,
       app: { slug: 'github-actions' },
@@ -133,6 +134,11 @@ describe('source tag', () => {
     ['the docs check failed', { docs: 'failure' }, 'typescript-check'],
     ['the docs check is pending', { docs: 'pending' }, 'typescript-check'],
     ['the docs check is missing', { docs: 'missing' }, 'typescript-check'],
+    [
+      'a re-run of a passed check failed',
+      { rerunFailed: 'SDK candidate (typescript)' },
+      'SDK candidate (typescript)',
+    ],
   ])(
     'when %s, the release is refused, no tag is created and the PR is told to revert',
     async (_name, options, reason) => {

@@ -1,6 +1,7 @@
 import { Effect, Option, Schema, Stream } from 'effect';
 import {
   CONTENT_CONCURRENCY,
+  PositiveInt,
   REPOSITORY_PATH,
   Sha,
   fileAt,
@@ -8,7 +9,7 @@ import {
   paginateArray,
   request,
 } from './github';
-import { Pull, isReleasePull, releaseBranch } from './release-pr';
+import { PullDetail, isReleasePull, releaseBranch } from './release-pr';
 import { ensure, fail } from './runtime';
 import { BATCH_PATH, ReleaseBatch, batchLanguages, channelOf } from './source';
 
@@ -42,15 +43,16 @@ export function eligibleApproval(
   );
 }
 
-const PullReview = Schema.Struct({
+export const PullReview = Schema.Struct({
   user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   state: Schema.String,
   commit_id: Sha,
 });
-const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
-const CheckRuns = Schema.Struct({
+export const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
+export const CheckRuns = Schema.Struct({
   check_runs: Schema.Array(
     Schema.Struct({
+      id: PositiveInt,
       name: Schema.String,
       head_sha: Sha,
       app: Schema.NullOr(Schema.Struct({ slug: Schema.String })),
@@ -58,7 +60,7 @@ const CheckRuns = Schema.Struct({
     })
   ),
 });
-const HeadCommit = Schema.Struct({
+export const HeadCommit = Schema.Struct({
   author: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   commit: Schema.Struct({ verification: Schema.Struct({ verified: Schema.Boolean }) }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),
@@ -99,7 +101,7 @@ const reviewsWithPermissions = (number: number) =>
 /** A release PR into next and the plan committed on its head. */
 export const readReleasePull = (number: number) =>
   Effect.gen(function* () {
-    const pull = yield* request('GET', `${REPOSITORY_PATH}/pulls/${number}`, Pull);
+    const pull = yield* request('GET', `${REPOSITORY_PATH}/pulls/${number}`, PullDetail);
     yield* ensure(
       pull.base.ref === 'next' && isReleasePull(pull),
       'Expected an SDK release PR into protected next'
@@ -115,7 +117,7 @@ export const readReleasePull = (number: number) =>
   });
 
 const ZERO_SHA = '0'.repeat(40);
-const BranchActivity = Schema.Struct({
+export const BranchActivity = Schema.Struct({
   after: Sha,
   actor: Schema.NullOr(Schema.Struct({ login: Schema.String })),
 });
@@ -145,10 +147,10 @@ export const isReleaseAppCommit = (sha: string, batch: ReleaseBatch, appSlug: st
     );
   });
 
-export const isReleaseAppHead = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+export const isReleaseAppHead = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
   isReleaseAppCommit(pull.head.sha, batch, appSlug);
 
-const IssueEvent = Schema.Struct({ event: Schema.String, commit_id: Schema.NullOr(Sha) });
+export const IssueEvent = Schema.Struct({ event: Schema.String, commit_id: Schema.NullOr(Sha) });
 
 /** The commit a merged PR left on its base. Pull responses no longer carry `merge_commit_sha`. */
 export const mergeCommitOf = (number: number) =>
@@ -166,7 +168,7 @@ export const mergeCommitOf = (number: number) =>
  * Anyone with write access can push a `sdk-release/batch-*` branch, so its plan cannot pick the
  * issue the bot comments on, labels and closes.
  */
-export const trustedIssue = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+export const trustedIssue = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
   Effect.map(isReleaseAppHead(pull, batch, appSlug), trusted =>
     trusted ? Option.some(batch.issue) : Option.none<number>()
   );
@@ -178,7 +180,7 @@ export const trustedIssue = (pull: Pull, batch: ReleaseBatch, appSlug: string) =
  * - a writer other than the author and the requester approved that head;
  * - the candidate build and smoke checks passed on it, and the docs check for a stable release.
  */
-export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+export const verifyReleaseGate = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
   Effect.gen(function* () {
     yield* ensure(
       yield* isReleaseAppHead(pull, batch, appSlug),
@@ -201,14 +203,16 @@ export const verifyReleaseGate = (pull: Pull, batch: ReleaseBatch, appSlug: stri
         body => body.check_runs
       )
     );
-    const passed = (name: string) =>
-      checks.some(
-        check =>
-          check.name === name &&
-          check.head_sha === pull.head.sha &&
-          check.app?.slug === 'github-actions' &&
-          check.conclusion === 'success'
-      );
+    // A re-run adds a newer check run under the same name; only the newest one counts.
+    const latest = new Map<string, (typeof checks)[number]>();
+    for (const check of checks)
+      if (
+        check.head_sha === pull.head.sha &&
+        check.app?.slug === 'github-actions' &&
+        check.id > (latest.get(check.name)?.id ?? 0)
+      )
+        latest.set(check.name, check);
+    const passed = (name: string) => latest.get(name)?.conclusion === 'success';
     for (const language of batchLanguages(batch))
       for (const check of [`SDK candidate (${language})`, `SDK candidate smoke (${language})`])
         yield* ensure(passed(check), `Missing green final-head check: ${check}`);

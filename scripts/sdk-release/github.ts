@@ -7,6 +7,8 @@ export const REPOSITORY_PATH = `/repos/${SDK_RELEASE_REPOSITORY}`;
 export const runUrl = (id: string | number) =>
   `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}`;
 const PAGE_SIZE = 100;
+/** The REST API version every release request pins; recorded fixtures carry the same version. */
+export const GITHUB_API_VERSION = '2026-03-10';
 /** Bounded so large release diffs stay under GitHub's secondary rate limit. */
 export const CONTENT_CONCURRENCY = 8;
 
@@ -32,7 +34,7 @@ export const ReleaseRun = Schema.Struct({
 });
 export type ReleaseRun = typeof ReleaseRun.Type;
 
-const ReleaseJob = Schema.Struct({
+export const ReleaseJob = Schema.Struct({
   name: Schema.String,
   status: Schema.optionalKey(Schema.String),
   conclusion: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -48,6 +50,9 @@ const ReleaseJob = Schema.Struct({
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
 });
 
+/** One page of a run's jobs. */
+export const JobsPage = Schema.Struct({ jobs: Schema.Array(ReleaseJob) });
+
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
 export class GitHubApiError extends Data.TaggedError('GitHubApiError')<{
@@ -57,10 +62,35 @@ export class GitHubApiError extends Data.TaggedError('GitHubApiError')<{
   readonly message: string;
 }> {}
 
-const decodeBody = <S extends Schema.Top>(schema: S, text: string) =>
-  text === ''
+/**
+ * GitHub answered, but not in the shape the release workflow reads. Retrying cannot help: the
+ * fixture recordings and schemas need updating for the API version GitHub now serves.
+ */
+export class GitHubContractError extends Data.TaggedError('GitHubContractError')<{
+  readonly method: HttpMethod;
+  readonly path: string;
+  readonly message: string;
+}> {}
+
+const decodeBody = <S extends Schema.Top>(
+  schema: S,
+  text: string,
+  method: HttpMethod,
+  path: string
+) =>
+  (text === ''
     ? Schema.decodeUnknownEffect(schema)(undefined)
-    : Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(text);
+    : Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(text)
+  ).pipe(
+    Effect.mapError(
+      error =>
+        new GitHubContractError({
+          method,
+          path,
+          message: `GitHub ${method} ${path} returned a response the release workflow cannot read under API version ${GITHUB_API_VERSION}: ${error.message}`,
+        })
+    )
+  );
 
 const makeGitHub = (token: string) =>
   Effect.gen(function* () {
@@ -78,7 +108,7 @@ const makeGitHub = (token: string) =>
           headers: {
             accept,
             authorization: `Bearer ${token}`,
-            'x-github-api-version': '2026-03-10',
+            'x-github-api-version': GITHUB_API_VERSION,
           },
         });
         return yield* client.execute(
@@ -103,7 +133,7 @@ const makeGitHub = (token: string) =>
           const response = yield* send(method, path, body, 'error');
           if (response.status < 200 || response.status >= 300)
             return yield* failure(method, path, response.status);
-          return yield* decodeBody(schema, yield* response.text);
+          return yield* decodeBody(schema, yield* response.text, method, path);
         }),
       /** A file's raw contents, or `None` on 404. Raw media works for files over 1 MB. */
       raw: (path: string) =>
@@ -213,7 +243,7 @@ export const jobs = (id: string, filter: 'all' | 'latest' = 'all') =>
   Stream.runCollect(
     paginate(
       `${REPOSITORY_PATH}/actions/runs/${id}/jobs?filter=${filter}`,
-      Schema.Struct({ jobs: Schema.Array(ReleaseJob) }),
+      JobsPage,
       body => body.jobs
     )
   );

@@ -21,7 +21,8 @@ import {
 } from './github';
 import { createSdkReleasePlan, type SdkReleasePlan } from './plan';
 import {
-  Pull,
+  PullDetail,
+  PullListItem,
   isReleasePull,
   releaseBranch,
   releasePullBody,
@@ -47,7 +48,7 @@ import {
 } from './source';
 import { ReleaseState } from './state';
 
-const Commit = Schema.Struct({
+export const GitCommit = Schema.Struct({
   sha: Sha,
   tree: Schema.Struct({ sha: Sha }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),
@@ -57,7 +58,7 @@ const CreatedRef = Schema.Struct({ ref: Schema.String });
 /** The open release PR into next, if any. Only one release runs at a time. */
 export const activeRelease = paginateArray(
   `${REPOSITORY_PATH}/pulls?state=open&base=next`,
-  Pull
+  PullListItem
 ).pipe(Stream.filter(isReleasePull), Stream.runHead);
 
 /**
@@ -184,7 +185,7 @@ const commitReleaseBranch = (batch: ReleaseBatch, patch: ReleasePatch) =>
     const source = yield* request(
       'GET',
       `${REPOSITORY_PATH}/git/commits/${batch.inputBase}`,
-      Commit
+      GitCommit
     );
     const blobs = yield* Effect.forEach(
       patch.files,
@@ -274,7 +275,7 @@ export const openReleasePull = (cwd: string, planned: ReleaseBatch, value: unkno
     const outputs = yield* releaseOutputs(cwd, batch);
     yield* validateBatchDiff(patch.files, batch, outputs);
     const branch = yield* commitReleaseBranch(batch, patch);
-    const pull = yield* request('POST', `${REPOSITORY_PATH}/pulls`, Pull, {
+    const pull = yield* request('POST', `${REPOSITORY_PATH}/pulls`, PullDetail, {
       title: releasePullTitle(batch),
       head: branch,
       base: 'next',
@@ -291,7 +292,7 @@ export const openReleasePull = (cwd: string, planned: ReleaseBatch, value: unkno
  * a GitHub or transport error fails the job so "Re-run failed jobs" retries it. GitHub records the
  * head and the squash commit separately, so a single-parent squash need not list the head.
  */
-export const authorizeSourceTag = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
+export const authorizeSourceTag = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
   Effect.gen(function* () {
     if (!pull.merged) return ReleaseState.make({ _tag: 'Abandoned', pull: pull.html_url });
     const verdict = yield* verifyReleaseGate(pull, batch, appSlug).pipe(
@@ -308,7 +309,7 @@ export const authorizeSourceTag = (pull: Pull, batch: ReleaseBatch, appSlug: str
     const merged = yield* request(
       'GET',
       `${REPOSITORY_PATH}/git/commits/${yield* mergeCommitOf(pull.number)}`,
-      Commit
+      GitCommit
     );
     yield* ensure(
       merged.parents.some(parent => parent.sha === pull.head.sha) || merged.parents.length === 1,

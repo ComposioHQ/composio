@@ -60,6 +60,9 @@ export const ActionArtifact = Schema.Struct({
 });
 export type CandidateArtifact = typeof ActionArtifact.Type;
 
+/** One page of a run's artifacts. */
+export const ArtifactsPage = Schema.Struct({ artifacts: Schema.Array(ActionArtifact) });
+
 export const normalizeArtifactDigest = (value: unknown) =>
   Effect.gen(function* () {
     const digest = yield* Schema.decodeUnknownEffect(Schema.String)(value);
@@ -136,7 +139,7 @@ export const originalCandidates = (run: number) =>
   Stream.runCollect(
     paginate(
       `${REPOSITORY_PATH}/actions/runs/${run}/artifacts`,
-      Schema.Struct({ artifacts: Schema.Array(ActionArtifact) }),
+      ArtifactsPage,
       body => body.artifacts
     )
   );

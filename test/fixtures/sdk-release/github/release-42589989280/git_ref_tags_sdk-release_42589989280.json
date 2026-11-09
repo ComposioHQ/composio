@@ -1,0 +1,17 @@
+{
+  "contract": "GitRef",
+  "method": "GET",
+  "path": "/repos/ComposioHQ/composio/git/ref/tags/sdk-release/42589989280",
+  "status": 200,
+  "apiVersion": "2026-03-10",
+  "body": {
+    "ref": "refs/tags/sdk-release/42589989280",
+    "node_id": "REF_kwDOLW_YDNoAIXJlZnMvdGFncy9zZGstcmVsZWFzZS80MjU4OTk4OTI4MA",
+    "url": "https://api.github.com/repos/ComposioHQ/composio/git/refs/tags/sdk-release/42589989280",
+    "object": {
+      "sha": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+      "type": "commit",
+      "url": "https://api.github.com/repos/ComposioHQ/composio/git/commits/3daade4191744c2f092e42ecca0e763fe11c7fa9"
+    }
+  }
+}

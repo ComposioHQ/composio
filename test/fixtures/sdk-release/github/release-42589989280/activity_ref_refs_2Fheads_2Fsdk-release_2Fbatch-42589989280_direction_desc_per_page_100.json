@@ -1,0 +1,69 @@
+{
+  "contract": "BranchActivity",
+  "method": "GET",
+  "path": "/repos/ComposioHQ/composio/activity?ref=refs%2Fheads%2Fsdk-release%2Fbatch-42589989280&direction=desc&per_page=100",
+  "status": 200,
+  "apiVersion": "2026-03-10",
+  "body": [
+    {
+      "id": 49549407948,
+      "node_id": "PSH_kwLOLW_YDM8AAAALiV_2zA",
+      "before": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+      "after": "0000000000000000000000000000000000000000",
+      "ref": "refs/heads/sdk-release/batch-42589989280",
+      "timestamp": "2026-11-09T09:32:52Z",
+      "activity_type": "branch_deletion",
+      "actor": {
+        "login": "jkomyno",
+        "id": 12381818,
+        "node_id": "MDQ6VXNlcjEyMzgxODE4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/12381818?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/jkomyno",
+        "html_url": "https://github.com/jkomyno",
+        "followers_url": "https://api.github.com/users/jkomyno/followers",
+        "following_url": "https://api.github.com/users/jkomyno/following{/other_user}",
+        "gists_url": "https://api.github.com/users/jkomyno/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/jkomyno/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/jkomyno/subscriptions",
+        "organizations_url": "https://api.github.com/users/jkomyno/orgs",
+        "repos_url": "https://api.github.com/users/jkomyno/repos",
+        "events_url": "https://api.github.com/users/jkomyno/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/jkomyno/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      }
+    },
+    {
+      "id": 49546544646,
+      "node_id": "PSH_kwLOLW_YDM8AAAALiTRGBg",
+      "before": "0000000000000000000000000000000000000000",
+      "after": "3daade4191744c2f092e42ecca0e763fe11c7fa9",
+      "ref": "refs/heads/sdk-release/batch-42589989280",
+      "timestamp": "2026-11-09T09:03:41Z",
+      "activity_type": "branch_creation",
+      "actor": {
+        "login": "sdkrelease[bot]",
+        "id": 294075132,
+        "node_id": "BOT_kgDOEYc6_A",
+        "avatar_url": "https://avatars.githubusercontent.com/u/128464815?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/sdkrelease%5Bbot%5D",
+        "html_url": "https://github.com/apps/sdkrelease",
+        "followers_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/followers",
+        "following_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/following{/other_user}",
+        "gists_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/subscriptions",
+        "organizations_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/orgs",
+        "repos_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/repos",
+        "events_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/sdkrelease%5Bbot%5D/received_events",
+        "type": "Bot",
+        "user_view_type": "public",
+        "site_admin": false
+      }
+    }
+  ]
+}

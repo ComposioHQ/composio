@@ -52,8 +52,6 @@ const openRelease = {
   number: 9,
   html_url: 'https://github.com/ComposioHQ/composio/pull/9',
   state: 'open',
-  merged: false,
-  merge_commit_sha: null,
   user: { login: 'sdk-release-app[bot]' },
   head: { sha, ref: 'sdk-release/batch-8', repo: { full_name: 'ComposioHQ/composio' } },
   base: { ref: 'next' },
