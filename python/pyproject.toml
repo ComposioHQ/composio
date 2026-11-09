@@ -69,6 +69,12 @@ dev = [
 docs-snippets = [
     "mypy==2.3.1",
 ]
+# `scripts/generate-docs.py` runs with only this group, so the SDK reference
+# that CI checks for drift and the one release preparation writes come from
+# the same generator version.
+docs-reference = [
+    "griffe==2.3.0",
+]
 # The release build installs only this group, from uv.lock, and builds with
 # `--no-isolation` so no unlocked build backend is fetched at release time.
 # Pinned exactly; only move to releases at least three days old, matching

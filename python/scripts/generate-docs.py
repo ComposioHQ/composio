@@ -5,7 +5,7 @@ Python SDK Documentation Generator
 Generates MDX documentation from Python source code using griffe.
 Output is written to the docs content directory.
 
-Run: cd python && uv run --with griffe python scripts/generate-docs.py
+Run: cd python && uv run --frozen --only-group docs-reference python scripts/generate-docs.py
 """
 
 from __future__ import annotations
@@ -32,7 +32,10 @@ def load_griffe() -> Any:
         try:
             import griffe as griffe_module
         except ImportError:
-            print("Error: griffe not installed. Run: pip install griffe")
+            print(
+                "Error: griffe not installed. Run: "
+                "uv run --frozen --only-group docs-reference python scripts/generate-docs.py"
+            )
             raise SystemExit(1)
         _griffe = griffe_module
     return _griffe
