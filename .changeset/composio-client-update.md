@@ -1,5 +1,6 @@
 ---
 '@composio/core': patch
+'@composio/python-sdk': patch
 ---
 
-Update @composio/client to 2.1.6 to include the latest API changes.
+Update the API client dependencies to 2.1.6 to include the latest API changes.
