@@ -49,7 +49,7 @@ result = composio.tools.execute(
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L278)
 
 ```python
-@before_execute(modifier: BeforeExecute | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@before_execute(modifier: BeforeExecute | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
 ```
@@ -59,7 +59,7 @@ def my_modifier(...):
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L239)
 
 ```python
-@after_execute(modifier: AfterExecute | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@after_execute(modifier: AfterExecute | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
 ```
@@ -71,7 +71,7 @@ Build a `Modifier` for the file-upload hook (same scoping pattern as `before_exe
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L317)
 
 ```python
-@before_file_upload(modifier: BeforeFileUploadLike | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@before_file_upload(modifier: BeforeFileUploadLike | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
 ```
@@ -81,7 +81,7 @@ def my_modifier(...):
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L375)
 
 ```python
-@schema_modifier(modifier: SchemaModifier | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+@schema_modifier(modifier: SchemaModifier | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
 ```
