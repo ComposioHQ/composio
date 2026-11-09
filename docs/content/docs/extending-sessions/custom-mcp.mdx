@@ -47,7 +47,7 @@ const composio = new Composio();
 // ---cut---
 const result = await composio.experimental.customToolkits.create({
   name: 'Acme',
-  appUrl: 'https://mcp.acme.com/mcp',
+  mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [{ mode: 'NO_AUTH' }],
   userId: 'all',
 });
@@ -123,7 +123,7 @@ const composio = new Composio();
 // ---cut---
 const result = await composio.experimental.customToolkits.create({
   name: 'Acme',
-  appUrl: 'https://mcp.acme.com/mcp',
+  mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [
     {
       mode: 'DCR_OAUTH',
