@@ -169,8 +169,14 @@ const requestedDelayMs = (response: HttpClientResponse.HttpClientResponse, now: 
   return undefined;
 };
 
+/** A response and its whole body, read within the same attempt timeout. */
+interface Answer {
+  readonly response: HttpClientResponse.HttpClientResponse;
+  readonly text: string;
+}
+
 type Attempt =
-  | { readonly _tag: 'Done'; readonly response: HttpClientResponse.HttpClientResponse }
+  | ({ readonly _tag: 'Done' } & Answer)
   | { readonly _tag: 'Retry'; readonly error: GitHubApiError; readonly delayMs?: number };
 
 const makeGitHub = (token: string, policy: RetryPolicy) =>
@@ -191,9 +197,11 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
             'x-github-api-version': GITHUB_API_VERSION,
           },
         });
-        return yield* client.execute(
+        const response = yield* client.execute(
           body === undefined ? base : HttpClientRequest.bodyJsonUnsafe(base, body)
         );
+        // The body is read here, so a response that stalls after its headers also times out.
+        return { response, text: yield* response.text } satisfies Answer;
       }).pipe(
         Effect.provideService(FetchHttpClient.RequestInit, { redirect }),
         Effect.timeout(policy.timeout)
@@ -221,14 +229,13 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
             });
             return method === 'GET' ? Effect.succeed({ _tag: 'Retry', error }) : Effect.fail(error);
           },
-          onSuccess: response =>
+          onSuccess: ({ response, text }) =>
             Effect.gen(function* () {
               const retryable =
                 response.status === 429 ||
                 response.status === 403 ||
                 (response.status >= 500 && method === 'GET');
-              if (!retryable) return { _tag: 'Done', response } satisfies Attempt;
-              const text = yield* response.text.pipe(Effect.orElseSucceed(() => ''));
+              if (!retryable) return { _tag: 'Done', response, text } satisfies Attempt;
               if (response.status === 403 && !isRateLimited(response, text))
                 return yield* failure(method, path, response, text);
               return {
@@ -250,7 +257,7 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
         yield* ensure(path.startsWith('/') && !path.startsWith('//'), 'Expected a GitHub API path');
         for (let tries = 1; ; tries++) {
           const outcome = yield* attempt(method, path, body, redirect, accept);
-          if (outcome._tag === 'Done') return outcome.response;
+          if (outcome._tag === 'Done') return { response: outcome.response, text: outcome.text };
           const delayMs = outcome.delayMs ?? policy.baseDelayMs * 2 ** (tries - 1);
           if (tries >= policy.attempts || delayMs > policy.maxDelayMs)
             return yield* new GitHubApiError({
@@ -260,14 +267,8 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
           yield* Effect.sleep(delayMs);
         }
       });
-    const failResponse = (
-      method: HttpMethod,
-      path: string,
-      response: HttpClientResponse.HttpClientResponse
-    ) =>
-      Effect.flatMap(response.text.pipe(Effect.orElseSucceed(() => '')), text =>
-        Effect.fail(failure(method, path, response, text))
-      );
+    const failResponse = (method: HttpMethod, path: string, { response, text }: Answer) =>
+      Effect.fail(failure(method, path, response, text));
     return {
       request: <S extends Schema.Top>(
         method: HttpMethod,
@@ -276,32 +277,26 @@ const makeGitHub = (token: string, policy: RetryPolicy) =>
         body?: unknown
       ) =>
         Effect.gen(function* () {
-          const response = yield* send(method, path, body, 'error');
-          if (response.status < 200 || response.status >= 300)
-            return yield* failResponse(method, path, response);
-          return yield* decodeBody(schema, yield* response.text, method, path);
+          const answer = yield* send(method, path, body, 'error');
+          if (answer.response.status < 200 || answer.response.status >= 300)
+            return yield* failResponse(method, path, answer);
+          return yield* decodeBody(schema, answer.text, method, path);
         }),
       /** A file's raw contents, or `None` on 404. Raw media works for files over 1 MB. */
       raw: (path: string) =>
         Effect.gen(function* () {
-          const response = yield* send(
-            'GET',
-            path,
-            undefined,
-            'error',
-            'application/vnd.github.raw'
-          );
-          if (response.status === 404) return Option.none<string>();
-          if (response.status < 200 || response.status >= 300)
-            return yield* failResponse('GET', path, response);
-          return Option.some(yield* response.text);
+          const answer = yield* send('GET', path, undefined, 'error', 'application/vnd.github.raw');
+          if (answer.response.status === 404) return Option.none<string>();
+          if (answer.response.status < 200 || answer.response.status >= 300)
+            return yield* failResponse('GET', path, answer);
+          return Option.some(answer.text);
         }),
       /** Resolves an endpoint that answers with a 302 to short-lived storage, such as an artifact archive. */
       redirectLocation: (path: string) =>
         Effect.gen(function* () {
-          const response = yield* send('GET', path, undefined, 'manual');
-          if (response.status !== 302) return yield* failResponse('GET', path, response);
-          return Option.fromNullishOr(response.headers.location);
+          const answer = yield* send('GET', path, undefined, 'manual');
+          if (answer.response.status !== 302) return yield* failResponse('GET', path, answer);
+          return Option.fromNullishOr(answer.response.headers.location);
         }),
     };
   });

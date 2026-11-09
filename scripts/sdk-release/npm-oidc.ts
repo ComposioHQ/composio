@@ -19,7 +19,7 @@ const AUDIENCE = `npm:${new URL(NPM_REGISTRY).hostname}`;
 
 /** npm's per-package exchange endpoint; npm escapes only the scope's slash, as `%2f`. */
 const exchangeUrl = (name: string) =>
-  `${NPM_REGISTRY}/-/npm/v1/oidc/token/exchange/package/${name.replace('/', '%2f')}`;
+  `${NPM_REGISTRY}/-/npm/v1/oidc/token/exchange/package/${name.replaceAll('/', '%2f')}`;
 
 const present = <A>(value: Option.Option<A>, text: (value: A) => string) =>
   Option.filter(value, item => text(item) !== '');

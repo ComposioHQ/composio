@@ -109,6 +109,21 @@ describe('GitHub client', () => {
     expect(github.seen).toHaveLength(2);
   });
 
+  test('a response whose body stalls after its headers times out and is retried', async () => {
+    const stalledBody = () =>
+      new Response(
+        new ReadableStream({
+          start: controller => controller.enqueue(new TextEncoder().encode('{"ref":')),
+        }),
+        { status: 200 }
+      );
+    const github = scripted(stalledBody, () => json({ ref: 'refs/heads/next' }));
+    expect(await call(github.fetcher, 'GET', { baseDelayMs: 1, timeout: '50 millis' })).toEqual({
+      ref: 'refs/heads/next',
+    });
+    expect(github.seen).toHaveLength(2);
+  });
+
   test('a response the schema cannot read is not retried', async () => {
     const github = scripted(() => json({ object: {} }));
     await expect(call(github.fetcher)).rejects.toThrow('cannot read');
