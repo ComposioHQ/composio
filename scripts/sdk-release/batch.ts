@@ -46,7 +46,7 @@ import {
   releaseTag,
   validateBatchDiff,
 } from './source';
-import { ReleaseState } from './state';
+import { RECOVERY_RUNBOOK, ReleaseState } from './state';
 
 export const GitCommit = Schema.Struct({
   sha: Sha,
@@ -61,20 +61,30 @@ export const activeRelease = paginateArray(
   PullListItem
 ).pipe(Stream.filter(isReleasePull), Stream.runHead);
 
-/**
- * The id of a release plan committed on `sha` whose tag was never created: its release PR merged
- * but failed the gate, or its tag job has not finished. Only the id is read, so older plan shapes
- * still decode.
- */
-const untaggedRelease = (sha: string) =>
+/** The id of the release plan committed on `sha`. Only the id is read, so older plan shapes still decode. */
+const committedRelease = (sha: string) =>
   Effect.gen(function* () {
     const committed = yield* fileAt(BATCH_PATH, sha);
     if (Option.isNone(committed)) return Option.none<string>();
     const { id } = yield* Schema.decodeUnknownEffect(
       Schema.fromJsonString(Schema.Struct({ id: RunId }))
     )(committed.value);
-    const tag = yield* requestOptional(`${REPOSITORY_PATH}/git/ref/tags/${releaseTag(id)}`, TagRef);
-    return Option.isNone(tag) ? Option.some(id) : Option.none<string>();
+    return Option.some(id);
+  });
+
+/**
+ * The id of a release plan committed on `sha` whose tag was never created: its release PR merged
+ * but failed the gate, or its tag job has not finished.
+ */
+const untaggedRelease = (sha: string) =>
+  Effect.gen(function* () {
+    const id = yield* committedRelease(sha);
+    if (Option.isNone(id)) return id;
+    const tag = yield* requestOptional(
+      `${REPOSITORY_PATH}/git/ref/tags/${releaseTag(id.value)}`,
+      TagRef
+    );
+    return Option.isNone(tag) ? id : Option.none<string>();
   });
 
 // 1. request -----------------------------------------------------------------------------------
@@ -302,7 +312,7 @@ export const authorizeSourceTag = (pull: PullDetail, batch: ReleaseBatch, appSlu
     if (Option.isSome(verdict)) {
       yield* commentIssue(
         pull.number,
-        `This release PR merged, but it failed the release gate, so nothing was tagged or published.\n\nReason: ${verdict.value}\n\nRevert it on \`next\`, then request the release again.`
+        `This release PR merged, but it failed the release gate, so nothing was tagged or published.\n\nReason: ${verdict.value}\n\nRevert it on \`next\`, then request the release again. If the gate itself was wrong, fix it on \`next\` and dispatch **SDK release** with action \`regate\` instead: ${RECOVERY_RUNBOOK}`
       );
       return ReleaseState.make({ _tag: 'Refused', pull: pull.html_url, reason: verdict.value });
     }
@@ -330,6 +340,38 @@ export const authorizeSourceTag = (pull: PullDetail, batch: ReleaseBatch, appSlu
         }),
     });
     return ReleaseState.make({ _tag: 'Tagged', tag });
+  });
+
+// 4. regate ------------------------------------------------------------------------------------
+
+/**
+ * The merged release PR behind the plan `next` carries, for re-gating with the gate as `next`
+ * has it now: the recovery for a release that a since-fixed gate bug left untagged. The plan
+ * names the release and its branch names the PR, so nobody can point this at another PR or
+ * commit, and `authorizeSourceTag` then applies exactly the gate and tag a closing PR gets.
+ */
+export const releaseToRegate = (actor: string, sourceSha: string) =>
+  Effect.gen(function* () {
+    yield* requireActiveMember(actor);
+    const id = yield* committedRelease(sourceSha);
+    if (Option.isNone(id)) return yield* fail('Nothing to re-gate: `next` carries no release plan');
+    const branch = releaseBranch(id.value);
+    const closed = yield* Stream.runCollect(
+      paginateArray(
+        `${REPOSITORY_PATH}/pulls?state=closed&base=next&head=${encodeURIComponent(`ComposioHQ:${branch}`)}`,
+        PullListItem
+      )
+    );
+    const pulls = yield* Effect.forEach(
+      closed.filter(pull => isReleasePull(pull) && pull.head.ref === branch),
+      pull => readReleasePull(pull.number)
+    );
+    // A re-run of the release-PR job can leave an older closed PR on the same branch.
+    const [release] = pulls.toSorted(
+      (a, b) => Number(b.pull.merged) - Number(a.pull.merged) || b.pull.number - a.pull.number
+    );
+    if (!release) return yield* fail(`Nothing to re-gate: no closed release PR from ${branch}`);
+    return release;
   });
 
 // entry point ----------------------------------------------------------------------------------
@@ -369,7 +411,7 @@ const outputIssue = (env: Environment, issue: Option.Option<number>) =>
 const outputState = (env: Environment, state: ReleaseState) =>
   appendFile(env.outputPath, `state=${JSON.stringify(state)}\n`);
 
-const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
+const MODES: Record<'plan' | 'release-pr' | 'tag' | 'regate', Mode> = {
   plan: (env: Environment, event: unknown, envelope: typeof EventEnvelope.Type) =>
     Effect.gen(function* () {
       const cwd = (yield* Path.Path).resolve('.');
@@ -415,14 +457,22 @@ const MODES: Record<'plan' | 'release-pr' | 'tag', Mode> = {
       yield* outputIssue(env, issue);
       yield* outputState(env, yield* authorizeSourceTag(pull, batch, appSlug));
     }),
+  regate: (env: Environment, _event: unknown, envelope: typeof EventEnvelope.Type) =>
+    Effect.gen(function* () {
+      const appSlug = yield* Config.String('SDK_RELEASE_APP_SLUG');
+      const { pull, batch } = yield* releaseToRegate(envelope.sender.login, env.sha);
+      const issue = yield* trustedIssue(pull, batch, appSlug);
+      yield* outputIssue(env, issue);
+      yield* outputState(env, yield* authorizeSourceTag(pull, batch, appSlug));
+    }),
 };
 
-/** `batch.ts plan`, `batch.ts release-pr <patch>`, or `batch.ts tag`. */
+/** `batch.ts plan`, `batch.ts release-pr <patch>`, `batch.ts tag`, or `batch.ts regate`. */
 const main = Effect.gen(function* () {
   const [argument] = yield* (yield* Stdio.Stdio).args;
-  const mode = yield* Schema.decodeUnknownEffect(Schema.Literals(['plan', 'release-pr', 'tag']))(
-    argument
-  );
+  const mode = yield* Schema.decodeUnknownEffect(
+    Schema.Literals(['plan', 'release-pr', 'tag', 'regate'])
+  )(argument);
   const env = yield* Environment;
   const event = yield* readJson(Schema.Unknown, env.eventPath);
   const envelope = yield* Schema.decodeUnknownEffect(EventEnvelope)(event);

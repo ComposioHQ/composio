@@ -8,7 +8,9 @@ run-name: SDK release (${{ github.event_name }}, ${{ github.actor }})
 #                sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
 #                a writer who did not request the release approves, and a person merges.
 #   2. review    when the release PR closes, the bot re-checks approval and checks, then tags the
-#                reviewed head. A PR closed without merging is abandoned.
+#                reviewed head. A PR closed without merging is abandoned. A `regate` dispatch
+#                from next re-runs that gate, as next has it now, for a merged release that a
+#                since-fixed gate bug left untagged.
 #   3. publish   the tag run uploads the reviewed files to npm and PyPI, then opens a docs PR
 #                that pins the released versions so twoslash checks against them.
 
@@ -17,6 +19,11 @@ on:
     types: [opened]
   workflow_dispatch:
     inputs:
+      action:
+        description: request plans a release; regate re-checks and tags the merged, untagged release on next
+        type: choice
+        options: [request, regate]
+        default: request
       channel:
         description: stable consumes the changesets; beta publishes a preview to npm next
         type: choice
@@ -48,7 +55,7 @@ jobs:
   plan:
     if: >-
       github.repository == 'ComposioHQ/composio' && github.ref == 'refs/heads/next' &&
-      (github.event_name == 'workflow_dispatch' ||
+      ((github.event_name == 'workflow_dispatch' && inputs.action == 'request') ||
        (github.event_name == 'issues' && startsWith(github.event.issue.title, '[SDK release]')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -187,6 +194,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: sdk-release-control
+    # Shared with regate, so a re-gate and a closing release PR never tag at the same time.
+    concurrency:
+      group: sdk-release-tag
+      queue: max
     outputs:
       issue: ${{ steps.tag.outputs.issue }}
       state: ${{ steps.tag.outputs.state }}
@@ -212,9 +223,46 @@ jobs:
           SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
         run: bun scripts/sdk-release/batch.ts tag
 
+  # Recovers a merged release that a gate bug left untagged, once the fix is on next. It finds the
+  # release from the untagged plan on next, so it cannot be pointed at another PR or commit, and
+  # applies the same gate. The new tag's push starts publishing as usual.
+  regate:
+    if: >-
+      github.repository == 'ComposioHQ/composio' && github.event_name == 'workflow_dispatch' &&
+      inputs.action == 'regate' && github.ref == 'refs/heads/next'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sdk-release-control
+    concurrency:
+      group: sdk-release-tag
+      queue: max
+    outputs:
+      issue: ${{ steps.regate.outputs.issue }}
+      state: ${{ steps.regate.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # A dedicated release App, installed with only the permissions the runbook lists.
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+        id: app
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ComposioHQ
+          repositories: composio
+      - name: Re-check the merged release on next, then tag its reviewed head
+        id: regate
+        env:
+          SDK_RELEASE_TOKEN: ${{ steps.app.outputs.token }}
+          SDK_RELEASE_APP_SLUG: ${{ vars.SDK_RELEASE_APP_SLUG }}
+        run: bun scripts/sdk-release/batch.ts regate
+
   review-status:
-    needs: tag
-    if: always() && needs.tag.result != 'skipped'
+    needs: [tag, regate]
+    if: always() && (needs.tag.result != 'skipped' || needs.regate.result != 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -223,16 +271,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Show the review outcome on the request issue
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          RESULTS: '{"tag": "${{ needs.tag.result }}"}'
-          OUTCOME: ${{ needs.tag.outputs.state }}
-          ISSUE: ${{ needs.tag.outputs.issue }}
+          RESULTS: '{"tag": "${{ needs.tag.result }}", "regate": "${{ needs.regate.result }}"}'
+          OUTCOME: ${{ needs.tag.outputs.state || needs.regate.outputs.state }}
+          ISSUE: ${{ needs.tag.outputs.issue || needs.regate.outputs.issue }}
         run: bun scripts/sdk-release/report.ts status review
 
   # 3. publish ---------------------------------------------------------------------------------

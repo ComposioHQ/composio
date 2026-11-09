@@ -81,10 +81,14 @@ export const STATUS_LABELS: ReadonlyArray<string> = Object.values(DISPLAY).map(
   display => display.label
 );
 
+/** The runbook's recovery steps for a release that did not finish. */
+export const RECOVERY_RUNBOOK =
+  'https://github.com/ComposioHQ/composio/blob/next/ts/docs/internal/release.md#recover-a-failed-release';
+
 /** How to resume a failed stage. */
 const RECOVERY: Record<Stage, string> = {
   request: 'Open the run and choose "Re-run failed jobs", or request the release again.',
-  review: 'Open the run and choose "Re-run failed jobs"; creating the tag is safe to repeat.',
+  review: `If GitHub failed, open the run and choose "Re-run failed jobs"; creating the tag is safe to repeat. A re-run uses the gate as it was before the merge, so if the gate itself is wrong, fix it on \`next\` and dispatch **SDK release** with action \`regate\`: ${RECOVERY_RUNBOOK}`,
   publish:
     'Open the run and choose "Re-run failed jobs"; a re-run uploads only the files the registries are missing. If the approved candidates expired or a registry serves different bytes, add changesets and request a new release.',
 };
@@ -97,14 +101,14 @@ export const describe = (state: ReleaseState) =>
     Waiting: ({ pull }) =>
       `Another SDK release is in progress: ${pull}. Request this release again after it finishes.`,
     Blocked: ({ release }) =>
-      `The release planned in run ${release} merged into \`next\` but was never tagged. Re-run its tag job, or revert its release PR on \`next\`, then request this release again.`,
+      `The release planned in run ${release} merged into \`next\` but was never tagged. If a gate bug refused it and the fix is on \`next\`, dispatch **SDK release** with action \`regate\`; otherwise revert its release PR on \`next\`. Then request this release again. See ${RECOVERY_RUNBOOK}`,
     Empty: () => 'Nothing to release: no pending changesets for the selected languages.',
     InReview: ({ pull }) =>
       `Release PR: ${pull}\n\nA writer other than the requester approves it. Merging it tags and publishes the release.`,
     Abandoned: ({ pull }) =>
       `${pull} closed without merging, so nothing was tagged or published. Request a new release when ready.`,
     Refused: ({ pull, reason }) =>
-      `${pull} merged, but it failed the release gate, so nothing was tagged or published.\n\nReason: ${reason}\n\nRevert the release PR on \`next\`, then request the release again.`,
+      `${pull} merged, but it failed the release gate, so nothing was tagged or published.\n\nReason: ${reason}\n\nRevert the release PR on \`next\`, then request the release again. If the gate itself was wrong, fix it on \`next\` and dispatch **SDK release** with action \`regate\` instead: ${RECOVERY_RUNBOOK}`,
     Tagged: ({ tag }) => `Tagged \`${tag}\`. The tag run publishes the reviewed files.`,
     Published: ({ versions }) =>
       ['Published:', '', ...versions.map(({ name, version }) => `- ${name} ${version}`)].join('\n'),
