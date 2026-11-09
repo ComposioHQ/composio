@@ -16,7 +16,7 @@ from composio.core.models.experimental import (
 
 TOOLKIT_CONFIG: custom_upsert_params.ToolkitConfig = {
     "name": "My Toolkit",
-    "app_url": "https://mcp.example.com/mcp",
+    "mcp_url": "https://mcp.example.com/mcp",
     "auth_schemes": [
         {
             "mode": "API_KEY",

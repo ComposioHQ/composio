@@ -322,9 +322,13 @@ class ApiKeyNotProvidedError(ApiKeyError, NotFoundError):
     def __init__(self) -> None:
         super().__init__(
             message=(
-                "API Key not provided, either provide API key "
-                f"or export it as `{ENV_COMPOSIO_API_KEY}` "
-                "or run `composio login`"
+                f"API key not provided. Set `{ENV_COMPOSIO_API_KEY}` or pass "
+                "`api_key` to `Composio(api_key=...)`. Get a project API key "
+                "from your project's Settings > API Keys: "
+                "https://docs.composio.dev/docs/quickstart. "
+                "Optional: `composio login` requires installing the CLI separately "
+                "(https://docs.composio.dev/docs/cli#install). CLI login alone "
+                f"does not set `{ENV_COMPOSIO_API_KEY}` for your application."
             ),
         )
 

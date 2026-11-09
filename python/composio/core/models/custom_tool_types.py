@@ -188,7 +188,7 @@ class SessionContext(te.Protocol):
 class CustomTool:
     """Custom tool definition returned from ``@composio.experimental.tool()``.
 
-    Pass to ``composio.create(user_id, experimental={"custom_tools": [...]})``
+    Pass to ``composio.create(user_id, experimental={"local_tools": [...]})``
     to bind to a session.
     """
 
@@ -201,6 +201,10 @@ class CustomTool:
     extends_toolkit: t.Optional[str] = None
     output_schema: t.Optional[t.Dict[str, t.Any]] = None
     preload: t.Optional[bool] = None
+
+
+LocalTool = CustomTool
+"""Definition of one of the SDK's local tools, returned from ``@composio.experimental.tool()``."""
 
 
 CustomToolWireDefinition = session_create_params.ExperimentalCustomTool
@@ -244,7 +248,7 @@ class CustomToolsMap:
 
 
 # ────────────────────────────────────────────────────────────────
-# Registered types (returned by session.custom_tools() / .custom_toolkits())
+# Registered types (returned by session.local_tools() / .local_toolkits())
 # ────────────────────────────────────────────────────────────────
 
 
@@ -268,3 +272,10 @@ class RegisteredCustomToolkit:
     name: str
     description: str
     tools: t.List[RegisteredCustomTool]
+
+
+RegisteredLocalTool = RegisteredCustomTool
+"""One of the session's local tools, as returned by ``session.local_tools()``."""
+
+RegisteredLocalToolkit = RegisteredCustomToolkit
+"""A toolkit of the session's local tools, as returned by ``session.local_toolkits()``."""

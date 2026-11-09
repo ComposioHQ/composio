@@ -19,7 +19,8 @@ export interface StubRequest {
  * and the validation a call asks for are the client's own.
  *
  * A retried call sleeps on Effect's clock, so a test whose answer is retryable
- * runs under `it.live` and answers with a `retry-after-ms: 0` header.
+ * runs on the live clock (`it.live`, or `layer(..., { excludeTestServices: true })`)
+ * and answers with a `retry-after-ms: 0` header.
  */
 export const stubComposioClient = (
   respond: (request: StubRequest) => Response

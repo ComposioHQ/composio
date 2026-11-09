@@ -77,6 +77,17 @@ describe("Navigation - meta.json validity", () => {
 
     expect(
       pages.slice(
+        pages.indexOf("---Governance---") + 1,
+        pages.indexOf("---Guides---")
+      )
+    ).toEqual([
+      "governance/tool-hints",
+      "governance/approvals",
+      "firewall",
+    ]);
+
+    expect(
+      pages.slice(
         pages.indexOf("---Direct execution (legacy)---") + 1,
         pages.indexOf("---Migration and security---")
       )
