@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { Effect, Exit } from 'effect';
-import { authorizeSourceTag, releaseToRegate } from '../scripts/sdk-release/batch';
+import { regateRelease, releaseToRegate } from '../scripts/sdk-release/batch';
 import type { Recording } from '../scripts/sdk-release/record-github-fixtures';
 import { json, readText, runRelease } from './sdk-release-harness';
 import {
@@ -37,7 +37,7 @@ const regate = (fetcher: ReturnType<typeof replay>['fetcher'], actor = 'maintain
   runRelease(
     Effect.exit(
       Effect.flatMap(releaseToRegate(actor, NEXT), ({ pull, batch }) =>
-        authorizeSourceTag(pull, batch, RELEASE_5278.appSlug)
+        regateRelease(pull, batch, RELEASE_5278.appSlug)
       )
     ),
     fetcher
@@ -60,6 +60,16 @@ describe('regate', () => {
 
   test('reports Tagged without writing when the tag is already on the reviewed head', async () => {
     const api = github({ [tagPath]: recorded => json(recorded) });
+    expect(await regate(api.fetcher)).toEqual(tagged);
+    expect(api.writes).toEqual([]);
+  });
+
+  test("leaves an already-tagged release alone, even one today's gate would refuse", async () => {
+    // #5278 predates the SDK candidate docs check, so without the stand-in it fails today's gate.
+    const api = replay(recordings, {
+      '/orgs/ComposioHQ/memberships/maintainer': () => json({ state: 'active' }),
+      [`/contents/.github/sdk-release-plan.json?ref=${NEXT}`]: () => new Response(plan),
+    });
     expect(await regate(api.fetcher)).toEqual(tagged);
     expect(api.writes).toEqual([]);
   });

@@ -59,7 +59,7 @@ const PypiProvenance = Schema.Struct({
  */
 class ProvenancePending extends Data.TaggedError('ProvenancePending')<{
   readonly url: string;
-  readonly status: number;
+  readonly status: number | 'timeout';
 }> {}
 
 const provenanceJson = <S extends Schema.Top>(
@@ -78,7 +78,14 @@ const provenanceJson = <S extends Schema.Top>(
         `Provenance lookup failed: ${url} (${response.status})`
       );
       return yield* Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(yield* response.text);
-    }).pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' })),
+    }).pipe(
+      Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }),
+      // A stalled lookup is retried like an answer that is not served yet.
+      Effect.timeoutOrElse({
+        duration: REGISTRY_WAIT.requestTimeout,
+        orElse: () => Effect.fail(new ProvenancePending({ url, status: 'timeout' })),
+      })
+    ),
     error => error instanceof ProvenancePending,
     deadline
   ).pipe(

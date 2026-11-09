@@ -374,6 +374,22 @@ export const releaseToRegate = (actor: string, sourceSha: string) =>
     return release;
   });
 
+/**
+ * Tags a release the gate left untagged. A release already tagged on its reviewed head is left
+ * alone, so a release published under an older gate is never judged by today's.
+ */
+export const regateRelease = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
+  Effect.gen(function* () {
+    const tag = releaseTag(batch.id);
+    const existing = yield* requestOptional(`${REPOSITORY_PATH}/git/ref/tags/${tag}`, TagRef);
+    if (Option.isNone(existing)) return yield* authorizeSourceTag(pull, batch, appSlug);
+    yield* ensure(
+      existing.value.object.type === 'commit' && existing.value.object.sha === pull.head.sha,
+      'Publication source tag already points to another source'
+    );
+    return ReleaseState.make({ _tag: 'Tagged', tag });
+  });
+
 // entry point ----------------------------------------------------------------------------------
 
 const Environment = Config.all({
@@ -463,7 +479,7 @@ const MODES: Record<'plan' | 'release-pr' | 'tag' | 'regate', Mode> = {
       const { pull, batch } = yield* releaseToRegate(envelope.sender.login, env.sha);
       const issue = yield* trustedIssue(pull, batch, appSlug);
       yield* outputIssue(env, issue);
-      yield* outputState(env, yield* authorizeSourceTag(pull, batch, appSlug));
+      yield* outputState(env, yield* regateRelease(pull, batch, appSlug));
     }),
 };
 

@@ -90,8 +90,6 @@ export interface RegistryState {
   readonly tagsToRepair: ReadonlyArray<ChannelTag>;
 }
 
-const REGISTRY_TIMEOUT = '30 seconds';
-
 const Url = Schema.String.check(
   Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
 );
@@ -106,8 +104,6 @@ const registryGet = (url: string) =>
 class RegistryIncomplete extends Data.TaggedError('RegistryIncomplete')<{
   readonly message: string;
 }> {}
-const incomplete = (condition: boolean, message: string) =>
-  condition ? Effect.void : Effect.fail(new RegistryIncomplete({ message }));
 /** Fails at once on an answer waiting cannot fix, and as still pending on any other failure. */
 const served = (status: number, pending: string, failed = pending) =>
   isSuccess(status)
@@ -127,14 +123,14 @@ const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
       `Registry lookup failed: ${url} (${response.status})`
     );
     return Option.some(yield* parseJson(schema, yield* response.text));
-  }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
+  }).pipe(Effect.timeout(REGISTRY_WAIT.requestTimeout));
 
 const registryBytes = (url: string, failure: (status: number) => string) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
     yield* served(response.status, failure(response.status));
     return new Uint8Array(yield* response.arrayBuffer);
-  }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
+  }).pipe(Effect.timeout(REGISTRY_WAIT.requestTimeout));
 
 const servedBy = (language: Lang, url: string) =>
   URL.canParse(url) &&

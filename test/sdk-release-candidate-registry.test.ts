@@ -8,6 +8,7 @@ import {
   serveCandidateRegistry,
 } from '../scripts/sdk-release/candidate-registry';
 import { tarballName } from '../scripts/sdk-release/candidates';
+import { CHANNELS } from '../scripts/sdk-release/channel';
 import { run, withoutReleaseTokens } from '../scripts/sdk-release/runtime';
 import type { ReleaseBatch } from '../scripts/sdk-release/source';
 import { batch } from './sdk-release-controller-fixture';
@@ -344,6 +345,8 @@ describe('docs workflows', () => {
     const { jobs } = await workflow('sdk.release.candidates.yml');
     const docs = jobs.docs;
     expect(docs.name).toBe('SDK candidate docs');
+    // The stable gate requires the check this job reports, under the same name.
+    expect(CHANNELS.stable.extraChecks.join()).toBe(String(docs.name));
     expect(docs.needs).toEqual(['select-candidates', 'candidate']);
     expect(docs.if).toBe(
       "${{ !cancelled() && needs.select-candidates.outputs.channel == 'stable' }}"

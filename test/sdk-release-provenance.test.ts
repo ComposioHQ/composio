@@ -56,6 +56,22 @@ describe('PyPI attestations', () => {
     await runOnTestClock(verifyPypiProvenance(wheel), pypi(releasePublisher, before));
   });
 
+  test('a provenance lookup that stalls is retried, then accepted', async () => {
+    let stalled = false;
+    const stallOnce = (): Fetch => {
+      const served = pypi(releasePublisher)();
+      return async (input, init) => {
+        if (!stalled && String(input).endsWith('/provenance')) {
+          stalled = true;
+          return new Promise<Response>(() => {});
+        }
+        return served(input, init);
+      };
+    };
+    await runOnTestClock(verifyPypiProvenance(wheel), stallOnce);
+    expect(stalled).toBe(true);
+  });
+
   test.each([
     ['another repository', { repository: 'someone/composio' }],
     ['another workflow', { workflow: 'py.release.yml' }],

@@ -9,6 +9,7 @@ export const REGISTRY_WAIT = {
   deadline: '20 minutes',
   firstDelay: '5 seconds',
   maxDelay: '1 minute',
+  requestTimeout: '30 seconds',
 } as const satisfies Record<string, Duration.Input>;
 
 export const isSuccess = (status: number) => status >= 200 && status < 300;

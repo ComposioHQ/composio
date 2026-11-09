@@ -78,6 +78,20 @@ describe('GitHub client', () => {
     expect(github.seen).toHaveLength(2);
   });
 
+  test("a 403 that is not a rate limit fails at once with GitHub's message", async () => {
+    const github = scripted(() => githubError(403, 'Resource not accessible by integration'));
+    await expect(call(github.fetcher)).rejects.toThrow(
+      '(403): Resource not accessible by integration'
+    );
+    expect(github.seen).toHaveLength(1);
+  });
+
+  test('a rate limit asking for a longer wait than the policy allows gives up at once', async () => {
+    const github = scripted(() => githubError(429, 'Too Many Requests', { 'retry-after': '3600' }));
+    await expect(call(github.fetcher)).rejects.toThrow('gave up after 1 attempt');
+    expect(github.seen).toHaveLength(1);
+  });
+
   test('repeated 503s stop after the attempt budget', async () => {
     const github = scripted(() => githubError(503, 'Service Unavailable'));
     await expect(call(github.fetcher)).rejects.toThrow('after 5 attempts');
