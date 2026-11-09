@@ -52,30 +52,28 @@ async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: strin
 
 ---
 
-### customToolkits() (deprecated)
+### customToolkits()
 
-<Callout type="warn" title="Deprecated">
-Use `localToolkits()` instead.
-</Callout>
+List all custom toolkits registered in this session.
+Returns toolkits with their tools showing final slugs.
 
 ```typescript
-customToolkits(): RegisteredLocalToolkit[]
+customToolkits(): RegisteredCustomToolkit[]
 ```
 
 **Returns**
 
-`RegisteredLocalToolkit[]`
+`RegisteredCustomToolkit[]` — Array of registered custom toolkits
 
 ---
 
-### customTools() (deprecated)
+### customTools()
 
-<Callout type="warn" title="Deprecated">
-Use `localTools()` instead.
-</Callout>
+List all custom tools registered in this session.
+Returns tools with their final slugs, schemas, and resolved toolkit.
 
 ```typescript
-customTools(options?: { toolkit?: string }): RegisteredLocalTool[]
+customTools(options?: { toolkit?: string }): RegisteredCustomTool[]
 ```
 
 **Parameters**
@@ -86,7 +84,7 @@ customTools(options?: { toolkit?: string }): RegisteredLocalTool[]
 
 **Returns**
 
-`RegisteredLocalTool[]`
+`RegisteredCustomTool[]` — Array of registered custom tools
 
 ---
 
@@ -246,42 +244,6 @@ const { items, nextCursor } = await session.listConfigHistory({ limit: 10 });
 console.log(items[0].version, items[0].isCurrent); // e.g. 3, true
 console.log(items[1].config.toolkits);
 ```
-
----
-
-### localToolkits()
-
-List all toolkits of local tools registered in this session.
-Returns toolkits with their tools showing final slugs.
-
-```typescript
-localToolkits(): RegisteredLocalToolkit[]
-```
-
-**Returns**
-
-`RegisteredLocalToolkit[]` — Array of registered toolkits of local tools
-
----
-
-### localTools()
-
-List all local tools registered in this session.
-Returns tools with their final slugs, schemas, and resolved toolkit.
-
-```typescript
-localTools(options?: { toolkit?: string }): RegisteredLocalTool[]
-```
-
-**Parameters**
-
-| Name | Type |
-|------|------|
-| `options?` | `\{ toolkit?: string \}` |
-
-**Returns**
-
-`RegisteredLocalTool[]` — Array of registered local tools
 
 ---
 
