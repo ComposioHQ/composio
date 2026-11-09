@@ -73,7 +73,7 @@ export const transformCustomToolkitCreateParams = (
   params: CustomToolkitCreateParams
 ): RawCustomCreateToolkitParams => ({
   name: params.name,
-  app_url: params.appUrl,
+  mcp_url: params.mcpUrl,
   logo_file: transformCustomToolkitLogoFile(params.logoFile),
   auth_schemes: params.authSchemes.map(transformCustomToolkitAuthScheme),
   user_id: params.userId,
@@ -118,7 +118,7 @@ export const transformCustomToolkitUpsertParams = (
   slug: params.slug,
   toolkit_config: {
     name: params.toolkitConfig.name,
-    app_url: params.toolkitConfig.appUrl,
+    mcp_url: params.toolkitConfig.mcpUrl,
     logo_file: transformCustomToolkitLogoFile(params.toolkitConfig.logoFile),
     auth_schemes: params.toolkitConfig.authSchemes.map(transformCustomToolkitAuthScheme),
   },

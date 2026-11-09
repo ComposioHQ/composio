@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.0 to include the latest API changes.
+
 - Update Effect and its Bun and Vitest integrations to `^4.1.0`.
 
 ### Minor Changes

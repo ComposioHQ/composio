@@ -67,8 +67,8 @@ import type {
   CustomToolsMap,
   CustomToolsMapEntry,
   SessionContext,
-  RegisteredCustomTool,
-  RegisteredCustomToolkit,
+  RegisteredLocalTool,
+  RegisteredLocalToolkit,
 } from '../types/customTool.types';
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
@@ -384,13 +384,13 @@ export class ToolRouterSession<
   }
 
   /**
-   * List all custom tools registered in this session.
+   * List all local tools registered in this session.
    * Returns tools with their final slugs, schemas, and resolved toolkit.
    *
    * @param options.toolkit - Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
-   * @returns Array of registered custom tools
+   * @returns Array of registered local tools
    */
-  customTools(options?: { toolkit?: string }): RegisteredCustomTool[] {
+  localTools(options?: { toolkit?: string }): RegisteredLocalTool[] {
     if (!this.customToolsMap) return [];
 
     const entries = Array.from(this.customToolsMap.byFinalSlug.values());
@@ -409,12 +409,19 @@ export class ToolRouterSession<
   }
 
   /**
-   * List all custom toolkits registered in this session.
+   * @deprecated Use `localTools()` instead.
+   */
+  customTools(options?: { toolkit?: string }): RegisteredLocalTool[] {
+    return this.localTools(options);
+  }
+
+  /**
+   * List all toolkits of local tools registered in this session.
    * Returns toolkits with their tools showing final slugs.
    *
-   * @returns Array of registered custom toolkits
+   * @returns Array of registered toolkits of local tools
    */
-  customToolkits(): RegisteredCustomToolkit[] {
+  localToolkits(): RegisteredLocalToolkit[] {
     const toolkits = this.customToolsMap?.toolkits;
     if (!toolkits?.length) return [];
 
@@ -442,6 +449,13 @@ export class ToolRouterSession<
         };
       }),
     }));
+  }
+
+  /**
+   * @deprecated Use `localToolkits()` instead.
+   */
+  customToolkits(): RegisteredLocalToolkit[] {
+    return this.localToolkits();
   }
 
   /**

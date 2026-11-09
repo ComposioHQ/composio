@@ -11,7 +11,7 @@ Custom MCP lets you add your own remote MCP server to Composio and use its tools
 Custom MCP is experimental. The APIs may change.
 </Callout>
 
-This is different from [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits), which run inside your app. A Custom MCP server runs on its own public HTTPS URL.
+This is different from [Local Tools and Toolkits](/docs/extending-sessions/local-tools-and-toolkits), which run inside your app. A Custom MCP server runs on its own public HTTPS URL.
 
 ## How it works
 
@@ -25,14 +25,14 @@ Use the SDK (`composio.experimental.custom_toolkits` in Python, `composio.experi
 
 ## Create a toolkit
 
-Pass your MCP server's URL as `app_url`, how to authenticate, and `user_id`. Use `"all"` to share the toolkit with every user in your project:
+Pass your MCP server's URL as `mcp_url`, how to authenticate, and `user_id`. Use `"all"` to share the toolkit with every user in your project:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = composio.experimental.custom_toolkits.create(
     name="Acme",
-    app_url="https://mcp.acme.com/mcp",
+    mcp_url="https://mcp.acme.com/mcp",
     auth_schemes=[{"mode": "NO_AUTH"}],
     user_id="all",
 )
@@ -47,7 +47,7 @@ const composio = new Composio();
 // ---cut---
 const result = await composio.experimental.customToolkits.create({
   name: 'Acme',
-  appUrl: 'https://mcp.acme.com/mcp',
+  mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [{ mode: 'NO_AUTH' }],
   userId: 'all',
 });
@@ -62,7 +62,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Acme",
-    "app_url": "https://mcp.acme.com/mcp",
+    "mcp_url": "https://mcp.acme.com/mcp",
     "auth_schemes": [{"mode": "NO_AUTH"}],
     "user_id": "all"
   }'
@@ -72,10 +72,10 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
 
 Save the returned slug: you need it to sync, update, or delete the toolkit.
 
-`app_url`, `auth_schemes`, and `user_id` can't change later. To change them, delete the toolkit and create it again.
+`mcp_url`, `auth_schemes`, and `user_id` can't change later. To change them, delete the toolkit and create it again.
 
 <Callout type="warn" title="Use the final URL">
-Set `app_url` to the final MCP endpoint, with no redirects: a redirect can send credentials to another host. Don't put keys in the URL.
+Set `mcp_url` to the final MCP endpoint, with no redirects: a redirect can send credentials to another host. Don't put keys in the URL.
 </Callout>
 
 ### Choose how users authenticate
@@ -93,14 +93,14 @@ Set `auth_schemes` to one of these:
 
 ### Create a toolkit for one user
 
-Set `user_id` to a user's ID to make the toolkit private: only that user's sessions and API calls can see or run its tools.
+Set `user_id` to a user's ID to make the toolkit private: only that user's sessions and API calls can see or run its tools. Private toolkits need a Pro plan: on the free plan, create returns `403`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 result = composio.experimental.custom_toolkits.create(
     name="Acme",
-    app_url="https://mcp.acme.com/mcp",
+    mcp_url="https://mcp.acme.com/mcp",
     auth_schemes=[
         {
             "mode": "DCR_OAUTH",
@@ -123,7 +123,7 @@ const composio = new Composio();
 // ---cut---
 const result = await composio.experimental.customToolkits.create({
   name: 'Acme',
-  appUrl: 'https://mcp.acme.com/mcp',
+  mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [
     {
       mode: 'DCR_OAUTH',
@@ -147,7 +147,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/custom/toolkits \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Acme",
-    "app_url": "https://mcp.acme.com/mcp",
+    "mcp_url": "https://mcp.acme.com/mcp",
     "auth_schemes": [
       {
         "mode": "DCR_OAUTH",
@@ -398,12 +398,13 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 - **New toolkit:** call create instead of upsert. Don't pass a slug: create returns one, so save it. Set `user_id` to `"all"` to share the toolkit like upsert did, or to a user's ID to make it private.
 - **Existing toolkit:** call update with its slug to change the name, logo, or API key field label. Don't create it again: a second shared toolkit for the same URL returns `409`.
-- **Request shape:** create takes the fields directly (`name`, `app_url`, `auth_schemes`, ...), not inside `toolkit_config`.
+- **Request shape:** create takes the fields directly (`name`, `mcp_url`, `auth_schemes`, ...), not inside `toolkit_config`.
 
 ## Limits
 
+- Private toolkits need a Pro plan. Shared toolkits (`user_id: "all"`) work on every plan.
 - Remote servers only: local and STDIO servers aren't supported.
-- `app_url`, `auth_schemes`, and `user_id` can't change after creation.
+- `mcp_url`, `auth_schemes`, and `user_id` can't change after creation.
 - At most 500 tools per toolkit.
 - OAuth works only through Dynamic Client Registration (DCR). Servers that need a pre-registered OAuth client, or that only support Client ID Metadata Documents (CIMD), aren't supported.
 - No automatic resync: sync again when the server's tools change.
@@ -412,7 +413,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 <Cards>
 <Card title="Using sessions via MCP" href="/docs/sessions-via-mcp" description="Connect an MCP client to a Composio-hosted session" />
-<Card title="Custom Tools and Toolkits" href="/docs/extending-sessions/custom-tools-and-toolkits" description="Run your own tools inside your application process" />
+<Card title="Local Tools and Toolkits" href="/docs/extending-sessions/local-tools-and-toolkits" description="Run your own tools inside your application process" />
 <Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Configure toolkit and tool filtering" />
 <Card title="Managing Multiple Connected Accounts" href="/docs/authentication/managing-multiple-connected-accounts" description="Select a connected account explicitly" />
 </Cards>

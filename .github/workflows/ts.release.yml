@@ -1,9 +1,10 @@
-name: TS SDK Release
+name: TS SDK beta release
 
 on:
   workflow_dispatch:
   push:
-    branches: [next, main]
+    # Stable releases use sdk.release.yml; this keeps the main beta lane.
+    branches: [main]
 
 permissions:
   contents: read

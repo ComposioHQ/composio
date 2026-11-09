@@ -40,6 +40,9 @@ jobs:
             # Get the list of added/modified changelog files across all commits in this push
             CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
           fi
+
+          # Skip generated SDK release entries (frontmatter `sdkRelease:`); their release PR covers them.
+          CHANGED_FILES=$(printf '%s\n' "$CHANGED_FILES" | bash scripts/sdk-release/changelog-filter.sh)
           
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changelog files changed in this push"

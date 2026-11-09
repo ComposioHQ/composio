@@ -57,7 +57,7 @@ export const CustomToolkitCreateParamsSchema = z.object({
   /** Human-readable toolkit name. */
   name: z.string().min(1).max(200),
   /** The MCP server URL. Must use https. */
-  appUrl: z.string().url(),
+  mcpUrl: z.string().url(),
   /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the MCP logo. */
   logoFile: CustomToolkitLogoFileSchema.optional(),
   /** At least one scheme. Cannot be changed after create. */
@@ -135,8 +135,8 @@ export const CustomToolkitUpsertParamsSchema = z.object({
   toolkitConfig: z.object({
     /** Human-readable toolkit name. */
     name: z.string().min(1).max(200),
-    /** The app URL. For an MCP app, the MCP server URL. */
-    appUrl: z.string().url(),
+    /** The MCP server URL. Must use https. */
+    mcpUrl: z.string().url(),
     /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the Composio logo. */
     logoFile: CustomToolkitLogoFileSchema.optional(),
     /** At least one scheme. The schemes cannot change once the toolkit exists. */
