@@ -106,8 +106,18 @@ describe('source tag', () => {
     expect(await issueOf({ branchSetter: 'writer' })).toEqual(Option.none());
   });
 
-  test('a beta is tagged without the docs check, which never runs on a plan-only PR', async () => {
-    const { fetcher, writes } = fakeController({ beta: true, docs: 'missing' });
+  test('a beta is tagged without either docs check, which never run on a plan-only PR', async () => {
+    const { fetcher, writes } = fakeController({
+      beta: true,
+      docs: 'missing',
+      rerunFailed: 'typescript-check',
+    });
+    expect(await tag(fetcher)).toEqual(tagged);
+    expect(writes).toEqual([tagWrite]);
+  });
+
+  test('a stable release no longer needs the pull-request docs check, which skips release heads', async () => {
+    const { fetcher, writes } = fakeController({ rerunFailed: 'typescript-check' });
     expect(await tag(fetcher)).toEqual(tagged);
     expect(writes).toEqual([tagWrite]);
   });
@@ -131,9 +141,9 @@ describe('source tag', () => {
     ['the head is not on the planned source', { headParent: merge }, 'release App commit'],
     ['the candidate build failed', { failedCandidate: true }, 'SDK candidate (typescript)'],
     ['the smoke test failed', { failedSmoke: true }, 'SDK candidate smoke (typescript)'],
-    ['the docs check failed', { docs: 'failure' }, 'typescript-check'],
-    ['the docs check is pending', { docs: 'pending' }, 'typescript-check'],
-    ['the docs check is missing', { docs: 'missing' }, 'typescript-check'],
+    ['the docs check failed', { docs: 'failure' }, 'SDK candidate docs'],
+    ['the docs check is pending', { docs: 'pending' }, 'SDK candidate docs'],
+    ['the docs check is missing', { docs: 'missing' }, 'SDK candidate docs'],
     [
       'a re-run of a passed check failed',
       { rerunFailed: 'SDK candidate (typescript)' },

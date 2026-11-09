@@ -81,6 +81,7 @@ export interface ControllerOptions {
   readonly existingBranch?: boolean;
   /** Head branch of a release PR that is already open into next. */
   readonly openRelease?: string;
+  /** The `SDK candidate docs` check on the head. */
   readonly docs?: 'success' | 'failure' | 'pending' | 'missing';
   /** Who authored the release PR head; the release App by default. */
   readonly headAuthor?: string;
@@ -163,7 +164,7 @@ export function fakeController(options: ControllerOptions = {}) {
             ? []
             : [
                 check(
-                  'typescript-check',
+                  'SDK candidate docs',
                   options.docs === 'pending' ? null : (options.docs ?? 'success')
                 ),
               ]),

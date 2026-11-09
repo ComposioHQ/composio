@@ -43,7 +43,7 @@ import {
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch, batchLanguages, channelOf, releaseTag } from './source';
 
-const PackedManifest = Schema.StructWithRest(
+export const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
   [Schema.Record(Schema.String, Schema.Unknown)]
 );
