@@ -61,7 +61,7 @@ Replace the account ID with your connected account. Both SDKs read `COMPOSIO_API
 - **Used server-side, never handed back.** Composio injects the credential into the provider request during execution. Your application, your model, and your MCP client receive results, not tokens.
 - **Redacted in API responses.** Connected-account reads return [redacted credential fields](#default-redaction-is-an-api-boundary), for both Composio-managed and custom auth configs.
 - **Refreshed by Composio.** OAuth tokens are refreshed server-side where the provider supports it, so refresh tokens don't pass through your application.
-- **Scoped project API keys.** Every request is authorized by a project API key. Keys can be [restricted by permission](/reference/authenticating-to-composio/project-api-key-permissions) and IP allowlist, and [Proxy Execute](/docs/extending-sessions/proxy-execute) requires its own permission.
+- **API-key scope.** Requests authenticate with an API key. Session routes also accept [user API keys](/reference/authenticating-to-composio#user-api-key) in `x-user-api-key`, which can reach every project their owner can access. Prefer project API keys for application code that only needs one project. Project keys can be [restricted by permission](/reference/authenticating-to-composio/project-api-key-permissions) and IP allowlist, and [Proxy Execute](/docs/extending-sessions/proxy-execute) requires its own permission.
 
 Encryption at rest protects stored credentials; the execution service still decrypts them to authenticate provider requests. If your requirement is that Composio cannot decrypt credentials, see [deployment options](#deployment-options).
 
