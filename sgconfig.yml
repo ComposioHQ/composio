@@ -1,0 +1,9 @@
+ruleDirs:
+  - .ast-grep/rules
+testConfigs:
+  - testDir: .ast-grep/tests
+# Parse both TS and TSX with the TSX grammar so the same rules cover both.
+languageGlobs:
+  Tsx: ['*.ts', '*.tsx', '*.mts', '*.cts']
+noIgnore:
+  - hidden

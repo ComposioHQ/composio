@@ -17,6 +17,8 @@ packages:
   - ts/packages/ts-builders
 
 allowBuilds:
+  # The package's Node shim resolves its platform binary without postinstall.
+  '@ast-grep/cli': false
   '@google/genai': false
   '@parcel/watcher': true
   esbuild: true

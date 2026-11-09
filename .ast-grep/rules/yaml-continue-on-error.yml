@@ -1,0 +1,20 @@
+id: yaml-continue-on-error
+language: Yaml
+severity: error
+message: Preserve CI failures. For an intentional soft failure, explain the outcome handling in a rule-specific suppression.
+files: ['.github/workflows/**', '.github/actions/**']
+rule:
+  any:
+    - kind: block_mapping
+    - kind: flow_mapping
+  has:
+    any:
+      - kind: block_mapping_pair
+      - kind: flow_pair
+    has:
+      field: key
+      regex: '^(continue-on-error|"continue-on-error"|''continue-on-error'')$'
+    all:
+      - has:
+          field: value
+          regex: '^(true|"true"|''true''|\$\{\{\s*true\s*\}\})$'
