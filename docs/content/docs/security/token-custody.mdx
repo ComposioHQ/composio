@@ -57,7 +57,7 @@ Replace the account ID with your connected account. Both SDKs read `COMPOSIO_API
 
 ## How credentials are protected
 
-- **Encrypted at rest and in transit.** Connected-account credentials, auth configs, and API keys are encrypted at rest with AES-256-GCM. All traffic uses TLS.
+- **Encrypted provider credentials and hashed Composio keys.** Provider credentials are encrypted at rest with AES-256-GCM. Composio API keys and session keys are stored as hashes. All traffic uses TLS.
 - **Used server-side, never handed back.** Composio injects the credential into the provider request during execution. Your application, your model, and your MCP client receive results, not tokens.
 - **Redacted in API responses.** Connected-account reads return [redacted credential fields](#default-redaction-is-an-api-boundary), for both Composio-managed and custom auth configs.
 - **Refreshed by Composio.** OAuth tokens are refreshed server-side where the provider supports it, so refresh tokens don't pass through your application.
