@@ -18,4 +18,4 @@ rule:
           regex: '.'
     - has:
         field: value
-        regex: '^(""|''''|[|>][-+]?\s*)$'
+        regex: '^("\s*"|''\s*''|[|>][-+]?\s*)$'

@@ -16,7 +16,15 @@ ignores:
   - '**/*_test.py'
 rule:
   kind: except_clause
-  regex: '^except(\s+(Exception|BaseException)(\s+as\s+\w+)?)?\s*:'
+  any:
+    - regex: '^except\s*:'
+    - has:
+        field: value
+        any:
+          - matches: broad-exception-type
+          - kind: as_pattern
+            has:
+              matches: broad-exception-type
   has:
     kind: block
     has:
@@ -27,3 +35,20 @@ rule:
           any:
             - kind: pass_statement
             - kind: comment
+utils:
+  broad-exception-name:
+    kind: identifier
+    regex: '^(Exception|BaseException)$'
+  broad-exception-type:
+    any:
+      - matches: broad-exception-name
+      - kind: parenthesized_expression
+        has:
+          matches: broad-exception-name
+      - kind: tuple
+        has:
+          any:
+            - matches: broad-exception-name
+            - kind: parenthesized_expression
+              has:
+                matches: broad-exception-name

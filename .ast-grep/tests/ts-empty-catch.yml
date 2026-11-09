@@ -2,7 +2,10 @@ id: ts-empty-catch
 valid:
   - 'try { work(); } catch (error) { throw error; }'
   - 'try { work(); } catch { return undefined; }'
+  - 'try { work(); } catch (error: unknown) { report(error); }'
 invalid:
   - 'try { work(); } catch {}'
   - 'try { work(); } catch (error) {}'
   - 'try { work(); } catch { /* ignore */ }'
+  - 'try { work(); } catch (error: unknown) {}'
+  - 'try { work(); } catch (error: any) { /* ignore */ }'

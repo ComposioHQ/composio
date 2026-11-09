@@ -1,11 +1,14 @@
 id: yaml-empty-run
 valid:
+  - 'run: echo "   "'
   - 'run: pnpm lint'
   - |
     run: |
       pnpm lint
   - 'description: "run:"'
 invalid:
+  - 'run: "   "'
+  - "run: '   '"
   - 'run:'
   - 'run: ""'
   - "run: ''"

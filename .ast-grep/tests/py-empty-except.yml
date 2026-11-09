@@ -3,6 +3,21 @@ valid:
   - |
     try:
         work()
+    except ValueError as Exception:
+        pass
+  - |
+    try:
+        work()
+    except (error_type(Exception), ValueError):
+        pass
+  - |
+    try:
+        work()
+    except (FileNotFoundError, ValueError):
+        pass
+  - |
+    try:
+        work()
     except FileNotFoundError:
         pass
   - |
@@ -16,6 +31,21 @@ valid:
     except Exception:
         raise
 invalid:
+  - |
+    try:
+        work()
+    except (Exception,):
+        pass
+  - |
+    try:
+        work()
+    except (ValueError, Exception) as error:
+        pass
+  - |
+    try:
+        work()
+    except (BaseException):
+        pass
   - |
     try:
         work()
