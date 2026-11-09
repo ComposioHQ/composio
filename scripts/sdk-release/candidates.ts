@@ -43,7 +43,7 @@ import {
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch, batchLanguages, channelOf, releaseTag } from './source';
 
-const PackedManifest = Schema.StructWithRest(
+export const PackedManifest = Schema.StructWithRest(
   Schema.Struct({ name: Schema.String, version: Schema.String }),
   [Schema.Record(Schema.String, Schema.Unknown)]
 );
@@ -166,6 +166,11 @@ const isSourceTag = (ref: string) => ref.startsWith('refs/tags/sdk-release/');
 const CANDIDATES_WORKFLOW = 'sdk.release.candidates.yml';
 const CANDIDATES_WORKFLOW_PATH = `.github/workflows/${CANDIDATES_WORKFLOW}`;
 
+const WorkflowRuns = Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) });
+
+/** GitHub reports step and artifact times to the second, so an artifact can land on either boundary second. */
+const TIMESTAMP_SLACK_MS = 1_000;
+
 /** The release-PR build step that uploads the candidate artifact. */
 const UPLOAD_STEP = 'Retain candidate bytes for publication';
 
@@ -200,7 +205,8 @@ const requireCreatedDuring = (
       );
     const created = Date.parse(artifact.created_at);
     yield* ensure(
-      Date.parse(step.startedAt) <= created && created <= Date.parse(step.completedAt),
+      Date.parse(step.startedAt) - TIMESTAMP_SLACK_MS <= created &&
+        created <= Date.parse(step.completedAt) + TIMESTAMP_SLACK_MS,
       `${artifact.name} was created at ${artifact.created_at}, outside its upload step, which ran from ${step.startedAt} to ${step.completedAt}; add changesets and request a new release`
     );
   });
@@ -215,7 +221,7 @@ export const adoptApprovedCandidate = (sha: string, language: Language, director
     const { workflow_runs } = yield* request(
       'GET',
       `${REPOSITORY_PATH}/actions/workflows/${CANDIDATES_WORKFLOW}/runs?event=pull_request&head_sha=${sha}&status=success&per_page=100`,
-      Schema.Struct({ workflow_runs: Schema.Array(ReleaseRun) })
+      WorkflowRuns
     );
     const [run] = workflow_runs
       .filter(

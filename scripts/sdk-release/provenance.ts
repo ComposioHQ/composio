@@ -1,11 +1,11 @@
-import { Data, Effect, Schedule, Schema } from 'effect';
-import type { Duration } from 'effect';
+import { Data, Effect, Schema } from 'effect';
 import { Digest } from 'effect/crypto';
 import { Base64 } from 'effect/encoding';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import { SDK_RELEASE_REPOSITORY } from './github';
 import { NPM_REGISTRY } from './lanes';
 import type { Distribution } from './registry';
+import { REGISTRY_WAIT, isPending, pollRegistry, type RegistryDeadline } from './registry-wait';
 import { ensure, fail } from './runtime';
 import { releaseTag } from './source';
 
@@ -53,31 +53,46 @@ const PypiProvenance = Schema.Struct({
   ),
 });
 
-/** Provenance can trail an upload by a few seconds, so a missing document is retried. */
-class ProvenancePending extends Data.TaggedError('ProvenancePending')<{ readonly url: string }> {}
+/**
+ * Provenance trails an upload by up to npm's publish-time scan, so a missing document is polled
+ * again; so is a rate limit or a server error.
+ */
+class ProvenancePending extends Data.TaggedError('ProvenancePending')<{
+  readonly url: string;
+  readonly status: number | 'timeout';
+}> {}
 
-/** How long to wait for provenance that trails an upload. */
-export interface ProvenanceWait {
-  readonly attempts?: number;
-  readonly spacing?: Duration.Input;
-}
-
-const provenanceJson = <S extends Schema.Top>(url: string, schema: S, wait: ProvenanceWait) =>
-  Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient;
-    const response = yield* client.get(url);
-    if (response.status === 404) return yield* new ProvenancePending({ url });
-    yield* ensure(response.status === 200, `Provenance lookup failed: ${url} (${response.status})`);
-    return yield* Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(yield* response.text);
-  }).pipe(
-    Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }),
-    Effect.retry({
-      schedule: Schedule.spaced(wait.spacing ?? '10 seconds'),
-      times: (wait.attempts ?? 6) - 1,
-      while: error => error instanceof ProvenancePending,
-    }),
+const provenanceJson = <S extends Schema.Top>(
+  url: string,
+  schema: S,
+  deadline?: RegistryDeadline
+) =>
+  pollRegistry(
+    Effect.gen(function* () {
+      const client = yield* HttpClient.HttpClient;
+      const response = yield* client.get(url);
+      if (isPending(response.status))
+        return yield* new ProvenancePending({ url, status: response.status });
+      yield* ensure(
+        response.status === 200,
+        `Provenance lookup failed: ${url} (${response.status})`
+      );
+      return yield* Schema.decodeUnknownEffect(Schema.fromJsonString(schema))(yield* response.text);
+    }).pipe(
+      Effect.provideService(FetchHttpClient.RequestInit, { redirect: 'error' }),
+      // A stalled lookup is retried like an answer that is not served yet.
+      Effect.timeoutOrElse({
+        duration: REGISTRY_WAIT.requestTimeout,
+        orElse: () => Effect.fail(new ProvenancePending({ url, status: 'timeout' })),
+      })
+    ),
+    error => error instanceof ProvenancePending,
+    deadline
+  ).pipe(
     Effect.catchTag('ProvenancePending', error =>
-      fail(`No provenance is published at ${error.url}`)
+      fail(
+        `No provenance is published at ${error.url} when the registry wait (${REGISTRY_WAIT.deadline}) ended; its last answer was ${error.status}`
+      )
     )
   );
 
@@ -85,10 +100,10 @@ const provenanceJson = <S extends Schema.Top>(url: string, schema: S, wait: Prov
  * The npm SLSA provenance of a published tarball must name this repository, the release
  * workflow and this batch's tag, and its subject must be the reviewed bytes.
  */
-export const verifyNpmProvenance = (file: Distribution, id: string, wait: ProvenanceWait = {}) =>
+export const verifyNpmProvenance = (file: Distribution, id: string, deadline?: RegistryDeadline) =>
   Effect.gen(function* () {
     const url = `${NPM_REGISTRY}/-/npm/v1/attestations/${encodeURIComponent(file.name)}@${file.version}`;
-    const { attestations } = yield* provenanceJson(url, NpmAttestations, wait);
+    const { attestations } = yield* provenanceJson(url, NpmAttestations, deadline);
     const slsa = attestations.find(attestation => attestation.predicateType === SLSA_PROVENANCE);
     if (!slsa) return yield* fail(`${file.name}@${file.version} has no SLSA provenance`);
     const payload = yield* Effect.fromResult(Base64.decodeString(slsa.bundle.dsseEnvelope.payload));
@@ -111,10 +126,10 @@ export const verifyNpmProvenance = (file: Distribution, id: string, wait: Proven
   });
 
 /** Every PyPI file must carry a PEP 740 attestation from this repository's release workflow. */
-export const verifyPypiProvenance = (file: Distribution, wait: ProvenanceWait = {}) =>
+export const verifyPypiProvenance = (file: Distribution, deadline?: RegistryDeadline) =>
   Effect.gen(function* () {
     const url = `https://pypi.org/integrity/${file.name}/${file.version}/${file.file}/provenance`;
-    const { attestation_bundles } = yield* provenanceJson(url, PypiProvenance, wait);
+    const { attestation_bundles } = yield* provenanceJson(url, PypiProvenance, deadline);
     yield* ensure(
       attestation_bundles.some(
         ({ publisher }) =>

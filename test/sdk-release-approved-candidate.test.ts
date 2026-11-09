@@ -180,6 +180,13 @@ test.each<
     'sdk-candidate-python was created at 2026-11-03T00:08:00Z, outside its upload step',
   ],
   [
+    'an artifact created two seconds after its upload step ended',
+    [releaseRun(41)],
+    false,
+    { createdAt: '2026-11-03T00:06:02Z' },
+    'sdk-candidate-python was created at 2026-11-03T00:06:02Z, outside its upload step',
+  ],
+  [
     'a build job that did not succeed',
     [releaseRun(41)],
     false,
@@ -197,6 +204,20 @@ test.each<
   ).rejects.toThrow(message);
   expect(await Bun.file(`${target}/${wheel}`).exists()).toBe(false);
 });
+
+// GitHub reports both times to the second, so a real artifact can land on either boundary second.
+test.each(['2026-11-03T00:03:59Z', '2026-11-03T00:06:00Z', '2026-11-03T00:06:01Z'])(
+  'adopts an artifact created at %s, within a second of its 00:04:00–00:06:00 upload step',
+  async createdAt => {
+    const archive = await approvedArchive();
+    const target = `${await directories.create()}/python`;
+    const approved = await runRelease(
+      adoptApprovedCandidate(head, 'python', target),
+      fakeGitHub(archive, [releaseRun(41)], false, { createdAt })
+    );
+    expect(approved).toEqual({ run: 41, artifactId: 77, digest: archive.digest });
+  }
+);
 
 test('a smoke-only re-run attempt still adopts the candidate its first attempt built', async () => {
   const archive = await approvedArchive();
