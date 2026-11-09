@@ -186,6 +186,8 @@ class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
     ``instant.return_instant_charge`` and a charge is available.
     """
 
+    # The SDK normalizes the client's separate blocked variant into this model.
+    result_type: t.Optional[t.Literal["completed", "failed", "blocked"]] = None  # type: ignore[assignment]
     hook_results: t.Optional[t.List[ToolRouterHookResult]] = None  # type: ignore[assignment]
 
 
