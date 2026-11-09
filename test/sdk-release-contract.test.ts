@@ -29,7 +29,7 @@ import {
   recordedShape,
   replay,
   unrecordedPaths,
-  type Override,
+  withCandidateDocs,
 } from './sdk-release-github-recordings';
 
 /** The production schema that reads each recorded endpoint. */
@@ -145,24 +145,6 @@ describe('the tag gate on release #5278', () => {
       fetcher
     );
   const tagPath = `/git/ref/tags/sdk-release/${RELEASE_5278.id}`;
-  /**
-   * #5278 ran before the `SDK candidate docs` job existed, so its recorded checks lack it. The
-   * recorded `typescript-check` run stands in for it, under the new name and a newer id.
-   */
-  const withCandidateDocs: Record<string, Override> = {
-    [`/commits/${RELEASE_5278.head}/check-runs?per_page=100&page=2`]: recorded => {
-      const body = recorded as { check_runs: ReadonlyArray<{ id: number; name: string }> };
-      const docs = body.check_runs.find(check => check.name === 'typescript-check');
-      return json({
-        ...body,
-        check_runs: [
-          ...body.check_runs,
-          { ...docs, id: Number(docs?.id) + 1, name: 'SDK candidate docs' },
-        ],
-      });
-    },
-  };
-
   test('tags the reviewed head', async () => {
     const github = replay(recordings, {
       ...withCandidateDocs,

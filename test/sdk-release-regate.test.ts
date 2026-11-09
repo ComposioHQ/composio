@@ -7,6 +7,7 @@ import {
   RELEASE_5278,
   loadRecordings,
   replay,
+  withCandidateDocs,
   type Override,
 } from './sdk-release-github-recordings';
 
@@ -25,6 +26,7 @@ beforeAll(async () => {
 /** The recorded release, with the plan on `next` and an active requester by default. */
 const github = (overrides: Record<string, Override> = {}) =>
   replay(recordings, {
+    ...withCandidateDocs,
     '/orgs/ComposioHQ/memberships/maintainer': () => json({ state: 'active' }),
     [`/contents/.github/sdk-release-plan.json?ref=${NEXT}`]: () => new Response(plan),
     [tagPath]: notFound,

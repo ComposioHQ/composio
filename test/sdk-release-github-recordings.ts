@@ -53,6 +53,24 @@ export const replay = (
   return { fetcher, writes };
 };
 
+/**
+ * #5278 ran before the `SDK candidate docs` job existed, so its recorded checks lack it. The
+ * recorded `typescript-check` run stands in for it, under the new name and a newer id.
+ */
+export const withCandidateDocs: Record<string, Override> = {
+  [`/commits/${RELEASE_5278.head}/check-runs?per_page=100&page=2`]: recorded => {
+    const body = recorded as { check_runs: ReadonlyArray<{ id: number; name: string }> };
+    const docs = body.check_runs.find(check => check.name === 'typescript-check');
+    return json({
+      ...body,
+      check_runs: [
+        ...body.check_runs,
+        { ...docs, id: Number(docs?.id) + 1, name: 'SDK candidate docs' },
+      ],
+    });
+  },
+};
+
 /** Folds bodies into one shape: objects keep every key seen, arrays every item shape seen. */
 const mergeShape = (left: unknown, right: unknown): unknown => {
   if (left === null || left === undefined) return right;
