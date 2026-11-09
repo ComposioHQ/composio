@@ -1,0 +1,43 @@
+---
+title: "Choose the project, acting user, and connected account"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: failure
+    lg1: active
+    lg2: Breaks NoAmbiguousAccountChosen
+    lg3: Path to the NoAmbiguousAccountChosen bug
+  }
+  class lg0 orange
+  class lg1 blue
+  class lg2 breaks
+  class lg3 bugPath
+  s0: Resolve the command project
+  s1: Choose the acting user
+  s2: Fix project, user, or account choice
+  s3: Resolve --account or a default
+  s4: Account selected
+  s5: Newest account guessed despite ambiguity
+  s6: No active account#59; caller decides
+  [*] --> s0
+  s0 --> s1: resolve the consumer or developer project
+  s0 --> s2: project is missing or lookup fails
+  s1 --> s3: resolve a user against that project
+  s1 --> s2: no acting user is available
+  s3 --> s5: silently choose the newest account
+  s3 --> s4: use the sole, default, or explicitly selected account
+  s3 --> s2: the selector matches no usable account
+  s3 --> s6: no active account exists
+  classDef breaks fill:#ffecee,stroke:#e72e3b,stroke-width:2.5px,color:#cd2834
+  class s0 blue
+  class s0 bugPath
+  class s1 blue
+  class s1 bugPath
+  class s2 orange
+  class s3 blue
+  class s3 bugPath
+  class s4 blue
+  class s5 blue
+  class s5 breaks
+  class s5 bugPath
+  class s6 blue

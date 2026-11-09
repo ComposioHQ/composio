@@ -158,6 +158,41 @@ const probes = [
     expect: 'typescript-testing',
     terms: ['Vitest', 'type checks', 'TypeScript SDK verification', 'runtime E2E tests'],
   },
+  {
+    task: 'verify CLI login state machine',
+    expect: 'verify-cli-login',
+    terms: ['pending login TTL'],
+  },
+  {
+    task: 'verify CLI routing state machine',
+    expect: 'verify-cli-routing',
+    terms: ['connected-account ambiguity'],
+  },
+  {
+    task: 'verify CLI execution state machine',
+    expect: 'verify-cli-execution',
+    terms: ['dry-run dispatch'],
+  },
+  {
+    task: 'verify CLI listener state machine',
+    expect: 'verify-cli-listener',
+    terms: ['accepted-event draining'],
+  },
+  {
+    task: 'verify CLI shutdown state machine',
+    expect: 'verify-cli-shutdown',
+    terms: ['child-process signal forwarding'],
+  },
+  {
+    task: 'verify CLI invocation state machine',
+    expect: 'verify-cli-invocation',
+    terms: ['parsed-command hooks'],
+  },
+  {
+    task: 'verify CLI account authorization state machine',
+    expect: 'verify-cli-link',
+    terms: ['ACTIVE authorization confirmation'],
+  },
 ];
 
 const skillNames = fs

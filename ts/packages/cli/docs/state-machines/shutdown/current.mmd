@@ -1,0 +1,42 @@
+---
+title: "Stop a listener or a supervised script"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: success
+    lg1: failure
+    lg2: active
+  }
+  class lg0 teal
+  class lg1 orange
+  class lg2 blue
+  s0: Starting#59; signal would interrupt
+  s1: Command or child determines exit
+  s2: Ready to stop cooperatively
+  s3: Signal interrupts the invocation
+  s4: Forward stop to the child process group
+  s5: Listener releases its resources
+  s6: Second signal or deadline forces exit
+  s7: Interrupted#59; exit 128 plus signal
+  [*] --> s0
+  s0 --> s1: command or child ends before a stop signal
+  s0 --> s2: subscription is acknowledged or child supervision starts
+  s0 --> s3: receive Ctrl+C, SIGTERM, or SIGHUP
+  s2 --> s1: command or child ends before a stop signal
+  s2 --> s5: receive Ctrl+C, SIGTERM, or SIGHUP
+  s2 --> s3: receive Ctrl+C, SIGTERM, or SIGHUP
+  s2 --> s4: receive Ctrl+C, SIGTERM, or SIGHUP
+  s3 --> s6: receive another signal or exceed ten seconds
+  s3 --> s7: finish an interrupted command
+  s4 --> s6: receive another signal or exceed ten seconds
+  s5 --> s1: listener releases resources and exits cleanly
+  s5 --> s6: receive another signal or exceed ten seconds
+  s4 --> s1: mirror the child outcome, preserving the first escalation signal
+  class s0 blue
+  class s1 teal
+  class s2 blue
+  class s3 blue
+  class s4 blue
+  class s5 blue
+  class s6 orange
+  class s7 orange
