@@ -1,126 +1,85 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { Effect, Exit } from 'effect';
 import { regateRelease, releaseToRegate } from '../scripts/sdk-release/batch';
-import type { Recording } from '../scripts/sdk-release/record-github-fixtures';
-import { json, readText, runRelease } from './sdk-release-harness';
 import {
-  RELEASE_5278,
-  loadRecordings,
-  replay,
-  withCandidateDocs,
-  type Override,
-} from './sdk-release-github-recordings';
+  APP_SLUG,
+  fakeController,
+  head,
+  merge,
+  type ControllerOptions,
+} from './sdk-release-controller-fixture';
+import { json, readText, runRelease } from './sdk-release-harness';
 
-/** `next` after release #5278 merged: its squash commit carries the release plan. */
-const NEXT = '5738b0d59bab9aced57332a834a9fda7757fe108';
-const tagPath = `/git/ref/tags/sdk-release/${RELEASE_5278.id}`;
-const notFound: Override = () => json({ message: 'Not Found' }, 404);
-
-let recordings: ReadonlyArray<Recording> = [];
-let plan = '';
-beforeAll(async () => {
-  recordings = await loadRecordings();
-  plan = String(recordings.find(recording => recording.contract === 'ReleasePlan')?.body ?? '');
-});
-
-/** The recorded release, with the plan on `next` and an active requester by default. */
-const github = (overrides: Record<string, Override> = {}) =>
-  replay(recordings, {
-    ...withCandidateDocs,
-    '/orgs/ComposioHQ/memberships/maintainer': () => json({ state: 'active' }),
-    [`/contents/.github/sdk-release-plan.json?ref=${NEXT}`]: () => new Response(plan),
-    [tagPath]: notFound,
-    ...overrides,
-  });
-
-const regate = (fetcher: ReturnType<typeof replay>['fetcher'], actor = 'maintainer') =>
+/** Regate as the workflow runs it: `next` at batch 8's merge commit, dispatched by the requester. */
+const regate = (fetcher: ReturnType<typeof fakeController>['fetcher'], actor = 'requester') =>
   runRelease(
     Effect.exit(
-      Effect.flatMap(releaseToRegate(actor, NEXT), ({ pull, batch }) =>
-        regateRelease(pull, batch, RELEASE_5278.appSlug)
+      Effect.flatMap(releaseToRegate(actor, merge), ({ pull, batch }) =>
+        regateRelease(pull, batch, APP_SLUG)
       )
     ),
     fetcher
   );
 
-const tagged = Exit.succeed({ _tag: 'Tagged', tag: `sdk-release/${RELEASE_5278.id}` } as const);
+const pull = 'https://github.com/ComposioHQ/composio/pull/9';
+const tagged = Exit.succeed({ _tag: 'Tagged', tag: 'sdk-release/8' } as const);
+const controller = (options: ControllerOptions = {}) => fakeController(options);
 
 describe('regate', () => {
   test('tags the merged, untagged release on next at its reviewed head', async () => {
-    const api = github();
-    expect(await regate(api.fetcher)).toEqual(tagged);
-    expect(api.writes).toEqual([
-      {
-        method: 'POST',
-        path: '/git/refs',
-        body: { ref: `refs/tags/sdk-release/${RELEASE_5278.id}`, sha: RELEASE_5278.head },
-      },
+    const github = controller();
+    expect(await regate(github.fetcher)).toEqual(tagged);
+    expect(github.writes).toEqual([
+      { method: 'POST', path: '/git/refs', body: { ref: 'refs/tags/sdk-release/8', sha: head } },
     ]);
   });
 
   test('reports Tagged without writing when the tag is already on the reviewed head', async () => {
-    const api = github({ [tagPath]: recorded => json(recorded) });
-    expect(await regate(api.fetcher)).toEqual(tagged);
-    expect(api.writes).toEqual([]);
+    const github = controller({ existingTag: head });
+    expect(await regate(github.fetcher)).toEqual(tagged);
+    expect(github.writes).toEqual([]);
   });
 
   test("leaves an already-tagged release alone, even one today's gate would refuse", async () => {
-    // #5278 predates the SDK candidate docs check, so without the stand-in it fails today's gate.
-    const api = replay(recordings, {
-      '/orgs/ComposioHQ/memberships/maintainer': () => json({ state: 'active' }),
-      [`/contents/.github/sdk-release-plan.json?ref=${NEXT}`]: () => new Response(plan),
-    });
-    expect(await regate(api.fetcher)).toEqual(tagged);
-    expect(api.writes).toEqual([]);
+    const github = controller({ existingTag: head, docs: 'missing' });
+    expect(await regate(github.fetcher)).toEqual(tagged);
+    expect(github.writes).toEqual([]);
   });
 
   test('refuses a tag that points at another commit', async () => {
-    const api = github({
-      [tagPath]: () => json({ object: { type: 'commit', sha: NEXT } }),
-    });
-    expect(String(await regate(api.fetcher))).toContain('already points to another source');
-    expect(api.writes).toEqual([]);
+    const github = controller({ existingTag: merge });
+    expect(String(await regate(github.fetcher))).toContain('already points to another source');
+    expect(github.writes).toEqual([]);
   });
 
   test('fails with nothing to re-gate when next carries no release plan', async () => {
-    const api = github({ [`/contents/.github/sdk-release-plan.json?ref=${NEXT}`]: notFound });
-    expect(String(await regate(api.fetcher))).toContain('Nothing to re-gate');
-    expect(api.writes).toEqual([]);
+    const github = controller({ noPlanOnNext: true });
+    expect(String(await regate(github.fetcher))).toContain('Nothing to re-gate');
+    expect(github.writes).toEqual([]);
   });
 
   test('reports a release PR closed without merging as abandoned', async () => {
-    const api = github({
-      [`/pulls/${RELEASE_5278.pull}`]: recorded => json({ ...(recorded as object), merged: false }),
-    });
-    expect(await regate(api.fetcher)).toEqual(
-      Exit.succeed({
-        _tag: 'Abandoned',
-        pull: `https://github.com/ComposioHQ/composio/pull/${RELEASE_5278.pull}`,
-      })
-    );
-    expect(api.writes).toEqual([]);
+    const github = controller({ closedUnmerged: true });
+    expect(await regate(github.fetcher)).toEqual(Exit.succeed({ _tag: 'Abandoned', pull }));
+    expect(github.writes).toEqual([]);
   });
 
   test('refuses a release that fails the gate, exactly as the tag job does', async () => {
-    const api = github({
-      [`/pulls/${RELEASE_5278.pull}/reviews?per_page=100&page=1`]: () => json([]),
-    });
-    expect(await regate(api.fetcher)).toEqual(
-      Exit.succeed({
-        _tag: 'Refused',
-        pull: `https://github.com/ComposioHQ/composio/pull/${RELEASE_5278.pull}`,
-        reason: expect.stringContaining('lacks an approval'),
-      })
+    const github = controller({ oldReview: true });
+    expect(await regate(github.fetcher)).toEqual(
+      Exit.succeed({ _tag: 'Refused', pull, reason: expect.stringContaining('lacks an approval') })
     );
-    expect(api.writes.map(write => write.path)).toEqual([`/issues/${RELEASE_5278.pull}/comments`]);
+    expect(github.writes.map(write => write.path)).toEqual(['/issues/9/comments']);
   });
 
   test('requires an active ComposioHQ member', async () => {
-    const api = github({
-      '/orgs/ComposioHQ/memberships/outsider': () => json({ message: 'Not Found' }, 404),
-    });
-    expect(String(await regate(api.fetcher, 'outsider'))).toContain('(404)');
-    expect(api.writes).toEqual([]);
+    const github = controller();
+    const outsider: typeof github.fetcher = (input, init) =>
+      new URL(String(input)).pathname === '/orgs/ComposioHQ/memberships/outsider'
+        ? Promise.resolve(json({ message: 'Not Found' }, 404))
+        : github.fetcher(input, init);
+    expect(String(await regate(outsider, 'outsider'))).toContain('(404)');
+    expect(github.writes).toEqual([]);
   });
 });
 

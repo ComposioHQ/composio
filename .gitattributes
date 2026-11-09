@@ -21,7 +21,3 @@ uv.lock linguist-generated=true
 # Managed-block conformance fixtures are byte-exact inputs/outputs shared by
 # the sh harness and the TS reconciler test; never normalize their line endings.
 test/managed-block-fixtures/** -text
-
-# Recorded GitHub API responses for the SDK release tests (written by
-# scripts/sdk-release/record-github-fixtures.ts; re-record, never hand-edit)
-test/fixtures/sdk-release/github/** linguist-generated=true

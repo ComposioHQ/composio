@@ -176,6 +176,20 @@ describe('source tag', () => {
     expect(writes).toEqual([]);
   });
 
+  test('a pull without `merged` is a contract failure, not an abandoned release', async () => {
+    const { fetcher, writes } = fakeController();
+    const withoutMerged: typeof fetcher = async (input, init) => {
+      const response = await fetcher(input, init);
+      if (new URL(String(input)).pathname !== '/repos/ComposioHQ/composio/pulls/9') return response;
+      const { merged: _merged, ...rest } = (await response.json()) as Record<string, unknown>;
+      return Response.json(rest);
+    };
+    await expect(tag(withoutMerged)).rejects.toThrow(
+      /GET \/repos\/ComposioHQ\/composio\/pulls\/9[\s\S]*merged/
+    );
+    expect(writes).toEqual([]);
+  });
+
   test('an existing matching tag is reused and a tag on another commit is refused', async () => {
     const matching = fakeController({ existingTag: head });
     expect(await tag(matching.fetcher)).toEqual(tagged);

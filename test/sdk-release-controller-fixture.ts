@@ -66,6 +66,8 @@ export const releaseFiles = [
 export interface ControllerOptions {
   /** `next` carries batch 8's plan without its tag: a release merged and failed its gate. */
   readonly untaggedNext?: boolean;
+  /** `next` at the merge commit carries no release plan. */
+  readonly noPlanOnNext?: boolean;
   /** Serve batch 8 as a beta release PR. */
   readonly beta?: boolean;
   readonly deletedReviewer?: boolean;
@@ -129,6 +131,8 @@ export function fakeController(options: ControllerOptions = {}) {
       throw new Error(`Unexpected write ${method} ${path}`);
     }
     if (path === '/orgs/ComposioHQ/memberships/requester') return response({ state: 'active' });
+    // The closed release PRs from batch 8's branch, as a regate looks them up.
+    if (path.startsWith('/pulls?state=closed&')) return response([listedPull()]);
     if (path.startsWith('/pulls?'))
       return response(
         options.openRelease
@@ -205,6 +209,7 @@ export function fakeController(options: ControllerOptions = {}) {
             : [{ sha: 'd'.repeat(40) }],
       });
     if (path.startsWith('/contents/')) {
+      if (options.noPlanOnNext && url.searchParams.get('ref') === merge) return response({}, 404);
       const filename = url.pathname.split('/contents/')[1];
       const file = (options.beta ? betaFiles : releaseFiles).find(file => file.path === filename);
       const data = url.searchParams.get('ref') === base ? file?.before : file?.after;

@@ -48,7 +48,7 @@ import {
 } from './source';
 import { RECOVERY_RUNBOOK, ReleaseState } from './state';
 
-export const GitCommit = Schema.Struct({
+const GitCommit = Schema.Struct({
   sha: Sha,
   tree: Schema.Struct({ sha: Sha }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),

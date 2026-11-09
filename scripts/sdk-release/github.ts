@@ -7,8 +7,8 @@ export const REPOSITORY_PATH = `/repos/${SDK_RELEASE_REPOSITORY}`;
 export const runUrl = (id: string | number) =>
   `https://github.com/${SDK_RELEASE_REPOSITORY}/actions/runs/${id}`;
 const PAGE_SIZE = 100;
-/** The REST API version every release request pins; recorded fixtures carry the same version. */
-export const GITHUB_API_VERSION = '2026-03-10';
+/** The REST API version every release request pins. */
+const GITHUB_API_VERSION = '2026-03-10';
 /** Bounded so large release diffs stay under GitHub's secondary rate limit. */
 export const CONTENT_CONCURRENCY = 8;
 
@@ -34,7 +34,7 @@ export const ReleaseRun = Schema.Struct({
 });
 export type ReleaseRun = typeof ReleaseRun.Type;
 
-export const ReleaseJob = Schema.Struct({
+const ReleaseJob = Schema.Struct({
   name: Schema.String,
   status: Schema.optionalKey(Schema.String),
   conclusion: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -50,7 +50,7 @@ export const ReleaseJob = Schema.Struct({
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
 });
 
-export const JobsPage = Schema.Struct({ jobs: Schema.Array(ReleaseJob) });
+const JobsPage = Schema.Struct({ jobs: Schema.Array(ReleaseJob) });
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
@@ -64,7 +64,7 @@ export class GitHubApiError extends Data.TaggedError('GitHubApiError')<{
 
 /**
  * GitHub answered, but not in the shape the release workflow reads. Retrying cannot help: the
- * fixture recordings and schemas need updating for the API version GitHub now serves.
+ * schemas need updating for the API version GitHub now serves.
  */
 export class GitHubContractError extends Data.TaggedError('GitHubContractError')<{
   readonly method: HttpMethod;

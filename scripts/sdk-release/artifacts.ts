@@ -60,7 +60,7 @@ export const ActionArtifact = Schema.Struct({
 });
 export type CandidateArtifact = typeof ActionArtifact.Type;
 
-export const ArtifactsPage = Schema.Struct({ artifacts: Schema.Array(ActionArtifact) });
+const ArtifactsPage = Schema.Struct({ artifacts: Schema.Array(ActionArtifact) });
 
 export const normalizeArtifactDigest = (value: unknown) =>
   Effect.gen(function* () {

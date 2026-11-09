@@ -43,13 +43,13 @@ export function eligibleApproval(
   );
 }
 
-export const PullReview = Schema.Struct({
+const PullReview = Schema.Struct({
   user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   state: Schema.String,
   commit_id: Sha,
 });
-export const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
-export const CheckRuns = Schema.Struct({
+const CollaboratorPermission = Schema.Struct({ permission: Schema.String });
+const CheckRuns = Schema.Struct({
   check_runs: Schema.Array(
     Schema.Struct({
       id: PositiveInt,
@@ -60,7 +60,7 @@ export const CheckRuns = Schema.Struct({
     })
   ),
 });
-export const HeadCommit = Schema.Struct({
+const HeadCommit = Schema.Struct({
   author: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   commit: Schema.Struct({ verification: Schema.Struct({ verified: Schema.Boolean }) }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),
@@ -117,7 +117,7 @@ export const readReleasePull = (number: number) =>
   });
 
 const ZERO_SHA = '0'.repeat(40);
-export const BranchActivity = Schema.Struct({
+const BranchActivity = Schema.Struct({
   after: Sha,
   actor: Schema.NullOr(Schema.Struct({ login: Schema.String })),
 });
@@ -150,7 +150,7 @@ export const isReleaseAppCommit = (sha: string, batch: ReleaseBatch, appSlug: st
 export const isReleaseAppHead = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
   isReleaseAppCommit(pull.head.sha, batch, appSlug);
 
-export const IssueEvent = Schema.Struct({ event: Schema.String, commit_id: Schema.NullOr(Sha) });
+const IssueEvent = Schema.Struct({ event: Schema.String, commit_id: Schema.NullOr(Sha) });
 
 /** The commit a merged PR left on its base. Pull responses no longer carry `merge_commit_sha`. */
 export const mergeCommitOf = (number: number) =>
