@@ -47,7 +47,7 @@ jobs:
           cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/next' }}
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Test anti-slop rules and enforcement
         run: pnpm test:antislop
