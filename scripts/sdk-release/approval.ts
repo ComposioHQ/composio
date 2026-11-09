@@ -60,7 +60,6 @@ const CheckRuns = Schema.Struct({
 });
 const HeadCommit = Schema.Struct({
   author: Schema.NullOr(Schema.Struct({ login: Schema.String })),
-  committer: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   commit: Schema.Struct({ verification: Schema.Struct({ verified: Schema.Boolean }) }),
   parents: Schema.Array(Schema.Struct({ sha: Sha })),
 });
@@ -115,23 +114,52 @@ export const readReleasePull = (number: number) =>
     return { pull, batch };
   });
 
+const ZERO_SHA = '0'.repeat(40);
+const BranchActivity = Schema.Struct({
+  after: Sha,
+  actor: Schema.NullOr(Schema.Struct({ login: Schema.String })),
+});
+
 /**
- * Whether the release PR head is the release App's own verified commit on the planned source. A
- * person can sign a commit that names the bot as author, but not one it committed.
+ * Whether `sha` is the release App's own verified commit on the planned source, and the App set
+ * the release branch to it last. GitHub commits and signs every API-made commit as `web-flow`,
+ * and any writer can make one that names the App as author, so only the branch's activity log,
+ * newest first, shows who moved it.
  */
-export const isReleaseAppCommit = (sha: string, inputBase: string, appSlug: string) =>
-  Effect.map(
-    request('GET', `${REPOSITORY_PATH}/commits/${sha}`, HeadCommit),
-    head =>
+export const isReleaseAppCommit = (sha: string, batch: ReleaseBatch, appSlug: string) =>
+  Effect.gen(function* () {
+    const head = yield* request('GET', `${REPOSITORY_PATH}/commits/${sha}`, HeadCommit);
+    const activity = yield* request(
+      'GET',
+      `${REPOSITORY_PATH}/activity?ref=${encodeURIComponent(`refs/heads/${releaseBranch(batch.id)}`)}&direction=desc&per_page=100`,
+      Schema.Array(BranchActivity)
+    );
+    const lastSet = activity.find(entry => entry.after !== ZERO_SHA);
+    return (
       head.author?.login === `${appSlug}[bot]` &&
-      head.committer?.login === `${appSlug}[bot]` &&
       head.commit.verification.verified &&
       head.parents.length === 1 &&
-      head.parents[0].sha === inputBase
-  );
+      head.parents[0].sha === batch.inputBase &&
+      lastSet?.after === sha &&
+      lastSet.actor?.login === `${appSlug}[bot]`
+    );
+  });
 
 export const isReleaseAppHead = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
-  isReleaseAppCommit(pull.head.sha, batch.inputBase, appSlug);
+  isReleaseAppCommit(pull.head.sha, batch, appSlug);
+
+const IssueEvent = Schema.Struct({ event: Schema.String, commit_id: Schema.NullOr(Sha) });
+
+/** The commit a merged PR left on its base. Pull responses no longer carry `merge_commit_sha`. */
+export const mergeCommitOf = (number: number) =>
+  Effect.gen(function* () {
+    const events = yield* Stream.runCollect(
+      paginateArray(`${REPOSITORY_PATH}/issues/${number}/events`, IssueEvent)
+    );
+    const sha = events.findLast(event => event.event === 'merged')?.commit_id;
+    if (!sha) return yield* fail('The merged release PR has no merge commit');
+    return sha;
+  });
 
 /**
  * The request issue named by a release PR's plan, only when the release App committed that plan.

@@ -102,7 +102,7 @@ describe('source tag', () => {
     };
     expect(await issueOf({})).toEqual(Option.some(8));
     expect(await issueOf({ closedUnmerged: true, headAuthor: 'writer' })).toEqual(Option.none());
-    expect(await issueOf({ headCommitter: 'writer' })).toEqual(Option.none());
+    expect(await issueOf({ branchSetter: 'writer' })).toEqual(Option.none());
   });
 
   test('a beta is tagged without the docs check, which never runs on a plan-only PR', async () => {
@@ -122,8 +122,8 @@ describe('source tag', () => {
     ['the approval is for an older head', { oldReview: true }, 'lacks an approval'],
     ['a human pushed the head', { headAuthor: 'writer' }, 'release App commit'],
     [
-      'a human committed a head that names the App as author',
-      { headCommitter: 'writer' },
+      'a human set the branch to a head that names the App as author',
+      { branchSetter: 'writer' },
       'release App commit',
     ],
     ['the head commit is unverified', { unverifiedHead: true }, 'release App commit'],

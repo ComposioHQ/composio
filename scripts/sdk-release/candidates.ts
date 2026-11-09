@@ -395,7 +395,7 @@ const approveMode = Effect.gen(function* () {
   // Written first, so the publish status still reaches the request issue if adoption fails. Only
   // a plan the release App committed may name that issue: the tag ruleset should stop anyone
   // else from pushing a release tag, and this keeps a forged one from steering the bot.
-  const trusted = yield* isReleaseAppCommit(env.sha, batch.inputBase, env.appSlug).pipe(
+  const trusted = yield* isReleaseAppCommit(env.sha, batch, env.appSlug).pipe(
     Effect.provide(GitHub.layer(env.token))
   );
   if (trusted) yield* appendFile(env.outputPath, `issue=${batch.issue}\n`);
