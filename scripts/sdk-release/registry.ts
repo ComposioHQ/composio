@@ -39,6 +39,8 @@ import {
 import { verifyNpmProvenance, verifyPypiProvenance, type ProvenanceWait } from './provenance';
 import { discoverPythonPackages } from './python-metadata';
 import {
+  CommandError,
+  ReleaseError,
   appendFile,
   ensure,
   fail,
@@ -50,6 +52,11 @@ import {
   withoutReleaseTokens,
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch, batchLanguages, releaseTag } from './source';
+import {
+  NPM_TRUSTED_PUBLISHING_RUNBOOK,
+  checkNpmLogin,
+  npmTrustedPublisherSettings,
+} from './npm-oidc';
 
 /** One reviewed distribution file: an npm tarball or a Python wheel/sdist. */
 export interface Distribution {
@@ -438,9 +445,27 @@ export class NpmCli extends Context.Service<
 }
 
 /**
- * Publishes under a release-only dist-tag, checks that each tarball's provenance names this
- * release, then moves the channel's tag and drops the release-only tag. A failed check leaves
- * the channel tag where it was.
+ * Runs `npm dist-tag add|rm` for `name`. npm refuses a trusted publisher without the dist-tag
+ * permission with a bare E403, so that refusal is reported with the setting that fixes it.
+ */
+export const npmDistTag = (args: readonly ['add' | 'rm', string, string], name: string) =>
+  Effect.gen(function* () {
+    const cli = yield* NpmCli;
+    return yield* cli.run(['dist-tag', ...args]);
+  }).pipe(
+    Effect.mapError(error =>
+      error instanceof CommandError && error.message.includes('cannot manage dist-tags')
+        ? new ReleaseError({
+            message: `npm refused \`npm dist-tag ${args.join(' ')}\`: the trusted publisher of ${name} lacks the "Allow npm dist-tag" permission. A package maintainer must enable it at ${npmTrustedPublisherSettings(name)}; the npm CLI cannot. Then re-run this job. See ${NPM_TRUSTED_PUBLISHING_RUNBOOK}.\n${error.message}`,
+          })
+        : error
+    )
+  );
+
+/**
+ * Checks the npm trusted-publishing login for every package, publishes under a release-only
+ * dist-tag, checks that each tarball's provenance names this release, then moves the channel's
+ * tag and drops the release-only tag. A failed check leaves the channel tag where it was.
  */
 export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distribution>) =>
   Effect.gen(function* () {
@@ -448,6 +473,7 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
     const channel = batch.plan.choices.channel;
     const cli = yield* NpmCli;
     const npm = cli.run;
+    yield* checkNpmLogin(files.map(file => file.name));
     for (const file of (yield* reconcileRegistry(files, channel)).missing)
       yield* npm([
         'publish',
@@ -461,7 +487,7 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
     // Users only install a version once its channel tag moves, so it moves after the checks.
     for (const file of files) yield* verifyNpmProvenance(file, batch.id);
     for (const tag of visible.tagsToRepair)
-      yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, tag.tag]);
+      yield* npmDistTag(['add', `${tag.name}@${tag.version}`, tag.tag], tag.name);
     yield* waitForRegistry(files, { channel });
     // The release-only tag only served the upload; a re-run finds it already gone.
     const releaseOnly = `sdk-release-${batch.id}`;
@@ -471,7 +497,7 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
         Schema.Record(Schema.String, Schema.String)
       );
       if (Option.exists(tags, value => releaseOnly in value))
-        yield* npm(['dist-tag', 'rm', file.name, releaseOnly]);
+        yield* npmDistTag(['rm', file.name, releaseOnly], file.name);
     }
   });
 

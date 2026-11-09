@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { Effect, Layer, Option } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { Digest } from 'effect/crypto';
 import { Base64 } from 'effect/encoding';
 import semver from 'semver';
@@ -26,11 +26,12 @@ import {
 import { resolvePath, runRelease, type Fetch } from './sdk-release-harness';
 
 const NPM = 'https://registry.npmjs.org';
+const ID_TOKEN_REQUEST_URL = 'https://token.actions.example.test/oidc?api-version=2.0';
 
 /**
  * A fake npm registry with its dist-tags, and the npm CLI that writes to it. Uploads record SLSA
  * provenance the way trusted publishing does, from `ref` (the release tag unless a test forges
- * another one).
+ * another one). The trusted-publishing login succeeds.
  */
 function npmRegistry(
   tags: Record<string, string>,
@@ -46,7 +47,13 @@ function npmRegistry(
       })
     );
   const provenance = new Map<string, string>();
-  const cli = Layer.succeed(NpmCli, {
+  const actionsEnv = ConfigProvider.layer(
+    ConfigProvider.fromUnknown({
+      ACTIONS_ID_TOKEN_REQUEST_URL: ID_TOKEN_REQUEST_URL,
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'request-token',
+    })
+  );
+  const npmCli = Layer.succeed(NpmCli, {
     run: (args: ReadonlyArray<string>) =>
       Effect.promise(async () => {
         commands.push(args.join(' '));
@@ -86,10 +93,14 @@ function npmRegistry(
         return '';
       }),
   });
+  const cli = Layer.mergeAll(npmCli, actionsEnv);
   const fetcher: Fetch = async input => {
     const url = String(input);
     const respond = (data: unknown) => new Response(JSON.stringify(data));
     const notFound = new Response('{}', { status: 404 });
+    if (url.startsWith(ID_TOKEN_REQUEST_URL)) return respond({ value: 'id-token' });
+    if (url === `${NPM}/-/npm/v1/oidc/token/exchange/package/@composio%2fcore`)
+      return respond({ token: 'exchanged-token' });
     if (url === `${NPM}/-/package/%40composio%2Fcore/dist-tags`) return respond(tags);
     const attestation = /\/-\/npm\/v1\/attestations\/%40composio%2Fcore@(.+)$/.exec(url);
     if (attestation)

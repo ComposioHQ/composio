@@ -336,7 +336,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Pin npm with native dist-tag OIDC support
         run: npm install --global npm@11.21.0 --ignore-scripts --registry=https://registry.npmjs.org
-      - name: Upload missing npm files, move the channel tag and check their provenance
+      # Checks npm's trusted-publishing login for every planned package before uploading anything.
+      - name: Check the npm login, upload missing npm files, move the channel tag and check their provenance
         id: publish
         env:
           SDK_READ_TOKEN: ${{ github.token }}

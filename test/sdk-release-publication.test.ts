@@ -1,14 +1,17 @@
 import { describe, expect, test } from 'bun:test';
+import { Effect } from 'effect';
 import type { Channel } from '../scripts/sdk-release/channel';
 import type { Language } from '../scripts/sdk-release/lanes';
 import {
+  NpmCli,
   loadOriginalDistributions,
+  npmDistTag,
   reconcileRegistry as reconcileRegistryEffect,
   waitForRegistry,
   type Distribution,
 } from '../scripts/sdk-release/registry';
 import { docsPinSpecs } from '../scripts/sdk-release/report';
-import { sha256Hex } from '../scripts/sdk-release/runtime';
+import { CommandError, sha256Hex } from '../scripts/sdk-release/runtime';
 import { batch, head } from './sdk-release-controller-fixture';
 import { runRelease, type Fetch } from './sdk-release-harness';
 
@@ -231,6 +234,32 @@ describe('pinned candidate download', () => {
         throw new Error('no request expected');
       })
     ).rejects.toThrow('No approved typescript candidate was pinned');
+  });
+});
+
+describe('npm dist-tag moves', () => {
+  // The E403 npm printed when the trusted publisher of @composio/slim lacked the dist-tag permission.
+  const refusal = [
+    'npm failed: npm error code E403',
+    'npm error 403 403 Forbidden - PUT https://registry.npmjs.org/-/package/@composio%2fslim/dist-tags/latest - This trusted publisher cannot manage dist-tags. Ask a package maintainer to enable Allow npm dist-tag.',
+  ].join('\n');
+  test('a dist-tag refusal names the trusted-publisher setting to enable', async () => {
+    const commands: string[][] = [];
+    await expect(
+      runRelease(
+        npmDistTag(['add', '@composio/slim@1.0.1', 'latest'], '@composio/slim').pipe(
+          Effect.provideService(NpmCli, {
+            run: args => {
+              commands.push([...args]);
+              return Effect.fail(new CommandError({ message: refusal, exitCode: 1 }));
+            },
+          })
+        )
+      )
+    ).rejects.toThrow(
+      /@composio\/slim.*Allow npm dist-tag.*Settings → Trusted publishing.*ts\/docs\/internal\/release\.md#npm-trusted-publishing/s
+    );
+    expect(commands).toEqual([['dist-tag', 'add', '@composio/slim@1.0.1', 'latest']]);
   });
 });
 
