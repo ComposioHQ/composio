@@ -46,7 +46,6 @@ const resolveProject = (
                 execPath: '/in-memory/composio',
                 platform: 'linux',
                 arch: 'x64',
-                setExitCode: () => Effect.void,
               })
             )
           )
@@ -131,6 +130,30 @@ describe('ProjectContext test user metadata', () => {
       ]);
       const result = yield* resolveProject(files, source.env);
       expect(Option.getOrNull(Option.flatMap(result, keys => keys.testUserId))).toBeNull();
+    })
+  );
+
+  it.effect('.composio/.env: a nearest profile without a test user ends the search', () =>
+    Effect.gen(function* () {
+      const files = new Map([
+        [`${directory}/.composio/.env`, dotenv],
+        [jsonPath, JSON.stringify({ org_id: 'org_test', project_id: 'proj_test' })],
+        [`${home}/.composio/project.json`, JSON.stringify(profile)],
+      ]);
+      const keys = Option.getOrThrow(yield* resolveProject(files));
+      expect(Option.getOrNull(keys.testUserId)).toBeNull();
+    })
+  );
+
+  it.effect('.composio/.env: skips a corrupt profile for the next valid one', () =>
+    Effect.gen(function* () {
+      const files = new Map([
+        [`${directory}/.composio/.env`, dotenv],
+        [jsonPath, '{'],
+        [`${home}/.composio/project.json`, JSON.stringify(profile)],
+      ]);
+      const keys = Option.getOrThrow(yield* resolveProject(files));
+      expect(Option.getOrNull(keys.testUserId)).toBe('project-user');
     })
   );
 
