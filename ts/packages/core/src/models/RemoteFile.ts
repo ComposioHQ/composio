@@ -190,40 +190,42 @@ export class RemoteFile {
       );
     }
 
-    let savePath: string;
-    let dir: string;
+    // An explicit `path` is the caller's own, so it needs no home directory.
     if (path != null) {
-      savePath = path;
-      dir = getParentDir(path);
-    } else {
-      const homeDir = platform.homedir();
-      if (!homeDir) {
-        throw new Error('Cannot determine save location: home directory is not available');
+      const content = await this.buffer();
+      const dir = getParentDir(path);
+      if (dir && !platform.existsSync(dir)) {
+        platform.mkdirSync(dir);
       }
-
-      // Validate the server-controlled default filename before any I/O (SEC-316).
-      dir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
-      const defaultName = safeBasename(this.mountRelativePath, 'mount path');
-      savePath = platform.joinPath(dir, defaultName);
+      platform.writeFileSync(path, content);
+      return path;
     }
+
+    const homeDir = platform.homedir();
+    if (!homeDir) {
+      throw new Error('Cannot determine save location: home directory is not available');
+    }
+
+    // The default path is built from `mountRelativePath`, a server-controlled
+    // response field, so it is validated first (SEC-316, mirroring the Python
+    // SDK): a value such as `""`, `"."` or `"foo/.."` would otherwise make
+    // `savePath` its own directory or the parent, and fail with a raw `EISDIR`
+    // only after `mkdirSync` had run.
+    const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    const defaultName = safeBasename(this.mountRelativePath, 'mount path');
+    const savePath = platform.joinPath(defaultDir, defaultName);
 
     const content = await this.buffer();
 
-    if (dir && !platform.existsSync(dir)) {
-      platform.mkdirSync(dir);
+    if (!platform.existsSync(defaultDir)) {
+      platform.mkdirSync(defaultDir);
     }
 
-    if (path != null) {
-      platform.writeFileSync(savePath, content);
-      return savePath;
-    }
-
-    const defaultName = platform.basename(savePath);
     // Server names can equal a digest-tagged name literally. Reserve a new
     // destination atomically so either save order keeps both downloads.
     for (let copy = 0; ; copy++) {
       const destination =
-        copy === 0 ? savePath : platform.joinPath(dir, numberedBasename(defaultName, copy));
+        copy === 0 ? savePath : platform.joinPath(defaultDir, numberedBasename(defaultName, copy));
       try {
         platform.writeFileExclusiveSync(destination, content);
         return destination;
