@@ -1,5 +1,71 @@
 # @composio/core
 
+## 0.29.0
+
+### Minor Changes
+
+- f22ab26: Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.
+- f22ab26: Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.customToolkits`. Pass `experimental.localTools` and `experimental.localToolkits` to `composio.create()`, and `localTools` and `localToolkits` to `composio.use()`. List them with `session.localTools()` and `session.localToolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool`, `RegisteredLocalToolkit`, `CreateLocalToolParams`, `CreateLocalToolkitParams` and `LocalToolExecuteFn`. The `customTools` and `customToolkits` options, the `session.customTools()` and `session.customToolkits()` methods, and the `Custom*` type names are deprecated and keep working. Passing both a new option and its deprecated alias throws `ValidationError`. The request sent to the API is unchanged.
+- f22ab26: Handle rate limits better: `tools.execute()` reuses tool schemas instead of fetching one per call, `waitForConnection()` backs off between polls and waits out a 429, and tool fetches and executions rejected with a 429 throw `ComposioToolFetchRateLimitError` or `ComposioToolExecutionRateLimitError` (check with `isComposioRateLimitError`).
+
+### Patch Changes
+
+- f22ab26: Update @composio/client to 2.1.0 to include the latest API changes.
+
+## 0.28.0
+
+### Minor Changes
+
+- d2d4148: Requires `@composio/client` `2.0.0`. POST and PATCH requests, including tool execution and trigger creation, are now sent once instead of being retried on a lost response or a retryable status, because a write can complete on the server after its response is lost. Other requests keep their retries. On the client returned by `getClient()`, a write retries only when that call sets `maxRetries`.
+- e87ed85: Requires `@composio/client` `2.0.0-rc.20`. The SDK imports the client's types from the one `@composio/client/resources/*` spelling rc.20 publishes and reaches nested types by indexed access; every type the SDK exports keeps its shape. With rc.20, the resources of the client returned by `getClient()` are plain objects typed by interfaces: the resource classes, `Composio.Tools`-style statics and namespace-member types such as `SessionCreateParams.Experimental` are gone, and the `.js`/`.mjs` subpath spellings no longer resolve.
+- 3f3df9a: Requires `@composio/client` `2.0.0-rc.21`. The SDK's behaviour is unchanged. With rc.21, the client returned by `getClient()` no longer has `request()`, `Composio.Composio` or `Composio.DEFAULT_TIMEOUT`: call the raw verb for the method (`get`, `post`, `patch`, `put`, `delete`), which takes the same `query`, `body` and request options.
+- 54a935f: Requires `@composio/client` `2.0.0-rc.23`. `composio.sessionConfigs.list()` no longer sends `search`, which the Composio API removed: the option is deprecated, ignored, and logs a warning when set; filter `items` by name instead. With rc.23, the client returned by `getClient()` no longer has `cli.createCodactFailure` (now under `client._internal`, typed through `@composio/client/internal`) or `org.clanker.createClaim`, and its `sessionConfigs.list()` no longer accepts `search`.
+- 7434e02: Requires `@composio/client` `2.0.0-rc.22`. `composio.toolkits.get(slug)` now returns `meta.appUrl` when the API sends the toolkit's app URL; it was always left out before. `composio.sessionConfigs.get()` keeps the `require_approval` lists of a stored policy, and no longer fails validation on a policy entry that only sets `require_approval`; `SessionConfigPolicy` gains the matching optional `require_approval` fields and the approval-only entry. Session hooks, blocked calls and hook results are read from the API types of `@composio/client` instead of SDK copies, with the same results and errors for well-formed responses; a malformed `hook_results` or blocked response is no longer re-validated by the SDK, matching every other API response.
+- a5a1fc8: Requires `@composio/client` `2.0.1`. Adds `composio.experimental.customToolkits.create()` and `update()`, which call the v3.1 custom toolkit create and update endpoints. `create()` takes `userId` (`'all'` to share the toolkit, or the user it is private to), generates the slug, and returns a `connectLink` for a private toolkit. `upsert()` is deprecated and logs a warning once per process; it keeps working.
+
+  API-key auth schemes accept `additionalFields.genericId` with a required `displayName` and optional `description` to collect the value used by `{{generic_id}}` headers.
+
+- d2d4148: `composio.triggers.create()` accepts `type` (`'webhook'` or `'poll'`, for a trigger that supports both) and `pollingInterval` (minutes between polls, which wins over `triggerConfig.interval`), and returns the instance's `type`, `fallbackReason` and `pollingInterval` along with `triggerId`. `composio.triggers.listActive()` items carry the same three fields, and `getType()` / `listTypes()` return each trigger type's `type`, `types` and `requiresWebhookEndpointSetup`.
+
+### Patch Changes
+
+- e547eb0: Upload local files with the MIME type of their extension
+
+  A file uploaded from a local path used to be sent as `application/octet-stream` whatever it was, so tools that check the file's type, such as Canva's design import, rejected it. The SDK now infers the type from the file name's extension (a `.pptx` uploads as `application/vnd.openxmlformats-officedocument.presentationml.presentation`) and keeps `application/octet-stream` only for missing or unknown extensions. The TypeScript and Python SDKs now use the same extension table, so a file uploads with the same type from either SDK and from the CLI. Files passed as `File` objects and URLs keep the type they carry.
+
+- 30f8ca1: `getExtensionFromMimeType` now maps `text/csv` to `csv` from its table, matching the Python SDK. The returned extension is unchanged.
+- f6368e0: Add the missing `experimental` option to the `ToolRouterAuthorizeFn` type. `session.authorize()` already accepted `experimental: { accountType, aclConfigForShared }` at runtime, but sessions returned by `composio.create()` and `composio.use()` rejected it at compile time.
+
+## 0.27.0
+
+### Minor Changes
+
+- c2bbfa8: Add session hooks. A hook can block a tool call before it runs, or block its result before the agent sees it.
+
+  `create()` and `update()` accept `hooks`. On `update()`, `hooks` replaces the whole list and `null` removes every hook. `hooks` cannot be combined with `experimental.sessionConfigId`.
+
+  ```ts
+  const session = await composio.create('user_123', {
+    hooks: [
+      {
+        type: 'before_execute',
+        id: 'no_external_email',
+        name: 'No external email',
+        appliesTo: { toolkits: ['gmail'] },
+        handler: {
+          type: 'condition_check',
+          condition: 'Sending email to anyone outside example.org',
+          action: 'block',
+        },
+      },
+    ],
+  });
+  ```
+
+  A blocked call comes back from `session.execute()` and `session.executeMeta()` with `resultType: 'blocked'`, empty `data`, the hook's message in `error`, and `blockReason`. Provider integrations hand it to the agent as a failed call with that message. Every result also carries `hookResults` when a hook applied.
+
+  `session.proxyExecute()` and `ctx.proxyExecute()` now return `resultType: 'completed'` or `resultType: 'blocked'`. A blocked request has no HTTP response, so TypeScript code that reads `status` has to check `resultType` first.
+
 ## 0.26.0
 
 ### Minor Changes

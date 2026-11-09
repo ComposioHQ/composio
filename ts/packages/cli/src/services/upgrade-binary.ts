@@ -25,6 +25,8 @@ import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-rep
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
+import type { NodeOs } from './node-os';
+import { recordLatestStableRelease } from './update-check';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
@@ -118,7 +120,7 @@ const fetchLatestRelease = (
     prerelease?: boolean;
     tag?: string;
   } = {}
-): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+): Effect.Effect<GitHubRelease, UpgradeBinaryError, NodeOs> =>
   Effect.gen(function* () {
     const { githubConfig, httpClient } = ctx;
     const prerelease = options.prerelease ?? false;
@@ -161,6 +163,10 @@ const fetchLatestRelease = (
           );
 
           yield* Effect.logDebug(`Resolved latest CLI release tag: ${latest.tag_name}`);
+          // Only an unpinned stable lookup answers what the update-check cache stores.
+          if (!prerelease) {
+            yield* provideFsAndPath(ctx, recordLatestStableRelease(latest.tag_name));
+          }
           return latest;
         }),
         onSome: Effect.fn(function* (tag) {

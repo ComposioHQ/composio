@@ -114,7 +114,13 @@ async function buildCliImage(
 ): Promise<boolean> {
   const dockerfilePath = resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
   const imageTag = imageTagForCliVersion(cliVersion);
-  const labels = defaultCliLabels(cliVersion);
+  const labels = {
+    ...defaultCliLabels(cliVersion),
+    'org.opencontainers.image.revision': execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    }).trim(),
+  };
   const labelArgs = Object.entries(labels)
     .map(([k, v]) => `--label=${k}=${v}`)
     .join(' ');

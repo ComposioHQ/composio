@@ -5,6 +5,8 @@ keywords: [eve, agent framework, provider, experimental, typescript]
 experimental: true
 ---
 
+{/* code-example: single-language-page reason="eve and @composio/experimental/eve are TypeScript-only" */}
+
 The eve provider adapts Composio tools for the [eve](https://github.com/vercel/eve) agent framework. With `EveProvider` registered, `session.tools()` returns eve-native `defineTool`s, so an eve agent gets the Tool Router meta-tools and any preloaded custom toolkits from one call. The provider also ships a `(ctx, next)` hook interface to intercept, allow, deny, or rewrite meta-tool calls before the model sees the result.
 
 <Callout type="warning">
@@ -95,7 +97,7 @@ export default defineComposioTools(session);
 </Step>
 </Steps>
 
-Your agent now has the Tool Router meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_MANAGE_CONNECTIONS`) plus any preloaded custom toolkits, with auth handled in chat.
+Your agent now has the Tool Router meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_MANAGE_CONNECTIONS`) plus any preloaded local toolkits, with auth handled in chat.
 
 <Callout type="info">
   eve's `defineTool` takes plain JSON Schema, so `EveProvider` passes Composio's `inputParameters`
@@ -167,7 +169,7 @@ When this returns `true`, eve pauses before execution and asks the user to appro
   icon={<BookOpen />}
   title="iMessage on eve"
   href="/examples/imessage-agent"
-  description="A full example: a custom toolkit for local iMessage plus the eve provider, on one session."
+  description="A full example: a local toolkit for iMessage plus the eve provider, on one session."
 />
 <Card
   icon={<BookOpen />}

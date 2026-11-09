@@ -4,6 +4,8 @@ description: Build an agent with Mastra and enable it to use 1000+ tools with Co
 keywords: [mastra]
 ---
 
+{/* code-example: single-language-page reason="Mastra is TypeScript-only; @composio/mastra has no Python counterpart" */}
+
 The Mastra provider transforms Composio tools into [Mastra's tool format](https://mastra.ai/en/docs/tools-mcp/overview#creating-tools) with built-in execution. Pass the wrapped tools to a Mastra `Agent`, and the agent calls them automatically. Each tool gets both an input and an output schema, so Mastra can validate tool results as well as arguments.
 
 <Steps>

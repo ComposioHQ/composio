@@ -28,8 +28,8 @@ export const runOrgsSwitch = ({ orgId, limit }: OrgsSwitchParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    // `requireLogin` on the `orgs` group has already proven the key is there; the
-    // filter also fails a stored empty key, which `requireLogin` counts as present.
+    // `requiresLogin` on the `orgs` group has already proven the key is there; the
+    // filter also fails a stored empty key, which the login check counts as present.
     const apiKey = yield* Effect.fromOption(
       Option.filter(ctx.data.apiKey, key => key.length > 0),
       notLoggedIn

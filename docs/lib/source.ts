@@ -31,6 +31,8 @@ import { z } from 'zod';
 import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
 import { HOME_OG_DESCRIPTION } from './toolkit-count';
+import { componentsToMarkdown } from './example-document';
+import { providerListMarkdown } from './providers';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -374,6 +376,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
         url
       )
   );
+  result = componentsToMarkdown(result);
 
   result = replaceHomeNavigationMarkdown(result);
 
@@ -412,39 +415,16 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
     (_, content) => `> ${content.trim()}`
   );
 
-  // Remove Cards wrapper before processing individual Card tags
+  // Cards were converted with the parsed document above; drop their wrapper.
   result = result.replace(/<\/?Cards\b[^>]*>/g, '');
 
-  // Convert Card - handle multiline and various attribute orders
   result = result.replace(
-    /<Card\b[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?description="([^"]*)"[\s\S]*?\/>/g,
-    '- [$1]($2): $3'
-  );
-  result = result.replace(
-    /<Card\b[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
-    '- [$1]($2): $3'
-  );
-  result = result.replace(
-    /<Card\b[\s\S]*?href="([^"]*)"[\s\S]*?title="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
-    '- [$2]($1): $3'
-  );
-  result = result.replace(
-    /<ProviderCard[\s\S]*?name="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?languages=\{\[([^\]]*)\]\}[\s\S]*?\/>/g,
-    (_, name, href, langs) => `- [${name}](${href}) (${langs.replace(/"/g, '')})`
+    /<ProviderList\s+group="(ai-sdks|agent-frameworks|custom)"\s*\/>/g,
+    (_, group: 'ai-sdks' | 'agent-frameworks' | 'custom') => providerListMarkdown(group),
   );
 
   result = result.replace(/^[ \t]+(- \[)/gm, '$1');
 
-  result = result.replace(/<TabsList>[\s\S]*?<\/TabsList>/g, '');
-  result = result.replace(/<TabsTrigger[^>]*>[^<]*<\/TabsTrigger>/g, '');
-  result = result.replace(
-    /<TabsContent[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/TabsContent>/g,
-    '\n**$1:**\n$2'
-  );
-  result = result.replace(
-    /<Tab[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Tab>/g,
-    '\n**$1:**\n$2'
-  );
 
   result = result.replace(/<StepTitle>([\s\S]*?)<\/StepTitle>/g, (_, title) => {
     const cleanTitle = title
@@ -561,7 +541,7 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = replaceRepoBrowserMarkdown(result);
 
   result = result.replace(
-    /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
+    /<\/?(Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
     ''
   );
 

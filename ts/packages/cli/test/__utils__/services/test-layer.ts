@@ -25,6 +25,7 @@ import {
   Path,
   References,
   Schedule,
+  Stream,
 } from 'effect';
 import { CliConfig, type Command as CliCommand } from 'effect/cli';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
@@ -50,6 +51,7 @@ import { CliUserConfig } from 'src/models/cli-user-config';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { ShutdownSignal } from 'src/services/shutdown-signal';
 import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
 import { DashboardToolExecutionTest, type DashboardTestResponder } from '../layers/dashboard';
 import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
@@ -82,6 +84,7 @@ import { notFoundError } from '../layers/not-found';
 import { DEFAULT_PAGE_LIMIT } from '../layers/page';
 import { CommandRunnerTest } from '../layers/command-runner';
 import { SetupSkillInstallerTest } from '../layers/setup';
+import { InvocationHooksTest } from '../layers/invocation-hooks';
 import {
   resolveToolkitsTestData,
   toolkitCatalogMethods,
@@ -383,6 +386,9 @@ export const TestLayer = (input?: TestLiveInput) =>
         createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+            type: 'webhook' as const,
+            fallback_reason: null,
+            polling_interval: null,
           }),
         enableTrigger: () => Effect.succeed({ status: 'success' as const }),
         disableTrigger: () => Effect.succeed({ status: 'success' as const }),
@@ -392,16 +398,18 @@ export const TestLayer = (input?: TestLiveInput) =>
     const TriggersRealtimeTest = Layer.succeed(
       TriggersRealtime,
       TriggersRealtime.of({
-        listen: onEvent =>
+        listen: (onEvent, options) =>
           Effect.gen(function* () {
+            yield* options?.onSubscribed ?? Effect.void;
             yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
             return yield* Effect.never;
-          }),
-        listenInProject: (_scope, onEvent) =>
+          }).pipe(Effect.scoped),
+        listenInProject: (_scope, onEvent, options) =>
           Effect.gen(function* () {
+            yield* options?.onSubscribed ?? Effect.void;
             yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
             return yield* Effect.never;
-          }),
+          }).pipe(Effect.scoped),
       })
     );
 
@@ -424,11 +432,6 @@ export const TestLayer = (input?: TestLiveInput) =>
         execPath: input?.execPath ? path.resolve(cwd, input.execPath) : path.join(cwd, 'composio'),
         platform: 'darwin',
         arch: 'arm64',
-        // Command tests read the exit code off the real process.
-        setExitCode: code =>
-          Effect.sync(() => {
-            process.exitCode = code;
-          }),
       })
     );
 
@@ -648,6 +651,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+            type: 'webhook' as const,
+            fallback_reason: null,
+            polling_interval: null,
           });
         },
         manage: {
@@ -767,20 +773,23 @@ export const TestLayer = (input?: TestLiveInput) =>
       Effect.die(new Error(`unexpected network call from the mock Composio client: ${request.url}`))
     );
 
-    // Each shadow answers with an Effect, built when the call runs. A shadow
+    // Each shadow builds its Effect or Stream when consumed. A shadow
     // ignores the request options
     // (`signal`, `maxRetries`, headers beyond `decode`), and the
-    // `connectedAccounts.list` shadow never pages (`next_cursor` is null):
+    // connected-account shadows serve fixture data without cursor traversal:
     // pagination, retries, and abort are covered by `stubComposioClient`,
     // the real `make` over a recording transport.
     const withShadows = <Resources extends object>(base: Resources, shadows: object): Resources => {
       const shadowed = { ...base } as Record<string, unknown>;
       for (const [key, shadow] of Object.entries(shadows) as Array<[string, unknown]>) {
         shadowed[key] =
-          typeof shadow === 'function'
+          typeof shadow === 'function' && key === 'listStream'
             ? (...args: ReadonlyArray<unknown>) =>
-                Effect.suspend(() => shadow(...args) as Effect.Effect<unknown, unknown>)
-            : withShadows((shadowed[key] ?? {}) as object, shadow as object);
+                Stream.suspend(() => shadow(...args) as Stream.Stream<unknown, unknown>)
+            : typeof shadow === 'function'
+              ? (...args: ReadonlyArray<unknown>) =>
+                  Effect.suspend(() => shadow(...args) as Effect.Effect<unknown, unknown>)
+              : withShadows((shadowed[key] ?? {}) as object, shadow as object);
       }
       return shadowed as Resources;
     };
@@ -887,7 +896,7 @@ export const TestLayer = (input?: TestLiveInput) =>
     const layers = Layer.mergeAll(
       Layer.succeed(Console.Console, _console),
       CliConfigLive,
-      // Mirror cli-main: no custom `CliOutput.Formatter` is provided here either
+      // Mirror `InvocationLive`: no custom `CliOutput.Formatter` is provided here either
       // — `CliOutput.Formatter` is a `Context.Reference` that falls back to v4's
       // own `CliOutput.defaultFormatter()`, so `Command.runWith` renders help,
       // errors, and `--version` identically to production.
@@ -898,6 +907,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioClientSingletonTest,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
+      // No runner signals tests; a suite that needs one provides its own controller's service.
+      ShutdownSignal.Default,
       ComposioToolkitsRepositoryTest,
       ToolkitSlugCatalogTest,
       JsPackageManagerDetector.Default,
@@ -912,6 +923,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       FetchHttpClient.layer,
       StdinTest,
       TerminalUILayer,
+      // Recording no-op doubles of the hooks and telemetry sink the invocation runs around a
+      // command; read their calls with `recordedInvocationCalls`.
+      InvocationHooksTest,
       // `src/commands/index.ts` provides these for real invocations; direct-effect tests that
       // never route through the root command still need the "no CLI flag override" default.
       cliDebugFlagsLayer(),

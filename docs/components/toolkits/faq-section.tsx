@@ -2,11 +2,10 @@
 
 import { HelpCircle } from 'lucide-react';
 import { Accordion, Accordions } from '@/mdx-components';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import type { FaqItem } from '@/lib/toolkit-faq';
 
-export interface FaqItem {
-  question: string;
-  answer: string;
-}
+export type { FaqItem } from '@/lib/toolkit-faq';
 
 interface FaqSectionProps {
   faq: FaqItem[];
@@ -24,10 +23,22 @@ export function FaqSection({ faq }: FaqSectionProps) {
       <Accordions type="single">
         {faq.map((item) => (
           <Accordion key={item.question} title={item.question}>
-            <div
-              className="prose prose-sm prose-fd max-w-none text-fd-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: item.answer }}
-            />
+            {item.answer.map((part, index) => part.type === 'html' ? (
+              <div key={index}
+                className="prose prose-sm prose-fd max-w-none text-fd-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: part.html }}
+              />
+            ) : (
+              <Tabs key={index} groupId="language" items={part.tabs.map((tab) => tab.value)} persist>
+                {part.tabs.map((tab) => (
+                  <Tab key={tab.value} value={tab.value}>
+                    <div className="prose prose-sm prose-fd max-w-none overflow-x-auto"
+                      dangerouslySetInnerHTML={{ __html: tab.html }}
+                    />
+                  </Tab>
+                ))}
+              </Tabs>
+            ))}
           </Accordion>
         ))}
       </Accordions>

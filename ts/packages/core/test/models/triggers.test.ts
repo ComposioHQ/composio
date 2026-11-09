@@ -66,6 +66,9 @@ const mockTriggerInstances = {
       updated_at: '2024-01-01T00:00:00Z',
       trigger_data: '{"event":"push"}',
       uuid: 'uuid-123',
+      type: 'webhook',
+      fallback_reason: null,
+      polling_interval: null,
     },
     {
       id: 'trigger-2',
@@ -77,6 +80,9 @@ const mockTriggerInstances = {
       updated_at: '2024-01-02T00:00:00Z',
       trigger_data: '{"event":"message"}',
       uuid: 'uuid-456',
+      type: 'poll',
+      fallback_reason: 'No webhook endpoint is set up for this auth config.',
+      polling_interval: 15,
     },
   ],
   next_cursor: null,
@@ -85,6 +91,16 @@ const mockTriggerInstances = {
 
 const mockTriggerUpsertResponse = {
   trigger_id: 'trigger-123',
+  type: 'webhook',
+  fallback_reason: null,
+  polling_interval: null,
+};
+
+const expectedUpsertResult = {
+  triggerId: mockTriggerUpsertResponse.trigger_id,
+  type: mockTriggerUpsertResponse.type,
+  fallbackReason: mockTriggerUpsertResponse.fallback_reason,
+  pollingInterval: mockTriggerUpsertResponse.polling_interval,
 };
 
 const mockTriggerUpdateResponse = {
@@ -116,6 +132,9 @@ const mockTriggerTypes = {
         logo: 'https://example.com/github.png',
       },
       version: '20250101_00',
+      type: 'webhook',
+      types: ['webhook'],
+      requires_webhook_endpoint_setup: false,
     },
   ],
   total_pages: 1,
@@ -141,7 +160,15 @@ const mockTriggerType = {
     logo: 'https://example.com/github.png',
   },
   version: '20250101_00',
+  type: 'poll',
+  types: ['webhook', 'poll'],
+  requires_webhook_endpoint_setup: true,
 };
+
+const toTriggerType = <T extends { requires_webhook_endpoint_setup?: boolean }>({
+  requires_webhook_endpoint_setup,
+  ...rest
+}: T) => ({ ...rest, requiresWebhookEndpointSetup: requires_webhook_endpoint_setup });
 
 const mockTriggerEnum = {
   enum: ['github_webhook', 'slack_message', 'email_received'],
@@ -431,6 +458,9 @@ describe('Triggers', () => {
           updatedAt: item.updated_at,
           triggerData: item.trigger_data,
           uuid: item.uuid,
+          type: item.type,
+          fallbackReason: item.fallback_reason,
+          pollingInterval: item.polling_interval,
         })),
         nextCursor: null,
         totalPages: 1,
@@ -503,7 +533,52 @@ describe('Triggers', () => {
         },
         undefined
       );
-      expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
+      expect(result).toEqual(expectedUpsertResult);
+    });
+
+    it('should pass type and pollingInterval, and return the type, fallback reason and interval', async () => {
+      mockClient.triggerInstances.upsert.mockResolvedValue({
+        trigger_id: 'trigger-123',
+        type: 'poll',
+        fallback_reason: 'No webhook endpoint is set up for this auth config.',
+        polling_interval: 15,
+      });
+
+      const result = await triggers.create(userId, slug, {
+        ...body,
+        type: 'poll',
+        pollingInterval: 15,
+      });
+
+      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
+        slug,
+        {
+          connected_account_id: body.connectedAccountId,
+          trigger_config: body.triggerConfig,
+          type: 'poll',
+          polling_interval: 15,
+          toolkit_versions: 'latest',
+          user_id: userId,
+        },
+        undefined
+      );
+      expect(result).toEqual({
+        triggerId: 'trigger-123',
+        type: 'poll',
+        fallbackReason: 'No webhook endpoint is set up for this auth config.',
+        pollingInterval: 15,
+      });
+    });
+
+    it.each([
+      { case: 'an unknown type', extra: { type: 'email' } },
+      { case: 'a fractional pollingInterval', extra: { pollingInterval: 1.5 } },
+      { case: 'a zero pollingInterval', extra: { pollingInterval: 0 } },
+    ])('should reject $case before calling the API', async ({ extra }) => {
+      await expect(triggers.create(userId, slug, { ...body, ...extra } as unknown)).rejects.toThrow(
+        ValidationError
+      );
+      expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
     });
 
     it('should let the backend auto-resolve the connection when no connected account ID is provided', async () => {
@@ -530,7 +605,7 @@ describe('Triggers', () => {
       // resolve it).
       const upsertParams = mockClient.triggerInstances.upsert.mock.calls[0][1];
       expect(upsertParams.connected_account_id).toBeUndefined();
-      expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
+      expect(result).toEqual(expectedUpsertResult);
     });
 
     it('should throw a validation error when userId is empty', async () => {
@@ -646,7 +721,7 @@ describe('Triggers', () => {
       );
       expect(result).toEqual({
         items: mockTriggerTypes.items.map(item => ({
-          ...item,
+          ...toTriggerType(item),
           payload: item.payload ?? {},
         })),
         nextCursor: mockTriggerTypes.next_cursor,
@@ -670,7 +745,7 @@ describe('Triggers', () => {
         undefined
       );
       expect(result).toEqual({
-        items: mockTriggerTypes.items,
+        items: mockTriggerTypes.items.map(toTriggerType),
         nextCursor: mockTriggerTypes.next_cursor,
         totalPages: mockTriggerTypes.total_pages,
       });
@@ -691,7 +766,7 @@ describe('Triggers', () => {
         },
         undefined
       );
-      expect(result).toEqual(mockTriggerType);
+      expect(result).toEqual(toTriggerType(mockTriggerType));
     });
 
     it('should use custom global toolkit versions when configured', async () => {
@@ -712,7 +787,7 @@ describe('Triggers', () => {
         },
         undefined
       );
-      expect(result).toEqual(mockTriggerType);
+      expect(result).toEqual(toTriggerType(mockTriggerType));
     });
 
     it('should use "latest" as default when no toolkit versions are configured', async () => {
@@ -728,7 +803,7 @@ describe('Triggers', () => {
         },
         undefined
       );
-      expect(result).toEqual(mockTriggerType);
+      expect(result).toEqual(toTriggerType(mockTriggerType));
     });
   });
 

@@ -27,7 +27,7 @@ describe('CLI: composio dev logs triggers over the API client', () => {
     it.effect('[Then] the logs are listed and printed as the API returned them', () =>
       Effect.gen(function* () {
         const page = { data: [olderLog] };
-        const stub = stubClientResources(['logs'], () => Response.json(page));
+        const stub = stubClientResources(['_internal'], () => Response.json(page));
         yield* cli(['dev', 'logs', 'triggers']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
@@ -50,7 +50,7 @@ describe('CLI: composio dev logs triggers over the API client', () => {
       },
     ])('[Then] each user id is sent as a search param when passed $name', ({ args }) =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json({ data: [] }));
+        const stub = stubClientResources(['_internal'], () => Response.json({ data: [] }));
         yield* cli(args).pipe(Effect.provide(stub.layer));
 
         expect(JSON.stringify(stub.requests)).toContain(
@@ -66,7 +66,7 @@ describe('CLI: composio dev logs triggers over the API client', () => {
   layer(testLayer)('[Given] one trigger log in an older response shape', it => {
     it.effect('[Then] its details are shown and it is printed as the API returned it', () =>
       Effect.gen(function* () {
-        const stub = stubClientResources(['logs'], () => Response.json(olderLog));
+        const stub = stubClientResources(['_internal'], () => Response.json(olderLog));
         yield* cli(['dev', 'logs', 'triggers', 'log_older_1']).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 

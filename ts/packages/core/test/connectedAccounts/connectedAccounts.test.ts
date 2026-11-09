@@ -3,7 +3,7 @@ import { mockClient } from '../utils/mocks/client.mock';
 import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import { Experimental } from '../../src/models/Experimental';
 import ComposioClient from '@composio/client';
-import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
+import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts';
 import {
   ComposioAclOnlyForSharedError,
   ComposioConnectedAccountNotFoundError,

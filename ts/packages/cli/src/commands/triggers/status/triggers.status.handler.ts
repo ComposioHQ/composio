@@ -94,36 +94,29 @@ export const runTriggersStatus = ({
         })
       )
       .pipe(
-        Effect.asSome,
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
           handleClientApiError(ui, {
             fallbackMessage: 'Failed to fetch trigger status.',
             hint: 'Retry with:\n> composio dev triggers status --show-disabled',
-            fallbackValue: Option.none(),
           })
         )
       );
 
-    yield* Option.match(page, {
-      onNone: () => Effect.void,
-      onSome: result => {
-        const { items, total } = filterByToolkits(result, toolkitFilter);
-        return Arr.match(items, {
-          onEmpty: () =>
-            ui.log.warn(
-              showDisabled
-                ? 'No triggers found for the provided filters.'
-                : 'No active triggers found for the provided filters.'
-            ),
-          onNonEmpty: shown =>
-            Effect.gen(function* () {
-              yield* ui.log.info(
-                `Listing ${shown.length} of ${total} triggers\n\n${formatTriggersStatusTable(shown)}`
-              );
-              yield* ui.output(formatTriggersStatusJson(shown));
-            }),
-        });
-      },
+    const { items, total } = filterByToolkits(page, toolkitFilter);
+    yield* Arr.match(items, {
+      onEmpty: () =>
+        ui.log.warn(
+          showDisabled
+            ? 'No triggers found for the provided filters.'
+            : 'No active triggers found for the provided filters.'
+        ),
+      onNonEmpty: shown =>
+        Effect.gen(function* () {
+          yield* ui.log.info(
+            `Listing ${shown.length} of ${total} triggers\n\n${formatTriggersStatusTable(shown)}`
+          );
+          yield* ui.output(formatTriggersStatusJson(shown));
+        }),
     });
   });

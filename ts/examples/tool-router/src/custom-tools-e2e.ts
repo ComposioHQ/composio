@@ -139,8 +139,8 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
   tools: [setUserRole, updateUserStatus],
 });
 
-const customTools = [getUserDetails, listUserKeys, formatGmailEmail];
-const customToolkits = [userManagement];
+const localTools = [getUserDetails, listUserKeys, formatGmailEmail];
+const localToolkits = [userManagement];
 
 // ────────────────────────────────────────────────────────────────
 // Run tests
@@ -160,8 +160,8 @@ async function main() {
       toolkits: ["weathermap", "gmail"],
       manageConnections: false,
       experimental: {
-        customTools,
-        customToolkits,
+        localTools,
+        localToolkits,
       },
     });
     ok(`Session created: ${session.sessionId}`);
@@ -173,7 +173,7 @@ async function main() {
 
   // ── Existing session reuse with local custom definitions ──
   try {
-    const reusedSession = await composio.use(session.sessionId, { customTools, customToolkits });
+    const reusedSession = await composio.use(session.sessionId, { localTools, localToolkits });
     const result = await reusedSession.execute("GET_USER_DETAILS", { user_id: "user-1" });
     if (result.data?.name !== "Alice Johnson") throw new Error(`Unexpected: ${JSON.stringify(result.data)}`);
     ok("Use: existing session binds custom tools for local execution");

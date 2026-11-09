@@ -1,6 +1,8 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 
@@ -61,7 +63,9 @@ describe('CLI: composio dev auth-configs info', () => {
             option: '<id>',
             message: expect.stringContaining('Missing required argument: <id>'),
           });
-          expect(yield* MockConsole.getLines()).toEqual([]);
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }
@@ -72,12 +76,13 @@ describe('CLI: composio dev auth-configs info', () => {
     it => {
       it.effect('shows not found error', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'auth-configs', 'info', 'ac_nonexistent']);
+          const exit = yield* Effect.exit(cli(['dev', 'auth-configs', 'info', 'ac_nonexistent']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
           expect(output).toContain('composio dev auth-configs list');
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }

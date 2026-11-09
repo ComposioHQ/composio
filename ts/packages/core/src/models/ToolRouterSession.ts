@@ -39,9 +39,9 @@ import {
   type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import {
-  assertNotInputRequired,
   transformSearchResponse,
   transformExecuteResponse,
+  transformProxyExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
@@ -67,8 +67,8 @@ import type {
   CustomToolsMap,
   CustomToolsMapEntry,
   SessionContext,
-  RegisteredCustomTool,
-  RegisteredCustomToolkit,
+  RegisteredLocalTool,
+  RegisteredLocalToolkit,
 } from '../types/customTool.types';
 import { ToolSchema, type Tool, type ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
@@ -78,8 +78,7 @@ import type {
   SessionLinkParams,
   SessionPatchParams,
   SessionPatchResponse,
-  SessionSearchParams,
-} from '@composio/client/resources/tool-router/session/session.mjs';
+} from '@composio/client/resources/tool-router/session';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import {
@@ -92,7 +91,6 @@ import {
   findCustomToolMapEntryByToolkitAndOriginalSlug,
 } from './CustomTool';
 import { transformProxyParams } from './proxyParamsTransform';
-import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
@@ -384,13 +382,13 @@ export class ToolRouterSession<
   }
 
   /**
-   * List all custom tools registered in this session.
+   * List all local tools registered in this session.
    * Returns tools with their final slugs, schemas, and resolved toolkit.
    *
    * @param options.toolkit - Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
-   * @returns Array of registered custom tools
+   * @returns Array of registered local tools
    */
-  customTools(options?: { toolkit?: string }): RegisteredCustomTool[] {
+  localTools(options?: { toolkit?: string }): RegisteredLocalTool[] {
     if (!this.customToolsMap) return [];
 
     const entries = Array.from(this.customToolsMap.byFinalSlug.values());
@@ -409,12 +407,19 @@ export class ToolRouterSession<
   }
 
   /**
-   * List all custom toolkits registered in this session.
+   * @deprecated Use `localTools()` instead.
+   */
+  customTools(options?: { toolkit?: string }): RegisteredLocalTool[] {
+    return this.localTools(options);
+  }
+
+  /**
+   * List all toolkits of local tools registered in this session.
    * Returns toolkits with their tools showing final slugs.
    *
-   * @returns Array of registered custom toolkits
+   * @returns Array of registered toolkits of local tools
    */
-  customToolkits(): RegisteredCustomToolkit[] {
+  localToolkits(): RegisteredLocalToolkit[] {
     const toolkits = this.customToolsMap?.toolkits;
     if (!toolkits?.length) return [];
 
@@ -442,6 +447,13 @@ export class ToolRouterSession<
         };
       }),
     }));
+  }
+
+  /**
+   * @deprecated Use `localToolkits()` instead.
+   */
+  customToolkits(): RegisteredLocalToolkit[] {
+    return this.localToolkits();
   }
 
   /**
@@ -484,7 +496,7 @@ export class ToolRouterSession<
       ...(opts.callbackUrl !== undefined && { callback_url: opts.callbackUrl }),
       ...(opts.alias !== undefined && { alias: opts.alias }),
       ...(experimentalWire !== undefined && {
-        experimental: experimentalWire as SessionLinkParams.Experimental,
+        experimental: experimentalWire as NonNullable<SessionLinkParams['experimental']>,
       }),
     };
 
@@ -667,13 +679,10 @@ export class ToolRouterSession<
     },
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionSearchResponse> {
-    const experimental = inlineCustomToolsExperimental<SessionSearchParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
     const searchParams = {
       queries: [{ use_case: params.query }],
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
-      ...(experimental ? { experimental } : {}),
+      ...(this.inlineCustomToolsPayload && { experimental: this.inlineCustomToolsPayload }),
     };
     const response = await withCancellation(
       () => this.client.toolRouter.session.search(this.sessionId, searchParams, requestOptions),
@@ -697,7 +706,7 @@ export class ToolRouterSession<
    * @param options.account - Account identifier for direct app tool execution. Accepted on every project: in multi-account sessions it picks the account; on single-account projects it must match one of the session's active connections for the toolkit. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
    * @param options.inputResponses - Experimental. The user's answers to an earlier `ComposioToolInputRequiredError`, keyed by the IDs in its `inputRequests`. Repeat the same call with them.
    * @param options.requestState - Experimental. The `requestState` of that error, sent back unchanged.
-   * @returns The tool execution result
+   * @returns The tool execution result. `resultType: 'blocked'` means a session hook blocked the call; `error` then holds the hook's message
    * @throws {ComposioToolInputRequiredError} If the tool needs input from the user (for example an approval) before it can run
    */
   async execute(
@@ -738,11 +747,8 @@ export class ToolRouterSession<
     if (options?.account) {
       executeParams.account = options.account;
     }
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
-    if (experimental) {
-      executeParams.experimental = experimental;
+    if (this.inlineCustomToolsPayload) {
+      executeParams.experimental = this.inlineCustomToolsPayload;
     }
 
     const response = await withCancellation(
@@ -790,11 +796,8 @@ export class ToolRouterSession<
       arguments: arguments_ ?? {},
       ...inputResponseParams(options),
     };
-    const experimental = inlineCustomToolsExperimental<SessionExecuteMetaParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
-    if (experimental) {
-      executeMetaParams.experimental = experimental;
+    if (this.inlineCustomToolsPayload) {
+      executeMetaParams.experimental = this.inlineCustomToolsPayload;
     }
 
     const response = await withCancellation(
@@ -815,7 +818,7 @@ export class ToolRouterSession<
    * The backend resolves the connected account from the toolkit within the session.
    *
    * @param params - Proxy request parameters (toolkit, endpoint, method, body, headers/query params)
-   * @returns The proxied API response with status, data, headers
+   * @returns The proxied API response with status, data and headers (`resultType: 'completed'`), or `resultType: 'blocked'` with the hook's message when a session hook blocked the request
    * @throws {ComposioToolInputRequiredError} If the call needs input from the user before it can run
    */
   async proxyExecute(
@@ -838,25 +841,10 @@ export class ToolRouterSession<
       requestOptions?.signal
     );
 
-    assertNotInputRequired(
+    return transformProxyExecuteResponse(
       response,
       `${validated.data.method} proxy call for toolkit ${validated.data.toolkit}`
     );
-    return {
-      status: response.status,
-      data: response.data,
-      headers: response.headers,
-      ...(response.binary_data
-        ? {
-            binaryData: {
-              contentType: response.binary_data.content_type,
-              size: response.binary_data.size,
-              url: response.binary_data.url,
-              expiresAt: response.binary_data.expires_at,
-            },
-          }
-        : {}),
-    };
   }
 
   /**
@@ -911,8 +899,9 @@ export class ToolRouterSession<
         () =>
           this.client.toolRouter.session.patch(
             this.sessionId,
-            // The generated client does not type `expected_config_version` or
-            // the nullable policy blocks; the body is serialized as-is.
+            // `expected_config_version` and the nullable policy blocks are not in
+            // the spec until ComposioHQ/platform#13157 lands; the body is
+            // serialized as-is.
             body as SessionPatchParams,
             { ...requestOptions, maxRetries: 0 }
           ),
@@ -1025,11 +1014,10 @@ export class ToolRouterSession<
     tool?: Tool
   ): Promise<ToolExecuteResponse> {
     const body = { sessionId: this.sessionId, arguments: input };
-    const experimental = inlineCustomToolsExperimental<SessionExecuteParams.Experimental>(
-      this.inlineCustomToolsPayload
-    );
-    if (experimental) {
-      return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool, { experimental });
+    if (this.inlineCustomToolsPayload) {
+      return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool, {
+        experimental: this.inlineCustomToolsPayload,
+      });
     }
     return ToolsModel.executeSessionTool(toolSlug, body, modifiers, tool);
   }

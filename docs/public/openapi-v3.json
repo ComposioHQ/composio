@@ -204,6 +204,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "credentials": {
@@ -296,6 +297,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "authScheme": {
@@ -438,6 +440,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "credentials": {
@@ -564,6 +567,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "scopes": {
@@ -650,6 +654,7 @@
         "properties": {
           "alias": {
             "type": "string",
+            "maxLength": 255,
             "description": "A human-readable alias for this connected account. Pass an empty string to clear the alias. Must be unique per entity and toolkit within the project."
           },
           "connection": {
@@ -1491,216 +1496,6 @@
           "is_deprecated",
           "deprecated"
         ]
-      },
-      "SessionHooks": {
-        "type": "array",
-        "items": {
-          "oneOf": [
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "before_execute"
-                  ]
-                },
-                "id": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9_-]{1,64}$",
-                  "description": "Unique within the session. Shows up in results and logs."
-                },
-                "name": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 120,
-                  "description": "A readable name. The agent sees it when this hook blocks a call."
-                },
-                "applies_to": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "enum": [
-                        "all"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "toolkits": {
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "minItems": 1,
-                          "description": "Toolkit slugs"
-                        }
-                      },
-                      "required": [
-                        "toolkits"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ],
-                  "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
-                },
-                "handler": {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "prompt"
-                      ]
-                    },
-                    "prompt": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 2000,
-                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                    },
-                    "on_match": {
-                      "type": "string",
-                      "enum": [
-                        "block"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "type",
-                    "prompt",
-                    "on_match"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "required": [
-                "type",
-                "id",
-                "applies_to",
-                "handler"
-              ],
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "after_execute"
-                  ]
-                },
-                "id": {
-                  "type": "string",
-                  "pattern": "^[a-z0-9_-]{1,64}$",
-                  "description": "Unique within the session. Shows up in results and logs."
-                },
-                "name": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 120,
-                  "description": "A readable name. The agent sees it when this hook blocks a call."
-                },
-                "applies_to": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "enum": [
-                        "all"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "toolkits": {
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "minItems": 1,
-                          "description": "Toolkit slugs"
-                        }
-                      },
-                      "required": [
-                        "toolkits"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ],
-                  "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
-                },
-                "handler": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "prompt"
-                          ]
-                        },
-                        "prompt": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 2000,
-                          "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                        },
-                        "on_match": {
-                          "type": "string",
-                          "enum": [
-                            "block"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "type",
-                        "prompt",
-                        "on_match"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "prompt_injection"
-                          ]
-                        },
-                        "on_match": {
-                          "type": "string",
-                          "enum": [
-                            "block"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "type",
-                        "on_match"
-                      ],
-                      "additionalProperties": false,
-                      "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "type",
-                "id",
-                "applies_to",
-                "handler"
-              ],
-              "additionalProperties": false
-            }
-          ]
-        },
-        "maxItems": 20,
-        "description": "Hooks that run on this session's tool calls."
       },
       "HookResult": {
         "oneOf": [
@@ -2765,6 +2560,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -3759,6 +3555,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found - Auth configuration does not exist",
             "content": {
@@ -3872,6 +3678,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Auth config not found - The specified configuration does not exist or was already deleted",
             "content": {
@@ -3974,6 +3790,16 @@
           },
           "401": {
             "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
             "content": {
               "application/json": {
                 "schema": {
@@ -4633,6 +4459,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -4820,6 +4647,7 @@
                       },
                       "alias": {
                         "type": "string",
+                        "maxLength": 255,
                         "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                       },
                       "callback_url": {
@@ -4848,7 +4676,7 @@
                               "PRIVATE",
                               "SHARED"
                             ],
-                            "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly.",
+                            "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly. Every use of a SHARED connection must pass the acting user_id, which is checked against its ACL.",
                             "x-experimental": true
                           },
                           "acl_config_for_shared": {
@@ -5996,6 +5824,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -6309,6 +6138,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -6574,7 +6404,7 @@
                           "PRIVATE",
                           "SHARED"
                         ],
-                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly.",
+                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly. Every use of a SHARED connection must pass the acting user_id, which is checked against its ACL.",
                         "x-experimental": true
                       },
                       "acl_config_for_shared": {
@@ -7241,7 +7071,8 @@
                         "type": "string"
                       },
                       "display_name": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 75
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -7272,6 +7103,10 @@
                         "type": "object",
                         "additionalProperties": {},
                         "description": "Link-auth theme for the hosted connect page. Opaque to the API; the dashboard owns the token vocabulary and all value validation."
+                      },
+                      "enable_instant": {
+                        "type": "boolean",
+                        "description": "Enable Instant Toolkits for this project."
                       },
                       "zdr_enabled": {
                         "type": "boolean",
@@ -8201,6 +8036,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Subscription already exists",
             "content": {
@@ -8633,6 +8478,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Subscription not found",
             "content": {
@@ -8702,6 +8557,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {
@@ -8788,6 +8653,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {
@@ -9736,6 +9611,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -9897,6 +9786,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -10097,7 +9988,7 @@
     "/api/v3/custom/toolkits/upsert": {
       "post": {
         "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. mcp_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
         "tags": [
           "Toolkits"
         ],
@@ -10135,7 +10026,7 @@
                         "maxLength": 200,
                         "description": "Display name of the toolkit"
                       },
-                      "app_url": {
+                      "mcp_url": {
                         "type": "string",
                         "format": "uri",
                         "description": "MCP server URL. Must use https."
@@ -10288,7 +10179,7 @@
                     },
                     "required": [
                       "name",
-                      "app_url",
+                      "mcp_url",
                       "auth_schemes"
                     ],
                     "additionalProperties": false
@@ -10365,7 +10256,7 @@
             }
           },
           "409": {
-            "description": "Conflict - app_url or auth_schemes differ from the registered toolkit; delete and re-register to change them",
+            "description": "Conflict - mcp_url or auth_schemes differ from the registered toolkit; delete and re-register to change them",
             "content": {
               "application/json": {
                 "schema": {
@@ -10719,8 +10610,25 @@
                         "properties": {
                           "mode": {
                             "type": "string",
-                            "description": "The type of authentication mode (e.g., oauth2, basic_auth, api_key)",
-                            "example": "oauth2"
+                            "enum": [
+                              "OAUTH2",
+                              "OAUTH1",
+                              "API_KEY",
+                              "BASIC",
+                              "BILLCOM_AUTH",
+                              "BEARER_TOKEN",
+                              "GOOGLE_SERVICE_ACCOUNT",
+                              "NO_AUTH",
+                              "BASIC_WITH_JWT",
+                              "CALCOM_AUTH",
+                              "SERVICE_ACCOUNT",
+                              "SAML",
+                              "DCR_OAUTH",
+                              "CIMD_OAUTH",
+                              "S2S_OAUTH2"
+                            ],
+                            "description": "The type of authentication mode (e.g., OAUTH2, BASIC, API_KEY)",
+                            "example": "OAUTH2"
                           },
                           "required_scopes": {
                             "type": "array",
@@ -11468,7 +11376,7 @@
     "/api/v3/tools/enum": {
       "get": {
         "summary": "Get tool enum list",
-        "description": "Retrieve a list of all available tool enumeration values (tool slugs) from latest version of each toolkit. This endpoint returns a comma-separated string of tool slugs that can be used in other API calls.",
+        "description": "Lists the slug of every tool in the latest version of each Composio-managed toolkit, such as GMAIL_SEND_EMAIL. Tools of custom toolkits are not included.",
         "tags": [
           "Tools"
         ],
@@ -11491,7 +11399,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "description": "JSON string containing all tool enum values from latest version of each toolkit"
+                  "description": "Tool slugs"
                 }
               }
             }
@@ -11786,6 +11694,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -11947,6 +11869,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -12833,7 +12757,7 @@
                   },
                   "user_id": {
                     "type": "string",
-                    "description": "The user id (entity id) that owns connected_account_id. When the project has 2FA enabled, it is validated against the owner of that connection. Also selects which custom toolkits the request may use.",
+                    "description": "The user id (entity id) acting on connected_account_id. Required for a SHARED connection, where it is checked against the connection's ACL. When the project has 2FA enabled, it is also validated against the owner of a PRIVATE connection. Also selects which custom toolkits the request may use.",
                     "example": "user_4567"
                   },
                   "endpoint": {
@@ -13363,7 +13287,7 @@
     "/api/v3/trigger_instances/{slug}/upsert": {
       "post": {
         "summary": "Create or update a trigger",
-        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Provide either a connected_account_id to pin a specific user connection, or a user_id to auto-resolve the first active connection for that user and the trigger's toolkit.",
+        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Provide either a connected_account_id to pin a specific user connection, or a user_id to auto-resolve the first active connection for that user and the trigger's toolkit. For a trigger that supports both webhooks and polling, Composio chooses the best way for the instance to receive events unless type sets one. When the instance polls because a webhook could not be set up, fallback_reason says why. An existing instance keeps its type, so an upsert asking for the other type returns 409.",
         "tags": [
           "Triggers"
         ],
@@ -13413,7 +13337,7 @@
                   },
                   "user_id": {
                     "type": "string",
-                    "description": "The user id (entity id) that owns the connection. When connected_account_id is omitted, the first active connection for this user and the trigger's toolkit is auto-resolved (same as tool execution). When connected_account_id is also provided and the project has 2FA enabled, user_id is validated against the owner of that connection."
+                    "description": "The user id (entity id) that owns the connection. When connected_account_id is omitted, the first active connection for this user and the trigger's toolkit is auto-resolved (same as tool execution). When connected_account_id is also provided, user_id is checked against that connection: always against a SHARED connection's ACL (user_id is then required), and against a PRIVATE connection's owner when the project has 2FA enabled."
                   },
                   "egress_url": {
                     "type": "string",
@@ -13426,6 +13350,20 @@
                     "type": "object",
                     "additionalProperties": {},
                     "description": "Trigger configuration"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "poll",
+                      "webhook"
+                    ],
+                    "description": "Whether this instance receives events by webhook or by polling, for a trigger that supports both. Omit it to let Composio choose the best one."
+                  },
+                  "polling_interval": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10080,
+                    "description": "Minutes between polls, for an instance that polls for its events. It is checked whenever the instance could poll, even when Composio tries a webhook first, so an interval outside the toolkit's allowed range fails the request."
                   },
                   "version": {
                     "type": "string",
@@ -13468,10 +13406,34 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "webhook",
+                        "poll"
+                      ],
+                      "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                      "example": "webhook"
+                    },
+                    "fallback_reason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                      "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                    },
+                    "polling_interval": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Minutes between scheduled polls for a poll instance.",
+                      "example": 15
                     }
                   },
                   "required": [
-                    "trigger_id"
+                    "trigger_id",
+                    "type",
+                    "fallback_reason",
+                    "polling_interval"
                   ]
                 }
               }
@@ -13487,10 +13449,34 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "webhook",
+                        "poll"
+                      ],
+                      "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                      "example": "webhook"
+                    },
+                    "fallback_reason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                      "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                    },
+                    "polling_interval": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Minutes between scheduled polls for a poll instance.",
+                      "example": 15
                     }
                   },
                   "required": [
-                    "trigger_id"
+                    "trigger_id",
+                    "type",
+                    "fallback_reason",
+                    "polling_interval"
                   ]
                 }
               }
@@ -13896,6 +13882,27 @@
                             "additionalProperties": {},
                             "description": "Configuration for the trigger"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "webhook",
+                              "poll"
+                            ],
+                            "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                            "example": "webhook"
+                          },
+                          "fallback_reason": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                            "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                          },
+                          "polling_interval": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "Minutes between scheduled polls for a poll instance.",
+                            "example": 15
+                          },
                           "egress_url": {
                             "type": "string",
                             "nullable": true,
@@ -13966,6 +13973,9 @@
                           "user_id",
                           "version",
                           "trigger_config",
+                          "type",
+                          "fallback_reason",
+                          "polling_interval",
                           "egress_url",
                           "state",
                           "updated_at",
@@ -14106,6 +14116,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Trigger instance not found",
             "content": {
@@ -14151,7 +14171,7 @@
       },
       "patch": {
         "summary": "Update a trigger",
-        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. When a webhook trigger is disabled, Composio also attempts to remove the webhook it received events through at the provider, once no other active trigger uses it. This runs in the background after the response, with retries if the provider fails. Re-enabling a webhook trigger sets it up with the provider again. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger.",
+        "description": "Updates a trigger instance. Pass status to enable or disable it: disabling pauses event listening without deleting the trigger configuration, and re-enabling restores it. When a webhook trigger is disabled, Composio also attempts to remove the webhook it received events through at the provider, once no other active trigger uses it. This runs in the background after the response, with retries if the provider fails. Re-enabling a webhook trigger sets it up with the provider again. Pass egress_url to override where this instance delivers its events (null removes the override); the project webhook subscription is still required and still controls signing, the payload version and which events are enabled. Send either field or both. On a project with 2FA enabled, user_id is required to set egress_url and, whenever sent, must own the connected account behind the trigger. On a shared connected account, user_id is required to enable the trigger or set egress_url, and is checked against the connection's ACL.",
         "tags": [
           "Triggers"
         ],
@@ -14195,7 +14215,7 @@
                   "user_id": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "The user id that owns the connected account behind this trigger. Optional: when sent on a project with 2FA enabled it must be the owner of a private connection or allowed on a shared one, whatever is being updated. Required to set egress_url when 2FA is enabled. Ignored when 2FA is disabled."
+                    "description": "The user id acting on the connected account behind this trigger. On a shared connection it must be allowed by the connection ACL, and it is required to enable the trigger or set egress_url. On a private connection it must be the owner when the project has 2FA enabled, and is ignored when 2FA is disabled. Required to set egress_url when 2FA is enabled."
                   },
                   "egress_url": {
                     "type": "string",
@@ -14490,8 +14510,25 @@
                         "webhook",
                         "poll"
                       ],
-                      "description": "The trigger mechanism - either webhook (event-based) or poll (scheduled check)",
-                      "example": "webhook"
+                      "description": "Deprecated: use types. poll for any trigger that polls, even one a webhook wakes; otherwise webhook.",
+                      "example": "webhook",
+                      "deprecated": true
+                    },
+                    "types": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "webhook",
+                          "poll"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "The trigger mechanisms this trigger supports, in order of preference: webhook (event-based) before poll (scheduled check).",
+                      "example": [
+                        "webhook",
+                        "poll"
+                      ]
                     },
                     "toolkit": {
                       "type": "object",
@@ -14576,6 +14613,7 @@
                     "description",
                     "instructions",
                     "type",
+                    "types",
                     "toolkit",
                     "config",
                     "payload",
@@ -14759,8 +14797,25 @@
                               "webhook",
                               "poll"
                             ],
-                            "description": "The trigger mechanism - either webhook (event-based) or poll (scheduled check)",
-                            "example": "webhook"
+                            "description": "Deprecated: use types. poll for any trigger that polls, even one a webhook wakes; otherwise webhook.",
+                            "example": "webhook",
+                            "deprecated": true
+                          },
+                          "types": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "webhook",
+                                "poll"
+                              ]
+                            },
+                            "minItems": 1,
+                            "description": "The trigger mechanisms this trigger supports, in order of preference: webhook (event-based) before poll (scheduled check).",
+                            "example": [
+                              "webhook",
+                              "poll"
+                            ]
                           },
                           "toolkit": {
                             "type": "object",
@@ -14845,6 +14900,7 @@
                           "description",
                           "instructions",
                           "type",
+                          "types",
                           "toolkit",
                           "config",
                           "payload",
@@ -18879,6 +18935,11 @@
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session. Unlike fast_mode, tool search quality is unaffected. Defaults to false.",
+                        "x-experimental": true
+                      },
                       "submit_feedback": {
                         "type": "object",
                         "properties": {
@@ -18931,14 +18992,214 @@
                     "description": "Preload configuration for Composio tools. Controls which tools appear in `session.tools` and the MCP server tool list so the agent can call them directly without going through search first. Custom tools use `preload` on the custom tool/toolkit definition instead. Not supported when multi-account is enabled. Each preloaded tool adds to the agent context window, so keep the list at or under ~20 tools."
                   },
                   "hooks": {
-                    "allOf": [
-                      {
-                        "$ref": "#/components/schemas/SessionHooks"
-                      },
-                      {
-                        "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
-                      }
-                    ]
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "before_execute"
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9_-]{1,64}$",
+                              "description": "Unique within the session. Shows up in results and logs."
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "description": "A readable name. The agent sees it when this hook blocks a call."
+                            },
+                            "applies_to": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "all"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "toolkits": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "minItems": 1,
+                                      "description": "Toolkit slugs"
+                                    }
+                                  },
+                                  "required": [
+                                    "toolkits"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                            },
+                            "handler": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "condition_check"
+                                  ]
+                                },
+                                "condition": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 2000,
+                                  "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                },
+                                "action": {
+                                  "type": "string",
+                                  "enum": [
+                                    "block"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "condition",
+                                "action"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "applies_to",
+                            "handler"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "after_execute"
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9_-]{1,64}$",
+                              "description": "Unique within the session. Shows up in results and logs."
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "description": "A readable name. The agent sees it when this hook blocks a call."
+                            },
+                            "applies_to": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "all"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "toolkits": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "minItems": 1,
+                                      "description": "Toolkit slugs"
+                                    }
+                                  },
+                                  "required": [
+                                    "toolkits"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                            },
+                            "handler": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "condition_check"
+                                      ]
+                                    },
+                                    "condition": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2000,
+                                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "condition",
+                                    "action"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "prompt_injection_check"
+                                      ]
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "action"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "applies_to",
+                            "handler"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "maxItems": 20,
+                    "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
                   }
                 },
                 "required": [
@@ -19671,7 +19932,214 @@
                           "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "hooks": {
-                          "$ref": "#/components/schemas/SessionHooks"
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "before_execute"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9_-]{1,64}$",
+                                    "description": "Unique within the session. Shows up in results and logs."
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "A readable name. The agent sees it when this hook blocks a call."
+                                  },
+                                  "applies_to": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "all"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "toolkits": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "minItems": 1,
+                                            "description": "Toolkit slugs"
+                                          }
+                                        },
+                                        "required": [
+                                          "toolkits"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ],
+                                    "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                                  },
+                                  "handler": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "condition_check"
+                                        ]
+                                      },
+                                      "condition": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000,
+                                        "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                      },
+                                      "action": {
+                                        "type": "string",
+                                        "enum": [
+                                          "block"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "condition",
+                                      "action"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "applies_to",
+                                  "handler"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "after_execute"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9_-]{1,64}$",
+                                    "description": "Unique within the session. Shows up in results and logs."
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "A readable name. The agent sees it when this hook blocks a call."
+                                  },
+                                  "applies_to": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "all"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "toolkits": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "minItems": 1,
+                                            "description": "Toolkit slugs"
+                                          }
+                                        },
+                                        "required": [
+                                          "toolkits"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ],
+                                    "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                                  },
+                                  "handler": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "condition_check"
+                                            ]
+                                          },
+                                          "condition": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000,
+                                            "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "condition",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "prompt_injection_check"
+                                            ]
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "applies_to",
+                                  "handler"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "maxItems": 20,
+                          "description": "Hooks that run on this session's tool calls."
                         },
                         "preload": {
                           "type": "object",
@@ -19981,9 +20449,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "workbench_access_key": []
           }
         ],
         "parameters": [
@@ -21012,7 +21477,214 @@
                           "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "hooks": {
-                          "$ref": "#/components/schemas/SessionHooks"
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "before_execute"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9_-]{1,64}$",
+                                    "description": "Unique within the session. Shows up in results and logs."
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "A readable name. The agent sees it when this hook blocks a call."
+                                  },
+                                  "applies_to": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "all"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "toolkits": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "minItems": 1,
+                                            "description": "Toolkit slugs"
+                                          }
+                                        },
+                                        "required": [
+                                          "toolkits"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ],
+                                    "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                                  },
+                                  "handler": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "condition_check"
+                                        ]
+                                      },
+                                      "condition": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000,
+                                        "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                      },
+                                      "action": {
+                                        "type": "string",
+                                        "enum": [
+                                          "block"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "condition",
+                                      "action"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "applies_to",
+                                  "handler"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "after_execute"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9_-]{1,64}$",
+                                    "description": "Unique within the session. Shows up in results and logs."
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "A readable name. The agent sees it when this hook blocks a call."
+                                  },
+                                  "applies_to": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "all"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "toolkits": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "minItems": 1,
+                                            "description": "Toolkit slugs"
+                                          }
+                                        },
+                                        "required": [
+                                          "toolkits"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ],
+                                    "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                                  },
+                                  "handler": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "condition_check"
+                                            ]
+                                          },
+                                          "condition": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000,
+                                            "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "condition",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "prompt_injection_check"
+                                            ]
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "applies_to",
+                                  "handler"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "maxItems": 20,
+                          "description": "Hooks that run on this session's tool calls."
                         },
                         "preload": {
                           "type": "object",
@@ -21944,16 +22616,215 @@
                     "description": "Preload configuration for Composio tools. Controls which tools appear in `session.tools` and the MCP server tool list so the agent can call them directly without going through search first. Custom tools use `preload` on the custom tool/toolkit definition instead. Not supported when multi-account is enabled. Each preloaded tool adds to the agent context window, so keep the list at or under ~20 tools."
                   },
                   "hooks": {
-                    "allOf": [
-                      {
-                        "$ref": "#/components/schemas/SessionHooks"
-                      },
-                      {
-                        "nullable": true,
-                        "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it.",
-                        "type": "object"
-                      }
-                    ]
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "before_execute"
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9_-]{1,64}$",
+                              "description": "Unique within the session. Shows up in results and logs."
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "description": "A readable name. The agent sees it when this hook blocks a call."
+                            },
+                            "applies_to": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "all"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "toolkits": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "minItems": 1,
+                                      "description": "Toolkit slugs"
+                                    }
+                                  },
+                                  "required": [
+                                    "toolkits"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                            },
+                            "handler": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "condition_check"
+                                  ]
+                                },
+                                "condition": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 2000,
+                                  "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                },
+                                "action": {
+                                  "type": "string",
+                                  "enum": [
+                                    "block"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "condition",
+                                "action"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "applies_to",
+                            "handler"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "after_execute"
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9_-]{1,64}$",
+                              "description": "Unique within the session. Shows up in results and logs."
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "description": "A readable name. The agent sees it when this hook blocks a call."
+                            },
+                            "applies_to": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "all"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "toolkits": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "minItems": 1,
+                                      "description": "Toolkit slugs"
+                                    }
+                                  },
+                                  "required": [
+                                    "toolkits"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                            },
+                            "handler": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "condition_check"
+                                      ]
+                                    },
+                                    "condition": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2000,
+                                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "condition",
+                                    "action"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "prompt_injection_check"
+                                      ]
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "action"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "applies_to",
+                            "handler"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "maxItems": 20,
+                    "description": "Hooks that run on this session's tool calls. A hook can block a call before it runs, or block its result before the agent sees it."
                   },
                   "experimental": {
                     "type": "object",
@@ -21999,6 +22870,11 @@
                       "fast_mode": {
                         "type": "boolean",
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
+                        "x-experimental": true
+                      },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session, false to return them again. Unlike fast_mode, tool search quality is unaffected.",
                         "x-experimental": true
                       },
                       "submit_feedback": {
@@ -22571,7 +23447,214 @@
                           "description": "Proxy execute configuration for this session. Omitted when not set."
                         },
                         "hooks": {
-                          "$ref": "#/components/schemas/SessionHooks"
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "before_execute"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9_-]{1,64}$",
+                                    "description": "Unique within the session. Shows up in results and logs."
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "A readable name. The agent sees it when this hook blocks a call."
+                                  },
+                                  "applies_to": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "all"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "toolkits": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "minItems": 1,
+                                            "description": "Toolkit slugs"
+                                          }
+                                        },
+                                        "required": [
+                                          "toolkits"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ],
+                                    "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                                  },
+                                  "handler": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "condition_check"
+                                        ]
+                                      },
+                                      "condition": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000,
+                                        "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                      },
+                                      "action": {
+                                        "type": "string",
+                                        "enum": [
+                                          "block"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "condition",
+                                      "action"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "applies_to",
+                                  "handler"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "after_execute"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9_-]{1,64}$",
+                                    "description": "Unique within the session. Shows up in results and logs."
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "A readable name. The agent sees it when this hook blocks a call."
+                                  },
+                                  "applies_to": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "all"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "toolkits": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "minItems": 1,
+                                            "description": "Toolkit slugs"
+                                          }
+                                        },
+                                        "required": [
+                                          "toolkits"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ],
+                                    "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
+                                  },
+                                  "handler": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "condition_check"
+                                            ]
+                                          },
+                                          "condition": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000,
+                                            "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "condition",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "prompt_injection_check"
+                                            ]
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "id",
+                                  "applies_to",
+                                  "handler"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "maxItems": 20,
+                          "description": "Hooks that run on this session's tool calls."
                         },
                         "preload": {
                           "type": "object",
@@ -22911,6 +23994,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -22928,7 +24012,7 @@
                           "PRIVATE",
                           "SHARED"
                         ],
-                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly.",
+                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly. Every use of a SHARED connection must pass the acting user_id, which is checked against its ACL.",
                         "x-experimental": true
                       },
                       "acl_config_for_shared": {
@@ -25227,6 +26311,22 @@
         "security": [
           {
             "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "[EXPERIMENTAL] Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
+              "example": "user_123",
+              "x-experimental": true
+            },
+            "required": false,
+            "description": "[EXPERIMENTAL] Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
+            "name": "user_id",
+            "in": "query"
           }
         ],
         "responses": {

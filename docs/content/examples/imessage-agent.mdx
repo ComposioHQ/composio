@@ -1,8 +1,8 @@
 ---
-title: iMessage custom toolkit with eve
-description: Walk through an agent that texts on your behalf from your own Mac. A Composio custom toolkit wraps local iMessage in-process, and the eve provider puts it on the same session as the whole Composio catalog.
+title: iMessage local toolkit with eve
+description: Walk through an agent that texts on your behalf from your own Mac. A Composio local toolkit wraps iMessage in-process, and the eve provider puts it on the same session as the whole Composio catalog.
 keywords:
-  [custom toolkit, imessage, local tools, eve, provider, session, custom tools, macOS, applescript]
+  [local toolkit, imessage, local tools, custom toolkit, eve, provider, session, custom tools, macOS, applescript]
 full: true
 gallery:
   categories: [General agents, Background agents]
@@ -10,6 +10,8 @@ gallery:
   featured: true
   order: 3
 ---
+
+{/* code-example: single-language-page reason="iMessage agent is a TypeScript-only eve example project" */}
 
 Most Composio toolkits call a remote API. Some capabilities only exist on one machine, and iMessage is the classic case: there's no iMessage cloud API, so the agent has to run on your Mac and drive Messages.app directly.
 
@@ -23,7 +25,7 @@ you  ›  what did Lena and I last text about?
 
 The pattern is the takeaway, not iMessage specifically. It comes together from a handful of Composio pieces:
 
-1. **A custom toolkit** wraps local iMessage (send, contacts, history, memory) as Composio tools.
+1. **A local toolkit** wraps local iMessage (send, contacts, history, memory) as Composio tools.
 2. **In-process execution** runs each tool right on your Mac through `session.execute`, with no remote API.
 3. **One session** puts those local tools on the same surface as the 1000+ app catalog.
 4. **The eve provider** turns `session.tools()` into [eve](https://github.com/vercel/eve)-native tools, so `eve dev` can call them.
@@ -31,7 +33,7 @@ The pattern is the takeaway, not iMessage specifically. It comes together from a
 
 <ImessageFlow />
 
-Below you build the integration core: the custom toolkit first, then the wiring that puts it on a session, then triggers, then a browse of the relevant source. You bring a Composio API key and a Mac. Composio brings the catalog.
+Below you build the integration core: the local toolkit first, then the wiring that puts it on a session, then triggers, then a browse of the relevant source. You bring a Composio API key and a Mac. Composio brings the catalog.
 
 ## Setup
 
@@ -59,9 +61,9 @@ COMPOSIO_API_KEY=xxxxxxxxx
 </Step>
 </Steps>
 
-## The custom toolkit
+## The local toolkit
 
-A custom toolkit is a named group of custom tools. Each tool declares an input schema and an `execute` that runs locally. Here is `SEND`, which shells out to AppleScript to drive Messages.app:
+A local toolkit is a named group of local tools. Each tool declares an input schema and an `execute` that runs locally. Here is `SEND`, which shells out to AppleScript to drive Messages.app:
 
 <FileBuildup name="send" />
 
@@ -85,7 +87,7 @@ export function createImessageToolkit() {
 }
 ```
 
-The toolkit depends only on `@composio/core`, so it drops into any Composio agent. Custom tools execute in-process through `session.execute`, which is why they aren't on the MCP URL yet.
+The toolkit depends only on `@composio/core`, so it drops into any Composio agent. Local tools execute in-process through `session.execute`, which is why they aren't on the MCP URL yet.
 
 ## Wire it up
 
@@ -105,7 +107,7 @@ The provider is what makes `session.tools()` return eve-native tools instead of 
 
 ### Register the local toolkit
 
-Pass the custom toolkit through `experimental.customToolkits`, and the local iMessage tools join the catalog on the same session.
+Pass the local toolkit through `experimental.customToolkits`, and the local iMessage tools join the catalog on the same session.
 
 <FileBuildup name="wiring" step={3} />
 
@@ -238,7 +240,7 @@ Use the exact slug from the Composio triggers catalog for each. Signature verifi
 
 ## Browse the project
 
-The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental/eve`, and the rest is local macOS glue.
+The key files, in one place. The local toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental/eve`, and the rest is local macOS glue.
 
 <RepoBrowser
   source="imessage"
@@ -259,8 +261,8 @@ The browser above is an implementation slice, not a standalone fixture: it omits
     description="EveProvider, the defineComposioTools resolver, and the (ctx, next) hooks."
   />
   <Card
-    title="Custom tools and toolkits"
-    href="/docs/extending-sessions/custom-tools-and-toolkits"
+    title="Local tools and toolkits"
+    href="/docs/extending-sessions/local-tools-and-toolkits"
     description="Build and register your own in-process Composio tools."
   />
 </Cards>

@@ -1,7 +1,8 @@
 import {
   ConnectedAccountListResponse as RawConnectedAccountListResponse,
   ConnectedAccountRetrieveResponse as RawConnectedAccountRetrieveResponse,
-  type ConnectedAccounts as ClientConnectedAccounts,
+  type ConnectedAccountCompleteAuthResponse as RawConnectedAccountCompleteAuthResponse,
+  type ConnectedAccountRevokeResponse as RawConnectedAccountRevokeResponse,
 } from '@composio/client/resources/connected-accounts';
 import {
   ConnectedAccountListResponse,
@@ -13,12 +14,6 @@ import {
   ConnectedAccountCompleteAuthResponse,
   ConnectedAccountCompleteAuthResponseSchema,
 } from '../../types/connectedAccounts.types';
-
-// The revoke and complete-auth response types are only reachable through the
-// resource class namespace on the published subpath.
-type RawConnectedAccountRevokeResponse = ClientConnectedAccounts.ConnectedAccountRevokeResponse;
-type RawConnectedAccountCompleteAuthResponse =
-  ClientConnectedAccounts.ConnectedAccountCompleteAuthResponse;
 import { ConnectionDataSchema } from '../../types/connectedAccountAuthStates.types';
 import logger from '../logger';
 import { transform } from '../transform';

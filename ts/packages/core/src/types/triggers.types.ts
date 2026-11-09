@@ -30,6 +30,9 @@ export const TriggerInstanceListActiveParamsSchema = z.object({
 
 export type TriggerInstanceListActiveParams = z.infer<typeof TriggerInstanceListActiveParamsSchema>;
 
+export const TriggerInstanceTypeSchema = z.enum(['webhook', 'poll']);
+export type TriggerInstanceType = z.infer<typeof TriggerInstanceTypeSchema>;
+
 export const TriggerInstanceListActiveResponseItemSchema = z.object({
   id: z.string(),
   connectedAccountId: z.string(),
@@ -40,6 +43,9 @@ export const TriggerInstanceListActiveResponseItemSchema = z.object({
   updatedAt: z.string(),
   triggerData: z.string().optional(),
   uuid: z.string().optional(),
+  type: TriggerInstanceTypeSchema,
+  fallbackReason: z.string().nullable(),
+  pollingInterval: z.number().nullable(),
 });
 
 export const TriggerInstanceListActiveResponseSchema = z.object({
@@ -58,12 +64,17 @@ export type TriggerInstanceListActiveResponseItem = z.infer<
 export const TriggerInstanceUpsertParamsSchema = z.object({
   connectedAccountId: z.string().optional(),
   triggerConfig: z.record(z.unknown()).optional(),
+  type: TriggerInstanceTypeSchema.optional(),
+  pollingInterval: z.number().int().positive().optional(),
 });
 
 export type TriggerInstanceUpsertParams = z.infer<typeof TriggerInstanceUpsertParamsSchema>;
 
 export const TriggerInstanceUpsertResponseSchema = z.object({
   triggerId: z.string(),
+  type: TriggerInstanceTypeSchema,
+  fallbackReason: z.string().nullable(),
+  pollingInterval: z.number().nullable(),
 });
 
 export type TriggerInstanceUpsertResponse = z.infer<typeof TriggerInstanceUpsertResponseSchema>;
@@ -162,6 +173,9 @@ export const TriggerTypeSchema = z.object({
   payload: z.record(z.unknown()),
   config: z.record(z.unknown()),
   version: z.string().optional(),
+  type: TriggerInstanceTypeSchema,
+  types: z.array(TriggerInstanceTypeSchema),
+  requiresWebhookEndpointSetup: z.boolean().optional(),
 });
 
 export type TriggerType = z.infer<typeof TriggerTypeSchema>;

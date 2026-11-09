@@ -13,6 +13,8 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 
 const createMockClient = () => ({
   custom: {
+    createToolkit: vi.fn(),
+    updateToolkits: vi.fn(),
     upsert: vi.fn(),
     sync: vi.fn(),
     deleteToolkit: vi.fn(),
@@ -34,7 +36,179 @@ describe('Experimental.customToolkits', () => {
     expect(telemetry.instrument).toHaveBeenCalledWith(customToolkits, 'CustomToolkits');
   });
 
+  describe('create', () => {
+    it('maps the toolkit to the wire and transforms the connect link', async () => {
+      mockClient.custom.createToolkit.mockResolvedValue({
+        slug: 'CUSTOM_MY_TOOLKIT_K7F2Q',
+        connect_link: {
+          redirect_url: 'https://connect.composio.dev/link/lk_1',
+          expires_at: '2026-11-03T12:00:00Z',
+          connected_account_id: 'ca_abc123',
+        },
+      });
+      const signal = new AbortController().signal;
+
+      const result = await customToolkits.create(
+        {
+          name: 'My Toolkit',
+          mcpUrl: 'https://mcp.example.com/mcp',
+          logoFile: { content: 'aGVsbG8=', mimeType: 'image/png' },
+          authSchemes: [
+            {
+              mode: 'API_KEY',
+              headers: {
+                Authorization: 'Bearer {{generic_api_key}}',
+                'X-Org-Id': '{{generic_id}}',
+              },
+              apiKeyField: { displayName: 'API key' },
+              additionalFields: {
+                genericId: {
+                  displayName: 'Organization ID',
+                  description: 'From your settings page',
+                },
+              },
+            },
+          ],
+          userId: 'user_123',
+          callbackUrl: 'https://app.example.com/connected',
+        },
+        { signal }
+      );
+
+      const [body, options] = mockClient.custom.createToolkit.mock.calls[0];
+      expect(JSON.parse(JSON.stringify(body))).toEqual({
+        name: 'My Toolkit',
+        mcp_url: 'https://mcp.example.com/mcp',
+        logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
+        auth_schemes: [
+          {
+            mode: 'API_KEY',
+            headers: {
+              Authorization: 'Bearer {{generic_api_key}}',
+              'X-Org-Id': '{{generic_id}}',
+            },
+            api_key_field: { display_name: 'API key' },
+            additional_fields: {
+              generic_id: {
+                display_name: 'Organization ID',
+                description: 'From your settings page',
+              },
+            },
+          },
+        ],
+        user_id: 'user_123',
+        callback_url: 'https://app.example.com/connected',
+      });
+      expect(options).toEqual({ signal });
+      expect(result).toEqual({
+        slug: 'CUSTOM_MY_TOOLKIT_K7F2Q',
+        connectLink: {
+          redirectUrl: 'https://connect.composio.dev/link/lk_1',
+          expiresAt: '2026-11-03T12:00:00Z',
+          connectedAccountId: 'ca_abc123',
+        },
+      });
+    });
+
+    it('returns a null connect link for a shared toolkit', async () => {
+      mockClient.custom.createToolkit.mockResolvedValue({
+        slug: 'CUSTOM_MY_TOOLKIT_K7F2Q',
+        connect_link: null,
+      });
+
+      const result = await customToolkits.create({
+        name: 'My Toolkit',
+        mcpUrl: 'https://mcp.example.com/mcp',
+        authSchemes: [{ mode: 'NO_AUTH' }],
+        userId: 'all',
+      });
+
+      expect(result).toEqual({ slug: 'CUSTOM_MY_TOOLKIT_K7F2Q', connectLink: null });
+    });
+
+    it.each([
+      ['no user ID', { userId: undefined }],
+      ['no auth schemes', { authSchemes: [] }],
+      ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
+      [
+        'an additional API key field without a display name',
+        {
+          authSchemes: [
+            {
+              mode: 'API_KEY',
+              headers: { 'X-Org-Id': '{{generic_id}}' },
+              additionalFields: { genericId: { description: 'From your settings page' } },
+            },
+          ],
+        },
+      ],
+    ])('rejects %s before calling the API', async (_label, override) => {
+      await expect(
+        customToolkits.create({
+          name: 'My Toolkit',
+          mcpUrl: 'https://mcp.example.com/mcp',
+          authSchemes: [{ mode: 'NO_AUTH' }],
+          userId: 'all',
+          ...(override as object),
+        })
+      ).rejects.toThrow(ValidationError);
+      expect(mockClient.custom.createToolkit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    it('sends only the given fields and transforms the response', async () => {
+      mockClient.custom.updateToolkits.mockResolvedValue({ success: true });
+
+      const result = await customToolkits.update('CUSTOM_MY_TOOLKIT_K7F2Q', {
+        apiKeyField: { displayName: 'Token', description: 'From your settings page' },
+        userId: 'user_123',
+      });
+
+      const [slug, body] = mockClient.custom.updateToolkits.mock.calls[0];
+      expect(slug).toBe('CUSTOM_MY_TOOLKIT_K7F2Q');
+      expect(JSON.parse(JSON.stringify(body))).toEqual({
+        api_key_field: { display_name: 'Token', description: 'From your settings page' },
+        user_id: 'user_123',
+      });
+      expect(result).toEqual({ success: true });
+    });
+
+    it('rejects an update with nothing to change before calling the API', async () => {
+      await expect(
+        customToolkits.update('CUSTOM_MY_TOOLKIT_K7F2Q', { userId: 'user_123' })
+      ).rejects.toThrow(ValidationError);
+      expect(mockClient.custom.updateToolkits).not.toHaveBeenCalled();
+    });
+  });
+
   describe('upsert', () => {
+    it('warns once per process that it is deprecated', async () => {
+      vi.resetModules();
+      const { CustomToolkits: FreshCustomToolkits } =
+        await import('../../src/models/CustomToolkits');
+      const { default: freshLogger } = await import('../../src/utils/logger');
+      const warn = vi.spyOn(freshLogger, 'warn').mockImplementation(() => {});
+      mockClient.custom.upsert.mockResolvedValue({ slug: 'CUSTOM_MY_TOOLKIT' });
+      const fresh = new FreshCustomToolkits(mockClient as unknown as ComposioClient);
+      const params = {
+        slug: 'MY_TOOLKIT',
+        toolkitConfig: {
+          name: 'My Toolkit',
+          mcpUrl: 'https://mcp.example.com/mcp',
+          authSchemes: [{ mode: 'NO_AUTH' as const }],
+        },
+      };
+
+      await fresh.upsert(params);
+      await fresh.upsert(params);
+
+      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
+        String(message).includes('upsert() is deprecated')
+      );
+      expect(deprecationWarnings).toHaveLength(1);
+    });
+
     it('maps every auth scheme and the logo to the wire', async () => {
       mockClient.custom.upsert.mockResolvedValue({ slug: 'CUSTOM_MY_TOOLKIT' });
 
@@ -42,7 +216,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           logoFile: { content: 'aGVsbG8=', mimeType: 'image/png' },
           authSchemes: [
             { mode: 'NO_AUTH' },
@@ -64,7 +238,7 @@ describe('Experimental.customToolkits', () => {
           slug: 'MY TOOLKIT',
           toolkit_config: {
             name: 'My Toolkit',
-            app_url: 'https://mcp.example.com/mcp',
+            mcp_url: 'https://mcp.example.com/mcp',
             logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
             auth_schemes: [
               { mode: 'NO_AUTH' },
@@ -92,7 +266,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
@@ -102,7 +276,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkit_config: {
           name: 'My Toolkit',
-          app_url: 'https://mcp.example.com/mcp',
+          mcp_url: 'https://mcp.example.com/mcp',
           auth_schemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
@@ -111,7 +285,7 @@ describe('Experimental.customToolkits', () => {
     it.each([
       ['a slug outside the API grammar', { slug: 'my-toolkit' }],
       ['no auth schemes', { authSchemes: [] }],
-      ['an app URL that is not a URL', { appUrl: 'not a url' }],
+      ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
     ])('rejects %s before calling the API', async (_label, override) => {
       const { slug = 'MY_TOOLKIT', ...config } = override as Record<string, unknown>;
 
@@ -120,7 +294,7 @@ describe('Experimental.customToolkits', () => {
           slug: slug as string,
           toolkitConfig: {
             name: 'My Toolkit',
-            appUrl: 'https://mcp.example.com/mcp',
+            mcpUrl: 'https://mcp.example.com/mcp',
             authSchemes: [{ mode: 'NO_AUTH' }],
             ...config,
           },

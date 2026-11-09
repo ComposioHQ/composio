@@ -1,75 +1,127 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { z } from 'zod';
 import { getMetaToolOverride } from './meta-tool-overrides';
 
-export interface MetaToolParameter {
-  type: string;
-  description: string;
-  required?: string[] | boolean;
-  default?: unknown;
-  enum?: string[];
-  examples?: unknown[];
-  items?: Record<string, unknown>;
-  properties?: Record<string, MetaToolParameter>;
-}
+const jsonTypeSchema = z.enum([
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'object',
+  'array',
+  'null',
+]);
 
-export interface MetaToolSchema {
-  type: string;
+// Normalize the schema fields used by the reference renderers. The generated
+// snapshot remains unchanged; `any` is a display label for an unrestricted type.
+const parameterSchema = z.object({
+  type: z
+    .union([jsonTypeSchema, z.array(jsonTypeSchema).min(1)])
+    .optional()
+    .transform(type => {
+      if (type === undefined) return 'any';
+      return Array.isArray(type) ? type.join(' | ') : type;
+    }),
+  description: z
+    .string()
+    .default('')
+    .transform(description =>
+      description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()
+    ),
+  required: z.array(z.string()).default([]),
+  default: z.unknown().optional(),
+  enum: z
+    .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .default([])
+    .transform(values => values.map(value => String(value))),
+  get properties(): z.ZodDefault<z.ZodRecord<z.ZodString, typeof parameterSchema>> {
+    return z.record(z.string(), parameterSchema).default({});
+  },
+  get items(): z.ZodOptional<typeof parameterSchema> {
+    return parameterSchema.optional();
+  },
+});
+
+type ParsedParameter = z.infer<typeof parameterSchema>;
+
+export type MetaToolParameter = Omit<
+  ParsedParameter,
+  'type' | 'default' | 'properties' | 'items'
+> & {
+  typeLabel: string;
+  defaultLabel: string | null;
   properties: Record<string, MetaToolParameter>;
-  required?: string[];
+  items?: MetaToolParameter;
+};
+
+/** Project schema nodes into one display model before they reach either renderer. */
+function toDisplayParameter({
+  type,
+  default: defaultValue,
+  properties,
+  items,
+  ...parameter
+}: ParsedParameter): MetaToolParameter {
+  const displayItems = items ? toDisplayParameter(items) : undefined;
+  const typeLabel =
+    type === 'array' ? `array<${displayItems ? displayItems.typeLabel : 'any'}>` : type;
+  const defaultLabel =
+    defaultValue === undefined || defaultValue === null || defaultValue === ''
+      ? null
+      : String(defaultValue);
+  return {
+    ...parameter,
+    typeLabel,
+    defaultLabel,
+    properties: Object.fromEntries(
+      Object.entries(properties).map(([name, value]) => [name, toDisplayParameter(value)])
+    ),
+    items: displayItems,
+  };
 }
 
-export interface MetaTool {
-  slug: string;
-  name: string;
-  displayName: string;
-  description: string;
-  tags: string[];
-  inputParameters: MetaToolSchema;
-  responseSchema: MetaToolSchema;
-  /** Hand-written Modal-voice copy, merged over the API data at read time. */
-  summary?: string;
-  whenToUse?: string;
-  usageNote?: string;
-}
+export type MetaToolSchema = MetaToolParameter;
 
+export const metaToolSchema = z
+  .object({
+    slug: z.string(),
+    name: z.string(),
+    displayName: z.string(),
+    description: z.string(),
+    tags: z.array(z.string()),
+    inputParameters: parameterSchema.transform(toDisplayParameter),
+    responseSchema: parameterSchema.transform(toDisplayParameter),
+  })
+  .transform(tool => {
+    const override = getMetaToolOverride(tool.slug);
+    return {
+      ...tool,
+      summary: override ? override.summary : tool.description,
+      whenToUse: override ? override.whenToUse : '',
+      usageNote: override?.usageNote ?? '',
+    };
+  });
+
+export type MetaTool = z.infer<typeof metaToolSchema>;
+
+const metaToolsSchema = z.array(metaToolSchema);
 const META_TOOLS_PATH = join(process.cwd(), 'public/data/meta-tools.json');
 
 let cached: { list: MetaTool[]; bySlug: Map<string, MetaTool> } | null = null;
 
-function buildCache(tools: MetaTool[]) {
-  cached = {
-    list: tools,
-    bySlug: new Map(tools.map(t => [t.slug, t])),
-  };
+async function getCache() {
+  if (cached) return cached;
+  const data = await readFile(META_TOOLS_PATH, 'utf-8');
+  const list = metaToolsSchema.parse(JSON.parse(data));
+  cached = { list, bySlug: new Map(list.map(tool => [tool.slug, tool])) };
   return cached;
 }
 
-/** Merge the hand-written override copy over the API-sourced tool. */
-function applyOverride(tool: MetaTool): MetaTool {
-  const override = getMetaToolOverride(tool.slug);
-  if (!override) return tool;
-  return { ...tool, ...override };
-}
-
-function parse(data: string): MetaTool[] {
-  const tools = JSON.parse(data) as MetaTool[];
-
-  if (!Array.isArray(tools)) {
-    throw new Error('meta-tools.json must contain an array');
-  }
-
-  return tools.map(applyOverride);
-}
-
 export async function getAllMetaTools(): Promise<MetaTool[]> {
-  if (cached) return cached.list;
-  const data = await readFile(META_TOOLS_PATH, 'utf-8');
-  return buildCache(parse(data)).list;
+  return (await getCache()).list;
 }
 
 export async function getMetaToolBySlug(slug: string): Promise<MetaTool | null> {
-  if (cached) return cached.bySlug.get(slug) ?? null;
-  const data = await readFile(META_TOOLS_PATH, 'utf-8');
-  return buildCache(parse(data)).bySlug.get(slug) ?? null;
+  return (await getCache()).bySlug.get(slug) ?? null;
 }

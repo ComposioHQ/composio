@@ -1,0 +1,168 @@
+import { Effect, Match } from 'effect';
+import { commandInputError } from 'src/commands/errors';
+import {
+  CONNECTED_ACCOUNTS_SHAPE_MESSAGE,
+  decodeAllConnectedAccountPages,
+} from 'src/effects/decode-connected-account-list';
+import { failedWith } from 'src/effects/request-error';
+import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { actingUser } from 'src/commands/surface';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { bold } from 'src/ui/colors';
+import { redact } from 'src/ui/redact';
+import { listAllConnectedAccounts } from 'src/services/list-all-connected-accounts';
+import { ConnectionsRemovalRequestError } from './connections.remove.errors';
+
+/** The flags of `composio connections remove`. */
+export type ConnectionsRemoveParams = {
+  readonly account: string;
+  readonly yes: boolean;
+};
+
+const invalidInput = commandInputError('connections remove');
+
+/** Without a terminal to confirm on, removing needs `--yes`. */
+const NEEDS_YES_MESSAGE =
+  '`composio connections remove` needs --yes when not running interactively.';
+
+const normalizeSelector = (value: string): string => value.trim().toLowerCase();
+
+const selectorMatches = (item: ConnectedAccountItem, selector: string): boolean => {
+  const normalized = normalizeSelector(selector);
+  return (
+    normalizeSelector(item.id) === normalized ||
+    normalizeSelector(item.alias ?? '') === normalized ||
+    normalizeSelector(item.word_id ?? '') === normalized ||
+    normalizeSelector(item.toolkit.slug) === normalized
+  );
+};
+
+const formatAccountSummary = (item: ConnectedAccountItem): string =>
+  [
+    `${bold('Toolkit:')} ${item.toolkit.slug}`,
+    `${bold('Alias:')} ${item.alias || '-'}`,
+    `${bold('Word Id:')} ${item.word_id || '-'}`,
+    `${bold('Connected Account:')} ${redact({ value: item.id, prefix: 'con_' })}`,
+    `${bold('Status:')} ${item.status}`,
+  ].join('\n');
+
+const formatAccountChoice = (item: ConnectedAccountItem): string => {
+  const labels = [item.alias, item.word_id].filter(
+    (value): value is string => typeof value === 'string' && value.trim().length > 0
+  );
+  const selectors = labels.length > 0 ? ` (${labels.join(' / ')})` : '';
+  return `${item.toolkit.slug}${selectors}: ${redact({ value: item.id, prefix: 'con_' })}`;
+};
+
+const resolveAccount = (params: {
+  readonly accounts: ReadonlyArray<ConnectedAccountItem>;
+  readonly selector: string;
+}): ConnectedAccountItem | { readonly error: string } => {
+  const matches = params.accounts.filter(item => selectorMatches(item, params.selector));
+
+  if (matches.length === 0) {
+    return {
+      error: `No connection matched "${params.selector}". Run \`composio connections list\` to inspect available connections.`,
+    };
+  }
+
+  const idMatches = matches.filter(
+    item => normalizeSelector(item.id) === normalizeSelector(params.selector)
+  );
+  const idMatch = idMatches[0];
+  if (idMatch && idMatches.length === 1) {
+    return idMatch;
+  }
+
+  const match = matches[0];
+  if (match && matches.length === 1) {
+    return match;
+  }
+
+  return {
+    error: [
+      `Multiple connections matched "${params.selector}". Use a unique alias, word_id, or connected account ID.`,
+      '',
+      ...matches.map(item => `- ${formatAccountChoice(item)}`),
+    ].join('\n'),
+  };
+};
+
+/**
+ * Removes one connection after a confirmation. Without a terminal to confirm on, it needs `--yes`
+ * and otherwise fails with a `CommandInputError` before any request; declining the prompt removes
+ * nothing and exits 0.
+ */
+export const runConnectionsRemove = ({ account, yes }: ConnectionsRemoveParams) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { canPrompt } = yield* ui.capabilities;
+    if (!yes && !canPrompt) {
+      return yield* invalidInput(NEEDS_YES_MESSAGE, '--yes');
+    }
+    const clientSingleton = yield* ComposioClientSingleton;
+    const { userId: consumerUserId, project: resolvedProject } = yield* actingUser();
+
+    const client = yield* clientSingleton.getFor({
+      orgId: resolvedProject.orgId,
+      projectId: resolvedProject.projectId,
+    });
+    const rawItems = yield* ui.withSpinner(
+      'Fetching connections...',
+      listAllConnectedAccounts(client, { user_ids: [consumerUserId] }).pipe(
+        Effect.mapError(
+          cause =>
+            new ConnectionsRemovalRequestError({
+              message: Match.value(cause).pipe(
+                Match.tag(
+                  'effects/ConnectedAccountListShapeError',
+                  () => CONNECTED_ACCOUNTS_SHAPE_MESSAGE
+                ),
+                Match.orElse(() => 'Failed to list connections.')
+              ),
+              cause,
+            })
+        )
+      )
+    );
+    const accounts = yield* decodeAllConnectedAccountPages(rawItems).pipe(
+      failedWith(ConnectionsRemovalRequestError, CONNECTED_ACCOUNTS_SHAPE_MESSAGE)
+    );
+    const resolved = resolveAccount({ accounts, selector: account });
+
+    if ('error' in resolved) {
+      return yield* invalidInput(resolved.error, '<account>');
+    }
+
+    yield* ui.note(
+      `${formatAccountSummary(resolved)}\n\nThis will remove the connection from Composio and tools will no longer be able to use it.`,
+      'Remove Connection'
+    );
+
+    const confirmed =
+      yes ||
+      (yield* ui.confirm(`Remove ${resolved.toolkit.slug} connection?`, {
+        defaultValue: false,
+      }));
+    if (!confirmed) {
+      yield* ui.log.warn('No connection removed.');
+      return;
+    }
+
+    yield* ui.withSpinner(
+      `Removing ${resolved.toolkit.slug} connection...`,
+      client.connectedAccounts
+        .delete(resolved.id)
+        .pipe(
+          failedWith(
+            ConnectionsRemovalRequestError,
+            `Failed to remove connected account "${resolved.id}".`
+          )
+        ),
+      {
+        successMessage: `Removed ${resolved.toolkit.slug} connection.`,
+        errorMessage: `Failed to remove ${resolved.toolkit.slug} connection.`,
+      }
+    );
+  });

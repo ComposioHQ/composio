@@ -144,7 +144,7 @@ pnpm create:example <example-name>                 # New TypeScript example
 
 ### Dead code detection
 
-The `Dead Code` CI workflow reports likely-orphaned code on every PR. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
+The `Dead Code` CI workflow reports likely-orphaned code every Monday, and can be run on demand. Findings land in the run's Step Summary and never fail the build. Run the same checks locally:
 
 ```bash
 # TypeScript: unused files, exports, types, and dependencies
@@ -168,13 +168,13 @@ This repository ships its own agent guidance, and CI keeps it accurate. An agent
 Two deterministic checks guard this guidance:
 
 ```bash
-pnpm validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
-pnpm validate:skill-routing   # routing smoke test over skill descriptions
+bun run validate:agent-skills    # frontmatter, reference links, stale guidance refs, command names
+bun run validate:skill-routing   # routing smoke test over skill descriptions
 ```
 
 `validate:agent-skills` parses `package.json`, `python/Makefile`, and `python/noxfile.py`, then verifies that every command mentioned in guidance exists. Both checks run in CI through `.github/workflows/agent-substrate.yml`.
 
-If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.mjs`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
+If you add or rename a skill, or rewrite a skill description, run both checks and add a routing probe in `ts/scripts/test-skill-routing.ts`. Read [`.agents/skills/skill-maintenance/SKILL.md`](.agents/skills/skill-maintenance/SKILL.md) before you author or edit a skill.
 
 Using an agent doesn't change your responsibility: [read the code you submit](#read-the-code-you-submit).
 
@@ -225,7 +225,7 @@ Docs changes follow the [third-party links policy](#third-party-links-in-docs).
 
 4. Add or update tests for behavior changes, and update docs for user-facing changes.
 
-5. Add a changeset for changes that affect published TypeScript packages:
+5. Add a changeset for public Python or TypeScript SDK behavior changes. Select each affected TypeScript package and/or the private `@composio/python-sdk` marker:
 
    ```bash
    pnpm changeset
@@ -307,7 +307,7 @@ bun run lint:links
 
 ## Release Process
 
-Only maintainers publish releases.
+Any active ComposioHQ member can request a stable or beta SDK release through the SDK release issue form. Repository writers can also run **SDK release** on `next`. A repository writer who did not request the release approves the final release PR, a person merges it, and automation publishes the candidates the PR built and checked. See the shared runbook below. CLI binaries and the 1.0 prerelease train on `main` keep their separate workflows.
 
 - TypeScript packages and the CLI: [`ts/docs/internal/release.md`](ts/docs/internal/release.md)
 - Python packages: [`python/docs/release.md`](python/docs/release.md)

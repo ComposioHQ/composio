@@ -12,7 +12,9 @@ import datetime
 
 import requests
 import typing_extensions as te
-from composio_client import BaseModel as _ComposioBaseModel
+from composio_client.types.file_create_presigned_url_response import (
+    FileCreatePresignedURLResponse,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from composio.client import HttpClient
@@ -46,7 +48,6 @@ if t.TYPE_CHECKING:
     from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
-_FILE_UPLOAD = "/api/v3/files/upload/request"
 _MAX_FILENAME_LENGTH = 100
 """
 Maximum filename length to prevent issues with long URLs from public buckets.
@@ -257,13 +258,6 @@ def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
     return True
 
 
-class _FileUploadResponse(_ComposioBaseModel):
-    id: str
-    key: str
-    type: str
-    new_presigned_url: str
-
-
 def _request_presigned_upload(
     client: HttpClient,
     *,
@@ -272,22 +266,18 @@ def _request_presigned_upload(
     mimetype: str,
     tool: str,
     toolkit: str,
-) -> _FileUploadResponse:
+) -> FileCreatePresignedURLResponse:
     """Request a presigned S3 upload URL from the backend.
 
     Single-sources the presign wire shape so the file and bytes upload paths
     request the same fields they later send.
     """
-    return client.post(
-        path=_FILE_UPLOAD,
-        body={
-            "md5": md5,
-            "filename": filename,
-            "mimetype": mimetype,
-            "tool_slug": tool,
-            "toolkit_slug": toolkit,
-        },
-        cast_to=_FileUploadResponse,
+    return client.files.create_presigned_url(
+        md5=md5,
+        filename=filename,
+        mimetype=mimetype,
+        tool_slug=tool,
+        toolkit_slug=toolkit,
     )
 
 
@@ -301,30 +291,17 @@ def _is_url(value: str) -> bool:
 
 
 def _get_extension_from_mimetype(mimetype: str) -> str:
-    """Get file extension from mimetype."""
-    mime_to_ext = {
-        "image/jpeg": ".jpg",
-        "image/png": ".png",
-        "image/gif": ".gif",
-        "image/webp": ".webp",
-        "image/svg+xml": ".svg",
-        "image/bmp": ".bmp",
-        "image/tiff": ".tiff",
-        "application/pdf": ".pdf",
-        "application/json": ".json",
-        "application/xml": ".xml",
-        "text/plain": ".txt",
-        "text/html": ".html",
-        "text/css": ".css",
-        "text/javascript": ".js",
-        "application/zip": ".zip",
-        "application/gzip": ".gz",
-        "audio/mpeg": ".mp3",
-        "audio/wav": ".wav",
-        "video/mp4": ".mp4",
-        "video/webm": ".webm",
-    }
-    return mime_to_ext.get(mimetype.lower(), "")
+    """Return the dotted extension for a known content type, or ``""``.
+
+    Looks the type up in the table shared with ``get_extension_from_mime_type``
+    but skips that helper's subtype fallback: an unknown or generic binary type
+    leaves the generated name extensionless instead of inventing an extension.
+    """
+    clean = mimetype.lower()
+    if clean == "application/octet-stream":
+        return ""
+    extension = mimetypes._MIME_TO_EXT.get(clean)
+    return f".{extension}" if extension else ""
 
 
 def _generate_timestamped_filename(extension: str) -> str:

@@ -1,6 +1,7 @@
 import { APIError } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 import { ComposioConnectedAccountNotFoundError } from './ConnectedAccountsErrors';
+import { getRetryAfterSeconds, isRateLimitResponse } from '../utils/rateLimit';
 
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
@@ -54,7 +55,7 @@ export class ComposioToolNotFoundError extends ComposioError {
 export class ComposioToolFetchError extends ComposioError {
   constructor(
     message: string = 'Failed to fetch tool',
-    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+    options: Omit<ComposioErrorOptions, 'code'> = {}
   ) {
     super(message, {
       ...options,
@@ -66,6 +67,41 @@ export class ComposioToolFetchError extends ComposioError {
       ],
     });
     this.name = 'ComposioToolFetchError';
+  }
+}
+
+/** Error options for a 429. Leaves out an unknown wait, as `ComposioError` does for unset fields. */
+const rateLimitOptions = (cause: APIError, meta: Record<string, unknown>) => {
+  const retryAfterSeconds = getRetryAfterSeconds(cause);
+  return {
+    retryAfterSeconds,
+    cause,
+    statusCode: 429,
+    meta: retryAfterSeconds === undefined ? meta : { ...meta, retryAfterSeconds },
+    possibleFixes: [
+      retryAfterSeconds === undefined
+        ? 'Wait before retrying'
+        : `Wait ${Math.ceil(retryAfterSeconds)} seconds, then retry`,
+      'Reduce how many requests your organization sends per minute',
+    ],
+  };
+};
+
+/**
+ * A tool schema fetch rejected with a 429. It is a `ComposioToolFetchError`, so existing handlers
+ * still catch it. Use `isComposioRateLimitError` to catch rate limits from fetching and executing.
+ */
+export class ComposioToolFetchRateLimitError extends ComposioToolFetchError {
+  /** How long the API asked to wait, when the response said. */
+  declare public readonly retryAfterSeconds?: number;
+
+  constructor(message: string, cause: APIError, meta: Record<string, unknown> = {}) {
+    const { retryAfterSeconds, ...options } = rateLimitOptions(cause, meta);
+    super(message, options);
+    if (retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = retryAfterSeconds;
+    }
+    this.name = 'ComposioToolFetchRateLimitError';
   }
 }
 
@@ -99,6 +135,34 @@ export class ComposioToolExecutionError extends ComposioError {
 
     this.name = 'ComposioToolExecutionError';
   }
+}
+
+/**
+ * A tool execution rejected with a 429. It is a `ComposioToolExecutionError`, so existing handlers
+ * still catch it. Use `isComposioRateLimitError` to catch rate limits from fetching and executing.
+ */
+export class ComposioToolExecutionRateLimitError extends ComposioToolExecutionError {
+  /** How long the API asked to wait, when the response said. */
+  declare public readonly retryAfterSeconds?: number;
+
+  constructor(message: string, cause: APIError, meta: Record<string, unknown> = {}) {
+    const { retryAfterSeconds, ...options } = rateLimitOptions(cause, meta);
+    super(message, options);
+    if (retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = retryAfterSeconds;
+    }
+    this.name = 'ComposioToolExecutionRateLimitError';
+  }
+}
+
+/** Whether an error from fetching or executing a tool is the API rejecting the request with a 429. */
+export function isComposioRateLimitError(
+  error: unknown
+): error is ComposioToolFetchRateLimitError | ComposioToolExecutionRateLimitError {
+  return (
+    error instanceof ComposioToolFetchRateLimitError ||
+    error instanceof ComposioToolExecutionRateLimitError
+  );
 }
 
 export class ComposioInvalidToolArgumentsError extends ComposioError {
@@ -257,6 +321,14 @@ export const handleToolExecutionError = (tool: string, actualError: Error): Comp
     if (errorCode && ERROR_CODE_HANDLERS.has(errorCode)) {
       return ERROR_CODE_HANDLERS.get(errorCode)!(errorMessage || 'An error occurred');
     }
+  }
+
+  if (isRateLimitResponse(actualError)) {
+    return new ComposioToolExecutionRateLimitError(
+      `Rate limited while executing the tool ${tool}`,
+      actualError,
+      { slug: tool }
+    );
   }
 
   // Default error for all other cases

@@ -5,6 +5,7 @@ import logging
 import os
 import traceback
 import typing as t
+import warnings
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -20,6 +21,9 @@ from composio_client import (
     omit,
 )
 from composio_client import ComposioError as ClientComposioError
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteResponse,
+)
 from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
@@ -27,6 +31,8 @@ from pydantic import BaseModel, Field
 
 from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
+from composio.core.models.session_context import SessionContextImpl
+from composio.core.provider import get_execution_target
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -47,8 +53,8 @@ from composio.core.models.tool_router_session import (
     ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
-from composio.core.models.session_context import SessionContextImpl
 from composio.exceptions import (
+    ComposioDeprecationWarning,
     InvalidParams,
     MCPDestinationError,
     SessionConfigConflictError,
@@ -275,38 +281,31 @@ class TestToolRouter:
 
     def test_delete_session_by_id(self, tool_router, mock_client):
         """delete() removes a session by ID."""
-        mock_client.delete.return_value = {
-            "session_id": "session_123",
-            "deleted": True,
-        }
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=True
+        )
 
         result = tool_router.delete("session_123")
 
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session_123",
-            cast_to=t.Dict[str, t.Any],
-        )
+        mock_client.tool_router.session.delete.assert_called_once_with("session_123")
         assert result == {
             "session_id": "session_123",
             "deleted": True,
         }
 
-    def test_delete_session_by_id_escapes_session_id(self, tool_router, mock_client):
-        """delete() URL-encodes session IDs before calling the raw endpoint."""
-        mock_client.delete.return_value = {
-            "session_id": "session/with spaces",
-            "deleted": True,
-        }
-
-        tool_router.delete("session/with spaces")
-
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session%2Fwith%20spaces",
-            cast_to=t.Dict[str, t.Any],
+    def test_delete_session_by_id_rejects_unconfirmed_response(
+        self, tool_router, mock_client
+    ):
+        """delete() raises when the response does not confirm the deletion."""
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=False
         )
 
-    def test_delete_session_by_id_calls_raw_http_endpoint(self):
-        """delete() works with the low-level Stainless HTTP client."""
+        with pytest.raises(ValidationError):
+            tool_router.delete("session_123")
+
+    def test_delete_session_by_id_calls_http_endpoint(self):
+        """delete() sends one DELETE with the session ID URL-encoded."""
         requests: t.List[httpx.Request] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -894,7 +893,7 @@ class TestToolRouter:
             tool_router.create(
                 user_id="user_123",
                 preload={"tools": ["GREP"]},
-                experimental={"custom_tools": [grep]},
+                experimental={"local_tools": [grep]},
             )
 
         mock_client.tool_router.session.create.assert_not_called()
@@ -986,7 +985,7 @@ class TestToolRouter:
             session_preset=SESSION_PRESET_DIRECT_TOOLS,
             toolkits=["github"],
             preload={"tools": ["GITHUB_CREATE_ISSUE"]},
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
@@ -1246,18 +1245,14 @@ class TestToolRouter:
 
     def test_session_delete(self, tool_router, mock_client):
         """Session delete removes the current session."""
-        mock_client.delete.return_value = {
-            "session_id": "session_123",
-            "deleted": True,
-        }
+        mock_client.tool_router.session.delete.return_value = MagicMock(
+            session_id="session_123", deleted=True
+        )
         session = tool_router.use(session_id="session_123")
 
         result = session.delete()
 
-        mock_client.delete.assert_called_once_with(
-            "/api/v3.1/tool_router/session/session_123",
-            cast_to=t.Dict[str, t.Any],
-        )
+        mock_client.tool_router.session.delete.assert_called_once_with("session_123")
         assert result == {
             "session_id": "session_123",
             "deleted": True,
@@ -1284,7 +1279,7 @@ class TestToolRouter:
         mock_custom_tool.extends_toolkit = None
         mock_response.experimental.custom_tools = [mock_custom_tool]
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
 
         mock_client.tool_router.session.attach.assert_called_once()
         kwargs = mock_client.tool_router.session.attach.call_args.kwargs
@@ -1292,8 +1287,8 @@ class TestToolRouter:
         assert "custom_toolkits" not in kwargs["experimental"]
         mock_client.tool_router.session.retrieve.assert_not_called()
         mock_client.post.assert_not_called()
-        assert session.custom_tools()[0].slug == "SERVER_GREP"
-        assert session.custom_tools()[0].name == "Grep"
+        assert session.local_tools()[0].slug == "SERVER_GREP"
+        assert session.local_tools()[0].name == "Grep"
 
     @patch("composio.core.models.tools.Tools")
     def test_use_session_attaches_preloaded_custom_tools(
@@ -1336,7 +1331,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
 
         mock_client.tool_router.session.attach.assert_called_once()
@@ -1392,7 +1387,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
         session.search(query="search local text")
 
@@ -1740,7 +1735,7 @@ class TestToolRouter:
 
         session = tool_router.create(
             user_id="user_123",
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
         result = session.tools()
 
@@ -1754,6 +1749,9 @@ class TestToolRouter:
         assert result == "mocked-custom-tools"
 
         execute_tool = mock_provider.wrap_tools.call_args.kwargs["execute_tool"]
+        # Gemini's manual handle_response(session=...) finds this routing
+        # executor by the session recorded on it.
+        assert get_execution_target(execute_tool) is session
         local_result = execute_tool(slug="SERVER_GREP", arguments={"pattern": "needle"})
         assert local_result == {
             "data": {"matches": ["needle"]},
@@ -1906,6 +1904,192 @@ class TestToolRouter:
         mock_client.post.assert_not_called()
 
 
+def _local_grep_tool():
+    @experimental_api.tool(slug="GREP", name="Grep", description="Search local text")
+    def grep(input: GrepInput, ctx):
+        return {"matches": []}
+
+    return grep
+
+
+def _local_role_toolkit():
+    toolkit = experimental_api.Toolkit(
+        slug="ROLES", name="Roles", description="Manage roles"
+    )
+
+    @toolkit.tool(slug="SET_ROLE")
+    def set_role(input: GrepInput, ctx):
+        """Set a role."""
+        return {"ok": True}
+
+    return toolkit
+
+
+def _mock_local_tools_response(response):
+    response.experimental = MagicMock()
+    response.experimental.assistive_prompt = None
+    server_tool = MagicMock()
+    server_tool.slug = "LOCAL_GREP"
+    server_tool.original_slug = "GREP"
+    server_tool.extends_toolkit = None
+    response.experimental.custom_tools = [server_tool]
+    server_toolkit = MagicMock()
+    server_toolkit.slug = "ROLES"
+    server_toolkit.tools = [
+        MagicMock(slug="LOCAL_ROLES_SET_ROLE", original_slug="SET_ROLE")
+    ]
+    response.experimental.custom_toolkits = [server_toolkit]
+
+
+class TestLocalToolsOptions:
+    """`local_tools`/`local_toolkits` and their deprecated `custom_*` aliases."""
+
+    def test_create_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "local_tools": [tool],
+                    "local_toolkits": [toolkit],
+                },
+            )
+
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+        assert [tk.slug for tk in session.local_toolkits()] == ["ROLES"]
+
+    def test_create_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "custom_tools": [tool],
+                    "custom_toolkits": [toolkit],
+                },
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert session.local_tools()[0].slug == "LOCAL_GREP"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_create_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.create(
+                user_id="user_123",
+                experimental=t.cast(
+                    ToolRouterExperimentalConfig,
+                    {new_name: [value()], old_name: [value()]},
+                ),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    def test_use_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.use(
+                "session_123",
+                local_tools=[tool],
+                local_toolkits=[toolkit],
+            )
+
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+
+    def test_use_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.use(
+                "session_123",
+                custom_tools=[tool],
+                custom_toolkits=[toolkit],
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert session.local_toolkits()[0].slug == "ROLES"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_use_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.use("session_123", **{new_name: [value()], old_name: [value()]})
+
+        mock_client.tool_router.session.attach.assert_not_called()
+        mock_client.tool_router.session.retrieve.assert_not_called()
+
+
 class TestToolRouterTypes:
     """Test type definitions for ToolRouter."""
 
@@ -2052,11 +2236,16 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Test that session execute is called for agentic tool execution."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_execute_response.result_type = "completed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "completed",
+                    "data": {"result": "success"},
+                    "error": None,
+                    "log_id": "log_123",
+                }
+            )
+        )
 
         # Create a real Tools instance to test the execute function
         from composio.core.models.tools import Tools as RealTools
@@ -2223,11 +2412,16 @@ class TestToolRouterExecution:
 
     def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
         """Test that tool execution errors are handled correctly."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {}
-        mock_execute_response.error = "Authentication failed"
-        mock_execute_response.result_type = "failed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = (
+            SessionExecuteResponse.model_validate(
+                {
+                    "result_type": "failed",
+                    "data": {},
+                    "error": "Authentication failed",
+                    "log_id": "log_123",
+                }
+            )
+        )
 
         # Create a real execute function
         from composio.core.models.tools import Tools as RealTools
@@ -2798,10 +2992,290 @@ class TestExecutionRequiresUserInput:
         result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
 
         assert result == {
+            "result_type": "completed",
             "status": 201,
             "data": {"id": 1},
             "headers": {"x-request-id": "req_1"},
         }
+
+
+_BLOCKED_CALL_JSON: t.Dict[str, t.Any] = {
+    "result_type": "blocked",
+    "reason": {"type": "request_blocked", "hook_id": "no_external_email"},
+    "message": "Blocked by session policy: No external email",
+    "log_id": "",
+    "hook_results": [
+        {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+    ],
+}
+
+
+class TestSessionHooks:
+    """A session hook can block a call before it runs, or block its result
+    before the agent sees it. The API answers ``result_type: "blocked"``,
+    which has no data and no HTTP response.
+
+    The cases run a real client over a stub transport so they cover the wire
+    shape the generated client hands to the SDK.
+    """
+
+    _HOOKS: t.List[t.Any] = [
+        {
+            "type": "before_execute",
+            "id": "no_external_email",
+            "name": "No external email",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "Sending email to anyone outside example.org",
+                "action": "block",
+            },
+        },
+        {
+            "type": "after_execute",
+            "id": "block_injection",
+            "applies_to": "all",
+            "handler": {"type": "prompt_injection_check", "action": "block"},
+        },
+    ]
+
+    def test_create_sends_hooks(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123", hooks=self._HOOKS)
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["hooks"] == self._HOOKS
+
+    def test_create_omits_hooks_by_default(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123")
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "hooks" not in kwargs
+
+    @pytest.mark.parametrize(
+        ("hooks", "expected"),
+        [
+            pytest.param(_HOOKS, _HOOKS, id="replace"),
+            pytest.param(None, None, id="remove"),
+        ],
+    )
+    def test_update_sends_hooks(self, hooks, expected):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = _created_session(client)
+
+        session.update(hooks=hooks)
+
+        body = json.loads(requests[-1].content)
+        assert body["hooks"] == expected
+
+    @pytest.mark.parametrize(
+        "hooks",
+        [
+            pytest.param(_HOOKS, id="replace"),
+            pytest.param(None, id="remove"),
+        ],
+    )
+    def test_update_rejects_hooks_with_session_config_id(self, hooks):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+        session = _created_session(client)
+        requests.clear()
+
+        with pytest.raises(InvalidParams):
+            session.update(hooks=hooks, experimental={"session_config_id": "sc_1"})
+
+        assert requests == []
+
+    def test_create_rejects_hooks_with_session_config_id(
+        self, tool_router, mock_client
+    ):
+        with pytest.raises(InvalidParams):
+            tool_router.create(
+                user_id="user_123",
+                hooks=self._HOOKS,
+                experimental=t.cast(t.Any, {"session_config_id": "sc_1"}),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda client: _created_session(client).execute(
+                    "GMAIL_SEND_EMAIL", arguments={"to": "ceo@rival.com"}
+                ),
+                id="session.execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).execute("GMAIL_SEND_EMAIL", {"to": "ceo@rival.com"}),
+                id="custom tool context execute",
+            ),
+        ],
+    )
+    def test_execute_returns_a_blocked_result(self, run):
+        client, _ = _answering_client(_BLOCKED_CALL_JSON)
+
+        result = run(client)
+
+        assert result.result_type == "blocked"
+        assert result.data == {}
+        assert result.error == "Blocked by session policy: No external email"
+        assert result.log_id == ""
+        assert result.block_reason == {
+            "type": "request_blocked",
+            "hook_id": "no_external_email",
+        }
+        assert result.hook_results == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+        ]
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            pytest.param(_BLOCKED_CALL_JSON, id="blocked"),
+            pytest.param(
+                {
+                    "data": {"sent": True},
+                    "error": None,
+                    "log_id": "log_1",
+                    "result_type": "completed",
+                    "hook_results": [
+                        {"id": "block_injection", "status": "unavailable"}
+                    ],
+                },
+                id="completed",
+            ),
+        ],
+    )
+    def test_a_result_dumps_its_hook_results_as_the_dicts_it_holds(self, body):
+        """The client types ``hook_results`` as models and the SDK's result
+        holds them as its own dicts, so dumping it must not warn."""
+        client, _ = _answering_client(body)
+        result = _created_session(client).execute(
+            "GMAIL_SEND_EMAIL", arguments={"to": "ceo@rival.com"}
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            dumped = result.model_dump()
+
+        assert dumped["hook_results"] == body["hook_results"]
+
+    def test_blocked_call_reaches_the_agent_as_a_failed_call(self):
+        """Every provider hands the agent ``data``, ``error`` and
+        ``successful``, so this is what the agent sees in any framework."""
+        client, _ = _answering_client(_BLOCKED_CALL_JSON)
+
+        result = _session_tool_execute_fn(client)(
+            "GMAIL_SEND_EMAIL", {"to": "ceo@rival.com"}
+        )
+
+        assert result["successful"] is False
+        assert result["data"] == {}
+        assert result["error"] == "Blocked by session policy: No external email"
+
+    def test_blocked_response_keeps_its_charge_for_the_agent(self):
+        """The tool ran before an ``after_execute`` hook blocked its result, so
+        the provider result still reports the charge."""
+        client, _ = _answering_client(
+            {
+                **_BLOCKED_CALL_JSON,
+                "reason": {"type": "response_blocked", "hook_id": "no_outside_data"},
+                "log_id": "log_456",
+                "instant_charge": {
+                    "amount": "0.01",
+                    "currency": "USD",
+                    "charged_by": "composio",
+                },
+            }
+        )
+
+        result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
+
+        assert result["successful"] is False
+        assert result["instant_charge"] == {
+            "amount": "0.01",
+            "currency": "USD",
+            "charged_by": "composio",
+        }
+
+    def test_unavailable_hook_does_not_block(self):
+        """A hook that could not be evaluated is reported, and the call still
+        returns its normal result."""
+        client, _ = _answering_client(
+            {
+                **_COMPLETED_JSON,
+                "hook_results": [{"id": "block_injection", "status": "unavailable"}],
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+        assert result.result_type == "completed"
+        assert result.data == {"id": "msg_1"}
+        assert result.hook_results == [
+            {"id": "block_injection", "status": "unavailable"}
+        ]
+
+    @pytest.mark.parametrize(
+        "run",
+        [
+            pytest.param(
+                lambda client: _created_session(client).proxy_execute(**_PROXY_PARAMS),
+                id="session.proxy_execute",
+            ),
+            pytest.param(
+                lambda client: SessionContextImpl(
+                    client, "user_123", "session_123"
+                ).proxy_execute(**_PROXY_PARAMS),
+                id="custom tool context proxy_execute",
+            ),
+        ],
+    )
+    def test_proxy_execute_returns_a_blocked_result(self, run):
+        client, _ = _answering_client(
+            {k: v for k, v in _BLOCKED_CALL_JSON.items() if k != "log_id"}
+        )
+
+        assert run(client) == {
+            "result_type": "blocked",
+            "block_reason": {"type": "request_blocked", "hook_id": "no_external_email"},
+            "message": "Blocked by session policy: No external email",
+            "hook_results": [
+                {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
+            ],
+        }
+
+    def test_proxy_execute_returns_the_hook_results_of_a_sent_request(self):
+        client, _ = _answering_client(
+            {
+                "result_type": "completed",
+                "status": 200,
+                "data": {"id": 1},
+                "headers": {},
+                "hook_results": [
+                    {
+                        "id": "no_external_email",
+                        "status": "evaluated",
+                        "outcome": "continue",
+                    },
+                    {"id": "block_injection", "status": "unavailable"},
+                ],
+            }
+        )
+
+        result = _created_session(client).proxy_execute(**_PROXY_PARAMS)
+
+        assert result["result_type"] == "completed"
+        assert result.get("hook_results") == [
+            {"id": "no_external_email", "status": "evaluated", "outcome": "continue"},
+            {"id": "block_injection", "status": "unavailable"},
+        ]
 
 
 class _NoInput(BaseModel):

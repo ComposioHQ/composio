@@ -10,7 +10,7 @@ description: "Triggers (instance) class"
 Create or update the project webhook subscription used for webhook delivery.  If a subscription already exists, the first subscription is updated. Otherwise a new subscription is created. By default this subscribes to V3 trigger message events.
 
 ```python
-def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str | None] = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
+def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str] | None = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
 ```
 
 **Parameters**
@@ -18,7 +18,7 @@ def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str | No
 | Name | Type |
 |------|------|
 | `webhook_url` | `str` |
-| `enabled_events?` | `Sequence[str \| None]` |
+| `enabled_events?` | `Sequence[str] \| None` |
 | `version?` | `Union[WebhookVersion, str]` |
 
 **Returns**
@@ -60,17 +60,17 @@ def get_type(slug: str) -> TriggersTypeRetrieveResponse
 List all active triggers
 
 ```python
-def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | None] = ..., auth_config_ids: list[str | None] = ..., connected_account_ids: list[str | None] = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
+def list_active(trigger_ids: list[str] | None = ..., trigger_names: list[str] | None = ..., auth_config_ids: list[str] | None = ..., connected_account_ids: list[str] | None = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `trigger_ids?` | `list[str \| None]` |
-| `trigger_names?` | `list[str \| None]` |
-| `auth_config_ids?` | `list[str \| None]` |
-| `connected_account_ids?` | `list[str \| None]` |
+| `trigger_ids?` | `list[str] \| None` |
+| `trigger_names?` | `list[str] \| None` |
+| `auth_config_ids?` | `list[str] \| None` |
+| `connected_account_ids?` | `list[str] \| None` |
 | `show_disabled?` | `bool \| None` |
 | `limit?` | `int \| None` |
 | `cursor?` | `str \| None` |
@@ -82,7 +82,7 @@ def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | N
 List all the trigger types.
 
 ```python
-def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[str | None] = ...)
+def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[str] | None = ...)
 ```
 
 **Parameters**
@@ -91,7 +91,7 @@ def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[
 |------|------|
 | `cursor?` | `str \| None` |
 | `limit?` | `int \| None` |
-| `toolkit_slugs?` | `list[str \| None]` |
+| `toolkit_slugs?` | `list[str] \| None` |
 
 ---
 
@@ -100,7 +100,7 @@ def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[
 Create a trigger instance
 
 ```python
-def create(slug: str, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any | None] = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
+def create(slug: str, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any] | None = ..., type: Literal['webhook', 'poll'] | None = ..., polling_interval: int | None = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
 ```
 
 **Parameters**
@@ -110,11 +110,13 @@ def create(slug: str, user_id: str | None = ..., connected_account_id: str | Non
 | `slug` | `str` |
 | `user_id?` | `str \| None` |
 | `connected_account_id?` | `str \| None` |
-| `trigger_config?` | `Dict[str, Any \| None]` |
+| `trigger_config?` | `Dict[str, Any] \| None` |
+| `type?` | `Literal['webhook', 'poll'] \| None` |
+| `polling_interval?` | `int \| None` |
 
 **Returns**
 
-`trigger_instance_upsert_response.TriggerInstanceUpsertRes...` — The trigger instance
+`trigger_instance_upsert_response.TriggerInstanceUpsertRes...` — The trigger instance, with the `type` it uses, the `fallback_reason` when it polls after a webhook was unavailable, and its `polling_interval`
 
 ---
 
@@ -247,4 +249,4 @@ async def webhook(request: Request):
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1147)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1146)

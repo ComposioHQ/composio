@@ -27,6 +27,7 @@ If none of that applies, use the [remote sandbox](/docs/sandbox/remote). It's th
 
 A local sandbox session is a [session](/docs/how-composio-works) created with the remote sandbox turned off. Set `workbench.enable: false`, then pass the session to `experimental_createLocalWorkbenchSession` (from the `@composio/experimental` package), which returns the two pieces you run yourself.
 
+{/* code-example: single-language reason="experimental_createLocalWorkbenchSession ships only in the TypeScript @composio/experimental package; Python SDK has no local workbench API" */}
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
@@ -60,6 +61,7 @@ The API ships under the `experimental_` prefix and the `@composio/experimental/w
 
 `helperSource` is a Python module your agent imports. It exposes the same helpers the [remote sandbox](/docs/sandbox/remote#built-in-helpers) runs, with the same signatures, so the agent calls tools without knowing that execution is local:
 
+{/* code-example: single-language reason="helperSource is a Python module that runs inside the sandbox; no TypeScript helper exists" */}
 ```python
 from composio_helper import run_composio_tool, invoke_llm, web_search
 

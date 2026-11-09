@@ -1,6 +1,10 @@
-import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, DateTime, Effect } from 'effect';
+import { assert, describe, expect, layer } from '@effect/vitest';
+import { isUsageFailure } from 'src/commands/errors';
+import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
+import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 
@@ -215,13 +219,16 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug',
     it => {
-      it.effect('shows error', () =>
+      it.effect('prints the error on a redirected stderr and exits 1', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'info', 'gmal']).pipe(Effect.result);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const terminal = redirectedTerminalUI();
+          const exit = yield* Effect.exit(
+            cli(['dev', 'toolkits', 'info', 'gmal']).pipe(Effect.provide(terminal.layer))
+          );
 
-          expect(output).toContain('Toolkit "gmal" not found');
+          expect(terminal.stderr()).toContain('Toolkit "gmal" not found.\n');
+          expect(terminal.stdout()).toBe('');
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }
@@ -230,14 +237,15 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug with substring match',
     it => {
-      it.effect('shows error with hint', () =>
+      it.effect('shows error with hint and exits 1', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'info', 'gma']).pipe(Effect.result);
+          const exit = yield* Effect.exit(cli(['dev', 'toolkits', 'info', 'gma']));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Toolkit "gma" not found');
           expect(output).toContain('composio dev toolkits info "gmail"');
+          expect(exitCodeOf(exit)).toBe(1);
         })
       );
     }
@@ -246,14 +254,20 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no slug argument',
     it => {
-      it.effect('shows missing argument warning with tip', () =>
+      it.effect('fails with a usage error naming <slug>, with a tip', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'info']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const failure = yield* cli(['dev', 'toolkits', 'info']).pipe(Effect.flip);
 
-          expect(output).toContain('Missing required argument');
-          expect(output).toContain('composio dev toolkits info "gmail"');
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'dev toolkits info',
+            option: '<slug>',
+            message:
+              'Missing required argument: <slug>\nTry specifying a toolkit slug, e.g.:\n> composio dev toolkits info "gmail"',
+          });
+          // The invocation prints the message on stderr, and nothing else.
+          assert(isUsageFailure(failure));
+          expect(yield* MockConsole.getLines()).toEqual([failure.message]);
         })
       );
     }
@@ -264,6 +278,34 @@ describe('CLI: composio dev toolkits info', () => {
       Effect.gen(function* () {
         const error = yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(Effect.flip);
         expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] the tool-router fetch fails', it => {
+    it.effect('reports the failure on a redirected stderr and exits 1', () =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(['toolRouter'], () =>
+          Response.json({ error: { message: 'Tool Router is down' } }, { status: 500 })
+        );
+        const terminal = redirectedTerminalUI();
+        const exit = yield* Effect.exit(
+          cli(['dev', 'toolkits', 'info', 'gmail']).pipe(
+            Effect.provide(Layer.mergeAll(stub.layer, terminal.layer))
+          )
+        );
+
+        expect(terminal.stderr()).toBe(
+          'Tool Router is down\nBrowse available toolkits:\n> composio dev toolkits list\n'
+        );
+        expect(terminal.stdout()).toBe('');
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });

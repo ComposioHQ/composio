@@ -1,5 +1,5 @@
 import { Array as Arr, Effect, Option, String as Str } from 'effect';
-import { notLoggedIn } from 'src/commands/errors';
+import { commandInputError, notLoggedIn } from 'src/commands/errors';
 import { listOrganizationProjects } from 'src/services/composio-account';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -24,12 +24,17 @@ export type ProjectsListParams = {
   readonly limit: number;
 };
 
-/** Lists the developer projects of `--org-id`, or of the current global org. */
+const invalidInput = commandInputError('dev projects list');
+
+/**
+ * Lists the developer projects of `--org-id`, or of the current global org. With neither, it
+ * fails with a `CommandInputError` before any request.
+ */
 export const runProjectsList = ({ orgId, limit }: ProjectsListParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    // `requireLogin` on the command has already proven the key is there.
+    // `requiresLogin` on the command has already proven the key is there.
     const apiKey = yield* Effect.fromOption(ctx.data.apiKey, notLoggedIn);
 
     yield* ui.intro(PROJECTS_LIST_INTRO);
@@ -41,10 +46,7 @@ export const runProjectsList = ({ orgId, limit }: ProjectsListParams) =>
 
     yield* Option.match(resolvedOrgId, {
       onNone: () =>
-        Effect.gen(function* () {
-          yield* ui.log.warn(NO_CURRENT_ORG_MESSAGE);
-          yield* ui.outro(NO_CURRENT_ORG_OUTRO);
-        }),
+        Effect.fail(invalidInput(`${NO_CURRENT_ORG_MESSAGE}\n${NO_CURRENT_ORG_OUTRO}`, '--org-id')),
       onSome: resolvedOrgId =>
         Effect.gen(function* () {
           const projects = yield* ui.withSpinner(
@@ -61,6 +63,8 @@ export const runProjectsList = ({ orgId, limit }: ProjectsListParams) =>
               Effect.gen(function* () {
                 yield* ui.log.warn(NO_PROJECTS_MESSAGE);
                 yield* ui.outro(NO_PROJECTS_OUTRO);
+                // Piped callers need the parseable empty result, not silence.
+                yield* ui.output(formatProjectsJson(projects.data));
               }),
             onNonEmpty: data =>
               Effect.gen(function* () {

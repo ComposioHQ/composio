@@ -85,7 +85,7 @@ describe('resolveCommandProject', () => {
       expect(error).toBeInstanceOf(ProjectResolutionError);
       expect(error).toMatchObject({
         reason: 'missing_org',
-        message: 'No current org configured. Run `composio login` or `composio dev orgs switch`.',
+        message: 'No current org configured. Run `composio login` or `composio orgs switch`.',
       });
       expect(fetchSpy).not.toHaveBeenCalled();
     }).pipe(Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), noLocalProject)))

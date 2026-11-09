@@ -1,5 +1,9 @@
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import { inspect } from 'node:util';
 import { Predicate } from 'effect';
+import { isBlockedSensitiveFileUploadPath } from '@composio/core';
 import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 import { installRunHelpers, parseJson } from 'src/services/run-helpers-runtime';
 import { ToolInputRequiredError } from 'src/utils/tool-input-required';
@@ -358,6 +362,159 @@ describe('run-helpers-runtime', () => {
       message: 'User not found',
       slug: 'HACKERNEWS_GET_USER',
       result: { successful: false, error: 'User not found' },
+    });
+  });
+
+  it('[Given] file labels larger than the Linux environment limit [Then] the child reads all labels from a temporary manifest', async () => {
+    const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-batch-'));
+    const childScript = [
+      'const fs = require("node:fs");',
+      'const manifestPath = process.env.COMPOSIO_RUN_STAGED_FILES_FILE;',
+      'const manifest = fs.readFileSync(manifestPath, "utf8");',
+      'const labels = JSON.parse(manifest);',
+      'const input = process.argv[process.argv.indexOf("--data") + 1];',
+      'const data = JSON.parse(fs.readFileSync(input.slice(1), "utf8"));',
+      'console.log(JSON.stringify({ successful: true, data: { manifestPath, manifestBytes: Buffer.byteLength(manifest), mode: fs.statSync(manifestPath).mode & 0o777, count: Object.keys(labels).length, dataCount: data.files.length, first: labels[data.files[0]], last: labels[data.files.at(-1)] } }));',
+    ].join('\n');
+    const mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    const fileName = (i: number) => `${i}-${'a'.repeat(200)}.pptx`;
+    try {
+      await installRunHelpers({
+        cliPrefix: [process.execPath, '-e', childScript],
+        helperContext: { runOutputDir: outputDir },
+      });
+      const result = await readInstalledFunction('execute')('TEST_UPLOAD', {
+        files: Array.from(
+          { length: 512 },
+          (_, i) => new File(['PK'], fileName(i), { type: mimeType })
+        ),
+      });
+      assert(
+        Predicate.hasProperty(result, 'data') &&
+          Predicate.hasProperty(result.data, 'manifestPath') &&
+          typeof result.data.manifestPath === 'string'
+      );
+      expect(result.data).toMatchObject({
+        count: 512,
+        dataCount: 512,
+        mode: 0o600,
+        first: { name: fileName(0), mimetype: mimeType },
+        last: { name: fileName(511), mimetype: mimeType },
+      });
+      assert(
+        Predicate.hasProperty(result.data, 'manifestBytes') &&
+          typeof result.data.manifestBytes === 'number'
+      );
+      expect(result.data.manifestBytes).toBeGreaterThan(128 * 1024);
+      expect(Buffer.byteLength(result.data.manifestPath)).toBeLessThan(1024);
+      expect(fs.existsSync(result.data.manifestPath)).toBe(false);
+    } finally {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([true, false])(
+    '[Given] a child fails with JSON result=%s [Then] its metadata is removed',
+    async reportsResult => {
+      const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-failure-'));
+      const observedPath = path.join(outputDir, 'observed-manifest');
+      const childScript = [
+        'const fs = require("node:fs");',
+        `fs.writeFileSync(${JSON.stringify(observedPath)}, process.env.COMPOSIO_RUN_STAGED_FILES_FILE);`,
+        ...(reportsResult
+          ? ['console.log(JSON.stringify({ successful: false, error: "refused" }));']
+          : []),
+        'process.exit(1);',
+      ].join('\n');
+      try {
+        await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+        await expect(
+          readInstalledFunction('execute')('TEST_UPLOAD', { file: new File(['x'], 'x.txt') })
+        ).rejects.toBeInstanceOf(Error);
+        const manifestPath = fs.readFileSync(observedPath, 'utf8');
+        expect(fs.existsSync(path.dirname(manifestPath))).toBe(false);
+      } finally {
+        fs.rmSync(outputDir, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it('[Given] a stale inherited metadata path and no Files [Then] the child receives no metadata path', async () => {
+    vi.stubEnv('COMPOSIO_RUN_STAGED_FILES_FILE', '/stale/metadata.json');
+    const childScript =
+      'console.log(JSON.stringify({ successful: true, data: { manifestPath: process.env.COMPOSIO_RUN_STAGED_FILES_FILE } }));';
+    await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+    expect(await readInstalledFunction('execute')('TEST_UPLOAD', { text: 'plain' })).toMatchObject({
+      data: { manifestPath: '' },
+    });
+  });
+
+  it("[Given] File and Blob arguments [Then] the spawned `composio execute` gets generated paths, and each one's own name and type beside them", async () => {
+    // Echoes the `--data` JSON and the staged files it was spawned with, and
+    // whether each staged file exists.
+    const childScript = [
+      'const fs = require("node:fs");',
+      'const data = JSON.parse(process.argv[process.argv.indexOf("--data") + 1]);',
+      'const stagedFiles = JSON.parse(fs.readFileSync(process.env.COMPOSIO_RUN_STAGED_FILES_FILE, "utf8"));',
+      'const exists = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, fs.existsSync(v)]));',
+      'console.log(JSON.stringify({ successful: true, data: { data, stagedFiles, exists } }));',
+    ].join('\n');
+    // A value the run process inherited must not reach the child.
+    vi.stubEnv('COMPOSIO_RUN_STAGED_FILES_FILE', '/stale/metadata.json');
+    await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
+    const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+    const result = await readInstalledFunction('execute')('CANVA_CREATE_DESIGN_IMPORT_JOB', {
+      named: new File(['PK'], 'deck.pptx', { type: PPTX }),
+      sameName: new File(['PK'], 'deck.pptx', { type: PPTX }),
+      extensionless: new File(['PK'], 'deck', { type: PPTX }),
+      traversal: new File(['PK'], '../escape.pptx', { type: PPTX }),
+      untyped: new File(['hi'], 'notes.txt'),
+      envExample: new File(['EXAMPLE=value'], '.env.example', { type: 'text/plain' }),
+      privateKeyName: new File(['not a key'], 'keys/id_rsa'),
+      blob: new Blob(['PK'], { type: PPTX }),
+    });
+
+    assert(
+      Predicate.hasProperty(result, 'data') &&
+        Predicate.hasProperty(result.data, 'data') &&
+        Predicate.isObject(result.data.data) &&
+        Predicate.hasProperty(result.data, 'stagedFiles')
+    );
+    const staged = result.data.data;
+    const stagedPaths = Object.values(staged).map(String);
+    // Every File is staged under a generated name, with its extension when it has one…
+    expect(stagedPaths.map(stagedPath => path.basename(stagedPath))).toEqual([
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.pptx$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.txt$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.example$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}$/),
+      expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
+    ]);
+    // …that the child's denylist does not refuse, and that two Files with one name do not share.
+    expect(stagedPaths.filter(stagedPath => isBlockedSensitiveFileUploadPath(stagedPath))).toEqual(
+      []
+    );
+    expect(new Set(stagedPaths).size).toBe(stagedPaths.length);
+    expect(result.data).toMatchObject({
+      exists: Object.fromEntries(Object.keys(staged).map(key => [key, true])),
+    });
+    // The child uploads each one under its own name and type.
+    expect(result.data.stagedFiles).toEqual({
+      [String(staged.named)]: { name: 'deck.pptx', mimetype: PPTX },
+      [String(staged.sameName)]: { name: 'deck.pptx', mimetype: PPTX },
+      [String(staged.extensionless)]: { name: 'deck', mimetype: PPTX },
+      [String(staged.traversal)]: { name: 'escape.pptx', mimetype: PPTX },
+      [String(staged.untyped)]: { name: 'notes.txt' },
+      [String(staged.envExample)]: { name: '.env.example', mimetype: 'text/plain' },
+      [String(staged.privateKeyName)]: { name: 'id_rsa' },
+      [String(staged.blob)]: {
+        name: expect.stringMatching(/^file-[0-9a-f]{8}\.bin$/),
+        mimetype: PPTX,
+      },
     });
   });
 
