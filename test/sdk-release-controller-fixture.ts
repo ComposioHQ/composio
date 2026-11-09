@@ -82,8 +82,8 @@ export interface ControllerOptions {
   readonly docs?: 'success' | 'failure' | 'pending' | 'missing';
   /** Who authored the release PR head; the release App by default. */
   readonly headAuthor?: string;
-  /** Who committed the release PR head; the release App by default. */
-  readonly headCommitter?: string;
+  /** Who last moved the release branch; the release App by default. */
+  readonly branchSetter?: string;
   readonly unverifiedHead?: boolean;
   /** Parent of the release PR head; the planned source by default. */
   readonly headParent?: string;
@@ -98,7 +98,6 @@ export function fakeController(options: ControllerOptions = {}) {
     html_url: 'https://github.com/ComposioHQ/composio/pull/9',
     state: 'closed',
     merged,
-    merge_commit_sha: merged ? merge : null,
     user: { login: `${APP_SLUG}[bot]` },
     head: { sha: head, ref: 'sdk-release/batch-8', repo: { full_name: 'ComposioHQ/composio' } },
     base: { ref: 'next' },
@@ -134,7 +133,6 @@ export function fakeController(options: ControllerOptions = {}) {
                 html_url: 'https://github.com/ComposioHQ/composio/pull/5',
                 state: 'open',
                 merged: false,
-                merge_commit_sha: null,
                 head: { ...pull().head, ref: options.openRelease },
               },
             ]
@@ -170,10 +168,25 @@ export function fakeController(options: ControllerOptions = {}) {
     if (path === `/commits/${head}`)
       return response({
         author: { login: options.headAuthor ?? `${APP_SLUG}[bot]` },
-        committer: { login: options.headCommitter ?? `${APP_SLUG}[bot]` },
+        // GitHub commits and signs every commit made through its API.
+        committer: { login: 'web-flow' },
         commit: { verification: { verified: !options.unverifiedHead } },
         parents: [{ sha: options.headParent ?? base }],
       });
+    if (path.startsWith('/activity?ref=refs%2Fheads%2Fsdk-release%2Fbatch-8&'))
+      return response([
+        { after: '0'.repeat(40), actor: { login: 'merger' } },
+        { after: head, actor: { login: options.branchSetter ?? `${APP_SLUG}[bot]` } },
+      ]);
+    if (path.startsWith('/issues/9/events?'))
+      return response(
+        merged
+          ? [
+              { event: 'merged', commit_id: merge },
+              { event: 'closed', commit_id: null },
+            ]
+          : [{ event: 'closed', commit_id: null }]
+      );
     if (path === `/git/commits/${base}`)
       return response({ sha: base, tree: { sha: base }, parents: [] });
     if (path === `/git/commits/${merge}`)

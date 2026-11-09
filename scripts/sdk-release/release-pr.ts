@@ -13,7 +13,6 @@ export const Pull = Schema.Struct({
   html_url: Schema.String,
   state: Schema.String,
   merged: Schema.optionalKey(Schema.Boolean),
-  merge_commit_sha: Schema.optionalKey(Schema.NullOr(Sha)),
   /** `null` when the author's account was deleted. */
   user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   head: Schema.Struct({

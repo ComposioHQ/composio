@@ -54,10 +54,11 @@ const pinAttempt = async (
   const routes = {
     [`/commits/${head}`]: {
       author: { login: options.headAuthor ?? app },
-      committer: { login: options.headAuthor ?? app },
+      committer: { login: 'web-flow' },
       commit: { verification: { verified: true } },
       parents: [{ sha: batch.inputBase }],
     },
+    '/activity': [{ after: head, actor: { login: app } }],
     '/actions/workflows/sdk.release.candidates.yml/runs': {
       workflow_runs: [
         {

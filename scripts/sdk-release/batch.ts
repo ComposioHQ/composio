@@ -1,6 +1,6 @@
 import { Config, Effect, Option, Path, Schema, Stdio, Stream } from 'effect';
 import { Base64 } from 'effect/encoding';
-import { readReleasePull, trustedIssue, verifyReleaseGate } from './approval';
+import { mergeCommitOf, readReleasePull, trustedIssue, verifyReleaseGate } from './approval';
 import {
   CONTENT_CONCURRENCY,
   CreatedSha,
@@ -293,8 +293,7 @@ export const openReleasePull = (cwd: string, planned: ReleaseBatch, value: unkno
  */
 export const authorizeSourceTag = (pull: Pull, batch: ReleaseBatch, appSlug: string) =>
   Effect.gen(function* () {
-    if (!pull.merged || !pull.merge_commit_sha)
-      return ReleaseState.make({ _tag: 'Abandoned', pull: pull.html_url });
+    if (!pull.merged) return ReleaseState.make({ _tag: 'Abandoned', pull: pull.html_url });
     const verdict = yield* verifyReleaseGate(pull, batch, appSlug).pipe(
       Effect.as(Option.none<string>()),
       Effect.catchTag('ReleaseError', error => Effect.succeedSome(error.message))
@@ -308,7 +307,7 @@ export const authorizeSourceTag = (pull: Pull, batch: ReleaseBatch, appSlug: str
     }
     const merged = yield* request(
       'GET',
-      `${REPOSITORY_PATH}/git/commits/${pull.merge_commit_sha}`,
+      `${REPOSITORY_PATH}/git/commits/${yield* mergeCommitOf(pull.number)}`,
       Commit
     );
     yield* ensure(
