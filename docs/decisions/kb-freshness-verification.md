@@ -14,6 +14,12 @@ Findings never block the data sync. They are written to the job summary and to a
 single long-lived `kb-freshness` issue, which the job closes when the KB verifies
 clean.
 
+An evergreen guide's review deadline is a maintenance reminder: expiry remains
+an error in this report, but does not block catalog assembly or unpublish the
+guide. A published time-sensitive guide with an expired review window still
+blocks catalog assembly until it is reverified or explicitly held for review.
+Both kinds of published guide must carry valid verification and review dates.
+
 ## Context
 
 The KB carries two kinds of claim. Most are mechanically checkable — a tool slug
@@ -26,11 +32,12 @@ the human queue fills with work that did not need a human. An audit of the sourc
 corpus found 36 of 180 cited action identifiers already absent from the catalog;
 this check found one of them — `CANVAS_GET_ACCOUNTS` — live in a published guide.
 
-Review dates also fail late. `reviewAfter` expiry throws during catalog assembly,
-so an expired guide breaks the docs build rather than quietly unpublishing. At
-the time of writing, 22 of 27 published guides share a single `reviewAfter` date,
-so they expire together and the cheapest response on that day is to bump the
-dates rather than re-verify. The verifier reports that cohort as a finding.
+Review dates used to fail late. Every `reviewAfter` expiry threw during catalog
+assembly, so one overdue evergreen guide broke the docs build. On 2026-11-10,
+61 evergreen guides expired together and blocked unrelated SDK pull requests
+during docs installation. Evergreen deadlines now stay in the verifier report;
+time-sensitive expiry still blocks publication. The verifier also reports
+guides sharing a review date so the maintenance queue is visible before expiry.
 
 ## What Is Checked
 
@@ -91,8 +98,9 @@ asserts no published guide renders from the source snapshot.
 - Human review narrows to prose that cannot be checked mechanically.
 - A guide contradicting production is visible within hours, in one tracked issue
   that closes itself.
-- The checker must keep working when the build gate has tripped, so it assembles
-  the catalog with a floor date and re-checks expiry against the real clock.
+- The checker must keep working when time-sensitive expiry has tripped the build
+  gate, so it assembles the catalog with a floor date and re-checks all review
+  deadlines against the real clock.
 - Coverage — questions with no article at all — is out of scope here. That is a
   demand-side signal and is measured from support ticket volume, not from the
   catalog.

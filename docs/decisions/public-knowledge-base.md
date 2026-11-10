@@ -59,9 +59,12 @@
   canonical routes, verification dates, review deadlines, and publication
   state.
 - Publication rejects content that is not explicitly public, contains known
-  private-data markers, is stale, has broken references, or conflicts with an
-  existing route.
+  private-data markers, has expired time-sensitive verification, has broken
+  references, or conflicts with an existing route.
 - Time-sensitive content stays unpublished until it has been reverified.
+- Evergreen review deadlines remain freshness-check errors for follow-up, but
+  do not block the docs build or remove previously reviewed guides. Dates are
+  extended only after review.
 - The running docs application reads only the checked-in public snapshot; it
   does not access the source repository at runtime.
 
