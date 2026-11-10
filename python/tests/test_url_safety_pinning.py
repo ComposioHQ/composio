@@ -96,11 +96,16 @@ def no_inherited_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
     ``getproxies`` also reads) would disable the pinning adapter, and the
     request would dial the proxy's answer to the hostname instead of the
     validated address — failing these tests on machines that carry one.
+
+    ``requests.sessions`` imports ``get_environ_proxies`` by name, so the
+    session's own proxy lookup needs its own patch: without it the SDK sees no
+    proxy and pins, while the session still routes through the inherited one.
     """
-    monkeypatch.setattr(
-        "requests.utils.get_environ_proxies",
-        lambda url: {},
-    )
+    for module in ("requests.utils", "requests.sessions"):
+        monkeypatch.setattr(
+            f"{module}.get_environ_proxies",
+            lambda url, no_proxy=None: {},
+        )
 
 
 @pytest.fixture
@@ -192,6 +197,32 @@ def test_fetch_connects_to_the_address_it_validated(
     # The whole point: the rebound endpoint is never even connected to, so
     # neither its body nor a bare TCP connection to it is available to the
     # attacker.
+    assert rebound_server.hits == []
+
+
+@pytest.mark.usefixtures("rebinding_dns")
+def test_pinning_ignores_an_inherited_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+    validated_server: _RecordingServer,
+    rebound_server: _RecordingServer,
+) -> None:
+    """``no_inherited_proxy`` must hold on machines that carry a proxy (#5249).
+
+    A Windows registry or macOS system proxy reaches Requests through the same
+    ``getproxies`` lookup as these variables, so an unreachable proxy here
+    stands in for one this suite would otherwise inherit on those machines.
+    """
+    for name in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        monkeypatch.setenv(name, "http://127.0.0.1:9")
+    for name in ("NO_PROXY", "no_proxy"):
+        monkeypatch.setenv(name, "")
+
+    response = safe_get(
+        f"http://{HOSTNAME}:{validated_server.port}/payload", timeout=(5, 5)
+    )
+
+    assert response.content == b"public payload"
+    assert len(validated_server.hits) == 1
     assert rebound_server.hits == []
 
 

@@ -1,0 +1,21 @@
+id: py-unchecked-ignore
+language: Python
+severity: error
+message: Fix the type error or limit type-ignore to specific error codes with an explanation.
+files: ['python/**', 'scripts/**', '.github/scripts/**']
+ignores:
+  - '**/node_modules/**'
+  - '**/.venv/**'
+  - '**/.nox/**'
+  - '**/build/**'
+  - '**/dist/**'
+  - '**/test/**'
+  - '**/tests/**'
+  - '**/integration_test/**'
+  - '**/test_*.py'
+  - '**/*_test.py'
+rule:
+  kind: comment
+  regex: '^#\s*type:\s*ignore\b'
+  not:
+    regex: '^#\s*type:\s*ignore\s*\[\s*[a-z][a-z0-9-]*(\s*,\s*[a-z][a-z0-9-]*)*\s*\]'

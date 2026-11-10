@@ -70,7 +70,7 @@
     "lucide-react": "^1.42.0",
     "mermaid": "^11.17.2",
     "motion": "^12.43.0",
-    "next": "16.3.8",
+    "next": "16.4.5",
     "nucleo-pixel": "^1.5.1",
     "posthog-js": "^1.428.4",
     "react": "^19.2.8",
@@ -91,7 +91,7 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@composio/anthropic": "^0.11.6",
     "@composio/claude-agent-sdk": "^0.13.0",
-    "@composio/core": "^0.28.0",
+    "@composio/core": "0.29.0",
     "@composio/google": "^0.12.0",
     "@composio/langchain": "^0.11.2",
     "@composio/llamaindex": "^0.11.2",
@@ -100,6 +100,7 @@
     "@composio/openai-agents": "^0.11.2",
     "@composio/typesafe": "^0.1.1",
     "@composio/vercel": "^0.13.0",
+    "@effect/platform-bun": "4.1.1",
     "@google/genai": "^2.21.0",
     "@langchain/core": "^1.2.9",
     "@langchain/langgraph": "^1.4.14",
@@ -121,6 +122,7 @@
     "ai": "7.0.37",
     "ajv": "^8.20.0",
     "ajv-draft-04": "^1.0.0",
+    "effect": "4.1.1",
     "github-slugger": "^2.0.0",
     "mdast-util-mdx-jsx": "3.2.0",
     "mdast-util-to-string": "^4.0.0",
@@ -139,7 +141,7 @@
     "unist-util-visit": "^5.1.0"
   },
   "patchedDependencies": {
-    "next@16.3.8": "patches/next@16.3.8.patch"
+    "next@16.4.5": "patches/next@16.4.5.patch"
   },
   "overrides": {
     "@mastra/mcp": "1.17.2",

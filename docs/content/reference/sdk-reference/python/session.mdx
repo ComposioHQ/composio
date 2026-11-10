@@ -40,17 +40,17 @@ def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
 Authorize a toolkit for the user and get a connection request.  Initiates the OAuth flow and returns a ConnectionRequest with redirect URL.
 
 ```python
-def authorize(toolkit: str, callback_url: str | None = ..., alias: str | None = ..., experimental: session_link_params.Experimental | None = ...) -> ConnectionRequest
+def authorize(toolkit: str, *, callback_url: str | None = ..., alias: str | None = ..., experimental: session_link_params.Experimental | None = ...) -> ConnectionRequest
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit` | `str` |
-| `callback_url?` | `str \| None` |
-| `alias?` | `str \| None` |
-| `experimental?` | `session_link_params.Experimental \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `str` |  |
+| `callback_url?` | `str \| None` |  |
+| `alias?` | `str \| None` | Human-readable alias for the connection. Must be unique per userId and toolkit within the project. |
+| `experimental?` | `session_link_params.Experimental \| None` | Experimental options for this connection. Pass an `Experimental` dict with `account_type` and/or `acl_config_for_shared` to create a SHARED connection with a per-user ACL. Experimental — shape may change in future releases. |
 
 **Returns**
 
@@ -63,14 +63,14 @@ def authorize(toolkit: str, callback_url: str | None = ..., alias: str | None = 
 Get toolkit connection states for the session.
 
 ```python
-def toolkits(toolkits: List[str | None] = ..., next_cursor: str | None = ..., limit: int | None = ..., is_connected: bool | None = ..., search: str | None = ...) -> ToolkitConnectionsDetails
+def toolkits(*, toolkits: List[str] | None = ..., next_cursor: str | None = ..., limit: int | None = ..., is_connected: bool | None = ..., search: str | None = ...) -> ToolkitConnectionsDetails
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `toolkits?` | `List[str \| None]` |
+| `toolkits?` | `List[str] \| None` |
 | `next_cursor?` | `str \| None` |
 | `limit?` | `int \| None` |
 | `is_connected?` | `bool \| None` |
@@ -87,7 +87,7 @@ def toolkits(toolkits: List[str | None] = ..., next_cursor: str | None = ..., li
 Search for tools by semantic use case.  Returns relevant tools for the given query with schemas and guidance.
 
 ```python
-def search(query: str, model: str | None = ...) -> ToolRouterSessionSearchResponse
+def search(*, query: str, model: str | None = ...) -> ToolRouterSessionSearchResponse
 ```
 
 **Parameters**
@@ -108,18 +108,18 @@ def search(query: str, model: str | None = ...) -> ToolRouterSessionSearchRespon
 Execute a tool within the session.  For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the original slug (e.g. "GREP") when that original slug is unique across the session's custom tools and toolkits. Custom tools are executed in-process; remote tools are sent to the Composio backend.
 
 ```python
-def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str | None = ..., input_responses: Dict[str, ToolRouterInputResponse | None] = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
+def execute(tool_slug: str, *, arguments: Dict[str, Any] | None = ..., account: str | None = ..., input_responses: Dict[str, ToolRouterInputResponse] | None = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `tool_slug` | `str` |
-| `arguments?` | `Dict[str, Any \| None]` |
-| `account?` | `str \| None` |
-| `input_responses?` | `Dict[str, ToolRouterInputResponse \| None]` |
-| `request_state?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `tool_slug` | `str` |  |
+| `arguments?` | `Dict[str, Any] \| None` |  |
+| `account?` | `str \| None` | Account ID or alias for direct app tool execution in multi-account sessions. Helper/meta tools either ignore this top-level field or define their own account-selection fields. |
+| `input_responses?` | `Dict[str, ToolRouterInputResponse] \| None` | Experimental. The user's answers to an earlier `ToolInputRequiredError`, keyed by the IDs in its `input_requests`. Repeat the same call (same tool and arguments) with them. An approved call runs; a denied or declined one returns `result_type="failed"`. |
+| `request_state?` | `str \| None` | Experimental. The `request_state` of that error, sent back unchanged. Both paths return a `ToolRouterSessionExecuteResponse` with `data`, `error`, `log_id`, `result_type`, and `instant_charge` attributes. `result_type` is `"completed"`, `"failed"` or `"blocked"`; a failed execution can carry a `None` or empty `error`, so read `result_type` to tell them apart. A `"blocked"` call (a session hook blocked it) has empty `data`, the hook's message in `error`, and `block_reason` (`type` and `hook_id`). `hook_results` lists every session hook that applied. |
 
 **Returns**
 
@@ -137,17 +137,17 @@ def execute(tool_slug: str, arguments: Dict[str, Any | None] = ..., account: str
 Execute a Composio meta tool (`COMPOSIO_*`) within the session.  `execute` also runs meta tools. This method only accepts meta tool slugs, so a typo is a type error instead of a failed request. The call is sent to the Composio backend as is: custom tools named in a `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
 
 ```python
-def execute_meta(slug: ToolRouterSessionMetaToolSlug, arguments: Dict[str, Any | None] = ..., input_responses: Dict[str, ToolRouterInputResponse | None] = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
+def execute_meta(slug: ToolRouterSessionMetaToolSlug, *, arguments: Dict[str, Any] | None = ..., input_responses: Dict[str, ToolRouterInputResponse] | None = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slug` | `ToolRouterSessionMetaToolSlug` |
-| `arguments?` | `Dict[str, Any \| None]` |
-| `input_responses?` | `Dict[str, ToolRouterInputResponse \| None]` |
-| `request_state?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `ToolRouterSessionMetaToolSlug` | The meta tool slug to execute. |
+| `arguments?` | `Dict[str, Any] \| None` | Optional meta tool arguments. |
+| `input_responses?` | `Dict[str, ToolRouterInputResponse] \| None` | Experimental. The user's answers to an earlier `ToolInputRequiredError`, keyed by the IDs in its `input_requests`. Repeat the same call with them, as in `execute`. |
+| `request_state?` | `str \| None` | Experimental. The `request_state` of that error, sent back unchanged. |
 
 **Returns**
 
@@ -175,14 +175,14 @@ print(result.result_type, result.data)
 List all local tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
 
 ```python
-def local_tools(toolkit: str | None = ...) -> List[RegisteredLocalTool]
+def local_tools(*, toolkit: str | None = ...) -> List[RegisteredLocalTool]
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit?` | `str \| None` | Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS') |
 
 **Returns**
 
@@ -209,7 +209,7 @@ def local_toolkits() -> List[RegisteredLocalToolkit]
 Deprecated alias for `local_tools`.
 
 ```python
-def custom_tools(toolkit: str | None = ...) -> List[RegisteredCustomTool]
+def custom_tools(*, toolkit: str | None = ...) -> List[RegisteredCustomTool]
 ```
 
 **Parameters**
@@ -243,18 +243,18 @@ def custom_toolkits() -> List[RegisteredCustomToolkit]
 Proxy an API call through Composio's auth layer.
 
 ```python
-def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any | None]] = ...) -> ToolRouterSessionProxyExecuteResponse
+def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any]] | None = ...) -> ToolRouterSessionProxyExecuteResponse
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit` | `str` |
-| `endpoint` | `str` |
-| `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH']` |
-| `body?` | `Any` |
-| `parameters?` | `List[Dict[str, Any \| None]]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `str` | Composio toolkit slug (e.g. 'gmail', 'github') |
+| `endpoint` | `str` | API endpoint URL |
+| `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH']` | HTTP method |
+| `body?` | `Any` | Request body (for POST, PUT, PATCH) |
+| `parameters?` | `List[Dict[str, Any]] \| None` | Query/header parameters |
 
 **Returns**
 
@@ -271,7 +271,7 @@ def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'P
 Partially update the session configuration.  Only the fields provided are changed; omitted fields are preserved. For each policy block `None` removes the stored override (which can increase access: `toolkits=None` restores the unrestricted default, while `toolkits={"enable": []}` denies every app toolkit and is sent as-is). Supplied `tools`, `auth_configs` and `connected_accounts` maps replace the stored map entirely. Inside `manage_connections`, `callback_url=None` removes only the stored callback URL. Experimental `instant` accepts `False` to disable billed access or an object to set its filters; it does not accept `None`. Any object, even one that only sets `return_instant_charge` or `return_prices_in_search`, re-enables Instant usage on a Session set to `False`. `proxy_execute` takes a bool or `{"enable": bool}`; `True` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool, `False` also turns off the sandbox `proxy_execute()` helper, and `None` removes the stored block. `hooks` replaces the whole list of hooks, and `None` removes every hook. `hooks` cannot be combined with `experimental={'session_config_id': ...}` (`hooks=None` counts).  By default the request carries no precondition: the last writer wins. Pass `expected_config_version` (for example this object's `config_version`) to make the update conditional: the API then applies it only when the stored version still matches, and a concurrent change raises `SessionConfigConflictError` (HTTP 409) instead of being overwritten. The API must support the `expected_config_version` field; otherwise it rejects the request with a 400. `expected_config_version=False` is the same as omitting it. The PATCH is never retried by the transport, so a 409 is reported exactly once. On conflict this object stays unchanged: re-fetch the session with `composio.sessions.use(session_id)` and retry against the fresh `config_version`.  `config`, `config_version` and `preload` are refreshed in place only after a successful response, and the updated `config` is returned.  `workbench` is a backwards-compatible alias for `sandbox`. Prefer `sandbox` in new code.  All other parameters use the same types as the generated `client.tool_router.session.patch()` method.
 
 ```python
-def update(toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., instant: Union[Literal[False], ToolRouterInstantConfig, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools | None], 'Omit'] = ..., tags: Union[session_patch_params.Tags | None, 'Omit'] = ..., auth_configs: Union[Dict[str, str | None], 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str | None]], 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, ToolRouterUpdateManageConnectionsConfig | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, ToolRouterUpdateMultiAccountConfig | None, 'Omit'] = ..., proxy_execute: Union[Union[bool, ToolRouterProxyExecuteConfig | None], 'Omit'] = ..., hooks: Union[List[ToolRouterHook | None], 'Omit'] = ..., preload: Union[session_patch_params.Preload | None, 'Omit'] = ..., search: Union[session_patch_params.Search | None, 'Omit'] = ..., execute: Union[session_patch_params.Execute | None, 'Omit'] = ..., experimental: Union[session_patch_params.Experimental | None, ToolRouterUpdateExperimentalConfig | None, 'Omit'] = ..., expected_config_version: Union[int, None, Literal[False]] = ...) -> ToolRouterSessionConfig
+def update(*, toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., instant: Union[Literal[False], ToolRouterInstantConfig, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools] | None, 'Omit'] = ..., tags: Union[session_patch_params.Tags | None, 'Omit'] = ..., auth_configs: Union[Dict[str, str] | None, 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str]] | None, 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, ToolRouterUpdateManageConnectionsConfig | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, ToolRouterUpdateMultiAccountConfig | None, 'Omit'] = ..., proxy_execute: Union[Union[bool, ToolRouterProxyExecuteConfig] | None, 'Omit'] = ..., hooks: Union[List[ToolRouterHook] | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload | None, 'Omit'] = ..., search: Union[session_patch_params.Search | None, 'Omit'] = ..., execute: Union[session_patch_params.Execute | None, 'Omit'] = ..., experimental: Union[session_patch_params.Experimental | None, ToolRouterUpdateExperimentalConfig | None, 'Omit'] = ..., expected_config_version: Union[int, None, Literal[False]] = ...) -> ToolRouterSessionConfig
 ```
 
 **Parameters**
@@ -280,16 +280,16 @@ def update(toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., 
 |------|------|
 | `toolkits?` | `Union[session_patch_params.Toolkits \| None, 'Omit']` |
 | `instant?` | `Union[Literal[False], ToolRouterInstantConfig, 'Omit']` |
-| `tools?` | `Union[Dict[str, session_patch_params.Tools \| None], 'Omit']` |
+| `tools?` | `Union[Dict[str, session_patch_params.Tools] \| None, 'Omit']` |
 | `tags?` | `Union[session_patch_params.Tags \| None, 'Omit']` |
-| `auth_configs?` | `Union[Dict[str, str \| None], 'Omit']` |
-| `connected_accounts?` | `Union[Dict[str, SequenceNotStr[str \| None]], 'Omit']` |
+| `auth_configs?` | `Union[Dict[str, str] \| None, 'Omit']` |
+| `connected_accounts?` | `Union[Dict[str, SequenceNotStr[str]] \| None, 'Omit']` |
 | `manage_connections?` | `Union[session_patch_params.ManageConnections \| None, ToolRouterUpdateManageConnectionsConfig \| None, 'Omit']` |
 | `sandbox?` | `Union[session_patch_params.Workbench \| None, 'Omit']` |
 | `workbench?` | `Union[session_patch_params.Workbench \| None, 'Omit']` |
 | `multi_account?` | `Union[session_patch_params.MultiAccount \| None, ToolRouterUpdateMultiAccountConfig \| None, 'Omit']` |
-| `proxy_execute?` | `Union[Union[bool, ToolRouterProxyExecuteConfig \| None], 'Omit']` |
-| `hooks?` | `Union[List[ToolRouterHook \| None], 'Omit']` |
+| `proxy_execute?` | `Union[Union[bool, ToolRouterProxyExecuteConfig] \| None, 'Omit']` |
+| `hooks?` | `Union[List[ToolRouterHook] \| None, 'Omit']` |
 | `preload?` | `Union[session_patch_params.Preload \| None, 'Omit']` |
 | `search?` | `Union[session_patch_params.Search \| None, 'Omit']` |
 | `execute?` | `Union[session_patch_params.Execute \| None, 'Omit']` |
@@ -307,14 +307,14 @@ def update(toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., 
 List the configuration history of this session, newest first.  Every `update()` records a new config version; this returns those versions with cursor-based pagination.
 
 ```python
-def list_config_history(query: session_config_history_params.SessionConfigHistoryParams = ...) -> session_config_history_response.SessionConfigHistoryResponse
+def list_config_history(**query: Unpack[session_config_history_params.SessionConfigHistoryParams]) -> session_config_history_response.SessionConfigHistoryResponse
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `query?` | `session_config_history_params.SessionConfigHistoryParams` |
+| `query?` | `Unpack[session_config_history_params.SessionConfigHistoryParams]` |
 
 **Returns**
 
@@ -344,4 +344,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L322)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L316)

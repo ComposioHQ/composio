@@ -14,7 +14,8 @@
     "ts/packages/cli",
     "ts/packages/cli-keyring",
     "ts/packages/ts-builders",
-    "ts/packages/providers/*"
+    "ts/packages/providers/*",
+    "python"
   ],
   "scripts": {
     "build": "turbo build",
@@ -45,7 +46,11 @@
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "typecheck:examples": "turbo typecheck --filter='./ts/examples/*'",
     "lint:examples": "turbo lint --filter='./ts/examples/*'",
-    "lint": "oxlint ts test tsdown.config.base.ts",
+    "lint": "oxlint ts test tsdown.config.base.ts && pnpm run lint:antislop",
+    "lint:antislop": "node scripts/check-antislop.mjs",
+    "lint:antislop:scan": "ast-grep scan --config sgconfig.yml --error=no-suppress-all --error=unused-suppression",
+    "lint:antislop:prune": "node scripts/check-antislop.mjs --prune",
+    "test:antislop": "ast-grep test --config sgconfig.yml --skip-snapshot-tests && node --test test/antislop.test.mjs",
     "lint:packages": "oxlint ts/packages",
     "lint:fix": "oxlint --fix .",
     "lint:fix:packages": "oxlint --fix ts/packages",
@@ -68,7 +73,9 @@
     "changeset:pre-exit": "changeset pre exit",
     "clean": "git clean -xdf .turbo node_modules ts/packages/**/.turbo ts/packages/**/node_modules ts/packages/**/dist",
     "clean:workspace": "pnpm turbo clean",
-    "typecheck:agent-workflow": "bun node_modules/typescript/bin/tsc -p tsconfig.agent-workflow.json"
+    "typecheck:agent-workflow": "bun node_modules/typescript/bin/tsc -p tsconfig.agent-workflow.json",
+    "test:sdk-release": "bun test test/sdk-release-*.test.ts",
+    "typecheck:sdk-release": "bun node_modules/typescript/bin/tsc -p tsconfig.sdk-release.json"
   },
   "devEngines": {
     "runtime": {
@@ -79,12 +86,18 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@ast-grep/cli": "0.51.1",
+    "@changesets/apply-release-plan": "8.1.1",
+    "@changesets/assemble-release-plan": "7.0.0",
     "@changesets/cli": "^3.0.3",
+    "@changesets/config": "4.0.1",
     "@changesets/read": "^1.0.1",
+    "@changesets/types": "7.0.0",
     "@composio/anthropic": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@effect/platform-bun": "catalog:",
+    "@manypkg/get-packages": "3.1.0",
     "@types/bun": "catalog:",
     "@types/node": "^26.6.4",
     "@types/semver": "^7.8.0",

@@ -148,8 +148,9 @@ def _push(event: Event):
                 timeout=2.0,  # 2 second timeout to prevent hanging
             )
         )
+    # Telemetry failures must not fail an otherwise successful SDK operation.
+    # ast-grep-ignore: py-empty-except
     except (httpx.TimeoutException, httpx.HTTPError, Exception):
-        # Silently fail - telemetry shouldn't break the application
         pass
 
 

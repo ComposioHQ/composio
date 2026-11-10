@@ -1,0 +1,11 @@
+id: yaml-continue-on-error
+valid:
+  - 'continue-on-error: false'
+  - 'continue-on-error: ${{ matrix.experimental }}'
+  - 'description: "continue-on-error: true"'
+invalid:
+  - 'continue-on-error: true'
+  - '"continue-on-error": true'
+  - "'continue-on-error': 'true'"
+  - 'continue-on-error: ${{ true }}'
+  - 'steps: [{run: pnpm lint, continue-on-error: true}]'

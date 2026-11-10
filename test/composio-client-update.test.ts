@@ -133,6 +133,9 @@ test('planning updates owned pins, SDK changeset and CLI release note once', () 
   expect(plan.changed['python/setup.py']).toContain('composio-client==2.0.1');
   expect(plan.changed['python/pyproject.toml']).toContain('composio-client==2.0.1');
   expect(plan.changed['.changeset/composio-client-update.md']).toContain("'@composio/core': patch");
+  expect(plan.changed['.changeset/composio-client-update.md']).toContain(
+    "'@composio/python-sdk': patch"
+  );
   expect(plan.changed['.changeset/composio-client-update.md']).not.toContain("'@composio/cli':");
   expect(plan.changed['ts/packages/cli/CHANGELOG.md']).toContain('- Existing note.');
   expect(planUpdates({ ...files, ...plan.changed }, '2.0.1').changed).toEqual({});
@@ -190,7 +193,15 @@ test('Python-only catchup does not create a TypeScript release', () => {
   );
   expect(plan.typescript).toBe(false);
   expect(plan.python).toBe(true);
-  expect(Object.keys(plan.changed).sort()).toEqual(['python/pyproject.toml', 'python/setup.py']);
+  expect(Object.keys(plan.changed).sort()).toEqual([
+    '.changeset/composio-client-update.md',
+    'python/pyproject.toml',
+    'python/setup.py',
+  ]);
+  expect(plan.changed['.changeset/composio-client-update.md']).toContain(
+    "'@composio/python-sdk': patch"
+  );
+  expect(plan.changed['.changeset/composio-client-update.md']).not.toContain("'@composio/core':");
 });
 
 test('artifact transfer rejects unexpected paths, duplicates and advancing next before writes', async () => {
