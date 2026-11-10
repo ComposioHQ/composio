@@ -15,7 +15,6 @@ on:
     paths:
       - 'install.sh'
       - 'install.ps1'
-      - 'test/install-ps1.test.ps1'
       - 'install/**'
       - 'test/install-sh-*.test.sh'
       - '.github/workflows/cli.test-installation.yml'
@@ -599,11 +598,11 @@ jobs:
           COMPOSIO_CLI_TELEMETRY_DISABLED: '1'
         run: |
           $ErrorActionPreference = 'Stop'
-          if (-not $env:VERSION_INPUT -or $env:VERSION_INPUT -eq 'latest') {
-            & ./install.ps1
-          } else {
-            & ./install.ps1 -Version $env:VERSION_INPUT
+          if ($env:VERSION_INPUT -and $env:VERSION_INPUT -ne 'latest') {
+            $env:COMPOSIO_INSTALL_VERSION = $env:VERSION_INPUT
           }
+          # The documented flow: pipe the script into Invoke-Expression.
+          Get-Content -Raw ./install.ps1 | Invoke-Expression
           $expectedVersion = (Get-Content -LiteralPath "$HOME/.composio/release-tag.txt" -Raw).Trim() -replace '^@composio/cli@', ''
           $actualVersion = (& composio --version | Out-String).Trim()
           if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $expectedVersion) {

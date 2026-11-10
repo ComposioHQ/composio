@@ -13,7 +13,6 @@ on:
       - '.github/workflows/cli.windows.yml'
       - '.github/workflows/build-cli-binaries.yml'
       - 'install.ps1'
-      - 'test/install-ps1.test.ps1'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -97,11 +96,7 @@ jobs:
           name: composio-windows-x64
           path: windows-artifact
 
-      - name: Test Windows PowerShell installer
-        shell: powershell
-        run: ./test/install-ps1.test.ps1 -ArchivePath ./windows-artifact/composio-windows-x64.zip
-
-      - name: Test native binary, companions, and upgrades
+      - name: Test installer, native binary, companions, and upgrades
         shell: pwsh
         run: |
           $expectedVersion = $env:RELEASE_TAG -replace '^@composio/cli@', ''

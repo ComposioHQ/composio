@@ -12,20 +12,32 @@ If your shell is not recognized, or shell setup fails, the binary install still 
 
 Official releases must pass SHA-256 verification against the release's `checksums.txt`: a missing manifest, a manifest with no entry for your platform's archive, a malformed entry, or a mismatch aborts the install with `Refusing to install`. On systems with no `sha256sum` or `shasum`, the installer warns that verification was skipped and continues.
 
-## Windows x64
+## Windows x64 (experimental)
 
 Run in PowerShell:
 
 ```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 -OutFile install.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
 ```
 
-The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME/.composio`, and adds that directory to your User PATH. Open a new terminal, then run `composio login`. You don't need administrator access.
+The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME\.composio`, and adds that directory to your User PATH. Then run `composio login`. You don't need administrator access.
 
-Pass `-Version @composio/cli@X.Y.Z` to install a specific stable or beta release. Use `-InstallDir <directory>` (or `COMPOSIO_INSTALL_DIR`) to choose the bundle directory, or `-NoPath` to leave PATH unchanged. Keep the complete bundle together when moving it.
+To install a specific stable or beta release, set `COMPOSIO_INSTALL_VERSION` first:
 
-Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. The CLI uses its existing plaintext credential fallback on Windows; a native Windows keyring backend is not available.
+```powershell
+$env:COMPOSIO_INSTALL_VERSION = "X.Y.Z"; irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_SHELL` to `none` to leave PATH unchanged. Keep the complete bundle together when moving it.
+
+Windows support is experimental. Installation, `composio run`, and `composio upgrade` are tested on Windows; other commands may not work yet. Known limitations:
+
+- Credentials are stored in plaintext in `user_data.json`. There is no Windows keyring backend.
+- `composio install` and shell completions support only zsh, bash, and fish.
+- Installing the CLI skill creates a symbolic link, which needs Developer Mode or an administrator terminal.
+- The CLI does not announce new versions. Run `composio upgrade` to update.
+
+Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. For a fully supported setup, run the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 ## Choose or skip shell setup
 
@@ -136,4 +148,4 @@ To purge credentials, configuration, caches, and every other CLI file, run `rm -
 - Linux ARM64
 - macOS Intel
 - macOS Apple Silicon
-- Windows: x64 (Windows 10 1809+), installed with PowerShell. Requires an SSE4.2-capable CPU.
+- Windows: x64, experimental (Windows 10 1809+), installed with PowerShell. Requires an SSE4.2-capable CPU.

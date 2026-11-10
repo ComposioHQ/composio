@@ -13,20 +13,15 @@ The CLI is built using:
 - [Bun](https://bun.sh/)
 - [Vitest](https://vitest.dev/)
 
-## Windows x64
+## Windows x64 (experimental)
 
 Run in PowerShell:
 
 ```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 -OutFile install.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
 ```
 
-The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME/.composio`, and adds that directory to your User PATH. Open a new terminal, then run `composio login`. You don't need administrator access.
-
-Pass `-Version @composio/cli@X.Y.Z` to install a specific stable or beta release. Use `-InstallDir <directory>` (or `COMPOSIO_INSTALL_DIR`) to choose the bundle directory, or `-NoPath` to leave PATH unchanged. Keep the complete bundle together when moving it.
-
-Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. The CLI uses its existing plaintext credential fallback on Windows; a native Windows keyring backend is not available.
+See [INSTALL.md](../../../INSTALL.md#windows-x64-experimental) for options, requirements, and known limitations.
 
 ## 🧑‍💻 Usage
 

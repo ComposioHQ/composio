@@ -12,10 +12,11 @@
 
 ### Minor Changes
 
-- Add native Windows x64 CLI binaries, a checksum-verified PowerShell installer,
-  and Windows installation, companion-runtime, and self-upgrade checks in the
-  beta and stable release workflows. Windows requires Windows 10 1809 or newer
-  and an SSE4.2-capable x64 CPU.
+- Add experimental native Windows x64 CLI binaries, installed from PowerShell
+  with a checksum-verified one-liner. Installation, `composio run`, and
+  `composio upgrade` are checked on Windows in the beta and stable release
+  workflows; other commands may not work yet. Windows requires Windows 10 1809
+  or newer and an SSE4.2-capable x64 CPU.
 
 - A signal now ends each command the way its work ends. A one-shot command,
   `composio login` and `composio upgrade` stopped with Ctrl-C (SIGINT), SIGTERM

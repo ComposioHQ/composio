@@ -148,7 +148,7 @@ for interpreter in "$(command -v sh)"; do
   if windows_output=$(env PATH="$windows_bin:$PATH" HOME="$windows_home" "$interpreter" "$repo_root/install.sh" 2>&1); then
     fail 'Windows-like platforms must fail'
   fi
-  assert_contains "$windows_output" 'On Windows, use the PowerShell installer' 'Windows guidance'
+  assert_contains "$windows_output" 'Run this installer inside WSL' 'Windows guidance'
 done
 
 platform=$(uname -ms)
