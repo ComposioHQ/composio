@@ -60,3 +60,54 @@ unit appropriate for the institution. Google says policy changes can take up to
 Do not generalize this code to every Google Workspace account. Distinguish it
 from `admin_policy_enforced`, `access_denied`, and unverified-app errors before
 giving instructions.
+
+## Plaid bank linking and Item access tokens
+
+### Which authentication type does Plaid use?
+
+The Plaid toolkit uses `API_KEY` authentication with your Plaid `client_id`, an
+environment-specific `secret`, and an optional Item `access_token`. Plaid Link
+is the bank-consent flow that produces the token you need for bank-data tools.
+It is not a Composio-managed OAuth connection.
+
+### Why can I connect but not read bank accounts or transactions?
+
+Client credentials let you use supported institution and Link setup tools.
+Account, balance, and transaction tools also need the Item `access_token` for
+the linked bank. A successful connection alone does not verify access to bank
+data.
+
+Run [Plaid Link](https://plaid.com/docs/link/) in your application, exchange its
+`public_token` on your backend with
+[`/item/public_token/exchange`](https://plaid.com/docs/api/items/#itempublic_tokenexchange),
+and securely store the resulting `access_token` on the corresponding Composio
+connected account. Do not put an Item token on a shared auth config.
+
+### Can I use Hosted Link instead of embedding Plaid Link?
+
+You can create a Hosted Link through `PLAID_CREATE_LINK_TOKEN`. Your backend
+still needs to handle completion, obtain the exchangeable `public_token`,
+exchange it, and store the resulting Item token.
+Creating a link does not complete that flow for you. See
+[Plaid Hosted Link](https://plaid.com/docs/link/hosted-link/) for completion
+handling.
+
+### Can one connected account represent multiple linked banks?
+
+Use a separate connected account for each Plaid Item. Keep each Item token
+associated with the correct application user and connected account. Never
+overwrite one user's token with another user's token.
+
+### Which environment should I select?
+
+The toolkit defaults to `sandbox`. Use credentials and Item tokens from the
+selected environment. For live bank data, select `production` and use the
+required Plaid production access and product permissions. Sandbox success does
+not verify a production workflow.
+
+### Where should I put secrets?
+
+Keep the Plaid secret, Item `access_token`, and token exchange on your backend.
+Do not put them in frontend code, prompts, screenshots, Slack messages, or logs.
+The toolkit does not return Item access tokens or public tokens in action
+outputs.
