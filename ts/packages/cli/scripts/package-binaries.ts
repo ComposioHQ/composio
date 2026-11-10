@@ -33,7 +33,9 @@ export function packageBinaries() {
   return Effect.gen(function* () {
     const entries = yield* Effect.tryPromise(() => readdir(BINARIES_DIR));
 
-    const binaries = entries.filter(entry => ARTIFACT_NAMES.includes(entry));
+    const binaries = ARTIFACT_NAMES.filter(artifact =>
+      entries.includes(artifact === 'composio-windows-x64' ? `${artifact}.exe` : artifact)
+    );
 
     if (binaries.length === 0) {
       yield* Console.error('No binaries found in dist/binaries/. Run build:binary:all first.');
@@ -63,7 +65,11 @@ export function packageBinaries() {
     const companionEntries = archiveCompanionEntries(liveCompanionRelativePaths);
 
     for (const binary of binaries) {
-      const binaryPath = path.join(BINARIES_DIR, binary);
+      const executableName = binary === 'composio-windows-x64' ? 'composio.exe' : 'composio';
+      const binaryPath = path.join(
+        BINARIES_DIR,
+        binary === 'composio-windows-x64' ? `${binary}.exe` : binary
+      );
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
       const absoluteZipPath = path.resolve(zipPath);
 
@@ -75,7 +81,7 @@ export function packageBinaries() {
         await $`rm -f ${zipPath}`.quiet();
         await $`rm -rf ${tempDir}`.quiet();
         await $`mkdir -p ${nestedDir}`.quiet();
-        await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
+        await $`cp ${binaryPath} ${path.join(nestedDir, executableName)}`.quiet();
         for (const { relativePath, kind } of companionEntries) {
           const destinationPath = path.join(nestedDir, relativePath);
           await $`mkdir -p ${path.dirname(destinationPath)}`.quiet();

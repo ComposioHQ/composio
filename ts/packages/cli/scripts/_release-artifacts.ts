@@ -15,6 +15,7 @@ export const ARTIFACT_NAMES: ReadonlyArray<string> = [
   'composio-darwin-x64',
   'composio-linux-x64',
   'composio-linux-aarch64',
+  'composio-windows-x64',
 ];
 
 export type ArchiveCompanionEntryKind = 'copy' | 'placeholder';

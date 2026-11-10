@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import {
   Data,
   Effect,
@@ -25,7 +26,7 @@ import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-rep
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
-import type { NodeOs } from './node-os';
+import { NodeOs } from './node-os';
 import { recordLatestStableRelease } from './update-check';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
@@ -60,6 +61,7 @@ interface UpgradeBinaryContext {
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly githubConfig: GitHubConfig;
+  readonly platform: NodeJS.Platform;
 }
 
 /**
@@ -411,7 +413,10 @@ const extractBinary = (
     const zipPath = path.join(tempDir, name);
     const extractDir = path.join(tempDir, 'extract');
     const packageDir = path.join(extractDir, path.parse(name).name);
-    const binaryPath = path.join(packageDir, CLI_BINARY_NAME);
+    const binaryPath = path.join(
+      packageDir,
+      name === 'composio-windows-x64.zip' ? `${CLI_BINARY_NAME}.exe` : CLI_BINARY_NAME
+    );
 
     yield* Effect.logDebug(`Download zip to ${extractDir}`);
 
@@ -509,7 +514,7 @@ const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =
   });
 
 const replaceBinary = (
-  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
+  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path' | 'platform'>,
   sourcePath: string,
   targetPath: string,
   options: {
@@ -604,9 +609,15 @@ const replaceBinary = (
       ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to update installed release metadata')));
     }
 
-    yield* provideFsAndPath(ctx, atomicReplaceFile({ sourcePath, targetPath, mode: 0o755 })).pipe(
-      Effect.mapError(mapAtomicReplaceError('Failed to replace binary'))
-    );
+    yield* provideFsAndPath(
+      ctx,
+      atomicReplaceFile({
+        sourcePath,
+        targetPath,
+        mode: 0o755,
+        backupPath: ctx.platform === 'win32' ? `${targetPath}.old` : undefined,
+      })
+    ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to replace binary')));
 
     const legacyLocalToolsPath = path.join(targetDirectory, LEGACY_LOCAL_TOOLS_DIRNAME);
     yield* fs
@@ -728,6 +739,7 @@ const makeUpgradeBinary = Effect.gen(function* () {
     fs: yield* FileSystem.FileSystem,
     path: yield* Path.Path,
     githubConfig: yield* GITHUB_CONFIG,
+    platform: (yield* NodeOs).platform,
   };
 
   return {
@@ -741,6 +753,6 @@ export class UpgradeBinary extends Context.Service<UpgradeBinary, UpgradeBinaryS
   'services/UpgradeBinary'
 ) {
   static readonly Default = Layer.effect(UpgradeBinary, makeUpgradeBinary).pipe(
-    Layer.provide(Path.layer)
+    Layer.provide(BunPath.layer)
   );
 }

@@ -10,6 +10,7 @@
  *   bun-darwin-x64    → composio-darwin-x64
  *   bun-linux-x64     → composio-linux-x64
  *   bun-linux-arm64   → composio-linux-aarch64
+ *   bun-windows-x64   → composio-windows-x64.exe
  *
  * Output: `dist/binaries/<artifact-name>`
  */
@@ -31,6 +32,7 @@ const TARGET_MAP: Record<string, string> = {
   'bun-darwin-x64': 'composio-darwin-x64',
   'bun-linux-x64': 'composio-linux-x64',
   'bun-linux-arm64': 'composio-linux-aarch64',
+  'bun-windows-x64': 'composio-windows-x64',
 };
 
 const VALID_TARGETS = Object.keys(TARGET_MAP);
@@ -61,7 +63,7 @@ export function buildBinaryCross() {
     const cwd = process.cwd();
     yield* Effect.logDebug(`Cross-compiling binary in ${cwd} for target ${target}`);
 
-    const outfile = `./dist/binaries/${artifact}`;
+    const outfile = `./dist/binaries/${artifact}${target === 'bun-windows-x64' ? '.exe' : ''}`;
 
     const args = [
       'bun',

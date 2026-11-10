@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -336,7 +337,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
 // ── Public API (production defaults, fire-and-forget) ───────────────────
 
-const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
+const DefaultConfigLayers = Layer.mergeAll(BunPath.layer, NodeOs.Default, BunFileSystem.layer);
 
 export type UpdateNoticeShape = InvocationHookShape;
 

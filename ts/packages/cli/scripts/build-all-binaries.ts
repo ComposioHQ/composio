@@ -5,9 +5,9 @@
  *
  * Usage: `bun scripts/build-all-binaries.ts`
  *
- * Builds all 4 targets sequentially:
+ * Builds all 5 targets sequentially:
  *   composio-darwin-aarch64, composio-darwin-x64,
- *   composio-linux-x64, composio-linux-aarch64
+ *   composio-linux-x64, composio-linux-aarch64, composio-windows-x64.exe
  *
  * Output: `dist/binaries/composio-*`
  */
@@ -28,6 +28,7 @@ const TARGETS = [
   { target: 'bun-darwin-x64', artifact: 'composio-darwin-x64' },
   { target: 'bun-linux-x64', artifact: 'composio-linux-x64' },
   { target: 'bun-linux-arm64', artifact: 'composio-linux-aarch64' },
+  { target: 'bun-windows-x64', artifact: 'composio-windows-x64' },
 ] as const;
 
 function runBunBuild(target: string, outfile: string) {
@@ -82,7 +83,7 @@ export function buildAllBinaries() {
     yield* Console.log(`Building ${TARGETS.length} platform binaries...`);
 
     for (const { target, artifact } of TARGETS) {
-      const outfile = `./dist/binaries/${artifact}`;
+      const outfile = `./dist/binaries/${artifact}${target === 'bun-windows-x64' ? '.exe' : ''}`;
       yield* Console.log(`\nBuilding ${artifact} (${target})...`);
       yield* runBunBuild(target, outfile);
       yield* Console.log(`Built: ${outfile}`);
