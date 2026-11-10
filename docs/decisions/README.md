@@ -13,3 +13,4 @@ Read these when a docs change touches an existing architecture, generated-data p
   and snapshot-miss toolkit page fallback.
 - `toolkits.md` - toolkit page data, rendering, and live Instant eligibility filter decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.
+- `production-auth-review.md` - production auth coverage review and proposed identity/callback guidance edits (DEVREL-324).
