@@ -52,8 +52,8 @@ const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
 );
-const buildAllCliBinariesScript = readFileSync(
-  new URL('../ts/packages/cli/scripts/build-all-binaries.ts', import.meta.url),
+const cliBuildSharedScript = readFileSync(
+  new URL('../ts/packages/cli/scripts/_shared.ts', import.meta.url),
   'utf8'
 );
 const installGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
@@ -935,11 +935,9 @@ if (!buildCliWorkflow.includes('RELEASE_TAG: ${{ needs.prepare.outputs.release_t
   throw new Error('CLI binary builds must receive the resolved GitHub release tag');
 }
 if (
-  !buildAllCliBinariesScript.includes(
-    '...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)'
-  )
+  !cliBuildSharedScript.includes('...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)')
 ) {
-  throw new Error('the all-target CLI build must embed the resolved GitHub release version');
+  throw new Error('CLI binary compilation must embed the resolved GitHub release version');
 }
 if (
   !buildCliWorkflow.includes(

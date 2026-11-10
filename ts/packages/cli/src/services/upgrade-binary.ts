@@ -405,7 +405,7 @@ const verifyChecksum = (
  * Extract binary from zip archive using FileSystem
  */
 const extractBinary = (
-  { fs, path }: UpgradeBinaryContext,
+  { fs, path, platform }: UpgradeBinaryContext,
   { name, data }: { name: string; data: Uint8Array },
   tempDir: string
 ): Effect.Effect<{ binaryPath: string; packageDir: string }, UpgradeBinaryError, never> =>
@@ -415,7 +415,7 @@ const extractBinary = (
     const packageDir = path.join(extractDir, path.parse(name).name);
     const binaryPath = path.join(
       packageDir,
-      name === 'composio-windows-x64.zip' ? `${CLI_BINARY_NAME}.exe` : CLI_BINARY_NAME
+      platform === 'win32' ? `${CLI_BINARY_NAME}.exe` : CLI_BINARY_NAME
     );
 
     yield* Effect.logDebug(`Download zip to ${extractDir}`);

@@ -214,7 +214,7 @@ describe('run-companion-modules', () => {
 
         return Effect.gen(function* () {
           const result = yield* repairMissingInstalledRunCompanionModules({
-            callerImportMetaUrl: 'file:///B:/~BUN/root/commands.mjs',
+            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
             execPath,
             appVersion: '0.0.0-test',
           });
