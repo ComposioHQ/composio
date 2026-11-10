@@ -179,6 +179,7 @@ describe('Docs product navigation', () => {
       '/docs/security/token-custody',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
+      '/docs/security/vulnerability-disclosure',
     ];
     const security = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],
