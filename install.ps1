@@ -33,7 +33,7 @@ function Install-Composio {
     } else {
         $release = $null
         for ($page = 1; $page -le 5 -and -not $release; $page++) {
-            $releases = @(Invoke-RestMethod -Uri "${releasesUrl}?per_page=100&page=$page" -TimeoutSec 60)
+            $releases = Invoke-RestMethod -Uri "${releasesUrl}?per_page=100&page=$page" -TimeoutSec 60
             $release = $releases | Where-Object {
                 -not $_.draft -and -not $_.prerelease -and $_.tag_name -match '^@composio/cli@\d+\.\d+\.\d+$' -and
                 @($_.assets | Where-Object { $_.name -eq $archiveName }).Count -gt 0
@@ -109,7 +109,8 @@ function Install-Composio {
 
 if ($MyInvocation.InvocationName -ne '.') {
     $ErrorActionPreference = 'Stop'
-    if ([Environment]::OSVersion.Platform -ne 'Win32NT' -or $env:PROCESSOR_ARCHITECTURE -ne 'AMD64') {
+    $osArchitecture = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+    if ([Environment]::OSVersion.Platform -ne 'Win32NT' -or $osArchitecture -ne 'AMD64') {
         throw 'This installer requires Windows x64. Use install.sh on Linux, macOS, or WSL.'
     }
     Install-Composio -Version $Version -InstallDir $InstallDir -NoPath:$NoPath

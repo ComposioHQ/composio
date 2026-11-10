@@ -68,7 +68,8 @@ const fileExists = (fs: FileSystem.FileSystem, filePath: string) =>
   fs.exists(filePath).pipe(Effect.orElseSucceed(() => false));
 
 export const isBunVirtualPath = (filePath: string): boolean =>
-  /^(?:\/?[A-Za-z]:)?[/\\]\$bunfs[/\\]/.test(filePath);
+  /^(?:\/?[A-Za-z]:)?[/\\]\$bunfs[/\\]/.test(filePath) ||
+  /^\/?[A-Za-z]:[/\\]~BUN[/\\]/.test(filePath);
 
 const filePathFromUrl = (path: Path.Path, url: string): Effect.Effect<string> =>
   Schema.decodeUnknownEffect(Schema.URLFromString)(url).pipe(

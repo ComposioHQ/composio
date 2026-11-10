@@ -214,7 +214,7 @@ describe('run-companion-modules', () => {
 
         return Effect.gen(function* () {
           const result = yield* repairMissingInstalledRunCompanionModules({
-            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+            callerImportMetaUrl: 'file:///B:/~BUN/root/commands.mjs',
             execPath,
             appVersion: '0.0.0-test',
           });
@@ -542,7 +542,7 @@ describe('Windows compiled companion resolution', () => {
   it.effect('falls back beside the executable for a Windows Bun virtual module', () =>
     Effect.gen(function* () {
       const result = yield* resolveRunCompanionModulePath({
-        callerImportMetaUrl: 'file:///B:/$bunfs/root/commands.mjs',
+        callerImportMetaUrl: 'file:///B:/~BUN/root/commands.mjs',
         execPath: 'C:\\Users\\Example User\\.composio\\composio.exe',
         relativeNoExtensionFromCaller: '../../services/run-helpers-runtime',
       });
