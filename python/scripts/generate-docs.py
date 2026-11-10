@@ -595,11 +595,11 @@ def generate_class_mdx(
                 for p in method["parameters"]:
                     opt = "?" if p["optional"] else ""
                     safe_type = p["type"].replace("|", "\\|")
-                    row = f"| `{p['name']}{opt}` | `{safe_type}` |"
+                    parameter_row = f"| `{p['name']}{opt}` | `{safe_type}` |"
                     if include_descriptions:
                         description = p["description"].replace("|", "\\|")
-                        row += f" {description} |"
-                    lines.append(row)
+                        parameter_row += f" {description} |"
+                    lines.append(parameter_row)
                 lines.append("")
 
             # Returns
