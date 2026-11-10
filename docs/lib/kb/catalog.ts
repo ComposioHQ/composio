@@ -135,7 +135,7 @@ export function buildKbCatalog(
       if (!reviewAfter) {
         throw new Error(`${definition.slug}: published content requires reviewAfter`);
       }
-      if (reviewAfter.valueOf() <= now.valueOf()) {
+      if (definition.freshness === 'time-sensitive' && reviewAfter.valueOf() <= now.valueOf()) {
         throw new Error(`${definition.slug}: review window expired`);
       }
     }
