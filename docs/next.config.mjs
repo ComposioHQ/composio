@@ -70,6 +70,11 @@ const config = {
   async redirects() {
     // Security has one canonical home. Keep legacy and agent-readable KB URLs useful.
     const retiredSecurityGuides = [
+      ['/kb/guide/canonical-public-sources', '/docs/security/overview'],
+      ['/kb/guide/model-training', '/docs/security/overview'],
+      ['/kb/guide/third-party-providers', '/docs/security/overview'],
+      ['/kb/guide/zero-data-retention-and-no-training-requirements', '/docs/security/overview'],
+      ['/kb/guide/don-t-store-data-removes-new-payload-content-not-the-audit-row', '/docs/security/zero-data-retention'],
       ['/kb/guide/platform-compliance-data-handling', '/docs/security/overview'],
       ['/kb/sdk-and-api/platform-compliance-data-handling', '/docs/security/overview'],
       ['/kb/security-and-trust/platform-compliance-data-handling', '/docs/security/overview'],

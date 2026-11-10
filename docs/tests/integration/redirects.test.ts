@@ -21,6 +21,11 @@ const EVIDENCED_REDIRECTS = [
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   ...EVIDENCED_REDIRECTS,
+  { from: "/kb/guide/canonical-public-sources", to: "/docs/security/overview" },
+  { from: "/kb/guide/model-training", to: "/docs/security/overview" },
+  { from: "/kb/guide/third-party-providers", to: "/docs/security/overview" },
+  { from: "/kb/guide/zero-data-retention-and-no-training-requirements", to: "/docs/security/overview" },
+  { from: "/kb/guide/don-t-store-data-removes-new-payload-content-not-the-audit-row", to: "/docs/security/zero-data-retention" },
   { from: "/kb/guide/platform-compliance-data-handling", to: "/docs/security/overview" },
   { from: "/kb/sdk-and-api/platform-compliance-data-handling", to: "/docs/security/overview" },
   { from: "/kb/security-and-trust/platform-compliance-data-handling", to: "/docs/security/overview" },
