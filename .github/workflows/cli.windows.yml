@@ -1,0 +1,108 @@
+name: CLI Windows x64
+
+on:
+  pull_request:
+    paths:
+      - 'ts/packages/cli/**'
+      - 'ts/packages/cli-keyring/**'
+      - 'ts/packages/core/**'
+      - 'ts/packages/ts-builders/**'
+      - 'ts/packages/json-schema-to-effect-schema/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/scripts/cli-release/**'
+      - '.github/workflows/cli.windows.yml'
+      - '.github/workflows/build-cli-binaries.yml'
+      - 'install.ps1'
+      - 'test/install-ps1.test.ps1'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Exact CLI release tag to embed and verify'
+        type: string
+        required: false
+        default: '@composio/cli@0.0.0-beta.0'
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || '@composio/cli@0.0.0-beta.0' }}
+  TURBO_TELEMETRY_DEBUG: 1
+
+jobs:
+  build:
+    name: Build Windows archive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: ${{ github.event_name != 'pull_request' && 'true' || 'false' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Cross-compile Windows x64
+        working-directory: ts/packages/cli
+        env:
+          COMPOSIO_POSTHOG_PROJECT_API_KEY: ${{ vars.COMPOSIO_POSTHOG_PROJECT_API_KEY }}
+        run: pnpm build:binary:cross --target bun-windows-x64
+
+      - name: Package Windows archive
+        working-directory: ts/packages/cli
+        run: pnpm build:binary:package
+
+      - name: Verify release metadata and companion layout
+        env:
+          ARCHIVE: ts/packages/cli/dist/binaries/composio-windows-x64.zip
+          ARTIFACT: composio-windows-x64
+        run: |
+          unzip -p "$ARCHIVE" "$ARTIFACT/release-tag.txt" | grep -Fx "$RELEASE_TAG"
+          bash .github/scripts/cli-release/verify-archive-companions.sh
+
+      - name: Upload Windows archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: composio-windows-x64
+          path: ts/packages/cli/dist/binaries/composio-windows-x64.zip
+          retention-days: 7
+
+  test:
+    name: Native Windows installation and runtime
+    needs: build
+    # Standard GitHub-hosted Windows runners are free for public repositories.
+    runs-on: windows-2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download Windows archive
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: composio-windows-x64
+          path: windows-artifact
+
+      - name: Test Windows PowerShell installer
+        shell: powershell
+        run: ./test/install-ps1.test.ps1 -ArchivePath ./windows-artifact/composio-windows-x64.zip
+
+      - name: Test native binary, companions, and upgrades
+        shell: pwsh
+        run: |
+          $expectedVersion = $env:RELEASE_TAG -replace '^@composio/cli@', ''
+          ./.github/scripts/cli-release/test-windows.ps1 -ArchivePath ./windows-artifact/composio-windows-x64.zip -ExpectedVersion $expectedVersion

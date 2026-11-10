@@ -672,12 +672,8 @@ const generatedWindowsInstallGuidance = requireMatch(
   'generated Windows install guidance'
 );
 
-if (
-  !canonicalWindowsInstallGuidance.includes(
-    '[WSL](https://learn.microsoft.com/windows/wsl/install)'
-  )
-) {
-  throw new Error('INSTALL.md must direct Windows users to the canonical WSL instructions');
+if (!canonicalWindowsInstallGuidance.includes('PowerShell')) {
+  throw new Error('INSTALL.md must document native Windows x64 PowerShell installation');
 }
 if (generatedWindowsInstallGuidance !== canonicalWindowsInstallGuidance) {
   throw new Error(
@@ -743,6 +739,65 @@ if (!createDraftScript.includes('--draft')) {
 }
 if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
   throw new Error('verify-assets.sh must require assets be fully uploaded (state == "uploaded")');
+}
+
+// Windows must be uploaded before a release becomes public, just like existing platforms.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-windows-release-assets-'));
+  try {
+    const fakeBin = join(fixtureDir, 'bin');
+    mkdirSync(fakeBin);
+    const fixturePath = join(fixtureDir, 'assets.json');
+    const ghPath = join(fakeBin, 'gh');
+    writeFileSync(ghPath, '#!/bin/sh\ncat "$CLI_RELEASE_ASSETS_FIXTURE"\n');
+    chmodSync(ghPath, 0o755);
+    const assets = [
+      'composio-linux-x64.zip',
+      'composio-linux-aarch64.zip',
+      'composio-darwin-x64.zip',
+      'composio-darwin-aarch64.zip',
+      'composio-windows-x64.zip',
+      'composio-skill.zip',
+      'checksums.txt',
+    ].map(name => ({ name, state: 'uploaded' }));
+    const verify = rows => {
+      writeFileSync(fixturePath, JSON.stringify({ assets: rows }));
+      return spawnSync(
+        'bash',
+        [new URL('../.github/scripts/cli-release/verify-assets.sh', import.meta.url).pathname],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            PATH: `${fakeBin}:${process.env.PATH}`,
+            CLI_RELEASE_ASSETS_FIXTURE: fixturePath,
+            RELEASE_TAG: '@composio/cli@1.2.3',
+            VERIFY_ATTEMPTS: '1',
+            VERIFY_SLEEP_SECONDS: '0',
+          },
+        }
+      );
+    };
+    const complete = verify(assets);
+    if (complete.status !== 0) {
+      throw new Error(`complete CLI release must pass verification: ${complete.stderr}`);
+    }
+    const missing = verify(assets.filter(asset => asset.name !== 'composio-windows-x64.zip'));
+    const pending = verify(
+      assets.map(asset =>
+        asset.name === 'composio-windows-x64.zip' ? { ...asset, state: 'new' } : asset
+      )
+    );
+    for (const result of [missing, pending]) {
+      if (result.status === 0 || !result.stdout.includes('composio-windows-x64.zip')) {
+        throw new Error(
+          'CLI release verification must reject a missing or pending Windows archive'
+        );
+      }
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
 }
 
 // Beta status must survive the draft→publish flip (regression: the old single create set

@@ -1,6 +1,6 @@
 # Composio CLI installation
 
-Install the CLI bundle in `~/.composio` and its entry point in `~/.local/bin`:
+On Linux or macOS, install the CLI bundle in `~/.composio` and its entry point in `~/.local/bin`:
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
@@ -11,6 +11,21 @@ The installer also configures your shell. It infers your login shell from `$SHEL
 If your shell is not recognized, or shell setup fails, the binary install still succeeds and the installer prints a runnable command instead. The installer also installs plugins for detected, supported Codex and Claude Code hosts. Set `COMPOSIO_INSTALL_PLUGINS=0` or pass `--no-plugins` to skip plugin setup. Login remains a separate step.
 
 Official releases must pass SHA-256 verification against the release's `checksums.txt`: a missing manifest, a manifest with no entry for your platform's archive, a malformed entry, or a mismatch aborts the install with `Refusing to install`. On systems with no `sha256sum` or `shasum`, the installer warns that verification was skipped and continues.
+
+## Windows x64
+
+Run in PowerShell:
+
+```powershell
+Invoke-WebRequest https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME/.composio`, and adds that directory to your User PATH. Open a new terminal, then run `composio login`. You don't need administrator access.
+
+Pass `-Version @composio/cli@X.Y.Z` to install a specific stable or beta release. Use `-InstallDir <directory>` (or `COMPOSIO_INSTALL_DIR`) to choose the bundle directory, or `-NoPath` to leave PATH unchanged. Keep the complete bundle together when moving it.
+
+Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. The CLI uses its existing plaintext credential fallback on Windows; a native Windows keyring backend is not available.
 
 ## Choose or skip shell setup
 
@@ -59,8 +74,9 @@ Download the archive for your platform from [GitHub Releases](https://github.com
 - `composio-linux-aarch64.zip`
 - `composio-darwin-x64.zip`
 - `composio-darwin-aarch64.zip`
+- `composio-windows-x64.zip`
 
-Extract and install the complete bundle. The CLI loads support files beside the executable, so do not copy only the nested `composio` file.
+Extract and install the complete bundle. The CLI loads support files beside the executable, so do not copy only the nested `composio` or `composio.exe` file.
 
 ```bash
 bundle=composio-linux-x64
@@ -120,4 +136,4 @@ To purge credentials, configuration, caches, and every other CLI file, run `rm -
 - Linux ARM64
 - macOS Intel
 - macOS Apple Silicon
-- Windows: use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the installer inside your WSL distribution
+- Windows: x64 (Windows 10 1809+), installed with PowerShell. Requires an SSE4.2-capable CPU.

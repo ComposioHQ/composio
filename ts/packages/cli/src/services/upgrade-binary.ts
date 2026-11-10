@@ -525,6 +525,19 @@ const replaceBinary = (
     const { fs, path } = ctx;
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
 
+    if (ctx.platform === 'win32') {
+      yield* fs.remove(`${targetPath}.old`, { force: true }).pipe(
+        Effect.mapError(
+          cause =>
+            new UpgradeBinaryError({
+              cause,
+              message:
+                'Could not remove the previous executable backup. Close other Composio processes and retry.',
+            })
+        )
+      );
+    }
+
     const sourceDirectory = path.dirname(sourcePath);
     const targetDirectory = path.dirname(targetPath);
     const companionRelativePaths = yield* provideFsAndPath(

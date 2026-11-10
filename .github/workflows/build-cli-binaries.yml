@@ -8,6 +8,9 @@ on:
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
+      - '.github/workflows/cli.windows.yml'
+      - 'install.ps1'
+      - 'test/install-ps1.test.ps1'
       - 'install.sh'
       - 'install/**'
       - 'mise.toml'
@@ -176,15 +179,22 @@ jobs:
           path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
           retention-days: 7
 
+  windows:
+    name: Windows x64
+    needs: prepare
+    uses: ./.github/workflows/cli.windows.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.release_tag }}
+
   release:
     name: Release (draft → verify → publish)
-    needs: [prepare, build]
+    needs: [prepare, build, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write # create/edit the GitHub Release and upload assets
     # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built,
-    # so a partial set can never reach the release path.
-    if: needs.build.result == 'success'
+    # and the Windows workflow must pass native execution before publication.
+    if: needs.build.result == 'success' && needs.windows.result == 'success'
     # Serialize runs that target the SAME release tag (e.g. two quick pushes, or a re-run
     # racing the original) so they cannot interleave uploads. Keyed on the resolved tag so
     # unrelated beta builds are not serialized behind each other. Job-level concurrency may
@@ -307,6 +317,21 @@ jobs:
           directory to `PATH` in that shell's startup file. Re-running the installer
           never duplicates the entry.
 
+          ### Windows x64
+
+          Run in PowerShell:
+
+          ```powershell
+          Invoke-WebRequest https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 -OutFile install.ps1
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Version RELEASE_TAG_PLACEHOLDER
+          ```
+
+          This verifies the archive, installs the complete bundle in
+          `$HOME/.composio`, and adds it to your User PATH. No administrator
+          access is needed. Keep `composio.exe` with its support files.
+          Windows currently uses the existing plaintext credential fallback;
+          a native Windows keyring backend is not available.
+
           ### Install without shell setup
 
           ```bash
@@ -364,8 +389,7 @@ jobs:
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
-          **Not supported:**
-          - Windows: use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the installer inside your WSL distribution
+          - Windows: x64 (Windows 10 1809+), installed with PowerShell. Requires an SSE4.2-capable CPU.
           EOF
           sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 

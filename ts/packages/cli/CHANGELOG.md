@@ -12,6 +12,11 @@
 
 ### Minor Changes
 
+- Add native Windows x64 CLI binaries, a checksum-verified PowerShell installer,
+  and Windows installation, companion-runtime, and self-upgrade checks in the
+  beta and stable release workflows. Windows requires Windows 10 1809 or newer
+  and an SSE4.2-capable x64 CPU.
+
 - A signal now ends each command the way its work ends. A one-shot command,
   `composio login` and `composio upgrade` stopped with Ctrl-C (SIGINT), SIGTERM
   or a closed terminal (SIGHUP) exit 130, 143 or 129. They used to exit 0, so a

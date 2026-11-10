@@ -50,6 +50,7 @@ try {
 
     $installDir = Join-Path $testRoot 'install with spaces'
     Install-Composio -Version '1.2.3' -InstallDir $installDir -NoPath
+    Assert-Equal $env:PATH $originalPath 'NoPath leaves process PATH untouched'
     Assert-Equal (Test-Path -LiteralPath (Join-Path $installDir 'composio.exe')) $true 'installs executable'
     Assert-Equal (Test-Path -LiteralPath (Join-Path $installDir 'services/generation-runtime.mjs')) $true 'installs live companions'
     Set-Content -LiteralPath (Join-Path $installDir 'user_data.json') -Value 'preserve credentials'

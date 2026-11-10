@@ -18,7 +18,10 @@ function Install-Composio {
     $repo = if ($env:COMPOSIO_GITHUB_REPO) { $env:COMPOSIO_GITHUB_REPO } else { 'composio' }
     if ($owner -notmatch '^[A-Za-z0-9._-]+$' -or $repo -notmatch '^[A-Za-z0-9._-]+$') { throw 'Invalid GitHub owner or repository.' }
     $api = if ($env:COMPOSIO_GITHUB_API_BASE_URL) { $env:COMPOSIO_GITHUB_API_BASE_URL.TrimEnd('/') } else { 'https://api.github.com' }
-    if ([uri]$api -and ([uri]$api).Scheme -ne 'https') { throw 'The GitHub API URL must use HTTPS.' }
+    function Test-DownloadUrl([uri]$Uri) {
+        return -not $Uri.UserInfo -and ($Uri.Scheme -eq 'https' -or ($Uri.Scheme -eq 'http' -and $Uri.IsLoopback))
+    }
+    if (-not (Test-DownloadUrl ([uri]$api))) { throw 'The GitHub API URL must use HTTPS (HTTP is allowed on localhost).' }
     $releasesUrl = "$api/repos/$owner/$repo/releases"
     $archiveName = 'composio-windows-x64.zip'
 
@@ -52,7 +55,7 @@ function Install-Composio {
         $checksumPath = Join-Path $tempDir 'checksums.txt'
         foreach ($download in @(@($archive.browser_download_url, $zipPath), @($checksums.browser_download_url, $checksumPath))) {
             $uri = [uri]$download[0]
-            if ($uri.Scheme -ne 'https' -or $uri.UserInfo) { throw 'Release download URLs must use HTTPS without credentials.' }
+            if (-not (Test-DownloadUrl $uri)) { throw 'Release download URLs must use HTTPS (HTTP is allowed on localhost), without credentials.' }
             Invoke-WebRequest -Uri $download[0] -OutFile $download[1] -UseBasicParsing -TimeoutSec 120
         }
         $checksumLine = Get-Content -LiteralPath $checksumPath | Where-Object { $_ -match '^([a-fA-F0-9]{64})\s+\*?composio-windows-x64\.zip$' } | Select-Object -First 1
@@ -66,16 +69,20 @@ function Install-Composio {
             if (-not (Test-Path -LiteralPath (Join-Path $bundle $relativePath) -PathType Leaf)) { throw "Incomplete CLI bundle: missing $relativePath. Refusing to install." }
         }
         New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+        $target = Join-Path $InstallDir 'composio.exe'
+        $backup = "$target.old"
+        try {
+            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
+        } catch {
+            throw "Could not remove the previous executable backup. Close other Composio processes and retry. $($_.Exception.Message)"
+        }
         # Copy support files individually so credentials and config in .composio survive.
         Get-ChildItem -LiteralPath $bundle -Force | Where-Object { $_.Name -ne 'composio.exe' } | ForEach-Object {
             Copy-Item -LiteralPath $_.FullName -Destination $InstallDir -Recurse -Force
         }
-        $target = Join-Path $InstallDir 'composio.exe'
         $staged = Join-Path $InstallDir "composio-$([Guid]::NewGuid()).exe"
-        $backup = "$target.old"
         Copy-Item -LiteralPath (Join-Path $bundle 'composio.exe') -Destination $staged
         try {
-            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
             $hadTarget = Test-Path -LiteralPath $target
             if ($hadTarget) { Move-Item -LiteralPath $target -Destination $backup }
             try { Move-Item -LiteralPath $staged -Destination $target } catch {

@@ -14,6 +14,8 @@ on:
   pull_request:
     paths:
       - 'install.sh'
+      - 'install.ps1'
+      - 'test/install-ps1.test.ps1'
       - 'install/**'
       - 'test/install-sh-*.test.sh'
       - '.github/workflows/cli.test-installation.yml'
@@ -582,6 +584,34 @@ jobs:
 
           rm test-install.sh
 
+  test-windows-installation:
+    name: Test Windows Installation
+    if: github.event_name != 'pull_request'
+    runs-on: windows-2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install and verify published Windows release
+        shell: pwsh
+        env:
+          VERSION_INPUT: ${{ inputs.version || github.ref_name }}
+          COMPOSIO_CLI_TELEMETRY_DISABLED: '1'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:VERSION_INPUT -or $env:VERSION_INPUT -eq 'latest') {
+            & ./install.ps1
+          } else {
+            & ./install.ps1 -Version $env:VERSION_INPUT
+          }
+          $expectedVersion = (Get-Content -LiteralPath "$HOME/.composio/release-tag.txt" -Raw).Trim() -replace '^@composio/cli@', ''
+          $actualVersion = (& composio --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $expectedVersion) {
+            throw "Expected Windows CLI $expectedVersion, got $actualVersion"
+          }
+          & composio --help
+          if ($LASTEXITCODE -ne 0) { throw 'Installed Windows CLI help failed.' }
+
   summary:
     name: Installation Test Summary
     needs:
@@ -590,6 +620,7 @@ jobs:
         test-install-script,
         test-architecture-detection,
         test-prerequisites,
+        test-windows-installation,
       ]
     runs-on: ubuntu-latest
     if: always() && github.event_name != 'pull_request'
@@ -630,5 +661,11 @@ jobs:
           echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS ARM64**: macOS 15, macOS 26 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY
+          echo "- **Windows x64**: Windows Server 2025" >> $GITHUB_STEP_SUMMARY
+          echo "- **Shells**: Bash, Zsh, and PowerShell" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.test-windows-installation.result }}" != "success" ]]; then
+            echo "❌ **Windows Installation**: FAILED" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "✅ **Windows Installation**: PASSED" >> $GITHUB_STEP_SUMMARY

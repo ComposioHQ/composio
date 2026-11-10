@@ -198,7 +198,7 @@ detect_target() {
     platform=$(uname -ms)
     case $platform in
         'MINGW64'* | 'MSYS'* | 'CYGWIN'*)
-            error 'Windows is not supported. Use WSL (https://learn.microsoft.com/windows/wsl/install) and run this script inside your WSL distribution.'
+            error 'On Windows, use the PowerShell installer: https://github.com/ComposioHQ/composio/blob/next/install.ps1. Run this shell installer inside WSL for the Linux binary.'
             ;;
         'Darwin x86_64') target=darwin-x64 ;;
         'Darwin arm64') target=darwin-aarch64 ;;
