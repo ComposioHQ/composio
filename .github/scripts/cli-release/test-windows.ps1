@@ -153,7 +153,12 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
         Invoke-Cli @('upgrade', $ExpectedVersion) | Out-Host
         Assert ((Invoke-Cli @('--version')) -eq $ExpectedVersion) "CLI failed after upgrade $upgrade."
         Assert ((Get-Sha256 "$binary.old") -eq $expectedBinaryHash) "Upgrade $upgrade did not replace the running executable."
-        if ($upgrade -eq 1) { Set-Content -LiteralPath "$binary.old" -Value 'stale backup' }
+        if ($upgrade -eq 1) {
+            # The replaced executable stays locked until its process has fully exited.
+            for ($attempt = 0; $attempt -lt 50; $attempt++) {
+                try { Set-Content -LiteralPath "$binary.old" -Value 'stale backup'; break } catch { Start-Sleep -Milliseconds 200 }
+            }
+        }
     }
 
     # While another process holds composio.exe.old, neither upgrade path may modify the installation.
