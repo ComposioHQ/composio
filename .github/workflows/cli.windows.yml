@@ -50,7 +50,7 @@ jobs:
           cache-save: ${{ github.event_name != 'pull_request' && 'true' || 'false' }}
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build packages
         run: pnpm build:packages
