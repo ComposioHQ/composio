@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from composio_client import omit
+from composio_client.types import toolkit_list_response
 
 from composio.core.models.toolkits import Toolkits
 from tests.conftest import mock_http_client
@@ -23,6 +24,23 @@ def toolkits(mock_client: Mock) -> Toolkits:
 
 
 class TestToolkitsGetMany:
+    def test_list_methods_preserve_generated_instant_support(
+        self, toolkits, mock_client
+    ):
+        item = toolkit_list_response.Item.model_construct(
+            name="Exa",
+            slug="exa",
+            instant=toolkit_list_response.CurrentItemInstant(supported=True),
+        )
+        mock_client.toolkits.list.return_value = (
+            toolkit_list_response.ToolkitListResponse.model_construct(items=[item])
+        )
+        mock_client.toolkits.retrieve_multi.return_value = Mock(items=[item])
+
+        assert toolkits.list().items[0].instant is not None
+        assert toolkits.get()[0].instant is not None
+        assert toolkits.get_many(["exa"])[0].instant.supported is True
+
     def test_get_many_by_slugs(self, toolkits, mock_client):
         mock_client.toolkits.retrieve_multi.return_value = Mock(items=["gh", "sl"])
 
@@ -39,6 +57,7 @@ class TestToolkitsGetMany:
         )
 
     def test_get_many_forwards_filters(self, toolkits, mock_client):
+        mock_client.toolkits.retrieve_multi.return_value = Mock(items=[])
         toolkits.get_many(
             ["github"],
             category="developer-tools",

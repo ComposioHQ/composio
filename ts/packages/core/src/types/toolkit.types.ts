@@ -48,9 +48,13 @@ export const ToolKitMetaSchema = z.object({
   availableVersions: z.array(z.string()).optional(),
 });
 
+export const ToolkitInstantSchema = z.object({ supported: z.literal(true) });
+export type ToolkitInstant = z.infer<typeof ToolkitInstantSchema>;
+
 export const ToolKitItemSchema = z.object({
   name: z.string(),
   slug: z.string(),
+  instant: ToolkitInstantSchema.optional(),
   meta: ToolKitMetaSchema,
   isLocalToolkit: z.boolean(),
   authSchemes: z.array(z.string()).optional(),
