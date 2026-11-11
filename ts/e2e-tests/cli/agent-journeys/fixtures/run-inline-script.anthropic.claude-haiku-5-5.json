@@ -1,0 +1,136 @@
+{
+  "$comment": "Recorded from anthropic claude-haiku-5-5 by record.ts. Do not edit by hand; record again.",
+  "fixtures": [
+    {
+      "match": {
+        "turnIndex": 0,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01G92FrEpnpkB12CqnnRdTo3",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio search \\\"send a message to a slack channel\\\" --toolkits slack\"}"
+          },
+          {
+            "id": "toolu_01KewDTHMcgWnSXxMeXeZSeH",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio whoami\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2670,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 315
+        },
+        "content": "I'll confirm the Slack slug and its input schema before writing the script."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 1,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01KewDTHMcgWnSXxMeXeZSeH",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01LL5tsDxfRkRMG1KpzG2zUx",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio execute SLACK_SEND_MESSAGE --get-schema\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3729,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 69
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 2,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01LL5tsDxfRkRMG1KpzG2zUx",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01Hfd7ZbcJRqiRfRHwnTVct1",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio run '\\n  const res = await execute(\\\"SLACK_SEND_MESSAGE\\\", { channel: \\\"#general\\\", text: \\\"build passed\\\" });\\n  const ts = res.data?.ts ?? res.data?.message?.ts ?? res.data?.data?.ts;\\n  console.log(ts ? `Sent at ts=${ts}` : JSON.stringify(res.data, null, 2));\\n'\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 4092,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 295
+        },
+        "content": "The schema takes `channel` and `text`. Now I'll send the message with a single `composio run` script."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 3,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01Hfd7ZbcJRqiRfRHwnTVct1",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "usage": {
+          "input_tokens": 4471,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 144
+        },
+        "content": "I sent \"build passed\" to #general with one `composio run` script, and the message timestamp came back as `1767225600.000100`.\n\nThe script called `SLACK_SEND_MESSAGE` with `channel: \"#general\"` and `text: \"build passed\"`, then printed the `ts` field from the response. I checked the tool's input schema first, and the `whoami` check showed I'm logged in as dev@acme-e2e.test with Slack connected."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    }
+  ]
+}

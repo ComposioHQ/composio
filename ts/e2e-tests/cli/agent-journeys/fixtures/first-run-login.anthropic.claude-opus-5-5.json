@@ -1,0 +1,196 @@
+{
+  "$comment": "Recorded from anthropic claude-opus-5-5 by record.ts. Do not edit by hand; record again.",
+  "fixtures": [
+    {
+      "match": {
+        "turnIndex": 0,
+        "userMessage": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01CgRnGM11DuSrQ9ict337eQ",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio whoami 2>&1\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2659,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 55
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 1,
+        "userMessage": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01CgRnGM11DuSrQ9ict337eQ",
+        "toolResultContains": "\"exit_code\":1,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01MyLdQ5L6dR4Q7Deb9npFid",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio login --help 2>&1 | head -40\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2761,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 60
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 2,
+        "userMessage": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01MyLdQ5L6dR4Q7Deb9npFid",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01PfGPKZQa4E1WiXuNTMxTku",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio login --no-wait 2>&1\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3215,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 58
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 3,
+        "userMessage": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01PfGPKZQa4E1WiXuNTMxTku",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01AVc8JXiG4QuyxCQi39iN5t",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio login --poll 2>&1\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3543,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 120
+        },
+        "content": "Open this URL in your browser to log in:\n\n**https://dashboard.composio.test?cliKey=00000000-0000-4000-8000-000000050001**\n\nI'll wait for the login to finish."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 4,
+        "userMessage": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01AVc8JXiG4QuyxCQi39iN5t",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01HWpEgV3G3kShr9B9ZZNYHT",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio whoami 2>&1\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3937,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 55
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 5,
+        "userMessage": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01HWpEgV3G3kShr9B9ZZNYHT",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "usage": {
+          "input_tokens": 4090,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 153
+        },
+        "content": "The Composio CLI wasn't logged in. It is now: you approved the login in your browser, and `composio whoami` confirms it.\n\n- **Account:** dev@acme-e2e.test\n- **Current organization:** Acme E2E (`ok_e2eacme00001`)\n\nYour account also belongs to **Globex E2E** (`ok_e2eglobex001`). To switch to it, run `composio orgs switch --org-id ok_e2eglobex001`."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    }
+  ]
+}

@@ -37,6 +37,8 @@ catalog:
   '@cloudflare/vitest-pool-workers': 0.23.0
   '@cloudflare/workers-types': ^5.20261019.1
   '@composio/client': 2.1.17
+  # Same version as harness/run.mjs (AIMOCK_VERSION); move both together.
+  '@copilotkit/aimock': 1.47.0
   '@effect/language-service': ^0.87.5
   '@effect/platform-bun': ^4.1.0
   '@effect/vitest': ^4.1.0

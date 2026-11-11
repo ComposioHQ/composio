@@ -10,11 +10,29 @@ Tests use `runCmd` to execute shell commands in the container and assert on exit
 
 ## Test Suites
 
-| Suite                 | Description                                            | Env Vars                |
-| --------------------- | ------------------------------------------------------ | ----------------------- |
-| [upgrade](./upgrade/) | `composio upgrade` replaces a running Linux executable | None                    |
-| [version](./version/) | `composio version` output and exit code                | None                    |
-| [whoami](./whoami/)   | `composio whoami` prints the API key                   | `COMPOSIO_USER_API_KEY` |
+| Suite                               | Description                                                                                              | Env Vars                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------- |
+| [upgrade](./upgrade/)               | `composio upgrade` replaces a running Linux executable                                                   | None                    |
+| [operations](./operations/)         | Login, session, search, execute, link, run, upgrade and their `dev` counterparts under a fault catalogue | None                    |
+| [agent-journeys](./agent-journeys/) | Tasks driven by a model replayed through aimock, with the `composio-cli` skill as its guidance           | None                    |
+| [fake-backend](./fake-backend/)     | Test support: the fake Composio deployment the two suites above talk to, and its contract check          | None                    |
+| [version](./version/)               | `composio version` output and exit code                                                                  | None                    |
+| [whoami](./whoami/)                 | `composio whoami` prints the API key                                                                     | `COMPOSIO_USER_API_KEY` |
+
+## Journeys
+
+`runCmd` starts a fresh container for every command. A test that needs several commands to share state (log in, link, then execute) holds one container instead:
+
+```typescript
+import { startJourneyContainer } from '@e2e-tests/utils';
+
+const journey = await startJourneyContainer({ env: { COMPOSIO_BASE_URL: fake.docker.http } });
+await journey.exec('composio login --user-api-key …');
+const result = await journey.exec('composio whoami');
+await journey.stop();
+```
+
+A journey container mounts nothing from the host and passes through no API key, so it reaches only what the test points it at. The `operations` and `agent-journeys` suites use it through `startCliRig` from `@e2e-tests/cli-fake-backend/rig`, which also starts the fake backend.
 
 ## Isolation Tool
 
