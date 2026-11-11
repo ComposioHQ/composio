@@ -27,7 +27,7 @@ Either way, the event lands in the same place: your subscription or webhook URL,
 If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 </Callout>
 
-### Which apps use which
+### Realtime and polling triggers by app
 
 Each trigger has its own type, so an app marked **Both** has some of each. The counts leave out deprecated triggers. To check a single trigger, run `composio triggers list <toolkit>` and read its `type`. A `webhook` trigger is realtime and a `poll` trigger is polling.
 
