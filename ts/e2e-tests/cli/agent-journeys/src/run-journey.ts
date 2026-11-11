@@ -4,10 +4,11 @@
  */
 
 import { startCliRig } from '@e2e-tests/cli-fake-backend/rig';
+import type { JournalEntry } from '@e2e-tests/cli-fake-backend';
 import { runAgent, type ModelAdapter } from './agent';
 import type { Journey, JourneyRun } from './journeys';
 import { BROWSER_PATH, BROWSER_SCRIPT, personFor } from './person';
-import { scrub } from './scrub';
+import { scrub, SCRUBBED_BACKEND_URL, SCRUBBED_DASHBOARD_URL } from './scrub';
 import { buildSkill, SKILL_DIRECTORY, systemPrompt } from './skill';
 
 /** Upper bound on model turns. The longest scripted journey takes eight. */
@@ -37,7 +38,13 @@ export const runJourney = async (
     // Nothing is approved by waiting: only the person approves, see `person.ts`.
     rig.fake.world.linkCompletesAfterPolls = null;
     await journey.setup(rig);
-    const person = personFor(rig.fake.world);
+    // The person reads what the agent writes, so they see the URLs the agent saw.
+    const person = personFor(rig.fake.world, {
+      dashboard: SCRUBBED_DASHBOARD_URL,
+      backend: SCRUBBED_BACKEND_URL,
+    });
+    const startingConnections = rig.fake.world.connections.map(connection => connection.id);
+    const commandRequests: Array<ReadonlyArray<JournalEntry>> = [];
 
     const mark = rig.fake.journal.mark();
     const transcript = await runAgent({
@@ -49,6 +56,7 @@ export const runJourney = async (
           cwd: journey.cwd,
           timeoutSeconds: COMMAND_TIMEOUT_SECONDS,
         });
+        commandRequests.push(result.requests);
         return {
           exitCode: result.exitCode,
           stdout: scrub(result.stdout, rig.fake),
@@ -56,7 +64,17 @@ export const runJourney = async (
         };
       },
     });
-    return { transcript, rig, requests: rig.fake.journal.since(mark) };
+    const requests = rig.fake.journal.since(mark);
+    const whoami = await rig.run('composio whoami', { timeoutSeconds: COMMAND_TIMEOUT_SECONDS });
+    return {
+      transcript,
+      rig,
+      world: rig.fake.world,
+      requests,
+      commandRequests,
+      startingConnections,
+      whoamiAfter: { exitCode: whoami.exitCode, stdout: whoami.stdout, stderr: whoami.stderr },
+    };
   } catch (error) {
     await rig.stop();
     throw error;

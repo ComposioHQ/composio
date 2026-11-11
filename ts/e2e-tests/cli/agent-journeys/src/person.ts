@@ -14,8 +14,15 @@
  * same: off a terminal `composio login` prints "For agents: Show the URL above
  * to the user".
  *
- * They approve every authorization that reaches them, and when the agent has
- * stopped to wait for that approval they say so.
+ * They approve an authorization when the page for it reaches them: the CLI
+ * opened it, or the agent wrote its complete URL. An id on its own, or the
+ * path under some other host, is not a page they can open. A URL written
+ * without its scheme is not recognised either; that is a limit of this model,
+ * not a claim about people.
+ *
+ * When the agent has stopped to wait, they say that they approved, once per
+ * approval, and only while the CLI has not been told: an agent whose own
+ * command already saw the login or the connection has nothing to wait for.
  */
 
 import type { World } from '@e2e-tests/cli-fake-backend';
@@ -49,20 +56,49 @@ export interface Person {
   hear(message: string, waiting: boolean): string | undefined;
 }
 
-export const personFor = (world: World): Person => ({
-  hear: (message, waiting) => {
-    let approved = false;
-    for (const session of world.loginSessions) {
-      if (session.status === 'pending' && message.includes(session.id)) {
-        world.linkLoginSession(session.id);
-        approved = true;
+/** The origins of the fake, as the agent sees them in command output. */
+export interface PersonUrls {
+  /** Where the login page lives: `<dashboard>?cliKey=<login session id>`. */
+  readonly dashboard: string;
+  /** Where an authorization page lives: `<backend>/api/v3/s/<connection id>`. */
+  readonly backend: string;
+}
+
+const AUTHORIZATION_PATH = /^\/api\/v\d+(?:\.\d+)?\/s\/([^/]+)$/;
+
+/** The complete URLs in a message, without the punctuation or markup around them. */
+const urlsIn = (message: string): URL[] =>
+  (message.match(/https?:\/\/[^\s<>"'`)\]]+/g) ?? []).flatMap(candidate => {
+    const text = candidate.replace(/[.,;:!?*_]+$/, '');
+    return URL.canParse(text) ? [new URL(text)] : [];
+  });
+
+export const personFor = (world: World, urls: PersonUrls): Person => {
+  const dashboard = new URL(urls.dashboard).origin;
+  const backend = new URL(urls.backend).origin;
+  const acknowledged = new Set<string>();
+
+  return {
+    hear: (message, waiting) => {
+      for (const url of urlsIn(message)) {
+        const loginId =
+          url.origin === dashboard && url.pathname === '/' ? url.searchParams.get('cliKey') : null;
+        if (
+          loginId !== null &&
+          world.loginSessions.some(
+            session => session.id === loginId && session.status === 'pending'
+          )
+        ) {
+          world.linkLoginSession(loginId);
+        }
+        const connectionId =
+          url.origin === backend ? AUTHORIZATION_PATH.exec(url.pathname)?.[1] : undefined;
+        if (connectionId !== undefined) world.authorizeConnection(connectionId);
       }
-    }
-    for (const connection of world.connections) {
-      if (connection.status === 'INITIATED' && message.includes(`/s/${connection.id}`)) {
-        approved = world.authorizeConnection(connection.id) || approved;
-      }
-    }
-    return waiting && approved ? PERSON_REPLY : undefined;
-  },
-});
+      if (!waiting) return undefined;
+      const news = world.unreportedApprovals().filter(id => !acknowledged.has(id));
+      for (const id of news) acknowledged.add(id);
+      return news.length > 0 ? PERSON_REPLY : undefined;
+    },
+  };
+};

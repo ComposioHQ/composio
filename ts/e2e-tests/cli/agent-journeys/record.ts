@@ -123,6 +123,8 @@ try {
   try {
     const checks = journey.checks(run);
     const reachedGoal = checks.every(check => check.ok);
+    // Reported, never a failure: what the model tried on the way.
+    const detours = journey.detours?.(run) ?? [];
 
     const recorded = readdirSync(rawDirectory, { recursive: true, encoding: 'utf8' })
       .filter(name => name.endsWith('.json'))
@@ -173,6 +175,7 @@ try {
         stop: run.transcript.stop,
         modelTurns: run.transcript.modelTurns,
         checks,
+        detours,
         commands: run.transcript.commands.map(({ command, exitCode: code, stdout, stderr }) => ({
           command,
           exitCode: code,
@@ -216,6 +219,9 @@ try {
       console.log(
         `  ${check.ok ? 'ok  ' : 'FAIL'} ${check.name}${check.ok ? '' : ` (saw ${check.seen ?? 'nothing'})`}`
       );
+    }
+    for (const detour of detours.filter(taken => !taken.ok)) {
+      console.log(`  detour ${detour.name} (saw ${detour.seen ?? 'it'})`);
     }
     console.log(`transcript ${transcriptPath}`);
 

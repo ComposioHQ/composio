@@ -22,13 +22,25 @@ process.env.AIMOCK_STRICT_TURN_INDEX = '1';
 
 const fixtures = listFixtures();
 
+describe('the fixture set', () => {
+  it('has no fixture for a journey that does not exist', () => {
+    const known = new Set(JOURNEYS.map(journey => journey.id));
+    expect(fixtures.filter(fixture => !known.has(fixture.journeyId))).toEqual([]);
+  });
+
+  // The baseline: it needs no key to produce, so no journey may be without it.
+  it('has the hand-authored path of every journey', () => {
+    const scripted = new Set(
+      fixtures.filter(fixture => fixture.model === HAND_AUTHORED).map(fixture => fixture.journeyId)
+    );
+    expect(JOURNEYS.map(journey => journey.id).filter(id => !scripted.has(id))).toEqual([]);
+  });
+});
+
 for (const journey of JOURNEYS) {
   describe(`journey: ${journey.title}`, () => {
     const played = fixtures.filter(fixture => fixture.journeyId === journey.id);
 
-    if (!played.some(fixture => fixture.provider === 'openai')) {
-      it.todo(`openai: no fixture for ${journey.id}`);
-    }
     if (!played.some(fixture => fixture.provider === 'anthropic')) {
       // A recording is kept only when the run reached the goal; see the README.
       it.todo(`anthropic: no recorded run of ${journey.id} reached its goal`);
@@ -49,11 +61,15 @@ for (const journey of JOURNEYS) {
         }, JOURNEY_TIMEOUT_MS);
 
         afterAll(async () => {
-          await run?.rig.journey.writeDebugLog(
-            join(import.meta.dir, `DEBUG.${journey.id}.${fixture.provider}.${fixture.model}.log`)
-          );
-          await run?.rig.stop();
-          await mock?.stop();
+          // The container and the servers go away even when the log cannot be written.
+          try {
+            await run?.rig.journey.writeDebugLog(
+              join(import.meta.dir, `DEBUG.${journey.id}.${fixture.provider}.${fixture.model}.log`)
+            );
+          } finally {
+            await run?.rig.stop();
+            await mock?.stop();
+          }
         });
 
         it('replays every recorded turn, and nothing else', () => {
@@ -76,6 +92,14 @@ for (const journey of JOURNEYS) {
           const failed = journey.checks(run).filter(check => !check.ok);
           expect(failed).toEqual([]);
         });
+
+        if (origin === 'hand-authored') {
+          // The scripted path is the one the skill teaches; it never leaves its tree.
+          it('took no detour', () => {
+            const taken = (journey.detours?.(run) ?? []).filter(check => !check.ok);
+            expect(taken).toEqual([]);
+          });
+        }
 
         if (origin === 'hand-authored' && journey.scriptedChecks) {
           const { scriptedChecks } = journey;

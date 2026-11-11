@@ -87,9 +87,9 @@ export const runAgent = async (options: {
   /** Runs a command and returns its output, already scrubbed for the model. */
   execute: (command: string) => Promise<ShellOutcome>;
   /**
-   * Hands the person each text the model writes. `waiting` is true when the
-   * model asked for no command; a returned string is their reply, and the loop
-   * goes on with it.
+   * Hands the person what the model wrote in each turn, which may be nothing.
+   * `waiting` is true when the model asked for no command; a returned string
+   * is their reply, and the loop goes on with it.
    */
   hear?: (message: string, waiting: boolean) => string | undefined;
   /** Hard cap on model turns, so a looping model cannot run forever. */
@@ -107,7 +107,7 @@ export const runAgent = async (options: {
     }
     const waiting = calls.length === 0;
     // The person reads the text before the turn's commands run, as they would in a chat.
-    const reply = text === '' ? undefined : options.hear?.(text, waiting);
+    const reply = options.hear?.(text, waiting);
     if (waiting) {
       if (reply === undefined) {
         return { commands, messages, replies, stop: 'finished', modelTurns: turn };
