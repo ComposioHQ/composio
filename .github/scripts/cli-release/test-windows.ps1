@@ -233,3 +233,5 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
     [Environment]::SetEnvironmentVariable('Path', $savedUserPath, 'User')
     Remove-Item -LiteralPath $testRoot -Recurse -Force
 }
+# The last native command above fails on purpose; do not let its exit code become the script's.
+exit 0
