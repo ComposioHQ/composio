@@ -8,6 +8,8 @@
  * stops to wait for them.
  */
 
+import type { Usage } from './usage';
+
 export interface ShellCall {
   /** The provider's id for the tool call. */
   readonly id: string;
@@ -46,6 +48,8 @@ export interface ModelAdapter {
   record(results: ReadonlyArray<{ call: ShellCall; payload: string }>): void;
   /** Adds a message from the person, after a turn that asked for no command. */
   say(message: string): void;
+  /** Tokens and cost so far, for an adapter that talks to a real provider. */
+  usage?(): Usage;
 }
 
 export interface ExecutedCommand extends ShellOutcome {

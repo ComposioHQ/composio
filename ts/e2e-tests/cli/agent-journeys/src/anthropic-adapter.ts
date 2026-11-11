@@ -5,6 +5,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { SHELL_TOOL, type ModelAdapter, type ModelTurn } from './agent';
+import { addTokens, ZERO_USAGE, type Usage } from './usage';
 
 const ShellInput = z.object({ command: z.string() });
 
@@ -19,6 +20,7 @@ export const anthropicAdapter = (options: {
   // No retries: a miss in strict replay, or a live failure while recording, must surface once.
   const client = new Anthropic({ baseURL: options.baseURL, apiKey: options.apiKey, maxRetries: 0 });
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content: options.prompt }];
+  let usage: Usage = ZERO_USAGE;
 
   return {
     provider: 'anthropic',
@@ -27,7 +29,8 @@ export const anthropicAdapter = (options: {
       const response = await client.messages.create({
         model: options.model,
         max_tokens: options.maxTokens,
-        system: options.system,
+        // The run without the skill has no system prompt at all.
+        ...(options.system === '' ? {} : { system: options.system }),
         tools: [
           {
             name: SHELL_TOOL.name,
@@ -36,6 +39,13 @@ export const anthropicAdapter = (options: {
           },
         ],
         messages,
+      });
+      usage = addTokens(usage, options.model, {
+        // A replayed answer may carry no usage at all.
+        input: response.usage?.input_tokens ?? 0,
+        output: response.usage?.output_tokens ?? 0,
+        cacheRead: response.usage?.cache_read_input_tokens ?? 0,
+        cacheWrite: response.usage?.cache_creation_input_tokens ?? 0,
       });
       // The whole content goes back unchanged, thinking blocks included.
       messages.push({ role: 'assistant', content: response.content });
@@ -64,5 +74,6 @@ export const anthropicAdapter = (options: {
     say: message => {
       messages.push({ role: 'user', content: message });
     },
+    usage: () => usage,
   };
 };
