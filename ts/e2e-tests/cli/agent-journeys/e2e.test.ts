@@ -28,10 +28,13 @@ describe('the fixture set', () => {
     expect(fixtures.filter(fixture => !known.has(fixture.journeyId))).toEqual([]);
   });
 
-  // The baseline: it needs no key to produce, so no journey may be without it.
-  it('has the hand-authored path of every journey', () => {
+  // The baseline: it needs no key to produce, and it is the only thing that
+  // exercises the OpenAI wire format, so no journey may be without it.
+  it('has the hand-authored OpenAI path of every journey', () => {
     const scripted = new Set(
-      fixtures.filter(fixture => fixture.model === HAND_AUTHORED).map(fixture => fixture.journeyId)
+      fixtures
+        .filter(fixture => fixture.provider === 'openai' && fixture.model === HAND_AUTHORED)
+        .map(fixture => fixture.journeyId)
     );
     expect(JOURNEYS.map(journey => journey.id).filter(id => !scripted.has(id))).toEqual([]);
   });

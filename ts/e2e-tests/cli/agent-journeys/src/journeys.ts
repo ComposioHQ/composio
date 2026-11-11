@@ -18,6 +18,7 @@ import {
   type World,
 } from '@e2e-tests/cli-fake-backend';
 import type { CliRig } from '@e2e-tests/cli-fake-backend/rig';
+import { z } from 'zod';
 import type { ExecutedCommand, ShellOutcome, Transcript } from './agent';
 
 /** What a journey is graded on: what ran, what it printed, and what it changed. */
@@ -86,13 +87,15 @@ const check = (name: string, ok: boolean, seen?: unknown): Check => ({
 });
 
 const isComposio = (command: ExecutedCommand, pattern: RegExp) => pattern.test(command.command);
-const DEV_TREE = /(^|[;&|(\s])composio\s+dev(\s|$)/;
-const ROOT_EXECUTE = /(^|[;&|(\s])composio\s+execute\s/;
+// Where a `composio` invocation can start in a command line: at its start,
+// after a separator, or after the directory of a binary named by its path.
+const DEV_TREE = /(^|[;&|(\s/])composio\s+dev(\s|$)/;
+const ROOT_EXECUTE = /(^|[;&|(\s/])composio\s+execute\s/;
 /** A root `composio execute` that runs the tool, not one that only describes it. */
 const ROOT_EXECUTE_RUNS =
-  /(^|[;&|(\s])composio\s+execute\s(?![^;&|]*--(?:get-schema|dry-run|help)\b)/;
-const ROOT_LINK = /(^|[;&|(\s])composio\s+link(\s|$)/;
-const RUN = /(^|[;&|(\s])composio\s+run\s/;
+  /(^|[;&|(\s/])composio\s+execute\s(?![^;&|]*--(?:get-schema|dry-run|help)\b)/;
+const ROOT_LINK = /(^|[;&|(\s/])composio\s+link(\s|$)/;
+const RUN = /(^|[;&|(\s/])composio\s+run\s/g;
 const PLAYGROUND_EXECUTE = /composio\s+dev\s+(?:--\S+\s+\S+\s+)*playground-execute\s/;
 
 const SEND = 'SLACK_SEND_MESSAGE';
@@ -117,10 +120,11 @@ const channelName = (value: unknown): string =>
   typeof value === 'string' ? value.trim().replace(/^#/, '') : '';
 
 /**
- * The person asked for one message. So one tool execution completed in the
- * whole run, on any project and through any route, and it is that message:
- * a second send, a send on the other project, another channel, and other
- * words each fail a check of their own.
+ * The person asked for one message. So one `SLACK_SEND_MESSAGE` completed in
+ * the whole run, on any project and through any route, and it is that
+ * message: a second send, a send on the other project, another channel, and
+ * other words each fail a check of their own. A lookup beside it changes
+ * nothing and is let through; any other tool that changes something is not.
  */
 const sentOnce = (
   run: Evidence,
@@ -136,18 +140,18 @@ const sentOnce = (
   }
 ): ReadonlyArray<Check> => {
   const all = executions(run.requests);
+  const sends = all.filter(({ tool }) => tool.slug === SEND);
+  const otherChanges = all.filter(
+    ({ tool }) => tool.slug !== SEND && run.world.findTool(tool.slug)?.readOnly !== true
+  );
   const seen = describeExecutions(run.requests);
-  const everyOne = (holds: (execution: (typeof all)[number]) => boolean) =>
-    all.length > 0 && all.every(holds);
+  const everySend = (holds: (execution: (typeof sends)[number]) => boolean) =>
+    sends.length > 0 && sends.every(holds);
   return [
-    check(
-      `one tool execution completed in the whole run, and it was ${SEND}`,
-      all.length === 1 && all[0]?.tool.slug === SEND,
-      seen
-    ),
+    check(`${SEND} completed once in the whole run`, sends.length === 1, seen),
     check(
       `it ran on the ${expected.project} project, as ${expected.userId}`,
-      everyOne(
+      everySend(
         ({ entry }) =>
           entry.project === expected.project &&
           entry.userId === expected.userId &&
@@ -158,17 +162,18 @@ const sentOnce = (
     ),
     check(
       'it went to #general',
-      everyOne(({ tool }) => channelName(tool.arguments.channel) === 'general'),
+      everySend(({ tool }) => channelName(tool.arguments.channel) === 'general'),
       seen
     ),
     check(
       `its text was exactly "${expected.text}"`,
-      everyOne(
+      everySend(
         ({ tool }) =>
           typeof tool.arguments.text === 'string' && tool.arguments.text.trim() === expected.text
       ),
       seen
     ),
+    check('no other tool that changes something ran', otherChanges.length === 0, seen),
   ];
 };
 
@@ -194,6 +199,23 @@ const ranNo = (run: Evidence, name: string, pattern: RegExp): Check => {
     matching.length === 0,
     matching.map(command => command.command)
   );
+};
+
+/** What `composio whoami` prints on stdout off a terminal, as far as a login is concerned. */
+const Whoami = z.looseObject({
+  account_type: z.string(),
+  email: z.string(),
+  current_org_name: z.string(),
+});
+
+/** The login a `composio whoami` reported, or `undefined` when it reported none. */
+const loginReportedBy = (outcome: ShellOutcome) => {
+  if (outcome.exitCode !== 0) return undefined;
+  try {
+    return Whoami.safeParse(JSON.parse(outcome.stdout)).data;
+  } catch {
+    return undefined;
+  }
 };
 
 const lastCommandSucceeded = (run: Evidence, pattern: RegExp): boolean => {
@@ -395,6 +417,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
       const whoami = run.transcript.commands.filter(command =>
         isComposio(command, /composio\s+whoami/)
       );
+      const stored = loginReportedBy(run.whoamiAfter);
       return [
         stoppedByItself(run),
         check(
@@ -420,9 +443,9 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
         // next process: it finds the login only if it was stored.
         check(
           'the login was stored: a new `composio whoami` exits 0 as the person, in their org',
-          run.whoamiAfter.exitCode === 0 &&
-            run.whoamiAfter.stdout.includes(`"email":"${MEMBER.email}"`) &&
-            run.whoamiAfter.stdout.includes(`"current_org_name":"${ORG.name}"`),
+          stored?.account_type === 'human' &&
+            stored.email === MEMBER.email &&
+            stored.current_org_name === ORG.name,
           run.whoamiAfter
         ),
         check(
@@ -456,13 +479,15 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
         }),
         // The send and the timestamp belong to one command, and that command
         // is the script: not `composio execute` followed by a script that
-        // prints what it was told.
+        // prints what it was told. This reads the command's text, so it holds
+        // for the ways a shell line names `composio`, not for an alias or a
+        // wrapper script.
         check(
-          'the message was sent by a `composio run` command, which exited 0 and printed its timestamp',
+          'the message was sent by a command that is one `composio run`, which exited 0 and printed its timestamp',
           sending.length === 1 &&
             sending.every(
               command =>
-                isComposio(command, RUN) &&
+                (command.command.match(RUN) ?? []).length === 1 &&
                 !isComposio(command, ROOT_EXECUTE_RUNS) &&
                 !isComposio(command, PLAYGROUND_EXECUTE) &&
                 command.exitCode === 0 &&

@@ -23,6 +23,8 @@
  * When the agent has stopped to wait, they say that they approved, once per
  * approval, and only while the CLI has not been told: an agent whose own
  * command already saw the login or the connection has nothing to wait for.
+ * "Told" is the fake having answered a request with the approved state;
+ * whether the answer reached the agent is not modelled.
  */
 
 import type { World } from '@e2e-tests/cli-fake-backend';

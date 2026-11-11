@@ -53,6 +53,8 @@ export interface SeededTool {
   readonly toolkit: string;
   readonly description: string;
   readonly inputParameters: Record<string, unknown>;
+  /** Whether running it changes nothing: a lookup, as opposed to a send or a create. */
+  readonly readOnly: boolean;
   /** What a successful execution answers with, given the arguments it received. */
   readonly respond: (args: Record<string, unknown>) => Record<string, unknown>;
 }
@@ -215,6 +217,7 @@ export const TOOLS: ReadonlyArray<SeededTool> = [
       },
       ['channel', 'text']
     ),
+    readOnly: false,
     respond: args => ({
       ok: true,
       channel: args.channel ?? null,
@@ -236,6 +239,7 @@ export const TOOLS: ReadonlyArray<SeededTool> = [
       },
       ['owner', 'repo', 'title']
     ),
+    readOnly: false,
     respond: args => ({
       number: 101,
       title: args.title ?? null,
@@ -248,6 +252,7 @@ export const TOOLS: ReadonlyArray<SeededTool> = [
     toolkit: 'github',
     description: 'Returns the profile of the connected GitHub account.',
     inputParameters: objectSchema({}, []),
+    readOnly: true,
     respond: () => ({ login: 'acme-e2e-dev', id: 4242 }),
   },
   {
@@ -263,6 +268,7 @@ export const TOOLS: ReadonlyArray<SeededTool> = [
       },
       ['recipient_email']
     ),
+    readOnly: false,
     respond: () => ({ id: 'msg_e2e_0001', labelIds: ['SENT'] }),
   },
   {
@@ -274,6 +280,7 @@ export const TOOLS: ReadonlyArray<SeededTool> = [
       { username: { type: 'string', description: 'Hacker News username.' } },
       ['username']
     ),
+    readOnly: true,
     respond: args => ({ id: args.username ?? null, karma: 157316 }),
   },
 ];

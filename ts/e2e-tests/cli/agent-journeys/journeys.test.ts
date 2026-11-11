@@ -131,7 +131,7 @@ describe('developer-execute-unconnected', () => {
       step(DEV_SEND, [send('developer', hello)]),
     ]);
     expect(failed(id, run)).toEqual([
-      'one tool execution completed in the whole run, and it was SLACK_SEND_MESSAGE',
+      'SLACK_SEND_MESSAGE completed once in the whole run',
       `it ran on the ${DEVELOPER_PROJECT.label} project, as ${GLOBAL_TEST_USER_ID}`,
       `no account was connected outside the ${DEVELOPER_PROJECT.label} project`,
     ]);
@@ -216,9 +216,7 @@ describe('consumer-slack-message', () => {
       step(ROOT_SEND, [send('consumer', { channel: '#general', text: 'deploy finished' })]),
       step(ROOT_SEND, [send('consumer', { channel: '#general', text: 'deploy finished' })]),
     ]);
-    expect(failed(id, run)).toEqual([
-      'one tool execution completed in the whole run, and it was SLACK_SEND_MESSAGE',
-    ]);
+    expect(failed(id, run)).toEqual(['SLACK_SEND_MESSAGE completed once in the whole run']);
   });
 
   it('sees a send through the direct execute route', () => {
@@ -231,9 +229,20 @@ describe('consumer-slack-message', () => {
       step(ROOT_SEND, [send('consumer', { channel: '#general', text: 'deploy finished' })]),
       step('curl …', [direct]),
     ]);
-    expect(failed(id, run)).toContain(
-      'one tool execution completed in the whole run, and it was SLACK_SEND_MESSAGE'
-    );
+    expect(failed(id, run)).toContain('SLACK_SEND_MESSAGE completed once in the whole run');
+  });
+
+  it('lets a lookup through, and fails on another tool that changes something', () => {
+    const other = (slug: string) => send('consumer', {}, { tool: { slug, arguments: {} } });
+    const withTool = (slug: string) =>
+      evidence(connected(), [
+        step('composio execute …', [other(slug)]),
+        step(ROOT_SEND, [send('consumer', { channel: '#general', text: 'deploy finished' })]),
+      ]);
+    expect(failed(id, withTool('HACKERNEWS_GET_USER'))).toEqual([]);
+    expect(failed(id, withTool('GMAIL_SEND_EMAIL'))).toEqual([
+      'no other tool that changes something ran',
+    ]);
   });
 
   it('reports a look at the dev tree as a detour, not a failure', () => {
@@ -277,8 +286,27 @@ describe('run-inline-script', () => {
       { startingConnections }
     );
     expect(failed(id, run)).toEqual([
-      'the message was sent by a `composio run` command, which exited 0 and printed its timestamp',
+      'the message was sent by a command that is one `composio run`, which exited 0 and printed its timestamp',
     ]);
+  });
+
+  it('fails when the binary is named by its path, or the line runs two scripts', () => {
+    const { seeded, startingConnections } = world();
+    const one = (command: string) =>
+      evidence(seeded, [step(command, [send('consumer', built)], { stdout: `${TIMESTAMP}\n` })], {
+        startingConnections,
+      });
+    const failure =
+      'the message was sent by a command that is one `composio run`, which exited 0 and printed its timestamp';
+    expect(
+      failed(
+        id,
+        one(
+          `/usr/local/bin/composio execute SLACK_SEND_MESSAGE -d '{}'; composio run 'console.log("${TIMESTAMP}")'`
+        )
+      )
+    ).toEqual([failure]);
+    expect(failed(id, one(`${SCRIPT}; composio run 'console.log(1)'`))).toEqual([failure]);
   });
 
   it('fails when both happened in one shell command', () => {
@@ -295,7 +323,7 @@ describe('run-inline-script', () => {
       { startingConnections }
     );
     expect(failed(id, run)).toEqual([
-      'the message was sent by a `composio run` command, which exited 0 and printed its timestamp',
+      'the message was sent by a command that is one `composio run`, which exited 0 and printed its timestamp',
     ]);
   });
 });
@@ -321,6 +349,14 @@ describe('first-run-login', () => {
   it('passes when the next process finds the login', () => {
     const [world, steps] = loggedIn();
     expect(failed(id, evidence(world, steps))).toEqual([]);
+  });
+
+  it('reads the login from the JSON, however it is laid out', () => {
+    const [world, steps] = loggedIn();
+    const pretty = JSON.stringify(JSON.parse(LOGGED_IN.stdout), null, 2);
+    expect(
+      failed(id, evidence(world, steps, { whoamiAfter: { ...LOGGED_IN, stdout: pretty } }))
+    ).toEqual([]);
   });
 
   it('fails when the key was fetched and nothing was stored', () => {

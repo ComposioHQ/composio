@@ -42,7 +42,7 @@ They do not read the output of the agent's commands. The CLI assumes the same: o
 
 They approve an authorization when its page reaches them: the CLI opened it, or the agent wrote its complete URL (the fake's origin, the path, the id). An id on its own, or the same path on another host, is not a page anyone can open, and approves nothing. Markdown around the URL is fine; a URL written without `https://` is not recognised, which is a limit of this model.
 
-When the agent has stopped to wait, they answer `Done, I approved it in my browser. Please continue.`, and the agent gets another turn. They say it once per approval, and only while no command of the agent has been told of it: after `composio login --poll` returned the linked session there is nothing to wait for, and the person stays quiet. So handing the person the URL and stopping is a correct move, not a failure: the journey goes on, and its checks are the same as for an agent that waited.
+When the agent has stopped to wait, they answer `Done, I approved it in my browser. Please continue.`, and the agent gets another turn. They say it once per approval, and only while no command of the agent has been told of it: after `composio login --poll` returned the linked session there is nothing to wait for, and the person stays quiet. "Told" means the fake answered a request with the approved state. Whether that answer reached the agent (a response lost on the way, output sent to `/dev/null`) is not modelled. So handing the person the URL and stopping is a correct move, not a failure: the journey goes on, and its checks are the same as for an agent that waited.
 
 `person.test.ts` pins these rules without a container.
 
@@ -72,9 +72,9 @@ A journey has two lists, and they answer different questions.
 
 **Checks** decide whether the run reached the goal. They grade what the run changed, not what it tried:
 
-- One tool execution completed in the whole run, on any project and through any of the three execute routes, and it was the message asked for: the right project and user, `#general` (or `general`), and the text verbatim. A second send, a send on the other project, another channel, and other words each fail a check of their own, so a text mismatch is not mistaken for tree confusion. A developer execution must also name its project in the request; a session that happened to resolve to the right one is not enough.
+- `SLACK_SEND_MESSAGE` completed once in the whole run, on any project and through any of the three execute routes, and it was the message asked for: the right project and user, `#general` (or `general`), and the text verbatim. A second send, a send on the other project, another channel, and other words each fail a check of their own, so a text mismatch is not mistaken for tree confusion. A developer execution must also name its project in the request; a session that happened to resolve to the right one is not enough. A lookup beside the send is let through; another tool that changes something is not.
 - No account became connected on a project the task does not involve. A person who approved `composio link slack` during a developer task gave access nobody asked for, and it stays.
-- `run-inline-script`: the send happened during a `composio run` command that exited 0 and printed the timestamp, not during a `composio execute` followed by a script that prints what it was told.
+- `run-inline-script`: the send happened during a shell command that is one `composio run`, which exited 0 and printed the timestamp, not during a `composio execute` followed by a script that prints what it was told. Requests are attributed per shell command and the command is recognised by its text, so this holds for the ways a shell line names `composio`; an alias or a wrapper script would get past it.
 - `first-run-login`: a new `composio whoami` after the model stopped exits 0 as the person, in their org. The requests of the process that logged in do not show that anything was stored.
 
 **Detours** are what a confused agent does on the way: a `composio dev` command during a consumer task, a root `composio execute` or `composio link` during a developer task, a request to the other project that changed nothing. A detour never fails a run. A run that tried the wrong tree, read the error, and finished on the right one reached the goal, and its detours say how it got there. Reading the two lists separately gives a success rate and a wrong-tree rate; `composio dev --help` during a consumer task counts toward the second and not against the first.
@@ -122,7 +122,7 @@ aimock runs in record mode between the loop and the provider. The loop still sen
 
 A recording costs a few thousand input tokens per turn (the skill is resent each turn) and at most 2,048 output tokens per turn.
 
-To replace a hand-authored OpenAI fixture, record the journey with an OpenAI model and delete the `hand-authored` file.
+A recording made with an OpenAI model is added beside the hand-authored fixture, which stays: it is the baseline every journey must have.
 
 ## Transcripts
 
@@ -162,7 +162,7 @@ How to read it:
 
 The replay suite answers "does the CLI still behave on paths models have taken". It cannot answer "does this change make models do better", because a replay does not consult the model. Recording does, and the pieces here are meant to be the base of that measurement:
 
-- **Environment**: `startCliRig()` gives a sealed machine with the real binary, a seeded backend, and a journal of which project and user every request acted on. It needs no account and has no side effects, so runs are repeatable and can run in parallel.
+- **Environment**: `startCliRig()` gives a fresh container with the real binary, a seeded backend that every host the CLI knows is pointed at, and a journal of which project and user every request acted on. It needs no account and changes nothing outside the fake as long as the agent stays on `composio`; the container's other outbound traffic is not blocked. Each run has its own container and backend, so runs are repeatable and can run in parallel.
 - **Task**: a journey's `prompt`, `setup`, and starting directory.
 - **Grader**: a journey's `checks` for success and its `detours` for how the run got there; see [How a run is graded](#how-a-run-is-graded). They read exit codes, command output, and the journal, never the model's prose, so a grade is a fact and not a judgement. Each is reported by name, which says where a failed run went wrong (wrong project, never linked, wrong text) and not only that it failed. Compute the wrong-tree rate from the detours of every run, the failed ones included.
 - **Subject**: the skill text, rendered from source on every run and identified by `skillSha256`; and the CLI, identified by `revision`.
