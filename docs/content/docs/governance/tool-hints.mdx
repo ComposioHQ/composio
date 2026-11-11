@@ -27,7 +27,7 @@ Composio assigns hints on a best-effort basis, based on each tool's description 
 
 ## Repeat calls
 
-Some tools also have `idempotentHint`. As in MCP, it means calling the tool again with the same arguments has no further effect. It doesn't mean the repeat succeeds: deleting something twice can return a "not found" error the second time. After a timeout, check the [execution log](/kb/guide/sdk-tool-execution-retries) before you retry. Sessions can't filter tools or require approval by this hint.
+Some tools also have `idempotentHint`. As in MCP, it means calling the tool again with the same arguments has no further effect. It doesn't mean the repeat succeeds: deleting something twice can return a "not found" error the second time. After a timeout, check the [execution log](/kb/guide/sdk-tool-execution-retries) before you retry.
 
 <span id="using-tags-in-a-session" className="block scroll-m-28" />
 
