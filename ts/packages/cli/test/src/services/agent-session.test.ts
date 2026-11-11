@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { ConfigProvider, Effect, Option } from 'effect';
+import { Array as Arr, ConfigProvider, Effect, Option, pipe } from 'effect';
 import { TELEMETRY_CONFIG, type AgentSessionEnvironment } from 'src/config';
 import {
   deriveAgentSessionId,
@@ -52,6 +52,11 @@ const SELECTION_CASES: ReadonlyArray<SelectionCase> = [
     name: 'a hook export for claude and a different CLAUDE_CODE_SESSION_ID: the export wins',
     variables: { hookHost: 'claude', hookSessionId: 'hook-chat', claudeCodeSessionId: 'own-chat' },
     expected: { host: 'claude', hostSessionId: 'hook-chat' },
+  },
+  {
+    name: 'a hook export for codex and a different CLAUDE_CODE_SESSION_ID: the export wins',
+    variables: { hookHost: 'codex', hookSessionId: 'hook-chat', claudeCodeSessionId: 'own-chat' },
+    expected: { host: 'codex', hostSessionId: 'hook-chat' },
   },
   {
     name: 'a hook export for claude inside Codex: the parent chat is reported',
@@ -126,6 +131,36 @@ const resolveWith = (env: Record<string, string>) =>
 
 const TELEMETRY_ON = { CI: 'false', NODE_ENV: 'production' };
 
+type SessionSource = {
+  readonly source: string;
+  readonly variables: Record<string, string>;
+};
+
+// Both ways a session resolves. Each resolves one in the tests below while telemetry is on.
+const SESSION_SOURCES: ReadonlyArray<SessionSource> = [
+  { source: 'a host variable', variables: { CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION } },
+  {
+    source: 'a hook export',
+    variables: { COMPOSIO_AGENT_HOST: 'claude', COMPOSIO_AGENT_SESSION_ID: CLAUDE_SESSION },
+  },
+];
+
+const TELEMETRY_DISABLED_CASES = pipe(
+  [
+    { name: 'COMPOSIO_CLI_TELEMETRY_DISABLED', value: '1' },
+    { name: 'COMPOSIO_DISABLE_TELEMETRY', value: 'true' },
+    { name: 'TELEMETRY_DISABLED', value: '1' },
+    { name: 'CI', value: 'true' },
+    { name: 'NODE_ENV', value: 'test' },
+  ],
+  Arr.flatMap(telemetrySwitch =>
+    pipe(
+      SESSION_SOURCES,
+      Arr.map(sessionSource => ({ ...telemetrySwitch, ...sessionSource }))
+    )
+  )
+);
+
 describe('resolveAgentSession', () => {
   it.effect('[Given] CLAUDE_CODE_SESSION_ID [Then] it resolves claude and the derived ID', () =>
     Effect.gen(function* () {
@@ -173,21 +208,13 @@ describe('resolveAgentSession', () => {
     })
   );
 
-  it.effect.each([
-    { name: 'COMPOSIO_CLI_TELEMETRY_DISABLED', value: '1' },
-    { name: 'COMPOSIO_DISABLE_TELEMETRY', value: 'true' },
-    { name: 'TELEMETRY_DISABLED', value: '1' },
-    { name: 'CI', value: 'true' },
-    { name: 'NODE_ENV', value: 'test' },
-  ])('[Given] telemetry disabled by $name=$value [Then] it resolves none', ({ name, value }) =>
-    Effect.gen(function* () {
-      const actual = yield* resolveWith({
-        ...TELEMETRY_ON,
-        CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION,
-        [name]: value,
-      });
-      expect(actual).toBeUndefined();
-    })
+  it.effect.each(TELEMETRY_DISABLED_CASES)(
+    '[Given] $source and telemetry disabled by $name=$value [Then] it resolves none',
+    ({ name, value, variables }) =>
+      Effect.gen(function* () {
+        const actual = yield* resolveWith({ ...TELEMETRY_ON, ...variables, [name]: value });
+        expect(actual).toBeUndefined();
+      })
   );
 
   it.effect('[Given] telemetry enabled and no PostHog key [Then] it still resolves', () =>
