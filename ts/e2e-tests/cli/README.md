@@ -32,7 +32,9 @@ const result = await journey.exec('composio whoami');
 await journey.stop();
 ```
 
-A journey container mounts nothing from the host and passes through no API key, so it reaches only what the test points it at. The `operations` and `agent-journeys` suites use it through `startCliRig` from `@e2e-tests/cli-fake-backend/rig`, which also starts the fake backend.
+A journey container mounts nothing from the host and passes through no API key. The `operations` and `agent-journeys` suites use it through `startCliRig` from `@e2e-tests/cli-fake-backend/rig`, which also starts the fake backend and points every host the CLI knows at it. Other outbound traffic is not blocked.
+
+Those two suites and `fake-backend` need no secret. CI runs them in their own step with the API keys blanked, on every pull request, fork and Dependabot ones included; the suites that talk to staging run in a second step that is skipped when the keys are missing.
 
 ## Isolation Tool
 
