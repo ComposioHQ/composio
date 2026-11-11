@@ -6,6 +6,7 @@ import {
   Option,
   Predicate,
   Record as EffectRecord,
+  Schedule,
   Scope,
   Stream,
   Context,
@@ -526,7 +527,10 @@ const replaceBinary = (
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
 
     if (ctx.platform === 'win32') {
+      // Windows keeps the previous executable locked until its process has fully exited,
+      // which can be a moment after an upgrade that just ran returns.
       yield* fs.remove(`${targetPath}.old`, { force: true }).pipe(
+        Effect.retry({ times: 10, schedule: Schedule.spaced('200 millis') }),
         Effect.mapError(
           cause =>
             new UpgradeBinaryError({

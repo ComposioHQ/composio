@@ -1,3 +1,5 @@
+// eslint-disable-next-line no-restricted-imports -- FileSystem.symlink cannot create a Windows junction, the only directory link that works without Developer Mode or administrator rights.
+import { symlink } from 'node:fs/promises';
 import { Data, Effect, FileSystem, Path } from 'effect';
 import { HttpClient } from 'effect/http';
 import { NodeOs } from 'src/services/node-os';
@@ -241,8 +243,20 @@ export const installSkill = (options?: {
 
         yield* fs.makeDirectory(path.dirname(targetSkillPath), { recursive: true });
         yield* fs.remove(targetSkillPath, { recursive: true, force: true });
-        const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
-        yield* fs.symlink(relativeTarget, targetSkillPath);
+        yield* os.platform === 'win32'
+          ? Effect.tryPromise({
+              try: () => symlink(agentSkillDir, targetSkillPath, 'junction'),
+              catch: cause =>
+                new SkillInstallError({
+                  cause,
+                  message: `Failed to link the skill into ${targetSkillPath}`,
+                  phase: 'extract',
+                }),
+            })
+          : fs.symlink(
+              path.relative(path.dirname(targetSkillPath), agentSkillDir),
+              targetSkillPath
+            );
       }).pipe(Effect.uninterruptible);
     }).pipe(
       Effect.ensuring(fs.remove(tmpDir, { recursive: true, force: true }).pipe(Effect.orDie))

@@ -68,9 +68,8 @@ Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_
 Windows support is experimental. Installation, `composio run`, and `composio upgrade` are tested on Windows; other commands may not work yet. Known limitations:
 
 - Credentials are stored in plaintext in `user_data.json`. There is no Windows keyring backend.
-- `composio install` and shell completions support only zsh, bash, and fish.
-- Installing the CLI skill creates a symbolic link, which needs Developer Mode or an administrator terminal.
-- The CLI does not announce new versions. Run `composio upgrade` to update.
+- `composio install` and shell completions support only zsh, bash, and fish. The PowerShell installer sets PATH for you.
+- `composio setup` may not find `claude` or `codex` when they are installed through npm.
 
 Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. For a fully supported setup, run the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install).
 

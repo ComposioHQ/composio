@@ -509,7 +509,8 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.effect('preserves the Windows bundle when a previous executable backup is locked', () => {
+  // Live clock: the upgrade waits out a briefly locked backup before giving up.
+  it.live('preserves the Windows bundle when a previous executable backup is locked', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {

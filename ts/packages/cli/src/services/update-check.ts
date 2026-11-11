@@ -9,8 +9,8 @@ import { GITHUB_CONFIG } from 'src/config';
 import { captureServices } from 'src/effects/capture-services';
 import { APP_VERSION } from '../constants';
 import type { InvocationHookShape } from './invocation-hook';
-import { NodeOs, type NodeOsShape } from './node-os';
-import { resolveRunningCliVersion } from './run-companion-modules';
+import { NodeOs } from './node-os';
+import { resolveBinaryAssetName, resolveRunningCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
 /**
@@ -98,17 +98,6 @@ const defaultStateFile = Effect.gen(function* () {
   return path.join(os.homedir, '.composio', 'update-check.json');
 });
 
-function getCurrentBinaryAssetName(os: Pick<NodeOsShape, 'platform' | 'arch'>): string | undefined {
-  const { platform } = os;
-  const rawArch: string = os.arch;
-  if (platform !== 'darwin' && platform !== 'linux') return undefined;
-
-  const arch = rawArch === 'arm64' || rawArch === 'aarch64' ? 'aarch64' : rawArch;
-  if (arch !== 'x64' && arch !== 'aarch64') return undefined;
-
-  return `composio-${platform}-${arch}.zip`;
-}
-
 const defaultConfig = (stateFile: string) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
@@ -119,7 +108,7 @@ const defaultConfig = (stateFile: string) =>
       currentVersion,
       checkIntervalMs: CHECK_INTERVAL_MS,
       releasesUrl: `${github.apiBaseUrl}/repos/${github.owner}/${github.repo}/releases?per_page=100`,
-      binaryAssetName: getCurrentBinaryAssetName(os),
+      binaryAssetName: resolveBinaryAssetName({ platform: os.platform, arch: os.arch }),
       accessToken: github.accessToken,
       fetchFn: fetch,
     } satisfies UpdateCheckConfig;

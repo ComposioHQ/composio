@@ -161,7 +161,7 @@ export const collectExpectedRunCompanionAssetRelativePaths = (
     return [...collected].sort();
   });
 
-const resolveBinaryAssetName = ({
+export const resolveBinaryAssetName = ({
   platform = process.platform,
   arch = process.arch,
 }: {

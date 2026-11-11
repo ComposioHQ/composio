@@ -11,7 +11,8 @@ $testRoot = Join-Path ([IO.Path]::GetTempPath()) "composio windows $([Guid]::New
 $envNames = @(
     'BUN_BE_BUN', 'COMPOSIO_CACHE_DIR', 'COMPOSIO_DISABLE_TELEMETRY', 'COMPOSIO_GITHUB_API_BASE_URL', 'COMPOSIO_INSTALL_DIR',
     'COMPOSIO_INSTALL_SHELL', 'COMPOSIO_INSTALL_VERSION', 'COMPOSIO_USER_API_KEY', 'COMPOSIO_WINDOWS_SMOKE_ARCHIVE',
-    'COMPOSIO_WINDOWS_SMOKE_INSTALLER', 'COMPOSIO_WINDOWS_SMOKE_PORT', 'COMPOSIO_WINDOWS_SMOKE_TAG'
+    'COMPOSIO_WINDOWS_SMOKE_INSTALLER', 'COMPOSIO_WINDOWS_SMOKE_PORT', 'COMPOSIO_WINDOWS_SMOKE_SKILL', 'COMPOSIO_WINDOWS_SMOKE_TAG',
+    'USERPROFILE'
 )
 $savedEnv = @{}
 foreach ($name in $envNames) { $savedEnv[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -43,6 +44,7 @@ try {
     # The first path segment of the API base URL selects a scenario:
     #   /stable   lists a stable release behind a newer beta, for the default (latest) install
     #   /corrupt  publishes a checksum that does not match the archive
+    #   /skill    adds the CLI skill bundle to the release
     $source = Join-Path $testRoot 'source'
     Expand-Archive -LiteralPath $ArchivePath -DestinationPath $source
     $serverFile = Join-Path $testRoot 'release-server.mjs'
@@ -58,6 +60,7 @@ const server = Bun.serve({
     const {origin, pathname} = new URL(request.url);
     if (pathname === '/install.ps1') return text(await Bun.file(process.env.COMPOSIO_WINDOWS_SMOKE_INSTALLER).text());
     if (pathname === '/cli.zip') return new Response(archive);
+    if (pathname === '/skill.zip') return new Response(Bun.file(process.env.COMPOSIO_WINDOWS_SMOKE_SKILL));
     if (pathname === '/checksums.txt') return text(`${hash}  composio-windows-x64.zip\n`);
     if (pathname === '/corrupt-checksums.txt') return text(`${'0'.repeat(64)}  composio-windows-x64.zip\n`);
     const release = (tagName, checksums = 'checksums.txt') => ({
@@ -67,6 +70,11 @@ const server = Bun.serve({
         {name: 'checksums.txt', browser_download_url: `${origin}/${checksums}`}
       ]});
     if (pathname.startsWith('/corrupt/')) return Response.json(release(tag, 'corrupt-checksums.txt'));
+    if (pathname.startsWith('/skill/')) {
+      const withSkill = release(tag);
+      withSkill.assets.push({name: 'composio-skill.zip', browser_download_url: `${origin}/skill.zip`});
+      return Response.json(withSkill);
+    }
     if (pathname.includes('/releases/tags/')) return Response.json(release(tag));
     if (pathname.startsWith('/stable/')) return Response.json([release('@composio/cli@9.9.9-beta.1'), release('@composio/cli@1.2.3')]);
     if (pathname.endsWith('/releases')) return Response.json([release(tag)]);
@@ -78,6 +86,11 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
     $env:COMPOSIO_WINDOWS_SMOKE_ARCHIVE = $ArchivePath
     $env:COMPOSIO_WINDOWS_SMOKE_INSTALLER = (Resolve-Path -LiteralPath "$PSScriptRoot/../../../install.ps1").Path
     $env:COMPOSIO_WINDOWS_SMOKE_PORT = $portFile
+    $skillSource = Join-Path $testRoot 'skill/composio-cli'
+    New-Item -ItemType Directory -Path $skillSource -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $skillSource 'SKILL.md') -Value '# fixture skill'
+    $env:COMPOSIO_WINDOWS_SMOKE_SKILL = Join-Path $testRoot 'composio-skill.zip'
+    Compress-Archive -Path $skillSource -DestinationPath $env:COMPOSIO_WINDOWS_SMOKE_SKILL
     $env:COMPOSIO_WINDOWS_SMOKE_TAG = "@composio/cli@$ExpectedVersion"
     $env:BUN_BE_BUN = '1'
     $server = Start-Process -FilePath (Join-Path $source 'composio-windows-x64/composio.exe') -ArgumentList @('"' + $serverFile + '"') -PassThru -RedirectStandardError (Join-Path $testRoot 'server.err')
@@ -156,8 +169,15 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
         if ($upgrade -eq 1) {
             # The replaced executable stays locked until its process has fully exited.
             for ($attempt = 0; $attempt -lt 50; $attempt++) {
-                try { Set-Content -LiteralPath "$binary.old" -Value 'stale backup'; break } catch { Start-Sleep -Milliseconds 200 }
+                try { Set-Content -LiteralPath "$binary.old" -Value 'stale backup'; break } catch {
+                    if ($attempt -eq 0) {
+                        Write-Host 'composio.exe.old is locked. Processes running from the install directory:'
+                        Get-Process | Where-Object { $_.Path -like "$installDir*" } | Format-Table Id, ProcessName, StartTime, Path | Out-Host
+                    }
+                    Start-Sleep -Milliseconds 200
+                }
             }
+            Write-Host "composio.exe.old became writable after $attempt retries."
         }
     }
 
@@ -190,7 +210,23 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
     Remove-Item -LiteralPath $companion
     Assert ((Invoke-Cli @('run', 'console.log("windows-repair-ok")')) -eq 'windows-repair-ok') 'Companion repair failed.'
     Assert (Test-Path -LiteralPath $companion) 'Companion was not restored.'
-    Write-Host 'Windows installation, run, repeated upgrade, and repair passed.'
+
+    # The CLI skill is linked into the agent's directory with a junction, which needs no
+    # elevated rights. Installing twice must replace the link without emptying its target.
+    $env:USERPROFILE = Join-Path $testRoot 'home'
+    New-Item -ItemType Directory -Path $env:USERPROFILE | Out-Null
+    $env:COMPOSIO_GITHUB_API_BASE_URL = "$baseUrl/skill"
+    $linkedSkill = Join-Path $env:USERPROFILE '.claude/skills/composio-cli'
+    foreach ($attempt in 1..2) {
+        Invoke-Cli @('setup', 'skill', 'claude') | Out-Host
+        Assert ((Get-Item -LiteralPath $linkedSkill).LinkType -eq 'Junction') 'The skill was not linked with a junction.'
+        Assert (Test-Path -LiteralPath (Join-Path $linkedSkill 'SKILL.md')) 'The linked skill is empty.'
+    }
+
+    # Shell setup has nothing to do on Windows and says so.
+    $output = & $binary install 2>&1 | Out-String
+    Assert ($LASTEXITCODE -ne 0 -and $output -like '*Windows*') "Expected composio install to explain itself, got: $output"
+    Write-Host 'Windows installation, run, repeated upgrade, repair, and skill setup passed.'
 } finally {
     if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force; $server.WaitForExit() }
     foreach ($name in $envNames) { [Environment]::SetEnvironmentVariable($name, $savedEnv[$name]) }
