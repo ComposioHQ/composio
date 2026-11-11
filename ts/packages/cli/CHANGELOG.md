@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- The `composio-cli` skill now says how to run a tool inside a developer
+  project: `composio dev playground-execute`, with
+  `composio dev connected-accounts link <toolkit>` for a missing connection.
+  Agents on developer tasks used to fall back to `composio execute`, which acts
+  on the consumer project; in live runs with `claude-haiku-5-5` that happened
+  on every developer run, and no longer does.
+
 - `composio dev playground-execute` without a connection now names
   `composio dev connected-accounts link <toolkit>` as the fix. It used to name
   `composio link <toolkit>`, which connects the consumer user and leaves the
