@@ -195,11 +195,16 @@ The CLI reads the file of the host and session ID it resolved for the command:
 
 Name the file after the same host and ID your hook exports. If your hook exports nothing, name it after the ID the host puts in its own variable.
 
+- **Nested hosts without an export.** When both hosts' own variables are present and no pair was exported, the CLI resolves no session and reads no file. So naming the file after the host's own variable works only when exactly one host's variable is set.
+- **A hook that inherits a pair.** A hook that starts with a parent's exported pair already in its environment keeps that pair, and writes the file under that pair, not under its own host's ID. The CLI reads the file of the pair it resolved, and an inherited pair is the one it resolves.
+- **Permissions.** Create the directories for the owner only (mode `0700`). The file names are the hosts' session IDs.
+
 The CLI builds the path only when the ID matches `^[A-Za-z0-9_-]{1,128}$`, which every UUID does. For any other ID it reports no count. The ID is used to find this file and is never sent.
 
 #### Format
 
-- Plain text, append-only. Never rewrite or truncate the file.
+- Plain text in UTF-8 or ASCII, append-only. Never rewrite or truncate the file.
+- Windows PowerShell 5.1 writes UTF-16 with `>>` and with `Out-File`. The CLI reports no count for a UTF-16 file, so write with an explicit `utf8` or `ascii` encoding there.
 - One line per compaction, ending in a newline. Append it with a single write, which `>>` in a shell hook does.
 - The count is the number of lines that hold anything other than whitespace. The CLI does not parse a line, so its content is yours to choose. A timestamp is enough.
 - Keep the file under 64 KiB. The CLI ignores a larger one and reports no count.
@@ -223,7 +228,7 @@ An empty file says "a hook is recording, and the chat was not compacted yet". No
 - The CLI only reads. It never creates, changes, or deletes the file or its directories, so removing the files of old chats is up to the writer.
 - The count is read per command. Each `composio` command reads the file when it runs, and nothing is cached between commands, so the first command after a compaction reports the new count. A long-running command such as `composio listen` keeps the count it first read for its API requests.
 - The count is sent as the number `agent_compaction_count` on telemetry events and as the header `x-cli-agent-compaction-count` (a decimal string) on the requests that carry the agent session headers.
-- A file that is missing, unreadable, larger than 64 KiB, or not a regular file gives no count. The command runs exactly as it would without it and prints nothing about it.
+- A file that is missing, unreadable, larger than 64 KiB, not a regular file, or that holds a NUL character, as a UTF-16 file does, gives no count. The command runs exactly as it would without it and prints nothing about it.
 - When telemetry is disabled (`COMPOSIO_CLI_TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED`, or `CI`), the CLI does not read the file and sends no count.
 
 ## Caching
