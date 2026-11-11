@@ -25,6 +25,8 @@ export interface JourneyOptions {
   home?: string;
   /** Short name used in the container name, to tell journeys apart in `docker ps`. */
   label?: string;
+  /** Host files or directories mounted read-only, such as a tool the journey runs. */
+  readOnlyMounts?: ReadonlyArray<{ readonly source: string; readonly target: string }>;
 }
 
 export interface JourneyExecOptions {
@@ -108,9 +110,13 @@ export async function startJourneyContainer(
   const home = options.home ?? DEFAULT_HOME;
   const name = `e2e-journey-${options.label ?? 'cli'}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
   const steps: JourneyStep[] = [];
+  const mountArgs = (options.readOnlyMounts ?? []).flatMap(mount => [
+    '--mount',
+    `type=bind,source=${mount.source},target=${mount.target},readonly`,
+  ]);
 
   const started =
-    await $`docker run -d --rm --name ${name} --label composio.e2e=true --label composio.runtime=cli --add-host host.docker.internal:host-gateway -e HOME=${home} ${envArgs(options.env)} --workdir / ${imageTag} sleep infinity`
+    await $`docker run -d --rm --name ${name} --label composio.e2e=true --label composio.runtime=cli --add-host host.docker.internal:host-gateway -e HOME=${home} ${envArgs(options.env)} ${mountArgs} --workdir / ${imageTag} sleep infinity`
       .nothrow()
       .quiet();
   if (started.exitCode !== 0) {

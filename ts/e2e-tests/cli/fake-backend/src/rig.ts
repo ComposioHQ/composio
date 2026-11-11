@@ -5,7 +5,7 @@
  */
 
 import { startJourneyContainer, type E2ETestResult, type JourneyContainer } from '@e2e-tests/utils';
-import type { JourneyExecOptions } from '@e2e-tests/utils';
+import type { JourneyExecOptions, JourneyOptions } from '@e2e-tests/utils';
 import type { JournalEntry } from './journal';
 import { startFakeComposio, type FakeComposio } from './server';
 import { USER_API_KEY } from './world';
@@ -23,6 +23,8 @@ export interface RigOptions {
   dashboard?: boolean;
   /** Extra environment for every command, applied over the rig's own. */
   env?: Record<string, string>;
+  /** Host files mounted read-only into the container. */
+  readOnlyMounts?: JourneyOptions['readOnlyMounts'];
 }
 
 export interface CommandResult extends E2ETestResult {
@@ -60,6 +62,7 @@ export const startCliRig = async (options: RigOptions = {}): Promise<CliRig> => 
     journey = await startJourneyContainer({
       label: options.label,
       env: { ...hermeticEnv(fake, options), ...options.env },
+      readOnlyMounts: options.readOnlyMounts,
     });
     await journey.writeFile(CA_CERT_PATH, fake.caCert);
   } catch (error) {
