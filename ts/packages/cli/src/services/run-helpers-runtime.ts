@@ -39,6 +39,11 @@ export type RunHelperContext = {
   readonly debug?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
+  /**
+   * The agent session headers the parent command resolved, for `proxy()` requests. This
+   * module reads no environment variable, so the parent passes them in.
+   */
+  readonly agentSessionHeaders?: Readonly<Record<string, string>>;
 };
 
 type RunHelpersInstallParams = {
@@ -771,6 +776,7 @@ const createProxyHelper = (params: {
       method: 'POST',
       headers: {
         ...cliRequestHeaders(),
+        ...helperContext.agentSessionHeaders,
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,

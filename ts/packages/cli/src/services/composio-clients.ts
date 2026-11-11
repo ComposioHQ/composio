@@ -24,6 +24,7 @@ import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { cliClientIdentity } from './client-provenance';
 import { sha256Hex } from 'src/utils/checksums';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
+import { agentSessionHeaders, resolveAgentSession } from './agent-session';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
@@ -181,6 +182,13 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
       getCurrentCwdSessionId().pipe(Effect.provideContext(sessionIdServices))
     );
 
+    // Resolved once, with the configuration this singleton is built with: the session
+    // variables and the telemetry switches do not change while a process runs.
+    const sessionHeaders = Option.match(yield* resolveAgentSession, {
+      onNone: () => ({}),
+      onSome: agentSessionHeaders,
+    });
+
     // `ctx.data` is read per call: a login or logout changes the user key.
     const getFor = (params?: ClientScope) =>
       Effect.gen(function* () {
@@ -219,8 +227,10 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                 // The identity headers come from here; the client refuses them
                 // in `defaultHeaders`.
                 identity: cliClientIdentity(),
-                defaultHeaders:
-                  cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : undefined,
+                defaultHeaders: {
+                  ...(cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : {}),
+                  ...sessionHeaders,
+                },
                 // Only a call that passes `idempotent` is retried.
                 maxRetries: 0,
                 schemas: schemaLoaders,
