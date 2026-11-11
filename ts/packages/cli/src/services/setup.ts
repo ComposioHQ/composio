@@ -289,7 +289,8 @@ const hostCommand = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =
       onNone: () => Command.make(adapter.executable, args),
       onSome: executable =>
         executable.needsShell
-          ? Command.make(`"${executable.path}"`, args, { shell: true })
+          ? // A shell takes one command line, not an argument list.
+            Command.make([`"${executable.path}"`, ...args].join(' '), [], { shell: true })
           : Command.make(executable.path, args),
     });
   });
