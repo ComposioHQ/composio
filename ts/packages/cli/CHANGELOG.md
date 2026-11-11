@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- `composio login` and `composio link` stop waiting for an authorization after
+  10 minutes, checking every 5 seconds once a short ramp is over. The wait used
+  to double after every check, so it took about 2 hours 44 minutes to give up,
+  although `composio login`'s hint promised 10 minutes.
+
 - Update @composio/client to 2.1.17 to include the latest API changes.
 
 - Update @composio/client to 2.1.16 to include the latest API changes.

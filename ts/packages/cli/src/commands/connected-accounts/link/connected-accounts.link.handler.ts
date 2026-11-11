@@ -1,4 +1,5 @@
-import { Effect, Match, Option, Schedule, pipe } from 'effect';
+import { Effect, Match, Option, pipe } from 'effect';
+import { authorizationPollSchedule } from 'src/effects/authorization-poll';
 import type { ComposioClientShape } from '@composio/client/effect';
 import open from 'open';
 import { commandInputError } from 'src/commands/errors';
@@ -227,7 +228,7 @@ const openBrowser = (url: string) =>
     catch: cause => new BrowserOpenError({ message: 'Failed to open the browser.', cause }),
   });
 
-/** Polls the account until it is `ACTIVE`: a 0.3s exponential ramp capped at 5s, 15 attempts. */
+/** Polls the account until it is `ACTIVE`, on `authorizationPollSchedule` (ten minutes at most). */
 const pollUntilActive = (client: ComposioClientShape, connectedAccountId: string) =>
   Effect.retry(
     Effect.gen(function* () {
@@ -248,9 +249,7 @@ const pollUntilActive = (client: ComposioClientShape, connectedAccountId: string
         status: account.status,
       });
     }),
-    Schedule.max([Schedule.exponential('0.3 seconds'), Schedule.spaced('5 seconds')]).pipe(
-      Schedule.upTo({ times: 15 })
-    )
+    authorizationPollSchedule
   );
 
 /** Opens the authorization page unless `noBrowser`, then waits for the account to turn `ACTIVE`. */
