@@ -8,6 +8,7 @@ import * as tempy from 'tempy';
 import { TELEMETRY_CONFIG } from 'src/config';
 import {
   agentSessionHeaders,
+  AGENT_SESSION_NAMESPACE,
   deriveAgentSessionId,
   resolveAgentSession,
   type HostSession,
@@ -21,6 +22,10 @@ const CODEX_SESSION = '00000000-0000-7000-8000-000000000002';
 const CODEX_AGENT_SESSION_ID = '9d27e7e4-b2ed-522c-bed8-595444e853a7';
 
 describe('deriveAgentSessionId', () => {
+  it('[Given] the namespace name [Then] it is the namespace other systems derive under', () => {
+    expect(AGENT_SESSION_NAMESPACE).toBe('377a1a01-b6e5-5f6e-ae1c-a874a3316d89');
+  });
+
   it.each([
     { host: 'claude', hostSessionId: CLAUDE_SESSION, expected: CLAUDE_AGENT_SESSION_ID },
     { host: 'codex', hostSessionId: CODEX_SESSION, expected: CODEX_AGENT_SESSION_ID },

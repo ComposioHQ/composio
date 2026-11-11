@@ -25,36 +25,59 @@ export type AgentSession = {
   readonly compactionCount?: number;
 };
 
+/** The pair a plugin hook exported, when it names a known host and carries a session ID. */
+const exportedSession = (env: AgentSessionEnvironment): Option.Option<HostSession> =>
+  Option.all({
+    host: Option.fromUndefinedOr(AGENT_HOSTS.find(host => host === env.hookHost)),
+    hostSessionId: Option.fromUndefinedOr(env.hookSessionId),
+  });
+
+/** Each host's own session ID. Codex versions without `CODEX_SESSION_ID` set only a thread ID. */
+const ownSessionIds = (env: AgentSessionEnvironment): Record<AgentHost, string | undefined> => ({
+  claude: env.claudeCodeSessionId,
+  codex: env.codexSessionId ?? env.codexThreadId,
+});
+
+/** The one host whose own variable is set. Two hosts cannot be ordered, so they give none. */
+const soleOwnSession = (env: AgentSessionEnvironment): Option.Option<HostSession> => {
+  const ids = ownSessionIds(env);
+  const [session, ...others] = AGENT_HOSTS.flatMap((host): ReadonlyArray<HostSession> => {
+    const hostSessionId = ids[host];
+    return hostSessionId === undefined ? [] : [{ host, hostSessionId }];
+  });
+  return session !== undefined && others.length === 0 ? Option.some(session) : Option.none();
+};
+
 /**
  * Picks the chat this process runs in from the agent session variables.
  *
  * The pair a plugin hook exported wins, because child processes inherit it: a host started
- * inside another host's chat still reports the parent chat. An export that names an unknown
- * host, or that lacks one of its two variables, is ignored. Without an export, the host whose
- * own variable is set is used; variables from both hosts cannot be ordered, so they select
- * nothing. Blank variables already read as `undefined` (see `HOST_CONFIG`).
+ * inside another host's chat still reports the parent chat. Without a usable export, the one
+ * host whose own variable is set is used. Blank variables already read as `undefined` (see
+ * `HOST_CONFIG`).
  *
  * Not exported: it reads no telemetry switch and returns the host's own session ID, which
  * only `resolveAgentSession` may hold, after its telemetry check.
  */
-const selectHostSession = (env: AgentSessionEnvironment): Option.Option<HostSession> => {
-  const hookHost = AGENT_HOSTS.find(host => host === env.hookHost);
-  if (hookHost !== undefined && env.hookSessionId !== undefined) {
-    return Option.some({ host: hookHost, hostSessionId: env.hookSessionId });
-  }
-  const claudeSessionId = env.claudeCodeSessionId;
-  const codexSessionId = env.codexSessionId ?? env.codexThreadId;
-  if (claudeSessionId !== undefined && codexSessionId === undefined) {
-    return Option.some({ host: 'claude', hostSessionId: claudeSessionId });
-  }
-  if (codexSessionId !== undefined && claudeSessionId === undefined) {
-    return Option.some({ host: 'codex', hostSessionId: codexSessionId });
-  }
-  return Option.none();
-};
+const selectHostSession = (env: AgentSessionEnvironment): Option.Option<HostSession> =>
+  Option.orElse(exportedSession(env), () => soleOwnSession(env));
 
-// A fixed namespace, so any system that holds a host and its session ID derives the same ID.
-const deriveInAgentSessionNamespace = uuidv5.namespace('377a1a01-b6e5-5f6e-ae1c-a874a3316d89');
+/**
+ * The namespace every agent session ID is derived under. A UUID v5 needs one, and this one is
+ * itself the UUID v5 of the name below under the RFC 9562 URL namespace, so nothing here is
+ * an arbitrary number. The name labels the scheme and does not have to resolve. `uuidv5.NIL`
+ * or `uuidv5.MAX` would be accepted too, but they belong to no one: any other system hashing
+ * the same `<host>:<id>` name under them would produce our IDs.
+ *
+ * Frozen. Another name changes every derived ID and splits each chat in two. Any system that
+ * holds a host and its session ID derives the same ID from this value.
+ */
+export const AGENT_SESSION_NAMESPACE = uuidv5(
+  'https://composio.dev/ns/agent-session/v1',
+  uuidv5.URL
+);
+
+const deriveInAgentSessionNamespace = uuidv5.namespace(AGENT_SESSION_NAMESPACE);
 
 /**
  * The UUID v5 of `<host>:<host session ID>`. Surrounding whitespace was dropped when the
