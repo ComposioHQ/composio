@@ -137,6 +137,11 @@ type Surroundings = {
   readonly home?: string;
   /** A file whose read fails, the way a file this user may not read does. */
   readonly unreadable?: string;
+  /**
+   * The type every lookup reports in place of the real one. A real FIFO would hang a
+   * resolver that opened it, and the suite with it.
+   */
+  readonly reportedType?: FileSystem.File.Type;
 };
 
 /**
@@ -144,7 +149,10 @@ type Surroundings = {
  * missing file pins the one path it records, so a resolver that read some other way would
  * fail there instead of passing the "reads nothing" tests unnoticed.
  */
-const recordingFileSystem = (touched: Array<string>, unreadable?: string) =>
+const recordingFileSystem = (
+  touched: Array<string>,
+  { unreadable, reportedType }: Pick<Surroundings, 'unreadable' | 'reportedType'>
+) =>
   Layer.effect(
     FileSystem.FileSystem,
     Effect.map(FileSystem.FileSystem, fs =>
@@ -152,7 +160,9 @@ const recordingFileSystem = (touched: Array<string>, unreadable?: string) =>
         ...fs,
         stat: path => {
           touched.push(path);
-          return fs.stat(path);
+          return fs
+            .stat(path)
+            .pipe(Effect.map(info => ({ ...info, type: reportedType ?? info.type })));
         },
         readFileString: (path, encoding) => {
           touched.push(path);
@@ -174,14 +184,14 @@ const recordingFileSystem = (touched: Array<string>, unreadable?: string) =>
 /** What the resolver resolved, and every path it touched on the way. */
 const observeResolution = (
   env: Record<string, string>,
-  { home = EMPTY_HOME, unreadable }: Surroundings = {}
+  { home = EMPTY_HOME, ...fileSystem }: Surroundings = {}
 ) => {
   const touched: Array<string> = [];
   return resolveAgentSession.pipe(
     Effect.map(session => ({ session: Option.getOrUndefined(session), touched })),
     Effect.provide(
       Layer.mergeAll(
-        recordingFileSystem(touched, unreadable),
+        recordingFileSystem(touched, fileSystem),
         BunPath.layer,
         Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
       )
@@ -396,6 +406,24 @@ describe('resolveAgentSession compaction count', () => {
       const actual = yield* resolveWith(IN_CLAUDE_CODE, { home, unreadable: file });
 
       expect(actual).toStrictEqual(WITHOUT_COUNT);
+    })
+  );
+
+  // The file is a regular one that would count 2 if it were read: only the reported type
+  // keeps the resolver from opening it.
+  it.effect('[Given] a FIFO at the file path [Then] it is looked at once and never read', () =>
+    Effect.gen(function* () {
+      const home = tempy.temporaryDirectory();
+      const file = compactionFile(home, 'claude', CLAUDE_SESSION);
+      yield* writeFile(file, 'auto\nmanual\n');
+
+      const { session, touched } = yield* observeResolution(IN_CLAUDE_CODE, {
+        home,
+        reportedType: 'FIFO',
+      });
+
+      expect(session).toStrictEqual(WITHOUT_COUNT);
+      expect(touched).toStrictEqual([file]);
     })
   );
 
