@@ -88,7 +88,8 @@ const enableTelemetry = (apiKey = 'uak_test') => {
   // telemetry implies a target. The no-key path is covered explicitly below.
   vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
   // Open telemetry resolves the agent session from these, and the suite may itself run inside
-  // Claude Code or Codex. Blank reads as unset; a test that wants a session sets it afterwards.
+  // Claude Code or Codex. The session resolver reads a blank value as unset; a test that wants
+  // a session sets it afterwards.
   vi.stubEnv('COMPOSIO_AGENT_HOST', '');
   vi.stubEnv('COMPOSIO_AGENT_SESSION_ID', '');
   vi.stubEnv('CLAUDE_CODE_SESSION_ID', '');
@@ -448,22 +449,32 @@ describe('CLI analytics dispatch', () => {
       });
     });
 
-    it.effect("keeps the host's own session IDs out of the envelope", () => {
+    it.effect("keeps the hosts' own session IDs out of the envelope", () => {
+      const otherCodexSession = '00000000-0000-7000-8000-000000000003';
+      const codexThread = '00000000-0000-7000-8000-000000000004';
       enableTelemetry();
+      // The hook's pair wins over every host variable, and none of the four IDs is sent.
       vi.stubEnv('COMPOSIO_AGENT_HOST', 'codex');
       vi.stubEnv('COMPOSIO_AGENT_SESSION_ID', CODEX_SESSION);
       vi.stubEnv('CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION);
+      vi.stubEnv('CODEX_SESSION_ID', otherCodexSession);
+      vi.stubEnv('CODEX_THREAD_ID', codexThread);
+      vi.stubEnv('CLAUDECODE', '1');
 
       return Effect.gen(function* () {
         const envelope = yield* enqueuedEnvelope({ name: 'producer_event' });
 
+        // `agent_host_env` keeps reading the host markers, whatever session is resolved.
         expect(envelope.properties).toMatchObject({
+          agent_host_env: 'claude',
           agent_session_host: 'codex',
           agent_session_id: CODEX_AGENT_SESSION_ID,
         });
         const serialized = JSON.stringify(envelope);
         expect(serialized).not.toContain(CODEX_SESSION);
         expect(serialized).not.toContain(CLAUDE_SESSION);
+        expect(serialized).not.toContain(otherCodexSession);
+        expect(serialized).not.toContain(codexThread);
       });
     });
   });
