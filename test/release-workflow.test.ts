@@ -792,6 +792,11 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
         `a release without the unverified Windows archive must pass: ${unverified.stdout}`
       );
     }
+    // A Windows archive left on a resumed draft has no checksum entry, so it must not ship.
+    const stale = verify(assets, { WINDOWS_VERIFIED: 'false' });
+    if (stale.status === 0 || !stale.stdout.includes('unexpected assets')) {
+      throw new Error('CLI release verification must reject an unverified Windows archive');
+    }
     const pending = verify(
       assets.map(asset =>
         asset.name === 'composio-windows-x64.zip' ? { ...asset, state: 'new' } : asset
@@ -803,6 +808,70 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
           'CLI release verification must reject a missing or pending Windows archive'
         );
       }
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+// Resuming a draft must remove assets the current run does not ship: the regenerated
+// checksums.txt no longer covers them.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-resume-draft-'));
+  try {
+    const fakeBin = join(fixtureDir, 'bin');
+    const binariesDir = join(fixtureDir, 'binaries');
+    mkdirSync(fakeBin);
+    mkdirSync(binariesDir);
+    for (const name of ['composio-linux-x64.zip', 'checksums.txt']) {
+      writeFileSync(join(binariesDir, name), '');
+    }
+    const ghLog = join(fixtureDir, 'gh.log');
+    const ghPath = join(fakeBin, 'gh');
+    writeFileSync(
+      ghPath,
+      [
+        '#!/bin/sh',
+        'echo "$*" >> "$GH_LOG"',
+        'case "$*" in',
+        '  *isDraft*) echo true ;;',
+        '  *assets*) printf "%s\\n" composio-linux-x64.zip composio-windows-x64.zip checksums.txt ;;',
+        'esac',
+        '',
+      ].join('\n')
+    );
+    chmodSync(ghPath, 0o755);
+    const resumed = spawnSync(
+      'bash',
+      [
+        new URL('../.github/scripts/cli-release/create-or-resume-draft.sh', import.meta.url)
+          .pathname,
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${fakeBin}:${process.env.PATH}`,
+          GH_LOG: ghLog,
+          BINARIES_DIR: binariesDir,
+          RELEASE_TAG: '@composio/cli@1.2.3',
+          RELEASE_NAME: 'CLI 1.2.3',
+          CHECKOUT_REF: 'abc123',
+          PRERELEASE: 'false',
+        },
+      }
+    );
+    const deletions = readFileSync(ghLog, 'utf8')
+      .split('\n')
+      .filter(line => line.startsWith('release delete-asset'));
+    if (
+      resumed.status !== 0 ||
+      deletions.length !== 1 ||
+      !deletions[0].includes('composio-windows-x64.zip')
+    ) {
+      throw new Error(
+        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions}`
+      );
     }
   } finally {
     rmSync(fixtureDir, { recursive: true, force: true });

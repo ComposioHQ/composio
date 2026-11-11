@@ -39,6 +39,17 @@ for attempt in $(seq 1 "$attempts"); do
     printf '%s\n' "$uploaded" | grep -qxF "$want" || missing+=("$want")
   done
 
+  # An asset outside the expected set is not covered by checksums.txt, for example a Windows
+  # archive left on a resumed draft. Waiting cannot fix that, so fail at once.
+  unexpected=()
+  while IFS= read -r have; do
+    [[ -z "$have" ]] || printf '%s\n' "${expected[@]}" | grep -qxF "$have" || unexpected+=("$have")
+  done < <(jq -r '.assets[].name' <<<"$payload")
+  if [[ ${#unexpected[@]} -gt 0 ]]; then
+    echo "::error::Release $RELEASE_TAG has unexpected assets: ${unexpected[*]}"
+    exit 1
+  fi
+
   if [[ ${#missing[@]} -eq 0 ]]; then
     echo "✅ All ${#expected[@]} expected assets present and uploaded."
     exit 0
