@@ -650,14 +650,17 @@ describe('DashboardToolExecution agent session headers', () => {
   };
 
   /** The requests of one tool execution and one meta tool execution. */
-  const sentRequests = () =>
-    withDashboard(succeedWith(successOutcome), (dashboard, requests) =>
-      Effect.gen(function* () {
-        yield* dashboard.execute(executeRequest);
-        yield* dashboard.executeMeta({ ...executeRequest, slug: 'COMPOSIO_SEARCH_TOOLS' });
-        expect(requests).toHaveLength(2);
-        return requests;
-      })
+  const sentRequests = (home?: string) =>
+    withDashboard(
+      succeedWith(successOutcome),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          yield* dashboard.execute(executeRequest);
+          yield* dashboard.executeMeta({ ...executeRequest, slug: 'COMPOSIO_SEARCH_TOOLS' });
+          expect(requests).toHaveLength(2);
+          return requests;
+        }),
+      { home }
     );
 
   const agentSessionHeadersOf = (requests: ReadonlyArray<RecordedRequest>) =>
@@ -679,6 +682,29 @@ describe('DashboardToolExecution agent session headers', () => {
       ]);
       // The host's own session ID stays on the device.
       expect(JSON.stringify(requests)).not.toContain(CLAUDE_SESSION);
+      // No plugin hook wrote a compaction file for this chat.
+      expect(requests.map(request => request.headers['x-cli-agent-compaction-count'])).toEqual([
+        undefined,
+        undefined,
+      ]);
+    })
+  );
+
+  it.effect("sends the chat's compaction count on both procedures", () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      stubAgentSessionVariables({ CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION });
+      const home = emptyHome();
+      const hostDir = path.join(home, '.composio', 'agent-compactions', 'claude');
+      fs.mkdirSync(hostDir, { recursive: true });
+      fs.writeFileSync(path.join(hostDir, CLAUDE_SESSION), 'auto\nmanual\n');
+
+      const requests = yield* sentRequests(home);
+
+      expect(requests.map(request => request.headers['x-cli-agent-compaction-count'])).toEqual([
+        '2',
+        '2',
+      ]);
     })
   );
 

@@ -713,7 +713,13 @@ export const trackCliEventEffect = (event: TrackEvent) =>
       // Not `agent_host`: setup events already send that name for the host they set up.
       ...Option.match(agentSession, {
         onNone: () => ({}),
-        onSome: session => ({ agent_session_host: session.host, agent_session_id: session.id }),
+        onSome: session => ({
+          agent_session_host: session.host,
+          agent_session_id: session.id,
+          ...(session.compactionCount !== undefined
+            ? { agent_compaction_count: session.compactionCount }
+            : {}),
+        }),
       }),
     }) as Record<string, unknown>;
     const envelope: AnalyticsEnvelope = {

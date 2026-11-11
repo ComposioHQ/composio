@@ -37,6 +37,7 @@ import {
   resolveRunCompanionModulePath,
   writeInstalledReleaseTag,
 } from 'src/services/run-companion-modules';
+import { NodeOs } from 'src/services/node-os';
 import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
 import { cli, MockConsole, recordedInvocationCalls, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -629,6 +630,34 @@ describe('CLI: composio run', () => {
           expect(preloadSource.includes(FORWARDED_AGENT_SESSION)).toBe(testCase.forwarded);
           expect(preloadSource.includes('agentSessionHeaders')).toBe(testCase.forwarded);
           // The host's own session ID stays in the parent process.
+          expect(preloadSource).not.toContain(CLAUDE_SESSION);
+        })
+    );
+  });
+
+  layer(RunTestLive())(it => {
+    it.effect(
+      "[Given] a compaction file for the chat [Then] helpers get the chat's compaction count",
+      () =>
+        Effect.gen(function* () {
+          stubAgentSessionEnvironment({});
+          const hostDir = path.join(
+            (yield* NodeOs).homedir,
+            '.composio',
+            'agent-compactions',
+            'claude'
+          );
+          fs.mkdirSync(hostDir, { recursive: true });
+          fs.writeFileSync(path.join(hostDir, CLAUDE_SESSION), 'auto\nmanual\n');
+          let preloadSource = '';
+          commandRuns.mockImplementation(command => {
+            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
+          });
+
+          yield* cli(['run', 'console.log("hi")']);
+
+          expect(preloadSource).toContain('"x-cli-agent-compaction-count":"2"');
           expect(preloadSource).not.toContain(CLAUDE_SESSION);
         })
     );
