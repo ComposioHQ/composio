@@ -189,32 +189,6 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
-      - name: Check API keys
-        id: api-keys
-        env:
-          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
-        run: |
-          missing=()
-          for name in COMPOSIO_API_KEY OPENAI_API_KEY COMPOSIO_USER_API_KEY; do
-            if [ -z "${!name}" ]; then
-              missing+=("$name")
-            fi
-          done
-
-          if [ "${#missing[@]}" -gt 0 ]; then
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
-              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
-              exit 0
-            fi
-
-            printf '::error::%s is not set\n' "${missing[@]}"
-            exit 1
-          fi
-
-          echo "available=true" >> "$GITHUB_OUTPUT"
-          echo "✅ API keys are configured"
-
       - name: Verify CLI image reuse policy
         run: pnpm --filter @e2e-tests/utils test
 
@@ -259,6 +233,33 @@ jobs:
           --filter=@e2e-tests/cli-fake-backend
           --filter=@e2e-tests/cli-operations
           --filter=@e2e-tests/cli-agent-journeys
+
+      # After the keyless step, so a missing key cannot keep those suites from running.
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY COMPOSIO_USER_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
 
       - name: Run CLI E2E Tests (staging)
         if: steps.api-keys.outputs.available == 'true'
