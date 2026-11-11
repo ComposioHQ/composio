@@ -168,16 +168,15 @@ The replay suite answers "does the CLI still behave on paths models have taken".
 - **Subject**: the skill text, rendered from source on every run and identified by `skillSha256`; and the CLI, identified by `revision`.
 - **Person**: fixed, so two runs differ only in the subject and the model.
 
-To compare two versions of the skill or the CLI, record every journey with each model several times per version under two set names, and compare the rate at which each check passes. A single run per cell, as in the table above, shows what can happen and not how often. `record.ts` records one run per call and overwrites the transcript of the same journey and model within a set, so repeated runs need a set name per repetition until it grows a repetition count.
+To compare two versions of the skill or the CLI, use `eval.ts`, not `record.ts`. It runs every journey k times per arm with Claude Code (or the minimal loop) against the real API, grades each run with the same checks, and reports pass@1, pass@k, pass^k and the wrong-tree rate per journey and split. [HILLCLIMB.md](./HILLCLIMB.md) is the procedure. A batch records what it measured: the skill's hash, a hash of the harness (journeys, graders, person, fake backend), the CLI image id, the agent and its version, and the model. Runs with the same fingerprint are reused instead of paid for again, and `compare` refuses batches graded by different harnesses.
 
-What this base does not have yet, and a tool that runs journeys many times will need:
+What the live runner bounds: each run's agent has six minutes, forty shell commands, and a dollar cap Claude Code enforces itself; a batch stops starting runs at `--max-cost-usd`. A run that fails for reasons outside the agent (the harness threw, the proxy refused a request) is recorded as `infra` and left out of every rate.
 
-- **Attempts.** A repetition overwrites the previous transcript of the same journey and model in a set, and a run that throws before grading leaves no transcript.
-- **Cost and time.** Transcripts carry no token usage and no duration.
-- **The exact subject.** `revision` plus `cliPackageModified` does not identify an uncommitted binary; there is no hash of the binary, the journey, the person, or the grader.
-- **A deadline.** Twelve model turns bound neither the number of commands in a turn nor the total time; each command is capped at 90 seconds and the replay suite has a test timeout, but `record.ts` has no overall limit.
-- **Enforced isolation.** The container reaches the fake because every host the CLI knows is redirected to it, not because other traffic is blocked. Images are addressed by a version tag that two checkouts can share.
-- **Breadth.** Every journey starts with the binary installed and uses the org's default developer project, where a request with no project scope lands on the right project by the fake's fallback. There is no journey for installing or upgrading, for a non-default project, for a script read from a file or stdin, and the person never declines, is never slow, and always has a browser.
+What it still does not have:
+
+- **Enforced isolation.** The container reaches the fake because every host the CLI knows is redirected to it, not because other traffic is blocked. An agent without the skill has tried to call the production backend directly with the fake project's keys. It failed only because the image has no `curl`; those keys work nowhere else, but nothing would stop the request.
+- **Exact attribution in Claude Code runs.** Requests are attributed to a command by the time between its call and its result. Commands that overlap, or that the agent leaves running in the background, share requests.
+- **Breadth.** Every journey starts with the binary installed and uses the org's default developer project, where a request with no project scope lands on the right project by the fake's fallback. There is no journey for installing or upgrading, for a non-default project, for a script read from a file or stdin, and the person never declines, is never slow, and always has a browser. Five journeys split three and two are a thin train and held-out set.
 
 Add a journey when a real agent failure is found that no journey would have caught: write the prompt a user would type, the state it starts from, and checks on the journal. The cases that separate versions best are the ones where the two trees are easy to confuse, a connection is missing, or the person has to act.
 
