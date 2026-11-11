@@ -117,7 +117,10 @@ enqueued envelope. When the CLI can identify the chat it runs in, it also adds
 (`src/services/agent-session.ts`), which reads the hosts' session variables and not the host
 markers: session variables from both hosts with no plugin hook export send neither property, and
 a Codex marked only by `CODEX_SANDBOX` gets `agent_host_env: 'codex'` and neither property. The
-ID is a UUID v5 derived from the host and the host's own session ID, which is never sent. The
+ID is a UUID v5 derived from the host and the host's own session ID, which is never sent. When
+the host's plugin hook keeps a compaction file for the chat (the contract is in the CLI README,
+under "Agent compaction state"), the session also carries the file's line count, sent as the
+number `agent_compaction_count`; without a file the property is absent. The
 host property is not named `agent_host`: common properties are spread last, so that name would
 overwrite the setup target on the setup and plugin lifecycle events. Setup-related events and
 their extra properties:
