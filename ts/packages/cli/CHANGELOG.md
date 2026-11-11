@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- `composio dev connected-accounts link --help` now shows
+  `composio dev connected-accounts link …` examples. It showed root
+  `composio link …` examples, which link the consumer user, not a user of the
+  developer project. The description of both pages now says which user each
+  command acts as.
+
 - `composio link` and `composio dev connected-accounts link` now print the
   authorization URL when stderr is not a terminal, as under a script, CI or a
   coding agent, before they wait for the authorization. The URL used to go
