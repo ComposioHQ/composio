@@ -19,7 +19,7 @@ Under the hood, Composio learns about events in one of two ways. It only affects
 | Kind | How Composio learns about the event | Latency | Examples |
 |---|---|---|---|
 | **Realtime** | The provider pushes the event to Composio the moment it happens. | Near-instant | Slack, Asana, Notion, Outlook, Gmail, Google Calendar |
-| **Polling** | Composio checks the provider on a schedule. | Up to the trigger's polling interval. On Composio-managed auth, the shortest allowed interval is 2 min | Google Drive, Google Sheets, OneDrive |
+| **Polling** | Composio checks the provider on a schedule. | Up to the trigger's polling interval, 2 min by default | Google Drive, Google Sheets, OneDrive |
 
 Most trigger types use one kind. Some, including the Gmail and Google Calendar triggers, support both: Composio uses realtime delivery whenever it can, and you can choose with `type`. See [Choosing webhook or polling](/docs/setting-up-triggers/creating-triggers#choosing-webhook-or-polling).
 

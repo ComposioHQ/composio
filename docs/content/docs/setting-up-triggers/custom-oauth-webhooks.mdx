@@ -41,7 +41,7 @@ The walkthrough below uses Slack as the example and the [Webhook Endpoints API](
 
 For Slack, collect the **Signing Secret** from your app's Basic Information page and an **App-Level Token** (`xapp-...`) with the `authorizations:read` scope. Keep both secret. The endpoint verification step below uses `webhook_signing_secret` and `app_token`; it does not require a separate Composio schema-discovery request.
 
-Other toolkits take different fields. Gmail, for example, takes `topic_name`, `push_service_account_email`, and `push_audience`.
+Other toolkits take different fields. Gmail, for example, takes `topic_name`, `push_service_account_email`, and `push_audience`. Save them last, once its Pub/Sub push subscription is delivering: new Gmail triggers switch to the webhook as soon as all three are set.
 
 Use the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints) for the supported create, retrieve, replace, and update operations. The committed API contract does not declare `/webhook_endpoints/schema`.
 
