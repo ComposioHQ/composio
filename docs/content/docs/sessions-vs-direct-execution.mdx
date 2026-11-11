@@ -7,15 +7,13 @@ legacy: true
 
 ## Should I use sessions or direct execution?
 
+Use sessions for new integrations. If your agent needs a fixed set of app tools, use a session's [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to keep session authentication and connected accounts without runtime tool discovery. Direct execution is a legacy interface that remains supported for existing integrations. If you maintain one, plan a [migration to sessions](/docs/migration-guide/direct-to-sessions).
+
 A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
 
 **Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
-<Callout type="info" title="Use sessions for new integrations">
-Direct execution is a legacy interface that remains supported for existing integrations. We recommend sessions for new integrations and encourage existing users to [migrate to sessions](/docs/migration-guide/direct-to-sessions). Sessions handle runtime tool discovery, authentication, and execution.
-</Callout>
-
-If your application needs a fixed tool set, consider the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) within a session. If you need approval before execution, use [approvals](/docs/governance/approvals): the session asks the user before it runs the tools you choose, including calls inside meta tools that execute multiple app tools. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
+If you need approval before execution, use [approvals](/docs/governance/approvals): the session asks the user before it runs the tools you choose, including calls inside meta tools that execute multiple app tools. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
 
 | | Sessions | Direct execution |
 |---|---|---|
