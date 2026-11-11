@@ -15,7 +15,7 @@ import {
   type JournalEntry,
 } from '@e2e-tests/cli-fake-backend';
 import { toolPayload, type ExecutedCommand, type ShellOutcome } from './src/agent';
-import { journeyById, type Evidence } from './src/journeys';
+import { journeyById, JOURNEYS, type Evidence } from './src/journeys';
 
 const TIMESTAMP = '1767225600.000100';
 const LOGGED_IN: ShellOutcome = {
@@ -368,4 +368,21 @@ describe('first-run-login', () => {
       'the login was stored: a new `composio whoami` exits 0 as the person, in their org',
     ]);
   });
+});
+
+// Harbor's "nop" agent: a grader that an agent passes by doing nothing measures nothing.
+describe('an agent that does nothing', () => {
+  for (const journey of JOURNEYS) {
+    it(`fails ${journey.id}`, () => {
+      const world = new World();
+      // The account the journey's setup may have connected is already there.
+      world.connect(DEVELOPER_PROJECT.label, GLOBAL_TEST_USER_ID, 'slack');
+      world.connect(CONSUMER_PROJECT.label, CONSUMER_USER_ID, 'slack');
+      const idle = evidence(world, [], {
+        startingConnections: world.connections.map(connection => connection.id),
+        whoamiAfter: { exitCode: 1, stdout: '', stderr: 'You are not logged in yet.' },
+      });
+      expect(failed(journey.id, idle)).not.toEqual([]);
+    });
+  }
 });

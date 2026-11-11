@@ -20,6 +20,7 @@ import {
 import type { CliRig } from '@e2e-tests/cli-fake-backend/rig';
 import { z } from 'zod';
 import type { ExecutedCommand, ShellOutcome, Transcript } from './agent';
+import type { Usage } from './usage';
 
 /** What a journey is graded on: what ran, what it printed, and what it changed. */
 export interface Evidence {
@@ -41,6 +42,8 @@ export interface Evidence {
 
 export interface JourneyRun extends Evidence {
   readonly rig: CliRig;
+  /** What the run cost, when the agent reports it. */
+  readonly usage?: Usage;
 }
 
 export interface Check {
@@ -54,6 +57,12 @@ export interface Journey {
   readonly id: string;
   readonly title: string;
   readonly prompt: string;
+  /**
+   * `train` journeys are the ones a skill change is tuned against; `holdout`
+   * journeys only measure, so a change that fits the train set and nothing
+   * else shows up there. See HILLCLIMB.md.
+   */
+  readonly split: 'train' | 'holdout';
   /** Directory the agent's shell starts in; defaults to the home directory. */
   readonly cwd?: string;
   readonly setup: (rig: CliRig) => Promise<void>;
@@ -284,6 +293,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     id: 'consumer-slack-message',
     title: 'consumer task: send a Slack message from an unconnected account',
     prompt: 'Send a Slack message to the #general channel that says: deploy finished',
+    split: 'train',
     setup: loginRig,
     checks: run => [
       stoppedByItself(run),
@@ -311,6 +321,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     title: 'developer task: list auth configs and run a tool as the test user',
     prompt:
       'I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post "hello from dev" in #general.',
+    split: 'holdout',
     cwd: DEV_DIRECTORY,
     setup: async rig => {
       await developerRig(rig);
@@ -351,6 +362,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     title: 'tree confusion: a developer task that needs a connection first',
     prompt:
       'In my Composio developer project, execute SLACK_SEND_MESSAGE as my test user to post "hello from dev" in #general.',
+    split: 'train',
     cwd: DEV_DIRECTORY,
     setup: developerRig,
     checks: run => [
@@ -412,6 +424,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     id: 'first-run-login',
     title: 'first run: find out the CLI is not logged in, and log in',
     prompt: 'Check whether the Composio CLI on this machine is logged in. If it is not, log in.',
+    split: 'train',
     setup: async () => {},
     checks: run => {
       const whoami = run.transcript.commands.filter(command =>
@@ -420,10 +433,14 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
       const stored = loginReportedBy(run.whoamiAfter);
       return [
         stoppedByItself(run),
+        // By what it printed as well as by its exit code: an agent that pipes
+        // `whoami` into `head` sees the message with exit code 0.
         check(
-          'the first `composio whoami` reported no login (exit 1)',
-          whoami[0]?.exitCode === 1,
-          whoami.map(command => command.exitCode)
+          'the first `composio whoami` reported no login',
+          whoami[0] !== undefined &&
+            (whoami[0].exitCode === 1 ||
+              /not logged in/i.test(`${whoami[0].stdout}\n${whoami[0].stderr}`)),
+          whoami.map(command => `${command.exitCode} ${command.stdout.slice(0, 120)}`)
         ),
         check(
           'exactly one CLI login session was created, and it was linked',
@@ -460,6 +477,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     title: '`composio run`: one inline script that executes a tool',
     prompt:
       'Use a single `composio run` inline script to send "build passed" to #general on Slack and print the timestamp of the sent message.',
+    split: 'holdout',
     setup: async rig => {
       await rig.login();
       rig.fake.world.connect(CONSUMER_PROJECT.label, CONSUMER_USER_ID, 'slack');
