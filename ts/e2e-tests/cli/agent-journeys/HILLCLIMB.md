@@ -44,7 +44,7 @@ set -a; . ~/.config/composio-e2e/llm.env; set +a
    `bun run eval.ts compare <baseline batch> <change batch>`.
 6. **Decide.** Keep the change when the train split's mean pass^k rises and no train journey's pass@1 falls by more than one run. A difference of one run out of three is noise: when it decides the outcome, run both batches again with `--runs 5` (earlier runs with the same fingerprint are reused, so only the extra runs are paid for).
 7. **Confirm.** Run the holdout split on the kept change and on the baseline, and the train split on `claude-opus-5-5`. A change that helps train and hurts holdout fits the journeys, not the agent: drop it.
-8. **Record.** Results are git-ignored. Put the compare tables of a kept change in its pull request, with the batch ids.
+8. **Record.** Results are git-ignored. Keep the batches a decision rests on with `bun run eval.ts keep <batch> <decision>`, which copies their records (not the logs) into `evals/<decision>/`, and write the decision's `README.md` there: what the runs showed, the change, the tables, the commands to repeat it. See [evals/](./evals/README.md); the pull request links to it.
 
 ## Rules
 
