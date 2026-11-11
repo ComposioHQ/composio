@@ -45,7 +45,10 @@ export const selectHostSession = (env: AgentSessionEnvironment): Option.Option<H
 // A fixed namespace, so any system that holds a host and its session ID derives the same ID.
 const deriveInAgentSessionNamespace = uuidv5.namespace('377a1a01-b6e5-5f6e-ae1c-a874a3316d89');
 
-/** The UUID v5 of `<host>:<host session ID>`, both used exactly as received. */
+/**
+ * The UUID v5 of `<host>:<host session ID>`. Surrounding whitespace was dropped when the
+ * variables were read (see `HOST_CONFIG`); nothing else is changed, letter case included.
+ */
 export const deriveAgentSessionId = ({ host, hostSessionId }: HostSession): string =>
   deriveInAgentSessionNamespace(`${host}:${hostSessionId}`);
 
