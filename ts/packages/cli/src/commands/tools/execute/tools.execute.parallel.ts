@@ -340,7 +340,12 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
           Effect.catch(error =>
             toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
-                const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
+                const mapped = mapComposioError({
+                  error,
+                  toolkit,
+                  toolSlug: spec.slug,
+                  tree: params.surface,
+                });
                 return {
                   slug: spec.slug,
                   successful: false,
@@ -496,7 +501,12 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           Effect.catch(error =>
             toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
-                const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
+                const mapped = mapComposioError({
+                  error,
+                  toolkit,
+                  toolSlug: spec.slug,
+                  tree: params.surface,
+                });
                 return {
                   slug: spec.slug,
                   successful: false,

@@ -63,7 +63,7 @@ export const composioDevReference: ReferenceDocument = {
         'Use these commands when the user needs to confirm or change the active developer scope:',
         'If the user only wants to connect and execute tools as an end user, return to the top-level workflow instead of staying in `composio dev`.',
       ],
-      commands: [{ code: 'composio dev orgs list\ncomposio dev projects list' }],
+      commands: [{ code: 'composio orgs list\ncomposio dev projects list' }],
     },
   ],
 };

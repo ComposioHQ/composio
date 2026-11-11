@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- `composio dev playground-execute` without a connection now names
+  `composio dev connected-accounts link <toolkit>` as the fix. It used to name
+  `composio link <toolkit>`, which connects the consumer user and leaves the
+  developer project's test user unconnected, so the retry failed the same way.
+  The `composio-cli` skill's developer reference now lists `composio orgs list`
+  in place of `composio dev orgs list`, which does not exist.
+
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root
   `composio link …` examples, which link the consumer user, not a user of the
