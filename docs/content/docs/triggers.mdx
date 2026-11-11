@@ -23,9 +23,16 @@ Under the hood, Composio learns about events in one of two ways. You don't confi
 
 Either way, the event lands in the same place: your subscription or webhook URL, in the same payload shape.
 
+<Callout>
+If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+</Callout>
+
 ### Which apps use which
 
-The type belongs to each trigger, so an app marked **Both** has some realtime triggers and some polling triggers. Counts leave out deprecated triggers.
+Each trigger has its own type, so an app marked **Both** has some of each. The counts leave out deprecated triggers. To check a single trigger, run `composio triggers list <toolkit>` and read its `type`. A `webhook` trigger is realtime and a `poll` trigger is polling.
+
+<Accordions>
+<Accordion title="Realtime and polling triggers by app">
 
 | App | Type | Realtime triggers | Polling triggers |
 |---|---|---|---|
@@ -46,12 +53,12 @@ The type belongs to each trigger, so an app marked **Both** has some realtime tr
 | Fireflies | Polling | 0 | 1 |
 | GitHub | Both | 5 | 41 |
 | Gmail | Polling | 0 | 2 |
-| Google Calendar | Both | 1 | 6 |
+| Google Calendar | Polling | 0 | 6 |
 | Google Docs | Polling | 0 | 10 |
 | Google Drive | Polling | 0 | 7 |
 | Google Sheets | Polling | 0 | 16 |
 | Google Slides | Polling | 0 | 1 |
-| Google Super | Both | 1 | 47 |
+| Google Super | Polling | 0 | 47 |
 | Google Tasks | Polling | 0 | 5 |
 | HubSpot | Realtime | 2 | 0 |
 | Jira | Realtime | 17 | 0 |
@@ -70,8 +77,8 @@ The type belongs to each trigger, so an app marked **Both** has some realtime tr
 | PostHog | Realtime | 11 | 0 |
 | Salesforce | Polling | 0 | 7 |
 | Shopify | Realtime | 45 | 0 |
-| Slack | Realtime | 9 | 0 |
-| Slackbot | Realtime | 9 | 0 |
+| Slack | Realtime | 5 | 0 |
+| Slackbot | Realtime | 5 | 0 |
 | Spotify | Polling | 0 | 3 |
 | Stripe | Realtime | 40 | 0 |
 | TimelinesAI | Polling | 0 | 1 |
@@ -85,9 +92,8 @@ The type belongs to each trigger, so an app marked **Both** has some realtime tr
 | Zendesk | Both | 1 | 1 |
 | Zoom | Polling | 0 | 11 |
 
-<Callout>
-If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
-</Callout>
+</Accordion>
+</Accordions>
 
 ## Trigger types and instances
 
