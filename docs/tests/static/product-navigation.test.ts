@@ -175,6 +175,7 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
+      '/docs/security/audit-logs',
       '/docs/security/token-custody',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',

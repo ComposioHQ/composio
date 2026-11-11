@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ComposioClient from '@composio/client';
+import { Composio } from '../../src/composio';
 import { CustomToolkits } from '../../src/models/CustomToolkits';
 import { Experimental } from '../../src/models/Experimental';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+import { MockProvider } from '../utils/mocks/provider.mock';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
@@ -19,6 +21,21 @@ const createMockClient = () => ({
     sync: vi.fn(),
     deleteToolkit: vi.fn(),
   },
+});
+
+describe('composio.customToolkits', () => {
+  it('is the same object as the deprecated composio.experimental.customToolkits', () => {
+    const composio = new Composio({
+      apiKey: 'ak_test',
+      baseURL: 'https://api.test.com',
+      provider: new MockProvider(),
+      allowTracking: false,
+      disableVersionCheck: true,
+    });
+
+    expect(composio.customToolkits).toBeInstanceOf(CustomToolkits);
+    expect(composio.experimental.customToolkits).toBe(composio.customToolkits);
+  });
 });
 
 describe('Experimental.customToolkits', () => {
@@ -51,7 +68,7 @@ describe('Experimental.customToolkits', () => {
       const result = await customToolkits.create(
         {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           logoFile: { content: 'aGVsbG8=', mimeType: 'image/png' },
           authSchemes: [
             {
@@ -78,7 +95,7 @@ describe('Experimental.customToolkits', () => {
       const [body, options] = mockClient.custom.createToolkit.mock.calls[0];
       expect(JSON.parse(JSON.stringify(body))).toEqual({
         name: 'My Toolkit',
-        app_url: 'https://mcp.example.com/mcp',
+        mcp_url: 'https://mcp.example.com/mcp',
         logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
         auth_schemes: [
           {
@@ -118,7 +135,7 @@ describe('Experimental.customToolkits', () => {
 
       const result = await customToolkits.create({
         name: 'My Toolkit',
-        appUrl: 'https://mcp.example.com/mcp',
+        mcpUrl: 'https://mcp.example.com/mcp',
         authSchemes: [{ mode: 'NO_AUTH' }],
         userId: 'all',
       });
@@ -129,7 +146,7 @@ describe('Experimental.customToolkits', () => {
     it.each([
       ['no user ID', { userId: undefined }],
       ['no auth schemes', { authSchemes: [] }],
-      ['an app URL that is not a URL', { appUrl: 'not a url' }],
+      ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
       [
         'an additional API key field without a display name',
         {
@@ -146,7 +163,7 @@ describe('Experimental.customToolkits', () => {
       await expect(
         customToolkits.create({
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'NO_AUTH' }],
           userId: 'all',
           ...(override as object),
@@ -195,7 +212,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'NO_AUTH' as const }],
         },
       };
@@ -216,7 +233,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           logoFile: { content: 'aGVsbG8=', mimeType: 'image/png' },
           authSchemes: [
             { mode: 'NO_AUTH' },
@@ -238,7 +255,7 @@ describe('Experimental.customToolkits', () => {
           slug: 'MY TOOLKIT',
           toolkit_config: {
             name: 'My Toolkit',
-            app_url: 'https://mcp.example.com/mcp',
+            mcp_url: 'https://mcp.example.com/mcp',
             logo_file: { content: 'aGVsbG8=', mime_type: 'image/png' },
             auth_schemes: [
               { mode: 'NO_AUTH' },
@@ -266,7 +283,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkitConfig: {
           name: 'My Toolkit',
-          appUrl: 'https://mcp.example.com/mcp',
+          mcpUrl: 'https://mcp.example.com/mcp',
           authSchemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
@@ -276,7 +293,7 @@ describe('Experimental.customToolkits', () => {
         slug: 'MY_TOOLKIT',
         toolkit_config: {
           name: 'My Toolkit',
-          app_url: 'https://mcp.example.com/mcp',
+          mcp_url: 'https://mcp.example.com/mcp',
           auth_schemes: [{ mode: 'API_KEY', headers: { 'x-api-key': '{{generic_api_key}}' } }],
         },
       });
@@ -285,7 +302,7 @@ describe('Experimental.customToolkits', () => {
     it.each([
       ['a slug outside the API grammar', { slug: 'my-toolkit' }],
       ['no auth schemes', { authSchemes: [] }],
-      ['an app URL that is not a URL', { appUrl: 'not a url' }],
+      ['an MCP URL that is not a URL', { mcpUrl: 'not a url' }],
     ])('rejects %s before calling the API', async (_label, override) => {
       const { slug = 'MY_TOOLKIT', ...config } = override as Record<string, unknown>;
 
@@ -294,7 +311,7 @@ describe('Experimental.customToolkits', () => {
           slug: slug as string,
           toolkitConfig: {
             name: 'My Toolkit',
-            appUrl: 'https://mcp.example.com/mcp',
+            mcpUrl: 'https://mcp.example.com/mcp',
             authSchemes: [{ mode: 'NO_AUTH' }],
             ...config,
           },

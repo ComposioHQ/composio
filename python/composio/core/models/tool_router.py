@@ -42,9 +42,6 @@ from composio.core.models.custom_tool_types import (
     InlineCustomToolsWirePayload,
     LocalTool,
 )
-from composio.core.models.inline_custom_tools_payload import (
-    inline_custom_tools_attach_experimental,
-)
 from composio.core.models.tool_router_constants import (
     PRELOAD_TOOLS_ALL,
     SESSION_PRESET_DIRECT_TOOLS,
@@ -1528,9 +1525,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if has_customs:
             session = self._client.tool_router.session.attach(
                 session_id,
-                experimental=inline_custom_tools_attach_experimental(
-                    attach_inline_custom_tools_payload
-                ),
+                experimental=attach_inline_custom_tools_payload
+                if attach_inline_custom_tools_payload is not None
+                else omit,
             )
         else:
             session = self._client.tool_router.session.retrieve(session_id)

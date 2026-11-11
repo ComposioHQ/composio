@@ -3133,6 +3133,10 @@ class TestSessionHooks:
         assert result.hook_results == [
             {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
         ]
+        assert (
+            ToolRouterSessionExecuteResponse.model_validate(result.model_dump())
+            == result
+        )
 
     @pytest.mark.parametrize(
         "body",

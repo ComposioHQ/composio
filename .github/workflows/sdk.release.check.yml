@@ -1,0 +1,46 @@
+name: SDK release checks
+
+on:
+  pull_request:
+    branches: [next]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.changeset/**'
+      - 'python/**'
+      - 'ts/packages/**'
+      - 'ts/scripts/validate-changesets.*'
+      - 'ts/scripts/check-provider-compatibility.ts'
+      - 'scripts/sdk-release/**'
+      - 'test/sdk-release-*'
+      - 'tsconfig.sdk-release.json'
+      - 'docs/scripts/generate-sdk-release-notes.ts'
+      - '.github/workflows/sdk.release*.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tooling:
+    name: SDK release tooling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install the docs dependencies release preparation imports
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+      - run: pnpm run typecheck:sdk-release
+      - run: pnpm exec oxlint scripts/sdk-release test/sdk-release-*.ts
+      - run: pnpm run test:sdk-release

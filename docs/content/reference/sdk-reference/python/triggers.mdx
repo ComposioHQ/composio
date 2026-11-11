@@ -10,7 +10,7 @@ description: "Triggers (instance) class"
 Create or update the project webhook subscription used for webhook delivery.  If a subscription already exists, the first subscription is updated. Otherwise a new subscription is created. By default this subscribes to V3 trigger message events.
 
 ```python
-def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str | None] = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
+def set_webhook_subscription(*, webhook_url: str, enabled_events: Sequence[str] | None = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
 ```
 
 **Parameters**
@@ -18,7 +18,7 @@ def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str | No
 | Name | Type |
 |------|------|
 | `webhook_url` | `str` |
-| `enabled_events?` | `Sequence[str \| None]` |
+| `enabled_events?` | `Sequence[str] \| None` |
 | `version?` | `Union[WebhookVersion, str]` |
 
 **Returns**
@@ -45,9 +45,9 @@ def get_type(slug: str) -> TriggersTypeRetrieveResponse
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slug` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `str` | The slug of the trigger type |
 
 **Returns**
 
@@ -60,20 +60,20 @@ def get_type(slug: str) -> TriggersTypeRetrieveResponse
 List all active triggers
 
 ```python
-def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | None] = ..., auth_config_ids: list[str | None] = ..., connected_account_ids: list[str | None] = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
+def list_active(trigger_ids: list[str] | None = ..., trigger_names: list[str] | None = ..., auth_config_ids: list[str] | None = ..., connected_account_ids: list[str] | None = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `trigger_ids?` | `list[str \| None]` |
-| `trigger_names?` | `list[str \| None]` |
-| `auth_config_ids?` | `list[str \| None]` |
-| `connected_account_ids?` | `list[str \| None]` |
-| `show_disabled?` | `bool \| None` |
-| `limit?` | `int \| None` |
-| `cursor?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `trigger_ids?` | `list[str] \| None` | List of trigger IDs to filter by |
+| `trigger_names?` | `list[str] \| None` | List of trigger names to filter by |
+| `auth_config_ids?` | `list[str] \| None` | List of auth config IDs to filter by |
+| `connected_account_ids?` | `list[str] \| None` | List of connected account IDs to filter by |
+| `show_disabled?` | `bool \| None` | Whether to show disabled triggers |
+| `limit?` | `int \| None` | Limit the number of triggers to return |
+| `cursor?` | `str \| None` | Cursor for pagination. Use the nextCursor from the response to get the next page. |
 
 ---
 
@@ -82,16 +82,16 @@ def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | N
 List all the trigger types.
 
 ```python
-def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[str | None] = ...)
+def list(*, cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[str] | None = ...)
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `cursor?` | `str \| None` |
-| `limit?` | `int \| None` |
-| `toolkit_slugs?` | `list[str \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `cursor?` | `str \| None` | The cursor for pagination |
+| `limit?` | `int \| None` | The maximum number of trigger types to return |
+| `toolkit_slugs?` | `list[str] \| None` | Filter by toolkit slugs |
 
 ---
 
@@ -100,21 +100,23 @@ def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[
 Create a trigger instance
 
 ```python
-def create(slug: str, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any | None] = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
+def create(slug: str, *, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any] | None = ..., type: Literal['webhook', 'poll'] | None = ..., polling_interval: int | None = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slug` | `str` |
-| `user_id?` | `str \| None` |
-| `connected_account_id?` | `str \| None` |
-| `trigger_config?` | `Dict[str, Any \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `str` | The slug of the trigger |
+| `user_id?` | `str \| None` | The ID of the user that owns the connected account. When `connected_account_id` is omitted, the backend resolves the first active connection for this user and the trigger's toolkit. |
+| `connected_account_id?` | `str \| None` | The ID of the connected account to pin |
+| `trigger_config?` | `Dict[str, Any] \| None` | The configuration of the trigger |
+| `type?` | `Literal['webhook', 'poll'] \| None` | `webhook` or `poll`, for a trigger that supports both. Omit it to let Composio choose. |
+| `polling_interval?` | `int \| None` | Minutes between polls, for an instance that polls. Wins over `trigger_config["interval"]`. |
 
 **Returns**
 
-`trigger_instance_upsert_response.TriggerInstanceUpsertRes...` — The trigger instance
+`trigger_instance_upsert_response.TriggerInstanceUpsertRes...` — The trigger instance, with the `type` it uses, the `fallback_reason` when it polls after a webhook was unavailable, and its `polling_interval`
 
 ---
 
@@ -128,10 +130,10 @@ def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorCall
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `timeout?` | `float` |
-| `on_subscription_error?` | `SubscriptionErrorCallback \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `float` | The timeout to wait for the subscription to be established. |
+| `on_subscription_error?` | `SubscriptionErrorCallback \| None` | Optional callback invoked when the channel subscription fails: with the raw Pusher payload for asynchronous `pusher:subscription_error` events (for example a later permission rejection), or with `{"error": ...}` for failures raised while establishing the subscription (for example an auth rejection — pysher performs channel auth synchronously). Establish-time failures also make `subscribe()` raise the underlying error promptly instead of waiting out the timeout. Exceptions raised inside the callback are contained and logged, never rethrown. |
 
 **Returns**
 
@@ -144,19 +146,19 @@ def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorCall
 Verify an incoming webhook payload and signature.  This method validates that the webhook request is authentic by: 1. Validating the webhook timestamp is within the tolerance window 2. Verifying the HMAC-SHA256 signature using the correct algorithm 3. Parsing the payload and detecting the webhook version (V1, V2, or V3)
 
 ```python
-def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp: str, tolerance: int = ...) -> VerifyWebhookResult
+def verify_webhook(*, id: str, payload: str, secret: str, signature: str, timestamp: str, tolerance: int = ...) -> VerifyWebhookResult
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `id` | `str` |
-| `payload` | `str` |
-| `secret` | `str` |
-| `signature` | `str` |
-| `timestamp` | `str` |
-| `tolerance?` | `int` |
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `str` | The webhook message ID from the 'webhook-id' header (format: 'msg_xxx') |
+| `payload` | `str` | The raw webhook payload as a string (request body) |
+| `secret` | `str` | The webhook secret used to sign the payload (from Composio dashboard) |
+| `signature` | `str` | The signature from the 'webhook-signature' header (format: 'v1,base64EncodedSignature') |
+| `timestamp` | `str` | The webhook timestamp from the 'webhook-timestamp' header (Unix seconds) |
+| `tolerance?` | `int` | Maximum allowed age of the webhook in seconds (default: 300 = 5 minutes). Set to 0 to disable timestamp validation. |
 
 **Returns**
 
@@ -197,18 +199,18 @@ def webhook():
 Parse an incoming webhook request into a typed, normalized trigger payload.  Pass a framework request object, or pass `body=` and `headers=` explicitly. When `verify_secret` is provided, the SDK verifies the webhook signature before returning the normalized trigger payload. When it is omitted, the SDK parses the body without verifying the signature.  `request` may be any object exposing the request body and headers, such as a Flask, Django, or FastAPI request. The body is read from `.body` (or `.data` / `.get_data()`), and the headers are read from `.headers`. Because this SDK is synchronous, async frameworks must pass an already-read raw body, for example via `body=await request.body()`.
 
 ```python
-def parse(request: Any = ..., body: Union[str, bytes, Mapping[str, Any], None] = ..., headers: Union[Mapping[str, Any], None] = ..., verify_secret: Union[str, None, Omit] = ..., tolerance: int = ...) -> VerifyWebhookResult
+def parse(request: Any = ..., *, body: Union[str, bytes, Mapping[str, Any], None] = ..., headers: Union[Mapping[str, Any], None] = ..., verify_secret: Union[str, None, Omit] = ..., tolerance: int = ...) -> VerifyWebhookResult
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `request?` | `Any` |
-| `body?` | `Union[str, bytes, Mapping[str, Any], None]` |
-| `headers?` | `Union[Mapping[str, Any], None]` |
-| `verify_secret?` | `Union[str, None, Omit]` |
-| `tolerance?` | `int` |
+| Name | Type | Description |
+|------|------|-------------|
+| `request?` | `Any` | The incoming webhook request object (Flask/Django/FastAPI) |
+| `body?` | `Union[str, bytes, Mapping[str, Any], None]` | The raw request body (str/bytes/parsed mapping); overrides `request` |
+| `headers?` | `Union[Mapping[str, Any], None]` | The request headers as a mapping; overrides `request` |
+| `verify_secret?` | `Union[str, None, Omit]` | Webhook secret; when set, the signature is verified. Omit it entirely to parse without verification. Passing a present-but-empty value (e.g. an unset `COMPOSIO_WEBHOOK_SECRET`) raises rather than silently skipping verification. |
+| `tolerance?` | `int` | Max webhook age in seconds (only used when verifying) |
 
 **Returns**
 

@@ -4,10 +4,18 @@ import typing as t
 import warnings
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
-from composio_client import BadRequestError, ConflictError, omit
+from composio_client import (
+    BadRequestError,
+    ConflictError,
+    ProjectAuth,
+    RateLimitError,
+    omit,
+)
 
 from composio import exceptions
+from composio.client import HttpClient
 from composio.core.models.connected_accounts import (
     AuthScheme,
     ConnectedAccounts,
@@ -125,6 +133,173 @@ class TestAuthScheme:
         assert state["auth_scheme"] == expected_auth_scheme
         assert state["val"]["foo"] == "bar"
         assert state["val"]["status"] == expected_status
+
+
+class TestConnectionRequestPolling:
+    """Backoff and 429 handling, on a fake clock that only ``sleep`` moves."""
+
+    @staticmethod
+    def _clock(monkeypatch):
+        clock = {"now": 0.0}
+        monkeypatch.setattr(time, "time", lambda: clock["now"])
+        monkeypatch.setattr(
+            time, "sleep", lambda s: clock.__setitem__("now", clock["now"] + s)
+        )
+        return clock
+
+    @staticmethod
+    def _rate_limited(retry_after=None):
+        headers = {} if retry_after is None else {"retry-after": retry_after}
+        request = httpx.Request("GET", "https://backend.invalid")
+        response = httpx.Response(429, headers=headers, request=request)
+        return RateLimitError("slow down", response=response, body=None)
+
+    @staticmethod
+    def _request(client):
+        return ConnectionRequest(
+            id="conn-1", status="PENDING", redirect_url=None, client=client
+        )
+
+    def _poll_times(self, monkeypatch, timeout):
+        clock = self._clock(monkeypatch)
+        times = []
+        pending = Mock(status="PENDING")
+
+        def retrieve(nanoid):
+            times.append(clock["now"])
+            return pending
+
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = retrieve
+        with pytest.raises(exceptions.ComposioSDKTimeoutError):
+            self._request(client).wait_for_connection(timeout=timeout)
+        return times
+
+    def test_backs_off_from_1s_to_a_5s_cap(self, monkeypatch):
+        times = self._poll_times(monkeypatch, 30.0)
+        assert times[:7] == [0.0, 1.0, 2.5, 4.75, 8.125, 13.125, 18.125]
+
+    def test_sends_about_16_requests_in_the_default_wait(self, monkeypatch):
+        assert len(self._poll_times(monkeypatch, 60.0)) == 16
+
+    def test_polls_one_last_time_at_the_deadline(self, monkeypatch):
+        assert self._poll_times(monkeypatch, 3.0) == [0.0, 1.0, 2.5, 3.0]
+
+    def test_waits_as_long_as_a_429_asks_then_keeps_polling(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        active = Mock(status="ACTIVE")
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = [
+            self._rate_limited("10"),
+            active,
+        ]
+
+        assert self._request(client).wait_for_connection(timeout=60.0) is active
+        assert clock["now"] == 10.0
+
+    def test_runs_past_the_timeout_while_the_real_client_retries_a_429(
+        self, monkeypatch
+    ):
+        clock = self._clock(monkeypatch)
+        requests = []
+
+        def handler(request):
+            requests.append(request)
+            return httpx.Response(
+                429, headers={"retry-after": "3"}, json={"error": {"message": "x"}}
+            )
+
+        client = HttpClient(
+            provider="test",
+            auth=ProjectAuth("test-api-key"),
+            base_url="https://backend.invalid",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+
+        with pytest.raises(exceptions.ComposioSDKTimeoutError):
+            self._request(client).wait_for_connection(timeout=1.0)
+
+        assert clock["now"] == 6.0
+        assert len(requests) == 3
+
+    def test_waiting_by_id_survives_a_429_on_its_first_request(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        active = Mock(status="ACTIVE")
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = [
+            self._rate_limited("10"),
+            active,
+        ]
+
+        result = ConnectedAccounts(client=client).wait_for_connection(
+            id="conn-1", timeout=60.0
+        )
+
+        assert result is active
+        assert clock["now"] == 10.0
+        client.connected_accounts.retrieve.assert_called_with(nanoid="conn-1")
+
+    def test_waiting_by_id_sends_one_request_when_already_active(self, monkeypatch):
+        self._clock(monkeypatch)
+        client = Mock()
+        client.connected_accounts.retrieve.return_value = Mock(status="ACTIVE")
+
+        ConnectedAccounts(client=client).wait_for_connection(id="conn-1", timeout=60.0)
+
+        assert client.connected_accounts.retrieve.call_count == 1
+
+    def test_a_nan_timeout_times_out_after_one_poll(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        client = Mock()
+        client.connected_accounts.retrieve.return_value = Mock(status="PENDING")
+
+        with pytest.raises(exceptions.ComposioSDKTimeoutError):
+            self._request(client).wait_for_connection(timeout=float("nan"))
+
+        assert clock["now"] == 0.0
+        assert client.connected_accounts.retrieve.call_count == 1
+
+    def test_stops_its_own_delay_at_the_timeout_after_a_429(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = self._rate_limited("60")
+
+        with pytest.raises(exceptions.ComposioSDKTimeoutError):
+            self._request(client).wait_for_connection(timeout=5.0)
+
+        assert clock["now"] == 5.0
+        assert client.connected_accounts.retrieve.call_count == 2
+
+    def test_reads_a_date_format_retry_after(self, monkeypatch):
+        clock = self._clock(monkeypatch)
+        # 1,000,000 seconds after the epoch, which is where the clock starts here.
+        clock["now"] = 1_000_000.0
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = [
+            self._rate_limited("Mon, 12 Jan 1970 13:47:00 GMT"),
+            Mock(status="ACTIVE"),
+        ]
+
+        self._request(client).wait_for_connection(timeout=60.0)
+
+        assert clock["now"] == 1_000_020.0
+
+    @pytest.mark.parametrize(
+        "retry_after", [None, "soon", "nan", "inf", "Thu, 01 Jan 1970 00:00:00 GMT"]
+    )
+    def test_keeps_its_usual_delay_without_a_usable_retry_after(
+        self, monkeypatch, retry_after
+    ):
+        clock = self._clock(monkeypatch)
+        client = Mock()
+        client.connected_accounts.retrieve.side_effect = [
+            self._rate_limited(retry_after),
+            Mock(status="ACTIVE"),
+        ]
+
+        self._request(client).wait_for_connection(timeout=60.0)
+
+        assert clock["now"] == 1.0
 
 
 class TestConnectionRequest:
@@ -603,17 +778,15 @@ class TestConnectedAccounts:
         connected_accounts = ConnectedAccounts(client=mock_client)
 
         with patch(
-            "composio.core.models.connected_accounts.ConnectionRequest.from_id"
-        ) as mock_from_id:
-            mock_request = Mock()
-            mock_request.wait_for_connection.return_value = "connected"
-            mock_from_id.return_value = mock_request
-
+            "composio.core.models.connected_accounts.ConnectionRequest.wait_for_connection",
+            return_value="connected",
+        ) as mock_wait:
             result = connected_accounts.wait_for_connection(id="conn-123", timeout=42.0)
 
-        mock_from_id.assert_called_once_with(id="conn-123", client=mock_client)
-        mock_request.wait_for_connection.assert_called_once_with(timeout=42.0)
+        mock_wait.assert_called_once_with(timeout=42.0)
         assert result == "connected"
+        # The wait does all the fetching, so its 429 handling covers every request.
+        mock_client.connected_accounts.retrieve.assert_not_called()
 
 
 def _make_status_error(error_type: t.Type[Exception], message: str):

@@ -1,0 +1,59 @@
+---
+title: Audit logs
+description: See who changed your organization's members, projects, API keys, webhook subscriptions, and session configs, and when.
+keywords: [audit logs, audit trail, activity log, change history, organization admin, compliance, security, retention]
+---
+
+Audit logs show who changed your organization and when. Composio records an event each time someone changes your organization or its members, projects, API keys, webhook subscriptions, or session configs. It records changes made in the dashboard, through the API, and with the CLI.
+
+Use audit logs to find out who revoked an API key, who turned off two-factor authentication for a project, or what a member changed before they left your team.
+
+<Callout type="info">
+Only organization admins can view audit logs.
+</Callout>
+
+## View audit logs
+
+1. In the dashboard, open [**Organization Settings > Audit logs**](https://dashboard.composio.dev/~/org/settings/audit-logs?utm_source=docs&utm_medium=content&utm_campaign=docs-audit-logs).
+2. Choose a time range. The page opens on the last 7 days, with the newest events first.
+3. To narrow the list, filter by member or by event.
+
+For example, filter by one member to see everything they changed. Filter by **Member removed** to see who removed people from your organization.
+
+## What each event shows
+
+| Column | What it shows |
+| --- | --- |
+| **Time** | When the change happened. |
+| **Member** | The current email of the member who made the change. A change made with an API key shows the member the key belongs to. |
+| **Event** | What changed, in one sentence, such as "Revoked API key ci-deploy" or "Renamed project to support-bot". |
+| **IP** | The IP address the request came from, when Composio has one. |
+| **Source** | How the change was made, such as **Dashboard**, **Project API key**, **Org API key**, **User API key**, or **CLI**. |
+
+Changes that Composio makes, such as a plan change by Composio support, show **Composio** as the member and no IP address. If a member's account was deleted, their events show **Deleted member**. When someone reports a leaked API key through the [key revocation endpoint](/reference/api-reference/api-keys/postApiKeyRevocation), Composio revokes the key, and the event shows **Leaked key report** as the member and the source.
+
+When one change revokes several keys, the log shows a single summary event next to it. For example, removing a member who owns three project API keys records the removal and a second event, "Revoked 3 API keys".
+
+## What audit logs record
+
+| Area | Recorded changes |
+| --- | --- |
+| Organization | Creating, renaming, deleting, or restoring the organization, and plan changes made by Composio support |
+| Members and invites | Creating or revoking an invite, a member joining, changing a member's role, and removing a member |
+| Projects | Creating, renaming, or deleting a project, and changing its settings, such as two-factor authentication, Zero Data Retention, Instant, or triggers |
+| API keys | Creating or revoking project API keys and changing their allowed IPs. Regenerating or revoking organization API keys. Creating or revoking user API keys, and approving a CLI login |
+| Webhook subscriptions | Creating, updating, or deleting a subscription, and rotating its secret |
+| Session configs | Creating, updating, archiving, or restoring a session config |
+
+## What audit logs don't record
+
+Audit logs cover changes to how your organization is set up, so they don't record the following.
+
+- Tool calls, sessions, and trigger events. These appear in your project's logs, which you can also [stream to a SIEM](/docs/poc-to-prod/stream-logs-to-a-siem).
+- Changes to connected accounts, auth configs, and triggers.
+- Sign-ins, and requests that fail or change nothing.
+- Plan changes you make in **Organization Settings > Billing**.
+
+## How far back audit logs go
+
+On the Hobby plan, audit logs cover the last 30 days. On paid plans, they cover the last 12 months.

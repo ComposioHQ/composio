@@ -8,7 +8,6 @@ export type CustomToolkitApiKeyField = z.infer<typeof CustomToolkitApiKeyFieldSc
 
 /**
  * How end users authenticate to a custom toolkit.
- * **Experimental — custom toolkits are in pilot; shape may change.**
  */
 export const CustomToolkitAuthSchemeSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('NO_AUTH') }),
@@ -50,14 +49,13 @@ const CustomToolkitLogoFileSchema = z.object({
 export type CustomToolkitLogoFile = z.infer<typeof CustomToolkitLogoFileSchema>;
 
 /**
- * Params for `composio.experimental.customToolkits.create()`.
- * **Experimental — custom toolkits are in pilot; shape may change.**
+ * Params for `composio.customToolkits.create()`.
  */
 export const CustomToolkitCreateParamsSchema = z.object({
   /** Human-readable toolkit name. */
   name: z.string().min(1).max(200),
   /** The MCP server URL. Must use https. */
-  appUrl: z.string().url(),
+  mcpUrl: z.string().url(),
   /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the MCP logo. */
   logoFile: CustomToolkitLogoFileSchema.optional(),
   /** At least one scheme. Cannot be changed after create. */
@@ -90,8 +88,7 @@ export const CustomToolkitCreateResponseSchema = z.object({
 export type CustomToolkitCreateResponse = z.infer<typeof CustomToolkitCreateResponseSchema>;
 
 /**
- * Params for `composio.experimental.customToolkits.update()`.
- * **Experimental — custom toolkits are in pilot; shape may change.**
+ * Params for `composio.customToolkits.update()`.
  */
 export const CustomToolkitUpdateParamsSchema = z
   .object({
@@ -117,8 +114,7 @@ export const CustomToolkitUpdateResponseSchema = z.object({
 export type CustomToolkitUpdateResponse = z.infer<typeof CustomToolkitUpdateResponseSchema>;
 
 /**
- * Params for `composio.experimental.customToolkits.upsert()`.
- * **Experimental — custom toolkits are in pilot; shape may change.**
+ * Params for `composio.customToolkits.upsert()`.
  *
  * @deprecated Use `CustomToolkitCreateParams` with `create()`.
  */
@@ -135,8 +131,8 @@ export const CustomToolkitUpsertParamsSchema = z.object({
   toolkitConfig: z.object({
     /** Human-readable toolkit name. */
     name: z.string().min(1).max(200),
-    /** The app URL. For an MCP app, the MCP server URL. */
-    appUrl: z.string().url(),
+    /** The MCP server URL. Must use https. */
+    mcpUrl: z.string().url(),
     /** Square PNG or JPEG logo (256-1024px, max 3MB), base64-encoded. Defaults to the Composio logo. */
     logoFile: CustomToolkitLogoFileSchema.optional(),
     /** At least one scheme. The schemes cannot change once the toolkit exists. */
@@ -152,8 +148,7 @@ export const CustomToolkitUpsertResponseSchema = z.object({
 export type CustomToolkitUpsertResponse = z.infer<typeof CustomToolkitUpsertResponseSchema>;
 
 /**
- * Params for `composio.experimental.customToolkits.sync()`.
- * **Experimental — custom toolkits are in pilot; shape may change.**
+ * Params for `composio.customToolkits.sync()`.
  */
 export const CustomToolkitSyncParamsSchema = z.object({
   /** Connected account to use when fetching the remote tool definitions. */
