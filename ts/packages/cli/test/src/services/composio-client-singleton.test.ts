@@ -88,6 +88,16 @@ const writeCliSessionCache = (
 const CLAUDE_SESSION = '00000000-0000-4000-8000-000000000001';
 const CLAUDE_AGENT_SESSION_ID = 'df095fd9-410b-5ec9-b678-4ed04b5ab2dd';
 
+/** The compaction file a plugin hook keeps for a Claude Code chat under `homedir`. */
+const writeClaudeCompactionFile = (homedir: string, contents: string, flag: 'w' | 'a' = 'w') =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const hostDir = path.join(homedir, '.composio', 'agent-compactions', 'claude');
+    yield* fs.makeDirectory(hostDir, { recursive: true });
+    yield* fs.writeFileString(path.join(hostDir, CLAUDE_SESSION), contents, { flag });
+  }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
+
 // Telemetry is on; a test run and CI turn it off.
 const TELEMETRY_ON = [
   ['CI', 'false'],
@@ -280,11 +290,47 @@ describe('ComposioClientSingleton headers', () => {
       expect(headers.get('x-cli-agent-session-host')).toBe('claude');
       expect(headers.get('x-cli-agent-session-id')).toBe(CLAUDE_AGENT_SESSION_ID);
       expect(headers.get('x-cli-session-id')).toBe('cli_s_current');
+      // No plugin hook wrote a compaction file for this chat.
+      expect(headers.has('x-cli-agent-compaction-count')).toBe(false);
       // The host's own session ID stays on the device.
       expect([...headers.values()]).not.toContain(CLAUDE_SESSION);
     }).pipe(
       Effect.provide(
         Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+  });
+
+  // The test body has no configuration of its own: the session a client first resolves comes
+  // from the configuration and the home directory the singleton was built with.
+  it.effect('sends the compaction count it read when the first client was built', () => {
+    // Two requests, and a response body is read once.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => okResponse());
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_from_user_env'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+      ...TELEMETRY_ON,
+      ['CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION],
+    ]);
+    const sentCompactionCounts = () =>
+      fetchSpy.mock.calls.map(([, init]) =>
+        new Headers((init as RequestInit).headers).get('x-cli-agent-compaction-count')
+      );
+
+    return Effect.gen(function* () {
+      const clientSingleton = yield* ComposioClientSingleton;
+      yield* writeClaudeCompactionFile(homedir, 'auto\nmanual\n');
+      yield* listTools(yield* clientSingleton.get());
+
+      // A later compaction does not change what this process sends.
+      yield* writeClaudeCompactionFile(homedir, 'auto\n', 'a');
+      yield* listTools(yield* clientSingleton.get());
+
+      expect(sentCompactionCounts()).toEqual(['2', '2']);
+    }).pipe(
+      Effect.provide(
+        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
       )
     );
   });

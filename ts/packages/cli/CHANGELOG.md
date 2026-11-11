@@ -80,6 +80,17 @@
   `x-cli-session-id`. The host's own session ID is never sent, and the
   telemetry switches above remove both headers.
 
+- The CLI now reports how many times the Claude Code or Codex chat it runs in
+  was compacted: as `agent_compaction_count` on telemetry events, and as the
+  `x-cli-agent-compaction-count` header on the three kinds of request that
+  carry the agent session. The count is the number of lines in a file the
+  Composio agent plugin's hook keeps for the chat,
+  `~/.composio/agent-compactions/<host>/<host session ID>`, which the CLI only
+  reads. The README describes the file under "Agent compaction state". No
+  plugin writes it yet, so the count stays absent until one does. A missing,
+  unreadable, or oversized file changes nothing about a command, and the
+  telemetry switches above turn off both the read and the value.
+
 ### Patch Changes
 
 - Command telemetry now derives option types and effective defaults from each
