@@ -193,7 +193,9 @@ def _rewrite_subscript(type_str: str, name: str, render: t.Callable[[str], str])
     return type_str
 
 
-def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
+def format_type(
+    annotation: Any, *, max_length: int | None = 60, unwrap_unpack: bool = True
+) -> str:
     """Format a type annotation to readable string.
 
     Types longer than ``max_length`` are elided; pass ``None`` to keep the
@@ -210,8 +212,8 @@ def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
     type_str = re.sub(r"\bt\.", "", type_str)
     type_str = re.sub(r"\bte\.", "", type_str)  # typing_extensions alias
     type_str = _rewrite_subscript(type_str, "Optional", lambda inner: f"{inner} | None")
-    # Clean up Unpack to just show the type
-    type_str = _rewrite_subscript(type_str, "Unpack", lambda inner: inner)
+    if unwrap_unpack:
+        type_str = _rewrite_subscript(type_str, "Unpack", lambda inner: inner)
 
     # Truncate very long types
     if max_length is not None and len(type_str) > max_length:
@@ -414,7 +416,13 @@ def extract_class_info(
                 params.append(
                     {
                         "name": p.name,
-                        "type": format_type(p.annotation, max_length=None),
+                        "kind": p.kind.value if p.kind else None,
+                        "type": format_type(
+                            p.annotation,
+                            max_length=None,
+                            unwrap_unpack=p.kind
+                            != griffe_module.ParameterKind.var_keyword,
+                        ),
                         "optional": p.default is not None,
                         "description": method_doc["params"].get(p.name, ""),
                     }
@@ -434,6 +442,39 @@ def extract_class_info(
             )
 
     return info
+
+
+def format_method_parameters(parameters: list[dict[str, Any]]) -> str:
+    """Preserve the parameter kinds that constrain how a method is called."""
+    parts = []
+    previous_kind = None
+    has_star = False
+    for param in parameters:
+        kind = param["kind"]
+        if previous_kind == "positional-only" and kind != previous_kind:
+            parts.append("/")
+        if kind == "keyword-only" and not has_star:
+            parts.append("*")
+            has_star = True
+
+        name = param["name"]
+        if kind == "variadic positional":
+            name = f"*{name}"
+            has_star = True
+        elif kind == "variadic keyword":
+            name = f"**{name}"
+        part = f"{name}: {param['type']}"
+        if param["optional"] and kind not in (
+            "variadic positional",
+            "variadic keyword",
+        ):
+            part += " = ..."
+        parts.append(part)
+        previous_kind = kind
+
+    if previous_kind == "positional-only":
+        parts.append("/")
+    return ", ".join(parts)
 
 
 def generate_class_mdx(
@@ -527,10 +568,7 @@ def generate_class_mdx(
                 lines.append("")
 
             # Signature
-            params_str = ", ".join(
-                f"{p['name']}: {p['type']}" + (" = ..." if p["optional"] else "")
-                for p in method["parameters"]
-            )
+            params_str = format_method_parameters(method["parameters"])
             ret_type = method["return_type"] if method["return_type"] != "Any" else ""
             sig = f"def {method['name']}({params_str})"
             if ret_type:
@@ -545,12 +583,23 @@ def generate_class_mdx(
             if method["parameters"]:
                 lines.append("**Parameters**")
                 lines.append("")
-                lines.append("| Name | Type |")
-                lines.append("|------|------|")
+                include_descriptions = any(
+                    p["description"] for p in method["parameters"]
+                )
+                if include_descriptions:
+                    lines.append("| Name | Type | Description |")
+                    lines.append("|------|------|-------------|")
+                else:
+                    lines.append("| Name | Type |")
+                    lines.append("|------|------|")
                 for p in method["parameters"]:
                     opt = "?" if p["optional"] else ""
                     safe_type = p["type"].replace("|", "\\|")
-                    lines.append(f"| `{p['name']}{opt}` | `{safe_type}` |")
+                    parameter_row = f"| `{p['name']}{opt}` | `{safe_type}` |"
+                    if include_descriptions:
+                        description = p["description"].replace("|", "\\|")
+                        parameter_row += f" {description} |"
+                    lines.append(parameter_row)
                 lines.append("")
 
             # Returns
