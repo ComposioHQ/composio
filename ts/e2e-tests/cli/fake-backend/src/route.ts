@@ -28,6 +28,11 @@ export interface RouteContext {
 
 export type RouteEffect = 'tool-executed' | 'connection-started';
 
+export interface ExecutedTool {
+  readonly slug: string;
+  readonly arguments: Readonly<Record<string, unknown>>;
+}
+
 export interface RouteResult {
   readonly status?: number;
   readonly json?: unknown;
@@ -39,6 +44,8 @@ export interface RouteResult {
    * answers 200 whether or not the tool ran, so a status alone cannot tell.
    */
   readonly effect?: RouteEffect;
+  /** The tool a `tool-executed` request ran, with the arguments it ran with. */
+  readonly tool?: ExecutedTool;
   /** Overrides the journal's project and user for this request (a session implies both). */
   readonly acted?: { readonly project?: string | null; readonly userId?: string | null };
 }

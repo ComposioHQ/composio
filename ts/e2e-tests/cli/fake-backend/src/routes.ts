@@ -164,38 +164,41 @@ const toolDetails = (tool: SeededTool, world: World) => {
   };
 };
 
-const connectedAccount = (connection: Connection, urls: RouteContext['urls']) => ({
-  toolkit: { slug: connection.toolkit },
-  auth_config: {
-    id: connection.authConfigId,
-    auth_scheme: 'OAUTH2',
-    is_composio_managed: true,
+const connectedAccount = (connection: Connection, urls: RouteContext['urls']) => {
+  if (connection.status === 'ACTIVE') connection.reportedActive = true;
+  return {
+    toolkit: { slug: connection.toolkit },
+    auth_config: {
+      id: connection.authConfigId,
+      auth_scheme: 'OAUTH2',
+      is_composio_managed: true,
+      is_disabled: false,
+    },
+    id: connection.id,
+    word_id: connection.wordId,
+    alias: connection.alias,
+    user_id: connection.userId,
+    status: connection.status,
+    created_at: SEEDED_AT,
+    updated_at: SEEDED_AT,
+    state:
+      connection.status === 'ACTIVE'
+        ? {
+            authScheme: 'OAUTH2',
+            val: { status: 'ACTIVE', access_token: 'REDACTED', token_type: 'Bearer' },
+          }
+        : {
+            authScheme: 'OAUTH2',
+            val: { status: 'INITIATED', redirectUrl: redirectUrl(urls, connection) },
+          },
+    data: {},
+    params: {},
+    status_reason: null,
     is_disabled: false,
-  },
-  id: connection.id,
-  word_id: connection.wordId,
-  alias: connection.alias,
-  user_id: connection.userId,
-  status: connection.status,
-  created_at: SEEDED_AT,
-  updated_at: SEEDED_AT,
-  state:
-    connection.status === 'ACTIVE'
-      ? {
-          authScheme: 'OAUTH2',
-          val: { status: 'ACTIVE', access_token: 'REDACTED', token_type: 'Bearer' },
-        }
-      : {
-          authScheme: 'OAUTH2',
-          val: { status: 'INITIATED', redirectUrl: redirectUrl(urls, connection) },
-        },
-  data: {},
-  params: {},
-  status_reason: null,
-  is_disabled: false,
-  test_request_endpoint: '',
-  deprecated: { labels: [], uuid: `00000000-0000-4000-8000-${connection.id.padStart(12, '0')}` },
-});
+    test_request_endpoint: '',
+    deprecated: { labels: [], uuid: `00000000-0000-4000-8000-${connection.id.padStart(12, '0')}` },
+  };
+};
 
 const authConfigItem = (authConfig: AuthConfig, world: World) => ({
   id: authConfig.id,
@@ -258,7 +261,7 @@ const runTool = (
   const toolkit = world.findToolkit(tool.toolkit);
   if (
     !toolkit?.noAuth &&
-    !world.activeConnection(params.projectLabel, params.userId, tool.toolkit)
+    !world.reportActiveConnection(params.projectLabel, params.userId, tool.toolkit)
   ) {
     return { kind: 'not-connected', toolkit: tool.toolkit };
   }
@@ -301,7 +304,7 @@ const searchResponse = (
     })),
     toolkit_connection_statuses: toolkits.map(slug => {
       const toolkit = world.findToolkit(slug);
-      const connection = world.activeConnection(session.projectLabel, session.userId, slug);
+      const connection = world.reportActiveConnection(session.projectLabel, session.userId, slug);
       const connected = toolkit?.noAuth === true || connection !== undefined;
       return {
         toolkit: slug,
@@ -541,6 +544,7 @@ const LOGIN_ROUTES: ReadonlyArray<Route> = [
       const session = world.loginSessions.find(s => s.id === reference || s.code === reference);
       if (!session) return notFound(`CLI session ${reference} not found`, 'Cli_SessionNotFound');
       const linked = session.status === 'linked';
+      if (linked) session.reportedLinked = true;
       return {
         json: {
           id: session.id,
@@ -727,6 +731,7 @@ const SESSION_ROUTES: ReadonlyArray<Route> = [
         json: { result_type: 'completed', data: outcome.data, error: null, log_id: outcome.logId },
         acted,
         effect: 'tool-executed',
+        tool: { slug: request.tool_slug, arguments: request.arguments ?? {} },
       };
     },
   }),
@@ -795,7 +800,7 @@ const SESSION_ROUTES: ReadonlyArray<Route> = [
       const items = world.toolkits
         .filter(toolkit => !wanted || wanted.includes(toolkit.slug))
         .map(toolkit => {
-          const connection = world.activeConnection(
+          const connection = world.reportActiveConnection(
             session.projectLabel,
             session.userId,
             toolkit.slug
@@ -971,6 +976,7 @@ const DEVELOPER_ROUTES: ReadonlyArray<Route> = [
         json: { data: outcome.data, error: null, successful: true, log_id: outcome.logId },
         acted,
         effect: 'tool-executed',
+        tool: { slug, arguments: request.arguments ?? {} },
       };
     },
   }),
@@ -1045,6 +1051,7 @@ const DASHBOARD_ROUTES: ReadonlyArray<Route> = [
         }),
         acted,
         effect: 'tool-executed',
+        tool: { slug: request.tool_slug, arguments: request.arguments ?? {} },
       };
     },
   },

@@ -1,6 +1,7 @@
 /**
  * A CLI rig: one fake Composio deployment and one journey container whose
- * `composio` binary can reach nothing else.
+ * `composio` binary is pointed at it for every host it knows. Other outbound
+ * traffic from the container is not blocked.
  */
 
 import { startJourneyContainer, type E2ETestResult, type JourneyContainer } from '@e2e-tests/utils';

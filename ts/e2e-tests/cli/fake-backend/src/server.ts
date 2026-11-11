@@ -259,6 +259,7 @@ export const startFakeComposio = async (
 
       let acted: RouteResult['acted'];
       let effect: RouteResult['effect'];
+      let tool: RouteResult['tool'];
       let scoped: SeededProject | undefined;
       const honest = (): Planned => {
         if (!route) {
@@ -287,6 +288,7 @@ export const startFakeComposio = async (
         const result = route.handle(context);
         acted = result.acted;
         effect = result.effect;
+        tool = result.tool;
         return plan(result);
       };
 
@@ -310,6 +312,7 @@ export const startFakeComposio = async (
         keyKnown: identity.keyKnown,
         orgId: identity.orgId,
         project: acted?.project !== undefined ? acted.project : (scoped?.label ?? identity.project),
+        requestedProject: identity.project,
         projectFrom:
           acted?.project !== undefined && acted.project !== identity.project
             ? 'route'
@@ -324,6 +327,7 @@ export const startFakeComposio = async (
         body,
         status: outcome?.planned.status ?? 0,
         effect: effect ?? null,
+        tool: tool ?? null,
         fault: fault ? describeFault(fault) : null,
       });
 

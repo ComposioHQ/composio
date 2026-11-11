@@ -35,6 +35,12 @@ export interface JournalEntry {
   /** The project the request acted on, as the seeded label (`consumer`, `developer`, …). */
   readonly project: string | null;
   /**
+   * The project the request itself named, through its project key or its scope
+   * headers; `null` when it named none. `project` can differ: a tool-router
+   * session acts on the project it was created for, whatever the request says.
+   */
+  readonly requestedProject: string | null;
+  /**
    * How the fake learned the project:
    * - `scope-headers`: `x-org-id` and `x-project-id` on a user-key request.
    * - `project-key`: the project API key that authenticated the request.
@@ -48,6 +54,14 @@ export interface JournalEntry {
   readonly status: number;
   /** What the request changed in the world: a tool that ran, a connection that was started. */
   readonly effect: 'tool-executed' | 'connection-started' | null;
+  /**
+   * The tool that ran, for a `tool-executed` entry, whichever route ran it.
+   * The three execute routes carry the slug and the arguments differently.
+   */
+  readonly tool: {
+    readonly slug: string;
+    readonly arguments: Readonly<Record<string, unknown>>;
+  } | null;
   /** The injected fault that shaped the answer, if any. */
   readonly fault: string | null;
 }

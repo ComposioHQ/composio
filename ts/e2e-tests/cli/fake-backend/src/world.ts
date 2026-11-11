@@ -68,6 +68,10 @@ export interface Connection {
   readonly alias: string | null;
   /** Status reads left before the account turns `ACTIVE`; `null` when it never will. */
   pollsUntilActive: number | null;
+  /** Whether the person approved it, as opposed to a seeded or self-completing connection. */
+  approvedByPerson: boolean;
+  /** Whether an answer has told a caller that the account is `ACTIVE`. */
+  reportedActive: boolean;
 }
 
 export interface ReleaseAsset {
@@ -94,6 +98,8 @@ export interface CliLoginSession {
   readonly id: string;
   readonly code: string;
   status: 'pending' | 'linked';
+  /** Whether an answer has told a caller that the session is linked. */
+  reportedLinked: boolean;
 }
 
 export interface ToolRouterSession {
@@ -370,6 +376,17 @@ export class World {
     );
   }
 
+  /** `activeConnection` for answering a request: the caller now knows the account is active. */
+  reportActiveConnection(
+    projectLabel: string,
+    userId: string,
+    toolkit: string
+  ): Connection | undefined {
+    const connection = this.activeConnection(projectLabel, userId, toolkit);
+    if (connection) connection.reportedActive = true;
+    return connection;
+  }
+
   /** Starts a connection the way a link request does: `INITIATED`, with a redirect to follow. */
   beginConnection(params: {
     projectLabel: string;
@@ -388,6 +405,8 @@ export class World {
       wordId: `${params.toolkit}_e2e_${ordinal}`,
       alias: params.alias ?? null,
       pollsUntilActive: this.linkCompletesAfterPolls,
+      approvedByPerson: false,
+      reportedActive: false,
     };
     this.connections.push(connection);
     return connection;
@@ -412,7 +431,23 @@ export class World {
     const connection = this.connections.find(c => c.id === id && c.status === 'INITIATED');
     if (!connection) return false;
     connection.status = 'ACTIVE';
+    connection.approvedByPerson = true;
     return true;
+  }
+
+  /**
+   * Ids of the login sessions and connections the person approved that no
+   * answer has reported yet: the CLI, and so the agent, cannot know of them.
+   */
+  unreportedApprovals(): ReadonlyArray<string> {
+    return [
+      ...this.loginSessions
+        .filter(session => session.status === 'linked' && !session.reportedLinked)
+        .map(session => session.id),
+      ...this.connections
+        .filter(connection => connection.approvedByPerson && !connection.reportedActive)
+        .map(connection => connection.id),
+    ];
   }
 
   createLoginSession(): CliLoginSession {
@@ -421,6 +456,7 @@ export class World {
       id: `00000000-0000-4000-8000-00000005${ordinal}`,
       code: `E2E${ordinal.slice(1)}`,
       status: 'pending',
+      reportedLinked: false,
     };
     this.loginSessions.push(session);
     return session;
