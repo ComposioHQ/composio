@@ -414,11 +414,15 @@ describe('CLI analytics dispatch', () => {
       });
     });
 
-    it.effect("reports the chat's compaction count as a number", () => {
+    // An empty file is the hook saying "recording, and not compacted yet": `0` is sent.
+    it.effect.each([
+      { name: 'an empty compaction file', contents: '', expected: 0 },
+      { name: 'a compaction file with two lines', contents: 'auto\nmanual\n', expected: 2 },
+    ])('reports the number $expected for $name', ({ contents, expected }) => {
       const home = tempy.temporaryDirectory();
       const hostDir = path.join(home, '.composio', 'agent-compactions', 'claude');
       mkdirSync(hostDir, { recursive: true });
-      writeFileSync(path.join(hostDir, CLAUDE_SESSION), 'auto\nmanual\n');
+      writeFileSync(path.join(hostDir, CLAUDE_SESSION), contents);
       enableTelemetry();
       vi.stubEnv('CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION);
 
@@ -427,7 +431,7 @@ describe('CLI analytics dispatch', () => {
 
         expect(envelope.properties).toMatchObject({
           agent_session_id: CLAUDE_AGENT_SESSION_ID,
-          agent_compaction_count: 2,
+          agent_compaction_count: expected,
         });
       });
     });
