@@ -30,6 +30,11 @@ on:
         required: false
         default: 'latest'
         type: string
+      windows:
+        description: "Set to 'false' when the release ships without the experimental Windows archive"
+        required: false
+        default: 'true'
+        type: string
 
 permissions:
   contents: read
@@ -585,7 +590,7 @@ jobs:
 
   test-windows-installation:
     name: Test Windows Installation
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.windows != 'false'
     runs-on: windows-2025
     steps:
       - name: Checkout
@@ -663,8 +668,11 @@ jobs:
           echo "- **Windows x64**: Windows Server 2025" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash, Zsh, and PowerShell" >> $GITHUB_STEP_SUMMARY
 
-          if [[ "${{ needs.test-windows-installation.result }}" != "success" ]]; then
-            echo "❌ **Windows Installation**: FAILED" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          echo "✅ **Windows Installation**: PASSED" >> $GITHUB_STEP_SUMMARY
+          case "${{ needs.test-windows-installation.result }}" in
+            success) echo "✅ **Windows Installation**: PASSED" >> $GITHUB_STEP_SUMMARY ;;
+            skipped) echo "⏭️ **Windows Installation**: SKIPPED (release has no Windows archive)" >> $GITHUB_STEP_SUMMARY ;;
+            *)
+              echo "❌ **Windows Installation**: FAILED" >> $GITHUB_STEP_SUMMARY
+              exit 1
+              ;;
+          esac

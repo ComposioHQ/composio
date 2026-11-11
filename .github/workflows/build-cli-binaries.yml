@@ -191,9 +191,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # create/edit the GitHub Release and upload assets
-    # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built,
-    # and the Windows workflow must pass native execution before publication.
-    if: needs.build.result == 'success' && needs.windows.result == 'success'
+    # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built.
+    # Windows is experimental, so a failed Windows job does not block the release: it ships
+    # without the Windows archive instead (see "Drop unverified Windows archive").
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     # Serialize runs that target the SAME release tag (e.g. two quick pushes, or a re-run
     # racing the original) so they cannot interleave uploads. Keyed on the resolved tag so
     # unrelated beta builds are not serialized behind each other. Job-level concurrency may
@@ -228,6 +229,14 @@ jobs:
         with:
           path: ts/packages/cli/dist/binaries
           merge-multiple: true
+
+      # The Windows build job uploads its archive before the native checks run, so a failed
+      # check leaves an unverified archive behind. Never publish that one.
+      - name: Drop unverified Windows archive
+        if: needs.windows.result != 'success'
+        run: |
+          echo "::warning::Windows x64 verification did not pass. Releasing without composio-windows-x64.zip."
+          rm -f ts/packages/cli/dist/binaries/composio-windows-x64.zip
 
       # Package skills BEFORE generating checksums so composio-skill.zip is included in
       # checksums.txt alongside the platform binaries (generate-checksums hashes every .zip
@@ -273,6 +282,8 @@ jobs:
       # An asset can appear in the list while still processing (`state != "uploaded"`), which is
       # exactly how a release ends up serving 404s, so we require state == "uploaded".
       - name: Verify all release assets are present and uploaded
+        env:
+          WINDOWS_VERIFIED: ${{ needs.windows.result == 'success' && 'true' || 'false' }}
         run: bash "$RELEASE_HELPERS_DIR/verify-assets.sh"
 
       # Publishing is the ONLY step that exposes the release. Do not edit the body here: a known
@@ -283,11 +294,12 @@ jobs:
 
   test-installation:
     name: Test Installation
-    needs: [prepare, release]
+    needs: [prepare, windows, release]
     if: always() && !cancelled() && needs.release.result == 'success'
     uses: ./.github/workflows/cli.test-installation.yml
     with:
       version: ${{ needs.prepare.outputs.release_tag }}
+      windows: ${{ needs.windows.result == 'success' && 'true' || 'false' }}
 
   create-install-instructions:
     name: Create Install Instructions

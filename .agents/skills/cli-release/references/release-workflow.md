@@ -77,7 +77,7 @@ The beta must have `isDraft: false`, `isPrerelease: true`, and these seven asset
 - `composio-linux-aarch64.zip`
 - `composio-darwin-x64.zip`
 - `composio-darwin-aarch64.zip`
-- `composio-windows-x64.zip`
+- `composio-windows-x64.zip` (experimental: absent when the `Windows x64` job failed, which does not block the release)
 - `composio-skill.zip`
 - `checksums.txt`
 
@@ -165,7 +165,7 @@ Do not call the release complete until all of these are true:
 
 1. `Build CLI Binaries` completed successfully.
 2. The stable release is published with `isDraft: false` and `isPrerelease: false`.
-3. All seven canonical assets are present and uploaded.
+3. All seven canonical assets are present and uploaded, or six when the experimental `Windows x64` job failed.
 4. The workflow's installation-test matrix passed.
 
 ```bash

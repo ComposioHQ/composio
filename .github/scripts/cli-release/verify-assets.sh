@@ -6,6 +6,8 @@
 # bounded retry while uploads settle.
 #
 # Inputs (env): RELEASE_TAG, GH_TOKEN
+#               WINDOWS_VERIFIED (optional): "false" when the experimental Windows build failed
+#               its native checks, so the release ships without the Windows archive
 #               VERIFY_ATTEMPTS / VERIFY_SLEEP_SECONDS (optional, for fast tests)
 set -euo pipefail
 
@@ -16,10 +18,12 @@ expected=(
   composio-linux-aarch64.zip
   composio-darwin-x64.zip
   composio-darwin-aarch64.zip
-  composio-windows-x64.zip
   composio-skill.zip
   checksums.txt
 )
+if [[ "${WINDOWS_VERIFIED:-true}" != "false" ]]; then
+  expected+=(composio-windows-x64.zip)
+fi
 
 attempts="${VERIFY_ATTEMPTS:-10}"
 sleep_seconds="${VERIFY_SLEEP_SECONDS:-15}"

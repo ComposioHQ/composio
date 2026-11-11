@@ -760,7 +760,7 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
       'composio-skill.zip',
       'checksums.txt',
     ].map(name => ({ name, state: 'uploaded' }));
-    const verify = rows => {
+    const verify = (rows, extraEnv = {}) => {
       writeFileSync(fixturePath, JSON.stringify({ assets: rows }));
       return spawnSync(
         'bash',
@@ -774,6 +774,7 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
             RELEASE_TAG: '@composio/cli@1.2.3',
             VERIFY_ATTEMPTS: '1',
             VERIFY_SLEEP_SECONDS: '0',
+            ...extraEnv,
           },
         }
       );
@@ -782,7 +783,15 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
     if (complete.status !== 0) {
       throw new Error(`complete CLI release must pass verification: ${complete.stderr}`);
     }
-    const missing = verify(assets.filter(asset => asset.name !== 'composio-windows-x64.zip'));
+    const withoutWindows = assets.filter(asset => asset.name !== 'composio-windows-x64.zip');
+    const missing = verify(withoutWindows);
+    // Windows is experimental: when its native checks fail, the release ships without it.
+    const unverified = verify(withoutWindows, { WINDOWS_VERIFIED: 'false' });
+    if (unverified.status !== 0) {
+      throw new Error(
+        `a release without the unverified Windows archive must pass: ${unverified.stdout}`
+      );
+    }
     const pending = verify(
       assets.map(asset =>
         asset.name === 'composio-windows-x64.zip' ? { ...asset, state: 'new' } : asset
