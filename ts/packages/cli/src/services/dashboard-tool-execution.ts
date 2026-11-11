@@ -20,6 +20,7 @@ import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
 import { readInstallIdWhenTelemetryEnabled } from 'src/analytics/dispatch';
 import { APP_CONFIG } from 'src/config';
+import { agentSessionHeaders, resolveAgentSession } from 'src/services/agent-session';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
@@ -261,6 +262,8 @@ const makeDashboardToolExecution = Effect.gen(function* () {
       // Lets the Dashboard's product analytics join the CLI's own events. Sent
       // only while telemetry is enabled, and only on these requests.
       const installId = yield* readInstallIdWhenTelemetryEnabled;
+      // The agent chat this execution is part of; none while telemetry is disabled.
+      const agentSession = yield* resolveAgentSession;
       const url = `${dashboard.base}/api/cli/trpc/${procedure}`;
       const request = HttpClientRequest.post(url).pipe(
         HttpClientRequest.setHeaders({
@@ -269,6 +272,7 @@ const makeDashboardToolExecution = Effect.gen(function* () {
           authorization: `Bearer ${apiKey.value}`,
           'x-org-id': orgId,
           ...(Option.isSome(installId) ? { 'x-cli-install-id': installId.value } : {}),
+          ...Option.match(agentSession, { onNone: () => ({}), onSome: agentSessionHeaders }),
         }),
         HttpClientRequest.bodyJsonUnsafe({ json: input })
       );

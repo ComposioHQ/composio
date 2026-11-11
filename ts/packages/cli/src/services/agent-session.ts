@@ -94,3 +94,12 @@ export const resolveAgentSession: Effect.Effect<Option.Option<AgentSession>> = E
     }));
   }
 );
+
+/**
+ * The request headers that carry an agent session. Only the backend client, the Dashboard
+ * execution client, and the `composio run` proxy helper send them.
+ */
+export const agentSessionHeaders = (session: AgentSession): Record<string, string> => ({
+  'x-cli-agent-session-host': session.host,
+  'x-cli-agent-session-id': session.id,
+});
