@@ -175,24 +175,30 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
     const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
     const httpClient = yield* HttpClient.HttpClient;
 
-    // Read from disk once per process, with the services captured here.
-    const sessionIdServices =
-      yield* Effect.context<Effect.Services<ReturnType<typeof getCurrentCwdSessionId>>>();
+    // Both read from disk once per process, when the first client is built, with the services
+    // and the configuration captured here.
+    const cachedReadServices = yield* Effect.context<
+      | Effect.Services<ReturnType<typeof getCurrentCwdSessionId>>
+      | Effect.Services<typeof resolveAgentSession>
+    >();
     const currentCwdSessionId = yield* Effect.cached(
-      getCurrentCwdSessionId().pipe(Effect.provideContext(sessionIdServices))
+      getCurrentCwdSessionId().pipe(Effect.provideContext(cachedReadServices))
     );
-
-    // Resolved once, with the configuration this singleton is built with: the session
-    // variables and the telemetry switches do not change while a process runs.
-    const sessionHeaders = Option.match(yield* resolveAgentSession, {
-      onNone: () => ({}),
-      onSome: agentSessionHeaders,
-    });
+    // Not resolved while the singleton is built: the compaction count is a file read, and a
+    // command that sends no backend request should not pay for it. The session variables and
+    // the telemetry switches do not change while a process runs.
+    const currentAgentSessionHeaders = yield* Effect.cached(
+      resolveAgentSession.pipe(
+        Effect.map(Option.match({ onNone: () => ({}), onSome: agentSessionHeaders })),
+        Effect.provideContext(cachedReadServices)
+      )
+    );
 
     // `ctx.data` is read per call: a login or logout changes the user key.
     const getFor = (params?: ClientScope) =>
       Effect.gen(function* () {
         const cliSessionId = yield* currentCwdSessionId;
+        const sessionHeaders = yield* currentAgentSessionHeaders;
         const userApiKey = normalizeApiKey(
           params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
         );
