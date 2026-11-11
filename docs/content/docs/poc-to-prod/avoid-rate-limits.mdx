@@ -1,7 +1,7 @@
 ---
 title: Avoid and recover from rate limits
 description: Tell Composio limits from provider quotas, retry with backoff, and shape tool traffic so you hit fewer limits
-keywords: [rate limits, 429, retry, Retry-After, exponential backoff, jitter, provider quota, concurrency, idempotency, managed auth]
+keywords: [rate limits, "429", retry, Retry-After, exponential backoff, jitter, provider quota, concurrency, idempotency, managed auth]
 ---
 
 A rate limit can come from Composio or from the app a tool calls. The two look different in your code and need different fixes. This guide shows how to tell them apart, retry the ones that clear on their own, and send traffic in a shape that hits fewer limits in the first place.
