@@ -339,9 +339,8 @@ jobs:
           This verifies the archive, installs the complete bundle in
           `$HOME\.composio`, and adds it to your User PATH. No administrator
           access is needed. Keep `composio.exe` with its support files.
-          Windows support is experimental: credentials are stored in
-          plaintext, and commands other than `run` and `upgrade` may not
-          work yet.
+          Windows support is experimental: commands other than `run`,
+          `upgrade`, and `setup` may not work yet.
 
           ### Install without shell setup
 

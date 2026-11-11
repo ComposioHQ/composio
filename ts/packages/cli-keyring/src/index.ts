@@ -15,6 +15,8 @@
  *     subprocess. Same semantics, ~25ms reads.
  *   - **Linux**: `secret-tool` subprocess against the freedesktop
  *     Secret Service API, with keyring-rs-compatible attribute names.
+ *   - **Windows (Bun runtime)**: Credential Manager via `bun:ffi`
+ *     calls into `advapi32.dll`. There is no Node fallback.
  *
  * Typical usage:
  *
@@ -52,8 +54,10 @@ import { UnsupportedPlatformStore } from './stores/unsupported';
  * macOS under Bun this resolves to the fast FFI backend; under Node
  * (typically tests or tools that import this package without Bun) it
  * falls back to the `/usr/bin/security` subprocess backend. On Linux
- * it always returns the `secret-tool` subprocess backend. Unsupported
- * platforms return a store whose operations throw `NoStorageAccess`.
+ * it always returns the `secret-tool` subprocess backend. On Windows
+ * under Bun it returns the Credential Manager backend. Unsupported
+ * platforms, and Windows under Node, return a store whose operations
+ * throw `NoStorageAccess`.
  *
  * Call this once at process startup, pass the result to
  * `setDefaultStore`, and use `new Entry(service, user)` everywhere.
@@ -66,13 +70,21 @@ export async function createDefaultStore(
       return await createMacOSStore(options.macOSBackend ?? 'auto');
     case 'linux':
       return new LinuxSecretToolStore();
+    case 'win32': {
+      if (typeof (globalThis as { Bun?: unknown }).Bun === 'undefined') {
+        return new UnsupportedPlatformStore('win32 without Bun');
+      }
+      const mod = await import('./stores/windows-credential-ffi');
+      return new mod.WindowsCredentialFFIStore();
+    }
     default:
       return new UnsupportedPlatformStore(process.platform);
   }
 }
 
 /**
- * Synchronous fallback that never returns the FFI macOS backend —
+ * Synchronous fallback that never returns an FFI backend, so Windows is
+ * unsupported here —
  * useful for callers that can't await at construction time (e.g. the
  * Effect.ts `Layer.sync` variant) and are willing to accept the
  * subprocess overhead. The async `createDefaultStore()` is strongly

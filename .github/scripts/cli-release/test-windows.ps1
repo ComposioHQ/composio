@@ -223,10 +223,32 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
         Assert (Test-Path -LiteralPath (Join-Path $linkedSkill 'SKILL.md')) 'The linked skill is empty.'
     }
 
+    # An npm-installed agent CLI is a .cmd shim. Setup must find and run it, here from a
+    # directory with spaces, and get as far as asking for approval.
+    $shimDir = Join-Path $testRoot 'npm global bin'
+    New-Item -ItemType Directory -Path $shimDir | Out-Null
+    @'
+@echo off
+if "%~1"=="--version" (echo 9.9.9& exit /b 0)
+echo %* | findstr /c:"--help" >nul && (echo   --json  Print JSON& exit /b 0)
+echo []
+'@ | Set-Content -LiteralPath (Join-Path $shimDir 'claude.cmd')
+    $pathBeforeShim = $env:Path
+    $env:Path = "$shimDir;$env:Path"
+    try { $output = & $binary setup --target claude 2>&1 | Out-String } finally { $env:Path = $pathBeforeShim }
+    Assert ($output -notlike '*not available on PATH*') "Setup did not find the claude.cmd shim: $output"
+    Assert ($output -like '*--yes*') "Setup did not reach the approval step: $output"
+
+    # Credentials can be kept in Windows Credential Manager. The compiled CLI doubles as the
+    # Bun runtime for the store's roundtrip check.
+    $env:BUN_BE_BUN = '1'
+    try { & $binary (Join-Path $PSScriptRoot '../../../ts/packages/cli-keyring/test/windows-credential.smoke.ts') | Out-Host } finally { Remove-Item Env:BUN_BE_BUN }
+    Assert ($LASTEXITCODE -eq 0) 'The Windows Credential Manager roundtrip failed.'
+
     # Shell setup has nothing to do on Windows and says so.
     $output = & $binary install 2>&1 | Out-String
     Assert ($LASTEXITCODE -ne 0 -and $output -like '*Windows*') "Expected composio install to explain itself, got: $output"
-    Write-Host 'Windows installation, run, repeated upgrade, repair, and skill setup passed.'
+    Write-Host 'Windows installation, run, repeated upgrade, repair, agent setup, and credential storage passed.'
 } finally {
     if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force; $server.WaitForExit() }
     foreach ($name in $envNames) { [Environment]::SetEnvironmentVariable($name, $savedEnv[$name]) }
