@@ -112,12 +112,15 @@ Never add an `eslint-disable`: `pnpm run validate:boundaries` (CI-blocking via `
 Event names and builders live in `src/analytics/events.ts`; `buildEvent` stamps every event with
 `journey_stage` and `cli_channel`, and `trackCliEventEffect` (`src/analytics/dispatch.ts`) adds
 `agent_host_env` (`claude`, `codex`, or `none`, from `src/services/agent-host-env.ts`) to every
-enqueued envelope. Inside a Claude Code or Codex chat it also adds `agent_session_host` (`claude`
-or `codex`) and `agent_session_id`, both from `resolveAgentSession`
-(`src/services/agent-session.ts`). The ID is a UUID v5 derived from the host and the host's own
-session ID, which is never sent. The host property is not named `agent_host`: common properties
-are spread last, so that name would overwrite the setup target on the setup events below.
-Setup-related events and their extra properties:
+enqueued envelope. When the CLI can identify the chat it runs in, it also adds
+`agent_session_host` (`claude` or `codex`) and `agent_session_id`, both from `resolveAgentSession`
+(`src/services/agent-session.ts`), which reads the hosts' session variables and not the host
+markers: session variables from both hosts with no plugin hook export send neither property, and
+a Codex marked only by `CODEX_SANDBOX` gets `agent_host_env: 'codex'` and neither property. The
+ID is a UUID v5 derived from the host and the host's own session ID, which is never sent. The
+host property is not named `agent_host`: common properties are spread last, so that name would
+overwrite the setup target on the setup and plugin lifecycle events. Setup-related events and
+their extra properties:
 
 - `CLI_SETUP_HOST_DETECTED`: `host_config_dir_present` and `host_binary_in_known_paths` only when
   `available` is `false` (probed by `src/services/agent-host-env.ts`).
