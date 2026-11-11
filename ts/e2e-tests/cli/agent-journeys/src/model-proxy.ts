@@ -18,7 +18,9 @@ import { z } from 'zod';
 export const ALLOWED_MODELS = ['claude-haiku-5-5', 'claude-opus-5-5'] as const;
 export type AllowedModel = (typeof ALLOWED_MODELS)[number];
 
-const UPSTREAM = 'https://api.anthropic.com';
+/** Every forwarded request goes under this prefix; only the rest of the path comes from the agent. */
+const UPSTREAM_API = 'https://api.anthropic.com/v1/';
+const UPSTREAM_ORIGIN = new URL(UPSTREAM_API).origin;
 
 /** Request headers that describe the hop, or carry a credential, and are never forwarded. */
 const DROPPED_REQUEST_HEADERS = new Set([
@@ -74,7 +76,15 @@ export const startModelProxy = async (options: { apiKey: string }): Promise<Mode
         refused.push(`bad token for ${path}`);
         return refuse(response, 401, 'unknown token');
       }
-      if (!path.startsWith('/v1/')) {
+      // The agent chooses only what follows `/v1/`: the host and the API prefix are fixed.
+      const target = path.startsWith('/v1/')
+        ? new URL(`${UPSTREAM_API}${path.slice('/v1/'.length)}`)
+        : undefined;
+      if (
+        target === undefined ||
+        target.origin !== UPSTREAM_ORIGIN ||
+        !target.pathname.startsWith('/v1/')
+      ) {
         refused.push(`path ${path}`);
         return refuse(response, 404, `only /v1/ is forwarded, not ${path}`);
       }
@@ -96,7 +106,7 @@ export const startModelProxy = async (options: { apiKey: string }): Promise<Mode
       }
       headers.set('x-api-key', options.apiKey);
 
-      const upstream = await fetch(`${UPSTREAM}${path}`, {
+      const upstream = await fetch(target, {
         method: request.method,
         headers,
         body: body.length > 0 ? new Uint8Array(body) : undefined,
