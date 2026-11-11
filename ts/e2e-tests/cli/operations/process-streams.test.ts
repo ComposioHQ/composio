@@ -83,13 +83,18 @@ describe('process: signals', () => {
     TEST_TIMEOUT_MS
   );
 
-  // CLI defect: off a terminal `link` prints nothing until the account is active, so the URL a person must open never reaches whoever ran it.
-  it.failing(
-    '`link` off a terminal prints the authorization URL before it starts waiting',
+  it(
+    '`link --no-browser` off a terminal prints the authorization URL on stderr before it waits',
     async () => {
-      const result = await rig.run('composio link gmail', { timeoutSeconds: 6 });
+      // Killed while it waits: whatever it printed, it printed before the authorization.
+      const result = await rig.run('composio link gmail --no-browser', { timeoutSeconds: 6 });
       const connection = rig.fake.world.connections.at(-1);
-      expect(`${result.stdout}\n${result.stderr}`).toContain(`/api/v3/s/${connection?.id}`);
+      expect(result.exitCode).toBe(124);
+      expect(result.stderr).toContain(`${rig.fake.docker.http}/api/v3/s/${connection?.id}`);
+      expect(result.stderr).toContain('For agents: Show the URL above to the user');
+      expect(result.stderr).toContain('--no-wait');
+      // stdout is for the connected account's JSON, which only comes once it is active.
+      expect(result.stdout).toBe('');
     },
     TEST_TIMEOUT_MS
   );

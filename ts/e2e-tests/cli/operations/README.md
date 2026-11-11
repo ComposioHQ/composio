@@ -101,21 +101,21 @@ Observed and left as is: on the backend transport an HTML error page is copied w
 
 ### Process and streams (`process-streams.test.ts`)
 
-| Fault                                       | Injected at                | Must hold                                                                        | Status                                                           |
-| ------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| SIGINT / SIGTERM while `link` waits         | `kill` after 2 s           | exit 130 / 143; stdout empty; the link was requested once                        | ok                                                               |
-| SIGINT while `run` executes a script        |                            | exit 130; stdout empty                                                           | ok                                                               |
-| `link` off a terminal, nobody authorizes    | no terminal                | The authorization URL is printed before the wait                                 | expected failure: nothing is printed until the account is active |
-| `link --no-wait`                            |                            | exit 0; JSON with the URL; no status polling                                     | ok                                                               |
-| Reader closes stdout early (`… \| head -1`) | pipe                       | CLI exits 0; no stderr                                                           | ok                                                               |
-| `-d -` with JSON on stdin                   | pipe                       | Arguments read from stdin                                                        | ok                                                               |
-| `-d -` with nothing on stdin                | `/dev/null`                | exit 1 at once; stdout empty; no execution                                       | ok                                                               |
-| No terminal on any stream                   |                            | stdout is the JSON; stderr empty                                                 | ok                                                               |
-| stdout piped, stderr a terminal             | `script`                   | JSON in the pipe; human rendering on the terminal, not a second copy of the data | ok                                                               |
-| stdout a terminal, stderr redirected        | `script`                   | No data on the terminal                                                          | ok                                                               |
-| Update notice pending                       | seeded `update-check.json` | Never on stdout; shown on a terminal stderr                                      | ok                                                               |
-| Plugin hint under an agent host             | `CLAUDECODE=1`             | On stderr; never on stdout                                                       | ok                                                               |
-| `search --human` off a terminal             | no terminal                | Results are printed                                                              | expected failure: prints nothing, exits 0                        |
+| Fault                                       | Injected at                | Must hold                                                                        | Status                                            |
+| ------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------- |
+| SIGINT / SIGTERM while `link` waits         | `kill` after 2 s           | exit 130 / 143; stdout empty; the link was requested once                        | ok                                                |
+| SIGINT while `run` executes a script        |                            | exit 130; stdout empty                                                           | ok                                                |
+| `link` off a terminal, nobody authorizes    | no terminal                | The authorization URL is printed before the wait                                 | ok: on stderr, with a hint that names `--no-wait` |
+| `link --no-wait`                            |                            | exit 0; JSON with the URL; no status polling                                     | ok                                                |
+| Reader closes stdout early (`… \| head -1`) | pipe                       | CLI exits 0; no stderr                                                           | ok                                                |
+| `-d -` with JSON on stdin                   | pipe                       | Arguments read from stdin                                                        | ok                                                |
+| `-d -` with nothing on stdin                | `/dev/null`                | exit 1 at once; stdout empty; no execution                                       | ok                                                |
+| No terminal on any stream                   |                            | stdout is the JSON; stderr empty                                                 | ok                                                |
+| stdout piped, stderr a terminal             | `script`                   | JSON in the pipe; human rendering on the terminal, not a second copy of the data | ok                                                |
+| stdout a terminal, stderr redirected        | `script`                   | No data on the terminal                                                          | ok                                                |
+| Update notice pending                       | seeded `update-check.json` | Never on stdout; shown on a terminal stderr                                      | ok                                                |
+| Plugin hint under an agent host             | `CLAUDECODE=1`             | On stderr; never on stdout                                                       | ok                                                |
+| `search --human` off a terminal             | no terminal                | Results are printed                                                              | expected failure: prints nothing, exits 0         |
 
 ### Upgrade (`upgrade.test.ts`, and `../upgrade`)
 
