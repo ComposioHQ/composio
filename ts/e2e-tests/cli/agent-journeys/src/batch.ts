@@ -59,27 +59,28 @@ export const BatchInfo = z.object({
   dirty: z.boolean(),
   skillSha256: z.string(),
   harnessSha256: z.string(),
-  cliImage: z.string(),
+  /** sha256 of the CLI binary and its companion modules, as the journey container has them. */
+  cliSha256: z.string(),
   maxCostUsd: z.number(),
 });
 export type BatchInfo = z.infer<typeof BatchInfo>;
 
-/** sha256 of every file under the given directories, by relative path. */
-export const treeHash = (root: string, directories: ReadonlyArray<string>): string => {
+/** sha256 of the given files and of every file under the given directories, by relative path. */
+export const treeHash = (root: string, paths: ReadonlyArray<string>): string => {
   const hash = createHash('sha256');
-  const walk = (directory: string) => {
-    for (const name of readdirSync(directory).sort()) {
-      if (name === 'node_modules') continue;
-      const path = join(directory, name);
-      if (statSync(path).isDirectory()) walk(path);
-      else
-        hash
-          .update(`${relative(root, path)}\0`)
-          .update(readFileSync(path))
-          .update('\0');
+  const walk = (path: string) => {
+    if (statSync(path).isDirectory()) {
+      for (const name of readdirSync(path).sort()) {
+        if (name !== 'node_modules') walk(join(path, name));
+      }
+      return;
     }
+    hash
+      .update(`${relative(root, path)}\0`)
+      .update(readFileSync(path))
+      .update('\0');
   };
-  for (const directory of directories) walk(join(root, directory));
+  for (const path of paths) walk(join(root, path));
   return hash.digest('hex');
 };
 
@@ -95,7 +96,7 @@ export const fingerprint = (parts: {
   model: string;
   skillSha256: string;
   harnessSha256: string;
-  cliImage: string;
+  cliSha256: string;
 }): string =>
   createHash('sha256')
     .update(

@@ -4,6 +4,10 @@
  *   bun run eval.ts run --model claude-haiku-5-5 [options]
  *   bun run eval.ts report <batch>
  *   bun run eval.ts compare <baseline batch> <candidate batch> [--arm skill]
+ *   bun run eval.ts keep <batch> <decision-name>
+ *
+ * A batch is named by its id under `results/`, or by the path of a batch
+ * directory kept in the repository (see `evals/`).
  *
  * `run` options:
  *   --agent claude-code|loop   Claude Code with the skill installed (default), or
@@ -27,8 +31,8 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { startJourneyContainer } from '@e2e-tests/utils';
 import { z } from 'zod';
@@ -57,8 +61,24 @@ import { buildSkill } from './src/skill';
 const HERE = import.meta.dir;
 const RESULTS = join(HERE, 'results');
 const REPO_TS = resolve(HERE, '..', '..', '..');
-/** What grades a run. A change here makes earlier results incomparable. */
-const HARNESS_DIRECTORIES = ['e2e-tests/cli/agent-journeys/src', 'e2e-tests/cli/fake-backend/src'];
+/**
+ * What drives and grades a run: the journeys and their checks, the person,
+ * the agents, and the fake backend. A change here makes earlier results
+ * incomparable. The reporting code (`batch.ts`, `metrics.ts`) is left out.
+ */
+const HARNESS_PATHS = [
+  'e2e-tests/cli/fake-backend/src',
+  ...[
+    'agent.ts',
+    'anthropic-adapter.ts',
+    'claude-code.ts',
+    'journeys.ts',
+    'person.ts',
+    'run-journey.ts',
+    'scrub.ts',
+    'skill.ts',
+  ].map(file => `e2e-tests/cli/agent-journeys/src/${file}`),
+];
 /** Wall-clock limit for one run's agent. */
 const RUN_DEADLINE_MS = 6 * 60_000;
 /** Shell commands one run may start. The longest recorded run used eleven. */
@@ -72,13 +92,36 @@ const fail = (message: string): never => {
 const git = (...args: string[]): string =>
   execFileSync('git', args, { cwd: HERE, encoding: 'utf8' }).trim();
 
+/** A batch id under `results/`, or the path of a batch directory kept elsewhere (`evals/`). */
+const batchDirectory = (name: string): string =>
+  existsSync(join(name, 'batch.json')) ? resolve(name) : resolve(RESULTS, name);
+
 const [command, ...rest] = process.argv.slice(2);
 
 if (command === 'report') {
   const [batch] = rest;
   if (!batch) fail('Usage: bun run eval.ts report <batch>');
-  const { info, runs } = readBatch(resolve(RESULTS, batch!));
+  const { info, runs } = readBatch(batchDirectory(batch!));
   process.stdout.write(renderSummary(info, runs));
+  process.exit(0);
+}
+
+if (command === 'keep') {
+  const [batch, decision] = rest;
+  if (!batch || !decision || !/^[a-z0-9][a-z0-9-]*$/.test(decision)) {
+    fail('Usage: bun run eval.ts keep <batch> <decision-name>');
+  }
+  const source = batchDirectory(batch!);
+  const { info } = readBatch(source);
+  const target = join(HERE, 'evals', decision!, info.id);
+  mkdirSync(target, { recursive: true });
+  // The records and the summary, not the logs: they are large and hold every command's output.
+  for (const name of ['batch.json', 'runs.jsonl', 'summary.md']) {
+    const text = readFileSync(join(source, name), 'utf8');
+    if (/sk-ant-|sk-journey-/.test(text)) fail(`${name} holds a key or a proxy token; not kept.`);
+    writeFileSync(join(target, name), text);
+  }
+  console.log(`kept      ${relative(process.cwd(), target)}`);
   process.exit(0);
 }
 
@@ -99,20 +142,16 @@ if (command === 'compare') {
     );
   }
   process.stdout.write(
-    renderComparison(
-      readBatch(resolve(RESULTS, baseline!)),
-      readBatch(resolve(RESULTS, candidate!)),
-      {
-        arm: arm.data!,
-        allowHarnessChange: values['allow-harness-change'] ?? false,
-      }
-    )
+    renderComparison(readBatch(batchDirectory(baseline!)), readBatch(batchDirectory(candidate!)), {
+      arm: arm.data!,
+      allowHarnessChange: values['allow-harness-change'] ?? false,
+    })
   );
   process.exit(0);
 }
 
 if (command !== 'run') {
-  fail('Usage: bun run eval.ts run|report|compare … (see the header of eval.ts)');
+  fail('Usage: bun run eval.ts run|report|compare|keep … (see the header of eval.ts)');
 }
 
 const { values } = parseArgs({
@@ -178,17 +217,20 @@ if (journeys.length === 0) fail('No journey matches.');
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey && !values.dry) fail('ANTHROPIC_API_KEY is not set; nothing was started.');
 
-// What the batch measures. The CLI image is the one a journey container
-// would use now; starting one container builds it when the checkout changed.
+// What the batch measures. The CLI is the binary a journey container would
+// run now: starting one builds the image when the checkout changed. The
+// binary is hashed, not the image, which also holds the test sources.
 const probe = await startJourneyContainer({ label: 'eval-probe' });
-const cliImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', probe.name], {
-  encoding: 'utf8',
-}).trim();
+const binaries = await probe.exec('cd /usr/local/bin && sha256sum composio *.mjs | sha256sum', {
+  cwd: '/',
+});
 await probe.stop();
+if (binaries.exitCode !== 0) fail(`Could not hash the CLI binary: ${binaries.stderr}`);
+const cliSha256 = binaries.stdout.split(' ')[0]!.trim();
 
 const agentVersion = options.agent === 'claude-code' ? CLAUDE_CODE_VERSION : 'loop';
 const skillSha256 = createHash('sha256').update(JSON.stringify(buildSkill())).digest('hex');
-const harnessSha256 = treeHash(REPO_TS, HARNESS_DIRECTORIES);
+const harnessSha256 = treeHash(REPO_TS, HARNESS_PATHS);
 const startedAt = new Date();
 const batchId = `${startedAt.toISOString().replace(/[:.]/g, '-').slice(0, 19)}-${options.agent}-${options.model}${options.label ? `-${options.label}` : ''}`;
 const info: BatchInfo = {
@@ -204,7 +246,7 @@ const info: BatchInfo = {
   dirty: git('status', '--porcelain', '--', ':/ts/packages/cli', ':/ts/e2e-tests/cli') !== '',
   skillSha256,
   harnessSha256,
-  cliImage,
+  cliSha256,
   maxCostUsd: options.maxCostUsd,
 };
 
@@ -228,7 +270,7 @@ for (const journey of journeys) {
       model: options.model,
       skillSha256,
       harnessSha256,
-      cliImage,
+      cliSha256,
     });
     const available = (earlier.get(print) ?? []).slice(-options.runs);
     reused.push(...available.map((run, index) => ({ ...run, attempt: index + 1 })));

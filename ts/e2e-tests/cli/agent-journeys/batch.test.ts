@@ -37,7 +37,7 @@ const info = (fields: Partial<BatchInfo> = {}): BatchInfo => ({
   dirty: false,
   skillSha256: 'skill-a',
   harnessSha256: 'harness-a',
-  cliImage: 'sha256:image',
+  cliSha256: 'cli-a',
   maxCostUsd: 1,
   ...fields,
 });
@@ -72,7 +72,7 @@ describe('fingerprint', () => {
     agentVersion: '2.1.310',
     model: 'claude-haiku-5-5',
     harnessSha256: 'h',
-    cliImage: 'i',
+    cliSha256: 'i',
   };
 
   it('changes with the skill on the skill arm only', () => {
@@ -89,7 +89,9 @@ describe('fingerprint', () => {
     expect(fingerprint({ ...parts, arm: 'skill', skillSha256: 'a', harnessSha256: 'x' })).not.toBe(
       base
     );
-    expect(fingerprint({ ...parts, arm: 'skill', skillSha256: 'a', cliImage: 'x' })).not.toBe(base);
+    expect(fingerprint({ ...parts, arm: 'skill', skillSha256: 'a', cliSha256: 'x' })).not.toBe(
+      base
+    );
     expect(
       fingerprint({ ...parts, arm: 'skill', skillSha256: 'a', model: 'claude-opus-5-5' })
     ).not.toBe(base);
