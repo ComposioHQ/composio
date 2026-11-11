@@ -588,9 +588,8 @@ describe('CLI: composio run', () => {
     'x-cli-agent-session-id': CLAUDE_AGENT_SESSION_ID,
   })}`;
 
-  // `TestLive` hides every `COMPOSIO_*` variable. These are the other telemetry switches and
-  // agent session variables, each set here so the shell or agent host that runs the suite
-  // cannot supply one. Blank reads as unset.
+  // The telemetry switches and agent session variables the live environment could supply,
+  // each set here so the shell or agent host that runs the suite cannot. Blank reads as unset.
   const stubAgentSessionEnvironment = (overrides: Record<string, string>) =>
     Object.entries({
       NODE_ENV: 'development',
@@ -608,31 +607,46 @@ describe('CLI: composio run', () => {
     readonly forwarded: boolean;
   }> = [
     { name: 'a Claude Code chat with telemetry on', env: {}, forwarded: true },
-    { name: 'a Claude Code chat with telemetry disabled', env: { CI: 'true' }, forwarded: false },
+    ...[
+      ['COMPOSIO_CLI_TELEMETRY_DISABLED', 'true'],
+      ['COMPOSIO_DISABLE_TELEMETRY', 'true'],
+      ['TELEMETRY_DISABLED', 'true'],
+      ['CI', 'true'],
+      ['NODE_ENV', 'test'],
+    ].map(([name, value]) => ({
+      name: `a Claude Code chat with ${name}=${value}`,
+      env: { [name]: value },
+      forwarded: false,
+    })),
     { name: 'no agent host', env: { CLAUDE_CODE_SESSION_ID: '' }, forwarded: false },
   ];
 
-  layer(RunTestLive())(it => {
-    it.effect.each(agentSessionForwarding)(
-      '[Given] $name [Then] helpers get the agent session headers: $forwarded',
-      testCase =>
-        Effect.gen(function* () {
-          stubAgentSessionEnvironment(testCase.env);
-          let preloadSource = '';
-          commandRuns.mockImplementation(command => {
-            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-          });
+  describe.each(agentSessionForwarding)('$name', testCase => {
+    // `TestLive` hides every `COMPOSIO_*` variable of the live environment, so a case's values
+    // also go in the base provider, whose values win. A blank there falls through to the live
+    // environment, which is why the test stubs it as well.
+    layer(RunTestLive({ baseConfigProvider: ConfigProvider.fromEnvRecord(testCase.env) }))(it => {
+      it.effect(
+        `[Given] ${testCase.name} [Then] helpers get the agent session headers: ${testCase.forwarded}`,
+        () =>
+          Effect.gen(function* () {
+            stubAgentSessionEnvironment(testCase.env);
+            let preloadSource = '';
+            commandRuns.mockImplementation(command => {
+              preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
+              return Effect.succeed(ChildProcessSpawner.ExitCode(0));
+            });
 
-          yield* cli(['run', 'console.log("hi")']);
+            yield* cli(['run', 'console.log("hi")']);
 
-          expect(preloadSource).toContain('"baseURL":');
-          expect(preloadSource.includes(FORWARDED_AGENT_SESSION)).toBe(testCase.forwarded);
-          expect(preloadSource.includes('agentSessionHeaders')).toBe(testCase.forwarded);
-          // The host's own session ID stays in the parent process.
-          expect(preloadSource).not.toContain(CLAUDE_SESSION);
-        })
-    );
+            expect(preloadSource).toContain('"baseURL":');
+            expect(preloadSource.includes(FORWARDED_AGENT_SESSION)).toBe(testCase.forwarded);
+            expect(preloadSource.includes('agentSessionHeaders')).toBe(testCase.forwarded);
+            // The host's own session ID stays in the parent process.
+            expect(preloadSource).not.toContain(CLAUDE_SESSION);
+          })
+      );
+    });
   });
 
   layer(RunTestLive())(it => {

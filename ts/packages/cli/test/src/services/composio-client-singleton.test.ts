@@ -104,6 +104,15 @@ const TELEMETRY_ON = [
   ['NODE_ENV', 'production'],
 ] as const;
 
+// Each switch turns telemetry off by itself.
+const TELEMETRY_OFF_SWITCHES = [
+  ['COMPOSIO_CLI_TELEMETRY_DISABLED', 'true'],
+  ['COMPOSIO_DISABLE_TELEMETRY', 'true'],
+  ['TELEMETRY_DISABLED', 'true'],
+  ['CI', 'true'],
+  ['NODE_ENV', 'test'],
+] as const;
+
 const listTools = (client: ComposioClientShape) =>
   client.tools.list({ limit: 1, toolkit_versions: 'latest' });
 
@@ -326,40 +335,50 @@ describe('ComposioClientSingleton headers', () => {
     );
   });
 
-  it.effect.each([
+  // Later entries win, so each switch case is a Claude Code chat with that one switch flipped.
+  const withoutAgentSession: ReadonlyArray<{
+    readonly name: string;
+    readonly entries: ReadonlyArray<readonly [string, string]>;
+  }> = [
     { name: 'no agent session variable', entries: TELEMETRY_ON },
-    {
-      name: 'telemetry disabled',
+    ...TELEMETRY_OFF_SWITCHES.map(telemetrySwitch => ({
+      name: telemetrySwitch.join('='),
       entries: [
-        ['CI', 'true'],
+        ...TELEMETRY_ON,
+        telemetrySwitch,
         ['CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION],
-      ],
-    },
-  ] as const)('builds a client without the agent session headers given $name', ({ entries }) => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
-    const homedir = tempy.temporaryDirectory();
-    const configMap = new Map([
-      ['COMPOSIO_USER_API_KEY', 'uak_from_user_env'],
-      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
-      ...entries,
-    ]);
+      ] satisfies ReadonlyArray<readonly [string, string]>,
+    })),
+  ];
 
-    return Effect.gen(function* () {
-      const clientSingleton = yield* ComposioClientSingleton;
-      const client = yield* clientSingleton.get();
-      yield* listTools(client);
+  it.effect.each(withoutAgentSession)(
+    'builds a client without the agent session headers given $name',
+    ({ entries }) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+      const homedir = tempy.temporaryDirectory();
+      const configMap = new Map([
+        ['COMPOSIO_USER_API_KEY', 'uak_from_user_env'],
+        ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+        ...entries,
+      ]);
 
-      const [, init] = fetchSpy.mock.calls[0]!;
-      const headers = new Headers((init as RequestInit).headers);
-      expect(headers.get('x-user-api-key')).toBe('uak_from_user_env');
-      expect(headers.has('x-cli-agent-session-host')).toBe(false);
-      expect(headers.has('x-cli-agent-session-id')).toBe(false);
-    }).pipe(
-      Effect.provide(
-        Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
-      )
-    );
-  });
+      return Effect.gen(function* () {
+        const clientSingleton = yield* ComposioClientSingleton;
+        const client = yield* clientSingleton.get();
+        yield* listTools(client);
+
+        const [, init] = fetchSpy.mock.calls[0]!;
+        const headers = new Headers((init as RequestInit).headers);
+        expect(headers.get('x-user-api-key')).toBe('uak_from_user_env');
+        expect(headers.has('x-cli-agent-session-host')).toBe(false);
+        expect(headers.has('x-cli-agent-session-id')).toBe(false);
+      }).pipe(
+        Effect.provide(
+          Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+        )
+      );
+    }
+  );
 
   it.effect('does not read COMPOSIO_API_KEY for user auth', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
