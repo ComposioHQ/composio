@@ -78,6 +78,8 @@ const MAX_COMPACTION_FILE_SIZE = ByteSize.kibibytes(64);
  *
  * None when the hook wrote no file, and for anything else that is not a readable regular file
  * of at most 64 KiB, so a command never fails on this file and never reads an unbounded one.
+ * None too for contents with a NUL character: the file is UTF-8 by contract, and a UTF-16 one,
+ * which reads that way, would count its line breaks twice.
  */
 const readCompactionCount = ({ host, hostSessionId }: HostSession) =>
   Effect.gen(function* () {
@@ -99,6 +101,9 @@ const readCompactionCount = ({ host, hostSessionId }: HostSession) =>
       return Option.none<number>();
     }
     const contents = yield* fs.readFileString(file);
+    if (contents.includes('\0')) {
+      return Option.none<number>();
+    }
     return Option.some(contents.split('\n').filter(line => line.trim() !== '').length);
   }).pipe(Effect.catchCause(() => Effect.succeed(Option.none<number>())));
 

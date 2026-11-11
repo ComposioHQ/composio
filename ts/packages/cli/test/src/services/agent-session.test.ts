@@ -325,15 +325,18 @@ const inTestFileSystem = <A, E>(
 ): Effect.Effect<A, E> =>
   effect.pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
 
-const writeFile = (file: string, contents: string) =>
+const writeBytes = (file: string, bytes: Uint8Array) =>
   inTestFileSystem(
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       yield* fs.makeDirectory(path.dirname(file), { recursive: true });
-      yield* fs.writeFileString(file, contents);
+      yield* fs.writeFile(file, bytes);
     })
   );
+
+const writeFile = (file: string, contents: string) =>
+  writeBytes(file, new TextEncoder().encode(contents));
 
 describe('resolveAgentSession compaction count', () => {
   const IN_CLAUDE_CODE = { ...TELEMETRY_ON, CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION };
@@ -424,6 +427,19 @@ describe('resolveAgentSession compaction count', () => {
 
       expect(session).toStrictEqual(WITHOUT_COUNT);
       expect(touched).toStrictEqual([file]);
+    })
+  );
+
+  // What `>>` and `Out-File` write in Windows PowerShell 5.1: UTF-16LE behind a byte order mark.
+  it.effect('[Given] a UTF-16 file with one line [Then] the session has no count', () =>
+    Effect.gen(function* () {
+      const home = tempy.temporaryDirectory();
+      yield* writeBytes(
+        compactionFile(home, 'claude', CLAUDE_SESSION),
+        Uint8Array.from([0xff, 0xfe, ...Buffer.from('auto\r\n', 'utf16le')])
+      );
+
+      expect(yield* resolveWith(IN_CLAUDE_CODE, { home })).toStrictEqual(WITHOUT_COUNT);
     })
   );
 
