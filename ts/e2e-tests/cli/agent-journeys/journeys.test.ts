@@ -275,6 +275,21 @@ describe('run-inline-script', () => {
     expect(failed(id, run)).toEqual([]);
   });
 
+  it("takes no detour for the CLI's own read of the org's settings", () => {
+    const { seeded, startingConnections } = world();
+    const orgRead = request({
+      route: '_internal.org.consumer.retrieveConfig',
+      project: DEVELOPER_PROJECT.label,
+      method: 'GET',
+    });
+    const run = evidence(
+      seeded,
+      [step(SCRIPT, [orgRead, send('consumer', built)], { stdout: `${TIMESTAMP}\n` })],
+      { startingConnections }
+    );
+    expect(detoursTaken(id, run)).toEqual([]);
+  });
+
   it('fails when `composio execute` sent it and a script only printed the timestamp', () => {
     const { seeded, startingConnections } = world();
     const run = evidence(

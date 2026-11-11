@@ -251,11 +251,17 @@ const developerRig = async (rig: CliRig): Promise<void> => {
   if (result.exitCode !== 0) throw new Error(`composio dev init failed: ${result.stderr}`);
 };
 
-/** Requests that acted on a project other than the one the task is about. */
+/**
+ * Requests that acted on a project other than the one the task is about.
+ * Organization routes (`_internal.org.*`) are left out: the CLI reads the
+ * org's settings on its own, under Claude Code on every command, and the
+ * project the fake journals for them is the key's default, not a choice.
+ */
 const requestsOutside = (run: Evidence, project: string): Check => {
   const outside = run.requests.filter(
     entry =>
       (entry.role === 'backend' || entry.role === 'dashboard') &&
+      !entry.route?.startsWith('_internal.org.') &&
       entry.project !== null &&
       entry.project !== project
   );
