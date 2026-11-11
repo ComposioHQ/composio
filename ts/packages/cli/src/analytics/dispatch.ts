@@ -23,6 +23,7 @@ import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { detectPluginHost, rawHostEnvironment } from 'src/services/agent-host-env';
+import { resolveAgentSession } from 'src/services/agent-session';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
@@ -703,11 +704,17 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     const distinctId = yield* getDistinctId(installId);
     const orgId = yield* getOrgId;
     const hostEnv = yield* rawHostEnvironment;
+    const agentSession = yield* resolveAgentSession;
     const sentAt = DateTime.formatIso(yield* DateTime.now);
     const properties = scrubSecrets({
       ...(enrichedEvent.properties ?? {}),
       ...(orgId ? { org_id: orgId } : {}),
       agent_host_env: detectPluginHost(hostEnv) ?? 'none',
+      // Not `agent_host`: setup events already send that name for the host they set up.
+      ...Option.match(agentSession, {
+        onNone: () => ({}),
+        onSome: session => ({ agent_session_host: session.host, agent_session_id: session.id }),
+      }),
     }) as Record<string, unknown>;
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
