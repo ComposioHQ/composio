@@ -138,6 +138,13 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
     Assert ($LASTEXITCODE -ne 0 -and $output -like '*Checksum mismatch*') "Expected a checksum mismatch, got: $output"
     Assert ((Get-Content -LiteralPath $binary) -eq 'installed before the corrupt download') 'A corrupt download modified the executable.'
 
+    # A remote server must use HTTPS: it supplies both the archive and its checksum.
+    foreach ($untrusted in 'http://example.com', 'https://user:secret@example.com') {
+        $env:COMPOSIO_GITHUB_API_BASE_URL = $untrusted
+        $output = Invoke-Installer 2>&1 | Out-String
+        Assert ($LASTEXITCODE -ne 0 -and $output -like '*Refusing to download*') "Expected $untrusted to be refused, got: $output"
+    }
+
     # With no version, the installer picks the latest stable release and puts it on PATH,
     # both for the current session and, exactly once, for the user.
     $latestDir = Join-Path $testRoot 'latest install'

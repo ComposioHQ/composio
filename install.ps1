@@ -19,12 +19,22 @@
         throw 'This installer requires Windows x64. On Linux, macOS, or WSL, run: curl -fsSL https://composio.dev/install | sh'
     }
 
+    # The checksum only proves the archive matches checksums.txt, and both come from the same
+    # server. So every download must use HTTPS; plain HTTP is accepted from this machine only.
+    function Assert-TrustedUrl([string]$Url) {
+        $uri = $Url -as [uri]
+        $trusted = $uri -and $uri.IsAbsoluteUri -and -not $uri.UserInfo -and
+            ($uri.Scheme -eq 'https' -or ($uri.Scheme -eq 'http' -and $uri.IsLoopback))
+        if (-not $trusted) { throw "Refusing to download from `"$Url`". The URL must use HTTPS and carry no credentials." }
+    }
+
     $archiveName = 'composio-windows-x64.zip'
     $installDir = if ($env:COMPOSIO_INSTALL_DIR) { $env:COMPOSIO_INSTALL_DIR } else { Join-Path $HOME '.composio' }
     $installDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($installDir)
 
     # Find the release: the requested version, or the newest stable one that ships a Windows archive.
     $api = if ($env:COMPOSIO_GITHUB_API_BASE_URL) { $env:COMPOSIO_GITHUB_API_BASE_URL.TrimEnd('/') } else { 'https://api.github.com' }
+    Assert-TrustedUrl $api
     $releasesUrl = "$api/repos/ComposioHQ/composio/releases"
     $release = $null
     if ($env:COMPOSIO_INSTALL_VERSION) {
@@ -51,6 +61,8 @@
     $checksumsUrl = ($release.assets | Where-Object { $_.name -eq 'checksums.txt' }).browser_download_url
     if (-not $archiveUrl) { throw "Release $tag has no Windows x64 archive." }
     if (-not $checksumsUrl) { throw "Release $tag has no checksums.txt, so it cannot be verified. Refusing to install." }
+    Assert-TrustedUrl $archiveUrl
+    Assert-TrustedUrl $checksumsUrl
 
     $tempDir = Join-Path ([IO.Path]::GetTempPath()) "composio-install-$([Guid]::NewGuid())"
     New-Item -ItemType Directory -Path $tempDir | Out-Null
@@ -73,21 +85,27 @@
             throw 'The archive has no composio.exe. Refusing to install.'
         }
 
-        # Windows cannot overwrite a running executable, but it can rename one. Move the current
-        # composio.exe aside, then copy the bundle over the install directory. Everything else in
-        # that directory (credentials, configuration) stays untouched.
+        # Windows cannot overwrite a running executable, but it can rename one. Copy the new
+        # executable next to the current one first, so the only step that leaves the directory
+        # without composio.exe is a pair of renames. Everything else in that directory
+        # (credentials, configuration) stays untouched.
         New-Item -ItemType Directory -Path $installDir -Force | Out-Null
         $exe = Join-Path $installDir 'composio.exe'
+        $stagedExe = "$exe.new"
         $previousExe = "$exe.old"
         try {
             if (Test-Path -LiteralPath $previousExe) { Remove-Item -LiteralPath $previousExe -Force }
         } catch {
             throw "Could not remove $previousExe. Close other Composio processes and retry. $($_.Exception.Message)"
         }
+        Copy-Item -LiteralPath (Join-Path $bundle 'composio.exe') -Destination $stagedExe -Force
+        Get-ChildItem -LiteralPath $bundle -Force | Where-Object { $_.Name -ne 'composio.exe' } |
+            Copy-Item -Destination $installDir -Recurse -Force
+
         $hadExe = Test-Path -LiteralPath $exe
         if ($hadExe) { Move-Item -LiteralPath $exe -Destination $previousExe }
         try {
-            Get-ChildItem -LiteralPath $bundle -Force | Copy-Item -Destination $installDir -Recurse -Force
+            Move-Item -LiteralPath $stagedExe -Destination $exe
         } catch {
             if ($hadExe) { Move-Item -LiteralPath $previousExe -Destination $exe -Force }
             throw
