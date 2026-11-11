@@ -30,7 +30,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Check Apollo responses against client schemas
         working-directory: ts/packages/cli
