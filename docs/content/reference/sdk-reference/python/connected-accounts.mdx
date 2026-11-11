@@ -10,15 +10,15 @@ description: "Manage connected accounts.  This class is used to manage connected
 Refresh the credentials of a connected account.
 
 ```python
-def refresh(nanoid: str, params: connected_account_refresh_params.ConnectedAccountRefreshParams = ...) -> connected_account_refresh_response.ConnectedAccountRefres...
+def refresh(nanoid: str, **params: Unpack[connected_account_refresh_params.ConnectedAccountRefreshParams]) -> connected_account_refresh_response.ConnectedAccountRefres...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
-| `params?` | `connected_account_refresh_params.ConnectedAccountRefreshParams` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The connected account ID (`ca_xxx`). |
+| `params?` | `Unpack[connected_account_refresh_params.ConnectedAccountRefreshParams]` |  |
 
 **Returns**
 
@@ -42,9 +42,9 @@ def revoke(nanoid: str) -> connected_account_revoke_response.ConnectedAccountRev
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The connected account ID (`ca_xxx`). |
 
 **Returns**
 
@@ -64,15 +64,15 @@ print(result.connected_account.status)  # "REVOKED"
 Complete a deferred OAuth connection once you have verified the user's identity.  When your project has an OAuth callback verifier configured, Composio does not activate a new OAuth connection by itself: it redirects to your verifier with a single-use session URI. After confirming who the user is, redeem it here; Composio checks that your project owns the pending connection and that `user_id` is its owner, completes the token exchange, and the connection becomes `ACTIVE`. Redeeming a session twice, or after it expires, fails with a 404 from the API.
 
 ```python
-def complete_auth(user_id: str, session_uri: str) -> connected_account_complete_auth_response.ConnectedAccount...
+def complete_auth(*, user_id: str, session_uri: str) -> connected_account_complete_auth_response.ConnectedAccount...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `session_uri` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The user the connection was initiated for. |
+| `session_uri` | `str` | The session URI from the verifier redirect. |
 
 **Returns**
 
@@ -95,16 +95,16 @@ print(result.connected_account_id)
 Update a connected account's alias and/or credentials.
 
 ```python
-def update(nanoid: str, alias: str | None = ..., connection: connected_account_patch_params.Connection | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+def update(nanoid: str, *, alias: str | None = ..., connection: connected_account_patch_params.Connection | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
-| `alias?` | `str \| None` |
-| `connection?` | `connected_account_patch_params.Connection \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The connected account ID (ca_xxx). |
+| `alias?` | `str \| None` | Human-readable alias. Pass an empty string to clear. Must be unique per entity and toolkit within the project. |
+| `connection?` | `connected_account_patch_params.Connection \| None` | Credential update with authScheme and val fields. |
 
 **Returns**
 
@@ -127,17 +127,17 @@ composio.connected_accounts.update('ca_abc123', alias='')
 Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.  Only valid on SHARED connections; raises `ComposioAclOnlyForSharedError` on a PRIVATE connection. Omit a parameter to leave it unchanged; pass an empty list to clear an allow/deny list. At least one parameter must be provided.
 
 ```python
-def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids: List[str | None] = ..., not_allowed_user_ids: List[str | None] = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+def update_acl(nanoid: str, *, allow_all_users: bool | None = ..., allowed_user_ids: List[str] | None = ..., not_allowed_user_ids: List[str] | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
-| `allow_all_users?` | `bool \| None` |
-| `allowed_user_ids?` | `List[str \| None]` |
-| `not_allowed_user_ids?` | `List[str \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The connected account ID (`ca_xxx`). |
+| `allow_all_users?` | `bool \| None` | When True, any `user_id` may use this SHARED connection (subject to the deny list). |
+| `allowed_user_ids?` | `List[str] \| None` | Explicit list of allowed `user_id` strings. Pass `[]` to clear. |
+| `not_allowed_user_ids?` | `List[str] \| None` | Explicit deny list (wins over allow on conflict). Pass `[]` to clear — note that clearing the deny list silently re-grants access to previously-blocked users. |
 
 **Returns**
 
@@ -160,19 +160,19 @@ composio.connected_accounts.update_acl(
 Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the `wait_for_connection` method.
 
 ```python
-def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ..., alias: str | None = ...) -> ConnectionRequest
+def initiate(user_id: str, auth_config_id: str, *, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ..., alias: str | None = ...) -> ConnectionRequest
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `auth_config_id` | `str` |
-| `callback_url?` | `str \| None` |
-| `allow_multiple?` | `bool` |
-| `config?` | `connected_account_create_params.ConnectionState \| None` |
-| `alias?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The user ID to create the connected account for. |
+| `auth_config_id` | `str` | The auth config ID to create the connected account for. |
+| `callback_url?` | `str \| None` | Callback URL to use for OAuth apps. |
+| `allow_multiple?` | `bool` | Whether to allow multiple connected accounts for the same user and auth config. |
+| `config?` | `connected_account_create_params.ConnectionState \| None` | The configuration to create the connected account with. |
+| `alias?` | `str \| None` | Optional human-readable alias for the account. Must be unique per userId and toolkit within the project. |
 
 **Returns**
 
@@ -185,19 +185,19 @@ def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., 
 Create a Composio Connect Link for a user to connect their account to a given auth config.  This method will return an external link which you can use for the user to connect their account.
 
 ```python
-def link(user_id: str, auth_config_id: str, callback_url: str | None = ..., alias: str | None = ..., allow_multiple: bool = ..., experimental: link_create_params.Experimental | None = ...) -> ConnectionRequest
+def link(user_id: str, auth_config_id: str, *, callback_url: str | None = ..., alias: str | None = ..., allow_multiple: bool = ..., experimental: link_create_params.Experimental | None = ...) -> ConnectionRequest
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `auth_config_id` | `str` |
-| `callback_url?` | `str \| None` |
-| `alias?` | `str \| None` |
-| `allow_multiple?` | `bool` |
-| `experimental?` | `link_create_params.Experimental \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The external user ID to create the connected account for. |
+| `auth_config_id` | `str` | The auth config ID to create the connected account for. |
+| `callback_url?` | `str \| None` | The URL to redirect the user to post connecting their account. |
+| `alias?` | `str \| None` | Optional human-readable alias for the connection. Must be unique per userId and toolkit within the project. |
+| `allow_multiple?` | `bool` | Whether to allow multiple connected accounts for the same user and auth config. When False (default), raises `ComposioMultipleConnectedAccountsError` if the user already has an `ACTIVE` connection on this auth config. Pair with `alias` and a session-level `multi_account` config to disambiguate at execution time. |
+| `experimental?` | `link_create_params.Experimental \| None` | Experimental options for this connection. Pass an `Experimental` dict with `account_type` and/or `acl_config_for_shared` to create a SHARED connection with a per-user ACL. Experimental — shape may change in future releases. |
 
 **Returns**
 
@@ -262,4 +262,4 @@ def wait_for_connection(id: str, timeout: float | None = ...) -> connected_accou
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L355)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L396)

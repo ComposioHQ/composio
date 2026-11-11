@@ -7,8 +7,20 @@
 import { describe, test, expect } from "bun:test";
 import { fetchPage, fetchNoRedirect, BASE_URL } from "./helpers";
 
+/** Exact failed requests from DEVREL-304, including machine-readable routes. */
+const EVIDENCED_REDIRECTS = [
+  { from: "/docs/auth-and-connected-accounts", to: "/docs/authentication", markdown: false },
+  { from: "/docs/getting-started", to: "/docs/quickstart", markdown: false },
+  { from: "/authentication/authentication-overview", to: "/docs/authentication", markdown: false },
+  { from: "/authentication/connected-accounts/overview", to: "/docs/authentication/manually-authenticating", markdown: false },
+  { from: "/llms.mdx/authentication/connected-accounts/overview", to: "/docs/authentication/manually-authenticating.md", markdown: true },
+  { from: "/llms.mdx/sessions/sessions-via-mcp", to: "/docs/sessions-via-mcp.md", markdown: true },
+  { from: "/docs/manually-authenticating.md", to: "/docs/authentication/manually-authenticating.md", markdown: true },
+];
+
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
+  ...EVIDENCED_REDIRECTS,
   { from: "/", to: "/docs" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
@@ -23,20 +35,24 @@ const REDIRECTS = [
   { from: "/docs/providers/langgraph", to: "/docs/providers/langchain" },
   { from: "/tools", to: "/toolkits" },
   { from: "/docs/fetching-tools", to: "/docs/tools-direct/fetching-tools" },
-  { from: "/docs/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
-  { from: "/docs/tools-direct/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
-  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
-  { from: "/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/custom-tools", to: "/docs/extending-sessions/local-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools", to: "/docs/extending-sessions/local-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/extending-sessions/local-tools-and-toolkits" },
+  { from: "/custom-tools/github", to: "/docs/extending-sessions/local-tools-and-toolkits" },
   { from: "/docs/how-tools-work", to: "/docs/how-composio-works" },
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
-  { from: "/docs/getting-started", to: "/docs/quickstart" },
+  { from: "/docs/tool-tags", to: "/docs/governance/tool-hints" },
+  { from: "/docs/tool-tags.md", to: "/docs/governance/tool-hints.md" },
+  { from: "/docs/approvals", to: "/docs/governance/approvals" },
+  { from: "/docs/approvals.md", to: "/docs/governance/approvals.md" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox/remote" },
   { from: "/docs/sandbox", to: "/docs/sandbox/remote" },
-  { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/local-tools-and-toolkits" },
+  { from: "/docs/extending-sessions/custom-tools-and-toolkits", to: "/docs/extending-sessions/local-tools-and-toolkits" },
   { from: "/docs/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
   { from: "/docs/white-labeling-authentication", to: "/docs/authentication/white-labeling-authentication" },
   { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
@@ -79,5 +95,73 @@ describe("Redirects - destinations are valid", () => {
     }
 
     expect(failures).toEqual([]);
+  });
+});
+
+describe("Evidenced legacy routes - response representations", () => {
+  for (const { from, to, markdown } of EVIDENCED_REDIRECTS) {
+    test(`${from} serves the canonical ${markdown ? "Markdown" : "HTML"} topic`, async () => {
+      const response = await fetchPage(from, {
+        headers: { Accept: "text/html", "User-Agent": "facebookexternalhit/1.1" },
+        timeout: 30_000,
+      });
+      expect(response.status).toBe(200);
+      expect(new URL(response.url).pathname).toBe(to);
+      expect(response.headers.get("content-type")).toContain(markdown ? "text/markdown" : "text/html");
+      const body = await response.text();
+      const canonical = `https://docs.composio.dev${to.replace(/\.md$/, "")}`;
+      if (markdown) {
+        expect(body).toContain(`canonical_url: "${canonical}"`);
+        expect(body).toMatch(/^# .+/m);
+        expect(body).not.toMatch(/<!doctype html/i);
+      } else {
+        expect(body).toContain(`<link rel="canonical" href="${canonical}"`);
+        expect(body).toContain("<h1");
+      }
+    });
+
+    if (!markdown) {
+      for (const accept of ["text/markdown", "text/plain"]) {
+        test(`${from} preserves ${accept} negotiation`, async () => {
+          const response = await fetchPage(from, { headers: { Accept: accept }, timeout: 30_000 });
+          expect(response.status).toBe(200);
+          expect(response.headers.get("content-type")).toContain("text/markdown");
+          expect(await response.text()).toContain(`canonical_url: "https://docs.composio.dev${to}"`);
+        });
+      }
+    }
+  }
+
+  test("unknown documentation routes remain 404s", async () => {
+    for (const path of [
+      "/authentication/not-a-real-guide",
+      "/llms.mdx/authentication/not-a-real-guide",
+      "/docs/not-a-real-guide.md",
+    ]) {
+      const response = await fetchPage(path, { timeout: 30_000 });
+      expect(response.status).toBe(404);
+      expect(new URL(response.url).pathname).toBe(path);
+    }
+  });
+});
+
+describe("Redirects - saved tool tag section links", () => {
+  test("legacy anchors survive the redirect alongside the renamed headings", async () => {
+    const res = await fetchPage("/docs/tool-tags", { timeout: 30_000 });
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(new URL(res.url).pathname).toBe("/docs/governance/tool-hints");
+
+    for (const id of [
+      "tags",
+      "how-tools-are-tagged",
+      "using-tags-in-a-session",
+      "hints",
+      "how-tools-get-hints",
+      "using-hints-in-a-session",
+    ]) {
+      expect(html).toContain(`id="${id}"`);
+    }
   });
 });

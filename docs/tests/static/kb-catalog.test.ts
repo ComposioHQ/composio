@@ -404,9 +404,25 @@ This is the second safe answer.`);
     expect(heldGuides).toHaveLength(0);
   });
 
-  test('rejects an expired published review window', () => {
+  test('keeps an evergreen guide published after its review deadline without extending it', () => {
+    const catalog = buildKbCatalog(
+      manifest({ reviewAfter: '2026-07-22' }),
+      () => source,
+      new Date('2026-07-23')
+    );
+
+    expect(getPublishedKbGuides(catalog).map(guide => guide.slug)).toEqual(['stable-answer']);
+    expect(catalog.guides[0]?.reviewAfter).toBe('2026-07-22');
+    expect(catalog.guides[0]?.lastVerifiedAt).toBe('2026-07-21');
+  });
+
+  test('rejects an expired published time-sensitive review window', () => {
     expect(() =>
-      buildKbCatalog(manifest({ reviewAfter: '2026-07-20' }), () => source, new Date('2026-07-21'))
+      buildKbCatalog(
+        manifest({ freshness: 'time-sensitive', reviewAfter: '2026-07-20' }),
+        () => source,
+        new Date('2026-07-21')
+      )
     ).toThrow('review window expired');
   });
 

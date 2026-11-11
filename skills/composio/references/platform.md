@@ -141,13 +141,68 @@ If the application has its own connect UI, use session authorization and connect
 Do not force advanced requests through first-time setup. Route them to current documentation:
 
 - Session scoping, account selection, callbacks, direct tools, and sandbox controls: `configuring-sessions.md`
-- Custom connection UI: `manually-authenticating.md`
+- Asking the user before a tool runs: `approvals.md`, covered in [Require approval before tools run](#require-approval-before-tools-run)
+- Blocking tool calls, tool results, or prompt injection: `firewall.md`, covered in [Block calls and results with Firewall](#block-calls-and-results-with-firewall)
+- Adding a remote MCP server as a toolkit: `extending-sessions/custom-mcp.md`, covered in [Add a remote MCP server](#add-a-remote-mcp-server)
+- Custom tools and toolkits that run in the application, or proxy execution: the other `extending-sessions` guides
+- Custom connection UI: `authentication/manually-authenticating.md`
 - Triggers and webhooks: `triggers.md` and the setting-up-triggers guides
-- Custom MCP servers, tools, toolkits, or proxy execution: the `extending-sessions` guides
 - Legacy direct execution, MCP servers, or Tool Router migrations: the migration and sessions guides
 - White labeling and custom OAuth apps: `white-labeling-authentication.md`
 
 "Tool Router" is the former name for sessions. Treat direct execution as a migration path, not the default for new agent integrations.
+
+Approvals, Firewall, and Custom MCP are experimental. Fetch their current page before writing code, check the installed SDK version against the minimum the page names, and copy the documented call shape for the requested language. Add them only when the request or inspected code asks for that control. A request like "ask before sending", "confirm before writes", or "human in the loop" asks for Approvals. A request like "never let the agent email pricing" or "stop prompt injection" asks for Firewall.
+
+### Require approval before tools run
+
+Approvals make Composio pause a tool call and ask the user before it runs. Composio doesn't run the tool. It returns an elicitation, then runs the tool when the call comes back with the user's answer.
+
+Choose the gated tools when you create the session:
+
+- By tag, session-wide: `tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]}` in Python, `tags: { requireApproval: [...] }` in TypeScript.
+- By tag, per toolkit: set `tools.<toolkit>.tags`. It replaces the session-wide `tags` for that toolkit, including blocked tags, so list everything that toolkit still needs.
+- By tool: set `tools.<toolkit>.require_approval` (`requireApproval` in TypeScript) to exact tool slugs. Prefer explicit slugs for anything that must always be gated: Composio assigns tags on a best-effort basis.
+
+Handle the pause in the application's tool loop:
+
+1. Run tools with `session.execute()`. The SDK's `handle_tool_calls` and framework providers don't handle approvals yet.
+2. Catch `ToolInputRequiredError` (Python, from `composio.exceptions`) or `ComposioToolInputRequiredError` (TypeScript). Over the API, the response has `"result_type": "input_required"`.
+3. Show the user each entry in `input_requests`: its `message`, and a form built from its `requested_schema`. Build the form from the schema, since choices vary. One call can return several questions, for example from `COMPOSIO_MULTI_EXECUTE_TOOL`.
+4. Retry the same call with `input_responses` (each `{"action": "accept", "content": {...}}`, keyed by question ID) and the returned `request_state`.
+
+An **Always approve** answer lasts for the rest of the session for that tool on the same connected account.
+
+Over MCP, clients that support elicitation ask the user themselves. Clients without elicitation support get the call denied, unless the session sets `experimental.no_elicitation_support_fallback` to `"allow"`. Only suggest that fallback when the developer accepts running those tools without approval.
+
+Tell the developer about the documented limits when they matter: Workbench and bash scripts can call tools the approval check misses (disable the sandbox if approval must never be skipped), and `session.proxy_execute()` is disabled for a toolkit with any approval-gated tool.
+
+### Block calls and results with Firewall
+
+Firewall blocks tool calls the agent shouldn't make and tool results it shouldn't read. Configure it with session `hooks`. Each hook needs a unique `id`, a `type`, an `applies_to` (`appliesTo` in TypeScript) of toolkit slugs or `"all"`, and a `handler`.
+
+- `before_execute` with a `condition_check` handler blocks a call before it runs, such as emailing internal pricing to a customer.
+- `after_execute` with a `condition_check` handler blocks a result before the agent reads it, such as an email that contains an API key.
+- `after_execute` with a `prompt_injection_check` handler blocks results that contain prompt injection. It works only in `after_execute`.
+
+Write each `condition` as a description of what to block, not as an instruction to the agent. "Sharing internal pricing with anyone outside acme.com" works. "Don't share internal pricing" does not.
+
+A blocked call returns `result_type` `blocked`, the error `Blocked by session policy`, and a `block_reason` and `hook_results` naming the hook. This is a policy outcome, not a tool or auth failure. Don't retry it or reconnect the account.
+
+`session.update(hooks=[...])` replaces the whole hook list, so include every hook to keep. Hooks don't run on meta tools themselves, but they do check tool calls made through multi-execute, Workbench scripts, and proxy calls. Firewall is a paid-plan feature, and with Zero Data Retention the classifier judges each call without earlier session context.
+
+### Add a remote MCP server
+
+Custom MCP adds a remote MCP server as a Composio toolkit, so its tools sit next to Composio's toolkits in a session. Use it for an MCP server on a public HTTPS URL. Use Custom Tools and Toolkits instead for functions that run inside the application.
+
+1. Create the toolkit with `composio.experimental.custom_toolkits.create()` in Python or `composio.experimental.customToolkits.create()` in TypeScript. Pass `name`, the final MCP endpoint as `app_url` (no redirects, no keys in the URL), `auth_schemes`, and `user_id`.
+2. Store the returned `CUSTOM_*` slug. Never construct it yourself.
+3. If a private toolkit needs auth, send its user to the returned `connect_link.redirect_url`. `connect_link` is `null` for shared and no-auth toolkits. Tools sync on creation for no-auth servers, and when the first account connects otherwise.
+4. Add the slug to a session's toolkits. The agent finds the tools with `COMPOSIO_SEARCH_TOOLS`.
+
+Choose `user_id` deliberately: `"all"` shares the toolkit with every user in the project, and a user ID makes it private to that user. Choose `auth_schemes` mode `NO_AUTH`, `API_KEY` (a header containing `{{generic_api_key}}`), or `DCR_OAUTH` (with a `discovery_url`). `app_url`, `auth_schemes`, and `user_id` can't change later: delete and create the toolkit again.
+
+Know the limits before promising a design: remote servers only (no local or STDIO), at most 500 tools, OAuth only through Dynamic Client Registration, and no automatic resync. Call `sync()` when the server's tools change. `upsert()` is deprecated: new code uses `create()` and `update()`.
 
 ## Verify setup when relevant
 

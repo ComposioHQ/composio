@@ -201,6 +201,31 @@ describe('verifyKb', () => {
     expect(finding?.severity).toBe('error');
   });
 
+  describe('review window boundary', () => {
+    const expiryFor = (at: string) =>
+      verifyKb({
+        manifest: MANIFEST,
+        catalog,
+        now: new Date(at),
+        guides: [guide({ slug: 'due', body: 'text', reviewAfter: '2026-11-10' })],
+      }).findings.find((entry) => entry.kind === 'review-window-expired');
+
+    test.each(['2026-11-09T12:25:00Z', '2026-11-09T15:05:00Z', '2026-11-09T23:59:59.999Z'])(
+      'stays open before the deadline (%s)',
+      (at) => {
+        expect(expiryFor(at)).toBeUndefined();
+      }
+    );
+
+    test('expires at the deadline', () => {
+      expect(expiryFor('2026-11-10T00:00:00Z')?.detail).toBe('review window expired 0 day(s) ago');
+    });
+
+    test('counts whole days elapsed since the deadline', () => {
+      expect(expiryFor('2026-11-11T12:00:00Z')?.detail).toBe('review window expired 1 day(s) ago');
+    });
+  });
+
   test('flags a cohort of guides that all expire on one date', () => {
     const guides = Array.from({ length: 6 }, (_, index) =>
       guide({ slug: `guide-${index}`, body: 'text', reviewAfter: '2026-10-20' })

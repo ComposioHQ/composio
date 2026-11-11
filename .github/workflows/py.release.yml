@@ -17,6 +17,8 @@ permissions:
 jobs:
   build:
     name: Build SDK packages
+    outputs:
+      core_only: ${{ steps.release_mode.outputs.core_only }}
     defaults:
       run:
         working-directory: ./python
@@ -38,6 +40,12 @@ jobs:
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
+        with:
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            mise.lock
+            python/pyproject.toml
 
       - name: Resolve release package set
         id: release_mode
@@ -85,7 +93,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && needs.build.outputs.core_only == 'true'
     runs-on: ubuntu-latest
     environment:
       name: pypi

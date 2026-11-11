@@ -34,6 +34,27 @@ permissions:
   contents: read
 
 jobs:
+  antislop:
+    name: Anti-slop (TypeScript, Python, YAML)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/next' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Test anti-slop rules and enforcement
+        run: pnpm test:antislop
+
+      - name: Reject new anti-slop findings
+        run: pnpm lint:antislop
+
   validate:
     name: Validate agent guidance
     runs-on: ubuntu-latest
@@ -70,3 +91,6 @@ jobs:
 
       - name: Verify issue triage security boundary
         run: pnpm test:issue-triage
+
+      - name: Verify API client dependency reconciliation
+        run: bun test test/composio-client-update.test.ts

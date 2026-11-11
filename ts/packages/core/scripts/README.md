@@ -22,4 +22,4 @@ pnpm generate:docs
 
 ## CI
 
-`.github/workflows/generate-sdk-docs.yml` triggers on changes to `ts/packages/core/src/**` and opens a PR with updated docs.
+`.github/workflows/docs-sdk-reference-drift.yml` regenerates the reference on PRs to `next` that change `ts/packages/core/src/**` or this generator, and fails if the committed output differs.

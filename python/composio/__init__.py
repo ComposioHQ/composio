@@ -1,7 +1,8 @@
 from .__version__ import __version__
-from .core.models.custom_tool import ExperimentalToolkit
+from .core.models.custom_tool import ExperimentalToolkit, LocalToolkit
 from .core.models.custom_tool_types import (
     CustomTool,
+    LocalTool,
     SessionContext,
 )
 from .core.models.tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
@@ -36,6 +37,8 @@ __all__ = (
     "ComposioDeprecationWarning",
     "CustomTool",
     "ExperimentalToolkit",
+    "LocalTool",
+    "LocalToolkit",
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",

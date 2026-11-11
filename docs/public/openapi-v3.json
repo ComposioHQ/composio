@@ -204,6 +204,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "credentials": {
@@ -296,6 +297,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 255,
             "description": "The name of the integration"
           },
           "authScheme": {
@@ -438,6 +440,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "credentials": {
@@ -564,6 +567,7 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 255,
             "description": "The display name of the authentication configuration"
           },
           "scopes": {
@@ -650,6 +654,7 @@
         "properties": {
           "alias": {
             "type": "string",
+            "maxLength": 255,
             "description": "A human-readable alias for this connected account. Pass an empty string to clear the alias. Must be unique per entity and toolkit within the project."
           },
           "connection": {
@@ -2555,6 +2560,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -3549,6 +3555,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found - Auth configuration does not exist",
             "content": {
@@ -3662,6 +3678,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Auth config not found - The specified configuration does not exist or was already deleted",
             "content": {
@@ -3764,6 +3790,16 @@
           },
           "401": {
             "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
             "content": {
               "application/json": {
                 "schema": {
@@ -4423,6 +4459,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -4610,6 +4647,7 @@
                       },
                       "alias": {
                         "type": "string",
+                        "maxLength": 255,
                         "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                       },
                       "callback_url": {
@@ -5786,6 +5824,7 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -6099,6 +6138,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -7031,7 +7071,8 @@
                         "type": "string"
                       },
                       "display_name": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 75
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -7995,6 +8036,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Subscription already exists",
             "content": {
@@ -8427,6 +8478,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Subscription not found",
             "content": {
@@ -8496,6 +8557,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {
@@ -8582,6 +8653,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow modifying webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {
@@ -9469,12 +9550,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 256,
-              "description": "[EXPERIMENTAL] List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
-              "example": "user_123",
-              "x-experimental": true
+              "description": "List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
+              "example": "user_123"
             },
             "required": false,
-            "description": "[EXPERIMENTAL] List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
+            "description": "List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
             "name": "user_id",
             "in": "query"
           },
@@ -9530,6 +9610,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -9551,9 +9645,8 @@
                               "all",
                               "user"
                             ],
-                            "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
-                            "example": "all",
-                            "x-experimental": true
+                            "description": "Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -9691,6 +9784,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -9890,8 +9985,9 @@
     },
     "/api/v3/custom/toolkits/upsert": {
       "post": {
-        "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. app_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "summary": "Upsert a custom toolkit (DEPRECATED)",
+        "description": "DEPRECATED: use POST /api/v3.1/custom/toolkits to create a toolkit and PATCH /api/v3.1/custom/toolkits/{slug} to update it. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. mcp_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "deprecated": true,
         "tags": [
           "Toolkits"
         ],
@@ -9929,7 +10025,7 @@
                         "maxLength": 200,
                         "description": "Display name of the toolkit"
                       },
-                      "app_url": {
+                      "mcp_url": {
                         "type": "string",
                         "format": "uri",
                         "description": "MCP server URL. Must use https."
@@ -10082,7 +10178,7 @@
                     },
                     "required": [
                       "name",
-                      "app_url",
+                      "mcp_url",
                       "auth_schemes"
                     ],
                     "additionalProperties": false
@@ -10159,7 +10255,7 @@
             }
           },
           "409": {
-            "description": "Conflict - app_url or auth_schemes differ from the registered toolkit; delete and re-register to change them",
+            "description": "Conflict - mcp_url or auth_schemes differ from the registered toolkit; delete and re-register to change them",
             "content": {
               "application/json": {
                 "schema": {
@@ -10195,7 +10291,7 @@
     "/api/v3/custom/toolkits/sync": {
       "post": {
         "summary": "Sync a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Re-fetches tool definitions from the remote MCP server for the custom toolkit with the provided slug. Call it when automatic sync fails or the remote tool definitions change.",
+        "description": "Re-fetches tool definitions from the remote MCP server for the custom toolkit with the provided slug. Call it when automatic sync fails or the remote tool definitions change.",
         "tags": [
           "Toolkits"
         ],
@@ -10424,9 +10520,8 @@
                         "all",
                         "user"
                       ],
-                      "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
-                      "example": "all",
-                      "x-experimental": true
+                      "description": "Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                      "example": "all"
                     },
                     "composio_managed_auth_schemes": {
                       "type": "array",
@@ -10513,8 +10608,25 @@
                         "properties": {
                           "mode": {
                             "type": "string",
-                            "description": "The type of authentication mode (e.g., oauth2, basic_auth, api_key)",
-                            "example": "oauth2"
+                            "enum": [
+                              "OAUTH2",
+                              "OAUTH1",
+                              "API_KEY",
+                              "BASIC",
+                              "BILLCOM_AUTH",
+                              "BEARER_TOKEN",
+                              "GOOGLE_SERVICE_ACCOUNT",
+                              "NO_AUTH",
+                              "BASIC_WITH_JWT",
+                              "CALCOM_AUTH",
+                              "SERVICE_ACCOUNT",
+                              "SAML",
+                              "DCR_OAUTH",
+                              "CIMD_OAUTH",
+                              "S2S_OAUTH2"
+                            ],
+                            "description": "The type of authentication mode (e.g., OAUTH2, BASIC, API_KEY)",
+                            "example": "OAUTH2"
                           },
                           "required_scopes": {
                             "type": "array",
@@ -11262,7 +11374,7 @@
     "/api/v3/tools/enum": {
       "get": {
         "summary": "Get tool enum list",
-        "description": "Retrieve a list of all available tool enumeration values (tool slugs) from latest version of each toolkit. This endpoint returns a comma-separated string of tool slugs that can be used in other API calls.",
+        "description": "Lists the slug of every tool in the latest version of each Composio-managed toolkit, such as GMAIL_SEND_EMAIL. Tools of custom toolkits are not included.",
         "tags": [
           "Tools"
         ],
@@ -11285,7 +11397,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "description": "JSON string containing all tool enum values from latest version of each toolkit"
+                  "description": "Tool slugs"
                 }
               }
             }
@@ -11580,6 +11692,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -11601,9 +11727,8 @@
                               "all",
                               "user"
                             ],
-                            "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
-                            "example": "all",
-                            "x-experimental": true
+                            "description": "Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -11741,6 +11866,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -13157,7 +13284,7 @@
     "/api/v3/trigger_instances/{slug}/upsert": {
       "post": {
         "summary": "Create or update a trigger",
-        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Provide either a connected_account_id to pin a specific user connection, or a user_id to auto-resolve the first active connection for that user and the trigger's toolkit.",
+        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Provide either a connected_account_id to pin a specific user connection, or a user_id to auto-resolve the first active connection for that user and the trigger's toolkit. For a trigger that supports both webhooks and polling, Composio chooses the best way for the instance to receive events unless type sets one. When the instance polls because a webhook could not be set up, fallback_reason says why. An existing instance keeps its type, so an upsert asking for the other type returns 409.",
         "tags": [
           "Triggers"
         ],
@@ -13221,6 +13348,20 @@
                     "additionalProperties": {},
                     "description": "Trigger configuration"
                   },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "poll",
+                      "webhook"
+                    ],
+                    "description": "Whether this instance receives events by webhook or by polling, for a trigger that supports both. Omit it to let Composio choose the best one."
+                  },
+                  "polling_interval": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10080,
+                    "description": "Minutes between polls, for an instance that polls for its events. It is checked whenever the instance could poll, even when Composio tries a webhook first, so an interval outside the toolkit's allowed range fails the request."
+                  },
                   "version": {
                     "type": "string",
                     "description": "DEPRECATED: This parameter will be removed in a future version. Please use toolkit_versions instead.",
@@ -13262,10 +13403,34 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "webhook",
+                        "poll"
+                      ],
+                      "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                      "example": "webhook"
+                    },
+                    "fallback_reason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                      "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                    },
+                    "polling_interval": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Minutes between scheduled polls for a poll instance.",
+                      "example": 15
                     }
                   },
                   "required": [
-                    "trigger_id"
+                    "trigger_id",
+                    "type",
+                    "fallback_reason",
+                    "polling_interval"
                   ]
                 }
               }
@@ -13281,10 +13446,34 @@
                     "trigger_id": {
                       "type": "string",
                       "description": "ID of the updated trigger"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "webhook",
+                        "poll"
+                      ],
+                      "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                      "example": "webhook"
+                    },
+                    "fallback_reason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                      "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                    },
+                    "polling_interval": {
+                      "type": "integer",
+                      "nullable": true,
+                      "description": "Minutes between scheduled polls for a poll instance.",
+                      "example": 15
                     }
                   },
                   "required": [
-                    "trigger_id"
+                    "trigger_id",
+                    "type",
+                    "fallback_reason",
+                    "polling_interval"
                   ]
                 }
               }
@@ -13690,6 +13879,27 @@
                             "additionalProperties": {},
                             "description": "Configuration for the trigger"
                           },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "webhook",
+                              "poll"
+                            ],
+                            "description": "How this trigger instance gets events: webhook (the provider notifies) or poll (a scheduled check).",
+                            "example": "webhook"
+                          },
+                          "fallback_reason": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Set when Composio downgraded to a poll-based mechanism instead of webhooks for this trigger.",
+                            "example": "No webhook endpoint found for toolkit \"gmail\". Create a webhook endpoint before setting up triggers."
+                          },
+                          "polling_interval": {
+                            "type": "integer",
+                            "nullable": true,
+                            "description": "Minutes between scheduled polls for a poll instance.",
+                            "example": 15
+                          },
                           "egress_url": {
                             "type": "string",
                             "nullable": true,
@@ -13760,6 +13970,9 @@
                           "user_id",
                           "version",
                           "trigger_config",
+                          "type",
+                          "fallback_reason",
+                          "polling_interval",
                           "egress_url",
                           "state",
                           "updated_at",
@@ -13892,6 +14105,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -18709,6 +18932,11 @@
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session. Unlike fast_mode, tool search quality is unaffected. Defaults to false.",
+                        "x-experimental": true
+                      },
                       "submit_feedback": {
                         "type": "object",
                         "properties": {
@@ -22641,6 +22869,11 @@
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session, false to return them again. Unlike fast_mode, tool search quality is unaffected.",
+                        "x-experimental": true
+                      },
                       "submit_feedback": {
                         "type": "object",
                         "properties": {
@@ -23758,6 +23991,7 @@
                   },
                   "alias": {
                     "type": "string",
+                    "maxLength": 255,
                     "description": "A human-readable alias for this connected account. Must be unique per entity and toolkit within the project."
                   },
                   "callback_url": {
@@ -26074,6 +26308,21 @@
         "security": [
           {
             "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
+              "example": "user_123"
+            },
+            "required": false,
+            "description": "Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
+            "name": "user_id",
+            "in": "query"
           }
         ],
         "responses": {

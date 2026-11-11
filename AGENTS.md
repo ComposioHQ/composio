@@ -101,7 +101,7 @@ make build
 
 ## Release And Package Notes
 
-- TypeScript package releases use Changesets. Add a changeset only when published TypeScript packages change.
+- Stable Python and TypeScript SDK releases share Changesets. Public SDK behavior changes need a note for each affected package/language; Python uses the private `@composio/python-sdk` marker. See `ts/docs/internal/release.md` for the shared request/approval/retry process.
 - `@composio/cli` is excluded from Changesets; use `cli-release` for CLI binaries and never target that package in a changeset while it remains ignored.
 - Documentation-only and agent-guidance-only changes do not need a changeset.
 - Python release metadata lives in `python/pyproject.toml`, `python/setup.py`, and `uv.lock`.

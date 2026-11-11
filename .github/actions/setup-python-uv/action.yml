@@ -14,6 +14,18 @@ inputs:
     description: 'Enable uv/tool cache'
     required: false
     default: 'true'
+  cache-dependency-glob:
+    description: 'Workspace-relative files used to invalidate the uv cache'
+    required: false
+    # Mirrors setup-uv v9 defaults; recheck when updating the pinned action.
+    default: |
+      **/*requirements*.txt
+      **/*requirements*.in
+      **/*constraints*.txt
+      **/*constraints*.in
+      **/pyproject.toml
+      **/uv.lock
+      **/*.py.lock
 
 outputs:
   python-version:
@@ -58,6 +70,7 @@ runs:
       with:
         version: ${{ steps.tool-versions.outputs.uv }}
         enable-cache: ${{ inputs.enable-caching }}
+        cache-dependency-glob: ${{ inputs.cache-dependency-glob }}
         prune-cache: true
 
     - name: Report versions

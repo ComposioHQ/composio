@@ -9,7 +9,10 @@ import typing as t
 from dataclasses import dataclass, field
 
 import typing_extensions as te
-from composio_client.types.tool_router import session_create_params
+from composio_client.types.tool_router import (
+    session_create_params,
+    session_execute_params,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -188,7 +191,7 @@ class SessionContext(te.Protocol):
 class CustomTool:
     """Custom tool definition returned from ``@composio.experimental.tool()``.
 
-    Pass to ``composio.create(user_id, experimental={"custom_tools": [...]})``
+    Pass to ``composio.create(user_id, experimental={"local_tools": [...]})``
     to bind to a session.
     """
 
@@ -203,13 +206,15 @@ class CustomTool:
     preload: t.Optional[bool] = None
 
 
+LocalTool = CustomTool
+"""Definition of one of the SDK's local tools, returned from ``@composio.experimental.tool()``."""
+
+
 CustomToolWireDefinition = session_create_params.ExperimentalCustomTool
 CustomToolkitWireDefinition = session_create_params.ExperimentalCustomToolkit
 
 
-class InlineCustomToolsWirePayload(te.TypedDict, total=False):
-    custom_tools: t.List[CustomToolWireDefinition]
-    custom_toolkits: t.List[CustomToolkitWireDefinition]
+InlineCustomToolsWirePayload = session_execute_params.Experimental
 
 
 # ────────────────────────────────────────────────────────────────
@@ -244,7 +249,7 @@ class CustomToolsMap:
 
 
 # ────────────────────────────────────────────────────────────────
-# Registered types (returned by session.custom_tools() / .custom_toolkits())
+# Registered types (returned by session.local_tools() / .local_toolkits())
 # ────────────────────────────────────────────────────────────────
 
 
@@ -268,3 +273,10 @@ class RegisteredCustomToolkit:
     name: str
     description: str
     tools: t.List[RegisteredCustomTool]
+
+
+RegisteredLocalTool = RegisteredCustomTool
+"""One of the session's local tools, as returned by ``session.local_tools()``."""
+
+RegisteredLocalToolkit = RegisteredCustomToolkit
+"""A toolkit of the session's local tools, as returned by ``session.local_toolkits()``."""

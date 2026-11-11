@@ -32,15 +32,14 @@ Usage::
     session = composio.create(
         user_id="default",
         experimental={
-            "custom_tools": [grep],
-            "custom_toolkits": [dev_tools],
+            "local_tools": [grep],
+            "local_toolkits": [dev_tools],
         },
     )
 """
 
 from __future__ import annotations
 
-import asyncio
 import inspect
 import sys
 import typing as t
@@ -244,7 +243,7 @@ def _create_tool(
     if not callable(execute):
         raise ValidationError(f"{context}: execute must be a callable")
 
-    if asyncio.iscoroutinefunction(execute):
+    if inspect.iscoroutinefunction(execute):
         raise ValidationError(
             f"{context}: execute must be a synchronous function, not async. "
             f"The Composio Python SDK is synchronous — use a regular "
@@ -373,7 +372,7 @@ def _infer_tool_from_function(
     #   (input: BaseModel, ctx)     — with session context
     # The first param MUST be annotated with a BaseModel subclass.
     # Reject async before wrapping (wrapper would hide it from _create_tool)
-    if asyncio.iscoroutinefunction(fn):
+    if inspect.iscoroutinefunction(fn):
         raise ValidationError(
             f'experimental.tool: "{fn.__name__}" is async. '
             f"The Composio Python SDK is synchronous — use a regular "
@@ -438,7 +437,7 @@ class ExperimentalToolkit:
     """Custom toolkit that groups related tools under one namespace.
 
     Use ``@toolkit.tool()`` to add tools. Pass the toolkit to
-    ``composio.create(experimental={"custom_toolkits": [toolkit]})``.
+    ``composio.create(experimental={"local_toolkits": [toolkit]})``.
 
     Tools added to a toolkit must NOT use ``extends_toolkit`` — they
     inherit the toolkit identity instead.
@@ -548,6 +547,10 @@ class ExperimentalToolkit:
             self._tools.append(custom_tool)
             return custom_tool
         return decorator
+
+
+LocalToolkit = ExperimentalToolkit
+"""Toolkit that groups local tools, created with ``composio.experimental.Toolkit()``."""
 
 
 # ────────────────────────────────────────────────────────────────

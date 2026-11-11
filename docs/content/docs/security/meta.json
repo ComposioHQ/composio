@@ -3,6 +3,7 @@
   "defaultOpen": false,
   "pages": [
     "overview",
+    "audit-logs",
     "token-custody",
     "data-retention",
     "zero-data-retention"

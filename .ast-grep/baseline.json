@@ -1,0 +1,518 @@
+[
+  {
+    "ruleId": "py-empty-except",
+    "file": "python/composio/utils/redaction.py",
+    "source": "                    except Exception:\n                        pass",
+    "count": 1
+  },
+  {
+    "ruleId": "py-empty-except",
+    "file": "python/composio/utils/schema_converter.py",
+    "source": "    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses\n        pass",
+    "count": 1
+  },
+  {
+    "ruleId": "py-empty-except",
+    "file": "python/composio/utils/schema_converter.py",
+    "source": "    except Exception:\n        pass",
+    "count": 1
+  },
+  {
+    "ruleId": "py-empty-except",
+    "file": "python/providers/typesafe/composio_typesafe/companion.py",
+    "source": "            except Exception:\n                pass",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/client/__init__.py",
+    "source": "        import google.colab  # type: ignore # noqa: F401",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/client/__init__.py",
+    "source": "        shell = get_ipython().__class__.__name__  # type: ignore # noqa: F821",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/core/models/_modifiers.py",
+    "source": "            return self.modifier(tool, toolkit, data)  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/core/models/_modifiers.py",
+    "source": "        return self.modifier(tool, toolkit, data)  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/core/models/auth_configs.py",
+    "source": "            type=options[\"type\"],  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/core/models/base.py",
+    "source": "                \"environment\": _environment,  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/core/models/base.py",
+    "source": "        return {k: v for k, v in payload.items()}  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/core/models/mcp.py",
+    "source": "    response.generate = generate  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/openapi.py",
+    "source": "    return t.List[SubT]  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/schema_converter.py",
+    "source": "                return t.List[t.cast(t.Type, item_type)]  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/schema_converter.py",
+    "source": "            return t.Optional[t.cast(t.Type, base_type)]  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/schema_converter.py",
+    "source": "        return t.Optional[union_type]  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/schema_converter.py",
+    "source": "    union_type = reduce(lambda a, b: t.Union[a, b], cast_types)  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/shared.py",
+    "source": "        Field(**field),  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/shared.py",
+    "source": "    base_model = create_model(model_name, **field_definitions)  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/shared.py",
+    "source": "    model = create_model(  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/composio/utils/shared.py",
+    "source": "    return field_definitions  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/examples/fastapi_app.py",
+    "source": "    return RedirectResponse(url=connection_request.redirect_url)  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/examples/modifiers.py",
+    "source": "    params[\"custom_auth_params\"][\"parameters\"].append(  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/gemini/composio_gemini/provider.py",
+    "source": "        action_func.__signature__ = Signature(parameters=sig_params)  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/gemini/composio_gemini/provider.py",
+    "source": "    genai_types = None  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/langchain/composio_langchain/provider.py",
+    "source": "        action_func.__signature__ = Signature(  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/langgraph/composio_langgraph/provider.py",
+    "source": "        action_func.__signature__ = Signature(  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/langgraph/langgraph_demo_toolnode.py",
+    "source": "            (  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/langgraph/langgraph_demo_toolnode.py",
+    "source": "    if last_message.tool_calls:  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/langgraph/langgraph_demo.py",
+    "source": "for output in app.stream(inputs):  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "py-unchecked-ignore",
+    "file": "python/providers/llamaindex/composio_llamaindex/provider.py",
+    "source": "        action_func.__signature__ = Signature(  # type: ignore",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/cli-keyring/src/stores/macos-security-ffi.ts",
+    "source": "  const ab = toArrayBuffer(address as unknown as never, 0, 8);",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/cli-keyring/src/stores/macos-security-ffi.ts",
+    "source": "  const view = new Uint8Array(toArrayBuffer(Number(bytePtr) as unknown as never, 0, length));",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/cli/src/commands/registration.ts",
+    "source": "  const command = child as unknown as Command.Command<string, unknown, unknown, unknown, unknown>;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/cli/src/commands/registration.ts",
+    "source": "  return Command.provideEffect(\n    begun,\n    CommandRegistration,\n    Effect.gen(function* () {\n      const identity = childIdentity(yield* CommandRegistration, command);\n      const invocation = yield* CommandInvocation;\n      yield* invocation.enter(identity);\n      return identity;\n    })\n  ) as unknown as Registered<C>;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/cli/src/generation/typescript/generate-type-from-json-schema.ts",
+    "source": "  const openApi3Definition = {\n    openapi: '3.1.0',\n    components: {\n      schemas: {\n        [name]: {\n          type: 'object',\n          properties: processedProperties,\n        },\n      },\n    },\n  } as unknown as OpenAPI3;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/core/src/errors/ComposioError.ts",
+    "source": "    const { cause, code, stack, statusCode, meta, possibleFixes } = this as unknown as {\n      cause: unknown;\n      code: string | undefined;\n      stack: string | undefined;\n      statusCode: number | undefined;\n      meta: Record<string, unknown> | undefined;\n      possibleFixes: string[] | undefined;\n    };",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/core/src/models/Triggers.ts",
+    "source": "      originalPayload: payload as unknown as Record<string, unknown>,",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/core/src/telemetry/Telemetry.ts",
+    "source": "      (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/core/src/telemetry/Telemetry.ts",
+    "source": "      const originalMethod = (instance as unknown as Record<string, Function>)[name] as (",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/core/src/utils/pinnedDispatcher.node.ts",
+    "source": "  const slots = globalThis as unknown as Record<symbol, { constructor?: { name?: string } }>;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v3.ts",
+    "source": "  tuple: (items, rest) => buildTuple<S>(z.tuple(items as unknown as [S]), rest),",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v3.ts",
+    "source": "  union: options => z.union(options as unknown as [S, S]),",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "        payload.issues.push({\n          input: payload.value,\n          continue: true,\n          ...issue,\n        } as unknown as z.core.$ZodRawIssue)",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "        sinkFor(issue => ctx.addIssue(issue as unknown as z.core.$ZodRawIssue))",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "    zod.constr = Instrumented as unknown as SchemaConstructor;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "  const constructor = Instrumented as unknown as SchemaConstructor;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "  tuple: (items, rest) => buildTuple<S>(z.tuple(items as unknown as [S]), rest),",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "  union: options => z.union(options as unknown as [S, S]),",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/backend/zod-v4.ts",
+    "source": "const internals = (schema: S): Internals => (schema as unknown as { _zod: Internals })._zod;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/parsers/parse-array.ts",
+    "source": "      variants.length === 1 ? variants[0] : backend.union(variants as unknown as [S, S, ...S[]]);",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/parsers/parse-literal-values.ts",
+    "source": "    return backend.union(primitives.map(value => backend.literal(value)) as unknown as [S, S]);",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/utils/extend-schema.ts",
+    "source": "    const errorMessage = (jsonSchema as unknown as { errorMessage?: Record<string, string> })",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/json-schema-to-zod/src/utils/its.ts",
+    "source": "      (x as unknown as { nullable: boolean }).nullable === true,",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/providers/claude-agent-sdk/src/index.ts",
+    "source": "    const defineTool = sdkTool as unknown as (\n      name: string,\n      description: string,\n      inputSchema: ZodType,\n      handler: (\n        args: Record<string, unknown>\n      ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>\n    ) => ClaudeAgentTool;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/providers/cloudflare/src/index.ts",
+    "source": "      parameters: inputParameters as unknown as {\n        type: 'object';\n        properties: {\n          [key: string]: {\n            type: string;\n            description?: string;\n          };\n        };\n        required: string[];\n      },",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/providers/google/src/index.ts",
+    "source": "      parameters: {\n        type: 'object',\n        description: tool.description || '',\n        properties: inputParameters?.properties || {},\n        required: inputParameters?.required || [],\n      } as unknown as Schema,",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-double-assertion",
+    "file": "ts/packages/providers/llamaindex/src/index.ts",
+    "source": "    return new FunctionTool(\n      execute,\n      {\n        name: tool.slug,\n        description: tool.description ?? tool.name ?? '',\n        parameters: parameters as LlamaindexToolParameters,\n      },\n      jsonSchemaToZodSchema(parameters)\n    ) as unknown as LlamaindexTool;",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "scripts/agent-task.ts",
+    "source": "            } catch {}",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/cli-keyring/src/stores/macos-security-ffi.ts",
+    "source": "    } catch {\n      // Spawn failure is fine — entry may not exist.\n    }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/cli-keyring/src/stores/macos-security-subprocess.ts",
+    "source": "    } catch {\n      // Spawn failure (e.g. /usr/bin/security missing) — the add\n      // below will hit the same failure and surface it properly.\n    }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/scripts/generate-docs.ts",
+    "source": "  } catch {\n    // Directory doesn't exist, that's fine\n  }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/scripts/generate-docs.ts",
+    "source": "  } catch {\n    // Ignore cleanup errors\n  }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/src/platform/node.ts",
+    "source": "    } catch {\n      // Walk toward the filesystem root until an existing directory is found.\n    }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/src/utils/sensitiveFileUploadPaths.ts",
+    "source": "  } catch {\n    // If realpath fails (e.g. race), use resolved path\n  }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/src/utils/toolkitDeprecation.ts",
+    "source": "      } catch {\n        // The fallback is best-effort too: a sink that throws must not fail the call.\n      }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/src/utils/uploadDirAllowlist.node.ts",
+    "source": "  } catch {\n    // ignore and fall through\n  }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/src/utils/uploadDirAllowlist.node.ts",
+    "source": "  } catch {\n    // ignore\n  }",
+    "count": 1
+  },
+  {
+    "ruleId": "ts-empty-catch",
+    "file": "ts/packages/core/src/utils/version.ts",
+    "source": "  } catch (_error) {\n    // Ignore and do nothing\n  }",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/build-cli-binaries.yml",
+    "source": "      - name: Check baked toolkit slugs freshness\n        continue-on-error: true\n        run: |\n          set -euo pipefail\n          refreshed_at=$(sed -n \"s/.*BAKED_TOOLKIT_SLUGS_REFRESHED_AT = '\\(.*\\)'.*/\\1/p\" \\\n            ts/packages/cli/src/generated/toolkit-slugs.ts)\n          age_days=$(( ( $(date -u +%s) - $(date -u -d \"$refreshed_at\" +%s) ) / 86400 ))\n          echo \"Baked toolkit slugs were refreshed $age_days day(s) ago ($refreshed_at).\"\n          if [ \"$age_days\" -gt 14 ]; then\n            echo \"::warning::Baked toolkit slugs are $age_days days old. Run the 'CLI - Update Toolkit Slugs' workflow.\"\n          fi",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-agent-eval.yml",
+    "source": "      - name: Run exact-HEAD docs agent eval\n        if: steps.extent.outputs.extent != 'none'\n        continue-on-error: true\n        working-directory: engine\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n        run: |\n          RUNMODE=Smoke\n          [ '${{ steps.extent.outputs.extent }}' = deep ] && RUNMODE=Deep\n          python ci/run_full_eval.py \\\n            --repo \"$SOURCE_REPO\" \\\n            --head-sha '${{ steps.extent.outputs.head_sha }}' \\\n            --mode \"$RUNMODE\"",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-check-links.yml",
+    "source": "      - name: Open tracking issue on failure\n        if: failure() && github.event_name != 'pull_request'\n        continue-on-error: true\n        # Override the job-level `./docs` default: that path only exists after\n        # checkout, and a pre-checkout failure would otherwise leave the runner\n        # unable to start this shell, silently losing the alert.\n        working-directory: ${{ github.workspace }}\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GH_REPO: ${{ github.repository }}\n          LABEL: docs-external-links-failure\n          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n          EVENT_NAME: ${{ github.event_name }}\n        run: |\n          gh label create \"$LABEL\" \\\n            --color B60205 \\\n            --description \"Nightly docs external-link check is failing\" 2>/dev/null || true\n\n          existing=$(gh issue list --label \"$LABEL\" --state open --limit 1 --json number --jq '.[0].number // empty')\n          if [ -n \"$existing\" ]; then\n            echo \"Issue #$existing is already open for this failure; not filing a duplicate.\"\n            exit 0\n          fi\n\n          gh issue create \\\n            --title \"Nightly docs external-link check is failing\" \\\n            --label \"$LABEL\" \\\n            --body \"The scheduled \\`Docs - Check Links\\` external sweep failed.\n\n          - Run: $RUN_URL\n          - Trigger: \\`$EVENT_NAME\\`\n\n          The failing URLs are listed in the run log. External links only fail on\n          evidence they are dead (404/410, or repeated network errors), so this\n          usually means a linked page moved or was taken down — fix or remove the\n          link in \\`docs/content\\`.\"\n",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-rebuild-kb-semantic.yml",
+    "source": "      - name: Check semantic artifact freshness\n        id: freshness\n        continue-on-error: true\n        run: bun run check:kb-semantic",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Close tracking issue on recovery\n        if: success()\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GH_REPO: ${{ github.repository }}\n          LABEL: docs-data-sync-failure\n        run: |\n          existing=$(gh issue list --label \"$LABEL\" --state open --limit 1 \\\n            --json number --jq '.[0].number // empty')\n          if [ -n \"$existing\" ]; then\n            gh issue close \"$existing\" \\\n              --comment \"The docs data sync recovered in run ${{ github.run_id }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.\"\n          fi\n\n      # A verifier crash is a tooling failure, not evidence that published guides\n      # contradict production. Track it separately and close it after the verifier\n      # returns either of its expected outcomes: clean (0) or findings (1).",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Generate read-only KB source token\n        id: source-token\n        continue-on-error: true\n        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0\n        with:\n          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}\n          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}\n          owner: ComposioHQ\n          repositories: support-knowledge\n          permission-contents: read",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Open tracking issue on failure\n        if: failure()\n        continue-on-error: true\n        # Override the job-level `./docs` default. That path only exists after\n        # checkout, so a failure before it (e.g. the app-token step) would leave\n        # the runner unable to start this shell — and continue-on-error would\n        # swallow that, losing the alert for precisely the earliest failures.\n        working-directory: ${{ github.workspace }}\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GH_REPO: ${{ github.repository }}\n          LABEL: docs-data-sync-failure\n          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n          EVENT_NAME: ${{ github.event_name }}\n        run: |\n          gh label create \"$LABEL\" \\\n            --color B60205 \\\n            --description \"Scheduled docs data sync is failing\" 2>/dev/null || true\n\n          existing=$(gh issue list --label \"$LABEL\" --state open --limit 1 --json number --jq '.[0].number // empty')\n          if [ -n \"$existing\" ]; then\n            echo \"Issue #$existing is already open for this failure; not filing a duplicate.\"\n            exit 0\n          fi\n\n          gh issue create \\\n            --title \"Docs data sync is failing\" \\\n            --label \"$LABEL\" \\\n            --body \"The scheduled \\`Docs - Update Data\\` workflow failed.\n\n          - Run: $RUN_URL\n          - Trigger: \\`$EVENT_NAME\\`\n\n          **Impact:** while this is red, \\`docs/public/data/toolkits.json\\` stops being\n          refreshed. docs.composio.dev/toolkits is statically generated from that file, so\n          toolkits added to production after the last successful run have no page and\n          return 404. The site stays up, which is why this fails silently.\n\n          **First thing to check:** the \\`COMPOSIO_DOCS_API_KEY\\` secret must have\n          **production** read access against \\`backend.composio.dev\\`. Note this job does\n          not use the shared \\`COMPOSIO_API_KEY\\`, which is staging-scoped.\n\n          This issue is filed once, not re-filed on every run, and automatically closes\n          after the next successful sync proves recovery.\"",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Request review from trigger actor\n        if: steps.create-pr.outputs.pull-request-number\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ steps.app-token.outputs.token }}\n          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}\n          AUTHOR: ${{ github.actor }}\n        run: |\n          gh pr edit \"$PR_NUMBER\" --add-reviewer \"$AUTHOR\" || \\\n          gh pr edit \"$PR_NUMBER\" --add-reviewer \"Sushmithamallesh\"\n\n      # A silent failure here is invisible: the workflow stops refreshing\n      # public/data/toolkits.json, the docs site keeps building from the last\n      # good commit, and nothing 500s — new toolkits simply 404. That is how a\n      # credential failure went unnoticed for 60 consecutive runs. File one\n      # tracking issue and close it after the next successful run proves recovery.",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Track KB freshness findings\n        if: always() && (steps.verify-kb.outputs.exit_code == '0' || steps.verify-kb.outputs.exit_code == '1')\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          VERIFY_EXIT: ${{ steps.verify-kb.outputs.exit_code }}\n          TITLE: 'KB freshness: published guides contradict production data'\n        run: |\n          set -euo pipefail\n          # Exactly one issue carries this label, so listing by label is the lookup.\n          existing=$(gh issue list --state open --label kb-freshness \\\n            --json number --jq '.[0].number // empty' 2>/dev/null || true)\n\n          if [ \"$VERIFY_EXIT\" = \"0\" ]; then\n            if [ -n \"$existing\" ]; then\n              gh issue close \"$existing\" \\\n                --comment \"Verified clean against the current production catalog by run ${{ github.run_id }}.\"\n            fi\n            exit 0\n          fi\n\n          {\n            echo \"\\`verify:kb\\` found published KB guides whose claims no longer match production.\"\n            echo\n            echo \"Fix the guide, or demote it to \\`state: needs-review\\` in \\`docs/kb/manifest.json\\`\"\n            echo \"so it stops serving readers while it is wrong.\"\n            echo\n            cat \"$RUNNER_TEMP/kb-freshness.md\" 2>/dev/null \\\n              || echo \"Report unavailable — \\`verify:kb\\` exited $VERIFY_EXIT before writing it.\"\n            echo\n            echo \"_Regenerated by [run ${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})._\"\n          } > \"$RUNNER_TEMP/kb-issue.md\"\n\n          gh label create kb-freshness --color FBCA04 \\\n            --description \"Published KB guides contradicting production data\" 2>/dev/null || true\n\n          if [ -n \"$existing\" ]; then\n            gh issue edit \"$existing\" --body-file \"$RUNNER_TEMP/kb-issue.md\"\n          else\n            gh issue create --title \"$TITLE\" --label kb-freshness \\\n              --body-file \"$RUNNER_TEMP/kb-issue.md\"\n          fi\n",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Track KB freshness verifier health\n        if: always() && steps.verify-kb.outputs.exit_code != ''\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          VERIFY_EXIT: ${{ steps.verify-kb.outputs.exit_code }}\n          LABEL: kb-freshness-check-failure\n          TITLE: 'KB freshness verifier is failing'\n        run: |\n          set -euo pipefail\n          existing=$(gh issue list --state open --label \"$LABEL\" \\\n            --json number --jq '.[0].number // empty' 2>/dev/null || true)\n\n          if [ \"$VERIFY_EXIT\" = \"0\" ] || [ \"$VERIFY_EXIT\" = \"1\" ]; then\n            if [ -n \"$existing\" ]; then\n              gh issue close \"$existing\" \\\n                --comment \"The verifier recovered in run ${{ github.run_id }} (exit $VERIFY_EXIT).\"\n            fi\n            exit 0\n          fi\n\n          gh label create \"$LABEL\" --color B60205 \\\n            --description \"KB freshness verifier is failing\" 2>/dev/null || true\n\n          {\n            echo \"The KB freshness verifier exited $VERIFY_EXIT before it could classify published content.\"\n            echo\n            echo \"This is a verifier or workflow failure, not evidence that published guides contradict production.\"\n            echo\n            echo \"_Observed in [run ${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})._\"\n          } > \"$RUNNER_TEMP/kb-verifier-issue.md\"\n\n          if [ -n \"$existing\" ]; then\n            gh issue edit \"$existing\" --body-file \"$RUNNER_TEMP/kb-verifier-issue.md\"\n          else\n            gh issue create --title \"$TITLE\" --label \"$LABEL\" \\\n              --body-file \"$RUNNER_TEMP/kb-verifier-issue.md\"\n          fi\n\n      # One long-lived issue, rewritten each run. A new issue per sweep would train\n      # everyone to ignore the label; a single issue that closes itself when the KB\n      # is clean stays worth reading. Runs regardless of whether data changed —\n      # a guide can rot while the catalog is unchanged.",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-data.yml",
+    "source": "      - name: Verify KB freshness against refreshed data\n        id: verify-kb\n        continue-on-error: true\n        env:\n          # Resolves manifest.source.commit on the upstream KB repository. Without\n          # read access there the check reports \"unverifiable\" and stays silent,\n          # so an unset or narrow token degrades quietly rather than crying wolf.\n          GH_TOKEN: ${{ steps.source-token.outputs.token }}\n        run: |\n          set +e\n          if [ -z \"${GH_TOKEN:-}\" ]; then\n            echo \"KB source token unavailable; source-pin status will be unverifiable.\"\n          fi\n          bun scripts/verify-kb.ts --check-links --check-source-pin \\\n            --markdown \"$RUNNER_TEMP/kb-freshness.md\"\n          echo \"exit_code=$?\" >> \"$GITHUB_OUTPUT\"\n          cat \"$RUNNER_TEMP/kb-freshness.md\" >> \"$GITHUB_STEP_SUMMARY\"",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-kb.yml",
+    "source": "      - name: Close KB refresh failure issue\n        if: needs.refresh.result == 'success' && (needs.refresh.outputs.changed != 'true' || needs.propose.result == 'success')\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GH_REPO: ${{ github.repository }}\n          LABEL: docs-kb-refresh-failure\n        run: |\n          existing=$(gh issue list --label \"$LABEL\" --state open --limit 1 \\\n            --json number --jq '.[0].number // empty')\n          if [ -n \"$existing\" ]; then\n            gh issue close \"$existing\" \\\n              --comment \"The support knowledge publication pipeline recovered in run ${{ github.run_id }}: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.\"\n          fi\n",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-kb.yml",
+    "source": "      - name: Generate read-only upstream token\n        id: upstream-token\n        continue-on-error: true\n        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0\n        with:\n          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}\n          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}\n          owner: ComposioHQ\n          repositories: support-knowledge\n          permission-contents: read",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs-update-kb.yml",
+    "source": "      - name: Open KB refresh failure issue\n        if: needs.refresh.result == 'failure' || needs.propose.result == 'failure'\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GH_REPO: ${{ github.repository }}\n          LABEL: docs-kb-refresh-failure\n          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n          EVENT_NAME: ${{ github.event_name }}\n          REFRESH_RESULT: ${{ needs.refresh.result }}\n          PROPOSE_RESULT: ${{ needs.propose.result }}\n        run: |\n          gh label create \"$LABEL\" \\\n            --color B60205 \\\n            --description \"Scheduled support knowledge refresh is failing\" 2>/dev/null || true\n\n          existing=$(gh issue list --label \"$LABEL\" --state open --limit 1 \\\n            --json number --jq '.[0].number // empty')\n          if [ -n \"$existing\" ]; then\n            echo \"Issue #$existing is already open for this failure; not filing a duplicate.\"\n            exit 0\n          fi\n\n          gh issue create \\\n            --title \"Support knowledge refresh is failing\" \\\n            --label \"$LABEL\" \\\n            --body \"The automated support knowledge publication pipeline failed.\n\n          - Run: $RUN_URL\n          - Trigger: \\`$EVENT_NAME\\`\n          - Refresh job: \\`$REFRESH_RESULT\\`\n          - Proposal job: \\`$PROPOSE_RESULT\\`\n\n          **Impact:** docs.composio.dev/kb remains on its last successfully imported\n          support-knowledge commit until this workflow recovers.\n\n          **First checks:** verify that the Release Bot GitHub App can read\n          \\`ComposioHQ/support-knowledge\\` and write the refresh branch and PR in\n          \\`ComposioHQ/composio\\`.\"",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs.changelog-to-docs.yml",
+    "source": "      - name: Request review from pusher\n        if: steps.create-pr.outputs.pull-request-number\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ steps.app-token.outputs.token }}\n          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}\n          AUTHOR: ${{ github.actor }}\n        run: gh pr edit \"$PR_NUMBER\" --add-reviewer \"$AUTHOR\"\n",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/docs.sdk-change-sync.yml",
+    "source": "      - name: Request review from pusher\n        if: steps.create-pr.outputs.pull-request-number\n        continue-on-error: true\n        env:\n          GH_TOKEN: ${{ steps.app-token.outputs.token }}\n          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}\n          AUTHOR: ${{ github.actor }}\n        run: gh pr edit \"$PR_NUMBER\" --add-reviewer \"$AUTHOR\"\n",
+    "count": 1
+  },
+  {
+    "ruleId": "yaml-continue-on-error",
+    "file": ".github/workflows/ts.audit.yml",
+    "source": "      - name: Run pnpm audit (production dependencies only)\n        id: audit\n        continue-on-error: true\n        run: pnpm audit --prod > audit-output.txt 2>&1",
+    "count": 1
+  }
+]

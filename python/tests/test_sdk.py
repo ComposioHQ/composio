@@ -18,17 +18,27 @@ from composio.core.provider._openai import OpenAIProvider
 class TestComposioSDK:
     """Test cases for Composio SDK."""
 
-    def test_sdk_requires_api_key(self):
-        """Test that SDK requires an API key."""
+    @pytest.mark.parametrize("config", [{}, {"api_key": None}, {"api_key": ""}])
+    def test_sdk_requires_api_key(self, config):
+        """Missing credentials must explain SDK setup and the separate CLI install."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(exceptions.ApiKeyNotProvidedError):
-                Composio()
+            with pytest.raises(exceptions.ApiKeyNotProvidedError) as exc_info:
+                Composio(**config)
 
-    def test_sdk_explicit_none_api_key_does_not_fall_back_to_env(self):
+        message = str(exc_info.value)
+        assert "COMPOSIO_API_KEY" in message
+        assert "Composio(api_key=" in message
+        assert "Optional: `composio login`" in message
+        assert "requires installing the CLI separately" in message
+        assert "https://docs.composio.dev/docs/cli#install" in message
+        assert "does not set `COMPOSIO_API_KEY`" in message
+
+    @pytest.mark.parametrize("api_key", [None, ""])
+    def test_sdk_explicit_missing_api_key_does_not_fall_back_to_env(self, api_key):
         """Only an omitted ``api_key`` falls back to COMPOSIO_API_KEY."""
         with patch.dict(os.environ, {"COMPOSIO_API_KEY": "test-key"}):
             with pytest.raises(exceptions.ApiKeyNotProvidedError):
-                Composio(api_key=None)
+                Composio(api_key=api_key)
 
     def test_sdk_forwards_user_and_org_api_keys_to_client(self):
         """User and org keys reach the API client, which selects them per operation."""
@@ -99,16 +109,21 @@ class TestComposioSDK:
         assert composio.logs._client is composio._client
 
     def test_sdk_mounts_keyring_and_custom_toolkits(self):
-        from composio.core.models import ExperimentalCustomToolkits, Keyring
+        from composio.core.models import (
+            CustomToolkits,
+            ExperimentalCustomToolkits,
+            Keyring,
+        )
 
         composio = Composio(api_key="test-key")
 
         assert isinstance(composio.keyring, Keyring)
         assert composio.keyring._client is composio._client
-        assert isinstance(
-            composio.experimental.custom_toolkits, ExperimentalCustomToolkits
-        )
-        assert composio.experimental.custom_toolkits._client is composio._client
+        assert isinstance(composio.custom_toolkits, CustomToolkits)
+        assert composio.custom_toolkits._client is composio._client
+        # Deprecated paths keep working and resolve to the same object.
+        assert composio.experimental.custom_toolkits is composio.custom_toolkits
+        assert ExperimentalCustomToolkits is CustomToolkits
 
     def test_sdk_has_required_attributes(self):
         """Test that SDK has required attributes after initialization."""

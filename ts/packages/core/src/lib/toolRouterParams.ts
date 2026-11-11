@@ -21,6 +21,7 @@ import {
   ToolRouterProxyExecute,
   ToolRouterHook,
 } from '../types/toolRouter.types';
+import type { LocalTool, LocalToolkit } from '../types/customTool.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
 import type { TypeOf } from 'zod/v3';
@@ -143,6 +144,45 @@ export const resolveToolRouterSandboxConfig = (
     );
   }
   return config.sandbox ?? config.workbench;
+};
+
+/** Local tools options, accepted under their current names and the deprecated `custom*` aliases. */
+export type LocalToolsOptions = {
+  localTools?: LocalTool[];
+  localToolkits?: LocalToolkit[];
+  /** @deprecated Use `localTools` instead. */
+  customTools?: LocalTool[];
+  /** @deprecated Use `localToolkits` instead. */
+  customToolkits?: LocalToolkit[];
+};
+
+/**
+ * Resolves local tools and toolkits from `localTools` / `localToolkits` or
+ * their deprecated `customTools` / `customToolkits` aliases. `source` picks
+ * the option path named in the error: `experimental.*` on create, bare on use.
+ */
+export const resolveLocalToolsOptions = (
+  options: LocalToolsOptions | undefined,
+  source: 'create' | 'use'
+): { tools?: LocalTool[]; toolkits?: LocalToolkit[] } => {
+  if (options?.localTools !== undefined && options.customTools !== undefined) {
+    throw new ValidationError(
+      source === 'create'
+        ? 'Pass either experimental.localTools or experimental.customTools, not both. experimental.customTools is a deprecated alias for experimental.localTools.'
+        : 'Pass either localTools or customTools, not both. customTools is a deprecated alias for localTools.'
+    );
+  }
+  if (options?.localToolkits !== undefined && options.customToolkits !== undefined) {
+    throw new ValidationError(
+      source === 'create'
+        ? 'Pass either experimental.localToolkits or experimental.customToolkits, not both. experimental.customToolkits is a deprecated alias for experimental.localToolkits.'
+        : 'Pass either localToolkits or customToolkits, not both. customToolkits is a deprecated alias for localToolkits.'
+    );
+  }
+  return {
+    tools: options?.localTools ?? options?.customTools,
+    toolkits: options?.localToolkits ?? options?.customToolkits,
+  };
 };
 
 export const transformToolRouterSandboxParams = (
