@@ -69,7 +69,7 @@ export const formatNonInteractiveAuthorizationInstructions = (
 
   ${redirectUrl}
 
-hint: For agents: Show the URL above to the user to open. This command waits up to ${AUTHORIZATION_TIMEOUT_MINUTES} minutes for the authorization, then prints the connected account as JSON. To return right away with the URL instead, run the same command with --no-wait.`;
+hint: For agents: Show the URL above to the user to open. This command waits up to ${AUTHORIZATION_TIMEOUT_MINUTES} minutes for the authorization, then prints the connected account as JSON if stdout is redirected. To return right away with the URL instead, run the same command with --no-wait.`;
 
 /**
  * Points the user at the authorization page: a step line and the URL as a note. `manual` is
