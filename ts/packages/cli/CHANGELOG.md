@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.17 to include the latest API changes.
+
 - Update @composio/client to 2.1.16 to include the latest API changes.
 
 - Update @composio/client to 2.1.13 to include the latest API changes.

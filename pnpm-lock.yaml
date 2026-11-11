@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20261019.1
       version: 5.20261019.1
     '@composio/client':
-      specifier: 2.1.16
-      version: 2.1.16
+      specifier: 2.1.17
+      version: 2.1.17
     '@effect/language-service':
       specifier: ^0.87.5
       version: 0.87.5
@@ -1018,7 +1018,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.16(effect@4.1.1)
+        version: 2.1.17(effect@4.1.1)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1266,7 +1266,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.16(effect@4.1.1)
+        version: 2.1.17(effect@4.1.1)
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1375,7 +1375,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.16(effect@4.1.1)
+        version: 2.1.17(effect@4.1.1)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1792,7 +1792,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.16(effect@4.1.1)
+        version: 2.1.17(effect@4.1.1)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2393,8 +2393,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.1.16':
-    resolution: {integrity: sha512-2rugV5G51RgGDhtOd35UFOlDOy7R6MaEwgN1yg65t2DYrbafT1ZJxx+FkbOQfVs+deHkt96+roRixwSjSVm7dw==}
+  '@composio/client@2.1.17':
+    resolution: {integrity: sha512-iMUZq+BiD8pF6lkxaQudS6+BeOCIPzTPnbYNp/FSzemvWkm21fblCYgG6TZJQ1xxDwjdAprND566ndTzi2be3A==}
     engines: {node: '>=22'}
     peerDependencies:
       effect: '*'
@@ -7642,7 +7642,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.1.16(effect@4.1.1)':
+  '@composio/client@2.1.17(effect@4.1.1)':
     optionalDependencies:
       effect: 4.1.1
 
