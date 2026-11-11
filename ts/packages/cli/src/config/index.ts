@@ -13,7 +13,7 @@
  */
 export { APP_CONFIG } from './app';
 export { DEBUG_CONFIG } from './debug';
-export { TELEMETRY_CONFIG } from './telemetry';
+export { TELEMETRY_CONFIG, telemetryDisabled } from './telemetry';
 export {
   HOST_CONFIG,
   type AgentHostEnvironment,
