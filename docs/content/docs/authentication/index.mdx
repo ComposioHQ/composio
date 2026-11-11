@@ -116,7 +116,7 @@ Composio manages authentication with **auth configs**. An [auth config](/referen
 - **Scopes**: what actions your tools can perform
 - **Credentials**: your own app credentials, or Composio's managed auth
 
-Composio creates one auth config per toolkit and applies it to every user who connects that toolkit. Most toolkits use Composio managed auth, so you don't create or configure anything. You only need a [custom auth config](/docs/authentication/custom-app-vs-managed-app) to use your own OAuth app or customize scopes.
+Composio creates one auth config per toolkit and applies it to every user who connects that toolkit. Most toolkits use Composio managed auth, so you don't create or configure anything. Managed auth works in production but is not built for production scale, so move to your own OAuth app before you scale. You only need a [custom auth config](/docs/authentication/custom-app-vs-managed-app) to use your own OAuth app or customize scopes.
 
 <AuthConfigFlow />
 

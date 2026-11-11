@@ -37,12 +37,13 @@ apps, scopes, or provider credentials differ.
 - [Composio glossary: Project](https://docs.composio.dev/reference/glossary#project)
 - [Configure authentication](https://docs.composio.dev/docs/tools-direct/authenticating-tools)
 
-## Switch from managed auth only when production requirements call for it
+## Move from managed auth to your own OAuth app before you scale
 
-Keep Composio-managed OAuth apps in production when their consent branding,
-scopes, and shared provider quotas fit your product. Create a custom auth
-config when you need your application's own OAuth brand, custom scopes, a
-dedicated provider quota, different polling requirements, or a custom instance.
+Composio-managed OAuth apps work in production, but they are not built for
+production scale. Before you scale, create a custom auth config with your own
+OAuth app. Your own app also supports your application's OAuth brand, custom
+scopes, a dedicated provider quota, different polling requirements, and custom
+instances.
 Both options keep connected-account credential storage and refresh in Composio.
 Pass the resulting auth config ID to the session; creating the config alone
 does not make the session use it.

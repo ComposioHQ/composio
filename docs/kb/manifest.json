@@ -994,7 +994,7 @@
         },
         {
           "sourcePath": "platform/production-readiness/public.md",
-          "sourceHeading": "Switch from managed auth only when production requirements call for it"
+          "sourceHeading": "Move from managed auth to your own OAuth app before you scale"
         },
         {
           "sourcePath": "platform/production-readiness/public.md",

@@ -2,7 +2,7 @@
 title: "Move a Composio Integration from Prototype to Production"
 description: "Public guidance for production user identity, environment isolation, authentication, sessions, and trigger delivery."
 keywords: ["authentication","deployment","platform","production","projects","sessions","users","auth-config","authentication","getting-started","security-and-trust","sessions-and-execution","workflows"]
-sources: [{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Replace example user IDs with stable application user IDs"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Isolate environments with separate Composio projects when needed"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Switch from managed auth only when production requirements call for it"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Restrict the production session to the capabilities the agent needs"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Reuse a stored session until the user or configuration changes"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Test production trigger handling through the real webhook path"}]
+sources: [{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Replace example user IDs with stable application user IDs"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Isolate environments with separate Composio projects when needed"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Move from managed auth to your own OAuth app before you scale"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Restrict the production session to the capabilities the agent needs"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Reuse a stored session until the user or configuration changes"},{"sourcePath":"platform/production-readiness/public.md","sourceHeading":"Test production trigger handling through the real webhook path"}]
 lastVerifiedAt: "2026-08-24"
 reviewAfter: "2026-11-22"
 freshness: "evergreen"
@@ -31,12 +31,13 @@ apps, scopes, or provider credentials differ.
 - [Composio glossary: Project](https://docs.composio.dev/reference/glossary#project)
 - [Configure authentication](https://docs.composio.dev/docs/tools-direct/authenticating-tools)
 
-## Switch from managed auth only when production requirements call for it
+## Move from managed auth to your own OAuth app before you scale
 
-Keep Composio-managed OAuth apps in production when their consent branding,
-scopes, and shared provider quotas fit your product. Create a custom auth
-config when you need your application's own OAuth brand, custom scopes, a
-dedicated provider quota, different polling requirements, or a custom instance.
+Composio-managed OAuth apps work in production, but they are not built for
+production scale. Before you scale, create a custom auth config with your own
+OAuth app. Your own app also supports your application's OAuth brand, custom
+scopes, a dedicated provider quota, different polling requirements, and custom
+instances.
 Both options keep connected-account credential storage and refresh in Composio.
 Pass the resulting auth config ID to the session; creating the config alone
 does not make the session use it.
