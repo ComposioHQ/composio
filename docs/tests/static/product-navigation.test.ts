@@ -202,6 +202,7 @@ describe('Docs product navigation', () => {
     expect(readinessUrls).toEqual([
       '/docs/authentication/custom-app-vs-managed-app',
       '/reference/rate-limits',
+      '/docs/poc-to-prod/avoid-rate-limits',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
     ]);
     for (const url of readinessUrls) {
