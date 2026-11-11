@@ -62,7 +62,7 @@ If the MCP client itself cannot authenticate, verify the consumer endpoint, OAut
 
 ## Branding and production auth
 
-Managed auth is intended to make initial development easy. Before launch, move integrations that require the application's branding, scopes, or dedicated quotas onto its own OAuth apps.
+Managed auth works in production and is the fastest way to start. Recommend your own OAuth app when the application needs its own branding, its own scopes, or dedicated provider rate limits.
 
 When someone asks to remove Composio branding, identify the surface first: Connect Link page, provider consent screen, secured badge, callback domain, or success page. They have different fixes. Fetch `white-labeling-authentication.md` before proposing an implementation.
 
