@@ -260,7 +260,7 @@ const waitForActiveConnection = (
   noBrowser: boolean
 ) =>
   Effect.gen(function* () {
-    yield* showRedirectUrl(ui, target.redirectUrl, { manual: noBrowser });
+    yield* showRedirectUrl(ui, target.redirectUrl, { manual: noBrowser, waiting: true });
 
     const urlSchemeValid = Option.exists(
       Option.liftThrowable((value: string) => new URL(value))(target.redirectUrl),
@@ -309,7 +309,10 @@ const finishLink = (params: {
 }) =>
   params.noWait
     ? Effect.gen(function* () {
-        yield* showRedirectUrl(params.ui, params.target.redirectUrl, { manual: true });
+        yield* showRedirectUrl(params.ui, params.target.redirectUrl, {
+          manual: true,
+          waiting: false,
+        });
         yield* params.ui.output(
           formatPendingLinkJson({
             target: params.target,

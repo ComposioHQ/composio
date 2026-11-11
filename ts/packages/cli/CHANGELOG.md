@@ -4,6 +4,14 @@
 
 ### Patch Changes
 
+- `composio link` and `composio dev connected-accounts link` now print the
+  authorization URL when stderr is not a terminal, as under a script, CI or a
+  coding agent, before they wait for the authorization. The URL used to go
+  through terminal decoration that is dropped off a terminal, so a run with
+  `--no-browser` printed nothing until it timed out and an agent had no URL to
+  show the person. The instructions name `--no-wait`, which returns the URL as
+  JSON at once, and the `composio-cli` skill now teaches it.
+
 - `composio login` and `composio link` stop waiting for an authorization after
   10 minutes, checking every 5 seconds once a short ramp is over. The wait used
   to double after every check, so it took about 2 hours 44 minutes to give up,
