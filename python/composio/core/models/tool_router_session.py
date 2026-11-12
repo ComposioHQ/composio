@@ -1018,6 +1018,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         Execute a tool within the session.
 
+        Use ``tool_slug=...`` (not the direct Tools API's ``slug=...``) and
+        ``arguments={...}``. The return value is a Pydantic model: read
+        ``result.result_type == "completed"`` for execution success,
+        ``result.model_dump(mode="json")`` for a JSON-compatible dictionary,
+        or ``result.model_dump_json()`` for a JSON string. Unlike provider
+        helper results and ``after_execute`` modifier dictionaries, it has
+        no ``successful`` key. This call has no model tool-call ID; retain
+        that ID separately when building provider messages.
+
         For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
         original slug (e.g. "GREP") when that original slug is unique across
         the session's custom tools and toolkits. Custom tools are executed
@@ -1042,6 +1051,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         call (a session hook blocked it) has empty ``data``, the hook's message
         in ``error``, and ``block_reason`` (``type`` and ``hook_id``).
         ``hook_results`` lists every session hook that applied.
+        A log ID correlates an execution; it does not prove that a provider
+        performed a side effect. Inspect the tool-specific ``data`` as well.
+        Transport and authentication errors raise instead of returning an
+        execution result. Handle authentication recovery separately from
+        returned tool failures; retry/idempotency decisions belong to you.
 
         :raises ToolInputRequiredError: If the tool needs input from the user
             (for example an approval) before it can run. Nothing was executed.
