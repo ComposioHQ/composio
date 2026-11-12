@@ -18,6 +18,9 @@ import { z } from 'zod';
 export const ALLOWED_MODELS = ['claude-haiku-5-5', 'claude-opus-5-5'] as const;
 export type AllowedModel = (typeof ALLOWED_MODELS)[number];
 
+const isAllowedModel = (model: string | undefined): model is AllowedModel =>
+  ALLOWED_MODELS.some(allowed => allowed === model);
+
 /** Every forwarded request goes under this prefix; only the rest of the path comes from the agent. */
 const UPSTREAM_API = 'https://api.anthropic.com/v1/';
 const UPSTREAM_ORIGIN = new URL(UPSTREAM_API).origin;
@@ -32,7 +35,21 @@ const DROPPED_REQUEST_HEADERS = new Set([
   'accept-encoding',
 ]);
 
+/**
+ * The endpoints an agent needs. Anything else (batches, files, admin) is refused, because a
+ * request there may name no model, or one the proxy cannot see.
+ */
+const FORWARDED_PATHS = new Set(['/v1/messages', '/v1/messages/count_tokens']);
+
 const ModelField = z.looseObject({ model: z.string().optional() });
+
+const parseJson = (body: Buffer): unknown => {
+  try {
+    return JSON.parse(body.toString('utf8'));
+  } catch {
+    return undefined;
+  }
+};
 
 export interface ModelProxy {
   /** Base URL for `ANTHROPIC_BASE_URL` inside a container. */
@@ -83,21 +100,25 @@ export const startModelProxy = async (options: { apiKey: string }): Promise<Mode
       if (
         target === undefined ||
         target.origin !== UPSTREAM_ORIGIN ||
-        !target.pathname.startsWith('/v1/')
+        request.method !== 'POST' ||
+        !FORWARDED_PATHS.has(target.pathname)
       ) {
-        refused.push(`path ${path}`);
-        return refuse(response, 404, `only /v1/ is forwarded, not ${path}`);
+        refused.push(`${request.method} ${path}`);
+        return refuse(
+          response,
+          404,
+          `only POST ${[...FORWARDED_PATHS].join(', ')} is forwarded, not ${request.method} ${path}`
+        );
       }
+      // Every forwarded request names its model at the top level, so no other model is reachable.
       const body = await readBody(request);
-      if (body.length > 0) {
-        const parsed = ModelField.safeParse(JSON.parse(body.toString('utf8')));
-        const model = parsed.success ? parsed.data.model : undefined;
-        if (model !== undefined && !ALLOWED_MODELS.some(allowed => allowed === model)) {
-          refused.push(`model ${model}`);
-          return refuse(response, 400, `model ${model} is not allowed in journey runs`);
-        }
-        if (model !== undefined) forwarded[model] = (forwarded[model] ?? 0) + 1;
+      const parsed = ModelField.safeParse(parseJson(body));
+      const model = parsed.success ? parsed.data.model : undefined;
+      if (!isAllowedModel(model)) {
+        refused.push(`model ${model ?? '(none)'}`);
+        return refuse(response, 400, `model ${model ?? '(none)'} is not allowed in journey runs`);
       }
+      forwarded[model] = (forwarded[model] ?? 0) + 1;
 
       const headers = new Headers();
       for (const [name, value] of Object.entries(request.headers)) {
