@@ -1,5 +1,6 @@
 import { Effect, Option } from 'effect';
 import { commandInputError } from 'src/commands/errors';
+import { resolveSurfaceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -13,8 +14,9 @@ export type AuthConfigsInfoParams = {
 const invalidInput = commandInputError('dev auth-configs info');
 
 /**
- * Show one auth config: the details on stderr, the JSON on stdout. A missing `<id>` fails with a
- * `CommandInputError` before any request; an API failure is reported with a hint and exits 1.
+ * Show one auth config of the developer project: the details on stderr, the JSON on stdout. A
+ * missing `<id>` fails with a `CommandInputError` before any request, and a missing developer
+ * project with `ProjectResolutionError`; an API failure is reported with a hint and exits 1.
  */
 export const runAuthConfigsInfo = ({ id }: AuthConfigsInfoParams) =>
   Effect.gen(function* () {
@@ -29,10 +31,11 @@ export const runAuthConfigsInfo = ({ id }: AuthConfigsInfoParams) =>
     }
 
     const idValue = id.value;
+    const project = yield* resolveSurfaceProject('developer');
 
     // Auth config IDs are opaque nanoids — "Did you mean?" suggestions would not be useful
     const item = yield* ui
-      .withSpinner(`Fetching auth config "${idValue}"...`, repo.getAuthConfig(idValue))
+      .withSpinner(`Fetching auth config "${idValue}"...`, repo.getAuthConfig(project, idValue))
       .pipe(
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,

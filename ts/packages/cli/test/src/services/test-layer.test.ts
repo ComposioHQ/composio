@@ -25,6 +25,7 @@ import {
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { DIRECTORY_PROJECT_SCOPE } from 'test/__utils__/layers/developer-project';
 
 describe('TestLayer', () => {
   it.effect('leaves globalThis.fetch untouched', () =>
@@ -97,7 +98,7 @@ describe('ToolkitsTest', () => {
   it.effect('dies on a repository method another family serves', () =>
     Effect.gen(function* () {
       const repo = yield* ComposioToolkitsRepository;
-      const exit = yield* repo.listAuthConfigs({}).pipe(Effect.exit);
+      const exit = yield* repo.listAuthConfigs(DIRECTORY_PROJECT_SCOPE, {}).pipe(Effect.exit);
 
       expect(Exit.hasDies(exit)).toBe(true);
     }).pipe(Effect.provide(ToolkitsTest()))
@@ -146,9 +147,13 @@ describe('ConnectedAccountsTest', () => {
   ])('serves the same auth-config and connected-account answers through $name', ({ layer }) =>
     Effect.gen(function* () {
       const repo = yield* ComposioToolkitsRepository;
-      const authConfigs = yield* repo.listAuthConfigs({ toolkit_slug: 'slack' });
-      const found = yield* repo.getConnectedAccount('con_gmail');
-      const missing = yield* repo.getAuthConfig('ac_nope').pipe(Effect.flip);
+      const authConfigs = yield* repo.listAuthConfigs(DIRECTORY_PROJECT_SCOPE, {
+        toolkit_slug: 'slack',
+      });
+      const found = yield* repo.getConnectedAccount(DIRECTORY_PROJECT_SCOPE, 'con_gmail');
+      const missing = yield* repo
+        .getAuthConfig(DIRECTORY_PROJECT_SCOPE, 'ac_nope')
+        .pipe(Effect.flip);
 
       expect(authConfigs.items.map(item => item.id)).toEqual(['ac_slack']);
       expect(found.toolkit.slug).toBe('gmail');

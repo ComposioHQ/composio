@@ -1,5 +1,6 @@
 import { Effect, Option } from 'effect';
 import { commandInputError } from 'src/commands/errors';
+import { resolveSurfaceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -27,9 +28,10 @@ const showConnectedAccount = (id: string) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
+    const project = yield* resolveSurfaceProject('developer');
 
     const account = yield* ui
-      .withSpinner(fetchingConnectedAccountMessage(id), repo.getConnectedAccount(id))
+      .withSpinner(fetchingConnectedAccountMessage(id), repo.getConnectedAccount(project, id))
       .pipe(
         Effect.catchTag(
           CLIENT_API_ERROR_TAGS,
@@ -45,8 +47,9 @@ const showConnectedAccount = (id: string) =>
   });
 
 /**
- * Shows one connected account. A missing `<id>` fails with a `CommandInputError` before any
- * request; an API failure is reported with a hint and exits 1.
+ * Shows one connected account of the developer project. A missing `<id>` fails with a
+ * `CommandInputError` before any request, and a missing developer project with
+ * `ProjectResolutionError`; an API failure is reported with a hint and exits 1.
  */
 export const runConnectedAccountsInfo = ({ id }: ConnectedAccountsInfoParams) =>
   Effect.gen(function* () {

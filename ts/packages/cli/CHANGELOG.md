@@ -4,6 +4,18 @@
 
 ### Patch Changes
 
+- `composio dev auth-configs`, `dev connected-accounts info` and `whoami`,
+  `dev triggers status`, `create`, `enable` and `disable`, and `dev logs` now
+  act on the developer project of the working directory, or the one
+  `--project-name` names, which they all accept now. They used to send only
+  the user key, so the backend answered from the key's default project:
+  `dev auth-configs list` listed another project's auth configs even in a
+  directory set up with `composio dev init`. Without a developer project they
+  now fail and point at `composio dev init`, as
+  `composio dev playground-execute` does. `dev toolkits list` and `info` read
+  connection status in that project too, and show the catalog without it when
+  there is none.
+
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root
   `composio link …` examples, which link the consumer user, not a user of the

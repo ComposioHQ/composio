@@ -1,7 +1,14 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, DateTime, Effect } from 'effect';
 import type { ToolkitDetailed } from 'src/models/toolkits';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { cli, cliExit, MockConsole, TestLive } from 'test/__utils__';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+} from 'test/__utils__/layers/developer-project';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const gmail: ToolkitDetailed = {
@@ -87,4 +94,82 @@ describe('CLI: composio dev toolkits info over the API client', () => {
       })
     );
   });
+});
+
+// The connection status comes from a session in the developer project the command resolved,
+// never in the one the backend would pick for the key.
+describe('CLI: composio dev toolkits info reads connection status in the developer project', () => {
+  const config = ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key' } });
+  const gmailPage = () =>
+    Response.json({
+      items: [
+        {
+          name: 'Gmail',
+          slug: 'gmail',
+          enabled: true,
+          is_no_auth: false,
+          composio_managed_auth_schemes: ['OAUTH2'],
+          meta: { description: 'Email service to send and receive emails', logo: '' },
+          connected_account: null,
+        },
+      ],
+      next_cursor: null,
+    });
+
+  layer(
+    TestLive({
+      ...inDeveloperProjectDirectory,
+      baseConfigProvider: config,
+      toolkitsData: { detailedToolkits: [gmail] },
+    })
+  )(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] opens its session in that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const stub = toolkitsOver(gmailPage);
+        yield* cli(['dev', 'toolkits', 'info', 'gmail', ...args]).pipe(Effect.provide(stub.layer));
+
+        expect(stub.requests.map(request => request.path)).toEqual([
+          '/api/v3.1/tool_router/session',
+          `${SESSION_TOOLKITS}?toolkits=gmail`,
+        ]);
+        expect(stub.scopes).toEqual([scope, scope]);
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: config, toolkitsData: { detailedToolkits: [gmail] } }))(
+    it => {
+      it.effect(
+        '[Given] a directory set up for no project [Then] shows the toolkit without connection status',
+        () =>
+          Effect.gen(function* () {
+            yield* loginWithoutDeveloperProject;
+            const stub = toolkitsOver(gmailPage);
+            const { exitCode } = yield* cliExit([
+              'dev',
+              'toolkits',
+              'info',
+              'gmail',
+              '--user-id',
+              'alice',
+            ]).pipe(Effect.provide(stub.layer));
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+            expect(exitCode).toBe(0);
+            expect(stub.requests).toEqual([]);
+            expect(lines).toContain(
+              'No developer project configured for this directory; showing toolkit details without connection status. Run `composio dev init` or pass --project-name.'
+            );
+            expect(JSON.parse(lines.at(-1) ?? '{}')).toMatchObject({ slug: 'gmail' });
+          })
+      );
+    }
+  );
 });

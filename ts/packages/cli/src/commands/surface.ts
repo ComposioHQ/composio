@@ -7,6 +7,7 @@ import {
   type ProjectMode,
   type ResolvedCommandProject,
 } from 'src/services/command-project';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -56,6 +57,37 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
     });
   });
 
+/**
+ * The developer project, as `resolveSurfaceProject('developer')` resolves it, for a dev command
+ * whose main work needs no project: none when no `--project-name` is given and the directory
+ * configures no project (or no org is logged in to look one up in), so the command can leave out
+ * what does need one. A `--project-name` that cannot be resolved still fails.
+ */
+export const resolveSurfaceProjectOption = Effect.gen(function* () {
+  const { projectName } = yield* CommandSurface;
+  return yield* resolveSurfaceProject('developer').pipe(
+    Effect.map(Option.some),
+    Effect.catchTag('services/ProjectResolutionError', error =>
+      Option.isNone(projectName) &&
+      (error.reason === 'missing_developer_project' || error.reason === 'missing_org')
+        ? Effect.succeedNone
+        : Effect.fail(error)
+    )
+  );
+});
+
+/**
+ * The client for the developer project a dev command acts on (`--project-name`'s, else the
+ * directory's), for a command whose requests all read or write that project's resources: they
+ * name it rather than leaving the backend to pick the key's default project. Fails with
+ * `ProjectResolutionError` when neither names one.
+ */
+export const developerProjectClient = Effect.gen(function* () {
+  const project = yield* resolveSurfaceProject('developer');
+  const clientSingleton = yield* ComposioClientSingleton;
+  return yield* clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId });
+});
+
 // --- acting user ------------------------------------------------------------------------------
 
 /** Which step of the acting-user rule picked the user. */
@@ -63,12 +95,12 @@ export type ActingUserSource = 'consumer' | 'flag' | 'directory-test-user' | 'gl
 
 /**
  * The user a command acts as (glossary "Acting user"), with the project it was resolved
- * against. `actingUserOption` leaves the project optional; see there.
+ * against.
  */
-export interface ActingUser<Project = ResolvedCommandProject> {
+export interface ActingUser {
   readonly userId: string;
   readonly source: ActingUserSource;
-  readonly project: Project;
+  readonly project: ResolvedCommandProject;
 }
 
 /** No step of the acting-user rule found a user for the command. */
@@ -214,36 +246,18 @@ export const actingUser = () =>
   });
 
 /**
- * The acting user for a command that also runs without one, by the same rule as `actingUser`.
- * On the dev tree it resolves only the project `--project-name` names, so `project` is none when
- * the command runs against the directory's project through the default client; on the root
- * tree it is the consumer project. Names a test user standing in on stderr, as `actingUser`
- * does. Fails only when that project cannot be resolved.
+ * The dev tree's acting user for a command that also runs without one, against the developer
+ * project the command resolved (`resolveSurfaceProject('developer')`), by the same rule as
+ * `actingUser`: `--user-id`, then the directory test user (only for the directory's own project),
+ * then the global test user. Names a test user standing in on stderr, as `actingUser` does; none
+ * when no step finds a user.
  */
-export const actingUserOption = () =>
+export const devActingUserOption = (project: ResolvedCommandProject) =>
   Effect.gen(function* () {
-    const surface = yield* CommandSurface;
-    if (surface.tree === 'root') {
-      const project = yield* resolveCommandProject({ mode: 'consumer' });
-      return Option.map(
-        consumerUser(project),
-        (user): ActingUser<Option.Option<ResolvedCommandProject>> => ({
-          ...user,
-          project: Option.some(project),
-        })
-      );
-    }
-    const namedProject = yield* Effect.transposeOption(
-      Option.map(surface.projectName, projectName =>
-        resolveCommandProject({ mode: 'developer', projectName })
-      )
-    );
-    const user = yield* devUser(Option.map(namedProject, project => project.projectId));
+    const { projectName } = yield* CommandSurface;
+    const user = yield* devUser(Option.as(projectName, project.projectId));
     yield* announceFallback(user);
-    return Option.map(user, (found): ActingUser<Option.Option<ResolvedCommandProject>> => ({
-      ...found,
-      project: namedProject,
-    }));
+    return Option.map(user, (found): ActingUser => ({ ...found, project }));
   });
 
 /** A shared flag of the `dev` group. */

@@ -7,7 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { reportFailure } from 'src/effects/report-failure';
 import { commandInputError } from 'src/commands/errors';
-import { actingUserOption } from 'src/commands/surface';
+import { devActingUserOption, resolveSurfaceProjectOption } from 'src/commands/surface';
 import { BROWSE_TOOLKITS_HINT, formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
@@ -19,10 +19,11 @@ export type ToolkitsInfoParams = {
 const invalidInput = commandInputError('dev toolkits info');
 
 /**
- * Shows a toolkit with its connection status for the surface's user: the `dev`
- * group's `--user-id`, then the project test user id, then the global one. A missing
- * `<slug>` fails with a `CommandInputError` before any request; a failed lookup or an
- * unknown toolkit is reported on stderr and exits 1.
+ * Shows a toolkit with its connection status in the developer project (the directory's, or
+ * `--project-name`'s) for the surface's user: the `dev` group's `--user-id`, then the project
+ * test user id, then the global one. Without a developer project the toolkit is shown without
+ * connection status. A missing `<slug>` fails with a `CommandInputError` before any request; a
+ * failed lookup or an unknown toolkit is reported on stderr and exits 1.
  */
 export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
   Effect.gen(function* () {
@@ -38,18 +39,18 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
 
     const slugValue = slug.value;
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const acting = yield* actingUserOption();
-    const repo = yield* ComposioToolkitsRepository;
-    // The client of the project --project-name names; none keeps the default client.
-    const namedClient = yield* Effect.transposeOption(
-      Option.map(
-        Option.flatMap(acting, found => found.project),
-        project => clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
-      )
+    const project = yield* resolveSurfaceProjectOption;
+    const acting = yield* Effect.map(
+      Effect.transposeOption(Option.map(project, devActingUserOption)),
+      Option.flatten
     );
-    const resolvedUserId = Option.map(acting, found => found.userId);
+    const repo = yield* ComposioToolkitsRepository;
 
-    if (Option.isNone(acting)) {
+    if (Option.isNone(project)) {
+      yield* ui.log.info(
+        'No developer project configured for this directory; showing toolkit details without connection status. Run `composio dev init` or pass --project-name.'
+      );
+    } else if (Option.isNone(acting)) {
       yield* ui.log.info(
         'No test user id found; showing toolkit details without connection status.'
       );
@@ -61,11 +62,12 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
         Effect.gen(function* () {
           const detailedToolkitOpt = yield* repo.getToolkitDetailed(slugValue).pipe(Effect.option);
 
-          if (Option.isSome(resolvedUserId)) {
-            const client = Option.isSome(namedClient)
-              ? namedClient.value
-              : yield* clientSingleton.get();
-            const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
+          if (Option.isSome(acting)) {
+            const client = yield* clientSingleton.getFor({
+              orgId: acting.value.project.orgId,
+              projectId: acting.value.project.projectId,
+            });
+            const { sessionId } = yield* resolveToolRouterSession(client, acting.value.userId);
             const sessionToolkits = yield* client.toolRouter.session
               // Only the first item is read, and only a few of its fields.
               .toolkits(sessionId, { toolkits: [slugValue] }, idempotent)

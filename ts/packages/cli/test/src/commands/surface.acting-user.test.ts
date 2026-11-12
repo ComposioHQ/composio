@@ -3,14 +3,17 @@ import { describe, expect, it } from '@effect/vitest';
 import { Effect, Layer, Option } from 'effect';
 import {
   actingUser,
-  actingUserOption,
   CommandSurface,
+  devActingUserOption,
   fallbackNotice,
   MissingActingUserError,
+  resolveSurfaceProject,
+  resolveSurfaceProjectOption,
   type ActingUserSource,
   type CommandTree,
 } from 'src/commands/surface';
 import type { ProjectKeys } from 'src/models/project-keys';
+import { ProjectResolutionError } from 'src/services/command-project';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -265,34 +268,79 @@ describe('an empty consumer user id', () => {
       expect(error).toBeInstanceOf(MissingActingUserError);
     })
   );
+});
 
-  it.effect('[Given] an empty consumer user id [Then] actingUserOption finds none', () =>
-    Effect.gen(function* () {
-      const user = yield* run(actingUserOption(), fixture);
+describe('devActingUserOption', () => {
+  it.effect.each(cases.filter(({ tree }) => tree === 'dev'))(
+    '[Given] $name [Then] finds the rule’s user for the resolved project, or none',
+    fixture =>
+      Effect.gen(function* () {
+        const warnings: Array<string> = [];
+        const user = yield* run(
+          Effect.flatMap(resolveSurfaceProject('developer'), devActingUserOption),
+          fixture,
+          warnings
+        );
+        const expected = expectedUser(fixture);
 
-      expect(user).toEqual(Option.none());
-    })
+        expect(warnings).toEqual(expectedNotices(fixture));
+        expect(Option.map(user, ({ userId, source }) => ({ userId, source }))).toEqual(expected);
+        expect(Option.map(user, found => found.project.projectId)).toEqual(
+          Option.map(expected, () => expectedProjectId(fixture))
+        );
+      })
   );
 });
 
-describe('actingUserOption', () => {
-  it.effect.each(cases)('[Given] $name [Then] finds the rule’s user, or none', fixture =>
+describe('resolveSurfaceProjectOption', () => {
+  const withoutDirectoryProject = Layer.succeed(
+    ProjectContext,
+    ProjectContext.of({ resolve: Effect.succeedNone })
+  );
+
+  it.effect.each([
+    { projectName: 'absent', expected: Option.some(DIRECTORY_PROJECT_ID) },
+    { projectName: 'other', expected: Option.some(OTHER_PROJECT_ID) },
+  ] as const)(
+    '[Given] --project-name $projectName [Then] resolves the developer project',
+    ({ projectName, expected }) =>
+      Effect.gen(function* () {
+        const project = yield* run(resolveSurfaceProjectOption, {
+          tree: 'dev',
+          candidates: 'none',
+          projectName,
+        });
+
+        expect(Option.map(project, found => found.projectId)).toEqual(expected);
+      })
+  );
+
+  it.effect('[Given] no directory project and no --project-name [Then] finds none', () =>
     Effect.gen(function* () {
-      const warnings: Array<string> = [];
-      const user = yield* run(actingUserOption(), fixture, warnings);
-      const expected = expectedUser(fixture);
+      const project = yield* run(
+        resolveSurfaceProjectOption.pipe(Effect.provide(withoutDirectoryProject)),
+        { tree: 'dev', candidates: 'none', projectName: 'absent' }
+      );
 
-      expect(warnings).toEqual(expectedNotices(fixture));
-      // Only the project --project-name names is resolved on the dev tree.
-      const project =
-        fixture.tree === 'dev' && fixture.projectName === 'absent'
-          ? Option.none()
-          : Option.some(expectedProjectId(fixture));
+      expect(project).toEqual(Option.none());
+    })
+  );
 
-      expect(Option.map(user, ({ userId, source }) => ({ userId, source }))).toEqual(expected);
-      expect(
-        Option.map(user, found => Option.map(found.project, resolved => resolved.projectId))
-      ).toEqual(Option.map(expected, () => project));
+  it.effect('[Given] a --project-name the org does not hold [Then] fails', () =>
+    Effect.gen(function* () {
+      const error = yield* run(
+        Effect.flip(
+          resolveSurfaceProjectOption.pipe(
+            Effect.provide(
+              CommandSurface.dev({ userId: Option.none(), projectName: Option.some('missing') })
+            )
+          )
+        ),
+        { tree: 'dev', candidates: 'none', projectName: 'absent' }
+      );
+
+      expect(error).toBeInstanceOf(ProjectResolutionError);
+      expect(error).toMatchObject({ reason: 'project_not_found' });
     })
   );
 });

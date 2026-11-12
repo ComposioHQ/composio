@@ -5,6 +5,15 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  expectNoDeveloperProject,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+  runRecordingRepositoryScopes,
+} from 'test/__utils__/layers/developer-project';
 
 const testConnectedAccounts: ConnectedAccountItem[] = [
   {
@@ -34,8 +43,11 @@ const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
 
+// Logged in, in a directory set up for a developer project.
+const inProject = { ...inDeveloperProjectDirectory, baseConfigProvider: testConfigProvider };
+
 describe('CLI: composio dev connected-accounts info', () => {
-  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+  layer(TestLive({ ...inProject, connectedAccountsData }))(
     '[Given] valid ID [Then] shows connected account info',
     it => {
       it.effect('displays info for existing account', () =>
@@ -53,7 +65,7 @@ describe('CLI: composio dev connected-accounts info', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+  layer(TestLive({ ...inProject, connectedAccountsData }))(
     '[Given] nonexistent ID [Then] shows error with hint',
     it => {
       it.effect('shows error for nonexistent account', () =>
@@ -72,7 +84,7 @@ describe('CLI: composio dev connected-accounts info', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+  layer(TestLive({ ...inProject, connectedAccountsData }))(
     '[Given] no ID argument [Then] fails with a usage error',
     it => {
       it.effect('raises a CommandInputError naming <id>', () =>
@@ -102,6 +114,53 @@ describe('CLI: composio dev connected-accounts info', () => {
         );
         expect(error).toMatchObject({ _tag: 'commands/NotLoggedInError' });
       })
+    );
+  });
+});
+
+// The request goes to the developer project the command resolved, never to the one the backend
+// would pick for the key.
+describe('CLI: composio dev connected-accounts info acts on the developer project', () => {
+  layer(TestLive({ ...inProject, connectedAccountsData }))(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] reads the account from that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+          ...['dev', 'connected-accounts', 'info', 'con_gmail_active'],
+          ...args,
+        ]);
+
+        expect(exitCode).toBe(0);
+        expect(calls).toEqual([
+          { method: 'getConnectedAccount', scope: expect.objectContaining(scope) },
+        ]);
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
+    it.effect(
+      '[Given] a directory set up for no project [Then] fails naming `composio dev init`',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const { exit, exitCode, calls } = yield* runRecordingRepositoryScopes([
+            'dev',
+            'connected-accounts',
+            'info',
+            'con_gmail_active',
+          ]);
+
+          expect(exitCode).toBe(1);
+          expectNoDeveloperProject(exit);
+          expect(calls).toEqual([]);
+        })
     );
   });
 });

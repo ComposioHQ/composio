@@ -12,6 +12,7 @@ import {
   type AuthConfigsTestData,
 } from './connected-accounts';
 import { terminalUITestImpl } from '../services/terminal-ui-test';
+import { DirectoryProjectTest } from './developer-project';
 
 /** What an `auth-configs` handler test serves. */
 export interface AuthConfigsHandlerFixture {
@@ -23,13 +24,15 @@ export interface AuthConfigsHandlerFixture {
 
 /**
  * What an `auth-configs` handler needs without argv or `TestLive`: a headless terminal whose
- * stdout payloads land in `outputs` (decoration goes to `MockConsole`), and a repository
- * serving only the auth-config methods. Any other repository method dies.
+ * stdout payloads land in `outputs` (decoration goes to `MockConsole`), the directory's
+ * developer project (`DirectoryProjectTest`), and a repository serving only the auth-config
+ * methods. Any other repository method dies.
  */
 export const AuthConfigsHandlerTest = (fixture: AuthConfigsHandlerFixture = {}) => {
   const outputs: Array<string> = [];
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
+    DirectoryProjectTest,
     Layer.succeed(
       TerminalUI,
       TerminalUI.of({

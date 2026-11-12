@@ -1,6 +1,14 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { cli, cliExit, MockConsole, TestLive } from 'test/__utils__';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  expectNoDeveloperProject,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+} from 'test/__utils__/layers/developer-project';
 import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const testLayer = TestLive({
@@ -182,6 +190,45 @@ describe('CLI: composio dev logs triggers', () => {
           _tag: 'commands/TriggerLogsRequestError',
           message: 'Failed to fetch trigger log "log_missing".',
         });
+      })
+    );
+  });
+});
+
+// The request goes to the developer project the command resolved, never to the one the backend
+// would pick for the key.
+describe('CLI: composio dev logs triggers acts on the developer project', () => {
+  const config = ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key' } });
+
+  layer(TestLive({ ...inDeveloperProjectDirectory, baseConfigProvider: config }))(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+      { given: 'a log id', args: ['log_1'], scope: DIRECTORY_PROJECT_SCOPE },
+    ])('[Given] $given [Then] reads the logs of that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(['_internal'], request => Response.json(request.method === 'GET' ? log : { data: [] }));
+        yield* cli([...['dev', 'logs', 'triggers'], ...args]).pipe(Effect.provide(stub.layer));
+
+        expect(stub.scopes).toEqual([scope]);
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: config }))(it => {
+    it.effect('[Given] a directory set up for no project [Then] fails naming `composio dev init`', () =>
+      Effect.gen(function* () {
+        yield* loginWithoutDeveloperProject;
+        const stub = stubClientResources(['_internal'], request => Response.json(request.method === 'GET' ? log : { data: [] }));
+        const { exit, exitCode } = yield* cliExit(['dev', 'logs', 'triggers']).pipe(Effect.provide(stub.layer));
+
+        expect(exitCode).toBe(1);
+        expectNoDeveloperProject(exit);
+        expect(stub.requests).toEqual([]);
       })
     );
   });

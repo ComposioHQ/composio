@@ -25,7 +25,6 @@ import { cliClientIdentity } from './client-provenance';
 import { sha256Hex } from 'src/utils/checksums';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
-import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
 import { isClientConfigurationError } from 'src/utils/api-error-extraction';
@@ -104,8 +103,9 @@ export type ClientScope = ClientCredential &
  */
 export interface ComposioClientSingletonShape {
   /**
-   * The client for the user's key and, when the working directory resolves to
-   * a project, that project's org and project.
+   * The client for the user's key, with no org or project: the backend acts on
+   * the key's default project. A command that acts on a project it resolved
+   * (a developer project, the consumer project) asks `getFor` for that one.
    */
   readonly get: () => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
@@ -171,7 +171,6 @@ export const clientScopeKey = (client: ComposioClientShape): string => {
 const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
-    const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
     const httpClient = yield* HttpClient.HttpClient;
 
     // Read from disk once per process, with the services captured here.
@@ -246,19 +245,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
 
     return {
       get: Effect.fn(function* () {
-        const resolvedProjectContext = yield* Option.match(projectContextOpt, {
-          onNone: () => Effect.succeed(Option.none()),
-          onSome: projectContext =>
-            projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
-        });
-        return yield* Option.match(resolvedProjectContext, {
-          onNone: () => getFor(),
-          onSome: keys =>
-            getFor({
-              orgId: keys.orgId,
-              projectId: keys.projectId,
-            }),
-        });
+        return yield* getFor();
       }),
       getFor: Effect.fn(function* (params: ClientScope) {
         return yield* getFor(params);
@@ -334,7 +321,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
    * project-scoped, so they are absent from the build-time catalog and from
    * {@link getToolkits}, whose callers expect Composio-managed toolkits only.
    * @param scope - The org/project the command resolved; without it, the
-   *   project context decides, which is no project at all in consumer mode
+   *   backend picks the key's default project
    */
   const getProjectToolkits = (scope?: ToolkitProjectScope) => listToolkits('project', scope);
 
@@ -478,7 +465,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getToolkitDetailed,
     ...lookupOperations(client),
-    ...resourceOperations(client),
+    ...resourceOperations(scope =>
+      clientSingleton.getFor({ orgId: scope.orgId, projectId: scope.projectId })
+    ),
   };
 });
 

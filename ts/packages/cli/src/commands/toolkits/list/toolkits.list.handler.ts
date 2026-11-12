@@ -1,6 +1,10 @@
 import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import { Array as Arr, Effect, Option } from 'effect';
-import { actingUserOption, fallbackNotice } from 'src/commands/surface';
+import {
+  devActingUserOption,
+  fallbackNotice,
+  resolveSurfaceProjectOption,
+} from 'src/commands/surface';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
@@ -42,9 +46,15 @@ export const applyConnectedFilter = (
   return { rows, filterSkipped: params.connectedOnly && params.userResolved };
 };
 
+/** Why the listing carries no connection status when no developer project is configured. */
+export const NO_PROJECT_STATUS_MESSAGE =
+  'No developer project configured for this directory; showing toolkits without connection status. Run `composio dev init` or pass --project-name.';
+
 /**
- * Lists the toolkit catalog. When a user is known, the rows also carry that user's connection
- * status, read from a tool router session; a failed session read only drops the status.
+ * Lists the toolkit catalog. When the developer project (the directory's, or `--project-name`'s)
+ * and a user are known, the rows also carry that user's connection status, read from a tool
+ * router session in that project; a failed session read only drops the status. Without a
+ * developer project the catalog is listed without it.
  */
 export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams) =>
   Effect.gen(function* () {
@@ -54,23 +64,26 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
 
     const clampedLimit = clampLimit(limit);
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const user = yield* actingUserOption();
-    // The client of the project --project-name names; none keeps the default client.
-    const namedClient = yield* Effect.transposeOption(
-      Option.map(
-        Option.flatMap(user, found => found.project),
-        project => clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId })
-      )
+    const project = yield* resolveSurfaceProjectOption;
+    const user = yield* Effect.map(
+      Effect.transposeOption(Option.map(project, devActingUserOption)),
+      Option.flatten
     );
 
-    // `actingUserOption` named the test user standing in; say how to pick another.
+    if (Option.isNone(project)) {
+      yield* ui.log.info(NO_PROJECT_STATUS_MESSAGE);
+    }
+
+    // `devActingUserOption` named the test user standing in; say how to pick another.
     if (Option.isSome(Option.flatMap(user, fallbackNotice))) {
       yield* ui.log.message('To show status for a specific user, use `--user-id`.');
     }
 
     if (Option.isSome(connected) && Option.isNone(user)) {
       yield* ui.log.warn(
-        '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
+        Option.isNone(project)
+          ? '`--connected` requires a developer project. Run `composio dev init` or pass --project-name.'
+          : '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
       );
     }
 
@@ -85,9 +98,9 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
       onNone: () => Effect.succeedNone,
       onSome: resolved =>
         Effect.gen(function* () {
-          const client = yield* Option.match(namedClient, {
-            onSome: Effect.succeed,
-            onNone: () => clientSingleton.get(),
+          const client = yield* clientSingleton.getFor({
+            orgId: resolved.project.orgId,
+            projectId: resolved.project.projectId,
           });
           const { sessionId } = yield* resolveToolRouterSession(client, resolved.userId);
           return Option.some({ client, sessionId });
