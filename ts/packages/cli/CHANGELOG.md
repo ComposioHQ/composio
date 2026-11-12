@@ -19,10 +19,12 @@
   JSON it cannot read or with an empty body. It crashed with a raw `TypeError`
   naming a minified variable, which told an agent nothing it could act on.
 
-- `composio whoami` now exits 1 when the backend rejects the stored key, with
-  nothing on stdout and the rejection and `composio login` on stderr. It
+- `composio whoami` now exits 1 when it cannot read the account (the backend
+  rejects the stored key, cannot be reached, or fails), with nothing on stdout
+  and the reason on stderr; a rejected key also names `composio login`. It
   exited 0 and printed a JSON object of nulls, so checking a login with
-  `composio whoami` passed on a key that no longer worked.
+  `composio whoami` passed on a key that no longer worked. A session it reads
+  only in part still prints, with the missing fields as `null`.
 
 - A command the Composio API answers with 401 now prints the API's message
   and how to recover: `composio logout && composio login` when the stored
