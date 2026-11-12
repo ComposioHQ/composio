@@ -120,7 +120,7 @@ describe('resolveCommandProject', () => {
       })
     );
 
-  const orgList = (ids: ReadonlyArray<string>) =>
+  const orgList = (ids: ReadonlyArray<string>, nextCursor: string | null = null) =>
     jsonResponse({
       organizations: ids.map(id => ({
         id,
@@ -128,36 +128,22 @@ describe('resolveCommandProject', () => {
         created_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-01T00:00:00.000Z',
       })),
-      next_cursor: null,
+      next_cursor: nextCursor,
       total_pages: 1,
       current_page: 1,
       total_items: ids.length,
     });
 
-  it.effect('refuses a directory project in an org the key does not belong to', () =>
+  it.effect('refuses a directory project outside the logged-in org without a request', () =>
     Effect.gen(function* () {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(orgList(['org_1']));
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
       const error = yield* resolveCommandProject({ mode: 'developer' }).pipe(Effect.flip);
 
       expect(error).toMatchObject({ reason: 'org_mismatch' });
       expect(error.message).toContain('"org_other"');
-      expect(error.message).toContain('composio dev init');
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_other'))
-      )
-    )
-  );
-
-  it.effect('resolves a directory project in another org the key belongs to', () =>
-    Effect.gen(function* () {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(orgList(['org_1', 'org_other']));
-
-      const project = yield* resolveCommandProject({ mode: 'developer' });
-
-      expect(project).toMatchObject({ orgId: 'org_other', projectId: 'pr_local' });
+      expect(error.message).toContain('composio orgs switch');
+      expect(fetchSpy).not.toHaveBeenCalled();
     }).pipe(
       Effect.provide(
         Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_other'))
@@ -183,16 +169,22 @@ describe('resolveCommandProject', () => {
     )
   );
 
-  it.effect('checks a directory project against the key when no org is stored', () =>
-    Effect.gen(function* () {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(orgList(['org_2']));
+  it.effect(
+    'checks a directory project against every page of the key orgs when none is stored',
+    () =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValueOnce(orgList(['org_a'], 'cursor_2'))
+          .mockResolvedValueOnce(orgList(['org_2']));
 
-      const project = yield* resolveCommandProject({ mode: 'developer' });
+        const project = yield* resolveCommandProject({ mode: 'developer' });
 
-      expect(project).toMatchObject({ orgId: 'org_2', projectId: 'pr_local' });
-    }).pipe(
-      Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
-    )
+        expect(project).toMatchObject({ orgId: 'org_2', projectId: 'pr_local' });
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+      }).pipe(
+        Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
+      )
   );
 
   it.effect('refuses a directory project from another org when no org is stored', () =>
@@ -202,6 +194,7 @@ describe('resolveCommandProject', () => {
       const error = yield* resolveCommandProject({ mode: 'developer' }).pipe(Effect.flip);
 
       expect(error).toMatchObject({ reason: 'org_mismatch' });
+      expect(error.message).toContain('cannot access');
     }).pipe(
       Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
     )

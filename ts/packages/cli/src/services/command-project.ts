@@ -9,7 +9,7 @@ import {
   findDeveloperProjectByName,
   DeveloperProjectNotFoundError,
   AmbiguousDeveloperProjectNameError,
-  listOrganizations,
+  userKeyBelongsToOrg,
 } from './composio-account';
 
 export type ProjectMode = 'consumer' | 'developer';
@@ -78,11 +78,11 @@ const normalizeLookupError = <E>(error: E): ProjectResolutionError | E => {
 };
 
 /**
- * The developer project the working directory is set up for. Its org must be one the active
- * key belongs to: a cloned repository's `.composio/` must not send the user's requests, and
- * the credentials some of them carry, to a project its author chose. The stored login's org
- * needs no request; any other org is checked against the key's own org list, because a key
- * from `COMPOSIO_USER_API_KEY` may store no org, or belong to another account than the login.
+ * The developer project the working directory is set up for. A cloned repository's
+ * `.composio/` must not send the user's requests, and the credentials some of them carry, to
+ * a project its author chose, so the project must be in the org the user is logged in to.
+ * Without a stored org, as with a key from `COMPOSIO_USER_API_KEY`, it must be in an org the
+ * key belongs to.
  */
 const resolveLocalDeveloperProject = (params: {
   projectContext: ProjectContext['Service'];
@@ -100,15 +100,20 @@ const resolveLocalDeveloperProject = (params: {
       );
     }
     const { orgId, projectId, projectName } = localProject.value;
-    const isStoredOrg = Option.contains(params.storedOrgId, orgId);
-    const keyOrgs = isStoredOrg
-      ? undefined
-      : yield* listOrganizations({ apiKey: params.apiKey, limit: 100 });
-    if (keyOrgs !== undefined && !keyOrgs.data.some(org => org.id === orgId)) {
+    const allowed = yield* Option.match(params.storedOrgId, {
+      onSome: storedOrgId => Effect.succeed(storedOrgId === orgId),
+      onNone: () => userKeyBelongsToOrg({ apiKey: params.apiKey, orgId }),
+    });
+    if (!allowed) {
       return yield* Effect.fail(
         new ProjectResolutionError({
           reason: 'org_mismatch',
-          message: `This directory is set up for a developer project in org "${orgId}", which your API key cannot access. Run \`composio dev init\` to set it up in one of your orgs, or pass --project-name.`,
+          message: Option.match(params.storedOrgId, {
+            onSome: storedOrgId =>
+              `This directory is set up for a developer project in org "${orgId}", not in the org you are logged in to ("${storedOrgId}"). Run \`composio orgs switch\` to use that org, \`composio dev init\` to set this directory up in yours, or pass --project-name.`,
+            onNone: () =>
+              `This directory is set up for a developer project in org "${orgId}", which your API key cannot access. Run \`composio dev init\` to set it up in one of your orgs, or pass --project-name.`,
+          }),
         })
       );
     }
