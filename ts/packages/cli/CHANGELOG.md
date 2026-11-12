@@ -16,9 +16,9 @@
   directory set up for a project in an org your API key does not belong to,
   so a cloned repository's `.composio/` cannot send your requests to a project
   its author chose; an org other than the one you are logged in to is checked
-  against your key's orgs, also for a key from `COMPOSIO_USER_API_KEY`. `dev toolkits list` and `info` read
-  connection status in that project too, and show the catalog without it when
-  there is none.
+  against your key's orgs, also for a key from `COMPOSIO_USER_API_KEY`.
+  `dev toolkits list` and `info` read connection status in that project too,
+  and show the catalog without it when there is none.
 
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root
