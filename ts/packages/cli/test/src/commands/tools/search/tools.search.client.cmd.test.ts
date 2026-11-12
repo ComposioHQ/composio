@@ -112,11 +112,12 @@ describe('CLI: composio search over the API client', () => {
         const payload = {
           results: [
             {
-              index: 1,
+              // The fields the command reads come first, then the others in the API's order.
               use_case: 'send an email',
-              difficulty: 'easy',
               primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
               related_tool_slugs: ['GMAIL_CREATE_EMAIL_DRAFT'],
+              index: 1,
+              difficulty: 'easy',
               toolkits: ['gmail'],
             },
           ],
@@ -175,6 +176,35 @@ describe('CLI: composio search over the API client', () => {
           GMAIL_SEND_EMAIL: '~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json',
         });
         expect(payload.connected_toolkits).toEqual(['gmail']);
+      })
+    );
+  });
+
+  layer(testLayer)('[Given] a 200 search response the command cannot read', it => {
+    it.effect.each([
+      { name: 'JSON of another shape', respond: () => Response.json({ unexpected: true }) },
+      {
+        name: 'an empty body',
+        respond: () =>
+          new Response(null, {
+            status: 200,
+            headers: { 'content-type': 'application/json', 'content-length': '0' },
+          }),
+      },
+    ])('[Then] $name fails as a response this CLI does not understand', ({ respond }) =>
+      Effect.gen(function* () {
+        const stub = searchingOver(respond);
+        const terminal = redirectedTerminalUI();
+        const exit = yield* Effect.exit(
+          cli(['search', 'send an email']).pipe(Effect.provide([stub.layer, terminal.layer]))
+        );
+
+        expect(exitCodeOf(exit)).toBe(1);
+        expect(terminal.stdout()).toBe('');
+        expect(terminal.stderr()).toContain(
+          "Failed to search tools.\nCaused by: The API response for 'toolRouter.session.search' is not in the shape this version of the CLI expects.\nUpgrade the CLI, then retry:\n> composio upgrade"
+        );
+        expect(terminal.stderr()).not.toContain('TypeError');
       })
     );
   });
