@@ -1,5 +1,5 @@
 import { BadRequestError } from '@composio/client/effect';
-import { describe, expect, layer } from '@effect/vitest';
+import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -602,4 +602,50 @@ describe('CLI: composio dev connected-accounts link', () => {
       })
     );
   });
+});
+
+describe('CLI: link --help on each tree', () => {
+  /** What `--help` printed on stdout, and how it exited. */
+  const help = (args: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const exitCode = exitCodeOf(yield* Effect.exit(cli([...args, '--help'])));
+      const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
+      return { exitCode, stdout: stdout.join('\n') };
+    }).pipe(Effect.provide(TestLive()));
+
+  const examples = (stdout: string) =>
+    (stdout.split(/^EXAMPLES$/m)[1] ?? '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line !== '');
+
+  it.effect('[Given] composio link --help [Then] its examples are root `composio link`', () =>
+    Effect.gen(function* () {
+      const { exitCode, stdout } = yield* help(['link']);
+      expect(exitCode).toBe(0);
+      expect(examples(stdout)).toEqual([
+        'composio link github',
+        'composio link gmail --alias work',
+        'composio link github --list',
+      ]);
+    })
+  );
+
+  it.effect(
+    '[Given] composio dev connected-accounts link --help [Then] its examples stay on the dev tree',
+    () =>
+      Effect.gen(function* () {
+        const { exitCode, stdout } = yield* help(['dev', 'connected-accounts', 'link']);
+        expect(exitCode).toBe(0);
+        expect(examples(stdout)).toEqual([
+          'composio dev connected-accounts link github',
+          'composio dev connected-accounts link gmail --alias work',
+          'composio dev connected-accounts link github --list',
+        ]);
+        // The page says who it acts as, and offers the dev group's user and project flags.
+        expect(stdout).toContain('acts as a user of a developer project');
+        expect(stdout).toContain('--user-id');
+        expect(stdout).toContain('--project-name');
+      })
+  );
 });
