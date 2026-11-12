@@ -109,6 +109,7 @@ describe('auth faults: a stored key the backend stops accepting', () => {
         const result = await rig.run(command);
         expect(result.exitCode).toBe(1);
         expect(`${clean(result.stdout)}\n${clean(result.stderr)}`).toContain('Invalid API key');
+        expect(commandRequests(result).length).toBeGreaterThan(0);
         expect(commandRequests(result).every(entry => entry.status === 401)).toBe(true);
         expect((await readStoredLogin(rig)).api_key).toBe(USER_API_KEY);
       },

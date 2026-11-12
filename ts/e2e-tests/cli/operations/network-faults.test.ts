@@ -60,43 +60,43 @@ describe('network faults on a read (`search`)', () => {
   const persistent: ReadonlyArray<{
     name: string;
     fault: Fault;
-    stderr: string;
+    stderr: ReadonlyArray<string>;
     attempts: number;
   }> = [
     {
       name: 'HTTP 500 on every attempt',
       fault: { kind: 'status', status: 500 },
-      stderr: 'Injected HTTP 500',
+      stderr: ['Injected HTTP 500'],
       attempts: 3,
     },
     {
       name: 'HTTP 429 on every attempt',
       fault: { kind: 'status', status: 429, headers: { 'retry-after': '1' } },
-      stderr: 'Injected HTTP 429',
+      stderr: ['Injected HTTP 429'],
       attempts: 3,
     },
     {
       name: 'an HTML error page from a proxy',
       fault: { kind: 'html', status: 502 },
-      stderr: '502',
+      stderr: ['502'],
       attempts: 3,
     },
     {
       name: 'connection reset before any response',
       fault: { kind: 'reset' },
-      stderr: 'ECONNRESET',
+      stderr: ['ECONNRESET'],
       attempts: 3,
     },
     {
       name: 'connection reset in the middle of the body',
       fault: { kind: 'reset-mid-body' },
-      stderr: 'ECONNRESET',
+      stderr: ['ECONNRESET'],
       attempts: 1,
     },
     {
       name: 'a body that is not JSON',
       fault: { kind: 'malformed-json' },
-      stderr: 'is not in the shape this version of the CLI expects',
+      stderr: ['is not in the shape this version of the CLI expects', 'composio upgrade'],
       attempts: 1,
     },
   ];
@@ -110,22 +110,12 @@ describe('network faults on a read (`search`)', () => {
 
         expect(result.exitCode).toBe(1);
         expect(result.stdout).toBe('');
-        expect(clean(result.stderr)).toContain(stderr);
+        for (const text of stderr) expect(clean(result.stderr)).toContain(text);
         expect(searchRequests(result)).toHaveLength(attempts);
       },
       TEST_TIMEOUT_MS
     );
   }
-
-  it(
-    'a body that is not JSON: names the command that may fix it',
-    async () => {
-      rig.fake.faults.inject({ route: SEARCH, fault: { kind: 'malformed-json' } });
-      const result = await rig.run(SEARCH_SLACK);
-      expect(clean(result.stderr)).toContain('composio upgrade');
-    },
-    TEST_TIMEOUT_MS
-  );
 
   const transient: ReadonlyArray<{ name: string; fault: Fault }> = [
     { name: 'one HTTP 500', fault: { kind: 'status', status: 500 } },
@@ -169,7 +159,6 @@ describe('network faults on a read (`search`)', () => {
     TEST_TIMEOUT_MS
   );
 
-  // CLI defect: a 200 whose JSON lacks the fields `search` reads crashes with a raw TypeError naming a minified variable.
   for (const { name, fault } of [
     {
       name: 'valid JSON of an unexpected shape',
@@ -177,13 +166,27 @@ describe('network faults on a read (`search`)', () => {
     },
     { name: 'an empty 200 body', fault: { kind: 'empty-body' } },
   ] satisfies ReadonlyArray<{ name: string; fault: Fault }>) {
-    it.failing(
-      `${name}: reported as an unexpected response, not as a TypeError`,
+    it(
+      `today: ${name}: exit 1 with a raw TypeError`,
       async () => {
         rig.fake.faults.inject({ route: SEARCH, fault });
         const result = await rig.run(SEARCH_SLACK);
         expect(result.exitCode).toBe(1);
-        expect(clean(result.stderr)).not.toContain('TypeError');
+        expect(result.stdout).toBe('');
+        expect(clean(result.stderr)).toContain('TypeError');
+      },
+      TEST_TIMEOUT_MS
+    );
+
+    // CLI defect: a 200 whose JSON lacks the fields `search` reads crashes with a raw TypeError naming a minified variable.
+    it.failing(
+      `${name}: reported as an unexpected response`,
+      async () => {
+        rig.fake.faults.inject({ route: SEARCH, fault });
+        const result = await rig.run(SEARCH_SLACK);
+        expect(clean(result.stderr)).toContain(
+          'is not in the shape this version of the CLI expects'
+        );
       },
       TEST_TIMEOUT_MS
     );

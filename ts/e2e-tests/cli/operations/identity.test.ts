@@ -34,6 +34,10 @@ import {
 
 const inDevDirectory = (command: string) => `cd ${DEV_DIRECTORY} && ${command}`;
 
+/** A row of the help printed with the error: the name indented, then its description or type. */
+const helpRow = (name: string) =>
+  new RegExp(`^\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s`, 'm');
+
 describe('identity: the two command trees', () => {
   let rig: CliRig;
 
@@ -139,21 +143,6 @@ describe('identity: the two command trees', () => {
       },
       TEST_TIMEOUT_MS
     );
-
-    it(
-      'never sends the project API key `dev init` minted',
-      async () => {
-        expect(rig.fake.world.mintedProjectKeys).toHaveLength(1);
-        const classes = new Set(
-          rig.fake.journal
-            .entries()
-            .filter(entry => entry.role === 'backend' || entry.role === 'dashboard')
-            .map(entry => entry.keyClass)
-        );
-        expect([...classes]).toEqual(['user']);
-      },
-      TEST_TIMEOUT_MS
-    );
   });
 
   describe('connections do not cross trees', () => {
@@ -223,34 +212,46 @@ describe('identity: the two command trees', () => {
         );
         const { error } = stdoutJson(result, ExecutionResult);
         expect(error).toContain('composio dev connected-accounts link github');
-        expect(error).not.toMatch(/`composio link github`/);
+        expect(error).not.toContain('composio link github');
       },
       TEST_TIMEOUT_MS
     );
   });
 
   describe('the developer project of the directory', () => {
+    const OTHER_DIRECTORY = '/work/other-app';
+    const listInOtherDirectory = async () => {
+      await rig.journey.writeFile(
+        `${OTHER_DIRECTORY}/.composio/project.json`,
+        JSON.stringify({
+          org_id: ORG.id,
+          project_id: OTHER_DEVELOPER_PROJECT.nanoId,
+          project_name: OTHER_DEVELOPER_PROJECT.name,
+        })
+      );
+      const result = await rig.run(`cd ${OTHER_DIRECTORY} && composio dev auth-configs list`);
+      return { result, listing: result.requests.find(entry => entry.route === 'authConfigs.list') };
+    };
+
+    it(
+      "today: `dev auth-configs list` in another project's directory sends no scope and gets the key's default project",
+      async () => {
+        const { result, listing } = await listInOtherDirectory();
+        expect(result.exitCode).toBe(0);
+        expect(listing).toMatchObject({
+          project: DEVELOPER_PROJECT.label,
+          projectFrom: 'key-default',
+        });
+      },
+      TEST_TIMEOUT_MS
+    );
+
     // CLI defect: commands on the shared backend client send the user key with no org or project scope, so the backend picks the project.
     it.failing(
       '`dev auth-configs list` is scoped to the project the directory is set up for',
       async () => {
-        const other = '/work/other-app';
-        await rig.journey.writeFile(
-          `${other}/.composio/project.json`,
-          JSON.stringify({
-            org_id: ORG.id,
-            project_id: OTHER_DEVELOPER_PROJECT.nanoId,
-            project_name: OTHER_DEVELOPER_PROJECT.name,
-          })
-        );
-        const result = await rig.run(`cd ${other} && composio dev auth-configs list`);
-        expect(result.exitCode).toBe(0);
-
-        const listing = result.requests.find(entry => entry.route === 'authConfigs.list');
-        expect(listing).toMatchObject({
-          project: OTHER_DEVELOPER_PROJECT.label,
-          projectFrom: 'scope-headers',
-        });
+        const { listing } = await listInOtherDirectory();
+        expect(listing?.projectFrom).toBe('scope-headers');
       },
       TEST_TIMEOUT_MS
     );
@@ -295,7 +296,7 @@ describe('identity: the two command trees', () => {
           const stderr = clean(result.stderr);
           expect(stderr).toContain(message);
           // The help printed with the error is what lets an agent find the real command.
-          expect(stderr).toContain(listed);
+          expect(stderr).toMatch(helpRow(listed));
           expect(commandRequests(result)).toEqual([]);
         },
         TEST_TIMEOUT_MS
@@ -348,6 +349,22 @@ describe('identity: the two command trees', () => {
       );
     }
   });
+
+  // Last, so it covers every command above: links, auth configs, both executions.
+  it(
+    'never sends the project API key `dev init` minted',
+    async () => {
+      expect(rig.fake.world.mintedProjectKeys).toHaveLength(1);
+      const classes = new Set(
+        rig.fake.journal
+          .entries()
+          .filter(entry => entry.role === 'backend' || entry.role === 'dashboard')
+          .map(entry => entry.keyClass)
+      );
+      expect([...classes]).toEqual(['user']);
+    },
+    TEST_TIMEOUT_MS
+  );
 });
 
 describe('identity: a missing acting user', () => {

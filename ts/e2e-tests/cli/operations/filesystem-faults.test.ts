@@ -4,7 +4,13 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { CONSUMER_PROJECT, CONSUMER_USER_ID, USER_API_KEY } from '@e2e-tests/cli-fake-backend';
+import {
+  CONSUMER_PROJECT,
+  CONSUMER_USER_ID,
+  MEMBER,
+  USER_API_KEY,
+} from '@e2e-tests/cli-fake-backend';
+import { z } from 'zod';
 import { startCliRig, type CliRig } from '@e2e-tests/cli-fake-backend/rig';
 import {
   clean,
@@ -19,6 +25,8 @@ import {
   TEST_TIMEOUT_MS,
   writeDebugLog,
 } from './support';
+
+const Whoami = z.looseObject({ email: z.string() });
 
 const NOT_LOGGED_IN = 'You are not logged in yet. Please run `composio login`.';
 const STORED_LOGIN = '~/.composio/user_data.json';
@@ -85,6 +93,10 @@ describe('filesystem faults: cache files', () => {
       const result = await rig.run(SEARCH_SLACK);
       expect(result.exitCode).toBe(0);
       expect(stdoutJson(result, SearchResult).results).toHaveLength(1);
+      // The tests below corrupt one file each; leave nothing else broken for them.
+      await rig.run(
+        'cd ~/.composio && rm -f update-check.json config.json tool-permissions-cache.json'
+      );
     },
     TEST_TIMEOUT_MS
   );
@@ -107,7 +119,9 @@ describe('filesystem faults: cache files', () => {
       await rig.run(`mkdir -p ~/.composio/tool_definitions`);
       await rig.run(`echo '{corrupt' > ~/.composio/tool_definitions/SLACK_SEND_MESSAGE.json`);
       const result = await rig.run(SEARCH_SLACK);
+      expect(result.exitCode).toBe(1);
       expect(result.stdout).toBe('');
+      expect(clean(result.stderr)).toContain('is not valid JSON');
       expect(clean(result.stderr)).toContain(
         `${rig.journey.home}/.composio/tool_definitions/SLACK_SEND_MESSAGE.json`
       );
@@ -141,6 +155,7 @@ describe('filesystem faults: a read-only home', () => {
     async () => {
       const whoami = await rig.run('composio whoami', asUser);
       expect(whoami.exitCode).toBe(0);
+      expect(stdoutJson(whoami, Whoami).email).toBe(MEMBER.email);
       const search = await rig.run(SEARCH_SLACK, asUser);
       expect(search.exitCode).toBe(0);
       expect(stdoutJson(search, SearchResult).results).toHaveLength(1);
@@ -149,11 +164,12 @@ describe('filesystem faults: a read-only home', () => {
   );
 
   it(
-    '`execute` still runs the tool; the failed cache write stays on stderr',
+    '`execute` still runs the tool; the failed cache write stays off stdout',
     async () => {
       const result = await rig.run(EXECUTE_SLACK, asUser);
       expect(result.exitCode).toBe(0);
       expect(stdoutJson(result, ExecutionResult).successful).toBe(true);
+      expect(result.stdout).not.toMatch(/EACCES|EROFS|permission denied/i);
       expect(result.requests.filter(entry => entry.route === 'dashboard.execute')).toHaveLength(1);
     },
     TEST_TIMEOUT_MS

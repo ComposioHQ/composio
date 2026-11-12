@@ -38,14 +38,21 @@ describe('process: signals', () => {
     await rig.stop();
   });
 
-  const interrupted = (command: string, signal: 'INT' | 'TERM') =>
+  /**
+   * Sends the signal once `ready` is on stderr, so a slow start cannot make the
+   * signal arrive before the command is waiting. `settle` seconds after the
+   * command ended, stdout is measured, which catches a child left running.
+   */
+  const interrupted = (command: string, signal: 'INT' | 'TERM', ready: string, settle = 0) =>
     [
       `${command} > /tmp/sig.out 2> /tmp/sig.err &`,
       'pid=$!',
-      'sleep 2',
+      `for i in $(seq 1 150); do grep -q '${ready}' /tmp/sig.err && break; sleep 0.1; done`,
+      `grep -q '${ready}' /tmp/sig.err || echo "never ready"`,
       `kill -${signal} $pid`,
       'wait $pid',
       'echo "status=$?"',
+      `sleep ${settle}`,
       'echo "stdout-bytes=$(wc -c < /tmp/sig.out)"',
     ].join('\n');
 
@@ -56,7 +63,8 @@ describe('process: signals', () => {
     it(
       `SIG${signal} while \`link\` waits: exits ${status} with nothing on stdout`,
       async () => {
-        const result = await rig.run(interrupted(`composio link ${toolkit}`, signal));
+        const result = await rig.run(interrupted(`composio link ${toolkit}`, signal, '/api/v3/s/'));
+        expect(result.stdout).not.toContain('never ready');
         expect(result.stdout).toContain(`status=${status}`);
         expect(result.stdout).toContain('stdout-bytes=0');
         // The link was requested once, and the interrupted wait did not request another.
@@ -73,10 +81,14 @@ describe('process: signals', () => {
     async () => {
       const result = await rig.run(
         interrupted(
-          `composio run 'await new Promise(resolve => setTimeout(resolve, 30000)); console.log("finished")'`,
-          'INT'
+          `composio run 'console.error("started"); await new Promise(resolve => setTimeout(resolve, 4000)); console.log("finished")'`,
+          'INT',
+          'started',
+          // Longer than the script's 4 seconds: a script left running would print by then.
+          5
         )
       );
+      expect(result.stdout).not.toContain('never ready');
       expect(result.stdout).toContain('status=130');
       expect(result.stdout).toContain('stdout-bytes=0');
     },
@@ -136,14 +148,26 @@ describe('streams', () => {
       `printf '{"lastChecked":"%s","latestVersion":"99.0.0"}' "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" > ~/.composio/update-check.json`
     );
 
+  // `true` exits without reading, so the pipe is closed before the CLI writes; a
+  // reader like `head -1` would let a small result fit in the pipe's buffer.
+  const CLOSED_EARLY = `{ ${SEARCH_SLACK}; echo $? > /tmp/pipe.rc; } | true; cat /tmp/pipe.rc`;
+
   it(
+    'today: a reader that closes stdout before the CLI writes makes it exit 1 with an EPIPE trace',
+    async () => {
+      const result = await rig.run(CLOSED_EARLY);
+      expect(result.stdout).toBe('1\n');
+      expect(result.stderr).toContain('EPIPE');
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  // CLI defect: a closed stdout is reported as an EPIPE stack trace, and the command fails.
+  it.failing(
     'a reader that closes stdout early does not fail the command',
     async () => {
-      const result = await rig.run(
-        `{ composio search "send a slack message" "create a github issue" "send an email"; echo $? > /tmp/pipe.rc; } | head -1; cat /tmp/pipe.rc`
-      );
-      expect(result.stdout).toBe('{\n0\n');
-      expect(result.stderr).toBe('');
+      const result = await rig.run(CLOSED_EARLY);
+      expect(result.stderr).not.toContain('EPIPE');
     },
     TEST_TIMEOUT_MS
   );
@@ -241,12 +265,22 @@ describe('streams', () => {
     TEST_TIMEOUT_MS
   );
 
+  it(
+    'today: `search --human` off a terminal prints nothing and exits 0',
+    async () => {
+      const result = await rig.run(`${SEARCH_SLACK} --human`);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe('');
+    },
+    TEST_TIMEOUT_MS
+  );
+
   // CLI defect: `--human` renders through terminal decoration only, so off a terminal it prints nothing and exits 0.
   it.failing(
     '`search --human` off a terminal still prints the results',
     async () => {
       const result = await rig.run(`${SEARCH_SLACK} --human`);
-      expect(result.exitCode).toBe(0);
       expect(`${result.stdout}${result.stderr}`).toContain('SLACK_SEND_MESSAGE');
     },
     TEST_TIMEOUT_MS
