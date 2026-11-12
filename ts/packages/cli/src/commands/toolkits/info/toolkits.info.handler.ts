@@ -7,7 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { reportFailure } from 'src/effects/report-failure';
 import { commandInputError } from 'src/commands/errors';
-import { devActingUserOption, resolveSurfaceProjectOption } from 'src/commands/surface';
+import { resolveSurfaceProjectAndUserOption } from 'src/commands/surface';
 import { BROWSE_TOOLKITS_HINT, formatToolkitInfo, formatToolkitInfoJson } from '../format';
 import { ToolkitsInfoRequestError } from './toolkits.info.errors';
 
@@ -39,11 +39,7 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
 
     const slugValue = slug.value;
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const project = yield* resolveSurfaceProjectOption;
-    const acting = yield* Effect.map(
-      Effect.transposeOption(Option.map(project, devActingUserOption)),
-      Option.flatten
-    );
+    const { project, user: acting } = yield* resolveSurfaceProjectAndUserOption;
     const repo = yield* ComposioToolkitsRepository;
 
     if (Option.isNone(project)) {

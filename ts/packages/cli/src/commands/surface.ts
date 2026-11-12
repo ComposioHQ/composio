@@ -260,6 +260,20 @@ export const devActingUserOption = (project: ResolvedCommandProject) =>
     return Option.map(user, (found): ActingUser => ({ ...found, project }));
   });
 
+/**
+ * The developer project as `resolveSurfaceProjectOption` resolves it, and the acting user
+ * `devActingUserOption` finds against it, for a dev command that runs without either: the user is
+ * none when the project is.
+ */
+export const resolveSurfaceProjectAndUserOption = Effect.gen(function* () {
+  const project = yield* resolveSurfaceProjectOption;
+  const user = yield* Effect.map(
+    Effect.transposeOption(Option.map(project, devActingUserOption)),
+    Option.flatten
+  );
+  return { project, user };
+});
+
 /** A shared flag of the `dev` group. */
 export type SharedFlag = '--user-id' | '--project-name';
 

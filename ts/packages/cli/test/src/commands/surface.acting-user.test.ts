@@ -8,6 +8,7 @@ import {
   fallbackNotice,
   MissingActingUserError,
   resolveSurfaceProject,
+  resolveSurfaceProjectAndUserOption,
   resolveSurfaceProjectOption,
   type ActingUserSource,
   type CommandTree,
@@ -341,6 +342,43 @@ describe('resolveSurfaceProjectOption', () => {
 
       expect(error).toBeInstanceOf(ProjectResolutionError);
       expect(error).toMatchObject({ reason: 'project_not_found' });
+    })
+  );
+});
+
+describe('resolveSurfaceProjectAndUserOption', () => {
+  it.effect('[Given] a directory project and its test user [Then] finds both', () =>
+    Effect.gen(function* () {
+      const { project, user } = yield* run(resolveSurfaceProjectAndUserOption, {
+        tree: 'dev',
+        candidates: 'directory',
+        projectName: 'absent',
+      });
+
+      expect(Option.map(project, found => found.projectId)).toEqual(
+        Option.some(DIRECTORY_PROJECT_ID)
+      );
+      expect(Option.map(user, ({ userId, source }) => ({ userId, source }))).toEqual(
+        Option.some({ userId: 'directory-user', source: 'directory-test-user' })
+      );
+    })
+  );
+
+  it.effect('[Given] no directory project and no --project-name [Then] finds neither', () =>
+    Effect.gen(function* () {
+      const warnings: Array<string> = [];
+      const result = yield* run(
+        resolveSurfaceProjectAndUserOption.pipe(
+          Effect.provide(
+            Layer.succeed(ProjectContext, ProjectContext.of({ resolve: Effect.succeedNone }))
+          )
+        ),
+        { tree: 'dev', candidates: 'flag', projectName: 'absent' },
+        warnings
+      );
+
+      expect(result).toEqual({ project: Option.none(), user: Option.none() });
+      expect(warnings).toEqual([]);
     })
   );
 });

@@ -1,10 +1,6 @@
 import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import { Array as Arr, Effect, Option } from 'effect';
-import {
-  devActingUserOption,
-  fallbackNotice,
-  resolveSurfaceProjectOption,
-} from 'src/commands/surface';
+import { fallbackNotice, resolveSurfaceProjectAndUserOption } from 'src/commands/surface';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
@@ -47,7 +43,7 @@ export const applyConnectedFilter = (
 };
 
 /** Why the listing carries no connection status when no developer project is configured. */
-export const NO_PROJECT_STATUS_MESSAGE =
+const NO_PROJECT_STATUS_MESSAGE =
   'No developer project configured for this directory; showing toolkits without connection status. Run `composio dev init` or pass --project-name.';
 
 /**
@@ -64,11 +60,7 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
 
     const clampedLimit = clampLimit(limit);
     // Resolved outside the session lookup, whose failures only drop the connection status.
-    const project = yield* resolveSurfaceProjectOption;
-    const user = yield* Effect.map(
-      Effect.transposeOption(Option.map(project, devActingUserOption)),
-      Option.flatten
-    );
+    const { project, user } = yield* resolveSurfaceProjectAndUserOption;
 
     if (Option.isNone(project)) {
       yield* ui.log.info(NO_PROJECT_STATUS_MESSAGE);

@@ -489,4 +489,27 @@ describe('CLI: composio dev toolkits list reads connection status in the develop
         })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(it => {
+    it.effect(
+      '[Given] --connected in a directory set up for no project [Then] warns that the filter needs a developer project and lists the catalog',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubSessionToolkits(emptyPage);
+          const { exitCode } = yield* cliExit(['dev', 'toolkits', 'list', '--connected']).pipe(
+            Effect.provide(stub.layer)
+          );
+          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+
+          expect(exitCode).toBe(0);
+          expect(stub.requests).toEqual([]);
+          expect(stderr).toContain(
+            '`--connected` requires a developer project. Run `composio dev init` or pass --project-name.'
+          );
+          expect(stderr.join('\n')).not.toContain('`--connected` requires a user id.');
+          expect(stderr.join('\n')).toContain('Listing 3 of 3 toolkits');
+        })
+    );
+  });
 });
