@@ -198,20 +198,22 @@ describe('unauthorizedHint', () => {
 
 describe('[Given] the stored login is the saved agent identity', () => {
   // `composio logout` would need --yes without a terminal and would delete the saved agent key.
-  it.effect('[Then] a rejected key names `composio login --agent`, with no logout', () =>
+  it.effect('[Then] a rejected key names reuse-only agent login and the saved key file', () =>
     Effect.gen(function* () {
       yield* saveAgentIdentity('uak_stored');
       expect(yield* rejectedUserApiKeyHint).toBe(
-        'Log in again, then retry:\n> COMPOSIO_ENVIRONMENT=staging composio login --agent'
+        'Log in again, then retry:\n> COMPOSIO_ENVIRONMENT=staging composio agent login <composio_agent_key>\nUse the composio_agent_key from ~/.composio/agent.json.'
       );
     }).pipe(Effect.provide(agentHomeLayer(STAGING.base, STAGING.web)))
   );
 
-  it.effect('[Then] another 401 names `composio login --agent`, with no logout', () =>
+  it.effect('[Then] another 401 names reuse-only agent login and the saved key file', () =>
     Effect.gen(function* () {
       yield* saveAgentIdentity('uak_stored');
       expect(yield* unauthorizedHint(unauthorized('Auth_InvalidApiKey'))).toEqual(
-        Option.some('If your login expired, log in again, then retry:\n> composio login --agent')
+        Option.some(
+          'If your login expired, log in again, then retry:\n> composio agent login <composio_agent_key>\nUse the composio_agent_key from ~/.composio/agent.json.'
+        )
       );
     }).pipe(Effect.provide(agentHomeLayer(PRODUCTION.base, PRODUCTION.web)))
   );

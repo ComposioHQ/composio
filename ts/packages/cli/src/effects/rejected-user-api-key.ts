@@ -74,8 +74,8 @@ const loggedInAsAgent = Effect.gen(function* () {
 
 /**
  * The login command that replaces the stored login, on the backend that rejected its key. An
- * agent identity's login is renewed with `login --agent`: `composio logout` would need `--yes`
- * without a terminal and would delete the saved agent key the renewal needs.
+ * agent identity's login uses the saved key through `agent login`, which never signs up a new
+ * agent. `composio logout` would delete that key; `login --agent` can replace the identity.
  */
 const loginAgainCommand = Effect.gen(function* () {
   const ctx = yield* Effect.serviceOption(ComposioUserContext);
@@ -84,7 +84,7 @@ const loginAgainCommand = Effect.gen(function* () {
     onSome: c => loginTargetPrefix(c.data.baseURL, c.data.webURL),
   });
   return (yield* loggedInAsAgent)
-    ? `${prefix}composio login --agent`
+    ? `${prefix}composio agent login <composio_agent_key>\nUse the composio_agent_key from ~/.composio/agent.json.`
     : `composio logout && ${prefix}composio login`;
 });
 
