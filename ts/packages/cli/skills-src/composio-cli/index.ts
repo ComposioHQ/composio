@@ -131,17 +131,25 @@ const commands: SkillCommand[] = [
       'Use `link` when `execute` reports that a toolkit is not connected, or when the user explicitly wants to authorize an account.',
     examples: [
       {
-        code: 'composio link gmail\ncomposio link googlecalendar --no-browser',
+        code: 'composio link gmail\ncomposio link googlecalendar --no-browser --no-wait',
       },
     ],
     flags: [
+      {
+        name: '`--no-wait`',
+        description:
+          'Print the authorization URL as JSON (`redirect_url`) and return at once instead of waiting for the authorization.',
+      },
       {
         name: '`--alias`',
         description:
           'Assign an alias to the connected account. Required when creating an additional account for the same toolkit.',
       },
     ],
-    notes: ['Retry the original `execute` command after linking succeeds.'],
+    notes: [
+      "When the user has to open the page themselves, run `link` with `--no-wait`, show them the `redirect_url`, and wait for them to say they approved. Without `--no-wait` the command blocks until the authorization completes, so the URL reaches the user only if they can see the command's output.",
+      'Retry the original `execute` command after linking succeeds.',
+    ],
   },
   {
     id: 'listen',

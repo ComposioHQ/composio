@@ -1,5 +1,6 @@
 import { Array as Arr, Effect, Option } from 'effect';
 import type { CommandTree } from 'src/commands/surface';
+import { AUTHORIZATION_TIMEOUT_MINUTES } from 'src/effects/authorization-poll';
 import { BROWSE_TOOLKITS_HINT } from 'src/commands/toolkits/format';
 import { printFailure, ReportedFailure } from 'src/effects/report-failure';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -58,15 +59,37 @@ export const BROWSE_AUTH_CONFIGS_HINT =
 // --- human renderers (stderr) ---------------------------------------------------------------
 
 /**
+ * What a command that waits for an authorization writes when stderr is not a terminal: the
+ * step line and the note are decoration and would be dropped, and the URL with them, leaving
+ * an agent nothing to show the person it waits for.
+ */
+export const formatNonInteractiveAuthorizationInstructions = (
+  redirectUrl: string
+) => `Open this URL in your browser to authorize the connection:
+
+  ${redirectUrl}
+
+hint: For agents: Show the URL above to the user to open. This command waits up to ${AUTHORIZATION_TIMEOUT_MINUTES} minutes for the authorization, then prints the connected account as JSON if stdout is redirected. To return right away with the URL instead, run the same command with --no-wait.`;
+
+/**
  * Points the user at the authorization page: a step line and the URL as a note. `manual` is
- * for a page the CLI does not open itself.
+ * for a page the CLI does not open itself; `waiting` is for a command that then waits for the
+ * authorization. Off a terminal, a waiting command writes the URL with plain instructions
+ * instead, since nothing else would show it; one that does not wait prints it on stdout.
  */
 export const showRedirectUrl = (
   ui: TerminalUI,
   redirectUrl: string,
-  options: { readonly manual: boolean }
+  options: { readonly manual: boolean; readonly waiting: boolean }
 ) =>
   Effect.gen(function* () {
+    const { canDecorate } = yield* ui.capabilities;
+    if (!canDecorate) {
+      if (options.waiting) {
+        yield* ui.error(formatNonInteractiveAuthorizationInstructions(redirectUrl));
+      }
+      return;
+    }
     yield* ui.log.step(
       options.manual
         ? 'Open this URL in your browser to authorize'

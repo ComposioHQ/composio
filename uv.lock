@@ -537,7 +537,7 @@ release = [
 [package.metadata]
 requires-dist = [
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "composio-client", specifier = "==2.1.6" },
+    { name = "composio-client", specifier = "==2.1.17" },
     { name = "json-schema-to-pydantic", specifier = ">=0.4.11,<1" },
     { name = "jsonschema", specifier = ">=4.23.0,<5" },
     { name = "openai", specifier = ">=2.48.0,<4" },
@@ -590,16 +590,16 @@ requires-dist = [
 
 [[package]]
 name = "composio-client"
-version = "2.1.6"
+version = "2.1.17"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/be/b3ddfcb151bb02b99118f01e7ad9c5e33d8066943a1c29465d0641a2ecd1/composio_client-2.1.6.tar.gz", hash = "sha256:d2ffb0f2e47ab796ca7e94023ae51ea373ec51a4c96b9c3bbefd49f99049e912", size = 592353, upload-time = "2026-11-09T18:04:42.963Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/fc/da697c80c0a09cdad3e6f6c23056f7069d4269104a906fb8a8d1329ec9b0/composio_client-2.1.17.tar.gz", hash = "sha256:e5eb075454b0bebc8c17ce7575cde403f68d31effefe83229ec20b644cdaf6bb", size = 592759, upload-time = "2026-11-11T09:05:31.584Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/f8/b22c7d74b7eb57546c757090aa6ca0b9fc1fe752b8ab99f01cf5686cf376/composio_client-2.1.6-py3-none-any.whl", hash = "sha256:f06fba69f69d2b9ab37e5ae21479f8920eb3adafcfc103a5087b71b0169099b2", size = 478308, upload-time = "2026-11-09T18:04:41.365Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/7d/bf48ef0477baa70491f28ce8a96fa45aa1654704e9d2e532c640a77de917/composio_client-2.1.17-py3-none-any.whl", hash = "sha256:41e0d96a43935fa3306450193e1bedde5f58e717b4be06f6e85cfbdb506c57bf", size = 478555, upload-time = "2026-11-11T09:05:30.077Z" },
 ]
 
 [[package]]
@@ -688,7 +688,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio" },
+    { name = "composio", specifier = ">=0.32.0" },
     { name = "openai-agents", specifier = ">=0.18.3,<1" },
 ]
 

@@ -4,6 +4,31 @@
 
 ### Patch Changes
 
+- `composio dev connected-accounts link --help` now shows
+  `composio dev connected-accounts link …` examples. It showed root
+  `composio link …` examples, which link the consumer user, not a user of the
+  developer project. The description of both pages now says which user each
+  command acts as.
+
+- `composio link` and `composio dev connected-accounts link` now print the
+  authorization URL when stderr is not a terminal, as under a script, CI or a
+  coding agent, before they wait for the authorization. The URL used to go
+  through terminal decoration that is dropped off a terminal, so a run with
+  `--no-browser` printed nothing until it timed out and an agent had no URL to
+  show the person. The instructions name `--no-wait`, which returns the URL as
+  JSON at once, and the `composio-cli` skill now teaches it.
+
+- `composio login` and `composio link` stop waiting for an authorization after
+  10 minutes, checking every 5 seconds once a short ramp is over. The wait used
+  to double after every check, so it took about 2 hours 44 minutes to give up,
+  although `composio login`'s hint promised 10 minutes.
+
+- Update @composio/client to 2.1.17 to include the latest API changes.
+
+- Update @composio/client to 2.1.16 to include the latest API changes.
+
+- Update @composio/client to 2.1.13 to include the latest API changes.
+
 - Update @composio/client to 2.1.6 to include the latest API changes.
 
 - Update @composio/client to 2.1.0 to include the latest API changes.

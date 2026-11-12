@@ -4,7 +4,6 @@ import { APP_VERSION } from 'src/constants';
 import {
   browserLogin,
   emitLoginComplete,
-  LOGIN_POLL_INTERVAL_SECONDS,
   LoginSessionError,
   playgroundTestUserId,
   storeCredentials,
@@ -75,10 +74,6 @@ type LoginFlow = Data.TaggedEnum<{
 }>;
 const LoginFlow = Data.taggedEnum<LoginFlow>();
 
-const LOGIN_POLL_TIMEOUT_SECONDS = 10 * 60;
-/** `--poll` keeps checking for the pending login's whole TTL. */
-const LOGIN_POLL_RETRIES = Math.ceil(LOGIN_POLL_TIMEOUT_SECONDS / LOGIN_POLL_INTERVAL_SECONDS);
-
 const invalidOptionValue = commandInputError('login');
 
 // --- shared steps -----------------------------------------------------------------------------
@@ -119,7 +114,6 @@ const loginWithKey = (params: {
   readonly key: string;
   readonly noWait: boolean;
   readonly announce: boolean;
-  readonly pollRetries?: number;
   readonly defaultToFirstOrg?: boolean;
 }) =>
   Effect.gen(function* () {
@@ -134,7 +128,7 @@ const loginWithKey = (params: {
     );
     const linkedSession = yield* params.noWait
       ? Effect.flatMap(getSession, requireLinkedNow)
-      : waitForLinkedSession(getSession, params.pollRetries);
+      : waitForLinkedSession(getSession);
 
     const uakApiKey = linkedSession.api_key;
     const sessionInfo = yield* getSessionInfoByUserApiKey({ userApiKey: uakApiKey });
@@ -232,7 +226,6 @@ export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
       key: pendingLogin.key,
       noWait: false,
       announce: false,
-      pollRetries: LOGIN_POLL_RETRIES,
       defaultToFirstOrg: true,
     });
     yield* pendingLoginSession.clear;

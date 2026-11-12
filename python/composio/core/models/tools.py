@@ -186,6 +186,8 @@ class ToolRouterSessionExecuteResponse(SessionExecuteResponse):
     ``instant.return_instant_charge`` and a charge is available.
     """
 
+    # The SDK normalizes the client's separate blocked variant into this model.
+    result_type: t.Optional[t.Literal["completed", "failed", "blocked"]] = None  # type: ignore[assignment]
     hook_results: t.Optional[t.List[ToolRouterHookResult]] = None  # type: ignore[assignment]
 
 
@@ -297,12 +299,39 @@ class InstantCharge(te.TypedDict):
 
 
 class ToolExecutionResponse(te.TypedDict):
+    """Dictionary returned by direct tools and provider execution adapters.
+
+    Read ``successful``, not ``error`` or the presence of a log ID. Session
+    adapters derive it from ``result_type == "completed"`` and retain the
+    session's ``result_type`` and ``log_id``. This is not a provider message;
+    serialize it with ``json.dumps`` when building message content.
+    """
+
     data: t.Dict
     error: t.Optional[str]
     successful: bool
+    log_id: te.NotRequired[str]
+    result_type: te.NotRequired[str]
     instant_charge: te.NotRequired[InstantCharge]
     """Present only when the Session sets
     ``instant.return_instant_charge`` and a charge is available."""
+
+
+def tool_execution_response_from_session(
+    response: ToolRouterSessionExecuteResponse,
+) -> ToolExecutionResponse:
+    """Adapt a validated session result without losing its outcome or log ID."""
+    result: ToolExecutionResponse = {
+        "data": response.data if hasattr(response, "data") else {},
+        "error": response.error if hasattr(response, "error") else None,
+        "successful": is_execution_successful(response.result_type),
+        "log_id": response.log_id,
+        "result_type": t.cast(str, response.result_type),
+    }
+    instant_charge = getattr(response, "instant_charge", None)
+    if isinstance(instant_charge, PydanticBaseModel):
+        result["instant_charge"] = t.cast(InstantCharge, instant_charge.model_dump())
+    return result
 
 
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
@@ -758,17 +787,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 slug,
             )
 
-            # Convert response to standard format
-            result: ToolExecutionResponse = {
-                "data": response.data if hasattr(response, "data") else {},
-                "error": response.error if hasattr(response, "error") else None,
-                "successful": is_execution_successful(response.result_type),
-            }
-            instant_charge = getattr(response, "instant_charge", None)
-            if isinstance(instant_charge, PydanticBaseModel):
-                result["instant_charge"] = t.cast(
-                    InstantCharge, instant_charge.model_dump()
-                )
+            result = tool_execution_response_from_session(response)
 
             # Apply after_execute modifiers
             if modifiers is not None:

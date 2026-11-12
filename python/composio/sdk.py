@@ -352,6 +352,9 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         from composio.core.models.experimental import ExperimentalAPI
 
         self.experimental = ExperimentalAPI(client=self._client)
+        # Custom toolkits graduated from experimental; experimental.custom_toolkits
+        # is a deprecated alias of this same object.
+        self.custom_toolkits = self.experimental.custom_toolkits
 
         # Sessions API — the canonical entrypoint for creating tool sessions.
         # Surfaced as `composio.sessions`; `composio.tool_router` is a

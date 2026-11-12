@@ -88,7 +88,15 @@ def test_handle_response_routes_function_calls_through_session() -> None:
         tool_slug="COMPOSIO_SEARCH_TOOLS", arguments={"query": "send an email"}
     )
     provider.execute_tool.assert_not_called()
-    assert results == [{"data": {"results": []}, "error": None, "successful": True}]
+    assert results == [
+        {
+            "data": {"results": []},
+            "error": None,
+            "successful": True,
+            "log_id": "log-session",
+            "result_type": "completed",
+        }
+    ]
 
 
 def test_handle_response_keeps_direct_user_id_execution() -> None:
@@ -122,7 +130,13 @@ def test_execute_tool_call_routes_through_session() -> None:
         tool_slug="COMPOSIO_SEARCH_TOOLS", arguments={"query": "x"}
     )
     provider.execute_tool.assert_not_called()
-    assert result == {"data": {"results": []}, "error": None, "successful": True}
+    assert result == {
+        "data": {"results": []},
+        "error": None,
+        "successful": True,
+        "log_id": "log-session",
+        "result_type": "completed",
+    }
 
 
 def test_handle_response_rejects_modifiers_with_session() -> None:

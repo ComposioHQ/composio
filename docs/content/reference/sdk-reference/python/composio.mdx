@@ -21,7 +21,7 @@ description: "Composio SDK for Python.  Generic parameters: TTool: The individua
 Create a session for a user.  This is the shortcut for `ToolRouter.create`, with the same keyword arguments and return types. Inspect either method on its class without constructing a client. `tools` is a toolkit-keyed map; `toolkits` accepts a list or an enable/disable policy.  See `help(ToolRouter.create)` for the full configuration reference. Creating a session requires credentials and makes a backend request.
 
 ```python
-def create(user_id: str, toolkits: Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig] | None = ..., tools: Dict[str, ToolRouterToolsConfig] | None = ..., tags: ToolRouterConfigTags | None = ..., manage_connections: Union[bool, ToolRouterManageConnectionsConfig] | None = ..., auth_configs: Dict[str, str] | None = ..., connected_accounts: Dict[str, Union[str, List[str]]] | None = ..., sandbox: ToolRouterSandboxConfig | None = ..., workbench: ToolRouterWorkbenchConfig | None = ..., multi_account: ToolRouterMultiAccountConfig | None = ..., proxy_execute: Union[bool, ToolRouterProxyExecuteConfig] | None = ..., hooks: List[ToolRouterHook] | None = ..., preload: ToolRouterPreloadConfig | None = ..., session_preset: SessionPreset | None = ..., experimental: ToolRouterExperimentalConfig | None = ..., instant: Union[Literal[False], ToolRouterInstantConfig] | None = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
+def create(*, user_id: str, toolkits: Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig] | None = ..., tools: Dict[str, ToolRouterToolsConfig] | None = ..., tags: ToolRouterConfigTags | None = ..., manage_connections: Union[bool, ToolRouterManageConnectionsConfig] | None = ..., auth_configs: Dict[str, str] | None = ..., connected_accounts: Dict[str, Union[str, List[str]]] | None = ..., sandbox: ToolRouterSandboxConfig | None = ..., workbench: ToolRouterWorkbenchConfig | None = ..., multi_account: ToolRouterMultiAccountConfig | None = ..., proxy_execute: Union[bool, ToolRouterProxyExecuteConfig] | None = ..., hooks: List[ToolRouterHook] | None = ..., preload: ToolRouterPreloadConfig | None = ..., session_preset: SessionPreset | None = ..., experimental: ToolRouterExperimentalConfig | None = ..., instant: Union[Literal[False], ToolRouterInstantConfig] | None = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
 ```
 
 **Parameters**
@@ -57,7 +57,7 @@ def create(user_id: str, toolkits: Union[List[str], ToolRouterToolkitsEnableConf
 Retrieve a session by ID. See `help(ToolRouter.use)` for options.  Inspect this signature without constructing a client. Retrieving a session requires credentials and makes a backend request.
 
 ```python
-def use(session_id: str, local_tools: List[LocalTool] | None = ..., local_toolkits: List[LocalToolkit] | None = ..., custom_tools: List[CustomTool] | None = ..., custom_toolkits: List[ExperimentalToolkit] | None = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
+def use(session_id: str, *, local_tools: List[LocalTool] | None = ..., local_toolkits: List[LocalToolkit] | None = ..., custom_tools: List[CustomTool] | None = ..., custom_toolkits: List[ExperimentalToolkit] | None = ..., mcp: bool = ...) -> ToolRouterSession[TTool, TToolCollection]
 ```
 
 **Parameters**
