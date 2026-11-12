@@ -994,7 +994,7 @@
         },
         {
           "sourcePath": "platform/production-readiness/public.md",
-          "sourceHeading": "Move from managed auth to your own OAuth app before you scale"
+          "sourceHeading": "Use managed auth in production, and your own OAuth app when you need dedicated limits"
         },
         {
           "sourcePath": "platform/production-readiness/public.md",

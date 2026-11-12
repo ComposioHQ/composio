@@ -6,8 +6,8 @@ keywords: [managed OAuth, OAuth app, auth config, client credentials, toolkit li
 
 Composio can provide the OAuth app that your users authorize when they connect a toolkit. You do not need to register an OAuth app or supply its client ID and client secret.
 
-<Callout type="warn">
-Managed OAuth apps work in production, but they are not built for production scale. Move to your own OAuth app before you scale. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app).
+<Callout type="info">
+Managed OAuth apps work in production. Because the OAuth app is shared, you may run into shared provider rate limits as your usage grows. For higher volume, we recommend your own OAuth app. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) and [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits).
 </Callout>
 
 Your users still authorize their accounts through a [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link). Composio stores and refreshes the resulting tokens. See [Authentication](/docs/authentication) for the full connection flow.
