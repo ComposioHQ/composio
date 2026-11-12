@@ -37,6 +37,7 @@ export class ProjectResolutionError extends Data.TaggedError('services/ProjectRe
     | 'missing_developer_project'
     | 'project_not_found'
     | 'ambiguous_project_name'
+    | 'org_mismatch'
     | 'request_failed';
   readonly message: string;
   readonly cause?: unknown;
@@ -75,19 +76,62 @@ const normalizeLookupError = <E>(error: E): ProjectResolutionError | E => {
     : new ProjectResolutionError({ reason: 'request_failed', message: apiMessage, cause: error });
 };
 
+/**
+ * The developer project the working directory is set up for. A project file in another org
+ * than the logged-in one is refused: a cloned repository's `.composio/` must not send the
+ * user's requests, and the credentials some of them carry, to a project its author chose.
+ */
+const resolveLocalDeveloperProject = (
+  projectContext: ProjectContext['Service'],
+  loggedInOrgId: Option.Option<string>
+) =>
+  Effect.gen(function* () {
+    const localProject = yield* projectContext.resolve;
+    if (Option.isNone(localProject)) {
+      return yield* Effect.fail(
+        new ProjectResolutionError({
+          reason: 'missing_developer_project',
+          message: 'No developer project configured for this directory. Run `composio dev init`.',
+        })
+      );
+    }
+    const { orgId, projectId, projectName } = localProject.value;
+    if (Option.isSome(loggedInOrgId) && loggedInOrgId.value !== orgId) {
+      return yield* Effect.fail(
+        new ProjectResolutionError({
+          reason: 'org_mismatch',
+          message: `This directory is set up for a developer project in org "${orgId}", not in the org you are logged in to ("${loggedInOrgId.value}"). Run \`composio dev init\` to set it up in your org, or pass --project-name.`,
+        })
+      );
+    }
+    return {
+      orgId,
+      projectId,
+      projectName: Option.getOrUndefined(projectName),
+      projectType: 'DEVELOPER',
+      source: 'developer-local-config',
+    } satisfies ResolvedCommandProject;
+  });
+
 export const resolveCommandProject = (params: { mode: ProjectMode; projectName?: string }) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
     const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+    if (!apiKey) {
+      return yield* Effect.fail(missingOrg());
+    }
+
+    // The directory's own project needs no stored org: a key from `COMPOSIO_USER_API_KEY`
+    // carries none, and the project file names its org.
+    if (params.mode === 'developer' && !params.projectName) {
+      return yield* resolveLocalDeveloperProject(projectContext, ctx.data.orgId);
+    }
+
     const currentOrgId = yield* Option.match(ctx.data.orgId, {
       onNone: () => Effect.fail(missingOrg()),
       onSome: value => Effect.succeed(value),
     });
-
-    if (!apiKey) {
-      return yield* Effect.fail(missingOrg());
-    }
 
     if (params.mode === 'consumer') {
       if (params.projectName) {
@@ -137,21 +181,5 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       } satisfies ResolvedCommandProject;
     }
 
-    const localProject = yield* projectContext.resolve;
-    if (Option.isNone(localProject)) {
-      return yield* Effect.fail(
-        new ProjectResolutionError({
-          reason: 'missing_developer_project',
-          message: 'No developer project configured for this directory. Run `composio dev init`.',
-        })
-      );
-    }
-
-    return {
-      orgId: localProject.value.orgId,
-      projectId: localProject.value.projectId,
-      projectName: Option.getOrUndefined(localProject.value.projectName),
-      projectType: 'DEVELOPER',
-      source: 'developer-local-config',
-    } satisfies ResolvedCommandProject;
+    return yield* resolveLocalDeveloperProject(projectContext, Option.some(currentOrgId));
   }).pipe(Effect.mapError(normalizeLookupError));

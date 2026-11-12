@@ -103,6 +103,66 @@ describe('resolveCommandProject', () => {
     }).pipe(Effect.provide(testLayer))
   );
 
+  const localProject = (orgId: string) =>
+    Layer.succeed(
+      ProjectContext,
+      ProjectContext.of({
+        resolve: Effect.succeed(
+          Option.some({
+            orgId,
+            projectId: 'pr_local',
+            projectName: Option.some('local-app'),
+            orgName: Option.none(),
+            email: Option.none(),
+            testUserId: Option.none(),
+          })
+        ),
+      })
+    );
+
+  it.effect('refuses a directory project in another org than the logged-in one', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const error = yield* resolveCommandProject({ mode: 'developer' }).pipe(Effect.flip);
+
+      expect(error).toMatchObject({ reason: 'org_mismatch' });
+      expect(error.message).toContain('"org_other"');
+      expect(error.message).toContain('composio dev init');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_other'))
+      )
+    )
+  );
+
+  it.effect('resolves a directory project in the logged-in org', () =>
+    Effect.gen(function* () {
+      const project = yield* resolveCommandProject({ mode: 'developer' });
+
+      expect(project).toMatchObject({
+        orgId: 'org_1',
+        projectId: 'pr_local',
+        source: 'developer-local-config',
+      });
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_1'))
+      )
+    )
+  );
+
+  it.effect('resolves a directory project without a stored org, as with an env key', () =>
+    Effect.gen(function* () {
+      const project = yield* resolveCommandProject({ mode: 'developer' });
+
+      expect(project).toMatchObject({ orgId: 'org_2', projectId: 'pr_local' });
+    }).pipe(
+      Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
+    )
+  );
+
   it.effect('turns an unknown project name into project_not_found with the remedy', () =>
     Effect.gen(function* () {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(projectsPage(['Other']));

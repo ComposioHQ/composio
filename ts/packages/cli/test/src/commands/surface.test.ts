@@ -98,7 +98,7 @@ describe('CommandSurface: the dev group shares --user-id and --project-name', ()
       baseConfigProvider: ConfigProvider.fromEnv({
         env: {
           COMPOSIO_USER_API_KEY: 'test_api_key',
-          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_ORG_ID: 'org_test',
           COMPOSIO_PROJECT_ID: 'dev_project_test',
         },
       }),
@@ -251,7 +251,7 @@ describe('CommandSurface: playground-execute --parallel keeps the shared flags',
       baseConfigProvider: ConfigProvider.fromEnv({
         env: {
           COMPOSIO_USER_API_KEY: 'test_api_key',
-          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_ORG_ID: 'org_test',
           COMPOSIO_PROJECT_ID: 'dev_project_test',
         },
       }),
@@ -311,7 +311,7 @@ describe('CommandSurface: playground-execute --parallel finds its command name',
       baseConfigProvider: ConfigProvider.fromEnv({
         env: {
           COMPOSIO_USER_API_KEY: 'test_api_key',
-          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_ORG_ID: 'org_test',
           COMPOSIO_PROJECT_ID: 'dev_project_test',
         },
       }),
