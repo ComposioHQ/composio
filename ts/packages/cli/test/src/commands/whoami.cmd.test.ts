@@ -1,8 +1,11 @@
+import { AuthenticationError } from '@composio/client/effect';
 import { assert, describe, expect, layer } from '@effect/vitest';
 import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeSessionInfo } from 'test/__utils__/models/account';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 describe('CLI: composio whoami', () => {
   layer(TestLive())('without a login', it => {
@@ -55,6 +58,42 @@ describe('CLI: composio whoami', () => {
         expect(output).toContain(`"email":null`);
         expect(output).toContain(`"current_org_name":null`);
         expect(output).not.toContain(`"test_user_id"`);
+      })
+    );
+  });
+
+  // A 401 that is not the backend's `UserApiKey_Unauthorized`: the CLI cannot tell which
+  // credential it is about, so it names the login as the likely way out.
+  const rejectedKey = new AuthenticationError({
+    message: '401 Invalid API key',
+    method: 'GET',
+    url: 'https://mock.invalid/api/v3.1/auth/session/info',
+    status: 401,
+    requestId: undefined,
+    details: { message: 'Invalid API key', code: 401, slug: 'Auth_InvalidApiKey', status: 401 },
+    body: undefined,
+  });
+
+  layer(
+    TestLive({
+      fixture: 'user-config-example',
+      accountData: {
+        sessionInfo: () => {
+          throw rejectedKey;
+        },
+      },
+    })
+  )('with a stored key the backend rejects', it => {
+    it.effect('[Then] exits 1 with nothing on stdout and names `composio login` on stderr', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI();
+        const exit = yield* Effect.exit(cli(['whoami']).pipe(Effect.provide(terminal.layer)));
+
+        expect(exitCodeOf(exit)).toBe(1);
+        expect(terminal.stdout()).toBe('');
+        expect(terminal.stderr()).toBe(
+          'Invalid API key\nIf your login expired, log in again, then retry:\n> composio logout && composio login\n'
+        );
       })
     );
   });

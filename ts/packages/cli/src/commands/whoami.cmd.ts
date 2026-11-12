@@ -8,10 +8,12 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { readStoredAgentIdentity } from 'src/services/agents';
 import { getOrgEnhancedControlsStatus } from 'src/services/tool-permissions';
+import { isUnauthorized } from 'src/effects/rejected-user-api-key';
 
 /**
  * CLI command to display your account information.
- * Never prints or exposes API keys. Without a login it fails with `NotLoggedInError`.
+ * Never prints or exposes API keys. Without a login it fails with `NotLoggedInError`; with a key
+ * the backend rejects (401) it fails with that rejection, printed with how to recover.
  *
  * @example
  * ```bash
@@ -30,11 +32,19 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onNone: () => Effect.fail(notLoggedIn()),
           onSome: apiKey =>
             Effect.gen(function* () {
+              // Without session info the fields print as unknown, unless the backend rejected
+              // the key: then the login this command reports on does not work.
               const sessionInfo = yield* getSessionInfoByUserApiKey({
                 userApiKey: apiKey,
                 // Reflect the org selected via `composio orgs switch`, not the key's home org.
                 orgId: Option.getOrUndefined(ctx.data.orgId),
-              }).pipe(Effect.option);
+              }).pipe(
+                Effect.map(Option.some),
+                Effect.catchIf(
+                  error => !isUnauthorized(error),
+                  () => Effect.succeedNone
+                )
+              );
               yield* Option.match(sessionInfo, {
                 onNone: () => Effect.void,
                 onSome: info => linkApolloIdentityForAnalytics(info.org_member.id, apiKey),
