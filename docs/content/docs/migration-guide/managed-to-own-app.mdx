@@ -1,10 +1,10 @@
 ---
-title: Move from a Composio-managed app to your own OAuth app
+title: Move to your own OAuth app
 description: Register your own OAuth app, route new connections to it, reconnect existing users, and recreate their triggers
 keywords: [migrate, managed auth, own oauth app, custom auth config, bring your own app, reconnect, white label, provider quota]
 ---
 
-This guide is for apps that already have users connected through a [Composio-managed app](/toolkits/managed-auth) and want to switch a toolkit to their own OAuth app. To decide whether you need to, read [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app).
+Use this guide when you're ready to move a toolkit to your own OAuth app, for example for dedicated rate limits or your own name on the consent screen. Managed connections keep working while you switch, so you can move on your own schedule. To decide whether to move, read [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) and [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits).
 
 You move one toolkit at a time. Each toolkit gets its own auth config, so Gmail can move while Slack stays on the managed app.
 
@@ -213,7 +213,7 @@ Use the same user ID the managed connection has. A different user ID creates a c
 <Step>
 <StepTitle>Recreate triggers on the new connection</StepTitle>
 
-Triggers stay attached to the managed connected account. List them, create the same trigger type and config on the new connected account, then disable the old instance:
+Triggers stay attached to the managed connected account. List them and create each one on the new connected account with the same trigger config, delivery type, and polling interval. Keep a map from each old trigger ID to its new one:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -226,13 +226,21 @@ old_triggers = composio.triggers.list_active(
     connected_account_ids=["ca_old_managed_account"],
 )
 
+new_trigger_ids = {}
 for trigger in old_triggers.items:
-    composio.triggers.create(
+    new_trigger = composio.triggers.create(
         slug=trigger.trigger_name,
         connected_account_id="ca_new_own_app_account",
         trigger_config=trigger.trigger_config,
+        # A fallback to polling is left for Composio to decide again
+        type=None if trigger.fallback_reason else trigger.type,
+        polling_interval=trigger.polling_interval,
     )
-    composio.triggers.disable(trigger_id=trigger.id)
+    new_trigger_ids[trigger.id] = new_trigger.trigger_id
+
+# After your event filters use the new IDs, disable the old instances
+for old_trigger_id in new_trigger_ids:
+    composio.triggers.disable(trigger_id=old_trigger_id)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -245,12 +253,21 @@ const oldTriggers = await composio.triggers.listActive({
   connectedAccountIds: ['ca_old_managed_account'],
 });
 
+const newTriggerIds = new Map<string, string>();
 for (const trigger of oldTriggers.items) {
-  await composio.triggers.create('user_123', trigger.triggerName, {
+  const newTrigger = await composio.triggers.create('user_123', trigger.triggerName, {
     connectedAccountId: 'ca_new_own_app_account',
     triggerConfig: trigger.triggerConfig,
+    // A fallback to polling is left for Composio to decide again
+    type: trigger.fallbackReason ? undefined : trigger.type,
+    pollingInterval: trigger.pollingInterval ?? undefined,
   });
-  await composio.triggers.disable(trigger.id);
+  newTriggerIds.set(trigger.id, newTrigger.triggerId);
+}
+
+// After your event filters use the new IDs, disable the old instances
+for (const oldTriggerId of newTriggerIds.keys()) {
+  await composio.triggers.disable(oldTriggerId);
 }
 ```
 </Tab>
@@ -258,16 +275,18 @@ for (const trigger of oldTriggers.items) {
 ```bash
 # List triggers on the managed connection
 curl -s "https://backend.composio.dev/api/v3.1/trigger_instances/active?connected_account_ids=ca_old_managed_account" \
-  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.items[] | {id, trigger_name, trigger_config}'
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.items[] | {id, trigger_name, trigger_config, type, fallback_reason, polling_interval}'
 
 # For each one, create the same trigger type on the new connection.
-# Use its trigger_name in the URL and copy its trigger_config into the body.
+# Use its trigger_name in the URL. Copy its trigger_config and polling_interval,
+# and its type unless fallback_reason is set. Save the returned trigger_id.
 curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_GMAIL_MESSAGE/upsert \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "user_123", "connected_account_id": "ca_new_own_app_account", "trigger_config": {}}'
+  -d '{"user_id": "user_123", "connected_account_id": "ca_new_own_app_account", "trigger_config": {}, "type": "poll", "polling_interval": 15}' \
+  | jq '{trigger_id, type, polling_interval}'
 
-# Then disable the old instance
+# After your event filters use the new trigger_id, disable the old instance
 curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_old_trigger \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -276,7 +295,9 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_
 </Tab>
 </Tabs>
 
-Results are cursor-paginated. If the list returns a next cursor, fetch the next page as shown in [Listing active triggers](/docs/setting-up-triggers/managing-triggers#listing-active-triggers). Polling triggers on your own app can use shorter intervals than the managed minimum where the toolkit supports it.
+Results are cursor-paginated. If the list returns a next cursor, fetch the next page as shown in [Listing active triggers](/docs/setting-up-triggers/managing-triggers#listing-active-triggers).
+
+Events from the new triggers carry the new trigger ID and connected account ID. Before you disable the old instances, update anything that matches on the old values: [event subscriptions filtered by trigger ID](/docs/setting-up-triggers/subscribing-to-events), webhook handlers, and any stored links between a user and their trigger or connected account.
 
 Disable the old trigger rather than deleting it until you've confirmed events arrive from the new one. Otherwise both instances fire for the same event while they overlap.
 </Step>
@@ -284,9 +305,13 @@ Disable the old trigger rather than deleting it until you've confirmed events ar
 <Step>
 <StepTitle>Retire the managed connections</StepTitle>
 
-After a user's new connection works, [disable](/docs/auth-configuration/connected-accounts#enable-and-disable-accounts) their managed connected account. Disabling an account also disables its triggers, and you can re-enable it if something goes wrong. Once you're confident, [delete the old triggers](/docs/setting-up-triggers/managing-triggers#deleting-triggers) and [delete the managed connected account](/docs/auth-configuration/connected-accounts#delete-accounts). Deletion is permanent.
+After a user's new connection works, [disable](/docs/auth-configuration/connected-accounts#enable-and-disable-accounts) their managed connected account. Disabling an account also disables its triggers, and you can re-enable it if something goes wrong.
 
-To revoke the upstream token as well, use [Revoke accounts](/docs/auth-configuration/connected-accounts#revoke-accounts) where the toolkit supports it.
+Once you're confident, clean up in this order:
+
+1. Optionally, [revoke the upstream token](/docs/auth-configuration/connected-accounts#revoke-accounts) where the toolkit supports it. Revoking needs the connected account to still exist, so do it before you delete.
+2. [Delete the old triggers](/docs/setting-up-triggers/managing-triggers#deleting-triggers).
+3. [Delete the managed connected account](/docs/auth-configuration/connected-accounts#delete-accounts). This removes it from Composio and is permanent.
 
 When no active connections remain on the managed config, every user is on your app. You can then pass your config in every session and drop the routing logic.
 </Step>
@@ -305,6 +330,7 @@ When no active connections remain on the managed config, every user is on your a
 ## Next
 
 <Cards>
-  <Card icon={<Key />} title="Managed vs custom auth" href="/docs/authentication/custom-app-vs-managed-app" description="What a managed app limits and when to move" />
+  <Card icon={<Key />} title="Managed vs custom auth" href="/docs/authentication/custom-app-vs-managed-app" description="What changes with your own app and when it makes sense" />
+  <Card icon={<Zap />} title="Avoid and recover from rate limits" href="/docs/poc-to-prod/avoid-rate-limits" description="Spot which limit you hit, retry well, and shape traffic" />
   <Card icon={<Palette />} title="White-labeling authentication" href="/docs/authentication/white-labeling-authentication" description="Brand the Connect Link and configure callback URLs" />
 </Cards>
