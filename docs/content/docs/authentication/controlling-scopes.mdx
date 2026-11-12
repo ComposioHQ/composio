@@ -77,7 +77,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
 
 ## Set scopes with your own OAuth app
 
-When you bring your own OAuth credentials, put `scopes` alongside the client ID and secret. Make sure your OAuth app has those scopes approved in the provider's portal.
+Use your own OAuth app when a tool needs a scope that Composio's managed app isn't approved for. When you bring your own OAuth credentials, put `scopes` alongside the client ID and secret. Make sure your OAuth app has those scopes approved in the provider's portal.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -185,6 +185,10 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/auth_configs/ac_1234 \
 <Callout type="warn">
 Changing scopes affects new connections only. Users with an existing [connected account](/docs/authentication#behind-the-scenes) keep the scopes they already granted until they reconnect. To apply new scopes to a current user, have them re-authenticate.
 </Callout>
+
+## Tools that need a different auth scheme
+
+Some tools work only under certain auth schemes. When a tool isn't available under your auth config's scheme, create an auth config for the toolkit with a scheme the tool supports, and have users connect through it. A toolkit lists its schemes in `auth_config_details`: see [Discover the required fields](/docs/authentication/programmatic-auth-configs#discover-the-required-fields) and [Other auth types](/docs/authentication/programmatic-auth-configs#other-auth-types).
 
 ## Use the auth config in a session
 
