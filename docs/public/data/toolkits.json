@@ -179595,12 +179595,26 @@
       {
         "slug": "BRIGHTDATA_GET_SNAPSHOT_RESULTS",
         "name": "Download Snapshot Results",
-        "description": "Download a completed dataset snapshot. A pending response contains no result data; poll BRIGHTDATA_GET_SNAPSHOT_STATUS before retrying."
+        "description": "Download a completed dataset snapshot. A pending response contains no result data; poll BRIGHTDATA_GET_SNAPSHOT_STATUS before retrying.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0 per request",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_GET_SNAPSHOT_STATUS",
         "name": "Check Snapshot Status",
-        "description": "Check whether a dataset snapshot is running, ready, or failed before downloading it."
+        "description": "Check whether a dataset snapshot is running, ready, or failed before downloading it.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0 per request",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_GET_WEB_ARCHIVE_SEARCH",
@@ -179640,142 +179654,338 @@
       {
         "slug": "BRIGHTDATA_SCRAPE_AE_COM_COMPLETE_PRODUCTS",
         "name": "Scrape AE.com - Complete Products",
-        "description": "Collect AE.com - Complete Products. Supports collect_by_url, discover_by_category. Returns structured product_name, brand, description, initial_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_AMERICAN_EAGLE_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect AE.com - Complete Products. Supports collect_by_url, discover_by_category. Returns structured product_name, brand, description, initial_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_AMERICAN_EAGLE_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AGODA_LISTINGS_SEARCH",
         "name": "Scrape Agoda Listings Search",
-        "description": "Collect Agoda Listings Search. Supports collect_by_url. Returns structured url, location, check_in, check_out data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Agoda Listings Search. Supports collect_by_url. Returns structured url, location, check_in, check_out data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AGODA_PROPERTIES_LISTINGS",
         "name": "Scrape Agoda Properties Listings",
-        "description": "Collect Agoda Properties Listings. Supports collect_by_url, discover_by_country, discover_by_url. Returns structured url, hotel_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Agoda Properties Listings. Supports collect_by_url, discover_by_country, discover_by_url. Returns structured url, hotel_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AGODA_PROPERTIES_LISTINGS_WITH_PRICING",
         "name": "Scrape Agoda Properties Listings with Pricing",
-        "description": "Collect Agoda Properties Listings with Pricing. Supports collect_by_url, discover_by_search_input. Returns structured url, listing_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Agoda Properties Listings with Pricing. Supports collect_by_url, discover_by_search_input. Returns structured url, listing_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AGODA_REVIEWS",
         "name": "Scrape Agoda Reviews",
-        "description": "Collect Agoda Reviews. Supports collect_by_url. Returns structured review_id, url, hotel_name, hotel_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Agoda Reviews. Supports collect_by_url. Returns structured review_id, url, hotel_name, hotel_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AMAZON_PRODUCTS",
         "name": "Amazon products",
-        "description": "Collect Amazon products by URL with optional ASIN metadata, or discover them by best-seller/category URL, keyword, or UPC, returning product and price data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Amazon products by URL with optional ASIN metadata, or discover them by best-seller/category URL, keyword, or UPC, returning product and price data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AMAZON_PRODUCT_SEARCH",
         "name": "Amazon products search",
-        "description": "Collect structured Amazon products search data from amazon.com, including asin, url, name, sponsored, initial_price. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured Amazon products search data from amazon.com, including asin, url, name, sponsored, initial_price. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AMAZON_PRODUCTS_GLOBAL",
         "name": "Amazon products global dataset",
-        "description": "Collect global Amazon products by URL or discover them by best-seller, brand, category, keyword/domain, or seller, returning product and price data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect global Amazon products by URL or discover them by best-seller, brand, category, keyword/domain, or seller, returning product and price data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AMAZON_REVIEWS",
         "name": "Amazon Reviews",
-        "description": "Collect structured Amazon Reviews data from amazon.com, including url, product_name, product_rating, product_rating_object, product_rating_max. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured Amazon Reviews data from amazon.com, including url, product_name, product_rating, product_rating_object, product_rating_max. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AMAZON_SELLERS",
         "name": "Amazon sellers info",
-        "description": "Collect structured Amazon sellers info data from amazon.com, including seller_id, url, seller_name, description, detailed_info. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured Amazon sellers info data from amazon.com, including seller_id, url, seller_name, description, detailed_info. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_AMERICAN_EAGLE_PRODUCTS_UNIFIED_SCHEMA",
         "name": "American Eagle Products - Unified Schema",
-        "description": "Collect American Eagle. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_AE_COM_COMPLETE_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect American Eagle. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_AE_COM_COMPLETE_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_APPLE_APP_STORE",
         "name": "Scrape Apple App Store",
-        "description": "Collect Apple App Store. Supports collect_by_url. Returns structured url, title, sub_title, developer data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Apple App Store. Supports collect_by_url. Returns structured url, title, sub_title, developer data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_APPLE_APP_STORE_REVIEWS",
         "name": "Scrape Apple App Store reviews",
-        "description": "Collect Apple App Store reviews . Supports collect_by_url. Returns structured url, review_id, review_title, review_rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Apple App Store reviews . Supports collect_by_url. Returns structured url, review_id, review_title, review_rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ASHLEY_FURNITURE_PRODUCTS",
         "name": "Ashley Furniture Products",
-        "description": "Collect Ashleyfurniture - Products. Supports collect_by_url, discover_by_category, discover_by_sitemap. Returns structured product_name, brand, initial_price, final_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_ASHLEY_FURNITURE_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Ashleyfurniture - Products. Supports collect_by_url, discover_by_category, discover_by_sitemap. Returns structured product_name, brand, initial_price, final_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_ASHLEY_FURNITURE_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ASHLEY_FURNITURE_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Ashley Furniture Products - Unified Schema",
-        "description": "Collect Ashley Furniture. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_ASHLEY_FURNITURE_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Ashley Furniture. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_ASHLEY_FURNITURE_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_BEST_BUY_PRODUCTS",
         "name": "Scrape Best Buy products",
-        "description": "Collect Best Buy products. Supports collect_by_url, discover_by_keywords. Returns structured url, product_id, title, images data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Best Buy products. Supports collect_by_url, discover_by_keywords. Returns structured url, product_id, title, images data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_BEST_BUY_REVIEWS",
         "name": "Scrape Best Buy Reviews",
-        "description": "Collect Best Buy Reviews. Supports collect_by_url. Returns structured url, product_name, product_id, sku data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Best Buy Reviews. Supports collect_by_url. Returns structured url, product_name, product_id, sku data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_BOOKING_HOTEL_LISTINGS",
         "name": "Scrape Booking Hotel Listings",
-        "description": "Collect Booking Hotel Listings . Supports collect_by_url. Returns structured url, hotel_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Booking Hotel Listings . Supports collect_by_url. Returns structured url, hotel_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_BOOKING_HOTEL_LISTINGS_WITH_PRICING",
         "name": "Scrape Booking Hotel Listings with Pricing",
-        "description": "Collect Booking Hotel Listings with Pricing. Supports collect_by_url, discover_by_search_input. Returns structured url, listing_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Booking Hotel Listings with Pricing. Supports collect_by_url, discover_by_search_input. Returns structured url, listing_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_BOOKING_LISTINGS_SEARCH",
         "name": "Scrape Booking Listings Search",
-        "description": "Collect Booking Listings Search. Supports collect_by_url. Returns structured url, location, check_in, check_out data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Booking Listings Search. Supports collect_by_url. Returns structured url, location, check_in, check_out data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_BOOKING_REVIEWS",
         "name": "Scrape Booking Reviews",
-        "description": "Collect Booking Reviews. Supports collect_by_url. Returns structured hotel_booking_website, hotel_name, hotel_location, hotel_rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Booking Reviews. Supports collect_by_url. Returns structured hotel_booking_website, hotel_name, hotel_location, hotel_rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_CHATGPT_SEARCH",
         "name": "Scrape ChatGPT Search",
-        "description": "Collect ChatGPT Search. Supports collect_by_url. Returns structured url, prompt, answer_html, answer_text data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect ChatGPT Search. Supports collect_by_url. Returns structured url, prompt, answer_html, answer_text data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_COSTCO_PRODUCTS",
         "name": "Scrape Costco products",
-        "description": "Collect Costco products. Supports collect_by_url. Returns structured url, item_id, variant_id, gtin data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Costco products. Supports collect_by_url. Returns structured url, item_id, variant_id, gtin data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_COSTCO_REVIEWS",
         "name": "Scrape Costco Reviews",
-        "description": "Collect Costco Reviews. Supports collect_by_url. Returns structured url, product_name, product_id, item_number data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Costco Reviews. Supports collect_by_url. Returns structured url, product_name, product_id, item_number data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_CRATE_AND_BARREL_PRODUCTS",
         "name": "Crate & Barrel Products",
-        "description": "Collect Crateandbarrel - Products. Supports collect_by_url, discover_by_category. Returns structured product_name, brand, description, initial_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_CRATE_AND_BARREL_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Crateandbarrel - Products. Supports collect_by_url, discover_by_category. Returns structured product_name, brand, description, initial_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_CRATE_AND_BARREL_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_CRATE_AND_BARREL_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Crate & Barrel Products - Unified Schema",
-        "description": "Collect Crateandbarrel - Products. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_CRATE_AND_BARREL_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Crateandbarrel - Products. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_CRATE_AND_BARREL_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_CREATIVE_COMMONS_3D_MODELS",
         "name": "Creative Commons 3D Models",
-        "description": "Collect Creative Commons 3D Models. Supports collect_by_url. Returns structured url, id, domain, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Creative Commons 3D Models. Supports collect_by_url. Returns structured url, id, domain, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_CREATIVE_COMMONS_IMAGES",
         "name": "Scrape Creative Commons Images",
-        "description": "Collect Creative Commons Images. Supports collect_by_url. Returns structured url, title, description, image_url data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Creative Commons Images. Supports collect_by_url. Returns structured url, title, description, image_url data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_DATA_SYNC",
@@ -179785,552 +179995,1322 @@
       {
         "slug": "BRIGHTDATA_SCRAPE_DIOR_PRODUCTS",
         "name": "Scrape Dior - Products",
-        "description": "Collect Dior - Products. Supports collect_by_url, discover_by_category. Returns structured product_name, description, country, currency data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_DIOR_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Dior - Products. Supports collect_by_url, discover_by_category. Returns structured product_name, description, country, currency data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_DIOR_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_DIOR_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Dior Products Unified Schema",
-        "description": "Collect Dior Products Unified Schema. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_DIOR_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Dior Products Unified Schema. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_DIOR_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_COMMENTS",
         "name": "Facebook -  Comments",
-        "description": "Collect structured Facebook - Comments data from facebook.com, including url, post_id, post_url, comment_id, user_name. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured Facebook - Comments data from facebook.com, including url, post_id, post_url, comment_id, user_name. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_COMPANY_REVIEWS",
         "name": "Scrape Facebook Company Reviews",
-        "description": "Collect Facebook Company Reviews. Supports collect_by_url. Returns structured company_name, company_id, company_url, url data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook Company Reviews. Supports collect_by_url. Returns structured company_name, company_id, company_url, url data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_EVENTS",
         "name": "Scrape Facebook Events",
-        "description": "Collect Facebook Events. Supports collect_by_url, discover_by_url, discover_by_venue. Returns structured event_id, url, main_image, event_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook Events. Supports collect_by_url, discover_by_url, discover_by_venue. Returns structured event_id, url, main_image, event_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_GROUP_POSTS",
         "name": "Facebook - Posts by group URL",
-        "description": "Collect structured Facebook - Posts by group URL data from facebook.com, including url, post_id, user_url, user_username_raw, content. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured Facebook - Posts by group URL data from facebook.com, including url, post_id, user_url, user_username_raw, content. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_MARKETPLACE",
         "name": "Scrape Facebook Marketplace",
-        "description": "Collect Facebook Marketplace. Supports collect_by_url, discover_by_keyword, discover_by_url. Returns structured url, title, initial_price, final_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook Marketplace. Supports collect_by_url, discover_by_keyword, discover_by_url. Returns structured url, title, initial_price, final_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_PAGE_POSTS",
         "name": "Facebook - Pages Posts by Profile URL",
-        "description": "Collect structured Facebook - Pages Posts by Profile URL data from facebook.com, including url, post_id, user_url, user_username_raw, content. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured Facebook - Pages Posts by Profile URL data from facebook.com, including url, post_id, user_url, user_username_raw, content. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_PAGES_AND_PROFILES",
         "name": "Facebook - Pages and Profiles",
-        "description": "Collect Facebook pages and public profiles with the combined page/profile dataset, including entity type and page-oriented fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook pages and public profiles with the combined page/profile dataset, including entity type and page-oriented fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_POSTS_BY_POST_URL",
         "name": "Scrape Facebook - Posts by post URL",
-        "description": "Collect Facebook - Posts by post URL. Supports collect_by_url. Returns structured url, post_id, user_url, user_username_raw data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook - Posts by post URL. Supports collect_by_url. Returns structured url, post_id, user_url, user_username_raw data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_PROFILES",
         "name": "Scrape Facebook - Profiles",
-        "description": "Collect Facebook profile URLs with the profile-only dataset. Use when page records and the combined page/profile schema are not needed. Supports collect_by_url. Returns structured url, name, id, profile_photo data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook profile URLs with the profile-only dataset. Use when page records and the combined page/profile schema are not needed. Supports collect_by_url. Returns structured url, name, id, profile_photo data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FACEBOOK_REELS_BY_PROFILE_URL",
         "name": "Scrape Facebook - Reels by profile URL",
-        "description": "Collect Facebook - Reels by profile URL. Supports collect_by_url. Returns structured url, post_id, user_url, user_username_raw data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Facebook - Reels by profile URL. Supports collect_by_url. Returns structured url, post_id, user_url, user_username_raw data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FALABELLA_COM_REVIEWS",
         "name": "Scrape Falabella.com - Reviews",
-        "description": "Collect Falabella.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured rootdomain, sku, variant_sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Falabella.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured rootdomain, sku, variant_sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FALABELLA_COM_SEARCH",
         "name": "Scrape Falabella.com - Search",
-        "description": "Collect Falabella.com - Search. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured rank, page, sku, variant_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Falabella.com - Search. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured rank, page, sku, variant_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FALABELLA_PRODUCTS",
         "name": "Falabella Products",
-        "description": "Collect Falabella.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured url, star_rating_distribution, is_promo, seller_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Falabella.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured url, star_rating_distribution, is_promo, seller_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FLIPKART_COM_SEARCH",
         "name": "Scrape Flipkart.com - Search",
-        "description": "Collect Flipkart.com - Search. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured rank, page, sku, variant_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Flipkart.com - Search. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured rank, page, sku, variant_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FLIPKART_PRODUCTS",
         "name": "Flipkart Products",
-        "description": "Collect Flipkart.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured sku, variant_id, url, rootdomain data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_FLIPKART_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Flipkart.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured sku, variant_id, url, rootdomain data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_FLIPKART_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FLIPKART_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Flipkart Products unified schema",
-        "description": "Collect Flipkart Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_FLIPKART_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Flipkart Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_FLIPKART_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_FLIPKART_REVIEWS",
         "name": "Scrape Flipkart - Reviews",
-        "description": "Collect Flipkart - Reviews. Supports collect_by_url, discover_by_sku. Returns structured rootdomain, sku, variant_sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Flipkart - Reviews. Supports collect_by_url, discover_by_sku. Returns structured rootdomain, sku, variant_sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GLASSDOOR_COMPANIES_OVERVIEW_INFORMATION",
         "name": "Scrape Glassdoor companies overview information",
-        "description": "Collect Glassdoor companies overview information. Supports collect_by_url, discover_by_input_filter, discover_by_keyword, discover_by_search_url. Returns structured id, company, ratings_overall, details_size data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Glassdoor companies overview information. Supports collect_by_url, discover_by_input_filter, discover_by_keyword, discover_by_search_url. Returns structured id, company, ratings_overall, details_size data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GLASSDOOR_COMPANIES_REVIEWS",
         "name": "Scrape Glassdoor companies reviews",
-        "description": "Collect Glassdoor companies reviews. Supports collect_by_url. Returns structured overview_id, review_id, review_url, rating_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Glassdoor companies reviews. Supports collect_by_url. Returns structured overview_id, review_id, review_url, rating_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GLASSDOOR_JOBS",
         "name": "Glassdoor Jobs",
-        "description": "Collect Glassdoor job listings information. Supports collect_by_url, discover_by_keyword, discover_by_url. Returns structured url, company_url_overview, company_name, company_rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Glassdoor job listings information. Supports collect_by_url, discover_by_keyword, discover_by_url. Returns structured url, company_url_overview, company_name, company_rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_AI_MODE_SEARCH",
         "name": "Scrape Google AI Mode Search",
-        "description": "Collect Google AI Mode Search. Supports collect_by_url. Returns structured url, prompt, answer_html, answer_text data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google AI Mode Search. Supports collect_by_url. Returns structured url, prompt, answer_html, answer_text data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_FLIGHTS",
         "name": "Scrape Google Flights",
-        "description": "Collect Google Flights. Supports collect_by_url, discover_by_input_filters. Returns structured url, itinerary_id, search, pricing data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Flights. Supports collect_by_url, discover_by_input_filters. Returns structured url, itinerary_id, search, pricing data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_HOTELS",
         "name": "Scrape Google Hotels",
-        "description": "Collect Google Hotels. Supports collect_by_url, discover_by_filter_url, discover_by_search. Returns structured url, hotel_id, hotel_name, rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Hotels. Supports collect_by_url, discover_by_filter_url, discover_by_search. Returns structured url, hotel_id, hotel_name, rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_IMAGES",
         "name": "Scrape Google Images",
-        "description": "Collect Google Images. Supports collect_by_url. Returns structured url, search_input, license, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Images. Supports collect_by_url. Returns structured url, search_input, license, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_MAPS_IMAGES",
         "name": "Scrape Google Maps Images",
-        "description": "Collect Google Maps place images. Use for image records rather than full place details or reviews. Supports collect_by_url. Returns structured place_id, url, country, name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Maps place images. Use for image records rather than full place details or reviews. Supports collect_by_url. Returns structured place_id, url, country, name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_MAPS_PLACES",
         "name": "Google Maps Places",
-        "description": "Collect Google Maps place URLs or discover places by keyword and location. Returns full place details; use the reviews or images datasets for those specialized resources. Supports collect_by_url, discover_by_cid, discover_by_location, discover_by_place_id. Returns structured place_id, url, country, name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Maps place URLs or discover places by keyword and location. Returns full place details; use the reviews or images datasets for those specialized resources. Supports collect_by_url, discover_by_cid, discover_by_location, discover_by_place_id. Returns structured place_id, url, country, name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_MAPS_REVIEWS",
         "name": "Scrape Google maps reviews",
-        "description": "Collect Google Maps place reviews or discover reviews from place URLs. Use for review records rather than full place details. Supports collect_by_url. Returns structured url, place_id, place_name, country data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Maps place reviews or discover reviews from place URLs. Use for review records rather than full place details. Supports collect_by_url. Returns structured url, place_id, place_name, country data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_PLAY_STORE",
         "name": "Scrape Google Play Store",
-        "description": "Collect Google Play Store. Supports collect_by_url. Returns structured url, title, developer, monetization_features data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Play Store. Supports collect_by_url. Returns structured url, title, developer, monetization_features data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_PLAY_STORE_REVIEWS",
         "name": "Scrape Google Play Store reviews",
-        "description": "Collect Google Play Store reviews. Supports collect_by_url. Returns structured url, review_id, reviewer_name, review_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Play Store reviews. Supports collect_by_url. Returns structured url, review_id, reviewer_name, review_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_SERP_100_RESULTS",
         "name": "Google SERP 100 Results",
-        "description": "Collect Google SERP - 100 Results. Supports collect_by_url. Returns structured url, keyword, general, related data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google SERP - 100 Results. Supports collect_by_url. Returns structured url, keyword, general, related data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_SHOPPING",
         "name": "Scrape Google Shopping",
-        "description": "Collect Google Shopping product pages or discover products by keyword with the general Google Shopping dataset. Supports collect_by_url, discover_by_keyword. Returns structured url, product_id, title, product_description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Google Shopping product pages or discover products by keyword with the general Google Shopping dataset. Supports collect_by_url, discover_by_keyword. Returns structured url, product_id, title, product_description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_GOOGLE_SHOPPING_PRODUCTS_SEARCH_US",
         "name": "Scrape Google Shopping products search US",
-        "description": "Collect US Google Shopping search-result URLs with the US search schema. Use for an existing US results URL, not general keyword discovery. Supports collect_by_url. Returns structured url, product_id, title, final_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect US Google Shopping search-result URLs with the US search schema. Use for an existing US results URL, not general keyword discovery. Supports collect_by_url. Returns structured url, product_id, title, final_price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_HM_PRODUCTS",
         "name": "H&M Products",
-        "description": "Collect H&M - Products. Supports collect_by_url, discover_by_category. Returns structured category_tree, color, country_code, county_of_origin data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_HM_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect H&M - Products. Supports collect_by_url, discover_by_category. Returns structured category_tree, color, country_code, county_of_origin data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_HM_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_HM_PRODUCTS_UNIFIED_SCHEMA",
         "name": "H&M Products - Unified Schema",
-        "description": "Collect H&M products. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_HM_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect H&M products. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_HM_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_IKEA_PRODUCTS",
         "name": "Scrape Ikea - Products",
-        "description": "Collect Ikea - Products. Supports collect_by_url, discover_by_category. Returns structured description, in_stock, color, size data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_IKEA_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Ikea - Products. Supports collect_by_url, discover_by_category. Returns structured description, in_stock, color, size data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_IKEA_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_IKEA_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Ikea products unified schema",
-        "description": "Collect Ikea products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_IKEA_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Ikea products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_IKEA_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INDEED_COMPANIES_INFO",
         "name": "Scrape Indeed companies info",
-        "description": "Collect Indeed companies info. Supports collect_by_url, discover_by_company_list, discover_by_industry_and_state, discover_by_keyword. Returns structured name, description, url, work_happiness data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Indeed companies info. Supports collect_by_url, discover_by_company_list, discover_by_industry_and_state, discover_by_keyword. Returns structured name, description, url, work_happiness data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INDEED_JOBS",
         "name": "Indeed Jobs",
-        "description": "Collect Indeed job listings information. Supports collect_by_url, discover_by_keyword, discover_by_url. Returns structured jobid, company_name, date_posted_parsed, job_title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Indeed job listings information. Supports collect_by_url, discover_by_keyword, discover_by_url. Returns structured jobid, company_name, date_posted_parsed, job_title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INSTACART_PRODUCTS",
         "name": "Scrape Instacart products",
-        "description": "Collect Instacart products. Supports collect_by_url, discover_by_category_url. Returns structured url, product_id, product_name, brand data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_INSTACART_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Instacart products. Supports collect_by_url, discover_by_category_url. Returns structured url, product_id, product_name, brand data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_INSTACART_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INSTACART_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Instacart Products unified schema",
-        "description": "Collect Instacart Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, title, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_INSTACART_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Instacart Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, title, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_INSTACART_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INSTAGRAM_COMMENTS",
         "name": "Scrape Instagram Comments",
-        "description": "Collect Instagram comments with commenter, text, date, likes, replies, hashtags, tagged users, and source-post details. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Instagram comments with commenter, text, date, likes, replies, hashtags, tagged users, and source-post details. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INSTAGRAM_POSTS",
         "name": "Scrape Instagram Posts",
-        "description": "Collect Instagram posts or discover posts from a profile, returning captions, hashtags, media, engagement, dates, location, and comments. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Instagram posts or discover posts from a profile, returning captions, hashtags, media, engagement, dates, location, and comments. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INSTAGRAM_PROFILES",
         "name": "Scrape Instagram Profiles",
-        "description": "Collect Instagram profiles by URL or discover them by username, returning biography, audience, verification, links, posts, and profile image. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Instagram profiles by URL or discover them by username, returning biography, audience, verification, links, posts, and profile image. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_INSTAGRAM_REELS",
         "name": "Scrape Instagram Reels",
-        "description": "Collect Instagram reels or discover reels from profiles, returning captions, hashtags, media, dates, engagement, play counts, and comments. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Instagram reels or discover reels from profiles, returning captions, hashtags, media, dates, engagement, play counts, and comments. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_KOHLS_COM_REVIEWS",
         "name": "Scrape Kohls.com - Reviews",
-        "description": "Collect Kohls.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured url, rootdomain, sku, variant_sku data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Kohls.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured url, rootdomain, sku, variant_sku data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_KOHLS_PRODUCTS",
         "name": "Kohl's Products",
-        "description": "Collect Kohls.com. Supports collect_by_url, discover_by_category_url, discover_by_keyword. Returns structured url, star_rating_distribution, quantity_sold, views data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_KOHLS_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Kohls.com. Supports collect_by_url, discover_by_category_url, discover_by_keyword. Returns structured url, star_rating_distribution, quantity_sold, views data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_KOHLS_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_KOHLS_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Kohl's Products unified schema",
-        "description": "Collect Kohl's Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_KOHLS_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Kohl's Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_KOHLS_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_KROGER_COM_SEARCH",
         "name": "Scrape Kroger.com - Search",
-        "description": "Collect Kroger.com - Search. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured rank, page, sku, url data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Kroger.com - Search. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured rank, page, sku, url data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_KROGER_PRODUCTS",
         "name": "Kroger Products",
-        "description": "Collect Kroger.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured sku, variant_id, url, rootdomain data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Kroger.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured sku, variant_id, url, rootdomain data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LINKEDIN_COMPANIES",
         "name": "Scrape LinkedIn Companies",
-        "description": "Collect structured LinkedIn company details, including size, industry, locations, followers, specialties, and website. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured LinkedIn company details, including size, industry, locations, followers, specialties, and website. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LINKEDIN_JOBS",
         "name": "Scrape LinkedIn Jobs",
-        "description": "Collect LinkedIn job listings or discover jobs by keyword, location, and search URL, returning role, employer, location, summary, and pay data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect LinkedIn job listings or discover jobs by keyword, location, and search URL, returning role, employer, location, summary, and pay data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LINKEDIN_PEOPLE_SEARCH",
         "name": "Scrape LinkedIn People Search",
-        "description": "Search LinkedIn people and return matching profile URLs, names, subtitles, locations, experience, education, and avatars. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Search LinkedIn people and return matching profile URLs, names, subtitles, locations, experience, education, and avatars. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LINKEDIN_POSTS",
         "name": "Scrape LinkedIn Posts",
-        "description": "Collect LinkedIn posts directly or discover posts from company, profile, and article-feed URLs, returning text, media, dates, and engagement. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect LinkedIn posts directly or discover posts from company, profile, and article-feed URLs, returning text, media, dates, and engagement. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LINKEDIN_PROFILES",
         "name": "Scrape LinkedIn Profiles",
-        "description": "Collect structured LinkedIn person profiles, including identity, location, company, follower, education, and public career data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured LinkedIn person profiles, including identity, location, company, follower, education, and public career data. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LL_BEAN_PRODUCTS",
         "name": "L.L.Bean Products",
-        "description": "Collect llbean.com - Products. Supports collect_by_url, discover_by_category. Returns structured identity, product_name, url, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_LL_BEAN_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect llbean.com - Products. Supports collect_by_url, discover_by_category. Returns structured identity, product_name, url, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_LL_BEAN_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_LL_BEAN_PRODUCTS_UNIFIED_SCHEMA",
         "name": "L.L.Bean Products - Unified Schema",
-        "description": "Collect LLBean. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_LL_BEAN_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect LLBean. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_LL_BEAN_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_MACYS_COM_REVIEWS",
         "name": "Scrape Macys.com - Reviews",
-        "description": "Collect Macys.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured url, rootdomain, sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Macys.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured url, rootdomain, sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_MACYS_PRODUCTS",
         "name": "Macy's Products",
-        "description": "Collect Macys.com. Supports collect_by_url, discover_by_category_url, discover_by_keyword. Returns structured url, star_rating_distribution, quantity_sold, is_promo data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_MACYS_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Macys.com. Supports collect_by_url, discover_by_category_url, discover_by_keyword. Returns structured url, star_rating_distribution, quantity_sold, is_promo data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_MACYS_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_MACYS_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Macys Products unified schema",
-        "description": "Collect Macys Products unified schema. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_MACYS_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Macys Products unified schema. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_MACYS_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_MASSIMO_DUTTI_PRODUCTS",
         "name": "Scrape Massimo Dutti - Products",
-        "description": "Collect Massimo Dutti - Products . Supports collect_by_url, discover_by_category. Returns structured url, title, price, product_type data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_MASSIMO_DUTTI_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Massimo Dutti - Products . Supports collect_by_url, discover_by_category. Returns structured url, title, price, product_type data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_MASSIMO_DUTTI_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_MASSIMO_DUTTI_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Massimo Dutti Products - Unified Schema",
-        "description": "Collect Massimodutti. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_MASSIMO_DUTTI_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Massimodutti. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_MASSIMO_DUTTI_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_META_AD_LIBRARY",
         "name": "Scrape Meta - Ad Library",
-        "description": "Collect Meta - Ad Library . Supports collect_by_url, discover_by_keyword. Returns structured url, library_id, is_active, status data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Meta - Ad Library . Supports collect_by_url, discover_by_keyword. Returns structured url, library_id, is_active, status data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_OVERSTOCK_COM_REVIEWS",
         "name": "Scrape Overstock.com - Reviews",
-        "description": "Collect Overstock.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured rootdomain, sku, variant_sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Overstock.com - Reviews. Supports collect_by_url, discover_by_sku. Returns structured rootdomain, sku, variant_sku, review_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_OVERSTOCK_PRODUCTS",
         "name": "Overstock Products",
-        "description": "Collect Overstock.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured url, star_rating_distribution, is_promo, other_price_options data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_OVERSTOCK_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Overstock.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured url, star_rating_distribution, is_promo, other_price_options data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_OVERSTOCK_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_OVERSTOCK_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Overstock Products unified schema",
-        "description": "Collect Overstock Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_OVERSTOCK_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Overstock Products unified schema. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_OVERSTOCK_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_PINTEREST_POSTS",
         "name": "Scrape Pinterest - Posts",
-        "description": "Collect Pinterest - Posts . Supports collect_by_url, discover_by_profile_url. Returns structured url, post_id, title, content data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Pinterest - Posts . Supports collect_by_url, discover_by_profile_url. Returns structured url, post_id, title, content data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_PINTEREST_PROFILES",
         "name": "Scrape Pinterest - Profiles",
-        "description": "Collect Pinterest - Profiles. Supports collect_by_url, discover_by_keyword. Returns structured url, profile_picture, name, nickname data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Pinterest - Profiles. Supports collect_by_url, discover_by_keyword. Returns structured url, profile_picture, name, nickname data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_POSHMARK_PRODUCTS",
         "name": "Poshmark Products",
-        "description": "Collect Poshmark.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured url, is_promo, seller_id, other_price_options data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_POSHMARK_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Poshmark.com. Supports collect_by_url, discover_by_category, discover_by_keyword. Returns structured url, is_promo, seller_id, other_price_options data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_POSHMARK_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_POSHMARK_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Poshmark Products unified schema",
-        "description": "Collect Poshmark Products unified schema. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_POSHMARK_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Poshmark Products unified schema. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_POSHMARK_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_REDDIT_COMMENTS",
         "name": "Scrape Reddit - Comments",
-        "description": "Collect Reddit - Comments. Supports collect_by_url. Returns structured url, comment_id, user_posted, comment data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Reddit - Comments. Supports collect_by_url. Returns structured url, comment_id, user_posted, comment data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_REDDIT_POSTS",
         "name": "Scrape Reddit- Posts",
-        "description": "Collect Reddit- Posts. Supports collect_by_url, discover_by_author_url, discover_by_keyword, discover_by_subreddit_url. Returns structured post_id, url, user_posted, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Reddit- Posts. Supports collect_by_url, discover_by_author_url, discover_by_keyword, discover_by_subreddit_url. Returns structured post_id, url, user_posted, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_REDDIT_PROFILES",
         "name": "Scrape Reddit - Profiles",
-        "description": "Collect Reddit - Profiles. Supports collect_by_url. Returns structured url, profile_id, name, followers data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Reddit - Profiles. Supports collect_by_url. Returns structured url, profile_id, name, followers data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_SNAPCHAT_POSTS",
         "name": "Scrape Snapchat posts",
-        "description": "Collect Snapchat posts. Supports collect_by_url, discover_by_profile, discover_by_search_url. Returns structured url, post_id, profile_name, profile_handle data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Snapchat posts. Supports collect_by_url, discover_by_profile, discover_by_search_url. Returns structured url, post_id, profile_name, profile_handle data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_SNAPCHAT_PROFILE",
         "name": "Scrape Snapchat profile",
-        "description": "Collect Snapchat profile. Supports collect_by_url. Returns structured url, profile_id, profile_name, profile_username data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Snapchat profile. Supports collect_by_url. Returns structured url, profile_id, profile_name, profile_username data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_THREADS_POSTS",
         "name": "Scrape Threads - Posts",
-        "description": "Collect Threads - Posts. Supports collect_by_url, discover_by_profile. Returns structured post_id, url, post_time, profile_name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Threads - Posts. Supports collect_by_url, discover_by_profile. Returns structured post_id, url, post_time, profile_name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_THREADS_PROFILES",
         "name": "Scrape Threads - Profiles",
-        "description": "Collect Threads - Profiles. Supports collect_by_url. Returns structured url, profile_name, profile_id, about_formatted data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Threads - Profiles. Supports collect_by_url. Returns structured url, profile_name, profile_id, about_formatted data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_COMMENTS",
         "name": "Scrape TikTok Comments",
-        "description": "Collect TikTok comments with text, dates, likes, replies, commenter identity, and source-post details. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect TikTok comments with text, dates, likes, replies, commenter identity, and source-post details. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_POSTS",
         "name": "Scrape TikTok Posts",
-        "description": "Collect TikTok posts with the full post dataset. Use for post URLs, keyword discovery, profile discovery, or discovery URLs when the richer non-fast schema is needed. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect TikTok posts with the full post dataset. Use for post URLs, keyword discovery, profile discovery, or discovery URLs when the richer non-fast schema is needed. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_POSTS_FAST",
         "name": "TikTok - Posts by URL Fast API",
-        "description": "Collect individual TikTok post URLs with the fast dataset. Use instead of the full post dataset when lower latency matters and URL-only collection is sufficient. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect individual TikTok post URLs with the fast dataset. Use instead of the full post dataset when lower latency matters and URL-only collection is sufficient. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_PROFILE_POSTS_FAST",
         "name": "Scrape TikTok Profile Posts Fast",
-        "description": "Discover TikTok posts from profile URLs with the fast profile-post dataset. Use for profile feeds, not individual post URLs or keyword search. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Discover TikTok posts from profile URLs with the fast profile-post dataset. Use for profile feeds, not individual post URLs or keyword search. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_PROFILES",
         "name": "TikTok - Profiles",
-        "description": "Collect structured TikTok - Profiles data from tiktok.com, including account_id, nickname, biography, awg_engagement_rate, comment_engagement_rate. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured TikTok - Profiles data from tiktok.com, including account_id, nickname, biography, awg_engagement_rate, comment_engagement_rate. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_SEARCH_POSTS_FAST",
         "name": "Scrape TikTok Search Posts Fast",
-        "description": "Discover TikTok posts from search or discovery URLs with the fast search-post dataset. Use for search results, not profile feeds or individual post URLs. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Discover TikTok posts from search or discovery URLs with the fast search-post dataset. Use for search results, not profile feeds or individual post URLs. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_SHOP",
         "name": "TikTok Shop",
-        "description": "Collect structured TikTok Shop data from tiktok.com, including url, title, available, description, currency. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured TikTok Shop data from tiktok.com, including url, title, available, description, currency. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TIKTOK_SHOP_CATEGORY_PRODUCTS",
         "name": "TikTok Shop Category Products",
-        "description": "Collect structured TikTok Shop Category Products data from tiktok.com, including url, product_id, category_url, category_name, sub_categories. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect structured TikTok Shop Category Products data from tiktok.com, including url, product_id, category_url, category_name, sub_categories. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TRIP_COM_FLIGHTS_MOBILE_APP",
         "name": "Scrape Trip.com - Flights (mobile-app)",
-        "description": "Collect Trip.com - Flights (mobile-app). Supports collect_by_url. Returns structured url, origin_code, destination_code, departure_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Trip.com - Flights (mobile-app). Supports collect_by_url. Returns structured url, origin_code, destination_code, departure_date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TRIP_COM_HOTEL_LISTINGS",
         "name": "Trip.com Hotel Listings",
-        "description": "Collect Trip Hotel Listings. Supports collect_by_url, discover_by_location. Returns structured url, hotel_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Trip Hotel Listings. Supports collect_by_url, discover_by_location. Returns structured url, hotel_id, title, location data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TRIP_COM_HOTELS_MOBILE_APP",
         "name": "Scrape Trip.com - Hotels (mobile-app)",
-        "description": "Collect Trip.com - Hotels (mobile-app). Supports collect_by_url, discover_by_location. Returns structured url, check_in, check_out, adults data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Trip.com - Hotels (mobile-app). Supports collect_by_url, discover_by_location. Returns structured url, check_in, check_out, adults data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_TRIP_COM_LISTINGS_SEARCH",
         "name": "Trip.com Listings Search",
-        "description": "Collect Trip Listings Search. Supports collect_by_url. Returns structured url, location, check_in, check_out data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Trip Listings Search. Supports collect_by_url. Returns structured url, location, check_in, check_out data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_WALMART_PRODUCTS",
         "name": "Scrape Walmart - products",
-        "description": "Collect Walmart - products . Supports collect_by_url, discover_by_category_url, discover_by_keyword, discover_by_sku. Returns structured url, final_price, sku, currency data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Walmart - products . Supports collect_by_url, discover_by_category_url, discover_by_keyword, discover_by_sku. Returns structured url, final_price, sku, currency data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_WALMART_PRODUCTS_SEARCH",
         "name": "Scrape Walmart products search",
-        "description": "Collect Walmart products search. Supports collect_by_url. Returns structured id, url, typename, buy_box_suppression data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Walmart products search. Supports collect_by_url. Returns structured id, url, typename, buy_box_suppression data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_WALMART_PRODUCTS_ZIPCODES",
         "name": "Scrape Walmart - products zipcodes",
-        "description": "Collect Walmart product URLs with zipcode-specific availability and pricing. Use when location-specific product data is required. Supports collect_by_url, discover_by_category_url, discover_by_keyword. Returns structured url, final_price, sku, currency data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Walmart product URLs with zipcode-specific availability and pricing. Use when location-specific product data is required. Supports collect_by_url, discover_by_category_url, discover_by_keyword. Returns structured url, final_price, sku, currency data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_WALMART_REVIEWS",
         "name": "Scrape Walmart Reviews",
-        "description": "Collect Walmart Reviews. Supports collect_by_url. Returns structured url, product_name, product_id, rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Walmart Reviews. Supports collect_by_url. Returns structured url, product_name, product_id, rating data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_WALMART_SELLERS_INFO",
         "name": "Scrape Walmart sellers info",
-        "description": "Collect Walmart sellers info. Supports collect_by_url. Returns structured seller_id, url, catalog_seller_id, seller_name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Walmart sellers info. Supports collect_by_url. Returns structured seller_id, url, catalog_seller_id, seller_name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_X_POSTS",
         "name": "X Posts",
-        "description": "Collect X (formerly Twitter) - Posts. Supports collect_by_url, discover_by_profile_url. Returns structured id, user_posted, name, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect X (formerly Twitter) - Posts. Supports collect_by_url, discover_by_profile_url. Returns structured id, user_posted, name, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_X_PROFILES",
         "name": "X Profiles",
-        "description": "Collect X (formerly Twitter) - Profiles. Supports collect_by_url, discover_by_user_name. Returns structured x_id, url, id, profile_name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect X (formerly Twitter) - Profiles. Supports collect_by_url, discover_by_user_name. Returns structured x_id, url, id, profile_name data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_YELP_BUSINESSES_OVERVIEW",
         "name": "Scrape Yelp businesses overview",
-        "description": "Collect Yelp businesses overview. Supports collect_by_url, discover_by_bounding_box, discover_by_search_filters, discover_by_url. Returns structured business_id, yelp_biz_id, name, updates_from_business data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Yelp businesses overview. Supports collect_by_url, discover_by_bounding_box, discover_by_search_filters, discover_by_url. Returns structured business_id, yelp_biz_id, name, updates_from_business data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_YELP_BUSINESSES_REVIEWS",
         "name": "Scrape Yelp businesses reviews",
-        "description": "Collect Yelp businesses reviews. Supports collect_by_url, discover_by_search_filters. Returns structured business_id, Review_auther, Rating, Date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Yelp businesses reviews. Supports collect_by_url, discover_by_search_filters. Returns structured business_id, Review_auther, Rating, Date data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_YOUTUBE_CHANNELS",
         "name": "Scrape YouTube - Channels",
-        "description": "Collect YouTube - Channels. Supports collect_by_url, discover_by_keyword. Returns structured url, handle, handle_md5, banner_img data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect YouTube - Channels. Supports collect_by_url, discover_by_keyword. Returns structured url, handle, handle_md5, banner_img data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_YOUTUBE_COMMENTS",
         "name": "Scrape Youtube - Comments",
-        "description": "Collect Youtube - Comments. Supports collect_by_url. Returns structured comment_id, comment_text, likes, replies data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Youtube - Comments. Supports collect_by_url. Returns structured comment_id, comment_text, likes, replies data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_YOUTUBE_VIDEOS",
         "name": "YouTube Videos",
-        "description": "Collect Youtube - Videos posts. Supports collect_by_url, discover_by_explore, discover_by_hashtag, discover_by_keyword, discover_by_podcast_url, discover_by_search_filters, discover_by_url. Returns structured url, title, youtuber, youtuber_md5 data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Youtube - Videos posts. Supports collect_by_url, discover_by_explore, discover_by_hashtag, discover_by_keyword, discover_by_podcast_url, discover_by_search_filters, discover_by_url. Returns structured url, title, youtuber, youtuber_md5 data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZARA_HOME_PRODUCTS",
         "name": "Scrape Zara Home Products",
-        "description": "Collect Zara Home Products. Supports collect_by_url. Returns structured category_id, category_key, category_name, product_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_ZARA_HOME_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Zara Home Products. Supports collect_by_url. Returns structured category_id, category_key, category_name, product_id data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_ZARA_HOME_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZARA_HOME_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Scrape Zara Home products",
-        "description": "Collect Zara Home products. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_ZARA_HOME_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Zara Home products. Supports collect_by_url, discover_by_category_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_ZARA_HOME_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZARA_PRODUCTS",
         "name": "Scrape Zara - Products",
-        "description": "Collect Zara - Products . Supports collect_by_url, discover_by_category. Returns structured category_id, product_id, product_name, price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_ZARA_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields."
+        "description": "Collect Zara - Products . Supports collect_by_url, discover_by_category. Returns structured category_id, product_id, product_name, price data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This is the provider-native schema; use BRIGHTDATA_SCRAPE_ZARA_PRODUCTS_UNIFIED_SCHEMA for standardized commerce fields.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZARA_PRODUCTS_UNIFIED_SCHEMA",
         "name": "Zara Products - Unified Schema",
-        "description": "Collect Zara.com products. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_ZARA_PRODUCTS action for its richer site-specific schema."
+        "description": "Collect Zara.com products. Supports collect_by_url. Returns structured url, item_id, variant_id, title data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs. This returns standardized commerce fields; use the provider-native BRIGHTDATA_SCRAPE_ZARA_PRODUCTS action for its richer site-specific schema.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZILLOW_PROPERTIES",
         "name": "Zillow Properties",
-        "description": "Collect full property details for Zillow property URLs. Use for property-level facts rather than search listings or price-history-only records. Supports collect_by_url, discover_by_search_url. Returns structured url, photos, responsive_photos, has_vr_model data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect full property details for Zillow property URLs. Use for property-level facts rather than search listings or price-history-only records. Supports collect_by_url, discover_by_search_url. Returns structured url, photos, responsive_photos, has_vr_model data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZILLOW_PROPERTY_LISTINGS",
         "name": "Zillow Property Listings",
-        "description": "Collect Zillow listing URLs or discover property listings from filters or search URLs. Returns listing-level records for search and listing workflows. Supports collect_by_url, discover_by_input_filters, discover_by_url. Returns structured zpid, city, state, homeStatus data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Zillow listing URLs or discover property listings from filters or search URLs. Returns listing-level records for search and listing workflows. Supports collect_by_url, discover_by_input_filters, discover_by_url. Returns structured zpid, city, state, homeStatus data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZILLOW_PROPERTY_PRICE_HISTORY",
         "name": "Zillow Property Price History",
-        "description": "Collect the price-history timeline for Zillow property URLs. Use when historical price events are needed rather than full property details or search listings. Supports collect_by_url. Returns structured url, zpid, date, event data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect the price-history timeline for Zillow property URLs. Use when historical price events are needed rather than full property details or search listings. Supports collect_by_url. Returns structured url, zpid, date, event data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SCRAPE_ZILLOW_PROPERTY_SEARCH_RESULTS",
         "name": "Zillow Property Search Results",
-        "description": "Collect Zillow search-page URLs into search-result property records. Use for an existing results page rather than filter-based listing discovery. Supports collect_by_url. Returns structured url, zpid, zipcode, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs."
+        "description": "Collect Zillow search-page URLs into search-result property records. Use for an existing results page rather than filter-based listing discovery. Supports collect_by_url. Returns structured url, zpid, zipcode, description data and preserves additional provider fields. Uses a fixed dataset; use BRIGHTDATA_SCRAPE_DATA_SYNC for other dataset IDs.",
+        "instant": {
+          "supported": true,
+          "price": {
+            "description": "$0.015 per 10 requested records",
+            "discount": "0"
+          }
+        }
       },
       {
         "slug": "BRIGHTDATA_SEARCH_BUSINESS_RECORDS",
