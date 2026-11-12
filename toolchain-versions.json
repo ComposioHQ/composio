@@ -2,7 +2,7 @@
   "node": ["22.23.5", "24.22.3", "26.13.1"],
   "python": ["3.11", "3.13", "3.15"],
   "nodeDigests": {
-    "22.23.5": "sha256:08eb66a0e37ff195e27c3c13ceaabc53b7ee83db1d0c32e0b668625d247da80a",
+    "22.23.5": "sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee",
     "24.22.3": "sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54",
     "26.13.1": "sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc"
   }
