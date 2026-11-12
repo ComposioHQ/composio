@@ -21,10 +21,6 @@ export type AllowedModel = (typeof ALLOWED_MODELS)[number];
 const isAllowedModel = (model: string | undefined): model is AllowedModel =>
   ALLOWED_MODELS.some(allowed => allowed === model);
 
-/** Every forwarded request goes under this prefix; only the rest of the path comes from the agent. */
-const UPSTREAM_API = 'https://api.anthropic.com/v1/';
-const UPSTREAM_ORIGIN = new URL(UPSTREAM_API).origin;
-
 /** Request headers that describe the hop, or carry a credential, and are never forwarded. */
 const DROPPED_REQUEST_HEADERS = new Set([
   'host',
@@ -36,10 +32,15 @@ const DROPPED_REQUEST_HEADERS = new Set([
 ]);
 
 /**
- * The endpoints an agent needs. Anything else (batches, files, admin) is refused, because a
- * request there may name no model, or one the proxy cannot see.
+ * The requests an agent needs, by the path it sends, and the fixed upstream URL each goes to.
+ * Anything else (batches, files, admin) is refused, because a request there may name no model,
+ * or one the proxy cannot see. Nothing the agent sends becomes part of an upstream URL.
  */
-const FORWARDED_PATHS = new Set(['/v1/messages', '/v1/messages/count_tokens']);
+const FORWARDED: ReadonlyMap<string, string> = new Map(
+  ['/v1/messages', '/v1/messages/count_tokens'].flatMap(path =>
+    ['', '?beta=true'].map(query => [`${path}${query}`, `https://api.anthropic.com${path}${query}`])
+  )
+);
 
 const ModelField = z.looseObject({ model: z.string().optional() });
 
@@ -93,21 +94,13 @@ export const startModelProxy = async (options: { apiKey: string }): Promise<Mode
         refused.push(`bad token for ${path}`);
         return refuse(response, 401, 'unknown token');
       }
-      // The agent chooses only what follows `/v1/`: the host and the API prefix are fixed.
-      const target = path.startsWith('/v1/')
-        ? new URL(`${UPSTREAM_API}${path.slice('/v1/'.length)}`)
-        : undefined;
-      if (
-        target === undefined ||
-        target.origin !== UPSTREAM_ORIGIN ||
-        request.method !== 'POST' ||
-        !FORWARDED_PATHS.has(target.pathname)
-      ) {
+      const target = request.method === 'POST' ? FORWARDED.get(path) : undefined;
+      if (target === undefined) {
         refused.push(`${request.method} ${path}`);
         return refuse(
           response,
           404,
-          `only POST ${[...FORWARDED_PATHS].join(', ')} is forwarded, not ${request.method} ${path}`
+          `only POST ${[...FORWARDED.keys()].join(', ')} is forwarded, not ${request.method} ${path}`
         );
       }
       // Every forwarded request names its model at the top level, so no other model is reachable.
