@@ -10,14 +10,14 @@ description: "Manage authentication configurations."
 Lists authentication configurations based on provided filter criteria.
 
 ```python
-def list(query: auth_config_list_params.AuthConfigListParams = ...) -> auth_config_list_response.AuthConfigListResponse
+def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_config_list_response.AuthConfigListResponse
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `query?` | `auth_config_list_params.AuthConfigListParams` |
+| `query?` | `Unpack[auth_config_list_params.AuthConfigListParams]` |
 
 **Returns**
 
@@ -35,10 +35,10 @@ def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit` | `str` |
-| `options` | `auth_config_create_params.AuthConfig` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `str` | The toolkit to create the auth config for. |
+| `options` | `auth_config_create_params.AuthConfig` | The options to create the auth config with. |
 
 **Returns**
 
@@ -56,9 +56,9 @@ def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to retrieve. |
 
 **Returns**
 
@@ -71,15 +71,15 @@ def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 Updates an existing authentication configuration.  This method allows you to modify properties of an auth config such as credentials, scopes, or tool restrictions. The update type (custom or default) determines which fields can be updated.
 
 ```python
-def update(nanoid: str, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
+def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
-| `options` | `auth_config_update_params.AuthConfigUpdateParams` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to update. |
+| `options` | `auth_config_update_params.AuthConfigUpdateParams` | The options to update the auth config with. |
 
 **Returns**
 
@@ -97,9 +97,9 @@ def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to delete. |
 
 **Returns**
 
@@ -117,9 +117,9 @@ def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateSt
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to enable. |
 
 **Returns**
 
@@ -137,9 +137,9 @@ def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateS
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to disable. |
 
 **Returns**
 

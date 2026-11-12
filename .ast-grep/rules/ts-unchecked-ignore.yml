@@ -1,0 +1,20 @@
+id: ts-unchecked-ignore
+language: Tsx
+severity: error
+message: Fix the type error or use @ts-expect-error with a specific explanation.
+files: ['ts/packages/**', 'ts/scripts/**', 'scripts/**', '.github/scripts/**']
+ignores:
+  - '**/node_modules/**'
+  - '**/dist/**'
+  - '**/generated/**'
+  - '**/.generated/**'
+  - '**/pack/**'
+  - '**/*.d.ts'
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - '**/__tests__/**'
+  - '**/test/**'
+  - '**/tests/**'
+rule:
+  kind: comment
+  regex: '^\s*(//|/\*)\s*@ts-(ignore|nocheck)\b'

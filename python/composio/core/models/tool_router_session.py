@@ -58,11 +58,6 @@ from composio.core.models.custom_tool_types import (
     ToolRouterSessionProxyExecuteResponse,
 )
 from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
-from composio.core.models.inline_custom_tools_payload import (
-    inline_custom_tools_execute_experimental,
-    inline_custom_tools_execute_meta_experimental,
-    inline_custom_tools_search_experimental,
-)
 from composio.core.models.session_context import (
     SessionContextImpl,
     proxy_execute_impl,
@@ -75,7 +70,6 @@ from composio.core.models.tools import (
     ToolExecuteParams,
     ToolExecutionResponse,
     ToolRouterSessionExecuteResponse,
-    require_execute_meta_result,
     require_execute_result,
 )
 from composio.core.provider import TTool, TToolCollection
@@ -1007,9 +1001,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             session_id=self.session_id,
             queries=[{"use_case": query}],
             model=model if model else omit,
-            experimental=inline_custom_tools_search_experimental(
-                self._inline_custom_tools_payload
-            ),
+            experimental=self._inline_custom_tools_payload
+            if self._inline_custom_tools_payload is not None
+            else omit,
         )
 
     def execute(
@@ -1093,9 +1087,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     input_responses if input_responses is not None else omit
                 ),
                 request_state=request_state if request_state is not None else omit,
-                experimental=inline_custom_tools_execute_experimental(
-                    self._inline_custom_tools_payload
-                ),
+                experimental=self._inline_custom_tools_payload
+                if self._inline_custom_tools_payload is not None
+                else omit,
             ),
             tool_slug,
         )
@@ -1139,7 +1133,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         # Disable retries: a session execution is a non-idempotent write, and a
         # silent retry after a read timeout can duplicate the side effect.
-        return require_execute_meta_result(
+        return require_execute_result(
             self._client.without_retries.tool_router.session.execute_meta(
                 session_id=self.session_id,
                 slug=slug,
@@ -1148,9 +1142,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     input_responses if input_responses is not None else omit
                 ),
                 request_state=request_state if request_state is not None else omit,
-                experimental=inline_custom_tools_execute_meta_experimental(
-                    self._inline_custom_tools_payload
-                ),
+                experimental=self._inline_custom_tools_payload
+                if self._inline_custom_tools_payload is not None
+                else omit,
             ),
             slug,
         )

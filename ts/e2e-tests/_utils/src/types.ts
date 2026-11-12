@@ -168,7 +168,7 @@ export interface E2EConfig {
    * @example
    * ```typescript
    * versions: {
-   *   node: ['22.23.4', '24.22.1', '26.12.1'],
+   *   node: ['22.23.5', '24.22.3', '26.13.1'],
    * }
    * ```
    */

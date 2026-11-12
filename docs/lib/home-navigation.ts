@@ -175,7 +175,12 @@ export const DOCS_PRODUCTS = {
           {
             type: 'group',
             label: 'Toolkits & Tools',
-            links: [{ url: '/docs/toolkits' }, { url: '/docs/instant-tools' }],
+            links: [
+              { url: '/docs/toolkits' },
+              { url: '/docs/instant-tools' },
+              { url: '/docs/extending-sessions/local-tools-and-toolkits' },
+              { url: '/docs/extending-sessions/custom-mcp' },
+            ],
           },
           {
             type: 'group',
@@ -213,7 +218,14 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Customize',
         items: [
-          { type: 'folder', path: 'extending-sessions' },
+          {
+            type: 'group',
+            label: 'Extend sessions',
+            links: [
+              { url: '/docs/extending-sessions/proxy-execute' },
+              { url: '/docs/extending-sessions/shared-connections' },
+            ],
+          },
           { type: 'folder', path: 'sandbox' },
           {
             type: 'group',
