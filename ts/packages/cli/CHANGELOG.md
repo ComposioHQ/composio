@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- A command whose stdout reader stops reading early, as in
+  `composio search "send a slack message" | head -1`, now drops the rest of
+  its output and exits as it would have. It printed an `EPIPE: broken pipe`
+  stack trace on stderr and exited 1, so a pipeline that only wanted the first
+  lines looked like a failure. Other stdout write failures still fail the
+  command.
+
 - `composio search` now fails with "The API response for
   'toolRouter.session.search' is not in the shape this version of the CLI
   expects" and `composio upgrade` as the way out when the API answers 200 with

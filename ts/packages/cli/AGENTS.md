@@ -162,7 +162,7 @@ The three streams are **independent contracts**. Each capability depends only on
 Rules:
 
 1. All `TerminalUI` methods **except `output()`** write to stderr via Clack's `{ output: process.stderr }`, and only when stderr is a TTY (`canDecorate`).
-2. `ui.output(data)` writes to stdout **only when stdout is piped** (or with explicit `force`). No other stream participates in that decision.
+2. `ui.output(data)` writes to stdout **only when stdout is piped** (or with explicit `force`). No other stream participates in that decision. A reader that closes stdout early (`… | head`) gets nothing more, and the command goes on as if it had read everything; any other stdout write failure is a defect.
 3. Prompts (`ui.confirm`, `ui.select`) run only when `canPrompt`; otherwise they fall back to their defaults without blocking.
 4. Piped stdout stays clean: `composio whoami | pbcopy` puts only the key in the clipboard — decoration still renders on the terminal via stderr, and is suppressed only when stderr itself is captured.
 5. **Data commands** (whoami, version, login, generate, etc.) call both decoration (stderr) and `ui.output()` (stdout).

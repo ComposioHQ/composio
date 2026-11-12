@@ -3,7 +3,7 @@ import type { Writable } from 'node:stream';
 import { getColumns } from '@clack/core';
 import * as p from '@clack/prompts';
 import stringWidth from 'fast-string-width';
-import { Context, Data, Effect, Exit, Layer } from 'effect';
+import { Context, Data, Effect, Exit, Layer, Predicate } from 'effect';
 
 export type TtyLikeStream = {
   readonly isTTY?: boolean;
@@ -98,6 +98,9 @@ export interface TerminalUI {
    * file), the raw value is written for machine consumption. Only stdout's own TTY
    * state participates in this decision; redirecting stdin or stderr must never make
    * data leak onto a visible stdout terminal.
+   *
+   * It completes once the stream took the data. After a reader closed stdout early (EPIPE),
+   * the data is dropped and the command goes on; any other write failure is a defect.
    *
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
@@ -273,6 +276,10 @@ function createClackSpinnerHandle(
   };
 }
 
+/** Whether a write failed because the reader of the pipe went away. */
+const isBrokenPipe = (error: unknown): boolean =>
+  Predicate.hasProperty(error, 'code') && error.code === 'EPIPE';
+
 /** No-op spinner handle used when decoration is suppressed (stderr redirected). */
 const silentSpinnerHandle: SpinnerHandle = {
   message: () => Effect.void,
@@ -301,6 +308,41 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     return Effect.sync(render);
   };
 
+  // Set once the reader of stdout went away: nothing written after can reach it.
+  let stdoutClosed = false;
+  // A failed write reaches its callback and is also emitted as an `error` event, which crashes
+  // the process when nothing listens. `writeStdout` reports every failure from the callback, and
+  // listens only once it writes, so a process that never writes data keeps the default.
+  let ignoringStdoutErrorEvents = false;
+
+  /**
+   * Writes `chunk` to stdout once the stream took it. A reader that closed the pipe early
+   * (EPIPE, as `head` can) chose to stop reading, so the data is dropped and the command goes
+   * on; any other write failure is a defect.
+   */
+  const writeStdout = (chunk: string): Effect.Effect<void> =>
+    Effect.suspend(() => {
+      if (stdoutClosed) {
+        return Effect.void;
+      }
+      if (!ignoringStdoutErrorEvents) {
+        ignoringStdoutErrorEvents = true;
+        streams.stdout.on('error', () => {});
+      }
+      return Effect.callback<void>(resume => {
+        streams.stdout.write(chunk, error => {
+          if (error === null || error === undefined) {
+            resume(Effect.void);
+          } else if (isBrokenPipe(error)) {
+            stdoutClosed = true;
+            resume(Effect.void);
+          } else {
+            resume(Effect.die(error));
+          }
+        });
+      });
+    });
+
   /** Start a clack spinner on stderr, clamped to a single terminal row. */
   const startSpinner = (message: string): StartedClackSpinner => {
     // Clack captures this width during construction and continues wrapping
@@ -320,11 +362,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     capabilities: Effect.succeed(capabilities),
 
     output: (data, options) =>
-      Effect.sync(() => {
-        if (options?.force || !stdoutIsTTY) {
-          streams.stdout.write(`${data}\n`);
-        }
-      }),
+      options?.force || !stdoutIsTTY ? writeStdout(`${data}\n`) : Effect.void,
 
     error: data => Effect.sync(() => stderr.write(`${data}\n`)),
 
