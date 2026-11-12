@@ -34,6 +34,7 @@ const TerminalUINoop = Layer.succeed(
       })
     ),
     output: () => Effect.void,
+    stdoutClosed: Effect.never,
     error: () => Effect.void,
     intro: () => Effect.void,
     outro: () => Effect.void,

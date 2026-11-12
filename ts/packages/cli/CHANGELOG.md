@@ -8,8 +8,10 @@
   `composio search "send a slack message" | head -1`, now drops the rest of
   its output and exits as it would have. It printed an `EPIPE: broken pipe`
   stack trace on stderr and exited 1, so a pipeline that only wanted the first
-  lines looked like a failure. Other stdout write failures still fail the
-  command.
+  lines looked like a failure. `composio listen` and `composio dev listen`
+  stop listening at their next write once that reader is gone and exit 0,
+  where they would keep running with nobody reading. Other stdout write
+  failures still fail the command.
 
 - `composio search` now fails with "The API response for
   'toolRouter.session.search' is not in the shape this version of the CLI
@@ -24,8 +26,9 @@
 
 - A command the Composio API answers with 401 now prints the API's message
   and how to recover: `composio logout && composio login` when the stored
-  login's key may have expired, or replacing `COMPOSIO_USER_API_KEY` when the
-  key came from there. `composio search` and other commands printed only the
+  login's key may have expired, `composio login --agent` when that login is
+  the saved Composio agent identity's (logging out would delete its agent
+  key), or replacing `COMPOSIO_USER_API_KEY` when the key came from there. `composio search` and other commands printed only the
   API's `Invalid API key` (inside a defect report), so an agent had no command
   to get unstuck. The hint was shown only when the API said the user API key
   itself was rejected; any other 401 now names the login as the likely cause.

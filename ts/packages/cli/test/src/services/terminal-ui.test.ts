@@ -5,7 +5,7 @@ import * as p from '@clack/prompts';
 import { CANCEL_SYMBOL } from '@clack/core';
 import stringWidth from 'fast-string-width';
 import { assert } from '@effect/vitest';
-import { Cause, Data, Effect, Exit } from 'effect';
+import { Cause, Data, Effect, Exit, Fiber } from 'effect';
 import {
   clampSpinnerMessage,
   getTerminalCapabilities,
@@ -227,6 +227,40 @@ describe('TerminalUI', () => {
         // Nothing more can reach a reader that went away, and its error does not crash the CLI.
         expect(stdout.attempts).toEqual(['{"first":true}\n']);
         expect(stdout.unhandled).toEqual([]);
+      })
+    );
+
+    it.effect('completes stdoutClosed once the reader closed stdout (EPIPE)', () =>
+      Effect.gen(function* () {
+        const ui = makeTerminalUI({
+          stdin: { isTTY: false },
+          stdout: failingStdout('EPIPE'),
+          stderr: makeSink(false),
+        });
+        const closed = yield* Effect.forkChild(ui.stdoutClosed);
+        yield* Effect.yieldNow;
+        expect(closed.pollUnsafe()).toBeUndefined();
+
+        yield* ui.output('{"first":true}');
+
+        expect(Exit.isSuccess(yield* Fiber.await(closed))).toBe(true);
+      })
+    );
+
+    it.effect('leaves stdoutClosed pending while the reader takes the data', () =>
+      Effect.gen(function* () {
+        const ui = makeTerminalUI({
+          stdin: { isTTY: false },
+          stdout: makeSink(false),
+          stderr: makeSink(false),
+        });
+        const closed = yield* Effect.forkChild(ui.stdoutClosed);
+
+        yield* ui.output('{"first":true}');
+        yield* settle;
+
+        expect(closed.pollUnsafe()).toBeUndefined();
+        yield* Fiber.interrupt(closed);
       })
     );
 

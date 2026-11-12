@@ -369,12 +369,17 @@ export const triggersCmd$Listen = Command.make(
         const events = yield* FiberSet.make();
         const runEvent = yield* FiberSet.runtime(events)();
         // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
-        // the listener until Ctrl-C or SIGTERM stops it or another signal interrupts it.
+        // the listener until Ctrl-C or SIGTERM stops it, a reader closes stdout
+        // (`--json | head -1`), or another signal interrupts it.
         const stopReason = yield* Effect.raceAllFirst([
           listenEffect(runEvent),
           Deferred.await(stopWhenDone),
           shutdown.requested,
+          Effect.as(ui.stdoutClosed, 'stdout-closed' as const),
         ]);
+        if (stopReason === 'stdout-closed') {
+          yield* ui.log.info('Stopped listening for realtime trigger events: stdout was closed.');
+        }
         if (stopReason === 'max-events') {
           yield* finishAcceptedEvents(events, failed);
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);

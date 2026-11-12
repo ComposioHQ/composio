@@ -3,7 +3,7 @@ import type { Writable } from 'node:stream';
 import { getColumns } from '@clack/core';
 import * as p from '@clack/prompts';
 import stringWidth from 'fast-string-width';
-import { Context, Data, Effect, Exit, Layer, Predicate } from 'effect';
+import { Context, Data, Deferred, Effect, Exit, Layer, Predicate } from 'effect';
 
 export type TtyLikeStream = {
   readonly isTTY?: boolean;
@@ -105,6 +105,13 @@ export interface TerminalUI {
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
   readonly output: (data: string, options?: { readonly force?: boolean }) => Effect.Effect<void>;
+
+  /**
+   * Completes once a reader closed stdout early (EPIPE), from which point `output` drops its
+   * data; never completes otherwise. A command that keeps producing data until stopped (a
+   * listener) races it, so it stops once nobody reads what it writes.
+   */
+  readonly stdoutClosed: Effect.Effect<void>;
 
   /**
    * Write an unformatted line to stderr even when stderr is redirected.
@@ -308,8 +315,8 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
     return Effect.sync(render);
   };
 
-  // Set once the reader of stdout went away: nothing written after can reach it.
-  let stdoutClosed = false;
+  // Done once the reader of stdout went away: nothing written after can reach it.
+  const stdoutClosed = Deferred.makeUnsafe<void>();
   // A failed write reaches its callback and is also emitted as an `error` event, which crashes
   // the process when nothing listens. `writeStdout` reports every failure from the callback, and
   // listens only once it writes, so a process that never writes data keeps the default.
@@ -322,7 +329,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
    */
   const writeStdout = (chunk: string): Effect.Effect<void> =>
     Effect.suspend(() => {
-      if (stdoutClosed) {
+      if (Deferred.isDoneUnsafe(stdoutClosed)) {
         return Effect.void;
       }
       if (!ignoringStdoutErrorEvents) {
@@ -334,7 +341,7 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
           if (error === null || error === undefined) {
             resume(Effect.void);
           } else if (isBrokenPipe(error)) {
-            stdoutClosed = true;
+            Deferred.doneUnsafe(stdoutClosed, Effect.void);
             resume(Effect.void);
           } else {
             resume(Effect.die(error));
@@ -363,6 +370,8 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
 
     output: (data, options) =>
       options?.force || !stdoutIsTTY ? writeStdout(`${data}\n`) : Effect.void,
+
+    stdoutClosed: Deferred.await(stdoutClosed),
 
     error: data => Effect.sync(() => stderr.write(`${data}\n`)),
 
