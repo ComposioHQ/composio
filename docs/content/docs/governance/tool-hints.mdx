@@ -1,7 +1,7 @@
 ---
 title: Tool hints
 description: How Composio classifies each tool by the action it takes, and how sessions use those hints
-keywords: [tags, readOnlyHint, createHint, updateHint, destructiveHint, governance, permissions]
+keywords: [tags, readOnlyHint, createHint, updateHint, destructiveHint, idempotentHint, governance, permissions]
 ---
 
 Every tool has a **hint** that describes the action it takes: reading, creating, updating or deleting. In [sessions](/docs/configuring-sessions), you can use these hints to configure the tools available in the session.
@@ -22,6 +22,12 @@ Every tool has a **hint** that describes the action it takes: reading, creating,
 ## How tools get hints
 
 Composio assigns hints on a best-effort basis, based on each tool's description and behavior. For MCP tools, Composio infers them from the tool's description and the hints the MCP server provides.
+
+<span id="idempotent-hint" className="block scroll-m-28" />
+
+## Repeat calls
+
+Some tools also have `idempotentHint`. As in MCP, it means calling the tool again with the same arguments has no further effect. It doesn't mean the repeat succeeds: deleting something twice can return a "not found" error the second time. After a timeout, check the [execution log](/kb/guide/sdk-tool-execution-retries) before you retry.
 
 <span id="using-tags-in-a-session" className="block scroll-m-28" />
 
