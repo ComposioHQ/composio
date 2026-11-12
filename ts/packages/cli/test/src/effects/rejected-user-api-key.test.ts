@@ -1,7 +1,11 @@
 import { AuthenticationError } from '@composio/client/effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer, Option } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Layer, Option, Path } from 'effect';
+import * as tempy from 'tempy';
 import { rejectedUserApiKeyHint, unauthorizedHint } from 'src/effects/rejected-user-api-key';
+import { NodeOs } from 'src/services/node-os';
 import { ComposioUserContext } from 'src/services/user-context';
 
 const PRODUCTION = { base: 'https://backend.composio.dev', web: 'https://dashboard.composio.dev/' };
@@ -38,6 +42,41 @@ const userContextLayer = (
       })
     )
   );
+
+/**
+ * `userContextLayer` on `baseURL`/`webURL` plus a temporary home, where `~/.composio/agent.json`
+ * lives, read through the real filesystem.
+ */
+const agentHomeLayer = (baseURL: string, webURL: string) => {
+  const homedir = tempy.temporaryDirectory({ prefix: 'unauthorized-hint' });
+  return Layer.mergeAll(
+    userContextLayer(baseURL, webURL),
+    BunFileSystem.layer,
+    BunPath.layer,
+    Layer.succeed(
+      NodeOs,
+      NodeOs.of({ homedir, tmpdir: homedir, arch: 'arm64', platform: 'darwin' })
+    )
+  );
+};
+
+/** Saves an agent identity whose user API key is `userApiKey` in `~/.composio/agent.json`. */
+const saveAgentIdentity = (userApiKey: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const os = yield* NodeOs;
+    const dir = path.join(os.homedir, '.composio');
+    yield* fs.makeDirectory(dir, { recursive: true });
+    yield* fs.writeFileString(
+      path.join(dir, 'agent.json'),
+      JSON.stringify({
+        composio_agent_key: 'ak_saved',
+        composio: { user_api_key: userApiKey, org_id: 'org_agent' },
+      }),
+      { mode: 0o600 }
+    );
+  });
 
 /** The hint for a stored login whose resolved backend is `baseURL` with its Dashboard at `webURL`. */
 const hintFor = (baseURL: string, webURL: string, env: Record<string, string> = {}) =>
@@ -154,5 +193,37 @@ describe('unauthorizedHint', () => {
       );
       expect(hint).toEqual(c.hint);
     })
+  );
+});
+
+describe('[Given] the stored login is the saved agent identity', () => {
+  // `composio logout` would need --yes without a terminal and would delete the saved agent key.
+  it.effect('[Then] a rejected key names `composio login --agent`, with no logout', () =>
+    Effect.gen(function* () {
+      yield* saveAgentIdentity('uak_stored');
+      expect(yield* rejectedUserApiKeyHint).toBe(
+        'Log in again, then retry:\n> COMPOSIO_ENVIRONMENT=staging composio login --agent'
+      );
+    }).pipe(Effect.provide(agentHomeLayer(STAGING.base, STAGING.web)))
+  );
+
+  it.effect('[Then] another 401 names `composio login --agent`, with no logout', () =>
+    Effect.gen(function* () {
+      yield* saveAgentIdentity('uak_stored');
+      expect(yield* unauthorizedHint(unauthorized('Auth_InvalidApiKey'))).toEqual(
+        Option.some('If your login expired, log in again, then retry:\n> composio login --agent')
+      );
+    }).pipe(Effect.provide(agentHomeLayer(PRODUCTION.base, PRODUCTION.web)))
+  );
+
+  it.effect('[Given] the saved agent owns another key [Then] it names the regular login', () =>
+    Effect.gen(function* () {
+      yield* saveAgentIdentity('uak_other');
+      expect(yield* unauthorizedHint(unauthorized('Auth_InvalidApiKey'))).toEqual(
+        Option.some(
+          'If your login expired, log in again, then retry:\n> composio logout && composio login'
+        )
+      );
+    }).pipe(Effect.provide(agentHomeLayer(PRODUCTION.base, PRODUCTION.web)))
   );
 });

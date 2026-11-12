@@ -1,7 +1,9 @@
-import { Effect, Option } from 'effect';
+import { Effect, FileSystem, Option, Path } from 'effect';
 import { APP_CONFIG } from 'src/config';
 import { withoutTrailingSlashes } from 'src/config/backend';
 import * as constants from 'src/constants';
+import { getCurrentLoggedInAgent } from 'src/services/agents';
+import { NodeOs } from 'src/services/node-os';
 import { ComposioUserContext } from 'src/services/user-context';
 import { findApiError } from 'src/utils/api-error-extraction';
 
@@ -45,14 +47,45 @@ const keyFromEnv = APP_CONFIG.USER_API_KEY.pipe(
   Effect.orElseSucceed(() => false)
 );
 
-/** The login command that replaces the stored login, on the backend that rejected its key. */
+/**
+ * Whether the stored login is the saved Composio agent identity's. False when it is not, or when
+ * the caller has none of the services that read it.
+ */
+const loggedInAsAgent = Effect.gen(function* () {
+  const services = Option.all({
+    ctx: yield* Effect.serviceOption(ComposioUserContext),
+    fs: yield* Effect.serviceOption(FileSystem.FileSystem),
+    path: yield* Effect.serviceOption(Path.Path),
+    os: yield* Effect.serviceOption(NodeOs),
+  });
+  if (Option.isNone(services)) {
+    return false;
+  }
+  const { ctx, fs, path, os } = services.value;
+  return yield* getCurrentLoggedInAgent.pipe(
+    Effect.map(Option.isSome),
+    Effect.provideService(ComposioUserContext, ctx),
+    Effect.provideService(FileSystem.FileSystem, fs),
+    Effect.provideService(Path.Path, path),
+    Effect.provideService(NodeOs, os),
+    Effect.orElseSucceed(() => false)
+  );
+});
+
+/**
+ * The login command that replaces the stored login, on the backend that rejected its key. An
+ * agent identity's login is renewed with `login --agent`: `composio logout` would need `--yes`
+ * without a terminal and would delete the saved agent key the renewal needs.
+ */
 const loginAgainCommand = Effect.gen(function* () {
   const ctx = yield* Effect.serviceOption(ComposioUserContext);
   const prefix = Option.match(ctx, {
     onNone: () => '',
     onSome: c => loginTargetPrefix(c.data.baseURL, c.data.webURL),
   });
-  return `composio logout && ${prefix}composio login`;
+  return (yield* loggedInAsAgent)
+    ? `${prefix}composio login --agent`
+    : `composio logout && ${prefix}composio login`;
 });
 
 /**
