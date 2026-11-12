@@ -22,11 +22,7 @@ export type SearchToolSchema = Schema.Schema.Type<typeof SearchToolSchema>;
 export const SearchToolSchemas = Schema.Record(Schema.String, SearchToolSchema);
 export type SearchToolSchemas = Schema.Schema.Type<typeof SearchToolSchemas>;
 
-/**
- * One query's result. Its other fields are kept, since `composio search` prints the result on
- * stdout.
- */
-export const SearchResult = Schema.StructWithRest(
+const SearchResultFields = Schema.StructWithRest(
   Schema.Struct({
     use_case: Schema.String,
     primary_tool_slugs: Schema.Array(Schema.String),
@@ -34,8 +30,17 @@ export const SearchResult = Schema.StructWithRest(
     recommended_plan_steps: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
   }),
   [JsonObject]
-).annotate({ identifier: 'SearchResult' });
-export type SearchResult = Schema.Schema.Type<typeof SearchResult>;
+);
+export type SearchResult = Schema.Schema.Type<typeof SearchResultFields>;
+
+/**
+ * One query's result. `composio search` prints the result on stdout, so it is checked and then
+ * kept as the API sent it, its other fields and its key order included: decoding a struct
+ * rebuilds the object with the declared fields first.
+ */
+export const SearchResult = Schema.declare(Schema.is(SearchResultFields)).annotate({
+  identifier: 'SearchResult',
+});
 
 export const ToolSearchResponse = Schema.Struct({
   results: Schema.Array(SearchResult),
