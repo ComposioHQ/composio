@@ -1,6 +1,6 @@
 import { Effect, Match, Option, Result } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { devActingUserOption, resolveSurfaceProject } from 'src/commands/surface';
+import { devActingUserOption, resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -41,11 +41,11 @@ const invalidTriggerConfig = (error: JsonParsingError) =>
   );
 
 /**
- * Create a trigger instance in the developer project (the directory's, or `--project-name`'s) as
+ * Create a trigger instance in the developer project (`resolveDeveloperResourceProject`) as
  * the `dev` group's `--user-id`, else the directory project's test user (for its own project),
  * else the global test user; without any, the request omits `user_id`. A missing
  * `<trigger-name>` or an invalid `--trigger-config` fails with a `CommandInputError` before any
- * request, and a missing developer project with `ProjectResolutionError`; an API failure is
+ * request, and a developer project that cannot be found with `ProjectResolutionError`; an API failure is
  * reported with a hint and exits 1.
  *
  * @example
@@ -74,7 +74,7 @@ export const runTriggersCreate = ({
       return yield* invalidTriggerConfig(parsedTriggerConfig.failure);
     }
 
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
     // A defaulted user id must own the connected account on a 2FA project; `devActingUserOption`
     // names it on stderr.
     const acting = yield* devActingUserOption(project);

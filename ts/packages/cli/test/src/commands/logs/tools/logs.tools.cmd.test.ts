@@ -4,7 +4,8 @@ import { buildToolLogShorthandSearchParams } from 'src/commands/logs/tools/logs.
 import { cli, cliExit, MockConsole, TestLive } from 'test/__utils__';
 import {
   DIRECTORY_PROJECT_SCOPE,
-  expectNoDeveloperProject,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
   OTHER_DEVELOPER_PROJECT,
@@ -274,16 +275,15 @@ describe('CLI: composio dev logs tools acts on the developer project', () => {
     );
   });
 
-  layer(TestLive({ baseConfigProvider: config }))(it => {
-    it.effect('[Given] a directory set up for no project [Then] fails naming `composio dev init`', () =>
+  layer(TestLive({ baseConfigProvider: config, accountData: defaultDeveloperProjectAccountData() }))(it => {
+    it.effect('[Given] a directory set up for no project [Then] reads the logs of the default developer project', () =>
       Effect.gen(function* () {
         yield* loginWithoutDeveloperProject;
         const stub = stubClientResources(['_internal'], () => Response.json({ data: [], nextCursor: null }));
-        const { exit, exitCode } = yield* cliExit(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
+        const { exitCode } = yield* cliExit(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
 
-        expect(exitCode).toBe(1);
-        expectNoDeveloperProject(exit);
-        expect(stub.requests).toEqual([]);
+        expect(exitCode).toBe(0);
+        expect(stub.scopes).toEqual([DEFAULT_PROJECT_SCOPE]);
       })
     );
   });

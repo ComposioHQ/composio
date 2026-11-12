@@ -1,6 +1,6 @@
 import { Effect, Option } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { resolveSurfaceProject } from 'src/commands/surface';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -14,7 +14,7 @@ const invalidInput = commandInputError('dev triggers enable');
 
 /**
  * Enable an existing trigger instance of the developer project. A missing `<id>` fails with a
- * `CommandInputError` before any request, and a missing developer project with
+ * `CommandInputError` before any request, and a developer project that cannot be found with
  * `ProjectResolutionError`; an API failure is reported with a hint and exits 1.
  *
  * @example
@@ -35,7 +35,7 @@ export const runTriggersEnable = ({ id }: TriggersEnableParams) =>
     }
 
     const idValue = id.value;
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
     yield* ui
       .withSpinner(`Enabling trigger "${idValue}"...`, repo.enableTrigger(project, idValue))
       .pipe(

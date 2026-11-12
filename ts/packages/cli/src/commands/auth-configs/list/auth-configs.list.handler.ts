@@ -1,5 +1,5 @@
 import { Array as Arr, Effect, Option, String } from 'effect';
-import { resolveSurfaceProject } from 'src/commands/surface';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -14,14 +14,14 @@ export type AuthConfigsListParams = {
 
 /**
  * List the developer project's auth configs, filtered by toolkit and name: the table on stderr,
- * the JSON on stdout. Fails with `ProjectResolutionError` when no developer project is configured
- * for the directory and no `--project-name` is given.
+ * the JSON on stdout. Fails with `ProjectResolutionError` when no developer project can be found
+ * (`resolveDeveloperResourceProject`).
  */
 export const runAuthConfigsList = ({ toolkits, query, limit }: AuthConfigsListParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
 
     const result = yield* ui.withSpinner(
       'Fetching auth configs...',

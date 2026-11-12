@@ -42,15 +42,16 @@ export const applyConnectedFilter = (
   return { rows, filterSkipped: params.connectedOnly && params.userResolved };
 };
 
-/** Why the listing carries no connection status when no developer project is configured. */
+/** Why the listing carries no connection status when no developer project was resolved. */
 const NO_PROJECT_STATUS_MESSAGE =
-  'No developer project configured for this directory; showing toolkits without connection status. Run `composio dev init` or pass --project-name.';
+  'No developer project to read connection status from; showing toolkits without it. Run `composio dev init`, or pass --user-id or --project-name.';
 
 /**
- * Lists the toolkit catalog. When the developer project (the directory's, or `--project-name`'s)
- * and a user are known, the rows also carry that user's connection status, read from a tool
- * router session in that project; a failed session read only drops the status. Without a
- * developer project the catalog is listed without it.
+ * Lists the toolkit catalog. When the developer project and a user are known
+ * (`resolveSurfaceProjectAndUserOption`: `--project-name`'s project, the directory's, or for
+ * `--user-id` or the global test user the backend's default one), the rows also carry that
+ * user's connection status, read from a tool router session in that project; a failed session
+ * read only drops the status. Without a developer project the catalog is listed without it.
  */
 export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams) =>
   Effect.gen(function* () {

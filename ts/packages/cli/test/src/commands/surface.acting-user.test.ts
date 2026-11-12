@@ -8,8 +8,8 @@ import {
   fallbackNotice,
   MissingActingUserError,
   resolveSurfaceProject,
+  resolveDeveloperResourceProject,
   resolveSurfaceProjectAndUserOption,
-  resolveSurfaceProjectOption,
   type ActingUserSource,
   type CommandTree,
 } from 'src/commands/surface';
@@ -20,7 +20,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { mockAccountResources } from 'test/__utils__/layers/accounts';
-import { makeOrgProject } from 'test/__utils__/models/account';
+import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const ORG_ID = 'org_test';
@@ -28,6 +28,8 @@ const CONSUMER_USER_ID = `consumer-user-${ORG_ID}`;
 const CONSUMER_PROJECT_ID = 'consumer_project_test';
 const DIRECTORY_PROJECT_ID = 'proj_directory';
 const OTHER_PROJECT_ID = 'proj_other';
+/** The developer project the backend acts on for a request that names none. */
+const DEFAULT_PROJECT_ID = 'proj_newest';
 
 const projects = [
   makeOrgProject({ id: DIRECTORY_PROJECT_ID, name: 'directory', orgId: ORG_ID }),
@@ -67,7 +69,17 @@ const actingUserLayer = (fixture: Fixture, warnings: Array<string>) => {
     email: Option.none(),
     testUserId: has('directory') ? Option.some('directory-user') : Option.none(),
   };
-  const resources = mockAccountResources({ projects }, {});
+  const resources = mockAccountResources(
+    {
+      projects,
+      sessionInfo: makeSessionInfo({
+        orgId: ORG_ID,
+        projectNanoId: DEFAULT_PROJECT_ID,
+        projectName: 'newest',
+      }),
+    },
+    {}
+  );
   // The account resources answer only the fields `resolveCommandProject` reads.
   const client = {
     ...resources,
@@ -100,6 +112,8 @@ const actingUserLayer = (fixture: Fixture, warnings: Array<string>) => {
           ...terminalUITestImpl.log,
           warn: message => Effect.sync(() => warnings.push(message)),
         },
+        // Off a terminal a warning that must still show is a plain stderr line.
+        error: message => Effect.sync(() => warnings.push(message)),
       })
     ),
     Layer.succeed(
@@ -293,45 +307,88 @@ describe('devActingUserOption', () => {
   );
 });
 
-describe('resolveSurfaceProjectOption', () => {
-  const withoutDirectoryProject = Layer.succeed(
-    ProjectContext,
-    ProjectContext.of({ resolve: Effect.succeedNone })
-  );
+const withoutDirectoryProject = Layer.succeed(
+  ProjectContext,
+  ProjectContext.of({ resolve: Effect.succeedNone })
+);
 
+/** A directory set up, by someone else, for a project in an org the user is not logged in to. */
+const directoryProjectElsewhere = Layer.succeed(
+  ProjectContext,
+  ProjectContext.of({
+    resolve: Effect.succeedSome({
+      orgId: 'org_elsewhere',
+      projectId: 'proj_elsewhere',
+      projectName: Option.some('elsewhere'),
+      orgName: Option.none(),
+      email: Option.none(),
+      testUserId: Option.some('elsewhere-user'),
+    }),
+  })
+);
+
+const NO_DIRECTORY_PROJECT_NOTICE =
+  'Warning: No developer project is set up for this directory; using "newest" (proj_newest), the newest developer project in the org you are logged in to, instead. Run `composio dev init` to choose one, or pass --project-name.';
+
+const DIRECTORY_PROJECT_ELSEWHERE_NOTICE =
+  'Warning: This directory\'s developer project is in org "org_elsewhere", not the org you are logged in to ("org_test"); using "newest" (proj_newest), the newest developer project in the org you are logged in to, instead. Run `composio orgs switch` to use the directory\'s org, or `composio dev init` to set this directory up in yours.';
+
+describe('resolveDeveloperResourceProject', () => {
   it.effect.each([
-    { projectName: 'absent', expected: Option.some(DIRECTORY_PROJECT_ID) },
-    { projectName: 'other', expected: Option.some(OTHER_PROJECT_ID) },
+    { projectName: 'absent', expected: DIRECTORY_PROJECT_ID },
+    { projectName: 'other', expected: OTHER_PROJECT_ID },
   ] as const)(
-    '[Given] --project-name $projectName [Then] resolves the developer project',
+    '[Given] --project-name $projectName [Then] resolves that project with no notice',
     ({ projectName, expected }) =>
       Effect.gen(function* () {
-        const project = yield* run(resolveSurfaceProjectOption, {
-          tree: 'dev',
-          candidates: 'none',
-          projectName,
-        });
+        const warnings: Array<string> = [];
+        const project = yield* run(
+          resolveDeveloperResourceProject,
+          { tree: 'dev', candidates: 'none', projectName },
+          warnings
+        );
 
-        expect(Option.map(project, found => found.projectId)).toEqual(expected);
+        expect(project.projectId).toBe(expected);
+        expect(warnings).toEqual([]);
       })
   );
 
-  it.effect('[Given] no directory project and no --project-name [Then] finds none', () =>
-    Effect.gen(function* () {
-      const project = yield* run(
-        resolveSurfaceProjectOption.pipe(Effect.provide(withoutDirectoryProject)),
-        { tree: 'dev', candidates: 'none', projectName: 'absent' }
-      );
+  it.effect.each([
+    {
+      given: 'no directory project',
+      layer: withoutDirectoryProject,
+      notice: NO_DIRECTORY_PROJECT_NOTICE,
+    },
+    {
+      given: 'a directory project in another org',
+      layer: directoryProjectElsewhere,
+      notice: DIRECTORY_PROJECT_ELSEWHERE_NOTICE,
+    },
+  ])(
+    '[Given] $given [Then] uses the default developer project and says so on stderr',
+    ({ layer, notice }) =>
+      Effect.gen(function* () {
+        const warnings: Array<string> = [];
+        const project = yield* run(
+          resolveDeveloperResourceProject.pipe(Effect.provide(layer)),
+          { tree: 'dev', candidates: 'none', projectName: 'absent' },
+          warnings
+        );
 
-      expect(project).toEqual(Option.none());
-    })
+        expect(project).toMatchObject({
+          orgId: ORG_ID,
+          projectId: DEFAULT_PROJECT_ID,
+          source: 'developer-default',
+        });
+        expect(warnings).toEqual([notice]);
+      })
   );
 
   it.effect('[Given] a --project-name the org does not hold [Then] fails', () =>
     Effect.gen(function* () {
       const error = yield* run(
         Effect.flip(
-          resolveSurfaceProjectOption.pipe(
+          resolveDeveloperResourceProject.pipe(
             Effect.provide(
               CommandSurface.dev({ userId: Option.none(), projectName: Option.some('missing') })
             )
@@ -343,6 +400,25 @@ describe('resolveSurfaceProjectOption', () => {
       expect(error).toBeInstanceOf(ProjectResolutionError);
       expect(error).toMatchObject({ reason: 'project_not_found' });
     })
+  );
+
+  it.effect(
+    '[Given] the default project stands in for another org’s directory project [Then] its test user does not',
+    () =>
+      Effect.gen(function* () {
+        const warnings: Array<string> = [];
+        const user = yield* run(
+          Effect.flatMap(resolveDeveloperResourceProject, devActingUserOption).pipe(
+            Effect.provide(directoryProjectElsewhere)
+          ),
+          { tree: 'dev', candidates: 'global', projectName: 'absent' },
+          warnings
+        );
+
+        expect(Option.map(user, ({ userId, source }) => ({ userId, source }))).toEqual(
+          Option.some({ userId: 'global-user', source: 'global-test-user' })
+        );
+      })
   );
 });
 
@@ -364,16 +440,37 @@ describe('resolveSurfaceProjectAndUserOption', () => {
     })
   );
 
-  it.effect('[Given] no directory project and no --project-name [Then] finds neither', () =>
+  it.effect.each([
+    { candidates: 'flag', userId: 'flag-user' },
+    { candidates: 'global', userId: 'global-user' },
+  ] as const)(
+    '[Given] no directory project and a $candidates user [Then] uses the default project, saying so',
+    ({ candidates, userId }) =>
+      Effect.gen(function* () {
+        const warnings: Array<string> = [];
+        const { project, user } = yield* run(
+          resolveSurfaceProjectAndUserOption.pipe(Effect.provide(withoutDirectoryProject)),
+          { tree: 'dev', candidates, projectName: 'absent' },
+          warnings
+        );
+
+        expect(Option.map(project, found => found.projectId)).toEqual(
+          Option.some(DEFAULT_PROJECT_ID)
+        );
+        expect(Option.map(user, found => found.userId)).toEqual(Option.some(userId));
+        expect(warnings[0]).toBe(NO_DIRECTORY_PROJECT_NOTICE);
+      })
+  );
+
+  it.effect.each([
+    { given: 'no directory project', layer: withoutDirectoryProject },
+    { given: 'a directory project in another org', layer: directoryProjectElsewhere },
+  ])('[Given] $given and no user but the directory’s [Then] finds neither, quietly', ({ layer }) =>
     Effect.gen(function* () {
       const warnings: Array<string> = [];
       const result = yield* run(
-        resolveSurfaceProjectAndUserOption.pipe(
-          Effect.provide(
-            Layer.succeed(ProjectContext, ProjectContext.of({ resolve: Effect.succeedNone }))
-          )
-        ),
-        { tree: 'dev', candidates: 'flag', projectName: 'absent' },
+        resolveSurfaceProjectAndUserOption.pipe(Effect.provide(layer)),
+        { tree: 'dev', candidates: 'none', projectName: 'absent' },
         warnings
       );
 

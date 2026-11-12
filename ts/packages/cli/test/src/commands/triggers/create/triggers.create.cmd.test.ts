@@ -12,7 +12,8 @@ import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 import {
   DIRECTORY_PROJECT_SCOPE,
-  expectNoDeveloperProject,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
   OTHER_DEVELOPER_PROJECT,
@@ -340,13 +341,15 @@ describe('CLI: composio dev triggers create acts on the developer project', () =
     );
   });
 
-  layer(TestLive(devConfigWithoutProject))(it => {
+  layer(
+    TestLive({ ...devConfigWithoutProject, accountData: defaultDeveloperProjectAccountData() })
+  )(it => {
     it.effect(
-      '[Given] a directory set up for no project [Then] fails naming `composio dev init`',
+      '[Given] a directory set up for no project [Then] acts on the default developer project',
       () =>
         Effect.gen(function* () {
           yield* loginWithoutDeveloperProject;
-          const { exit, exitCode, calls } = yield* runRecordingRepositoryScopes([
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes([
             'dev',
             'triggers',
             'create',
@@ -355,9 +358,10 @@ describe('CLI: composio dev triggers create acts on the developer project', () =
             'con_123',
           ]);
 
-          expect(exitCode).toBe(1);
-          expectNoDeveloperProject(exit);
-          expect(calls).toEqual([]);
+          expect(exitCode).toBe(0);
+          expect(calls).toEqual([
+            { method: 'createTrigger', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
         })
     );
   });

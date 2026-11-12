@@ -7,7 +7,8 @@ import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import {
   DIRECTORY_PROJECT_SCOPE,
-  expectNoDeveloperProject,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
   OTHER_DEVELOPER_PROJECT,
@@ -136,22 +137,29 @@ describe('CLI: composio dev auth-configs info acts on the developer project', ()
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(it => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      authConfigsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
     it.effect(
-      '[Given] a directory set up for no project [Then] fails naming `composio dev init`',
+      '[Given] a directory set up for no project [Then] acts on the default developer project',
       () =>
         Effect.gen(function* () {
           yield* loginWithoutDeveloperProject;
-          const { exit, exitCode, calls } = yield* runRecordingRepositoryScopes([
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes([
             'dev',
             'auth-configs',
             'info',
             'ac_gmail_default',
           ]);
 
-          expect(exitCode).toBe(1);
-          expectNoDeveloperProject(exit);
-          expect(calls).toEqual([]);
+          expect(exitCode).toBe(0);
+          expect(calls).toEqual([
+            { method: 'getAuthConfig', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
         })
     );
   });

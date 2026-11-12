@@ -1,5 +1,5 @@
 import { Array as Arr, Effect, Option } from 'effect';
-import { resolveSurfaceProject } from 'src/commands/surface';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import {
@@ -54,8 +54,8 @@ const filterByToolkits = (
 
 /**
  * Display the developer project's active trigger instances with optional filters. Fails with
- * `ProjectResolutionError` when no developer project is configured for the directory and no
- * `--project-name` is given.
+ * `ProjectResolutionError` when no developer project can be found
+ * (`resolveDeveloperResourceProject`).
  *
  * @example
  * ```bash
@@ -75,7 +75,7 @@ export const runTriggersStatus = ({
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
 
     // An empty list (`--toolkits ","`) filters nothing.
     const toolkitFilter = Option.flatMap(toolkits, csv =>

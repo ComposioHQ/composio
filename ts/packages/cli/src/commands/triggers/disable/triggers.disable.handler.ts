@@ -1,6 +1,6 @@
 import { Effect, Option } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { resolveSurfaceProject } from 'src/commands/surface';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -17,8 +17,7 @@ const invalidInput = commandInputError('dev triggers disable');
 /**
  * Disable an existing trigger instance of the developer project. A developer-destructive command:
  * it runs only when `developer.destructive_actions` is enabled and `--dangerously-allow` is passed.
- * A missing `<id>` fails with a `CommandInputError` before any request, and a missing developer
- * project with `ProjectResolutionError`; an API failure is reported with a hint and exits 1.
+ * A missing `<id>` fails with a `CommandInputError` before any request, and a developer project that cannot be found with `ProjectResolutionError`; an API failure is reported with a hint and exits 1.
  *
  * @example
  * ```bash
@@ -50,7 +49,7 @@ export const runTriggersDisable = ({ id, dangerouslyAllow }: TriggersDisablePara
     }
 
     const idValue = id.value;
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
     yield* ui
       .withSpinner(`Disabling trigger "${idValue}"...`, repo.disableTrigger(project, idValue))
       .pipe(

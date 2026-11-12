@@ -3,9 +3,12 @@ import { ConfigProvider, DateTime, Effect } from 'effect';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { cli, cliExit, MockConsole, TestLive } from 'test/__utils__';
 import {
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   DIRECTORY_PROJECT_SCOPE,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
+  NO_DIRECTORY_PROJECT_NOTICE,
   OTHER_DEVELOPER_PROJECT,
   OTHER_PROJECT_SCOPE,
 } from 'test/__utils__/layers/developer-project';
@@ -144,32 +147,62 @@ describe('CLI: composio dev toolkits info reads connection status in the develop
     );
   });
 
-  layer(TestLive({ baseConfigProvider: config, toolkitsData: { detailedToolkits: [gmail] } }))(
-    it => {
-      it.effect(
-        '[Given] a directory set up for no project [Then] shows the toolkit without connection status',
-        () =>
-          Effect.gen(function* () {
-            yield* loginWithoutDeveloperProject;
-            const stub = toolkitsOver(gmailPage);
-            const { exitCode } = yield* cliExit([
-              'dev',
-              'toolkits',
-              'info',
-              'gmail',
-              '--user-id',
-              'alice',
-            ]).pipe(Effect.provide(stub.layer));
-            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+  layer(
+    TestLive({
+      baseConfigProvider: config,
+      toolkitsData: { detailedToolkits: [gmail] },
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
+    it.effect(
+      '[Given] --user-id in a directory set up for no project [Then] reads its status in the default developer project, saying so',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = toolkitsOver(gmailPage);
+          const { exitCode } = yield* cliExit([
+            'dev',
+            'toolkits',
+            'info',
+            'gmail',
+            '--user-id',
+            'alice',
+          ]).pipe(Effect.provide(stub.layer));
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
-            expect(exitCode).toBe(0);
-            expect(stub.requests).toEqual([]);
-            expect(lines).toContain(
-              'No developer project configured for this directory; showing toolkit details without connection status. Run `composio dev init` or pass --project-name.'
-            );
-            expect(JSON.parse(lines.at(-1) ?? '{}')).toMatchObject({ slug: 'gmail' });
-          })
-      );
-    }
-  );
+          expect(exitCode).toBe(0);
+          expect(stub.scopes).toEqual([DEFAULT_PROJECT_SCOPE, DEFAULT_PROJECT_SCOPE]);
+          expect(lines).toContain(NO_DIRECTORY_PROJECT_NOTICE);
+          expect(JSON.parse(lines.at(-1) ?? '{}')).toMatchObject({ slug: 'gmail' });
+        })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: config,
+      toolkitsData: { detailedToolkits: [gmail] },
+    })
+  )(it => {
+    it.effect(
+      '[Given] no user in a directory set up for no project [Then] shows the toolkit without connection status',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = toolkitsOver(gmailPage);
+          const { exitCode } = yield* cliExit(['dev', 'toolkits', 'info', 'gmail']).pipe(
+            Effect.provide(stub.layer)
+          );
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+          expect(exitCode).toBe(0);
+          expect(stub.requests).toEqual([]);
+          expect(lines).toContain(
+            'No developer project to read connection status from; showing toolkit details without it. Run `composio dev init`, or pass --user-id or --project-name.'
+          );
+          expect(lines).not.toContain(NO_DIRECTORY_PROJECT_NOTICE);
+          expect(JSON.parse(lines.at(-1) ?? '{}')).toMatchObject({ slug: 'gmail' });
+        })
+    );
+  });
 });

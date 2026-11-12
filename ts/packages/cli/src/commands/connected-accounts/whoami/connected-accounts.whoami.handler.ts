@@ -1,6 +1,6 @@
 import { Effect, Option } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { resolveSurfaceProject } from 'src/commands/surface';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -29,7 +29,7 @@ const showConnectedAccountProfile = (id: string) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
 
     const account = yield* ui
       .withSpinner(fetchingConnectedAccountMessage(id), repo.getConnectedAccount(project, id))
@@ -53,7 +53,7 @@ const showConnectedAccountProfile = (id: string) =>
 /**
  * Shows who a connected account of the developer project is connected as (toolkit, user,
  * status), warning when the connection is not ACTIVE. A missing `<id>` fails with a
- * `CommandInputError` before any request, and a missing developer project with
+ * `CommandInputError` before any request, and a developer project that cannot be found with
  * `ProjectResolutionError`; an API failure is reported with a hint and exits 1.
  */
 export const runConnectedAccountsWhoami = ({ id }: ConnectedAccountsWhoamiParams) =>

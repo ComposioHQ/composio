@@ -5,7 +5,8 @@ import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { TriggerInstanceItem } from 'src/models/triggers';
 import {
   DIRECTORY_PROJECT_SCOPE,
-  expectNoDeveloperProject,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
   OTHER_DEVELOPER_PROJECT,
@@ -189,21 +190,28 @@ describe('CLI: composio dev triggers status acts on the developer project', () =
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(it => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      triggersData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
     it.effect(
-      '[Given] a directory set up for no project [Then] fails naming `composio dev init`',
+      '[Given] a directory set up for no project [Then] acts on the default developer project',
       () =>
         Effect.gen(function* () {
           yield* loginWithoutDeveloperProject;
-          const { exit, exitCode, calls } = yield* runRecordingRepositoryScopes([
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes([
             'dev',
             'triggers',
             'status',
           ]);
 
-          expect(exitCode).toBe(1);
-          expectNoDeveloperProject(exit);
-          expect(calls).toEqual([]);
+          expect(exitCode).toBe(0);
+          expect(calls).toEqual([
+            { method: 'listActiveTriggers', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
         })
     );
   });

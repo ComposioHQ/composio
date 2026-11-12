@@ -1,13 +1,18 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
+import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { AuthConfigItem } from 'src/models/auth-configs';
+import type { MockAccountRequest } from 'test/__utils__/layers/accounts';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import {
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   DIRECTORY_PROJECT_SCOPE,
-  expectNoDeveloperProject,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
+  NO_DIRECTORY_PROJECT_NOTICE,
   OTHER_DEVELOPER_PROJECT,
   OTHER_PROJECT_SCOPE,
   runRecordingRepositoryScopes,
@@ -198,21 +203,79 @@ describe('CLI: composio dev auth-configs list acts on the developer project', ()
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(it => {
+  // Before the command named a project, the backend answered from its default developer project;
+  // a directory without a usable project of its own still gets that one, named on stderr.
+  const sessionRequests: Array<MockAccountRequest> = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      authConfigsData,
+      accountData: defaultDeveloperProjectAccountData(sessionRequests),
+    })
+  )(it => {
     it.effect(
-      '[Given] a directory set up for no project [Then] fails naming `composio dev init`',
+      '[Given] a directory set up for no project [Then] lists the default developer project’s auth configs, saying so on stderr',
       () =>
         Effect.gen(function* () {
           yield* loginWithoutDeveloperProject;
-          const { exit, exitCode, calls } = yield* runRecordingRepositoryScopes([
-            'dev',
-            'auth-configs',
-            'list',
-          ]);
+          sessionRequests.length = 0;
+          // Redirected streams, as under a script: only plain stderr lines and stdout data show.
+          const terminal = redirectedTerminalUI();
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes(
+            ['dev', 'auth-configs', 'list'],
+            terminal.layer
+          );
 
-          expect(exitCode).toBe(1);
-          expectNoDeveloperProject(exit);
-          expect(calls).toEqual([]);
+          expect(exitCode).toBe(0);
+          expect(terminal.stderr()).toBe(`${NO_DIRECTORY_PROJECT_NOTICE}\n`);
+          expect(JSON.parse(terminal.stdout()).map((item: { id: string }) => item.id)).toEqual(
+            testAuthConfigs.map(item => item.id)
+          );
+          // One session-info read in the logged-in org picks the project every request names.
+          expect(
+            sessionRequests.filter(({ operation }) => operation === 'auth.session.retrieveInfo')
+          ).toEqual([
+            expect.objectContaining({ scope: expect.objectContaining({ orgId: 'org_test' }) }),
+          ]);
+          expect(calls).toEqual([
+            { method: 'listAuthConfigs', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
+        })
+    );
+  });
+
+  layer(
+    TestLive({
+      ...inProject,
+      authConfigsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
+    it.effect(
+      '[Given] a directory set up for a project in another org [Then] never names it, using the default project',
+      () =>
+        Effect.gen(function* () {
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_mine');
+          const terminal = redirectedTerminalUI();
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes(
+            ['dev', 'auth-configs', 'list'],
+            terminal.layer
+          );
+
+          expect(exitCode).toBe(0);
+          expect(terminal.stderr()).toContain(
+            'Warning: This directory\'s developer project is in org "org_test", not the org you are logged in to ("org_mine"); using "newest-project" (proj_newest)'
+          );
+          expect(calls).toEqual([
+            {
+              method: 'listAuthConfigs',
+              scope: expect.objectContaining({
+                orgId: 'org_mine',
+                projectId: DEFAULT_PROJECT_SCOPE.projectId,
+              }),
+            },
+          ]);
         })
     );
   });

@@ -1,7 +1,7 @@
 import type { AuthConfigCreateParams as AuthConfigCreateRequest } from '@composio/client/resources/auth-configs';
 import { Effect, Option, Result } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { resolveSurfaceProject } from 'src/commands/surface';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -83,7 +83,7 @@ const invalidInput = commandInputError('dev auth-configs create');
 /**
  * Create an auth config in the developer project: the summary on stderr, the API response as JSON
  * on stdout. Invalid `--custom-credentials` JSON fails with a `CommandInputError` before any
- * request, and a missing developer project with `ProjectResolutionError`; an API failure is
+ * request, and a developer project that cannot be found with `ProjectResolutionError`; an API failure is
  * reported with a hint and exits 1.
  */
 export const runAuthConfigsCreate = ({
@@ -112,7 +112,7 @@ export const runAuthConfigsCreate = ({
       scopes: parseScopes(scopes),
       customCredentials: parsedCustomCredentials.success,
     });
-    const project = yield* resolveSurfaceProject('developer');
+    const project = yield* resolveDeveloperResourceProject;
 
     const result = yield* ui
       .withSpinner('Creating auth config...', repo.createAuthConfig(project, request))

@@ -9,9 +9,12 @@ import { notFoundError } from 'test/__utils__/layers/not-found';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import {
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
   DIRECTORY_PROJECT_SCOPE,
   inDeveloperProjectDirectory,
   loginWithoutDeveloperProject,
+  NO_DIRECTORY_PROJECT_NOTICE,
   OTHER_DEVELOPER_PROJECT,
   OTHER_PROJECT_SCOPE,
 } from 'test/__utils__/layers/developer-project';
@@ -163,21 +166,24 @@ describe('CLI: composio dev toolkits list', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] explicit --user-id [Then] shows connected status column',
-    it => {
-      it.effect('shows connected column with explicit user id', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'list', '--user-id', 'default']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )('[Given] explicit --user-id [Then] shows connected status column', it => {
+    it.effect('shows connected column with explicit user id', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'list', '--user-id', 'default']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          expect(output).toContain('Connected');
-          expect(output).toContain('Listing 3 of 3 toolkits');
-        })
-      );
-    }
-  );
+        expect(output).toContain('Connected');
+        expect(output).toContain('Listing 3 of 3 toolkits');
+      })
+    );
+  });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --query "email"',
@@ -464,9 +470,15 @@ describe('CLI: composio dev toolkits list reads connection status in the develop
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(it => {
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
     it.effect(
-      '[Given] a directory set up for no project [Then] lists the catalog without connection status',
+      '[Given] --user-id in a directory set up for no project [Then] opens its session in the default developer project, saying so',
       () =>
         Effect.gen(function* () {
           yield* loginWithoutDeveloperProject;
@@ -481,11 +493,31 @@ describe('CLI: composio dev toolkits list reads connection status in the develop
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
           expect(exitCode).toBe(0);
+          expect(stub.scopes).toEqual([DEFAULT_PROJECT_SCOPE, DEFAULT_PROJECT_SCOPE]);
+          expect(lines).toContain(NO_DIRECTORY_PROJECT_NOTICE);
+          expect(lines.join('\n')).toContain('Listing 3 of 3 toolkits');
+        })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(it => {
+    it.effect(
+      '[Given] no user in a directory set up for no project [Then] lists the catalog without connection status',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubSessionToolkits(emptyPage);
+          const { exitCode } = yield* cliExit(['dev', 'toolkits', 'list']).pipe(
+            Effect.provide(stub.layer)
+          );
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+          expect(exitCode).toBe(0);
           expect(stub.requests).toEqual([]);
           expect(lines).toContain(
-            'No developer project configured for this directory; showing toolkits without connection status. Run `composio dev init` or pass --project-name.'
+            'No developer project to read connection status from; showing toolkits without it. Run `composio dev init`, or pass --user-id or --project-name.'
           );
-          expect(lines.join('\n')).toContain('Listing 3 of 3 toolkits');
+          expect(lines).not.toContain(NO_DIRECTORY_PROJECT_NOTICE);
         })
     );
   });

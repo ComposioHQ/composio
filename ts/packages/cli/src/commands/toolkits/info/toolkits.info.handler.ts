@@ -19,9 +19,10 @@ export type ToolkitsInfoParams = {
 const invalidInput = commandInputError('dev toolkits info');
 
 /**
- * Shows a toolkit with its connection status in the developer project (the directory's, or
- * `--project-name`'s) for the surface's user: the `dev` group's `--user-id`, then the project
- * test user id, then the global one. Without a developer project the toolkit is shown without
+ * Shows a toolkit with its connection status in the developer project
+ * (`resolveSurfaceProjectAndUserOption`: `--project-name`'s, the directory's, or for `--user-id`
+ * or the global test user the backend's default one) for the surface's user: the `dev` group's
+ * `--user-id`, then the project test user id, then the global one. Without a developer project the toolkit is shown without
  * connection status. A missing `<slug>` fails with a `CommandInputError` before any request; a
  * failed lookup or an unknown toolkit is reported on stderr and exits 1.
  */
@@ -44,7 +45,7 @@ export const runToolkitsInfo = ({ slug, allDetails }: ToolkitsInfoParams) =>
 
     if (Option.isNone(project)) {
       yield* ui.log.info(
-        'No developer project configured for this directory; showing toolkit details without connection status. Run `composio dev init` or pass --project-name.'
+        'No developer project to read connection status from; showing toolkit details without it. Run `composio dev init`, or pass --user-id or --project-name.'
       );
     } else if (Option.isNone(acting)) {
       yield* ui.log.info(

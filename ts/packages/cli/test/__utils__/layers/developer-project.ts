@@ -1,12 +1,12 @@
-import { expect } from '@effect/vitest';
-import { Cause, Effect, Exit, Layer, Option } from 'effect';
+import { Effect, Layer, Option } from 'effect';
 import { CommandSurface } from 'src/commands/surface';
-import { ProjectResolutionError } from 'src/services/command-project';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
+import type { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cliExit } from 'test/__utils__/cli';
-import { makeOrgProject } from 'test/__utils__/models/account';
+import type { MockAccountRequest, MockRequestScope } from 'test/__utils__/layers/accounts';
+import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { recordRepositoryScopes } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -38,18 +38,52 @@ export const inDeveloperProjectDirectory = {
   accountData: { projects: [OTHER_DEVELOPER_PROJECT] },
 } as const satisfies TestLiveInput;
 
-/** What a dev command that acts on a project says when the directory names none. */
-export const NO_DEVELOPER_PROJECT_MESSAGE =
-  'No developer project configured for this directory. Run `composio dev init`.';
+/**
+ * The developer project the backend acts on for a request that names none, as session info
+ * reports it for `org_test`: the newest developer project of that org.
+ */
+export const DEFAULT_PROJECT_SCOPE = { orgId: 'org_test', projectId: 'proj_newest' } as const;
+
+/**
+ * `TestLive` account data whose session info reports {@link DEFAULT_PROJECT_SCOPE}'s project in the
+ * org the request names (`org_test` when it names none), recording every account request in
+ * `requests`.
+ */
+export const defaultDeveloperProjectAccountData = (requests: Array<MockAccountRequest> = []) => ({
+  // The org the request names (`x-org-id`), else `org_test`.
+  sessionInfo: (scope: MockRequestScope) =>
+    makeSessionInfo({
+      orgId: scope.orgId ?? DEFAULT_PROJECT_SCOPE.orgId,
+      projectNanoId: DEFAULT_PROJECT_SCOPE.projectId,
+      projectName: 'newest-project',
+    }),
+  onRequest: (request: MockAccountRequest) => {
+    requests.push(request);
+  },
+});
+
+/**
+ * What a dev command that acts on a project's resources says on stderr, off a terminal, when it
+ * uses {@link DEFAULT_PROJECT_SCOPE} because the directory is set up for no project.
+ */
+export const NO_DIRECTORY_PROJECT_NOTICE =
+  'Warning: No developer project is set up for this directory; using "newest-project" (proj_newest), the newest developer project in the org you are logged in to, instead. Run `composio dev init` to choose one, or pass --project-name.';
 
 /**
  * Runs the CLI with `args` while the repository records the scope of every project resource
- * call, and returns how the run ended with those calls.
+ * call, and returns how the run ended with those calls. `layer` replaces more of the test layer,
+ * such as the terminal.
  */
-export const runRecordingRepositoryScopes = (args: ReadonlyArray<string>) =>
+export const runRecordingRepositoryScopes = (
+  args: ReadonlyArray<string>,
+  layer: Layer.Layer<TerminalUI> | undefined = undefined
+) =>
   Effect.gen(function* () {
     const recorder = recordRepositoryScopes();
-    const result = yield* cliExit(args).pipe(Effect.provide(recorder.layer));
+    const result = yield* cliExit(args).pipe(
+      Effect.provide(recorder.layer),
+      Effect.provide(layer ?? Layer.empty)
+    );
     return { ...result, calls: recorder.calls };
   });
 
@@ -58,13 +92,6 @@ export const loginWithoutDeveloperProject = Effect.gen(function* () {
   const userContext = yield* ComposioUserContext;
   yield* userContext.login('test_api_key', 'org_test');
 });
-
-/** Asserts that a run failed because the directory is set up for no developer project. */
-export const expectNoDeveloperProject = (exit: Exit.Exit<unknown, unknown>) => {
-  const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
-  expect(error).toBeInstanceOf(ProjectResolutionError);
-  expect(error).toMatchObject({ message: NO_DEVELOPER_PROJECT_MESSAGE });
-};
 
 /**
  * What `resolveSurfaceProject('developer')` reads in a handler test, without argv or `TestLive`:
