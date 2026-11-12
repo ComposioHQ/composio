@@ -324,6 +324,30 @@ describe('identity: the two command trees', () => {
       TEST_TIMEOUT_MS
     );
   });
+
+  describe('a help page teaches its own tree', () => {
+    // One `link` definition serves both trees, so its examples must follow the page they are on.
+    const examplesOf = (help: string) =>
+      (help.split('EXAMPLES')[1] ?? '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('composio '));
+
+    for (const page of ['composio link', 'composio dev connected-accounts link']) {
+      it(
+        `\`${page} --help\` shows examples of \`${page}\` only`,
+        async () => {
+          const result = await rig.run(`${page} --help`);
+          expect(result.exitCode).toBe(0);
+          const examples = examplesOf(clean(`${result.stdout}${result.stderr}`));
+          expect(examples.length).toBeGreaterThan(0);
+          expect(examples.filter(example => !example.startsWith(`${page} `))).toEqual([]);
+          expect(commandRequests(result)).toEqual([]);
+        },
+        TEST_TIMEOUT_MS
+      );
+    }
+  });
 });
 
 describe('identity: a missing acting user', () => {
