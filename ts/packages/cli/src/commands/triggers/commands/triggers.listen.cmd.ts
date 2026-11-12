@@ -377,11 +377,12 @@ export const triggersCmd$Listen = Command.make(
           shutdown.requested,
           Effect.as(ui.stdoutClosed, 'stdout-closed' as const),
         ]);
-        if (stopReason === 'stdout-closed') {
-          yield* ui.log.info('Stopped listening for realtime trigger events: stdout was closed.');
+        // Events already accepted still finish their --out and --forward steps; once stdout is
+        // closed their own writes there are dropped.
+        if (stopReason === 'max-events' || stopReason === 'stdout-closed') {
+          yield* finishAcceptedEvents(events, failed);
         }
         if (stopReason === 'max-events') {
-          yield* finishAcceptedEvents(events, failed);
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
       }).pipe(

@@ -505,10 +505,13 @@ export const runListen = (input: ListenParams) =>
             Effect.as(shutdown.requested, 'signal' as const),
             Effect.as(ui.stdoutClosed, 'stdout-closed' as const),
           ]);
-          if (stopReason === 'stdout-closed') {
-            yield* ui.log.info(`Stopped listening for events ${slug}: stdout was closed.`);
-          }
-          if (stopReason === 'max-events' || stopReason === 'timeout') {
+          // Events already accepted still finish their --out and --forward steps; once stdout
+          // is closed their own writes there are dropped.
+          if (
+            stopReason === 'max-events' ||
+            stopReason === 'timeout' ||
+            stopReason === 'stdout-closed'
+          ) {
             yield* finishAcceptedEvents(events, failed);
           }
           if (stopReason === 'max-events') {
