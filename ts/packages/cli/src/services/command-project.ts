@@ -9,6 +9,7 @@ import {
   findDeveloperProjectByName,
   DeveloperProjectNotFoundError,
   AmbiguousDeveloperProjectNameError,
+  listOrganizations,
 } from './composio-account';
 
 export type ProjectMode = 'consumer' | 'developer';
@@ -77,16 +78,19 @@ const normalizeLookupError = <E>(error: E): ProjectResolutionError | E => {
 };
 
 /**
- * The developer project the working directory is set up for. A project file in another org
- * than the logged-in one is refused: a cloned repository's `.composio/` must not send the
- * user's requests, and the credentials some of them carry, to a project its author chose.
+ * The developer project the working directory is set up for. Its org must be one the active
+ * key belongs to: a cloned repository's `.composio/` must not send the user's requests, and
+ * the credentials some of them carry, to a project its author chose. The stored login's org
+ * needs no request; any other org is checked against the key's own org list, because a key
+ * from `COMPOSIO_USER_API_KEY` may store no org, or belong to another account than the login.
  */
-const resolveLocalDeveloperProject = (
-  projectContext: ProjectContext['Service'],
-  loggedInOrgId: Option.Option<string>
-) =>
+const resolveLocalDeveloperProject = (params: {
+  projectContext: ProjectContext['Service'];
+  apiKey: string;
+  storedOrgId: Option.Option<string>;
+}) =>
   Effect.gen(function* () {
-    const localProject = yield* projectContext.resolve;
+    const localProject = yield* params.projectContext.resolve;
     if (Option.isNone(localProject)) {
       return yield* Effect.fail(
         new ProjectResolutionError({
@@ -96,11 +100,15 @@ const resolveLocalDeveloperProject = (
       );
     }
     const { orgId, projectId, projectName } = localProject.value;
-    if (Option.isSome(loggedInOrgId) && loggedInOrgId.value !== orgId) {
+    const isStoredOrg = Option.contains(params.storedOrgId, orgId);
+    const keyOrgs = isStoredOrg
+      ? undefined
+      : yield* listOrganizations({ apiKey: params.apiKey, limit: 100 });
+    if (keyOrgs !== undefined && !keyOrgs.data.some(org => org.id === orgId)) {
       return yield* Effect.fail(
         new ProjectResolutionError({
           reason: 'org_mismatch',
-          message: `This directory is set up for a developer project in org "${orgId}", not in the org you are logged in to ("${loggedInOrgId.value}"). Run \`composio dev init\` to set it up in your org, or pass --project-name.`,
+          message: `This directory is set up for a developer project in org "${orgId}", which your API key cannot access. Run \`composio dev init\` to set it up in one of your orgs, or pass --project-name.`,
         })
       );
     }
@@ -125,7 +133,11 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
     // The directory's own project needs no stored org: a key from `COMPOSIO_USER_API_KEY`
     // carries none, and the project file names its org.
     if (params.mode === 'developer' && !params.projectName) {
-      return yield* resolveLocalDeveloperProject(projectContext, ctx.data.orgId);
+      return yield* resolveLocalDeveloperProject({
+        projectContext,
+        apiKey,
+        storedOrgId: ctx.data.orgId,
+      });
     }
 
     const currentOrgId = yield* Option.match(ctx.data.orgId, {
@@ -181,5 +193,9 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       } satisfies ResolvedCommandProject;
     }
 
-    return yield* resolveLocalDeveloperProject(projectContext, Option.some(currentOrgId));
+    return yield* resolveLocalDeveloperProject({
+      projectContext,
+      apiKey,
+      storedOrgId: Option.some(currentOrgId),
+    });
   }).pipe(Effect.mapError(normalizeLookupError));

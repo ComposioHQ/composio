@@ -13,10 +13,10 @@
   directory set up with `composio dev init`. Without a developer project they
   now fail and point at `composio dev init`, as
   `composio dev playground-execute` does. Every `dev` command now refuses a
-  directory set up for a project in another org than the one you are logged
-  in to, so a cloned repository's `.composio/` cannot send your requests to a
-  project its author chose; a key from `COMPOSIO_USER_API_KEY`, which stores no
-  org, uses the directory's project. `dev toolkits list` and `info` read
+  directory set up for a project in an org your API key does not belong to,
+  so a cloned repository's `.composio/` cannot send your requests to a project
+  its author chose; an org other than the one you are logged in to is checked
+  against your key's orgs, also for a key from `COMPOSIO_USER_API_KEY`. `dev toolkits list` and `info` read
   connection status in that project too, and show the catalog without it when
   there is none.
 
