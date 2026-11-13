@@ -3,7 +3,8 @@
  * journey's starting state, then an agent, and the evidence it left.
  *
  * The agent is a driver. The replay tests and `record.ts` use the minimal
- * loop in `agent.ts`; other agents can use the same driver contract and evidence checks.
+ * loop in `agent.ts`; a live run can also drive Claude Code, see
+ * `claude-code.ts`. Either way the checks read the same evidence.
  */
 
 import { startCliRig, type CliRig, type RigOptions } from '@e2e-tests/cli-fake-backend/rig';
