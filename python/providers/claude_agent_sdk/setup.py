@@ -21,7 +21,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.11,<3.16",
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=["claude-agent-sdk>=0.2.128,<1", "composio"],
     include_package_data=True,
 )

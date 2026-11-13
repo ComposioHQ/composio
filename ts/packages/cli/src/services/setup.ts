@@ -16,6 +16,8 @@ import {
 } from './agent-host';
 import { probeHostInstallation } from './agent-host-env';
 import { CommandRunner, type CommandResult } from './command-runner';
+import { NodeOs } from './node-os';
+import { resolveWindowsExecutable } from './windows-executable';
 import { SetupCommandError } from './setup-command-error';
 import { SetupSkillInstaller } from './setup-skill-installer';
 import { cliInvocationContext } from './runtime-cli-context';
@@ -272,6 +274,27 @@ const pluginState = (
 const commandText = (executable: string, args: ReadonlyArray<string>) =>
   [executable, ...args].join(' ');
 
+/**
+ * The command that runs an agent host's CLI. On Windows the executable is located first:
+ * an npm-installed host is a `.cmd` shim, which has to run through a shell. Its arguments
+ * are fixed by `ADAPTERS` and contain nothing a shell would interpret.
+ */
+const hostCommand = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const os = yield* NodeOs;
+    const resolved =
+      os.platform === 'win32' ? yield* resolveWindowsExecutable(adapter.executable) : Option.none();
+    return Option.match(resolved, {
+      // Not found, or not Windows: spawning by name reports a missing executable as usual.
+      onNone: () => Command.make(adapter.executable, args),
+      onSome: executable =>
+        executable.needsShell
+          ? // A shell takes one command line, not an argument list.
+            Command.make([`"${executable.path}"`, ...args].join(' '), [], { shell: true })
+          : Command.make(executable.path, args),
+    });
+  });
+
 const capture = (
   adapter: SetupTargetAdapter,
   args: ReadonlyArray<string>,
@@ -279,7 +302,7 @@ const capture = (
 ) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    return yield* runner.capture(Command.make(adapter.executable, args)).pipe(
+    return yield* runner.capture(yield* hostCommand(adapter, args)).pipe(
       Effect.timeoutOrElse({
         duration: SETUP_COMMAND_TIMEOUT,
         orElse: () =>
@@ -629,7 +652,7 @@ const runRequired = (
 ) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    const result = yield* runner.capture(Command.make(adapter.executable, args)).pipe(
+    const result = yield* runner.capture(yield* hostCommand(adapter, args)).pipe(
       Effect.timeoutOrElse({
         duration: SETUP_COMMAND_TIMEOUT,
         orElse: () =>

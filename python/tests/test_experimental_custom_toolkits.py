@@ -85,12 +85,19 @@ class TestExperimentalCustomToolkits:
         assert len(deprecations) == 1
         assert "create()" in str(deprecations[0].message)
 
-    def test_upsert_passes_params_through(self, custom_toolkits, mock_client):
+    def test_upsert_passes_params_through(
+        self, custom_toolkits, mock_client, monkeypatch
+    ):
         mock_client.custom.upsert.return_value = "upserted"
+        monkeypatch.setattr(experimental_module, "_upsert_warning_emitted", False)
 
-        result = custom_toolkits.upsert(
-            slug="MY_TOOLKIT", toolkit_config=TOOLKIT_CONFIG
-        )
+        with pytest.warns(
+            exceptions.ComposioDeprecationWarning,
+            match=r"custom_toolkits\.upsert\(\) is deprecated",
+        ):
+            result = custom_toolkits.upsert(
+                slug="MY_TOOLKIT", toolkit_config=TOOLKIT_CONFIG
+            )
 
         assert result == "upserted"
         mock_client.custom.upsert.assert_called_once_with(

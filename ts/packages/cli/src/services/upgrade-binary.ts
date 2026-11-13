@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import {
   Data,
   Effect,
@@ -5,6 +6,7 @@ import {
   Option,
   Predicate,
   Record as EffectRecord,
+  Schedule,
   Scope,
   Stream,
   Context,
@@ -25,7 +27,7 @@ import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-rep
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
-import type { NodeOs } from './node-os';
+import { NodeOs } from './node-os';
 import { recordLatestStableRelease } from './update-check';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
@@ -60,6 +62,7 @@ interface UpgradeBinaryContext {
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly githubConfig: GitHubConfig;
+  readonly platform: NodeJS.Platform;
 }
 
 /**
@@ -403,7 +406,7 @@ const verifyChecksum = (
  * Extract binary from zip archive using FileSystem
  */
 const extractBinary = (
-  { fs, path }: UpgradeBinaryContext,
+  { fs, path, platform }: UpgradeBinaryContext,
   { name, data }: { name: string; data: Uint8Array },
   tempDir: string
 ): Effect.Effect<{ binaryPath: string; packageDir: string }, UpgradeBinaryError, never> =>
@@ -411,7 +414,10 @@ const extractBinary = (
     const zipPath = path.join(tempDir, name);
     const extractDir = path.join(tempDir, 'extract');
     const packageDir = path.join(extractDir, path.parse(name).name);
-    const binaryPath = path.join(packageDir, CLI_BINARY_NAME);
+    const binaryPath = path.join(
+      packageDir,
+      platform === 'win32' ? `${CLI_BINARY_NAME}.exe` : CLI_BINARY_NAME
+    );
 
     yield* Effect.logDebug(`Download zip to ${extractDir}`);
 
@@ -509,7 +515,7 @@ const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =
   });
 
 const replaceBinary = (
-  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
+  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path' | 'platform'>,
   sourcePath: string,
   targetPath: string,
   options: {
@@ -519,6 +525,22 @@ const replaceBinary = (
   Effect.gen(function* () {
     const { fs, path } = ctx;
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
+
+    if (ctx.platform === 'win32') {
+      // Windows keeps the previous executable locked until its process has fully exited,
+      // which can be a moment after an upgrade that just ran returns.
+      yield* fs.remove(`${targetPath}.old`, { force: true }).pipe(
+        Effect.retry({ times: 10, schedule: Schedule.spaced('200 millis') }),
+        Effect.mapError(
+          cause =>
+            new UpgradeBinaryError({
+              cause,
+              message:
+                'Could not remove the previous executable backup. Close other Composio processes and retry.',
+            })
+        )
+      );
+    }
 
     const sourceDirectory = path.dirname(sourcePath);
     const targetDirectory = path.dirname(targetPath);
@@ -604,9 +626,15 @@ const replaceBinary = (
       ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to update installed release metadata')));
     }
 
-    yield* provideFsAndPath(ctx, atomicReplaceFile({ sourcePath, targetPath, mode: 0o755 })).pipe(
-      Effect.mapError(mapAtomicReplaceError('Failed to replace binary'))
-    );
+    yield* provideFsAndPath(
+      ctx,
+      atomicReplaceFile({
+        sourcePath,
+        targetPath,
+        mode: 0o755,
+        backupPath: ctx.platform === 'win32' ? `${targetPath}.old` : undefined,
+      })
+    ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to replace binary')));
 
     const legacyLocalToolsPath = path.join(targetDirectory, LEGACY_LOCAL_TOOLS_DIRNAME);
     yield* fs
@@ -728,6 +756,7 @@ const makeUpgradeBinary = Effect.gen(function* () {
     fs: yield* FileSystem.FileSystem,
     path: yield* Path.Path,
     githubConfig: yield* GITHUB_CONFIG,
+    platform: (yield* NodeOs).platform,
   };
 
   return {
@@ -741,6 +770,6 @@ export class UpgradeBinary extends Context.Service<UpgradeBinary, UpgradeBinaryS
   'services/UpgradeBinary'
 ) {
   static readonly Default = Layer.effect(UpgradeBinary, makeUpgradeBinary).pipe(
-    Layer.provide(Path.layer)
+    Layer.provide(BunPath.layer)
   );
 }
