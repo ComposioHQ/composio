@@ -3,6 +3,7 @@
   "pages": [
     "no-auth-to-instant",
     "direct-to-sessions",
+    "api-v3-to-v3-1",
     "mcp-servers-to-sessions",
     "tool-router-beta",
     "toolkit-versioning",

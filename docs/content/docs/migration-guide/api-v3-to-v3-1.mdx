@@ -1,0 +1,52 @@
+---
+title: Migrate from API v3 to v3.1
+description: Move direct REST calls from /api/v3 to /api/v3.1, where tool endpoints default to the latest toolkit version
+keywords: [API v3.1, API v3, migration, toolkit version, REST API]
+---
+
+API v3.1 changes one default. Tool endpoints resolve to the latest toolkit version when you don't pass one. In v3, they resolve to the initial pinned version, `00000000_00`. Every other endpoint behaves the same at `/api/v3/` and `/api/v3.1/`.
+
+## If you use the SDK
+
+You don't need to change anything. Current releases of `composio` (Python) and `@composio/core` (TypeScript) already call the v3.1 tool endpoints, and version pinning works as described in [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+
+## What changed
+
+| Endpoint | Version parameter | v3 default | v3.1 default |
+| --- | --- | --- | --- |
+| `GET /tools` | `toolkit_versions` (query) | `00000000_00` | `latest` |
+| `GET /tools/{tool_slug}` | `version` (query) | `00000000_00` | `latest` |
+| `POST /tools/execute/{tool_slug}` | `version` (body) | `00000000_00` | `latest` |
+| `POST /tools/execute/{tool_slug}/input` | `version` (body) | `00000000_00` | `latest` |
+| `POST /tools/scopes/required` | `version` (body) | `00000000_00` | `latest` |
+
+Trigger endpoints already default to `latest` in both versions. Auth configs, connected accounts, toolkits, and triggers have the same request and response contracts in both.
+
+## Update your requests
+
+1. Replace `/api/v3/` with `/api/v3.1/` in your tool endpoint URLs.
+2. If you relied on the v3 default, pass the version explicitly. Pin a dated version you've tested, or pass `00000000_00` to keep the old behavior. `GET /tools` takes `toolkit_versions`; the other endpoints take `version`.
+3. If you already pass `latest`, you can drop the parameter.
+
+Before (v3):
+
+{/* code-example: single-language reason="Shows the raw REST path change; the SDKs already call v3.1 and need no change" */}
+{/* code-example: unchecked-api rule="api-legacy-version" operation="GET /api/v3/tools/{tool_slug}" reason="this migration example deliberately shows the previous REST version before the v3.1 equivalent" */}
+```bash
+curl "https://backend.composio.dev/api/v3/tools/GMAIL_SEND_EMAIL?version=latest" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+After (v3.1):
+
+{/* code-example: single-language reason="Shows the raw REST path change; the SDKs already call v3.1 and need no change" */}
+```bash
+curl "https://backend.composio.dev/api/v3.1/tools/GMAIL_SEND_EMAIL" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+Unpinned calls on v3.1 pick up new toolkit versions as they ship, including changes to tool input schemas. Pin a version in production; see [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+
+## Next
+
+<Card title="API reference" href="/reference" description="v3.1 endpoints, parameters, and schemas" />

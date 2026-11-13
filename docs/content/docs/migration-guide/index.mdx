@@ -4,6 +4,8 @@ description: Guides for migrating to newer versions of Composio
 written: "December 2025"
 ---
 
+Not sure whether to use sessions or call tools directly? See [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) before you pick a guide.
+
 ## Available migration guides
 
 <Accordions>
@@ -17,6 +19,12 @@ written: "December 2025"
     Move from manual tool fetching and execution to the sessions paradigm. Your existing auth configs and connected accounts carry over.
 
     [View Direct Tools migration guide →](/docs/migration-guide/direct-to-sessions)
+  </Accordion>
+
+  <Accordion title="Migrating from API v3 to v3.1">
+    Move direct REST calls to `/api/v3.1/`, where tool endpoints default to the latest toolkit version. SDK users don't need to change anything.
+
+    [View API v3.1 migration guide →](/docs/migration-guide/api-v3-to-v3-1)
   </Accordion>
 
   <Accordion title="Migrating from MCP servers to Sessions">
@@ -43,3 +51,9 @@ written: "December 2025"
     [View SDK migration guide →](/docs/migration-guide/new-sdk)
   </Accordion>
 </Accordions>
+
+## Deprecations
+
+- **Toolkit versions** are deprecated 12 months after they're published and stop working 3 months later. Both SDKs log a warning when a call resolves to a deprecated version. See [Deprecation and sunset](/docs/tools-direct/toolkit-versioning#deprecation-and-sunset).
+- **Tools** backed by deprecated upstream endpoints have `deprecated.is_deprecated` set to `true` in the [tool metadata](/reference/api-reference/tools). They may be removed in a future toolkit version.
+- **The legacy SDK** (`composio-core`) is no longer maintained. Follow the [new SDK migration guide](/docs/migration-guide/new-sdk).
