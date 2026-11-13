@@ -71,7 +71,7 @@ response, error = run_composio_tool(
 )
 ```
 
-Every `run_composio_tool` call routes back through the Tool Router under the session's connections, so auth and discovery stay managed.
+Every `run_composio_tool` call routes back through the session and uses its connections, so auth and discovery stay managed.
 
 Most of the workbench helpers run in a local sandbox today. Only the file helpers, which depend on the managed `/mnt/files` mount, are remote-only:
 

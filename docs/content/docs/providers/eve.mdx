@@ -7,7 +7,7 @@ experimental: true
 
 {/* code-example: single-language-page reason="eve and @composio/experimental/eve are TypeScript-only" */}
 
-The eve provider adapts Composio tools for the [eve](https://github.com/vercel/eve) agent framework. With `EveProvider` registered, `session.tools()` returns eve-native `defineTool`s, so an eve agent gets the Tool Router meta-tools and any preloaded custom toolkits from one call. The provider also ships a `(ctx, next)` hook interface to intercept, allow, deny, or rewrite meta-tool calls before the model sees the result.
+The eve provider adapts Composio tools for the [eve](https://github.com/vercel/eve) agent framework. With `EveProvider` registered, `session.tools()` returns eve-native `defineTool`s, so an eve agent gets the session meta-tools and any preloaded custom toolkits from one call. The provider also ships a `(ctx, next)` hook interface to intercept, allow, deny, or rewrite meta-tool calls before the model sees the result.
 
 <Callout type="warning">
   The eve provider is experimental and currently ships from `@composio/experimental` for TypeScript
@@ -97,7 +97,7 @@ export default defineComposioTools(session);
 </Step>
 </Steps>
 
-Your agent now has the Tool Router meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_MANAGE_CONNECTIONS`) plus any preloaded local toolkits, with auth handled in chat.
+Your agent now has the session meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_MANAGE_CONNECTIONS`) plus any preloaded local toolkits, with auth handled in chat.
 
 <Callout type="info">
   eve's `defineTool` takes plain JSON Schema, so `EveProvider` passes Composio's `inputParameters`
@@ -109,7 +109,7 @@ eve requires every dynamic tool to carry a durable descriptor for its callbacks,
 
 ## Hooks
 
-Pass a `hooks` object to the constructor to wrap the Tool Router meta-tools. Each hook is `(ctx, next)`: `await next()` runs the default behavior, returning a value replaces what the model sees, and `ctx.deny(reason)` blocks the call. `ctx.request` is mutable; `ctx.context` is read-only.
+Pass a `hooks` object to the constructor to wrap the session meta-tools. Each hook is `(ctx, next)`: `await next()` runs the default behavior, returning a value replaces what the model sees, and `ctx.deny(reason)` blocks the call. `ctx.request` is mutable; `ctx.context` is read-only.
 
 ```typescript
 // @noErrors

@@ -10,9 +10,9 @@ legacy: true
 This guide covers legacy direct-authentication methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/configuring-sessions) with [in-chat authentication](/docs/authentication#in-chat-authentication) or [manual authentication](/docs/authentication/manually-authenticating). If you use direct authentication today, consider [migrating to sessions](/docs/migration-guide/direct-to-sessions).
 </Callout>
 
-The first step in authenticating your users is to create an **Auth Config**. Every toolkit has its own authentication method such as `OAuth`, `API key`, `Basic Auth`, or custom schemes.
+The first step in authenticating your users is to create an **auth config**. Every toolkit has its own authentication method such as `OAuth`, `API key`, `Basic Auth`, or custom schemes.
 
-An **Auth Config** is a blueprint that defines how authentication works for a toolkit across all your users. It defines:
+An **auth config** is a blueprint that defines how authentication works for a toolkit across all your users. It defines:
 
 1. **Authentication method** - `OAuth2`, `Bearer token`, `API key`, or `Basic Auth`
 2. **Scopes** - what actions your tools can perform

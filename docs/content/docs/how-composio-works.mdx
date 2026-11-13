@@ -118,7 +118,7 @@ Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessio
 
 ### Executing session tools
 
-When your model asks to call a session tool, execute it with `session.execute()`. It routes the call through the session's tool router, which is the only place session meta-tools run:
+When your model asks to call a session tool, execute it with `session.execute()`. It routes the call through the session, which is the only place session meta-tools run:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">

@@ -30,7 +30,7 @@ export const META_TOOL_OVERRIDES: Record<string, MetaToolOverride> = {
   },
   COMPOSIO_SEARCH_TOOLS: {
     summary:
-      'Discovers the right tools across 500+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together.',
+      'Discovers the right tools across 1000+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together.',
     whenToUse:
       'Call `COMPOSIO_SEARCH_TOOLS` first, at the start of any task that touches an external app or service. Run it again whenever the user pivots to a new use case so you get a fresh `session_id` and a plan scoped to the new work.',
     usageNote:
