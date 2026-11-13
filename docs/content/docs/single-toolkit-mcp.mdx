@@ -5,8 +5,10 @@ keywords: [mcp, model context protocol, single toolkit]
 deprecated: true
 ---
 
-<Callout type="info">
-For most use cases, use a regular [session](/docs/configuring-sessions) instead. Sessions provide dynamic tool access and a much better MCP experience with context management handled by us.
+<Callout type="warn" title="Deprecated: use sessions via MCP">
+The standalone `composio.mcp` API on this page is deprecated and kept only for existing integrations. For new work, create a session with `mcp: true` and connect to `session.mcp.url`. See [Using sessions via MCP](/docs/sessions-via-mcp).
+
+Session MCP servers find tools at runtime instead of fixing a toolkit list up front, and include connection-management tools. URLs from `composio.mcp.generate()` rely on a query parameter the API will remove in a future version.
 </Callout>
 
 ## Install the SDK
