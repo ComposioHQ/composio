@@ -100,6 +100,8 @@ Use `composio.experimental.usage.summary()` for totals by entity type and `compo
 
 The summary also returns the total Instant charge for the window as an exact USD string: `instantCharge` in TypeScript and `instant_charge` in Python. It returns `"0"` when no usage was charged. Breakdowns contain usage quantities and event counts, not charges.
 
+A tool call counts whether it succeeds or fails. To see usage across every project in your organization, call the org-scoped [Usage API](/reference/api-reference/organization) with an organization API key. In the dashboard, project usage is under the project's **Settings → Usage**, and organization-wide usage and billing are under the organization's **Usage** and **Billing** settings.
+
 <Callout>
 Usage metering is experimental, and its response shape may change.
 </Callout>
