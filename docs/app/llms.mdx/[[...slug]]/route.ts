@@ -923,6 +923,25 @@ function toolkitToMarkdown(
     lines.push('- **Instant:** Supported on the latest version. Support varies by tool.');
   }
 
+  const scopeLines = (toolkit.authConfigDetails ?? []).flatMap((detail) => {
+    const field = [
+      ...detail.fields.auth_config_creation.optional,
+      ...detail.fields.auth_config_creation.required,
+    ].find((f) => f.name === 'scopes');
+    const scopes = field?.default?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+    return scopes.length > 0 ? [`- **${detail.mode}:** ${scopes.map((s) => `\`${s}\``).join(', ')}`] : [];
+  });
+  if (scopeLines.length > 0) {
+    lines.push(
+      '',
+      '## Default scopes',
+      '',
+      'Default `scopes` value of an auth config, by auth scheme. To request different scopes, see [Controlling scopes](/docs/authentication/controlling-scopes).',
+      '',
+      ...scopeLines
+    );
+  }
+
   if (faqMarkdown && faqMarkdown.trim()) {
     lines.push('', '## Frequently Asked Questions', '');
     // Bump ## headings to ### so FAQ questions are children of the FAQ section
