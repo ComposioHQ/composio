@@ -22,6 +22,7 @@ import {
   type DashboardToolExecutionShape,
 } from 'src/services/dashboard-tool-execution';
 import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
+import { INSTANT_ACCOUNT_SELECTOR } from 'src/services/connected-account-selection';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -64,6 +65,11 @@ export interface ToolExecuteParams {
   readonly arguments: Record<string, unknown>;
   readonly client?: ComposioClientShape;
   readonly connectedAccounts?: Record<string, string>;
+  /**
+   * Run on the Composio instant account for the tool's toolkit, sent as
+   * `account: "instant_account"` on the execute call; `connectedAccounts` is then empty.
+   */
+  readonly useInstantAccount?: boolean;
   /**
    * The org/project the command resolved. The executor's tool-schema lookup
    * keys its memoized `get_latest_version` on this, so it has to match what
@@ -233,7 +239,8 @@ const createBackendSend = (
   client: ComposioClientShape,
   userId: string,
   slug: string,
-  sessionContext: ToolRouterSessionContext
+  sessionContext: ToolRouterSessionContext,
+  useInstantAccount: boolean
 ) =>
   createToolRouterSessionFromContext(client, userId, sessionContext).pipe(
     Effect.map(
@@ -250,6 +257,7 @@ const createBackendSend = (
               : client.toolRouter.session.execute(sessionId, {
                   tool_slug: slug,
                   arguments: arguments_,
+                  ...(useInstantAccount ? { account: INSTANT_ACCOUNT_SELECTOR } : {}),
                 });
             if (raw.result_type === 'input_required') {
               return yield* toolInputRequiredError(`Tool ${slug}`, raw);
@@ -262,19 +270,20 @@ const createBackendSend = (
 /**
  * The Dashboard transport: the Dashboard creates the session and resolves the
  * user itself, so the CLI sends no session settings, only the account it
- * resolved for this tool's toolkit.
+ * resolved for this tool's toolkit, or the instant account.
  */
 const createDashboardSend =
   (
     dashboard: DashboardToolExecutionShape,
     slug: string,
     orgId: string,
-    connectedAccounts: ToolExecuteParams['connectedAccounts']
+    params: Pick<ToolExecuteParams, 'connectedAccounts' | 'useInstantAccount'>
   ): ToolExecutionSend =>
   arguments_ => {
     const request = { slug, arguments: arguments_, orgId };
     if (isMetaToolSlug(slug)) return dashboard.executeMeta(request);
-    const [account] = Object.values(connectedAccounts ?? {});
+    const [connectedAccount] = Object.values(params.connectedAccounts ?? {});
+    const account = params.useInstantAccount ? INSTANT_ACCOUNT_SELECTOR : connectedAccount;
     return dashboard.execute({ ...request, account });
   };
 
@@ -371,8 +380,14 @@ export const ToolsExecutorLive = Layer.effect(
           const { target } = params;
           const send =
             target.kind === 'dashboard'
-              ? createDashboardSend(dashboard, slug, target.orgId, params.connectedAccounts)
-              : yield* createBackendSend(resolvedClient, params.userId, slug, sessionContext);
+              ? createDashboardSend(dashboard, slug, target.orgId, params)
+              : yield* createBackendSend(
+                  resolvedClient,
+                  params.userId,
+                  slug,
+                  sessionContext,
+                  params.useInstantAccount ?? false
+                );
           const { permissionGateResult, preparedArguments } = yield* prepareToolExecution(
             resolvedClient,
             slug,

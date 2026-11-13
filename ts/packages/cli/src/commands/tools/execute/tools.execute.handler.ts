@@ -388,7 +388,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       ui: context.ui,
       resolvedProject: context.resolvedProject,
       resolvedUserId: context.resolvedUserId,
-      skipConnectionCheck: params.skipConnectionCheck,
+      // The instant account needs no connection of the user's.
+      skipConnectionCheck: params.skipConnectionCheck || context.useInstantAccount,
       skipChecks: params.skipChecks,
     });
     yield* logToolDebug('execute_params', {

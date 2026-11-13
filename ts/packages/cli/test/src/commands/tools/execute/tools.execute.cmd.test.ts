@@ -724,6 +724,71 @@ describe('CLI: composio execute', () => {
         expect(recordedSessionCreateParams).toHaveLength(2);
       })
     );
+
+    it.effect(
+      'sends instant_account as the account instead of matching it against the user accounts',
+      () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--account',
+            'instant_account',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]);
+
+          const sentAccount = recordedExecuteParams[0]?.account;
+          expect(sentAccount).toBe('instant_account');
+        })
+    );
+
+    it.effect('runs on instant_account for a toolkit the user never connected', () =>
+      Effect.gen(function* () {
+        vi.spyOn(
+          consumerShortTermCache,
+          'getFreshConsumerConnectedToolkitsFromCache'
+        ).mockReturnValue(Effect.succeed(Option.some(['github'])));
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--account',
+          'instant_account',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        const sentAccount = recordedExecuteParams[0]?.account;
+        expect(sentAccount).toBe('instant_account');
+      })
+    );
+
+    it.effect('applies instant_account to its own parallel tool only', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"instant@example.com"}',
+          '--account',
+          'instant_account',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"work@example.com"}',
+          '--account',
+          'forest',
+        ]);
+
+        const sentAccounts = recordedExecuteParams.map(params => params.account);
+        expect(sentAccounts).toEqual(
+          expect.arrayContaining(['instant_account', 'con_gmail_secondary'])
+        );
+      })
+    );
   });
 
   layer(

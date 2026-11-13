@@ -24,6 +24,17 @@ export const CachedConnectedAccountSummarySchema = Schema.Struct({
 });
 export type CachedConnectedAccountSummary = typeof CachedConnectedAccountSummarySchema.Type;
 
+/**
+ * The `--account` value that names the Composio instant account for the toolkit
+ * instead of one of the user's connected accounts. Sent to the backend as is,
+ * which runs the tool on it or fails; it never falls back to the user's own account.
+ */
+export const INSTANT_ACCOUNT_SELECTOR = 'instant_account';
+
+/** Whether an `--account` value names the Composio instant account. */
+export const isInstantAccountSelector = (selector: Option.Option<string>): boolean =>
+  Option.isSome(selector) && selector.value.trim() === INSTANT_ACCOUNT_SELECTOR;
+
 const normalizeSelector = (value: string): string => value.trim().toLowerCase();
 
 const parseTimestamp = (value: string | null | undefined): number => {
