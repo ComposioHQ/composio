@@ -8,6 +8,7 @@ import {
 export type KnowledgeFilter =
   | 'all'
   | 'docs'
+  /** Deprecated alias for `docs`, kept for callers from before the KB was retired. */
   | 'kb'
   | 'oauth'
   | 'toolkit'
@@ -34,14 +35,8 @@ export interface KnowledgeSearchResult {
   section?: string | null;
 }
 
-export type KnowledgeRetrievalMode = 'hybrid' | 'semantic' | 'keyword';
+export type KnowledgeRetrievalMode = 'keyword';
 export type KnowledgeDegradationReason =
-  | 'embedding-unavailable'
-  | 'semantic-artifact-invalid'
-  | 'semantic-request-failed'
-  | 'semantic-timeout'
-  | 'semantic-rate-limited'
-  | 'semantic-capacity-limited'
   | 'keyword-request-failed'
   | 'preview-overlay-failed';
 
@@ -57,7 +52,6 @@ export interface KnowledgeSearchResponse {
 export const KNOWLEDGE_FILTERS: readonly KnowledgeFilterDefinition[] = [
   { value: 'all', label: 'All', sourceTypes: [] },
   { value: 'docs', label: 'Docs', sourceTypes: ['docs'] },
-  { value: 'kb', label: 'Knowledge Base', sourceTypes: ['kb'] },
   { value: 'oauth', label: 'OAuth', sourceTypes: ['oauth-guide'] },
   { value: 'toolkits', label: 'Toolkits', sourceTypes: ['toolkit'] },
   { value: 'reference', label: 'Reference', sourceTypes: ['reference', 'legacy'] },
@@ -66,6 +60,7 @@ export const KNOWLEDGE_FILTERS: readonly KnowledgeFilterDefinition[] = [
 const FILTER_BY_VALUE = new Map<KnowledgeFilter, KnowledgeFilterDefinition>([
   ...KNOWLEDGE_FILTERS.map((filter) => [filter.value, filter] as const),
   ['toolkit', { value: 'toolkit', label: 'Toolkits', sourceTypes: ['toolkit'] }],
+  ['kb', { value: 'kb', label: 'Docs', sourceTypes: ['docs'] }],
 ]);
 
 export function isKnowledgeFilter(value: string): value is KnowledgeFilter {

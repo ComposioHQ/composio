@@ -3,7 +3,6 @@ import {
   reference,
   examples,
   toolkits,
-  knowledgeBase,
   changelog,
 } from 'fumadocs-mdx:collections/server';
 import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
@@ -179,12 +178,6 @@ export const examplesSource = loader({
 export const toolkitsSource = loader({
   baseUrl: '/toolkits',
   source: toolkits.toFumadocsSource(),
-  plugins: [lucideIconsPlugin()],
-});
-
-export const knowledgeBaseSource = loader({
-  baseUrl: '/kb',
-  source: knowledgeBase.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 

@@ -94,8 +94,6 @@ const SEARCH_BREADCRUMB_LABELS: Record<string, string> = {
   examples: 'Example',
   example: 'Example',
   docs: 'Docs',
-  kb: 'Knowledge Base',
-  guide: 'Knowledge Base',
   auth: 'OAuth',
   oauth: 'OAuth',
   'oauth-guide': 'OAuth',

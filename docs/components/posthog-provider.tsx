@@ -10,9 +10,7 @@ export function getPostHogPageViewUrl(
   pathname: string,
   searchParams: URLSearchParams,
 ): string {
-  const visibleParams = new URLSearchParams(searchParams.toString());
-  if (pathname === '/kb/search') visibleParams.delete('q');
-  const queryString = visibleParams.toString();
+  const queryString = searchParams.toString();
   return `${origin}${pathname}${queryString ? `?${queryString}` : ''}`;
 }
 

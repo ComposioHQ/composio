@@ -1,7 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { getPublishedKbGuides } from '@/lib/kb/repository';
-import { getKnowledgeToolkitSummaries } from '@/lib/knowledge/catalog';
-import { getToolkitKnowledgeRedirect } from '@/lib/knowledge/toolkit-routing';
 import { fetchNoRedirect, fetchPage } from './helpers';
 
 function markdownAlternates(html: string): string[] {
@@ -44,27 +41,11 @@ describe('HTML Markdown alternate discovery', () => {
     '/toolkits/managed-auth',
     '/toolkits/meta-tools',
     '/toolkits/meta-tools/search_tools',
-    '/kb',
-    '/kb/search',
-    '/kb/toolkits',
-    '/kb/topic/authentication-and-connected-accounts',
   ]) {
     test(`${pathname} advertises a working public Markdown alternate`, async () => {
       await expectDiscoverableMarkdown(pathname);
     });
   }
-
-  test('published KB guides advertise their own Markdown URL', async () => {
-    const guide = getPublishedKbGuides()[0];
-    expect(guide).toBeDefined();
-    await expectDiscoverableMarkdown(`/kb/guide/${guide.slug}`);
-  });
-
-  test('nonredirecting toolkit knowledge pages advertise their own Markdown URL', async () => {
-    const toolkit = (await getKnowledgeToolkitSummaries()).find(candidate => !getToolkitKnowledgeRedirect(candidate));
-    expect(toolkit).toBeDefined();
-    await expectDiscoverableMarkdown(`/kb/toolkit/${toolkit!.slug}`);
-  });
 
   test('historical changelog HTML paths retain their canonical redirects', async () => {
     for (const pathname of ['/docs/changelog', '/docs/changelog/1900/01/01']) {

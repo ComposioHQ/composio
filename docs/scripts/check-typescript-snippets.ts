@@ -1,6 +1,6 @@
 /**
  * Type-check authored examples outside the production Twoslash build: canonical
- * API overviews, authored reference pages, and plain Markdown FAQ/KB inputs.
+ * API overviews, authored reference pages, and plain Markdown FAQ inputs.
  * Every diagnostic is retained; snippets are never executed.
  */
 import { fileURLToPath } from 'node:url';

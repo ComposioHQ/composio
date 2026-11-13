@@ -1,4 +1,4 @@
-import authGuideRegistry from '@/kb/external-sources/auth-guides.json';
+import authGuideRegistry from './auth-guides.json';
 import type { AlgoliaDocsRecord } from '@/lib/search-index';
 import {
   classifyKnowledgeRecord,

@@ -95,7 +95,7 @@ Run `bun run inventory:code-examples` for JSON records with source path, line, k
 - `PackageInstall`, `FileBuildup`, and `RepoBrowser` invocations and their committed source files/stages. Shared source-runtime reasons live in `lib/example-sources.ts`; new sources require an explicit classification.
 - Agent-only Markdown examples injected from `lib/llm-guardrails`. The checks use `#rendered.md` projections with source-line padding, not the TypeScript template-literal syntax.
 
-The maintained-file checks read `content/docs`, `content/examples`, authored `content/reference`, `content/toolkits`, `api-overviews`, `kb/source`, `kb/articles`, and the injected guardrail projections. Generated API overview and KB copies are checked through their maintained inputs, not treated as independent editable examples.
+The maintained-file checks read `content/docs`, `content/examples`, authored `content/reference`, `content/toolkits`, `api-overviews`, and the injected guardrail projections. Generated API overview copies are checked through their maintained inputs, not treated as independent editable examples.
 
 Generated SDK symbol references remain language-specific: signatures and partial fragments are inventoried, not translated or certified by the maintained-example gates. Historical release examples are also inventoried rather than rewritten against today's API. These are explicit validation limits, not proof that every rendered fence offers three runnable equivalents. Edit reference generators/SDK docstrings or historical source deliberately; do not hand-edit generated pages to satisfy a gate.
 

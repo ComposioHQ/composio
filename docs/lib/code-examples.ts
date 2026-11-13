@@ -474,7 +474,7 @@ export function checkCodeExamples(
 }
 
 // Generated copies are inventoried below; their canonical authored inputs are checked once.
-const SCOPE_DIRS = ['content/docs', 'content/examples', 'content/reference', 'content/toolkits', 'api-overviews', 'kb/source', 'kb/articles'];
+const SCOPE_DIRS = ['content/docs', 'content/examples', 'content/reference', 'content/toolkits', 'api-overviews'];
 const EXCLUDED_DIRS = ['content/reference/sdk-reference', 'content/reference/api-reference', 'content/reference/v3/api-reference'];
 
 /** Lists authored `.md`/`.mdx` pages in code example scope, with paths relative to `docsRoot`. */
@@ -535,7 +535,7 @@ export function inventoryCodeExamples(docsRoot: string): CodeExampleInventoryEnt
           const reason = marker?.reason ?? (validation === 'symbol-reference'
             ? 'Language-specific SDK symbol documentation includes signatures and partial API usage; maintained cross-language operation examples live in the guides'
             : validation === 'historical' ? 'Immutable release history is inventoried, not rewritten as current API guidance'
-            : validation === 'generated-copy' ? 'Generated presentation; canonical api-overviews or kb/source content is checked' : undefined);
+            : validation === 'generated-copy' ? 'Generated presentation; canonical api-overviews content is checked' : undefined);
           entries.push({ path, line: unit.line, kind: unit.type === 'external' ? unit.name ?? 'external' : unit.type,
             ...(unit.type === 'fence' ? { language: unit.lang } : {}), options: group?.type === 'tabs' ? group.items ?? [] : [], validation,
             ...(reason ? { reason } : {}) });
@@ -543,7 +543,7 @@ export function inventoryCodeExamples(docsRoot: string): CodeExampleInventoryEnt
       }
     }
   };
-  for (const directory of ['content', 'api-overviews', 'kb/source', 'kb/articles']) visit(join(docsRoot, directory));
+  for (const directory of ['content', 'api-overviews']) visit(join(docsRoot, directory));
   for (const file of listCodeExampleFiles(docsRoot).filter((entry) => entry.path.includes('#rendered.md'))) {
     walkCodeExamples(parseCodeExamples(file.source, file.path).units, (unit, ancestors) => {
       if (unit.type !== 'fence') return;

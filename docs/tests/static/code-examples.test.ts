@@ -155,8 +155,7 @@ describe('Markdown options and agent output', () => {
 describe('maintained and rendered surfaces', () => {
   test('all maintained sources follow the option contract', () => {
     const files = listCodeExampleFiles(root);
-    expect(files.some((file) => file.path.startsWith('kb/source/'))).toBe(true);
-    expect(files.some((file) => file.path.startsWith('kb/articles/'))).toBe(true);
+    expect(files.some((file) => file.path.startsWith('api-overviews/'))).toBe(true);
     expect(checkCodeExamples(files, { requireApi: true })).toEqual([]);
   });
 

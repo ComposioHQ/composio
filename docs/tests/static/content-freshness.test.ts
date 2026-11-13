@@ -64,24 +64,24 @@ describe('source-backed page freshness', () => {
     expect(result.pages['/missing']).toBeUndefined();
   });
 
-  test('uses real spec, toolkit and KB backing sources and aggregates their latest change', () => {
+  test('uses real spec, toolkit and overview backing sources and aggregates their latest change', () => {
     const root = repository();
-    for (const file of ['public/openapi.json', 'public/data/toolkits.json', 'kb/source/article.md']) {
+    for (const file of ['public/openapi.json', 'public/data/toolkits.json', 'api-overviews/article.mdx']) {
       put(root, file, 'original');
     }
     commit(root, initial);
-    put(root, 'kb/source/article.md', 'updated');
+    put(root, 'api-overviews/article.mdx', 'updated');
     commit(root, changed);
     const result = buildContentFreshness(root, [
       { pathname: '/reference/operation', sources: ['public/openapi.json'] },
       { pathname: '/toolkits/example', sources: ['public/data/toolkits.json'] },
-      { pathname: '/kb/guide/article', sources: ['kb/source/article.md'] },
-      { pathname: '/collection', sources: ['public/openapi.json', 'kb/source/article.md'] },
-      { pathname: '/unknown-collection', sources: ['kb/source/article.md', 'missing.md'] },
+      { pathname: '/reference/article', sources: ['api-overviews/article.mdx'] },
+      { pathname: '/collection', sources: ['public/openapi.json', 'api-overviews/article.mdx'] },
+      { pathname: '/unknown-collection', sources: ['api-overviews/article.mdx', 'missing.md'] },
     ]);
     expect(result.pages['/reference/operation']).toBe('2025-01-01T12:00:00.000Z');
     expect(result.pages['/toolkits/example']).toBe('2025-01-01T12:00:00.000Z');
-    expect(result.pages['/kb/guide/article']).toBe('2025-02-02T12:00:00.000Z');
+    expect(result.pages['/reference/article']).toBe('2025-02-02T12:00:00.000Z');
     expect(result.pages['/collection']).toBe('2025-02-02T12:00:00.000Z');
     expect(result.pages['/unknown-collection']).toBeUndefined();
   });

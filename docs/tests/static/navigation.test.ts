@@ -98,15 +98,14 @@ describe("Navigation - meta.json validity", () => {
     ]);
   });
 
-  test("Knowledge Base appears between Docs and Examples", async () => {
+  test("top navigation goes straight from Docs to Examples", async () => {
     const source = await readFile(LAYOUT_OPTIONS, "utf-8");
     const docsIndex = source.indexOf("text: 'Docs'");
-    const kbIndex = source.indexOf("text: 'Knowledge Base'");
     const examplesIndex = source.indexOf("text: 'Examples'");
 
     expect(docsIndex).toBeGreaterThan(-1);
-    expect(kbIndex).toBeGreaterThan(docsIndex);
-    expect(examplesIndex).toBeGreaterThan(kbIndex);
+    expect(examplesIndex).toBeGreaterThan(docsIndex);
+    expect(source).not.toContain("url: '/kb'");
   });
 
   test("global search uses canonical knowledge URLs and shared source labels", async () => {

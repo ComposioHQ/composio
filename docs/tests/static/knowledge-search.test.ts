@@ -14,9 +14,8 @@ import { searchPublicKnowledge } from '@/lib/knowledge/search-service';
 import * as searchServiceModule from '@/lib/knowledge/search-service';
 import {
   isStrongLexicalCandidate,
-  publicKbCandidateFromAlgolia,
   publicKnowledgeCandidateFromSearchRecord,
-} from '@/lib/knowledge/hybrid-search';
+} from '@/lib/knowledge/candidates';
 import type { KnowledgeSourceType } from '@/lib/knowledge/types';
 
 const REPO_ROOT = join(import.meta.dir, '../../..');
@@ -65,13 +64,12 @@ function record(input: {
       : [],
     toolkit_slugs: [],
     intents: [],
-    last_verified_at: input.sourceType === 'kb' ? '2026-07-22' : null,
+    last_verified_at: null,
   };
 }
 
 const closeMatchRecords = [
   record({ id: 'docs', title: 'Connected account setup', sourceType: 'docs', pageRank: 2_000 }),
-  record({ id: 'kb', title: 'Connected account setup', sourceType: 'kb', pageRank: 1_900 }),
   record({ id: 'oauth', title: 'Connected account setup', sourceType: 'oauth-guide', pageRank: 1_700 }),
   record({ id: 'toolkit', title: 'Connected account setup', sourceType: 'toolkit', pageRank: 1_500 }),
   record({ id: 'example', title: 'Connected account setup', sourceType: 'example', pageRank: 1_300 }),
@@ -135,8 +133,8 @@ describe('plain knowledge excerpts', () => {
     const guide = record({
       id: 'safe-fallback',
       title: 'Safe fallback',
-      sourceType: 'kb',
-      pageRank: 1_900,
+      sourceType: 'docs',
+      pageRank: 2_000,
       description: '&lt;em&gt;Reconnect&lt;/em&gt; the account.',
     });
 
@@ -294,7 +292,7 @@ describe('unified knowledge search', () => {
     });
 
     expect(result.results.map((item) => item.sourceType)).toEqual([
-      'docs', 'kb', 'oauth-guide', 'toolkit', 'example', 'reference', 'changelog',
+      'docs', 'oauth-guide', 'toolkit', 'example', 'reference', 'changelog',
     ]);
   });
 
@@ -310,15 +308,15 @@ describe('unified knowledge search', () => {
       record({
         id: 'calendly',
         title: 'Use CALENDLY_POST_INVITEE for invitee creation',
-        sourceType: 'kb',
-        pageRank: 1_900,
+        sourceType: 'docs',
+        pageRank: 2_000,
         keywords: ['CALENDLY_POST_INVITEE'],
       }),
       record({
         id: 'odoo',
         title: 'Inspect Odoo JSON-RPC errors inside HTTP 200 responses',
-        sourceType: 'kb',
-        pageRank: 1_900,
+        sourceType: 'docs',
+        pageRank: 2_000,
         content: 'The response has HTTP 200 but contains an Odoo JSON-RPC error object.',
       }),
       record({
@@ -343,7 +341,7 @@ describe('unified knowledge search', () => {
   test('maps every source filter and keeps examples and changelog in All', () => {
     expect(algoliaFacetFilters('all')).toEqual([]);
     expect(algoliaFacetFilters('docs')).toEqual([['source_type:docs']]);
-    expect(algoliaFacetFilters('kb')).toEqual([['source_type:kb']]);
+    expect(algoliaFacetFilters('kb')).toEqual([['source_type:docs']]);
     expect(algoliaFacetFilters('oauth')).toEqual([['source_type:oauth-guide']]);
     expect(algoliaFacetFilters('toolkit')).toEqual([['source_type:toolkit']]);
     expect(algoliaFacetFilters('toolkits')).toEqual([['source_type:toolkit']]);
@@ -405,27 +403,27 @@ describe('unified knowledge search', () => {
       record({
         id: 'generic',
         title: 'Audit data handling',
-        sourceType: 'kb',
+        sourceType: 'docs',
         pageRank: 2_400,
         content: 'The audit row is retained when data storage is disabled.',
       }),
       record({
         id: 'calendar',
         title: 'Google Calendar troubleshooting',
-        sourceType: 'kb',
-        pageRank: 1_900,
+        sourceType: 'docs',
+        pageRank: 2_000,
         content: 'Use primary when the signed-in user alias fails as a calendar ID.',
       }),
     ];
 
     expect(searchKnowledgeRecords(records, {
       query: 'Why does the signed-in user alias fail when I pass it as a calendar id?',
-      filter: 'kb',
+      filter: 'docs',
       limit: 20,
     }).results[0]?.objectID).toBe('calendar');
     expect(searchKnowledgeRecords(records, {
       query: 'the and when does it',
-      filter: 'kb',
+      filter: 'docs',
       limit: 20,
     }).results).toEqual([]);
   });
@@ -450,7 +448,7 @@ describe('unified knowledge search', () => {
 
   test('removes markdown decoration from result excerpts', () => {
     const guide = record({
-      id: 'oauth', title: 'OAuth setup', sourceType: 'kb', pageRank: 1_900,
+      id: 'oauth', title: 'OAuth setup', sourceType: 'docs', pageRank: 2_000,
     });
 
     expect(knowledgeSearchResultFromRecord(
@@ -466,55 +464,21 @@ describe('unified knowledge search', () => {
     expect(response.status).toBe(400);
   });
 
-  test('returns fused public KB results with provider-neutral retrieval metadata', async () => {
-    const github = publicKbCandidateFromAlgolia(record({
-      id: 'github-answer',
-      title: 'Reconnect GitHub',
-      sourceType: 'kb',
-      pageRank: 1_900,
-    }));
-    const oauth = publicKbCandidateFromAlgolia(record({
-      id: 'oauth-answer',
-      title: 'Refresh OAuth access',
-      sourceType: 'kb',
-      pageRank: 1_900,
-    }));
-    const handler = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => ({ candidates: [github, oauth] }),
-      searchSemanticCandidates: async () => [oauth, github],
-    });
-
-    const response = await handler(new Request(
-      'http://localhost/api/knowledge-search?q=revoked+access&filter=kb',
-    ));
-    const body = await response.json() as {
-      mode: string;
-      results: Array<{ objectID: string; sourceType: string }>;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.mode).toBe('hybrid');
-    expect(body.results.map(result => result.objectID)).toEqual(['github-answer', 'oauth-answer']);
-    expect(body.results.every(result => result.sourceType === 'kb')).toBe(true);
-  });
-
-  test('removes markdown decoration from hybrid result excerpts', async () => {
-    const github = publicKbCandidateFromAlgolia(record({
+  test('removes markdown decoration from API result excerpts', async () => {
+    const github = publicKnowledgeCandidateFromSearchRecord(record({
       id: 'github-oauth',
       title: 'Configure GitHub OAuth',
-      sourceType: 'kb',
-      pageRank: 1_900,
+      sourceType: 'docs',
+      pageRank: 2_000,
       content: '# Create an auth config\n\nUse **custom OAuth** credentials from `GitHub`.',
     }));
     const handler = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => ({ candidates: [github] }),
       searchSemanticCandidates: async () => [github],
     });
 
     const response = await handler(new Request(
-      'http://localhost/api/knowledge-search?q=github+oauth&filter=kb',
+      'http://localhost/api/knowledge-search?q=github+oauth&filter=docs',
     ));
     const body = await response.json() as {
       results: Array<{ excerpt: string }>;
@@ -525,51 +489,20 @@ describe('unified knowledge search', () => {
     );
   });
 
-  test('abstains when hybrid retrieval has neither semantic nor exact keyword evidence', async () => {
-    const incidentalKeywordMatch = publicKbCandidateFromAlgolia(record({
-      id: 'incidental',
-      title: 'Operational health checks',
-      sourceType: 'kb',
-      pageRank: 1_900,
-      content: 'A generic page sharing only incidental words with the query.',
-    }));
-    const handler = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => ({ candidates: [incidentalKeywordMatch] }),
-      searchSemanticCandidates: async () => [],
-    });
-
-    const response = await handler(new Request(
-      'http://localhost/api/knowledge-search?q=unrelated+request&filter=kb',
-    ));
-    const body = await response.json() as {
-      strongMatch?: boolean;
-      total: number;
-      results: unknown[];
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.strongMatch).toBe(false);
-    expect(body.total).toBe(0);
-    expect(body.results).toEqual([]);
-  });
-
-  test('keeps an exact keyword identity when semantic retrieval abstains', async () => {
-    const exactKeywordMatch = publicKbCandidateFromAlgolia(record({
+  test('returns an exact keyword identity as a strong match', async () => {
+    const exactKeywordMatch = publicKnowledgeCandidateFromSearchRecord(record({
       id: 'exact-identifier',
       title: 'Action troubleshooting',
-      sourceType: 'kb',
-      pageRank: 1_900,
+      sourceType: 'docs',
+      pageRank: 2_000,
       keywords: ['EXACT_ACTION_IDENTIFIER'],
     }));
     const handler = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => ({ candidates: [exactKeywordMatch] }),
-      searchSemanticCandidates: async () => [],
     });
 
     const response = await handler(new Request(
-      'http://localhost/api/knowledge-search?q=EXACT_ACTION_IDENTIFIER&filter=kb',
+      'http://localhost/api/knowledge-search?q=EXACT_ACTION_IDENTIFIER&filter=docs',
     ));
     const body = await response.json() as {
       strongMatch?: boolean;
@@ -580,72 +513,28 @@ describe('unified knowledge search', () => {
     expect(body.results.map(result => result.objectID)).toEqual(['exact-identifier']);
   });
 
-  test('allows a cold semantic request to finish without degrading', async () => {
-    const answer = publicKbCandidateFromAlgolia(record({
-      id: 'cold-answer',
-      title: 'Cold-start answer',
-      sourceType: 'kb',
-      pageRank: 1_900,
+  test('accepts the retired kb filter as an alias for docs', async () => {
+    const docs = publicKnowledgeCandidateFromSearchRecord(record({
+      id: 'docs-answer', title: 'Reconnect GitHub', sourceType: 'docs', pageRank: 2_000,
+    }));
+    const toolkit = publicKnowledgeCandidateFromSearchRecord(record({
+      id: 'github', title: 'Reconnect GitHub', sourceType: 'toolkit', pageRank: 1_500,
     }));
     const handler = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => ({ candidates: [answer] }),
-      searchSemanticCandidates: async () => {
-        await new Promise(resolve => setTimeout(resolve, 2_200));
-        return [answer];
-      },
+      searchKeywordCandidates: async () => ({ candidates: [docs, toolkit] }),
     });
 
     const response = await handler(new Request(
-      'http://localhost/api/knowledge-search?q=why+is+cold+startup+slow&filter=kb',
+      'http://localhost/api/knowledge-search?q=reconnect+github&filter=kb',
     ));
-    const body = await response.json() as { mode: string };
+    const body = await response.json() as {
+      filter: string;
+      results: Array<{ objectID: string; sourceType: string }>;
+    };
 
-    expect(body.mode).toBe('hybrid');
-  });
-
-  test('uses either available retriever without exposing its peer failure', async () => {
-    const answer = publicKbCandidateFromAlgolia(record({
-      id: 'answer',
-      title: 'Known answer',
-      sourceType: 'kb',
-      pageRank: 1_900,
-    }));
-    const semanticFailure = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => ({ candidates: [answer] }),
-      searchSemanticCandidates: async () => {
-        throw new Error('semantic-request-failed');
-      },
-    });
-    const keywordFailure = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => {
-        throw new Error('keyword-request-failed');
-      },
-      searchSemanticCandidates: async () => [answer],
-    });
-    const bothFail = createKnowledgeSearchHandler({
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => {
-        throw new Error('keyword-request-failed');
-      },
-      searchSemanticCandidates: async () => {
-        throw new Error('semantic-request-failed');
-      },
-    });
-    const request = () => new Request(
-      'http://localhost/api/knowledge-search?q=known+answer&filter=kb',
-    );
-
-    const keywordResponse = await (await semanticFailure(request())).json() as Record<string, unknown>;
-    expect(keywordResponse).toMatchObject({ mode: 'keyword' });
-    expect(keywordResponse).not.toHaveProperty('degradedReason');
-
-    const semanticResponse = await (await keywordFailure(request())).json() as Record<string, unknown>;
-    expect(semanticResponse).toMatchObject({ mode: 'semantic' });
-    expect(semanticResponse).not.toHaveProperty('degradedReason');
-    expect((await bothFail(request())).status).toBe(503);
+    expect(response.status).toBe(200);
+    expect(body.filter).toBe('kb');
+    expect(body.results.map(result => result.objectID)).toEqual(['docs-answer']);
   });
 
   test('configures normalized search facets and retrieval fields', () => {
@@ -690,13 +579,11 @@ describe('public knowledge search service', () => {
     const execution = await searchPublicKnowledge({
       query: 'sessions', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => ({
         candidates: normalizeAlgoliaSearchHits([
           { objectID: 'invalid', title: 'Invalid', type: 'unknown', url: '/unknown' },
         ]).map(publicKnowledgeCandidateFromSearchRecord),
       }),
-      searchSemanticCandidates: async () => [],
       searchLocalCandidates: async () => [toolkit, reference],
       previewOverlayEnabled: () => false,
     });
@@ -737,9 +624,7 @@ describe('public knowledge search service', () => {
     branchRecord.canonical_url = '/docs/configuring-sessions';
     const branch = publicKnowledgeCandidateFromSearchRecord(branchRecord);
     const dependencies = (preview: boolean) => ({
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => ({ candidates: [shared] }),
-      searchSemanticCandidates: async () => [],
       searchPreviewCandidates: async () => [branch],
       previewOverlayEnabled: () => preview,
     });
@@ -757,7 +642,7 @@ describe('public knowledge search service', () => {
     expect(production.response).toMatchObject({ results: [{ title: 'Deployed title' }] });
   });
 
-  test('returns a full-corpus exact action result before semantic retrieval', async () => {
+  test('returns a full-corpus exact action result', async () => {
     const action = publicKnowledgeCandidateFromSearchRecord(record({
       id: 'create-invitee',
       title: 'Create invitee',
@@ -765,7 +650,6 @@ describe('public knowledge search service', () => {
       pageRank: 700,
       keywords: ['CALENDLY_POST_INVITEE'],
     }));
-    let semanticCalls = 0;
     let keywordFilter = '';
 
     const execution = await searchPublicKnowledge({
@@ -773,14 +657,9 @@ describe('public knowledge search service', () => {
       filter: 'all',
       headers: new Headers(),
     }, {
-      hybridEnabled: () => true,
       searchKeywordCandidates: async (_query, filter) => {
         keywordFilter = filter;
         return { candidates: [action] };
-      },
-      searchSemanticCandidates: async () => {
-        semanticCalls += 1;
-        return [];
       },
       searchLocalCandidates: async () => [],
       previewOverlayEnabled: () => false,
@@ -788,14 +667,12 @@ describe('public knowledge search service', () => {
 
     expect(execution.status).toBe(200);
     expect(keywordFilter).toBe('all');
-    expect(semanticCalls).toBe(0);
     expect(execution.response).toMatchObject({
       filter: 'all',
       mode: 'keyword',
       strongMatch: true,
       results: [{ sourceType: 'reference' }],
     });
-    expect(execution.timings.semanticDurationMs).toBeNull();
   });
 
   test('promotes exact page identities above incidental body matches', async () => {
@@ -821,31 +698,24 @@ describe('public knowledge search service', () => {
         content: 'Create a shared Gmail connection that any user can use.',
       }),
       record({
-        id: 'gmail-kb',
+        id: 'gmail-docs',
         title: 'Gmail',
-        sourceType: 'kb',
-        pageRank: 1_900,
+        sourceType: 'docs',
+        pageRank: 2_000,
       }),
     ].map(publicKnowledgeCandidateFromSearchRecord);
-    let semanticCalls = 0;
 
     const execution = await searchPublicKnowledge({
       query: 'gmail', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => ({ candidates }),
-      searchSemanticCandidates: async () => {
-        semanticCalls += 1;
-        return [];
-      },
       previewOverlayEnabled: () => false,
     });
 
     const results = 'results' in execution.response ? execution.response.results : [];
-    expect(semanticCalls).toBe(0);
     expect(results.map(result => result.objectID)).toEqual([
       'gmail-toolkit',
-      'gmail-kb',
+      'gmail-docs',
       'configuring-sessions',
       'shared-connections',
     ]);
@@ -856,15 +726,15 @@ describe('public knowledge search service', () => {
       const section = record({
         id: index === 0 ? 'gmail-attachments' : `gmail-section-${index}`,
         title: 'Gmail',
-        sourceType: 'kb',
-        pageRank: 1_900,
+        sourceType: 'docs',
+        pageRank: 2_000,
         content: index === 0
           ? 'Send attachments safely with Gmail.'
           : `Gmail support section ${index}.`,
       });
-      section.url = '/kb/guide/toolkits-gmail';
-      section.page_id = '/kb/guide/toolkits-gmail';
-      section.canonical_url = '/kb/guide/toolkits-gmail';
+      section.url = '/docs/gmail-guide';
+      section.page_id = '/docs/gmail-guide';
+      section.canonical_url = '/docs/gmail-guide';
       section.section = index === 0 ? 'Send attachments safely' : `Gmail section ${index}`;
       return publicKnowledgeCandidateFromSearchRecord(section);
     });
@@ -875,106 +745,59 @@ describe('public knowledge search service', () => {
       sourceType: 'toolkit',
       pageRank: 1_500,
     }));
-    let semanticCalls = 0;
 
     const execution = await searchPublicKnowledge({
       query: 'gmail', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => ({
         candidates: gmailSections.concat(toolkit),
       }),
-      searchSemanticCandidates: async () => {
-        semanticCalls += 1;
-        return [];
-      },
       previewOverlayEnabled: () => false,
     });
 
     const results = 'results' in execution.response ? execution.response.results : [];
-    expect(semanticCalls).toBe(0);
     expect(results.map(result => result.objectID)).toEqual(['gmail-attachments', 'gmail']);
     expect(new Set(results.map(result => result.canonicalUrl)).size).toBe(results.length);
   });
 
-  test('deduplicates section chunks when hybrid retrieval is disabled', async () => {
+  test('deduplicates section chunks for a weak keyword match', async () => {
     const attachmentsRecord = record({
       id: 'gmail-attachments',
       title: 'Gmail',
-      sourceType: 'kb',
-      pageRank: 1_900,
+      sourceType: 'docs',
+      pageRank: 2_000,
       content: 'Use Gmail attachments safely.',
     });
-    attachmentsRecord.url = '/kb/guide/toolkits-gmail';
-    attachmentsRecord.page_id = '/kb/guide/toolkits-gmail';
-    attachmentsRecord.canonical_url = '/kb/guide/toolkits-gmail';
+    attachmentsRecord.url = '/docs/gmail-guide';
+    attachmentsRecord.page_id = '/docs/gmail-guide';
+    attachmentsRecord.canonical_url = '/docs/gmail-guide';
     attachmentsRecord.section = 'Send attachments safely';
 
     const oauthRecord = record({
       id: 'gmail-oauth',
       title: 'Gmail',
-      sourceType: 'kb',
-      pageRank: 1_900,
+      sourceType: 'docs',
+      pageRank: 2_000,
       content: 'Configure Gmail OAuth scopes.',
     });
-    oauthRecord.url = '/kb/guide/toolkits-gmail';
-    oauthRecord.page_id = '/kb/guide/toolkits-gmail';
-    oauthRecord.canonical_url = '/kb/guide/toolkits-gmail';
+    oauthRecord.url = '/docs/gmail-guide';
+    oauthRecord.page_id = '/docs/gmail-guide';
+    oauthRecord.canonical_url = '/docs/gmail-guide';
     oauthRecord.section = 'Configure Gmail OAuth';
 
     const execution = await searchPublicKnowledge({
       query: 'gmail attachments', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => ({
         candidates: [attachmentsRecord, oauthRecord]
           .map(publicKnowledgeCandidateFromSearchRecord),
       }),
-      searchSemanticCandidates: async () => [],
       previewOverlayEnabled: () => false,
     });
 
     const results = 'results' in execution.response ? execution.response.results : [];
     expect(results.map(result => result.objectID)).toEqual(['gmail-attachments']);
     expect(new Set(results.map(result => result.canonicalUrl)).size).toBe(results.length);
-  });
-
-  test('fuses docs and KB semantics with toolkit and reference keyword candidates', async () => {
-    const toolkit = publicKnowledgeCandidateFromSearchRecord(record({
-      id: 'calendar-toolkit', title: 'Calendar tools', sourceType: 'toolkit', pageRank: 1_500,
-    }));
-    const reference = publicKnowledgeCandidateFromSearchRecord(record({
-      id: 'sessions-reference', title: 'Sessions API', sourceType: 'reference', pageRank: 700,
-    }));
-    const docs = publicKnowledgeCandidateFromSearchRecord(record({
-      id: 'sessions-docs', title: 'Configure sessions', sourceType: 'docs', pageRank: 2_000,
-    }));
-    const kb = publicKnowledgeCandidateFromSearchRecord(record({
-      id: 'calendar-kb', title: 'Repair calendar authorization', sourceType: 'kb', pageRank: 1_900,
-    }));
-    let semanticCalls = 0;
-
-    const execution = await searchPublicKnowledge({
-      query: 'why did my calendar connection stop working',
-      filter: 'all',
-      headers: new Headers(),
-    }, {
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => ({ candidates: [toolkit, reference] }),
-      searchSemanticCandidates: async () => {
-        semanticCalls += 1;
-        return [docs, kb];
-      },
-      searchLocalCandidates: async () => [],
-      previewOverlayEnabled: () => false,
-    });
-
-    expect(semanticCalls).toBe(1);
-    expect(execution.response).toMatchObject({ mode: 'hybrid', strongMatch: true });
-    expect('results' in execution.response
-      ? execution.response.results.map(result => result.sourceType)
-      : []).toEqual(['docs', 'toolkit', 'kb', 'reference']);
-    expect(execution.timings.semanticDurationMs).not.toBeNull();
   });
 
   test('keeps legacy reference exact-only across the unified corpus', async () => {
@@ -989,9 +812,7 @@ describe('public knowledge search service', () => {
       content: 'Create connected account with the old endpoint.',
     }));
     const dependencies = {
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => ({ candidates: [legacy, current, weakLegacy] }),
-      searchSemanticCandidates: async () => [],
       searchLocalCandidates: async () => [],
       previewOverlayEnabled: () => false,
     };
@@ -1020,9 +841,7 @@ describe('public knowledge search service', () => {
     const execution = await searchPublicKnowledge({
       query: 'connected account setup', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => { throw new Error('keyword-request-failed'); },
-      searchSemanticCandidates: async () => { throw new Error('semantic-request-failed'); },
       searchLocalCandidates: async () => local,
       previewOverlayEnabled: () => false,
       captureSearch: event => events.push(event),
@@ -1032,7 +851,7 @@ describe('public knowledge search service', () => {
     expect('results' in execution.response
       ? execution.response.results.map(result => result.sourceType)
       : []).toEqual([
-      'docs', 'kb', 'oauth-guide', 'toolkit', 'example', 'reference', 'changelog',
+      'docs', 'oauth-guide', 'toolkit', 'example', 'reference', 'changelog',
     ]);
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
@@ -1053,9 +872,7 @@ describe('public knowledge search service', () => {
     const branch = publicKnowledgeCandidateFromSearchRecord(branchRecord);
     let localCalls = 0;
     const dependencies = (preview: boolean) => ({
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => ({ candidates: [shared] }),
-      searchSemanticCandidates: async () => [],
       searchPreviewCandidates: async () => {
         localCalls += 1;
         return [branch];
@@ -1085,9 +902,7 @@ describe('public knowledge search service', () => {
     const execution = await searchPublicKnowledge({
       query: 'Removed setup wording', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => false,
       searchKeywordCandidates: async () => ({ candidates: [shared] }),
-      searchSemanticCandidates: async () => [],
       searchPreviewCandidates: async () => ({
         candidates: [],
         canonicalUrls: [shared.canonicalUrl],
@@ -1108,22 +923,15 @@ describe('public knowledge search service', () => {
       id: 'local-doc', title: 'Calendly overview', sourceType: 'docs', pageRank: 2_000,
       content: 'Learn about Calendly actions.',
     }));
-    let semanticCalls = 0;
 
     const execution = await searchPublicKnowledge({
       query: 'CALENDLY_POST_INVITEE', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => ({ candidates: [exact] }),
-      searchSemanticCandidates: async () => {
-        semanticCalls += 1;
-        return [];
-      },
       searchPreviewCandidates: async () => [weakLocal],
       previewOverlayEnabled: () => true,
     });
 
-    expect(semanticCalls).toBe(0);
     expect(execution.response).toMatchObject({
       mode: 'keyword',
       results: [{ objectID: 'exact-reference' }, { objectID: 'local-doc' }],
@@ -1151,9 +959,7 @@ describe('public knowledge search service', () => {
       const execution = await searchPublicKnowledge({
         query: item.query, filter: item.filter, headers: new Headers(),
       }, {
-        hybridEnabled: () => true,
         searchKeywordCandidates: async () => { throw new Error('keyword-request-failed'); },
-        searchSemanticCandidates: async () => [],
         searchLocalCandidates: async (_query, filter) => {
           localFilter = filter;
           return [toolkit, reference, oauth];
@@ -1167,40 +973,6 @@ describe('public knowledge search service', () => {
     }
   });
 
-  test('does not bypass semantics for an exact identity beyond the returned keyword window', async () => {
-    const weak = Array.from({ length: 20 }, (_, index) =>
-      publicKnowledgeCandidateFromSearchRecord(record({
-        id: `weak-${index}`,
-        title: `Weak result ${index}`,
-        sourceType: 'docs',
-        pageRank: 2_000 - index,
-      })));
-    const outOfWindowExact = publicKnowledgeCandidateFromSearchRecord(record({
-      id: 'out-of-window-exact',
-      title: 'Action reference',
-      sourceType: 'reference',
-      pageRank: 700,
-      keywords: ['CALENDLY_POST_INVITEE'],
-    }));
-    let semanticCalls = 0;
-
-    const execution = await searchPublicKnowledge({
-      query: 'CALENDLY_POST_INVITEE', filter: 'all', headers: new Headers(),
-    }, {
-      hybridEnabled: () => true,
-      searchKeywordCandidates: async () => ({ candidates: [...weak, outOfWindowExact] }),
-      searchSemanticCandidates: async () => {
-        semanticCalls += 1;
-        return [];
-      },
-      searchLocalCandidates: async () => [],
-      previewOverlayEnabled: () => false,
-    });
-
-    expect(semanticCalls).toBe(1);
-    expect(execution.response).toMatchObject({ mode: 'hybrid', strongMatch: false, results: [] });
-  });
-
   test('reports preview overlay failure while preserving shared keyword results', async () => {
     const shared = publicKnowledgeCandidateFromSearchRecord(record({
       id: 'shared-doc', title: 'Shared title', sourceType: 'docs', pageRank: 2_000,
@@ -1210,9 +982,7 @@ describe('public knowledge search service', () => {
     const execution = await searchPublicKnowledge({
       query: 'Shared title', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => ({ candidates: [shared] }),
-      searchSemanticCandidates: async () => [],
       searchPreviewCandidates: async () => { throw new Error('local-index-failed'); },
       previewOverlayEnabled: () => true,
       captureSearch: event => events.push(event),
@@ -1225,13 +995,11 @@ describe('public knowledge search service', () => {
     expect(events[0]).toMatchObject({ degradationCategory: 'preview-overlay-failed' });
   });
 
-  test('returns 503 only when shared, local, and semantic retrieval all fail', async () => {
+  test('returns 503 only when shared and local retrieval both fail', async () => {
     const execution = await searchPublicKnowledge({
       query: 'unavailable answer', filter: 'all', headers: new Headers(),
     }, {
-      hybridEnabled: () => true,
       searchKeywordCandidates: async () => { throw new Error('keyword-request-failed'); },
-      searchSemanticCandidates: async () => { throw new Error('semantic-request-failed'); },
       searchLocalCandidates: async () => { throw new Error('local-index-failed'); },
       previewOverlayEnabled: () => false,
     });

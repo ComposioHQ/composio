@@ -20,7 +20,6 @@ export interface KnowledgeSearchAnalyticsEvent {
   statusCode: number;
   durationMs: number;
   keywordDurationMs: number;
-  semanticDurationMs: number | null;
   resultSourceTypes: KnowledgeSourceType[];
   previewOverlayApplied: boolean;
 }
@@ -117,9 +116,6 @@ export function buildKnowledgeSearchCapture(
         status_code: event.statusCode,
         duration_ms: Math.round(event.durationMs),
         keyword_duration_ms: Math.round(event.keywordDurationMs),
-        semantic_duration_ms: event.semanticDurationMs === null
-          ? null
-          : Math.round(event.semanticDurationMs),
         result_source_types: event.resultSourceTypes,
         preview_overlay_applied: event.previewOverlayApplied,
       },

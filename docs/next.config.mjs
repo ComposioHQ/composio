@@ -2,6 +2,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createMDX } from 'fumadocs-mdx/next';
 import { withEve } from 'eve/next';
+import { kbRedirects } from './lib/kb-redirects.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const withMDX = createMDX();
@@ -47,9 +48,8 @@ const config = {
     '/llms.mdx/**': [...OPENAPI_SPEC_FILES, './.generated/content-freshness.json'],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
-    '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
-    '/kb/**': ['./kb/**'],
-    '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
+    '/llms-index.txt/**': [...OPENAPI_SPEC_FILES],
+    '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**'],
     // The OG route reads its fonts and wordmark from disk at request time.
     '/api/og/**': ['./app/fonts/Geist*.ttf', './public/Composio Logo*.svg', './public/og/*'],
   },
@@ -69,6 +69,8 @@ const config = {
   },
   async redirects() {
     return [
+      // The Knowledge Base was retired; send its URLs to the closest maintained pages.
+      ...kbRedirects(),
       // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
       // Renamed/moved pages -> new location
       {

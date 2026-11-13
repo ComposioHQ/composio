@@ -1,5 +1,9 @@
 # Public Knowledge Base
 
+> **Superseded on 2026-11-13** by [Knowledge Base Retirement](./kb-retirement.md).
+> Kept for history; the KB routes, snapshot, and workflows described here no
+> longer exist.
+
 ## Purpose and ownership
 
 - The public knowledge base is hosted with the documentation at

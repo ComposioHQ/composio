@@ -1,6 +1,5 @@
 export type KnowledgeSourceType =
   | 'docs'
-  | 'kb'
   | 'oauth-guide'
   | 'toolkit'
   | 'example'
@@ -43,7 +42,6 @@ export interface KnowledgeClassificationInput {
   sourceType: KnowledgeSourceType;
   canonicalUrl: string;
   productAreas?: string[];
-  topics?: string[];
   toolkitSlugs?: string[];
   intents?: KnowledgeIntent[];
   lastVerifiedAt?: string | null;
@@ -51,7 +49,6 @@ export interface KnowledgeClassificationInput {
 
 export const KNOWLEDGE_SOURCE_LABELS: Record<KnowledgeSourceType, string> = {
   docs: 'Docs',
-  kb: 'Knowledge Base',
   'oauth-guide': 'OAuth',
   toolkit: 'Toolkit',
   example: 'Example',

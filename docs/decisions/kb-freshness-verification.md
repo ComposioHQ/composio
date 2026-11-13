@@ -1,5 +1,9 @@
 # KB Freshness Verification
 
+> **Superseded on 2026-11-13** by [Knowledge Base Retirement](./kb-retirement.md).
+> Kept for history; the KB routes, snapshot, and workflows described here no
+> longer exist.
+
 ## Decision
 
 Verify published knowledge base guides mechanically against production data on
