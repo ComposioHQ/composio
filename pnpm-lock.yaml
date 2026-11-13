@@ -52,8 +52,8 @@ catalogs:
       specifier: ^5.1.0
       version: 5.1.0
     ai:
-      specifier: ^7.0.146
-      version: 7.0.146
+      specifier: ^7.0.166
+      version: 7.0.166
     dotenv:
       specifier: ^18.0.10
       version: 18.0.10
@@ -378,7 +378,7 @@ importers:
         version: link:../../../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
       hono:
         specifier: 'catalog:'
         version: 4.13.17
@@ -934,7 +934,7 @@ importers:
         version: 1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7)
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.10
@@ -962,7 +962,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1070,7 +1070,7 @@ importers:
         version: 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.10
@@ -1110,7 +1110,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1132,7 +1132,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.10
@@ -1216,7 +1216,7 @@ importers:
         version: 1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7)
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.10
@@ -1464,7 +1464,7 @@ importers:
         version: 1.5.1(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.4)(supports-color@10.2.2)(ws@8.22.2)(zod@4.6.7)
       eve:
         specifier: ^0.81.1
-        version: 0.81.1(@opentelemetry/api@1.10.0)(ai@7.0.146(zod@4.6.7))
+        version: 0.81.1(@opentelemetry/api@1.10.0)(ai@7.0.166(zod@4.6.7))
       tsdown:
         specifier: 'catalog:'
         version: 0.23.7(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2))
@@ -1777,7 +1777,7 @@ importers:
         version: link:../../core
       ai:
         specifier: 'catalog:'
-        version: 7.0.146(zod@4.6.7)
+        version: 7.0.166(zod@4.6.7)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.7(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2))
@@ -1873,8 +1873,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/gateway@4.0.119':
-    resolution: {integrity: sha512-CJczvdtOAW9URKHY74TAup1CPc+HTB0lbcbd0mPTweiJ64tk6T3BFxREixBwfNDP6d0XIzdBWucJnDL47gW0XA==}
+  '@ai-sdk/gateway@4.0.139':
+    resolution: {integrity: sha512-2YEIPm4n59nm4PBhMGjFWH0g+ztPgfybqoeMIjfJYNiB8zLHftUrONgb8P3Ho3Yy5cdoLCjiDE/Hv2Crol0JBw==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1933,12 +1933,6 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@5.0.64':
-    resolution: {integrity: sha512-BDU8rDR6mBR+na5U/Dj4B33LX980x200lqhBGRIOxxx1NFunoixuvvweqIB+sCsCoFC8cGCsa82Ce2fKoAPOqw==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
   '@ai-sdk/provider-utils@5.0.76':
     resolution: {integrity: sha512-76QcCmVtSunSAbQBJtgQTTE8e+Yaz4rJJe1MRWnJ3GAQYUvNPHJejKx4jZTbhGGTdSSLaYcMBT62SISNgnGq9w==}
     engines: {node: '>=22'}
@@ -1967,10 +1961,6 @@ packages:
 
   '@ai-sdk/provider@4.0.3':
     resolution: {integrity: sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw==}
-    engines: {node: '>=22'}
-
-  '@ai-sdk/provider@4.0.31':
-    resolution: {integrity: sha512-3wJnwVTFg8SwOyoZCv+ov7Re2GB+7IQnU5a5MYJACrtiWDDUHgqTBeeesq2MB2ddgojzL8hgWleltwpAgtUqfg==}
     engines: {node: '>=22'}
 
   '@ai-sdk/provider@4.0.37':
@@ -4430,8 +4420,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  ai@7.0.146:
-    resolution: {integrity: sha512-dNeZs+zlp47upGQKuw2/o8zNbuzEdTlD+0uWi3DTeDU3DH38iWkaNMy8fAl4z3IsgKvsM9x+dzUF5VNYR9CzEw==}
+  ai@7.0.166:
+    resolution: {integrity: sha512-bijt5WsdpQXQLB0SHYEoSuvpZ8KdUxl3Iz843uvHFcGpEBSrxlgwXXadR7EBVOHoByEf2PwgOxutWU5dcdjs9Q==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6875,10 +6865,10 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.6.7
 
-  '@ai-sdk/gateway@4.0.119(zod@4.6.7)':
+  '@ai-sdk/gateway@4.0.139(zod@4.6.7)':
     dependencies:
-      '@ai-sdk/provider': 4.0.31
-      '@ai-sdk/provider-utils': 5.0.64(zod@4.6.7)
+      '@ai-sdk/provider': 4.0.37
+      '@ai-sdk/provider-utils': 5.0.76(zod@4.6.7)
       '@vercel/oidc': 3.2.0
       zod: 4.6.7
 
@@ -7000,15 +6990,6 @@ snapshots:
       undici: 7.30.2
       zod: 4.6.7
 
-  '@ai-sdk/provider-utils@5.0.64(zod@4.6.7)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.31
-      '@standard-schema/spec': 1.1.0
-      '@workflow/serde': 4.1.0
-      eventsource-parser: 3.1.1
-      undici: 7.30.2
-      zod: 4.6.7
-
   '@ai-sdk/provider-utils@5.0.76(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 4.0.37
@@ -7039,10 +7020,6 @@ snapshots:
       json-schema: 0.4.0
 
   '@ai-sdk/provider@4.0.3':
-    dependencies:
-      json-schema: 0.4.0
-
-  '@ai-sdk/provider@4.0.31':
     dependencies:
       json-schema: 0.4.0
 
@@ -9465,11 +9442,11 @@ snapshots:
       '@opentelemetry/api': 1.10.0
       zod: 4.6.7
 
-  ai@7.0.146(zod@4.6.7):
+  ai@7.0.166(zod@4.6.7):
     dependencies:
-      '@ai-sdk/gateway': 4.0.119(zod@4.6.7)
-      '@ai-sdk/provider': 4.0.31
-      '@ai-sdk/provider-utils': 5.0.64(zod@4.6.7)
+      '@ai-sdk/gateway': 4.0.139(zod@4.6.7)
+      '@ai-sdk/provider': 4.0.37
+      '@ai-sdk/provider-utils': 5.0.76(zod@4.6.7)
       zod: 4.6.7
 
   ajv-formats@3.0.1(ajv@8.20.0):
@@ -9883,9 +9860,9 @@ snapshots:
 
   etag@1.8.1: {}
 
-  eve@0.81.1(@opentelemetry/api@1.10.0)(ai@7.0.146(zod@4.6.7)):
+  eve@0.81.1(@opentelemetry/api@1.10.0)(ai@7.0.166(zod@4.6.7)):
     dependencies:
-      ai: 7.0.146(zod@4.6.7)
+      ai: 7.0.166(zod@4.6.7)
       nitro: 3.0.260903-beta
       undici: 8.10.2
     optionalDependencies:

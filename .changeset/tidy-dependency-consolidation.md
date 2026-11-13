@@ -7,6 +7,8 @@
 '@composio/anthropic': patch
 '@composio/claude-agent-sdk': patch
 '@composio/mastra': patch
+'@composio/langchain': patch
+'@composio/typesafe': patch
 '@composio/python-sdk': patch
 ---
 
