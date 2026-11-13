@@ -23,6 +23,7 @@ import * as constants from 'src/constants';
 import { isExpectedFailure } from 'src/effects/expected-failure';
 import { isUnauthorized, unauthorizedHint } from 'src/effects/rejected-user-api-key';
 import { ReportedFailure } from 'src/effects/report-failure';
+import { isSafeToRetry, retryHint } from 'src/effects/retry-advice';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { getVersion } from 'src/effects/version';
 import {
@@ -201,10 +202,16 @@ const report = (cause: Cause.Cause<unknown>) =>
             Option.match({ onNone: () => Effect.void, onSome: ui.error })
           )
         : Effect.void;
+    // A failed request that is safe to run again as it is says so after its message; the runner
+    // exits 75 for it (see `runnerCause`).
+    const printRetryHint = Option.exists(error, isSafeToRetry)
+      ? ui.error(retryHint('safe'))
+      : Effect.void;
     const expected = Option.filter(error, isExpectedFailure);
     if (Option.isSome(expected)) {
       yield* ui.error(expected.value.message);
       yield* printUnauthorizedHint(expected.value);
+      yield* printRetryHint;
       return;
     }
     // Any other 401 gets the backend's message in place of a defect report.
@@ -231,6 +238,7 @@ const report = (cause: Cause.Cause<unknown>) =>
     }).trim();
     if (message.length > 0) {
       yield* ui.error(message);
+      yield* printRetryHint;
     }
   });
 
@@ -263,14 +271,21 @@ export const runInvocation = (
 
 /**
  * The cause the runner receives for a failed invocation. A failure `runInvocation` put on screen
- * becomes a `ReportedFailure`: the runner logs nothing and exits 1. A failure that was on screen
+ * becomes a `ReportedFailure`: the runner logs nothing and exits 1, or 75 for a failed request
+ * that is safe to run again as it is. A failure that was on screen
  * before (`ShowHelp`, a command's own report, `ChildProcessExited`) keeps its markers and its
  * exit code, and an interruption stays one, so a signal still decides the exit.
  */
 export const runnerCause = (cause: Cause.Cause<unknown>): Cause.Cause<unknown> =>
   cause.reasons.every(hasNothingToPrint)
     ? cause
-    : Cause.fail(new ReportedFailure({ message: Cause.pretty(cause) }));
+    : Cause.fail(
+        new ReportedFailure(
+          Option.exists(Cause.findErrorOption(cause), isSafeToRetry)
+            ? { message: Cause.pretty(cause), retryable: true }
+            : { message: Cause.pretty(cause) }
+        )
+      );
 
 /** `exit` as the runner receives it; see {@link runnerCause}. */
 export const runnerExit = <A>(exit: Exit.Exit<A, unknown>): Exit.Exit<A, unknown> =>
