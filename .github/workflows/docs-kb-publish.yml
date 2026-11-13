@@ -1,7 +1,8 @@
 name: Docs - Publish KB Guide
 
-# The support portal sends this when Front Desk proposes a KB change: a new guide, a rewrite or a
-# retirement. It becomes one PR on next, and reviewing and merging that PR is the approval. Each guide
+# The support portal sends this when Front Desk proposes a KB change, and Zen (source: zen) sends it
+# when a merged code PR changes what a guide says: a new guide, a rewrite or a retirement. It becomes
+# one PR on next, and reviewing and merging that PR is the approval. Each guide
 # lives in its own files (kb/guides/<slug>.json, kb/articles, kb/source) and content/kb is generated
 # at build time, so PRs for different guides can wait for review side by side without conflicting.
 on:
@@ -28,12 +29,38 @@ jobs:
         working-directory: ./docs
 
     steps:
+      # Every payload field that reaches a branch name or the PR body is checked here first.
       - name: Check request
+        id: request
         env:
+          SOURCE: ${{ github.event.client_payload.source }}
           DRAFT_ID: ${{ github.event.client_payload.draft_id }}
+          REQUEST_ID: ${{ github.event.client_payload.request_id }}
+          ORIGIN_URL: ${{ github.event.client_payload.origin_url }}
+          ORIGIN_AUTHOR: ${{ github.event.client_payload.origin_author }}
         run: |
-          if ! [[ "$DRAFT_ID" =~ ^[0-9]+$ ]]; then
-            echo "draft_id must be a number" >&2
+          if [ "$SOURCE" = zen ]; then
+            if ! [[ "$REQUEST_ID" =~ ^[a-z0-9-]+$ ]]; then
+              echo "request_id must match ^[a-z0-9-]+$" >&2
+              exit 1
+            fi
+            if ! [[ "$ORIGIN_URL" =~ ^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[0-9]+$ ]]; then
+              echo "origin_url must be a GitHub pull request URL" >&2
+              exit 1
+            fi
+            if ! [[ "$ORIGIN_AUTHOR" =~ ^[A-Za-z0-9-]+$ ]]; then
+              echo "origin_author must be a GitHub login" >&2
+              exit 1
+            fi
+            echo "branch=docs/kb-$REQUEST_ID" >> "$GITHUB_OUTPUT"
+          elif [ -z "$SOURCE" ]; then
+            if ! [[ "$DRAFT_ID" =~ ^[0-9]+$ ]]; then
+              echo "draft_id must be a number" >&2
+              exit 1
+            fi
+            echo "branch=docs/kb-front-desk-$DRAFT_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unknown source: $SOURCE" >&2
             exit 1
           fi
         working-directory: .
@@ -96,13 +123,13 @@ jobs:
           commit-message: 'docs(kb): ${{ github.event.client_payload.summary }}'
           title: 'docs(kb): ${{ github.event.client_payload.summary }}'
           body: |
-            KB guide change proposed by Front Desk in the support portal.
+            ${{ github.event.client_payload.source == 'zen' && format('KB guide change proposed by Zen from {0} (@{1}).', github.event.client_payload.origin_url, github.event.client_payload.origin_author) || 'KB guide change proposed by Front Desk in the support portal.' }}
 
             - Guide: `${{ github.event.client_payload.guide.slug }}` (${{ github.event.client_payload.guide.action }})
-            - Draft: ${{ github.event.client_payload.portal_url }}
+            ${{ github.event.client_payload.source != 'zen' && format('- Draft: {0}', github.event.client_payload.portal_url) || '' }}
 
             Review the article and merge to publish it; close the PR to dismiss it. Nothing merges on its own.
-          branch: docs/kb-front-desk-${{ github.event.client_payload.draft_id }}
+          branch: ${{ steps.request.outputs.branch }}
           base: next
           add-paths: |
             docs/kb/

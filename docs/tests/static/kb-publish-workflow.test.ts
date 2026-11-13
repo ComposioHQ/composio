@@ -63,6 +63,31 @@ describe('KB publication workflow', () => {
     expect(raw).not.toContain('docs/content/kb/');
   });
 
+  test('names the PR branch from a checked portal or Zen request', () => {
+    const root = fixture();
+    try {
+      const branchFor = (env: Record<string, string>) => {
+        writeFileSync(join(root, 'output'), '');
+        const result = runStep('Check request', root, { GITHUB_OUTPUT: join(root, 'output'), ...env });
+        return result.status === 0 ? readFileSync(join(root, 'output'), 'utf8').trim() : null;
+      };
+      const zen = {
+        SOURCE: 'zen', REQUEST_ID: 'zen-composiohq-composio-5340-1',
+        ORIGIN_URL: 'https://github.com/ComposioHQ/composio/pull/5340', ORIGIN_AUTHOR: 'octo-cat',
+      };
+
+      expect(branchFor({ DRAFT_ID: '12' })).toBe('branch=docs/kb-front-desk-12');
+      expect(branchFor(zen)).toBe('branch=docs/kb-zen-composiohq-composio-5340-1');
+      expect(branchFor({ DRAFT_ID: '12; rm -rf /' })).toBeNull();
+      expect(branchFor({ ...zen, REQUEST_ID: 'Zen/../main' })).toBeNull();
+      expect(branchFor({ ...zen, ORIGIN_URL: 'https://evil.example/pull/1' })).toBeNull();
+      expect(branchFor({ ...zen, ORIGIN_AUTHOR: 'a b\nc' })).toBeNull();
+      expect(branchFor({ SOURCE: 'other', DRAFT_ID: '12' })).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test('blocks support-facing prose even when verification reports it as a warning', () => {
     const root = fixture();
     try {
