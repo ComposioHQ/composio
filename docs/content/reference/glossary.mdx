@@ -5,10 +5,18 @@ llmGuardrails: "none"
 keywords: [glossary, definitions, terminology]
 ---
 
+Use these terms when working with Composio. Older SDK names appear below so you can match them to the current names.
+
+An auth config and a connected account describe different resources. For Gmail, the auth config defines the OAuth app and scopes. Each connected account stores one user's Gmail credentials under that config. The same auth config can support connected accounts for many users.
+
 <Glossary>
 
+<GlossaryTerm name="Action">
+The older SDK name for a [tool](#tool). Use *tool* in current Composio docs and code. See the [SDK terminology migration](/docs/migration-guide/new-sdk#nomenclature).
+</GlossaryTerm>
+
 <GlossaryTerm name="Auth Config">
-A blueprint that defines how authentication works for a toolkit: the auth method (`OAUTH2`, `API_KEY`, `BEARER_TOKEN`, or `BASIC`), scopes, and credentials. A [session](/docs/how-composio-works) creates one automatically when it needs one. To use your own OAuth credentials or non-default scopes, [create a custom one](/docs/auth-configuration/custom-auth-configs).
+A blueprint that defines how authentication works for a toolkit: the auth method (`OAUTH2`, `API_KEY`, `BEARER_TOKEN`, or `BASIC`), scopes, and credentials. Previously called an *integration*. A [session](/docs/how-composio-works) creates one automatically when it needs one. To use your own OAuth credentials or non-default scopes, [create a custom one](/docs/auth-configuration/custom-auth-configs).
 </GlossaryTerm>
 
 <GlossaryTerm name="Auth Scheme">
@@ -32,15 +40,23 @@ A hosted page where a user authorizes access to a toolkit. It is returned as a `
 </GlossaryTerm>
 
 <GlossaryTerm name="Connected Account">
-A stored set of credentials (OAuth tokens or API keys) linked to a userID, created when a user authenticates with a toolkit. Composio refreshes OAuth tokens automatically, and a user can have [multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for the same toolkit. IDs are prefixed `ca_`.
+A stored set of credentials (OAuth tokens or API keys) linked to a userID and an [auth config](#auth-config), created when a user authenticates with a toolkit. Also called a *connection*. Composio refreshes OAuth tokens automatically, and a user can have [multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for the same toolkit. IDs are prefixed `ca_`.
 </GlossaryTerm>
 
 <GlossaryTerm name="Connection Request">
 The object returned when you initiate authentication. It contains the Connect Link URL and a `waitForConnection()` method that resolves once the user completes the flow.
 </GlossaryTerm>
 
+<GlossaryTerm name="Function">
+In an AI framework's function-calling API, a [tool](#tool) can be represented as a function definition. For example, the OpenAI provider wraps a Composio tool with `type: 'function'` and uses its tool slug as the function name. This is a format for the same tool. See [Providers](/docs/providers).
+</GlossaryTerm>
+
 <GlossaryTerm name="In-Chat Authentication">
 A flow in which the agent handles authentication itself by calling `COMPOSIO_MANAGE_CONNECTIONS` to generate a Connect Link and send it to the user in the conversation. See [In-chat authentication](/docs/authentication#in-chat-authentication).
+</GlossaryTerm>
+
+<GlossaryTerm name="Integration">
+The older SDK name for an [auth config](#auth-config). It describes authentication settings, while a [connected account](#connected-account) holds a user's credentials. In general prose, "integration" can also mean the application you build with Composio. See the [SDK terminology migration](/docs/migration-guide/new-sdk#nomenclature).
 </GlossaryTerm>
 
 <GlossaryTerm name="Local Tool">
@@ -48,7 +64,7 @@ A tool you define yourself that runs in your application process alongside Compo
 </GlossaryTerm>
 
 <GlossaryTerm name="MCP (Model Context Protocol)">
-An open protocol for connecting AI models to external tools. Create a session with `mcp: true` to expose `session.mcp.url` and `session.mcp.headers`, an MCP-compatible endpoint any MCP client can connect to. See [Using sessions via MCP](/docs/sessions-via-mcp).
+An open protocol for connecting AI models to external tools. A tool is an operation the agent can execute; MCP is a protocol through which the agent can discover and call tools. Create a session with `mcp: true` to expose `session.mcp.url` and `session.mcp.headers`, an MCP-compatible endpoint any MCP client can connect to. See [Using sessions via MCP](/docs/sessions-via-mcp).
 </GlossaryTerm>
 
 <GlossaryTerm name="Manual Authentication">
@@ -96,7 +112,7 @@ The unique identifier for a session. Meta tools use it internally to share conte
 </GlossaryTerm>
 
 <GlossaryTerm name="Tool">
-An individual action an agent can execute. It has an input schema and an output schema, and is named `{TOOLKIT}_{ACTION}` (for example, `GITHUB_CREATE_ISSUE`).
+An individual action an agent can execute. Previously called an *action* in the SDK, and represented as a *function* in some AI frameworks. It has an input schema and an output schema, and is named `{TOOLKIT}_{ACTION}` (for example, `GITHUB_CREATE_ISSUE`).
 </GlossaryTerm>
 
 <GlossaryTerm name="Tool Slug">
