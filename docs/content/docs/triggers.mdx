@@ -29,6 +29,74 @@ Either way, the event lands in the same place: your subscription or webhook URL,
 If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 </Callout>
 
+### Realtime and polling triggers by app
+
+Each trigger has its own type, so an app marked **Both** has some of each. The counts leave out deprecated triggers. To check a single trigger, run `composio triggers list <toolkit>` and read its `type`. A `webhook` trigger is realtime and a `poll` trigger is polling.
+
+<Accordions>
+<Accordion title="Realtime and polling triggers by app">
+
+| App | Type | Realtime triggers | Polling triggers |
+|---|---|---|---|
+| Agent Mail | Polling | 0 | 1 |
+| Airtable | Polling | 0 | 6 |
+| Asana | Realtime | 6 | 0 |
+| Ashby | Realtime | 28 | 0 |
+| Box | Polling | 0 | 20 |
+| Calendly | Realtime | 10 | 0 |
+| Canvas | Polling | 0 | 6 |
+| ClickUp | Realtime | 21 | 0 |
+| Close | Realtime | 45 | 0 |
+| Coda | Polling | 0 | 4 |
+| Confluence | Polling | 0 | 23 |
+| Discord | Polling | 0 | 1 |
+| DocuSign | Realtime | 20 | 0 |
+| Fathom | Realtime | 1 | 0 |
+| Fireflies | Polling | 0 | 1 |
+| GitHub | Both | 5 | 41 |
+| Gmail | Polling | 0 | 2 |
+| Google Calendar | Polling | 0 | 6 |
+| Google Docs | Polling | 0 | 10 |
+| Google Drive | Polling | 0 | 7 |
+| Google Sheets | Polling | 0 | 16 |
+| Google Slides | Polling | 0 | 1 |
+| Google Super | Polling | 0 | 47 |
+| Google Tasks | Polling | 0 | 5 |
+| HubSpot | Realtime | 2 | 0 |
+| Jira | Realtime | 17 | 0 |
+| Kit | Realtime | 17 | 0 |
+| LaunchDarkly | Realtime | 16 | 0 |
+| LINE | Realtime | 1 | 0 |
+| Linear | Both | 6 | 6 |
+| Mailchimp | Realtime | 4 | 0 |
+| MailerLite | Realtime | 13 | 0 |
+| Monday | Realtime | 17 | 0 |
+| Notion | Realtime | 8 | 0 |
+| OneDrive | Polling | 0 | 9 |
+| Outlook | Realtime | 5 | 0 |
+| Pipedrive | Realtime | 3 | 0 |
+| Plain | Realtime | 11 | 0 |
+| PostHog | Realtime | 11 | 0 |
+| Salesforce | Polling | 0 | 7 |
+| Shopify | Realtime | 45 | 0 |
+| Slack | Realtime | 5 | 0 |
+| Slackbot | Realtime | 5 | 0 |
+| Spotify | Polling | 0 | 3 |
+| Stripe | Realtime | 40 | 0 |
+| TimelinesAI | Polling | 0 | 1 |
+| Todoist | Polling | 0 | 1 |
+| Trello | Realtime | 43 | 0 |
+| Twilio | Realtime | 45 | 0 |
+| Typeform | Realtime | 1 | 0 |
+| WhatsApp | Polling | 0 | 1 |
+| Workday | Polling | 0 | 13 |
+| YouTube | Polling | 0 | 4 |
+| Zendesk | Both | 1 | 1 |
+| Zoom | Polling | 0 | 11 |
+
+</Accordion>
+</Accordions>
+
 ## Trigger types and instances
 
 A **trigger type** is a kind of event you can listen for, like `GITHUB_COMMIT_EVENT` or a new Slack message. Each toolkit has its own set.
