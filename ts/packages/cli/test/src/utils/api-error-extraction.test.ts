@@ -5,6 +5,7 @@ import {
   RateLimitError,
 } from '@composio/client/effect';
 import { describe, expect, it } from 'vitest';
+import { HttpDecodingError } from 'src/services/composio-errors';
 import {
   extractApiErrorDetails,
   extractMessage,
@@ -141,6 +142,17 @@ describe('extractMessage', () => {
 
     expect(extractMessage({ cause: clientError })).toBe(
       "The API response for 'toolRouter.session.toolkits' is not in the shape this version of the CLI expects (request id: req_toolkits).\nUpgrade the CLI, then retry:\n> composio upgrade"
+    );
+  });
+
+  it("reports a response that failed the CLI's schema for a named operation, with the remedy", () => {
+    const shapeError = new HttpDecodingError({
+      cause: new Error('Expected object, got undefined'),
+      operation: 'toolRouter.session.search',
+    });
+
+    expect(extractMessage({ cause: shapeError })).toBe(
+      "The API response for 'toolRouter.session.search' is not in the shape this version of the CLI expects.\nUpgrade the CLI, then retry:\n> composio upgrade"
     );
   });
 

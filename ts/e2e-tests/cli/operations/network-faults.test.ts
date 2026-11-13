@@ -167,23 +167,14 @@ describe('network faults on a read (`search`)', () => {
     { name: 'an empty 200 body', fault: { kind: 'empty-body' } },
   ] satisfies ReadonlyArray<{ name: string; fault: Fault }>) {
     it(
-      `today: ${name}: exit 1 with a raw TypeError`,
+      `${name}: reported as an unexpected response`,
       async () => {
         rig.fake.faults.inject({ route: SEARCH, fault });
         const result = await rig.run(SEARCH_SLACK);
         expect(result.exitCode).toBe(1);
         expect(result.stdout).toBe('');
-        expect(clean(result.stderr)).toContain('TypeError');
-      },
-      TEST_TIMEOUT_MS
-    );
-
-    // CLI defect: a 200 whose JSON lacks the fields `search` reads crashes with a raw TypeError naming a minified variable.
-    it.failing(
-      `${name}: reported as an unexpected response`,
-      async () => {
-        rig.fake.faults.inject({ route: SEARCH, fault });
-        const result = await rig.run(SEARCH_SLACK);
+        expect(clean(result.stderr)).not.toContain('TypeError');
+        expect(clean(result.stderr)).toContain('composio upgrade');
         expect(clean(result.stderr)).toContain(
           'is not in the shape this version of the CLI expects'
         );

@@ -34,11 +34,15 @@ export const idempotent = { maxRetries: DEFAULT_MAX_RETRIES } satisfies RequestO
 export const validated = { decode: true } satisfies RequestOptions;
 
 /**
- * Decodes a payload against a CLI-owned contract.
+ * Decodes a payload against a CLI-owned contract. Pass the client's name for
+ * the request's `operation` to have a mismatch reported by that name.
  */
 export const decode =
-  <S extends Schema.Top>(schema: S) =>
+  <S extends Schema.Top>(schema: S, options?: { readonly operation?: string }) =>
   (input: unknown): Effect.Effect<S['Type'], HttpDecodingError, S['DecodingServices']> =>
     Schema.decodeUnknownEffect(schema)(input).pipe(
-      Effect.catchTag('SchemaError', cause => new HttpDecodingError({ cause }))
+      Effect.catchTag(
+        'SchemaError',
+        cause => new HttpDecodingError({ cause, operation: options?.operation })
+      )
     );

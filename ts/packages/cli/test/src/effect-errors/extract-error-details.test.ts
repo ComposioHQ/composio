@@ -7,6 +7,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { Data } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
+import { HttpDecodingError } from 'src/services/composio-errors';
 
 class RequestError extends Data.TaggedError('RequestError')<{
   readonly message: string;
@@ -197,6 +198,43 @@ describe('extractErrorDetails for an uncaught API failure', () => {
 
       expect(extractErrorDetails(error).message).toBe(
         "Failed to fetch tool logs.\nCaused by: The API response for 'logs.tools.list' is not in the shape this version of the CLI expects (request id: req_logs).\nUpgrade the CLI, then retry:\n> composio upgrade"
+      );
+    });
+  });
+
+  describe("raised for a response that failed the CLI's schema", () => {
+    // The schema issues may quote the response, so they are never shown.
+    const shapeError = new HttpDecodingError({
+      cause: new Error('Expected array, got {"secret":"value"}'),
+      operation: 'toolRouter.session.search',
+    });
+    const described =
+      "The API response for 'toolRouter.session.search' is not in the shape this version of the CLI expects.\nUpgrade the CLI, then retry:\n> composio upgrade";
+
+    it('names the operation and suggests an upgrade', () => {
+      expect(extractErrorDetails(shapeError)).toStrictEqual({
+        isPlainString: false,
+        type: 'services/HttpDecodingError',
+        message: described,
+      });
+    });
+
+    it('does so as the cause of a command error', () => {
+      const error = new RequestError({ message: 'Failed to search tools.', cause: shapeError });
+
+      expect(extractErrorDetails(error).message).toBe(
+        `Failed to search tools.\nCaused by: ${described}`
+      );
+    });
+
+    it('keeps the schema issues of a failure that names no operation', () => {
+      const error = new RequestError({
+        message: 'Failed to fetch toolkits.',
+        cause: new HttpDecodingError({ cause: new Error('Expected array') }),
+      });
+
+      expect(extractErrorDetails(error).message).toBe(
+        'Failed to fetch toolkits.\nCaused by: Expected array'
       );
     });
   });
