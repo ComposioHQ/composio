@@ -36,7 +36,7 @@ catalog:
   '@clack/prompts': '^1.9.0'
   '@cloudflare/vitest-pool-workers': 0.23.0
   '@cloudflare/workers-types': ^5.20261110.1
-  '@composio/client': 2.1.17
+  '@composio/client': 2.1.32
   '@effect/language-service': ^0.87.5
   '@effect/platform-bun': ^4.1.3
   '@effect/vitest': ^4.1.3
