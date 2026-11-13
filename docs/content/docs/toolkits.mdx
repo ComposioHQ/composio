@@ -94,7 +94,17 @@ Toolkit filters choose the apps a session can access. Tool filters narrow that a
 
 Use [session configuration](/docs/configuring-sessions) to enable or disable toolkits, select individual tools, or filter by tags such as read-only. The connected account's permissions still determine what those tools can do in the app.
 
-You can also attach your own local, in-process tools with the experimental [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) API.
+## Add an app or action Composio doesn't have
+
+If the catalog is missing an app, or an app is missing an action, you can build it yourself:
+
+| You need | Use |
+| --- | --- |
+| An action the toolkit doesn't wrap, for an app Composio supports | [Proxy execute](/docs/extending-sessions/proxy-execute) calls the app's API with the user's connected account. To give your agent that call as a tool, write a [local tool](/docs/extending-sessions/local-tools-and-toolkits) with `extendsToolkit` / `extends_toolkit`. |
+| An app Composio doesn't support, where users connect with an API key or DCR OAuth | Put the app's API behind a remote MCP server and add it as a [Custom MCP](/docs/extending-sessions/custom-mcp) toolkit. Composio stores each user's credentials and syncs the server's tools. |
+| Your own logic, or an app whose credentials your backend already holds | Group the tools into a [local toolkit](/docs/extending-sessions/local-tools-and-toolkits). They run in your process, so your code supplies any credentials. |
+
+Local tools and Custom MCP are experimental. To ask Composio to add a toolkit, tool, or trigger, use the [request board](https://request.composio.dev/boards/tool-requests).
 
 ## Related concepts
 
