@@ -1,0 +1,83 @@
+{
+  "$comment": "Hand-authored: no model produced this file. It scripts the path the composio-cli skill teaches, one fixture per model turn. After the first turn each fixture is gated on the id of the previous shell call and on a substring of what that command printed, so a CLI that answers differently leaves the next turn without a match and the strict replay fails.",
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "In my developer project, list the auth configs",
+        "hasToolResult": false,
+        "turnIndex": 0
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_reference",
+            "name": "shell",
+            "arguments": {
+              "command": "cat /skills/composio-cli/references/composio-dev.md"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_reference",
+        "toolResultContains": "composio dev auth-configs list"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_auth_configs",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev auth-configs list"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_auth_configs",
+        "toolResultContains": "ac_e2e0001"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_dev_help",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev --help"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_dev_help",
+        "toolResultContains": "playground-execute"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_playground",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev playground-execute SLACK_SEND_MESSAGE -d '{\"channel\":\"general\",\"text\":\"hello from dev\"}'"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_playground",
+        "toolResultContains": "log_e2e0001"
+      },
+      "response": {
+        "content": "Listed the auth configs and posted \"hello from dev\" to #general as the test user."
+      }
+    }
+  ]
+}
