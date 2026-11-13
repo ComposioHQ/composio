@@ -96,6 +96,28 @@ Use [session configuration](/docs/configuring-sessions) to enable or disable too
 
 You can also attach your own local, in-process tools with the experimental [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) API.
 
+## If a toolkit or tool is missing
+
+Check the [toolkit catalog](/toolkits) for the app and the action you need before requesting an addition.
+
+### A listed tool isn't available to your agent
+
+Check your [session configuration](/docs/configuring-sessions). Toolkit, tool, and tag filters can exclude a tool that exists in the catalog. By default, `session.tools()` returns meta tools that discover app tools as needed. Use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) if you want specific app tools in that list.
+
+If you're [fetching tools directly](/docs/tools-direct/fetching-tools#by-toolkit) with the TypeScript SDK, a toolkit-only filter returns tools marked `important` by default. Set `important: false` to remove that filter.
+
+For a remote MCP server you've registered, see [Custom MCP troubleshooting](/docs/extending-sessions/custom-mcp#troubleshooting) for search and toolkit-version issues.
+
+### The toolkit or action isn't in the catalog
+
+Search the [tool request board](https://request.composio.dev/boards/tool-requests) for an existing request and upvote it, or submit a new request. Include the app name, the action you need, a link to the app's API documentation, and your use case.
+
+You can also use these options:
+
+- If Composio supports the toolkit but doesn't have a tool for the endpoint, use [proxy execute](/docs/extending-sessions/proxy-execute) to call the API with the connected account's authentication.
+- To expose your own business logic or API wrapper to an agent, define [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits). This session-extension API is experimental, and your app runs the handlers.
+- If you have a remote MCP server for the service, register it with [Custom MCP](/docs/extending-sessions/custom-mcp). This integration is experimental.
+
 ## Related concepts
 
 - [Sessions](/docs/how-composio-works) tie toolkits, connected accounts, and execution state to a user.
