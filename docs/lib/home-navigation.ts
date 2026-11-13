@@ -251,15 +251,34 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'page', url: '/docs/security/overview' },
           {
-            type: 'link',
-            url: '/kb/guide/platform-compliance-data-handling',
-            label: 'Vendor security review',
+            type: 'group',
+            label: 'Compliance',
+            links: [
+              {
+                type: 'link',
+                url: '/kb/guide/platform-compliance-data-handling',
+                label: 'Vendor security review',
+              },
+              { type: 'link', url: 'https://trust.composio.dev', label: 'Trust Center', external: true },
+            ],
           },
-          { type: 'page', url: '/docs/security/token-custody' },
-          { type: 'page', url: '/docs/security/data-retention' },
-          { type: 'page', url: '/docs/security/zero-data-retention' },
-          { type: 'page', url: '/docs/security/audit-logs' },
-          { type: 'page', url: '/docs/security/outbound-ips' },
+          {
+            type: 'group',
+            label: 'Data privacy',
+            links: [
+              { url: '/docs/security/data-retention' },
+              { url: '/docs/security/zero-data-retention' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Security controls',
+            links: [
+              { url: '/docs/security/token-custody' },
+              { url: '/docs/security/audit-logs' },
+              { url: '/docs/security/outbound-ips' },
+            ],
+          },
         ],
       },
       {

@@ -176,9 +176,10 @@ describe('Docs product navigation', () => {
     const securityUrls = [
       '/docs/security/overview',
       '/kb/guide/platform-compliance-data-handling',
-      '/docs/security/token-custody',
+      'https://trust.composio.dev',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
+      '/docs/security/token-custody',
       '/docs/security/audit-logs',
       '/docs/security/outbound-ips',
     ];
@@ -192,9 +193,19 @@ describe('Docs product navigation', () => {
         (node, index) => index > securityStart && node.type === 'separator',
       ),
     );
-    expect(securityPages.map(node => node.type === 'page' ? node.url : null)).toEqual(
-      securityUrls,
-    );
+    expect(securityPages).toMatchObject([
+      { type: 'page', url: '/docs/security/overview' },
+      { type: 'folder', name: 'Compliance' },
+      { type: 'folder', name: 'Data privacy' },
+      { type: 'folder', name: 'Security controls' },
+    ]);
+    expect(pageTreeUrls({ children: securityPages })).toEqual(securityUrls);
+    expect(securityPages.slice(1).map(node => node.type)).toEqual(['folder', 'folder', 'folder']);
+    const compliance = securityPages[1];
+    if (compliance.type !== 'folder') throw new Error('Compliance group missing');
+    expect(compliance.children).toContainEqual(expect.objectContaining({
+      type: 'page', url: 'https://trust.composio.dev', external: true,
+    }));
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       expect(forYouUrls).not.toContain(url);
