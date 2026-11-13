@@ -1,5 +1,11 @@
 # @composio/openai-agents
 
+## 0.11.3
+
+### Patch Changes
+
+- 39fc590: Allow OpenAI Agents SDK 0.21 in the TypeScript provider's peer dependencies. Require composio 0.32.0 or newer for the Python OpenAI Agents provider so installs cannot retain an older core.
+
 ## 0.11.2
 
 ### Patch Changes
