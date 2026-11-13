@@ -24,7 +24,6 @@ const dataWorkflowPath = resolve(
   'workflows',
   'docs-update-data.yml',
 );
-const importerPath = resolve(process.cwd(), 'scripts', 'import-support-knowledge.ts');
 
 interface WorkflowStep {
   name?: string;
@@ -54,7 +53,7 @@ function workflowSteps(path: string, job: string): WorkflowStep[] {
   return workflow.jobs?.[job]?.steps ?? [];
 }
 
-describe('support knowledge refresh workflow', () => {
+describe('KB semantic artifact workflows', () => {
   test('allows stale embeddings in PR checks without ignoring artifact errors', () => {
     const check = workflowSteps(docsTestsWorkflowPath, 'test')
       .find(step => step.name === 'Check KB semantic artifact');
@@ -239,74 +238,33 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     );
   });
 
-  test('imports the private upstream and proposes every generated KB artifact', () => {
+  test('repairs the semantic artifact on a schedule without any upstream source', () => {
     const workflow = readFileSync(workflowPath, 'utf8');
+    const parsed = Bun.YAML.parse(workflow) as { on?: Record<string, unknown> };
 
-    expect(workflow).toContain('repository: ComposioHQ/support-knowledge');
-    expect(workflow).toContain('bun run import:kb');
+    expect(Object.keys(parsed.on ?? {}).sort()).toEqual(['schedule', 'workflow_dispatch']);
+    expect(workflow).not.toContain('support-knowledge');
     expect(workflow).toContain('bun run build:kb-semantic');
     expect(workflow).toContain('bun run verify:kb');
-    expect(workflow).toContain('docs/kb/');
-    expect(workflow).toContain('docs/content/kb/');
     expect(workflow).toContain('branch: docs/auto-update-kb');
     expect(workflow).toContain('base: next');
-    expect(workflow).toContain('refresh:');
-    expect(workflow).toContain('propose:');
-    expect(workflow).toContain('needs: refresh');
-    expect(workflow).toContain('id: upstream-token');
-    expect(workflow).toContain('id: write-token');
-    expect(workflow).toContain('permission-contents: read');
     expect(workflow).toContain('persist-credentials: false');
-    expect(workflow).toContain('actions/upload-artifact@');
-    expect(workflow).toContain('actions/download-artifact@');
   });
 
-  test('passes dispatched source context to the tested resolver script', () => {
-    const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
-      on?: {
-        repository_dispatch?: { types?: string[] };
-        workflow_dispatch?: unknown;
-      };
-      jobs?: Record<string, WorkflowJob>;
-    };
-    const steps = workflow.jobs?.refresh?.steps ?? [];
-    const checkout = steps.find(step => step.name === 'Checkout support knowledge');
-    const resolveSource = steps.find(step => step.name === 'Resolve upstream change');
-
-    expect(workflow.on?.repository_dispatch?.types).toEqual(['support-knowledge-updated']);
-    expect(workflow.on).toHaveProperty('workflow_dispatch');
-    expect(checkout?.with?.ref).toBe(
-      "${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source_commit || 'main' }}",
-    );
-    expect(resolveSource?.env?.REQUESTED_SOURCE_COMMIT).toBe(
-      "${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source_commit || '' }}",
-    );
-    expect(resolveSource?.run).toBe('bash scripts/resolve-kb-refresh-source.sh');
-  });
-
-  test('serializes both KB writers before checkout and pins artifacts to their docs base', () => {
+  test('serializes both KB writers and pins artifacts to their docs base', () => {
     const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
       concurrency?: { group?: string; 'cancel-in-progress'?: boolean; queue?: string };
       jobs?: Record<string, WorkflowJob>;
     };
-    const checkout = workflow.jobs?.refresh?.steps?.find(
-      step => step.name === 'Checkout support knowledge',
-    );
-
     const publish = Bun.YAML.parse(readFileSync(
       resolve(process.cwd(), '..', '.github/workflows/docs-kb-publish.yml'), 'utf8',
     )) as { concurrency: { group: string }; jobs: Record<string, WorkflowJob> };
     expect(workflow.concurrency?.group).toBe(publish.concurrency.group);
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false);
     expect(workflow.concurrency?.queue).toBe('max');
-    expect(checkout?.with?.['fetch-depth']).toBe(0);
     for (const job of [workflow.jobs?.refresh, publish.jobs.publish]) {
-      const steps = job?.steps ?? [];
-      const waitIndex = steps.findIndex(step => step.name === 'Wait for earlier KB publications');
-      const checkoutIndex = steps.findIndex(step => step.name === 'Checkout docs repository');
-      expect(waitIndex).toBeGreaterThanOrEqual(0);
-      expect(waitIndex).toBeLessThan(checkoutIndex);
-      expect(steps[checkoutIndex]?.with?.ref).toBe('next');
+      const checkout = job?.steps?.find(step => step.name === 'Checkout docs repository');
+      expect(checkout?.with?.ref).toBe('next');
     }
     const proposalCheckout = workflow.jobs?.propose?.steps?.find(
       step => step.name === 'Checkout docs repository',
@@ -315,13 +273,13 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(proposalCheckout?.with?.ref).toBe('${{ needs.refresh.outputs.docs_base_sha }}');
   });
 
-  test('tracks failures until both refresh and PR proposal recover', () => {
+  test('tracks failures until both rebuild and PR proposal recover', () => {
     const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
       jobs?: Record<string, WorkflowJob>;
     };
     const reporter = workflow.jobs?.report;
-    const failure = reporter?.steps?.find(step => step.name === 'Open KB refresh failure issue');
-    const recovery = reporter?.steps?.find(step => step.name === 'Close KB refresh failure issue');
+    const failure = reporter?.steps?.find(step => step.name === 'Open KB repair failure issue');
+    const recovery = reporter?.steps?.find(step => step.name === 'Close KB repair failure issue');
 
     expect(reporter?.needs).toEqual(['refresh', 'propose']);
     expect(reporter?.if).toBe('always()');
@@ -342,11 +300,11 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
   test('downloads generated artifacts under the docs directory staged by the refresh PR', () => {
     const steps = workflowSteps(workflowPath, 'propose');
     const download = steps.find(step => step.name === 'Download verified KB artifacts');
-    const createPullRequest = steps.find(step => step.name === 'Create refresh pull request');
+    const createPullRequest = steps.find(step => step.name === 'Create repair pull request');
 
     expect(download?.with?.path).toBe('docs');
     expect(String(createPullRequest?.with?.['add-paths'])).toContain('docs/kb/');
-    expect(String(createPullRequest?.with?.['add-paths'])).toContain('docs/content/kb/');
+    expect(String(createPullRequest?.with?.['add-paths'])).not.toContain('docs/content/kb/');
   });
 
   test('treats keyword-only production retrieval as a semantic health failure', () => {
@@ -360,14 +318,6 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(endpointCheck?.run).not.toContain('.mode == "keyword"');
   });
 
-  test('gives the existing freshness sweep read access to the pinned upstream', () => {
-    const workflow = readFileSync(dataWorkflowPath, 'utf8');
-
-    expect(workflow).toContain('repositories: support-knowledge');
-    expect(workflow).toContain('id: source-token');
-    expect(workflow).toContain('GH_TOKEN: ${{ steps.source-token.outputs.token }}');
-  });
-
   test('keeps verifier crashes separate from published-content freshness findings', () => {
     const steps = workflowSteps(dataWorkflowPath, 'update-data');
     const verifierHealth = steps.find(step => step.name === 'Track KB freshness verifier health');
@@ -379,12 +329,5 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(freshnessFindings?.if).toContain("steps.verify-kb.outputs.exit_code == '0'");
     expect(freshnessFindings?.if).toContain("steps.verify-kb.outputs.exit_code == '1'");
     expect(freshnessFindings?.if).not.toContain("steps.verify-kb.outputs.exit_code != ''");
-  });
-
-  test('treats upstream files as data instead of executing upstream code', () => {
-    const importer = readFileSync(importerPath, 'utf8');
-
-    expect(importer).not.toContain('scripts/validate-kb.py');
-    expect(importer).not.toContain("spawnSync('python3'");
   });
 });

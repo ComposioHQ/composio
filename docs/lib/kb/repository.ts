@@ -1,11 +1,30 @@
-import { lstatSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { buildKbCatalog } from './catalog';
-import type { KbCatalog, KbGuide, KbManifest } from './types';
+import type { KbCatalog, KbGuide, KbGuideDefinition, KbManifest } from './types';
 
 const KB_ROOT = join(process.cwd(), 'kb');
 const KB_ARTICLES_ROOT = resolve(KB_ROOT, 'articles');
 let cachedCatalog: KbCatalog | null = null;
+
+/**
+ * Read the manifest (`kb/manifest.json`: schema version and topics) plus one
+ * definition per guide (`kb/guides/<slug>.json`). Guides live in their own files
+ * so publication PRs for different guides never touch the same file.
+ */
+export function readKbManifest(kbRoot = KB_ROOT): KbManifest {
+  const base = JSON.parse(readFileSync(join(kbRoot, 'manifest.json'), 'utf8')) as Omit<KbManifest, 'guides'>;
+  const guidesRoot = join(kbRoot, 'guides');
+  const guides = readdirSync(guidesRoot)
+    .filter(name => name.endsWith('.json'))
+    .sort()
+    .map(name => {
+      const guide = JSON.parse(readFileSync(join(guidesRoot, name), 'utf8')) as KbGuideDefinition;
+      if (`${guide.slug}.json` !== name) throw new Error(`kb/guides/${name} defines ${guide.slug}`);
+      return guide;
+    });
+  return { ...base, guides };
+}
 
 export function createKbArticleReader(articlesRoot: string): (articlePath: string) => string {
   return articlePath => {
@@ -84,7 +103,7 @@ export function createKbSourceReader(sourceRoot: string): (sourcePath: string) =
 
 export function getKbCatalog(): KbCatalog {
   if (cachedCatalog) return cachedCatalog;
-  const manifest = JSON.parse(readFileSync(join(KB_ROOT, 'manifest.json'), 'utf8')) as KbManifest;
+  const manifest = readKbManifest();
   cachedCatalog = buildKbCatalog(
     manifest,
     createKbSourceReader(resolve(KB_ROOT, 'source')),

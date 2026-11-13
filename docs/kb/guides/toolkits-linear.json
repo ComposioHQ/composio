@@ -1,0 +1,36 @@
+{
+  "slug": "toolkits-linear",
+  "title": "Linear",
+  "description": "Public trigger configuration guidance for Linear.",
+  "articlePath": "toolkits-linear.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/linear/public.md",
+      "sourceHeading": "Linear triggers require a valid `team_id`"
+    }
+  ],
+  "topics": [
+    "errors-and-troubleshooting",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "linear",
+    "platform",
+    "team_id",
+    "triggers"
+  ],
+  "aliases": [
+    "/kb/toolkits/linear-triggers-require-a-valid-team-id",
+    "linear-triggers-require-a-valid-team-id"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -1,0 +1,61 @@
+{
+  "slug": "toolkits-pipedrive",
+  "title": "Pipedrive",
+  "description": "Public support knowledge for Pipedrive.",
+  "articlePath": "toolkits-pipedrive.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/pipedrive/public.md",
+      "sourceHeading": "Pipedrive requires custom OAuth or API-key credentials"
+    },
+    {
+      "sourcePath": "toolkits/pipedrive/public.md",
+      "sourceHeading": "Pipedrive OAuth initiation requires the workspace subdomain"
+    },
+    {
+      "sourcePath": "toolkits/pipedrive/public.md",
+      "sourceHeading": "Do not install the Pipedrive app directly from Pipedrive OAuth settings"
+    },
+    {
+      "sourcePath": "toolkits/pipedrive/public.md",
+      "sourceHeading": "Hosted auth links can collect Pipedrive required fields"
+    },
+    {
+      "sourcePath": "toolkits/pipedrive/public.md",
+      "sourceHeading": "Pass `callback_url` when initiating Pipedrive auth to redirect users after authentication"
+    },
+    {
+      "sourcePath": "toolkits/pipedrive/public.md",
+      "sourceHeading": "Pipedrive has trigger support"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "pipedrive",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/pipedrive-troubleshooting",
+    "claude-may-block-pipedrive-because-payment-processing-toolkits-are-res",
+    "do-not-install-the-pipedrive-app-directly-from-pipedrive-oauth-setting",
+    "hosted-auth-links-can-collect-pipedrive-required-fields",
+    "pass-callback-url-when-initiating-pipedrive-auth-to-redirect-users-aft",
+    "pipedrive-oauth-initiation-requires-the-workspace-subdomain",
+    "pipedrive-troubleshooting",
+    "use-custom-credentials-or-api-key-when-composio-s-default-pipedrive-oa"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-24",
+  "reviewAfter": "2026-11-22",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

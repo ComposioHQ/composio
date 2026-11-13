@@ -1,0 +1,37 @@
+{
+  "slug": "platform-microsoft-oauth",
+  "title": "Microsoft OAuth scopes and tenant consent",
+  "description": "Shared OAuth scope and tenant-consent guidance for Microsoft toolkits.",
+  "articlePath": "platform-microsoft-oauth.md",
+  "sources": [
+    {
+      "sourcePath": "platform/microsoft-oauth/public.md",
+      "sourceHeading": "Request `offline_access` when a delegated connection needs refresh tokens"
+    },
+    {
+      "sourcePath": "platform/microsoft-oauth/public.md",
+      "sourceHeading": "Some Microsoft tenant policies and permissions require administrator consent"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "microsoft",
+    "oauth",
+    "platform"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

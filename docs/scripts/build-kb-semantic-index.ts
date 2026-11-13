@@ -10,17 +10,8 @@ import {
   validateSemanticArtifact,
   type KnowledgeSemanticArtifact,
 } from '@/lib/knowledge/semantic-artifact';
-import type { KbManifest } from '@/lib/kb/types';
 
 const artifactPath = join(process.cwd(), 'kb', 'semantic-index.json');
-const manifest = JSON.parse(
-  readFileSync(join(process.cwd(), 'kb', 'manifest.json'), 'utf8'),
-) as KbManifest;
-if (manifest.source.repository !== 'ComposioHQ/support-knowledge') {
-  throw new Error(
-    `Refusing to build embeddings for transitional source ${manifest.source.repository}; import support-knowledge first`,
-  );
-}
 
 const records = (await getAlgoliaSearchDocuments())
   .filter(record => record.source_type === 'kb' || record.source_type === 'docs')
@@ -40,7 +31,6 @@ if (process.argv.includes('--check')) {
   const artifact = JSON.parse(readFileSync(artifactPath, 'utf8')) as KnowledgeSemanticArtifact;
   try {
     validateSemanticArtifact(artifact, {
-      supportKnowledgeCommit: manifest.source.commit,
       docsContentHash,
       contentHashes,
     });
@@ -64,7 +54,6 @@ const previousArtifact = existsSync(artifactPath)
 
 const artifact = await buildSemanticArtifact({
   records,
-  supportKnowledgeCommit: manifest.source.commit,
   docsContentHash,
   builtAt: new Date().toISOString(),
   previousArtifact,

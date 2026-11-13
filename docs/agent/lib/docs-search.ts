@@ -20,11 +20,11 @@ import {
  */
 
 // Collection priority: docs first, then examples, then references and toolkits.
-// (Curated knowledge ranks with docs.) A toolkit-name query still surfaces its
+// (Knowledge base guides rank with docs.) A toolkit-name query still surfaces its
 // toolkit page because nothing else matches it.
 const PRIORITY: Record<DocPage['collection'], number> = {
   docs: 1.3,
-  knowledge: 1.3,
+  kb: 1.3,
   examples: 1.1,
   reference: 0.85,
   toolkits: 0.9,
@@ -290,14 +290,6 @@ function contentFor(
   maxContentChars: number,
   maxSections: number
 ) {
-  if (page.collection === 'knowledge') {
-    const evidence = excerpt(page.text, terms, maxContentChars);
-    return {
-      content: evidence.value,
-      contentTruncated: evidence.truncated,
-    };
-  }
-
   const found = readPageByUrl(page.url);
 
   if (found) {

@@ -1,0 +1,41 @@
+{
+  "slug": "dashboard-org-members",
+  "title": "Organization Members and Roles",
+  "description": "What the Admin, Member (Developer), and Viewer roles can do in Composio For You and Platform, and how to transfer organization control.",
+  "articlePath": "dashboard-org-members.md",
+  "sources": [
+    {
+      "sourcePath": "dashboard/org-members/public.md",
+      "sourceHeading": "What each organization role can do"
+    },
+    {
+      "sourcePath": "dashboard/org-members/public.md",
+      "sourceHeading": "Transfer organization control to another user"
+    }
+  ],
+  "topics": [
+    "account-and-billing",
+    "getting-started"
+  ],
+  "tags": [
+    "dashboard",
+    "for-you",
+    "members",
+    "organizations",
+    "permissions",
+    "platform",
+    "roles"
+  ],
+  "aliases": [
+    "/kb/dashboard-and-projects/transfer-organization-control-to-another-user",
+    "transfer-organization-control-to-another-user"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-10-13",
+  "lastVerifiedAt": "2026-10-13",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -1,0 +1,37 @@
+{
+  "slug": "toolkits-discord",
+  "title": "Discord",
+  "description": "Public support knowledge for Discord.",
+  "articlePath": "toolkits-discord.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/discord/public.md",
+      "sourceHeading": "Discord OAuth credentials do not have a fixed expiration period"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "discord",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/discordbot-401s-on-managed-oauth-were-a-known-managed-app-configuratio",
+    "/kb/toolkits/multiple-accounts-for-the-same-discord-app-were-not-supported-in-that",
+    "discordbot-401s-on-managed-oauth-were-a-known-managed-app-configuratio",
+    "multiple-accounts-for-the-same-discord-app-were-not-supported-in-that"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

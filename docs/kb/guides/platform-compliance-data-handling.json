@@ -1,0 +1,53 @@
+{
+  "slug": "platform-compliance-data-handling",
+  "title": "Compliance, Data Retention, and Model Training",
+  "description": "Public guidance for data retention, model training, compliance, and enterprise security reviews.",
+  "articlePath": "platform-compliance-data-handling.md",
+  "sources": [
+    {
+      "sourcePath": "platform/compliance-data-handling/public.md",
+      "sourceHeading": "Canonical public sources"
+    },
+    {
+      "sourcePath": "platform/compliance-data-handling/public.md",
+      "sourceHeading": "Zero data retention and no-training requirements"
+    },
+    {
+      "sourcePath": "platform/compliance-data-handling/public.md",
+      "sourceHeading": "Model training"
+    },
+    {
+      "sourcePath": "platform/compliance-data-handling/public.md",
+      "sourceHeading": "FedRAMP"
+    },
+    {
+      "sourcePath": "platform/compliance-data-handling/public.md",
+      "sourceHeading": "Third-party providers"
+    }
+  ],
+  "topics": [
+    "security-and-trust"
+  ],
+  "tags": [
+    "compliance",
+    "platform",
+    "privacy",
+    "retention",
+    "security"
+  ],
+  "aliases": [
+    "/kb/sdk-and-api/platform-compliance-data-handling",
+    "canonical-public-sources",
+    "model-training",
+    "third-party-providers",
+    "zero-data-retention-and-no-training-requirements"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

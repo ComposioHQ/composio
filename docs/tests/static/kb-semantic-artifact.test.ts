@@ -86,11 +86,7 @@ function artifact(): KnowledgeSemanticArtifact {
     provider: 'openai',
     model: 'text-embedding-3-small',
     dimensions: 2,
-    source: {
-      repository: 'ComposioHQ/support-knowledge',
-      supportKnowledgeCommit: 'abc1234',
-      docsContentHash: 'docs-hash',
-    },
+    source: { docsContentHash: 'docs-hash' },
     builtAt: '2026-08-17T00:00:00.000Z',
     records: [
       semanticRecord('exact-x', 'Exact X', 'hash-x'),
@@ -165,7 +161,6 @@ Content: Provider tokens are redacted from connected-account responses.`);
 
 describe('KB semantic artifact', () => {
   test.each([
-    { supportKnowledgeCommit: 'new-commit' },
     { docsContentHash: 'new-docs-hash' },
     { contentHashes: new Map([['exact-x', 'changed-hash']]) },
     { contentHashes: new Map([
@@ -174,7 +169,6 @@ describe('KB semantic artifact', () => {
   ])('classifies corpus drift as stale: %j', drift => {
     expect(() => validateSemanticArtifact(artifact(), {
       dimensions: 2,
-      supportKnowledgeCommit: 'abc1234',
       ...drift,
     })).toThrow(SemanticArtifactStaleError);
   });
@@ -191,7 +185,6 @@ describe('KB semantic artifact', () => {
     try {
       validateSemanticArtifact({ ...artifact(), ...corruption } as KnowledgeSemanticArtifact, {
         dimensions: 2,
-        supportKnowledgeCommit: 'new-commit',
         docsContentHash: 'new-docs-hash',
       });
     } catch (error) {
@@ -210,7 +203,6 @@ describe('KB semantic artifact', () => {
     const value = artifact();
     expect(validateSemanticArtifact(value, {
       dimensions: 2,
-      supportKnowledgeCommit: 'abc1234',
       docsContentHash: 'docs-hash',
       contentHashes: new Map([
         ['exact-x', 'hash-x'],
@@ -221,11 +213,10 @@ describe('KB semantic artifact', () => {
 
     expect(() => validateSemanticArtifact(
       { ...value, model: 'another-model' },
-      { dimensions: 2, supportKnowledgeCommit: 'abc1234', docsContentHash: 'docs-hash' },
+      { dimensions: 2, docsContentHash: 'docs-hash' },
     )).toThrow('model mismatch');
     expect(() => validateSemanticArtifact(value, {
       dimensions: 2,
-      supportKnowledgeCommit: 'abc1234',
       docsContentHash: 'docs-hash',
       contentHashes: new Map([
         ['exact-x', 'tampered'],
@@ -237,11 +228,10 @@ describe('KB semantic artifact', () => {
     const nonUnit = { ...value, vectorsBase64: encodeVectors([[2, 0], [0, 1], [0, 1]]) };
     expect(() => validateSemanticArtifact(
       nonUnit,
-      { dimensions: 2, supportKnowledgeCommit: 'abc1234', docsContentHash: 'docs-hash' },
+      { dimensions: 2, docsContentHash: 'docs-hash' },
     )).toThrow('not normalized');
     expect(() => validateSemanticArtifact(value, {
       dimensions: 2,
-      supportKnowledgeCommit: 'abc1234',
       docsContentHash: 'tampered-docs-hash',
     })).toThrow('docs content hash mismatch');
 
@@ -249,7 +239,6 @@ describe('KB semantic artifact', () => {
     parsed.records[0]!.sourceType = 'toolkit' as never;
     expect(() => validateSemanticArtifact(parsed, {
       dimensions: 2,
-      supportKnowledgeCommit: 'abc1234',
       docsContentHash: 'docs-hash',
     })).toThrow('source type');
   });
@@ -318,11 +307,7 @@ describe('KB semantic artifact', () => {
       provider: 'openai',
       model: 'text-embedding-3-small',
       dimensions: 256,
-      source: {
-        repository: 'ComposioHQ/support-knowledge',
-        supportKnowledgeCommit: 'old-commit',
-        docsContentHash: 'old-docs-hash',
-      },
+      source: { docsContentHash: 'old-docs-hash' },
       builtAt: '2026-08-16T00:00:00.000Z',
       records: [unchangedMetadata],
       vectorsBase64: encodeVectors([[1, ...Array.from({ length: 255 }, () => 0)]]),
@@ -331,7 +316,6 @@ describe('KB semantic artifact', () => {
 
     const built = await buildSemanticArtifact({
       records: [changed, unchanged],
-      supportKnowledgeCommit: 'new-commit',
       docsContentHash: 'new-docs-hash',
       builtAt: '2026-08-17T00:00:00.000Z',
       previousArtifact: prior,
@@ -345,6 +329,6 @@ describe('KB semantic artifact', () => {
     expect(built.records.map(record => record.objectID)).toEqual(['a', 'b']);
     const vectors = decodeVectors(built.vectorsBase64, 2, 256);
     expect([vectors[0], vectors[1], vectors[256], vectors[257]]).toEqual([1, 0, 0, 1]);
-    expect(built.source.supportKnowledgeCommit).toBe('new-commit');
+    expect(built.source).toEqual({ docsContentHash: 'new-docs-hash' });
   });
 });

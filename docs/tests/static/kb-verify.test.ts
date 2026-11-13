@@ -11,7 +11,7 @@ import {
   verifyKb,
   type CatalogToolkit,
 } from '@/lib/kb/verify';
-import { getKbCatalog } from '@/lib/kb/repository';
+import { getKbCatalog, readKbManifest } from '@/lib/kb/repository';
 import type { KbGuide, KbManifest } from '@/lib/kb/types';
 
 const TOOLKITS: CatalogToolkit[] = [
@@ -39,12 +39,6 @@ const catalog = buildProductCatalog(TOOLKITS);
 
 const MANIFEST: KbManifest = {
   schemaVersion: 2,
-  source: {
-    repository: 'ComposioHQ/example-knowledge',
-    commit: 'abc1234',
-    capturedAt: '2026-07-22',
-    contentHash: 'sha256:fixture',
-  },
   topics: [],
   guides: [],
 };
@@ -246,32 +240,6 @@ describe('verifyKb', () => {
     expect(report.findings.some((entry) => entry.kind === 'verification-stale')).toBe(true);
   });
 
-  test('reports an unresolvable source pin', () => {
-    const report = verifyKb({
-      manifest: MANIFEST,
-      catalog,
-      now,
-      guides: [guide({ slug: 'any', body: 'text' })],
-      options: { sourcePinStatus: 'missing' },
-    });
-    const finding = report.findings.find((entry) => entry.kind === 'source-pin-unresolvable');
-    expect(finding?.severity).toBe('warning');
-    expect(finding?.detail).toContain('abc1234');
-  });
-
-  test('stays silent when the pin cannot be verified by this token', () => {
-    for (const status of ['resolved', 'unverifiable'] as const) {
-      const report = verifyKb({
-        manifest: MANIFEST,
-        catalog,
-        now,
-        guides: [guide({ slug: 'any', body: 'text' })],
-        options: { sourcePinStatus: status },
-      });
-      expect(report.findings.some((entry) => entry.kind === 'source-pin-unresolvable')).toBe(false);
-    }
-  });
-
   test('treats provider rate-limiting as inconclusive, not as rot', () => {
     const body = 'see [docs](https://example.com/a) and [more](https://example.com/b)';
     const report = verifyKb({
@@ -313,9 +281,7 @@ describe('live corpus', () => {
    * Published prose belongs in `kb/articles`; `kb/source` must stay verbatim.
    */
   test('no published guide renders from the source snapshot', () => {
-    const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8')
-    ) as { guides: Array<{ slug: string; state: string; articlePath?: string }> };
+    const manifest = readKbManifest();
     const rendersFromSource = manifest.guides
       .filter((guide) => guide.state === 'published' && !guide.articlePath)
       .map((guide) => guide.slug);

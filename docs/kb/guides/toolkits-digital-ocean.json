@@ -1,0 +1,34 @@
+{
+  "slug": "toolkits-digital-ocean",
+  "title": "DigitalOcean authentication",
+  "description": "Current authentication choices for the DigitalOcean toolkit.",
+  "articlePath": "toolkits-digital-ocean.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/digital_ocean/public.md",
+      "sourceHeading": "DigitalOcean supports managed OAuth2, custom OAuth2, or a personal access token"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "digital_ocean",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/managed-oauth-fails-before-consent-with-unsupported-parameters-or-inva",
+    "managed-oauth-fails-before-consent-with-unsupported-parameters-or-inva"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-24",
+  "reviewAfter": "2026-11-22",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

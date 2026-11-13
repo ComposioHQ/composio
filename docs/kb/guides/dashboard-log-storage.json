@@ -1,0 +1,35 @@
+{
+  "slug": "dashboard-log-storage",
+  "title": "Dashboard Log Storage",
+  "description": "Public behavior of the project Log storage setting.",
+  "articlePath": "dashboard-log-storage.md",
+  "sources": [
+    {
+      "sourcePath": "dashboard/log-storage/public.md",
+      "sourceHeading": "“Don't store data” removes new payload content, not the audit row"
+    }
+  ],
+  "topics": [
+    "errors-and-troubleshooting",
+    "security-and-trust",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "dashboard",
+    "data-retention",
+    "logs",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/dashboard-and-projects/don-t-store-data-removes-new-payload-content-not-the-audit-row",
+    "don-t-store-data-removes-new-payload-content-not-the-audit-row"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

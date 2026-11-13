@@ -1,0 +1,32 @@
+{
+  "slug": "toolkits-ynab",
+  "title": "YNAB authentication",
+  "description": "Current OAuth setup for the YNAB toolkit.",
+  "articlePath": "toolkits-ynab.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/ynab/public.md",
+      "sourceHeading": "YNAB supports managed and customer-owned OAuth"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "platform",
+    "ynab"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-24",
+  "reviewAfter": "2026-11-22",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

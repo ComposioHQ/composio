@@ -1,0 +1,42 @@
+{
+  "slug": "mcp-mcp-hermes",
+  "title": "Hermes MCP",
+  "description": "Public support knowledge for Hermes MCP.",
+  "articlePath": "mcp-mcp-hermes.md",
+  "sources": [
+    {
+      "sourcePath": "mcp/mcp-hermes/public.md",
+      "sourceHeading": "Production MCP API paths and direct transport tests"
+    },
+    {
+      "sourcePath": "mcp/mcp-hermes/public.md",
+      "sourceHeading": "Auth configs are project-scoped"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "getting-started",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "for-you",
+    "mcp",
+    "mcp-hermes",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/tool-router-and-mcp/mcp-mcp-hermes",
+    "auth-configs-are-project-scoped",
+    "production-mcp-api-paths-and-direct-transport-tests"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-11-10",
+  "reviewAfter": "2027-02-08",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

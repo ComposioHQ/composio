@@ -9,7 +9,6 @@ import {
 } from '@/lib/knowledge/evaluation';
 import { searchKnowledgeRecords, type KnowledgeSearchResponse } from '@/lib/knowledge/search';
 import { getAlgoliaSearchDocuments } from '@/lib/search-index';
-import type { KbManifest } from '@/lib/kb/types';
 
 function argument(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -21,17 +20,8 @@ const expectedMode = argument('--expect-mode');
 const fixturePath = argument('--fixture') ?? join(process.cwd(), 'evals', 'kb-search-v1.json');
 const jsonOutput = process.argv.includes('--json');
 const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
-  sourceCommit: string;
   cases: KbSearchEvalCase[];
 };
-const manifest = JSON.parse(
-  readFileSync(join(process.cwd(), 'kb', 'manifest.json'), 'utf8'),
-) as KbManifest;
-if (fixture.sourceCommit !== manifest.source.commit) {
-  throw new Error(
-    `KB search eval fixture targets ${fixture.sourceCommit}, but the snapshot is ${manifest.source.commit}; review and repin the eval cases`,
-  );
-}
 const cases = fixture.cases;
 const rankings = new Map<string, KbSearchEvalRanking[]>();
 const observedModes = new Set<string>();

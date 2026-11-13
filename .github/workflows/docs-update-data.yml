@@ -51,17 +51,6 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
-      - name: Generate read-only KB source token
-        id: source-token
-        continue-on-error: true
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
-          owner: ComposioHQ
-          repositories: support-knowledge
-          permission-contents: read
-
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -128,17 +117,9 @@ jobs:
       - name: Verify KB freshness against refreshed data
         id: verify-kb
         continue-on-error: true
-        env:
-          # Resolves manifest.source.commit on the upstream KB repository. Without
-          # read access there the check reports "unverifiable" and stays silent,
-          # so an unset or narrow token degrades quietly rather than crying wolf.
-          GH_TOKEN: ${{ steps.source-token.outputs.token }}
         run: |
           set +e
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "KB source token unavailable; source-pin status will be unverifiable."
-          fi
-          bun scripts/verify-kb.ts --check-links --check-source-pin \
+          bun scripts/verify-kb.ts --check-links \
             --markdown "$RUNNER_TEMP/kb-freshness.md"
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           cat "$RUNNER_TEMP/kb-freshness.md" >> "$GITHUB_STEP_SUMMARY"
@@ -335,7 +316,7 @@ jobs:
           {
             echo "\`verify:kb\` found published KB guides whose claims no longer match production."
             echo
-            echo "Fix the guide, or demote it to \`state: needs-review\` in \`docs/kb/manifest.json\`"
+            echo "Fix the guide, or demote it to \`state: needs-review\` in its \`docs/kb/guides/<slug>.json\`"
             echo "so it stops serving readers while it is wrong."
             echo
             cat "$RUNNER_TEMP/kb-freshness.md" 2>/dev/null \

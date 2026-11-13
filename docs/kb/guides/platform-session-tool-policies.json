@@ -1,0 +1,50 @@
+{
+  "slug": "platform-session-tool-policies",
+  "title": "Create Read-Only and Restricted Composio Sessions",
+  "description": "Public guidance for limiting session tool access with tags, exact tool allowlists, OAuth scopes, and sandbox controls.",
+  "articlePath": "platform-session-tool-policies.md",
+  "sources": [
+    {
+      "sourcePath": "platform/session-tool-policies/public.md",
+      "sourceHeading": "Filter a broad read-only session with behavior tags"
+    },
+    {
+      "sourcePath": "platform/session-tool-policies/public.md",
+      "sourceHeading": "Use exact tool allowlists for the narrowest policy"
+    },
+    {
+      "sourcePath": "platform/session-tool-policies/public.md",
+      "sourceHeading": "Combine provider scopes with session tool restrictions"
+    },
+    {
+      "sourcePath": "platform/session-tool-policies/public.md",
+      "sourceHeading": "Apply toolkit-specific exceptions without widening every toolkit"
+    },
+    {
+      "sourcePath": "platform/session-tool-policies/public.md",
+      "sourceHeading": "Disable the session sandbox when the workflow does not need code execution"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "security-and-trust",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "least-privilege",
+    "oauth-scopes",
+    "platform",
+    "read-only",
+    "sessions",
+    "tool-policy"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-24",
+  "lastVerifiedAt": "2026-08-24",
+  "reviewAfter": "2026-11-22",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}
