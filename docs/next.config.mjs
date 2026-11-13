@@ -108,11 +108,6 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/common-faq',
-        destination: '/docs',
-        permanent: true,
-      },
-      {
         source: '/docs/debugging-info',
         destination: '/reference/errors',
         permanent: true,

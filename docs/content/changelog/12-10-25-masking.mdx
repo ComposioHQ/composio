@@ -6,8 +6,8 @@ date: "2025-12-10"
 
 We've improved the security masking for `REDACTED` fields in the following APIs:
 
-- [Get Connected Account](https://docs.composio.dev/rest-api/connected-accounts/get-connected-accounts-by-nanoid)
-- [List Connected Accounts](https://docs.composio.dev/rest-api/connected-accounts/get-connected-accounts)
+- [Get Connected Account](/reference/api-reference/connected-accounts/getConnectedAccountsByNanoid)
+- [List Connected Accounts](/reference/api-reference/connected-accounts/getConnectedAccounts)
 
 **What's Changed:**
 Sensitive fields are now partially masked, revealing only the **first 4 characters** to help with debugging while maintaining security.
@@ -23,4 +23,4 @@ After:  abcd...
 If you need to disable masking for your use case, you have two options:
 
 1. **Via UI:** Navigate to **Project Settings** → **Configuration** tab and update the masking settings
-2. **Via API:** Use the [Patch Project Config API](https://docs.composio.dev/rest-api/projects/patch-org-project-config)
+2. **Via API:** Use the Patch Project Config API available at the time of this announcement. For current guidance, see [Credential masking](/docs/auth-configuration/connected-accounts#credential-masking).
