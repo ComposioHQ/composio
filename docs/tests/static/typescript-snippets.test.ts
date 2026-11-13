@@ -13,11 +13,11 @@ const snippet = (code: string, line = 100): TypeScriptSnippet => ({
 const check = (code: string) => checkTypeScriptSnippets([snippet(code)], twoslasher);
 
 describe('uncovered TypeScript snippet coverage', () => {
-  test('collects canonical API/reference, FAQ, and KB Markdown without checking build-owned copies twice', () => {
+  test('collects canonical API/reference and FAQ Markdown without checking build-owned copies twice', () => {
     const source = '```typescript\nconst value: number = 1;\n```';
     const files = [
       'api-overviews/tools.mdx', 'content/reference/errors.mdx',
-      'content/docs/faq.md', 'kb/source/platform/example/public.md', 'kb/articles/example.md',
+      'content/docs/faq.md', 'content/toolkits/faq/example.md', 'content/toolkits/faq/other.md',
       'content/docs/quickstart.mdx', 'content/examples/agent.mdx',
     ].map((path) => ({ path, source }));
     expect(collectTypeScriptSnippets(files).map(({ path, line }) => [path, line])).toEqual(
@@ -27,7 +27,7 @@ describe('uncovered TypeScript snippet coverage', () => {
 
   test('extracts plain Markdown language groups and nested authored-reference wrappers', () => {
     const snippets = collectTypeScriptSnippets([
-      { path: 'kb/articles/example.md', source: '### Python\n```python\npass\n```\n### TypeScript\n```ts\nconst x = 1;\n```\n### API\nUse REST.' },
+      { path: 'content/toolkits/faq/example.md', source: '### Python\n```python\npass\n```\n### TypeScript\n```ts\nconst x = 1;\n```\n### API\nUse REST.' },
       { path: 'api-overviews/example.mdx', source: '<Callout>\n\n```typescript\nconst y = 2;\n```\n\n</Callout>' },
     ]);
     expect(snippets.map(({ code }) => code)).toEqual(['const x = 1;', 'const y = 2;']);

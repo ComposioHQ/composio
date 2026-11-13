@@ -71,7 +71,6 @@ For an unavailable dependency, add the dependency through the package manager wh
 | Import cannot resolve | Check the installed docs dependencies and lockfile |
 | Name cannot resolve | Add explicit initialization or a narrowly scoped hidden declaration |
 | Argument or callback mismatch | Compare with the installed SDK signature; use exported types |
-| Generated KB error | Edit its `kb/articles` source and corresponding canonical `kb/source` article, then regenerate |
 | Reference example error | Edit `api-overviews` for generated overviews, or the authored reference source |
 
 Static type checking does not establish that requests have equivalent defaults, filters, identities, permissions, or output. Review those against SDK behavior and the OpenAPI contract, then inspect the built tabs and agent Markdown.

@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { getPublishedKbGuides, getKbGuideUrl } from '@/lib/kb/repository';
 import { fetchPage } from './helpers';
 
 const metadataSchema = z.object({
@@ -46,8 +45,6 @@ describe('agent-readable Markdown metadata', () => {
   });
 
   test('shared catalogs and manifests do not claim page freshness', async () => {
-    const guide = getPublishedKbGuides()[0];
-    expect(guide).toBeDefined();
     const sitemap = await (await fetchPage('/sitemap.xml')).text();
     const entries = sitemap.match(/<url>[\s\S]*?<\/url>/g) ?? [];
     for (const path of [
@@ -55,8 +52,6 @@ describe('agent-readable Markdown metadata', () => {
       '/reference/v3/api-reference/files/postFilesUploadRequest',
       '/toolkits/github', '/toolkits/meta-tools/search_tools',
       '/toolkits', '/toolkits/managed-auth', '/examples',
-      '/kb', '/kb/topic/authentication-and-connected-accounts',
-      getKbGuideUrl(guide),
     ]) {
       const response = await fetchPage(`${path}.md`, { timeout: 30_000 });
       expect(response.status).toBe(200);
@@ -92,7 +87,7 @@ describe('agent-readable Markdown metadata', () => {
           markdown_url: `https://docs.composio.dev${path}.md`,
           last_updated: null,
         });
-        for (const link of ['/llms.txt', '/llms-index.txt', '/kb/search', '/docs/quickstart.md']) {
+        for (const link of ['/llms.txt', '/llms-index.txt', '/docs/quickstart.md']) {
           expect(text).toContain(`](${link})`);
         }
         expect(text).not.toContain('<!DOCTYPE html>');

@@ -7,7 +7,6 @@ import {
   reference,
   examples,
   toolkits,
-  knowledgeBase,
 } from 'fumadocs-mdx:collections/server';
 import { loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
@@ -56,12 +55,6 @@ const examplesSource = loader({
 const toolkitsSource = loader({
   baseUrl: '/toolkits',
   source: toolkits.toFumadocsSource(),
-  plugins: [lucideIconsPlugin()],
-});
-
-const knowledgeBaseSource = loader({
-  baseUrl: '/kb',
-  source: knowledgeBase.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 
@@ -225,9 +218,6 @@ function urlFromContentPath(path: string): { url: string; type: string } | undef
     if (parts[0] === 'faq') return undefined;
     return { url: `/toolkits/${parts.join('/')}`.replace(/\/index$/, ''), type: 'toolkits' };
   }
-  if (collection === 'kb') {
-    return { url: `/kb/${parts.join('/')}`.replace(/\/index$/, ''), type: 'kb' };
-  }
   if (collection === 'changelog') return undefined;
 
   return undefined;
@@ -248,7 +238,6 @@ const typeLabels: Record<string, string> = {
   reference: 'Reference',
   'v3-reference': 'Legacy v3 Reference',
   toolkits: 'Toolkit',
-  kb: 'Knowledge Base',
   changelog: 'Changelog',
   'api-reference': 'API Reference',
 };
@@ -336,7 +325,6 @@ function pageRank(url: string, sourceType: KnowledgeSourceType): number {
     return 2_000;
   }
 
-  if (sourceType === 'kb') return 1_900;
   if (sourceType === 'oauth-guide') return 1_700;
   if (sourceType === 'toolkit') return 1_500;
   if (sourceType === 'example') return 1_300;
@@ -349,7 +337,6 @@ function pageRank(url: string, sourceType: KnowledgeSourceType): number {
 function knowledgeSourceType(type: string, legacy: boolean): KnowledgeSourceType {
   if (legacy || type === 'v3-reference') return 'legacy';
   if (type === 'docs') return 'docs';
-  if (type === 'kb') return 'kb';
   if (type === 'toolkits') return 'toolkit';
   if (type === 'examples') return 'example';
   if (type === 'reference' || type === 'api-reference') return 'reference';
@@ -369,7 +356,6 @@ export function recordsFromMarkdownPage(input: {
   toolNames?: string[];
   toolSlugs?: string[];
   legacy?: boolean;
-  topics?: string[];
   productAreas?: ProductAreaSlug[];
   toolkitSlugs?: string[];
   intents?: KnowledgeIntent[];
@@ -381,7 +367,6 @@ export function recordsFromMarkdownPage(input: {
     sourceType,
     canonicalUrl: input.url,
     productAreas: input.productAreas,
-    topics: input.topics,
     toolkitSlugs: input.toolkitSlugs,
     intents: input.intents,
     lastVerifiedAt: input.lastVerifiedAt,
@@ -547,11 +532,7 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
     if (!title) return [];
 
     const keywords = getFrontmatterList(frontmatter, 'keywords');
-    const topics = getFrontmatterList(frontmatter, 'topics');
     const explicitToolkitSlugs = getFrontmatterList(frontmatter, 'toolkitSlugs');
-    const taggedToolkitSlugs = route.type === 'kb' && topics.includes('toolkits')
-      ? keywords.filter((keyword) => toolkitBySlug.has(keyword))
-      : [];
     const routeToolkitSlug = route.type === 'toolkits'
       ? route.url.replace(/^\/toolkits\//, '').split('/')[0]
       : null;
@@ -573,7 +554,6 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       markdown: source,
       breadcrumbs: breadcrumbsForUrl(route.url, route.type),
       legacy,
-      topics,
       productAreas: getFrontmatterList(frontmatter, 'productAreas').filter(
         (area): area is ProductAreaSlug => [
           'authentication-and-connected-accounts',
@@ -585,7 +565,6 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       ),
       toolkitSlugs: [
         ...explicitToolkitSlugs,
-        ...taggedToolkitSlugs,
         ...(routeToolkitSlug ? [routeToolkitSlug] : []),
       ],
       intents: getFrontmatterList(frontmatter, 'intents') as KnowledgeIntent[],
@@ -707,7 +686,6 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
     ...docsSource.getPages(),
     ...examplesSource.getPages(),
     ...toolkitsSource.getPages(),
-    ...knowledgeBaseSource.getPages(),
     ...fullReferenceSource.getPages(),
   ].filter((page) =>
     !isExcludedFromSearch(page.url) && !isHiddenApiTagUrl(page.url)

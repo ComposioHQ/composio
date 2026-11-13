@@ -4,12 +4,10 @@ import {
   getReferenceSource,
   examplesSource,
   toolkitsSource,
-  knowledgeBaseSource,
   changelogEntries,
   dateToChangelogUrl,
 } from '@/lib/source';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
-import { getLocalKnowledgeDiscoveryPaths } from '@/lib/knowledge/discovery';
 import { getPageLastUpdated } from '@/lib/content-freshness';
 
 const baseUrl = 'https://docs.composio.dev';
@@ -25,7 +23,6 @@ function getChangelogDate(entry: (typeof changelogEntries)[number]): string | nu
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const knowledgeDiscoveryPaths = await getLocalKnowledgeDiscoveryPaths();
   const docsPages = source.getPages().map((page) => ({
     url: `${baseUrl}${page.url}`,
   }));
@@ -39,15 +36,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const examplesPages = examplesSource.getPages().map((page) => ({
     url: `${baseUrl}${page.url}`,
   }));
-
-  const knowledgeBasePages = knowledgeBaseSource.getPages().map((page) => ({
-    url: `${baseUrl}${page.url}`,
-  }));
-  const knowledgeDiscoveryPages = knowledgeDiscoveryPaths
-    .filter((path) => path !== '/kb/search')
-    .map((path) => ({
-      url: `${baseUrl}${path}`,
-    }));
 
   // MDX toolkit pages
   const toolkitsMdxPages = toolkitsSource.getPages().map((page) => ({
@@ -73,8 +61,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...docsPages,
     ...referencePages,
     ...examplesPages,
-    ...knowledgeBasePages,
-    ...knowledgeDiscoveryPages,
     ...toolkitsMdxPages,
     ...toolkitsJsonPages,
     ...changelogPages,

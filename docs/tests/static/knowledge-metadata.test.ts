@@ -5,7 +5,6 @@ import {
   normalizeToolkitSlug,
 } from '@/lib/knowledge/metadata';
 import { isProductAreaSlug, PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
-import * as taxonomyModule from '@/lib/knowledge/taxonomy';
 import { getAlgoliaSearchDocuments } from '@/lib/search-index';
 
 describe('unified knowledge metadata', () => {
@@ -24,37 +23,6 @@ describe('unified knowledge metadata', () => {
     expect(isProductAreaSlug('sdk-api-and-mcp')).toBe(true);
     expect(isProductAreaSlug('sdk-and-api')).toBe(false);
     expect(isProductAreaSlug('incidents-and-known-issues')).toBe(false);
-  });
-
-  test('maps current KB topics to a focused support topic and useful intents', () => {
-    expect(classifyKnowledgeRecord({
-      sourceType: 'kb',
-      canonicalUrl: '/kb/guide/custom-connection-data-fields-are-toolkit-specific',
-      topics: ['authentication', 'auth-config', 'errors-and-troubleshooting'],
-      lastVerifiedAt: '2026-07-22',
-    })).toEqual({
-      source_type: 'kb',
-      canonical_url: '/kb/guide/custom-connection-data-fields-are-toolkit-specific',
-      product_areas: ['authentication-and-connected-accounts'],
-      toolkit_slugs: [],
-      intents: ['how-to', 'troubleshooting'],
-      last_verified_at: '2026-07-22',
-    });
-  });
-
-  test('redirects old product-area URLs to the replacement support topic', () => {
-    const getProductAreaRedirect = (
-      taxonomyModule as { getProductAreaRedirect?: (slug: string) => string | null }
-    ).getProductAreaRedirect;
-
-    expect(typeof getProductAreaRedirect).toBe('function');
-    expect(getProductAreaRedirect?.('tools-and-actions'))
-      .toBe('/kb/topic/tools-actions-and-execution');
-    expect(getProductAreaRedirect?.('tool-router-mcp-and-workbench'))
-      .toBe('/kb/topic/sdk-api-and-mcp');
-    expect(getProductAreaRedirect?.('composio-for-you'))
-      .toBe('/kb/search?q=Composio+For+You');
-    expect(getProductAreaRedirect?.('not-a-topic')).toBeNull();
   });
 
   test.each([
@@ -99,22 +67,12 @@ describe('unified knowledge metadata', () => {
 
   test('adds normalized metadata to every local search record', async () => {
     const records = await getAlgoliaSearchDocuments();
-    const toolkitKbRecord = records.find(record =>
-      record.source_type === 'kb' && record.toolkit_slugs.length > 0,
-    );
-
     expect(records.length).toBeGreaterThan(0);
     expect(records.every((record) => Boolean(record.canonical_url))).toBe(true);
     expect(records.every((record) => Boolean(record.source_type))).toBe(true);
     expect(records.every((record) => Array.isArray(record.product_areas))).toBe(true);
     expect(records.every((record) => Array.isArray(record.toolkit_slugs))).toBe(true);
     expect(records.every((record) => Array.isArray(record.intents))).toBe(true);
-    expect(toolkitKbRecord).toMatchObject({
-      source_type: 'kb',
-      page_rank: 1_900,
-    });
-    expect(toolkitKbRecord?.canonical_url.startsWith('/kb/guide/')).toBe(true);
-    expect(toolkitKbRecord?.toolkit_slugs.every(slug => slug === normalizeToolkitSlug(slug)))
-      .toBe(true);
+    expect(records.some((record) => record.canonical_url.startsWith('/kb'))).toBe(false);
   });
 });

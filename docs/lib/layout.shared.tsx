@@ -25,11 +25,6 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
-        text: 'Knowledge Base',
-        url: '/kb',
-        active: 'nested-url',
-      },
-      {
         text: 'Examples',
         url: '/examples',
         active: 'nested-url',

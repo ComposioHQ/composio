@@ -19,18 +19,15 @@ The toolkit pages were coupled to the freshness of
 `public/data/toolkits.json`. When the docs data sync stopped before generation,
 valid production toolkits added after the last snapshot returned 404. The
 [toolkit page decisions](./toolkits.md) establish the generated snapshot as the
-default data source, and the
-[KB freshness decision](./kb-freshness-verification.md) relies on the same
-snapshot architecture. The runtime fallback preserves those decisions while
+default data source. The runtime fallback preserves that decision while
 removing snapshot freshness as an availability requirement for individual
 toolkit pages.
 
 The sync failure came from requesting a GitHub App permission that the
 installation did not grant. Issue tracking does not need the App token because
-it only writes to the current repository. The separate token for
-`ComposioHQ/support-knowledge` and every step that consumes it are optional and
-non-fatal. A failure in that path can reduce KB freshness evidence, but it cannot
-block toolkit, OpenAPI, API index, or meta-tool generation.
+it only writes to the current repository. The optional
+`ComposioHQ/support-knowledge` token and KB freshness steps were removed when the
+Knowledge Base was [retired](./kb-retirement.md).
 
 ## Consequences
 

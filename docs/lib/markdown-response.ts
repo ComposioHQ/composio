@@ -35,7 +35,6 @@ export function missingMarkdownResponse(): Response {
     '# Page not found\n\nThis documentation page does not exist. Check the URL or use these discovery links:\n\n' +
     '- [Documentation index](/llms.txt)\n' +
     '- [Complete page index](/llms-index.txt)\n' +
-    '- [Search support knowledge](/kb/search)\n' +
     '- [Quickstart](/docs/quickstart.md)\n',
     { status: 404, headers: { 'Content-Type': 'text/markdown; charset=utf-8' } },
   );

@@ -16,7 +16,7 @@ For a runtime bug, include a reproducible example and involve the SDK or platfor
 | Sidebar order | The nearest `meta.json`; product navigation also uses `lib/home-navigation.ts` |
 | Page layout or an MDX component | `app/`, `components/`, or `lib/` |
 | API or SDK reference, toolkit data | The owning source or generator; do not patch generated output by hand |
-| A public support answer | The [knowledge publication workflow](decisions/public-knowledge-base.md) |
+| A public support answer | The relevant `/docs` page or toolkit FAQ in `content/toolkits/faq/`. The Knowledge Base was [retired](decisions/kb-retirement.md) |
 
 Read [AGENTS.md](AGENTS.md) for repository rules. For typed code examples, read the [Twoslash guide](agent-guidance/context/twoslash.md). Check the [docs decisions](decisions/README.md) before changing an established architecture or content pipeline.
 
@@ -46,15 +46,10 @@ bun run test
 bun run lint
 bun run lint:links
 bun run types:check
-bun run check:kb-semantic --allow-stale
 bun run build
 ```
 
 To check the built site's endpoints, run `bun run start` in one terminal and `bun run test:integration` in another. The integration tests use `http://localhost:3000` by default. Set `TEST_BASE_URL` if your server uses another address.
-
-The semantic artifact covers both regular docs and KB articles, so edits to either can make it stale. PR checks use `--allow-stale` to warn about freshness while still rejecting missing or corrupt artifacts. Search falls back to keyword results until the artifact is rebuilt.
-
-The `Docs - Rebuild KB Semantic Artifact` workflow can rebuild it for eligible same-repository PRs after `Docs - Tests` runs. The scheduled support-knowledge refresh also proposes stale-artifact repairs. If you rebuild locally with `bun run build:kb-semantic`, use an authorized `OPENAI_API_KEY`: the generator sends the indexed docs content to the embeddings service. Run `bun run check:kb-semantic` without `--allow-stale` to verify a rebuild. Never edit embedding values or content hashes by hand.
 
 ## Agent-readable representations
 

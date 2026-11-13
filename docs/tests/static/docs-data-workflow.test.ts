@@ -82,8 +82,6 @@ describe('docs data update workflow', () => {
     const issueSteps = [
       'Open tracking issue on failure',
       'Close tracking issue on recovery',
-      'Track KB freshness verifier health',
-      'Track KB freshness findings',
     ];
 
     for (const name of issueSteps) {
@@ -92,28 +90,6 @@ describe('docs data update workflow', () => {
 
     for (const step of steps.filter(candidate => candidate.run?.includes('gh issue'))) {
       expect(step.env?.GH_TOKEN).not.toBe('${{ steps.app-token.outputs.token }}');
-    }
-  });
-
-  test('isolates the optional KB source path from every required data-sync step', () => {
-    const sourceToken = stepNamed(steps, 'Generate read-only KB source token');
-    expect(sourceToken['continue-on-error']).toBe(true);
-
-    const requiredStepNames = [
-      'Generate GitHub App token',
-      'Checkout repository',
-      'Generate toolkits data',
-      'Fetch OpenAPI spec',
-      'Generate API index pages',
-      'Generate meta tools reference',
-      'Create Pull Request',
-    ];
-
-    for (const name of requiredStepNames) {
-      const step = stepNamed(steps, name);
-      const dependencies = JSON.stringify({ if: step.if, env: step.env, with: step.with });
-      expect(dependencies).not.toContain('steps.source-token');
-      expect(dependencies).not.toContain('steps.verify-kb');
     }
   });
 

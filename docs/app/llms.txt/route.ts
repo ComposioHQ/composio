@@ -45,7 +45,7 @@ If unclear, distinguish application integration from connecting apps to the codi
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose a framework provider.
 - [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
 - [Single-toolkit MCP](https://docs.composio.dev/docs/single-toolkit-mcp.md): Build an MCP server scoped to one toolkit.
-- [Troubleshooting](https://docs.composio.dev/kb.md): Diagnose authentication, connection, and execution failures.
+- [Errors](https://docs.composio.dev/reference/errors.md): Look up error codes and how to resolve them.
 - [Production rate limits](https://docs.composio.dev/reference/rate-limits.md): Plan for request limits before deployment.
 
 ## Provider guides
@@ -74,7 +74,6 @@ Fetch these Markdown pages directly for exact call shapes; search-result summari
 - [Changelog](https://docs.composio.dev/docs/changelog.md): Find dated release notes and read what changed.
 
 - [Complete documentation index](https://docs.composio.dev/llms-index.txt): All guides, SDK references, endpoint groups, and toolkit pages, with legacy routes labeled.
-- [Knowledge Base](https://docs.composio.dev/kb.md): Find support answers and toolkit-specific troubleshooting.
 - [Examples](https://docs.composio.dev/examples.md): Browse complete application examples.
 - [Full documentation](https://docs.composio.dev/llms-full.txt): Load all current page bodies when individual pages are insufficient.
 `, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });

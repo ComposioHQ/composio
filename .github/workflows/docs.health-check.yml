@@ -116,13 +116,15 @@ jobs:
             "${BASE_URL}/toolkits/__definitely-not-a-toolkit__" 404
           check_url "/reference" "${BASE_URL}/reference"
 
-          # Public support knowledge
-          check_url "/kb" "${BASE_URL}/kb"
-          check_url "/kb/search" "${BASE_URL}/kb/search?q=github%20oauth"
+          # Public knowledge search (used by the published composio skill)
           check_json_url "/api/knowledge-search" \
-            "${BASE_URL}/api/knowledge-search?q=github%20oauth&filter=kb" \
-            '.query == "github oauth" and .filter == "kb" and (.results | type == "array") and .mode == "hybrid"' \
+            "${BASE_URL}/api/knowledge-search?q=github%20oauth" \
+            '.query == "github oauth" and (.results | type == "array") and .mode == "keyword"' \
             -H "Cache-Control: no-cache"
+
+          # Retired Knowledge Base URLs redirect to maintained pages
+          check_url "/kb" "${BASE_URL}/kb"
+          check_url "/kb/guide/toolkits-gmail" "${BASE_URL}/kb/guide/toolkits-gmail"
 
           # Provider pages
           check_url "/docs/providers/openai" "${BASE_URL}/docs/providers/openai"

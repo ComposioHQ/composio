@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { liteClient } from 'algoliasearch/lite';
 import { z } from 'zod';
 import toolkitsData from '@/public/data/toolkits-list.json';
@@ -10,27 +8,11 @@ import {
   type AlgoliaDocsRecord,
 } from '@/lib/search-index';
 import { isHiddenApiTagUrl } from '@/lib/filter-api-version';
-import type { KbManifest } from '@/lib/kb/types';
-import { embedTexts, embeddingContentHash } from './embeddings';
 import {
-  fusePublicKbCandidates,
   isStrongLexicalCandidate,
   publicKnowledgeCandidateFromSearchRecord,
-  publicKnowledgeCandidateFromSemantic,
   type PublicKnowledgeCandidateRecord,
-} from './hybrid-search';
-import {
-  docsContentHashFromRecords,
-  rankSemanticCandidates,
-  semanticRecordFromSearchRecord,
-  validateSemanticArtifact,
-  type KnowledgeSemanticArtifact,
-} from './semantic-artifact';
-import {
-  acquireDefaultSemanticSearch,
-  defaultSemanticTimeoutMs,
-  type SemanticSearchAdmission,
-} from './semantic-protection';
+} from './candidates';
 import {
   queueKnowledgeSearchAnalytics,
   type KnowledgeSearchAnalyticsEvent,
@@ -43,7 +25,6 @@ import {
   searchKnowledgeRecords,
   type KnowledgeDegradationReason,
   type KnowledgeFilter,
-  type KnowledgeRetrievalMode,
   type KnowledgeSearchResponse,
   type KnowledgeSearchResult,
 } from './search';
@@ -51,14 +32,12 @@ import type { KnowledgeSourceType } from './types';
 
 const KNOWLEDGE_CACHE_CONTROL = 'public, max-age=30, stale-while-revalidate=300';
 const KNOWLEDGE_UNAVAILABLE_MESSAGE = 'Knowledge search is temporarily unavailable';
-const SEMANTIC_MINIMUM_SIMILARITY = 0.3;
 const PUBLISHED_TOOLKIT_CANONICAL_URLS = new Set(
   toolkitsData.map(toolkit => `/toolkits/${toolkit.slug}`),
 );
 
 const knowledgeSourceTypeSchema = z.enum([
   'docs',
-  'kb',
   'oauth-guide',
   'toolkit',
   'example',
@@ -117,7 +96,6 @@ const algoliaSearchHitSchema = z.object({
 
 const legacyTypeSources = new Map<string, KnowledgeSourceType>([
   ['docs', 'docs'],
-  ['kb', 'kb'],
   ['oauth-guide', 'oauth-guide'],
   ['toolkits', 'toolkit'],
   ['examples', 'example'],
@@ -129,7 +107,6 @@ const legacyTypeSources = new Map<string, KnowledgeSourceType>([
 
 const defaultTypeBySource: Record<KnowledgeSourceType, string> = {
   docs: 'docs',
-  kb: 'kb',
   'oauth-guide': 'oauth-guide',
   toolkit: 'toolkits',
   example: 'examples',
@@ -140,7 +117,6 @@ const defaultTypeBySource: Record<KnowledgeSourceType, string> = {
 
 const defaultPageRankBySource: Record<KnowledgeSourceType, number> = {
   docs: 2_000,
-  kb: 1_900,
   'oauth-guide': 1_700,
   toolkit: 1_500,
   example: 1_300,
@@ -184,7 +160,6 @@ function sourceTypeFromPath(canonicalUrl: string): KnowledgeSourceType | null {
   if (origin !== null) return null;
   if (pathname === '/docs/changelog' || pathname.startsWith('/docs/changelog/')) return 'changelog';
   if (pathname === '/docs' || pathname.startsWith('/docs/')) return 'docs';
-  if (pathname === '/kb' || pathname.startsWith('/kb/')) return 'kb';
   if (pathname === '/toolkits' || pathname.startsWith('/toolkits/')) return 'toolkit';
   if (pathname === '/examples' || pathname.startsWith('/examples/')) return 'example';
   if (pathname === '/reference/v3' || pathname.startsWith('/reference/v3/')) return 'legacy';
@@ -282,7 +257,6 @@ export interface KnowledgeSearchInput {
 export interface KnowledgeSearchTimings {
   totalDurationMs: number;
   keywordDurationMs: number;
-  semanticDurationMs: number | null;
 }
 
 export interface KnowledgeSearchUnavailableResponse {
@@ -298,15 +272,10 @@ export interface KnowledgeSearchExecution {
 }
 
 export interface KnowledgeSearchDependencies {
-  hybridEnabled: () => boolean;
   searchKeywordCandidates: (
     query: string,
     filter: KnowledgeFilter,
   ) => Promise<KeywordCandidateSearch>;
-  searchSemanticCandidates: (
-    query: string,
-    options?: { signal: AbortSignal },
-  ) => Promise<PublicKnowledgeCandidateRecord[]>;
   searchLocalCandidates?: (
     query: string,
     filter: KnowledgeFilter,
@@ -316,8 +285,6 @@ export interface KnowledgeSearchDependencies {
     filter: KnowledgeFilter,
   ) => Promise<PublicKnowledgeCandidateRecord[] | LocalCandidateSearch>;
   previewOverlayEnabled?: () => boolean;
-  acquireSemanticSearch?: (request: Request) => SemanticSearchAdmission;
-  semanticTimeoutMs?: () => number;
   captureSearch?: (event: KnowledgeSearchAnalyticsEvent) => void;
 }
 
@@ -327,7 +294,7 @@ function filterCandidates(
   filter: KnowledgeFilter,
 ): PublicKnowledgeCandidateRecord[] {
   const filtered = candidates.filter(candidate =>
-    knowledgeFilterIncludesSource(filter, candidate.sourceType ?? 'kb'));
+    knowledgeFilterIncludesSource(filter, candidate.sourceType));
   if (filter !== 'all' && filter !== 'reference') return filtered;
 
   const currentReferenceHasExactMatch = filtered.some(candidate =>
@@ -369,8 +336,8 @@ function excerpt(value: string): string {
 }
 
 function resultFromCandidate(record: PublicKnowledgeCandidateRecord): KnowledgeSearchResult {
-  const sourceType = record.sourceType ?? 'kb';
-  const sourceLabel = record.sourceLabel ?? 'Knowledge Base';
+  const sourceType = record.sourceType;
+  const sourceLabel = record.sourceLabel;
   return {
     objectID: record.objectID,
     title: record.title,
@@ -481,8 +448,7 @@ async function defaultPreviewSearch(
   filter: KnowledgeFilter,
 ): Promise<LocalCandidateSearch> {
   const index = await loadLocalPublicIndex();
-  const records = index.records.filter(record =>
-    record.source_type === 'docs' || record.source_type === 'kb');
+  const records = index.records.filter(record => record.source_type === 'docs');
   const candidates = searchKnowledgeRecords(
     records,
     { query, filter, limit: 50 },
@@ -496,63 +462,11 @@ async function defaultPreviewSearch(
   };
 }
 
-let semanticArtifact: KnowledgeSemanticArtifact | null = null;
-
-async function loadSemanticArtifact(): Promise<KnowledgeSemanticArtifact> {
-  if (semanticArtifact) return semanticArtifact;
-  const manifest = JSON.parse(
-    readFileSync(join(process.cwd(), 'kb', 'manifest.json'), 'utf8'),
-  ) as KbManifest;
-  const artifact = JSON.parse(
-    readFileSync(join(process.cwd(), 'kb', 'semantic-index.json'), 'utf8'),
-  ) as KnowledgeSemanticArtifact;
-  const records = (await getAlgoliaSearchDocuments())
-    .filter(record => record.source_type === 'docs' || record.source_type === 'kb');
-  const semanticRecords = records.map(semanticRecordFromSearchRecord);
-  const contentHashes = new Map(
-    records.map(record => [record.objectID, embeddingContentHash(record)]),
-  );
-  semanticArtifact = validateSemanticArtifact(artifact, {
-    supportKnowledgeCommit: manifest.source.commit,
-    docsContentHash: docsContentHashFromRecords(semanticRecords),
-    contentHashes,
-  });
-  return semanticArtifact;
-}
-
-async function defaultSemanticSearch(
-  query: string,
-  options?: { signal: AbortSignal },
-): Promise<PublicKnowledgeCandidateRecord[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('embedding-unavailable');
-  let artifact: KnowledgeSemanticArtifact;
-  try {
-    artifact = await loadSemanticArtifact();
-  } catch {
-    throw new Error('semantic-artifact-invalid');
-  }
-  try {
-    const [queryVector] = await embedTexts([query], { apiKey, signal: options?.signal });
-    if (!queryVector) throw new Error('missing query vector');
-    return rankSemanticCandidates(artifact, queryVector, 50, {
-      minimumSimilarity: SEMANTIC_MINIMUM_SIMILARITY,
-    }).map(candidate => publicKnowledgeCandidateFromSemantic(candidate.record));
-  } catch (error) {
-    if (options?.signal.aborted) throw error;
-    throw new Error('semantic-request-failed');
-  }
-}
-
 const defaultDependencies: KnowledgeSearchDependencies = {
-  hybridEnabled: () => process.env.KB_HYBRID_SEARCH_ENABLED === 'true',
   searchKeywordCandidates: defaultKeywordSearch,
-  searchSemanticCandidates: defaultSemanticSearch,
   searchLocalCandidates: defaultLocalSearch,
   searchPreviewCandidates: defaultPreviewSearch,
   previewOverlayEnabled: () => process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview',
-  acquireSemanticSearch: acquireDefaultSemanticSearch,
-  semanticTimeoutMs: defaultSemanticTimeoutMs,
   captureSearch: queueKnowledgeSearchAnalytics,
 };
 
@@ -562,58 +476,12 @@ function degradationReason(
 ): KnowledgeDegradationReason {
   const message = error instanceof Error ? error.message : '';
   const allowed: KnowledgeDegradationReason[] = [
-    'embedding-unavailable',
-    'semantic-artifact-invalid',
-    'semantic-request-failed',
-    'semantic-timeout',
-    'semantic-rate-limited',
-    'semantic-capacity-limited',
     'keyword-request-failed',
     'preview-overlay-failed',
   ];
   return allowed.includes(message as KnowledgeDegradationReason)
     ? message as KnowledgeDegradationReason
     : fallback;
-}
-
-async function protectedSemanticSearch(
-  query: string,
-  headers: Headers | undefined,
-  dependencies: KnowledgeSearchDependencies,
-): Promise<PublicKnowledgeCandidateRecord[]> {
-  const request = new Request('http://localhost/api/knowledge-search', { headers });
-  const admission = dependencies.acquireSemanticSearch?.(request)
-    ?? { allowed: true as const, release: () => {} };
-  if (!admission.allowed) throw new Error(admission.reason);
-
-  const controller = new AbortController();
-  const timeoutMs = dependencies.semanticTimeoutMs?.() ?? defaultSemanticTimeoutMs();
-  let timedOut = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-      reject(new Error('semantic-timeout'));
-    }, timeoutMs);
-  });
-
-  try {
-    return await Promise.race([
-      dependencies.searchSemanticCandidates(query, { signal: controller.signal }),
-      timeout,
-    ]);
-  } catch (error) {
-    if (timedOut) throw new Error('semantic-timeout');
-    throw error;
-  } finally {
-    if (timer) clearTimeout(timer);
-    admission.release();
-  }
-}
-
-function semanticEligible(filter: KnowledgeFilter): boolean {
-  return filter === 'all' || filter === 'docs' || filter === 'kb';
 }
 
 function localEditorialEligible(filter: KnowledgeFilter): boolean {
@@ -627,7 +495,6 @@ export async function searchPublicKnowledge(
   const query = input.query.trim().slice(0, 200);
   const startedAt = performance.now();
   let keywordDurationMs = 0;
-  let semanticDurationMs: number | null = null;
   let previewOverlayApplied = false;
   let degradationCategory: KnowledgeSearchAnalyticsEvent['degradationCategory'] = null;
 
@@ -637,13 +504,11 @@ export async function searchPublicKnowledge(
   ): KnowledgeSearchExecution => {
     const totalDurationMs = performance.now() - startedAt;
     const results = 'results' in response ? response.results : [];
-    const retrievalMode = 'mode' in response
-      ? response.mode ?? 'keyword'
-      : 'unavailable';
+    const retrievalMode = 'mode' in response ? 'keyword' : 'unavailable';
     const strongMatch = 'strongMatch' in response ? response.strongMatch ?? null : null;
     if (degradationCategory) {
-      console.warn('[kb-search]', JSON.stringify({
-        event: 'kb_search_degraded',
+      console.warn('[knowledge-search]', JSON.stringify({
+        event: 'knowledge_search_degraded',
         reason: degradationCategory,
         retrievalMode,
         statusCode: status,
@@ -661,17 +526,16 @@ export async function searchPublicKnowledge(
         statusCode: status,
         durationMs: totalDurationMs,
         keywordDurationMs,
-        semanticDurationMs,
         previewOverlayApplied,
       });
     } catch {
-      console.warn('[kb-search]', JSON.stringify({ event: 'kb_search_analytics_schedule_failed' }));
+      console.warn('[knowledge-search]', JSON.stringify({ event: 'knowledge_search_analytics_schedule_failed' }));
     }
     return {
       response,
       status,
       cacheControl: status === 200 ? KNOWLEDGE_CACHE_CONTROL : 'no-store',
-      timings: { totalDurationMs, keywordDurationMs, semanticDurationMs },
+      timings: { totalDurationMs, keywordDurationMs },
       previewOverlayApplied,
     };
   };
@@ -685,7 +549,6 @@ export async function searchPublicKnowledge(
       timings: {
         totalDurationMs: keywordDurationMs,
         keywordDurationMs,
-        semanticDurationMs: null,
       },
       previewOverlayApplied: false,
     };
@@ -753,68 +616,16 @@ export async function searchPublicKnowledge(
     }, 200);
   }
 
-  if (!dependencies.hybridEnabled() || !semanticEligible(input.filter)) {
-    if (!keywordWindow) {
-      degradationCategory = 'all-retrievers-failed';
-      return finish({ error: KNOWLEDGE_UNAVAILABLE_MESSAGE }, 503);
-    }
-    const results = keywordResults(keywordCandidates ?? keywordWindow);
-    return finish({
-      query,
-      filter: input.filter,
-      results,
-      total: results.length,
-      mode: 'keyword',
-    }, 200);
-  }
-
-  let semanticCandidates: PublicKnowledgeCandidateRecord[] | null = null;
-  const semanticStartedAt = performance.now();
-  try {
-    semanticCandidates = filterCandidates(
-      await protectedSemanticSearch(query, input.headers, dependencies),
-      query,
-      input.filter,
-    ).filter(candidate => candidate.sourceType === 'docs' || candidate.sourceType === 'kb');
-  } catch (error) {
-    const semanticDegradation = degradationReason(error, 'semantic-request-failed');
-    const isGuardrail = semanticDegradation === 'semantic-timeout' ||
-      semanticDegradation === 'semantic-rate-limited' ||
-      semanticDegradation === 'semantic-capacity-limited';
-    if (keywordWindow && (!degradationCategory || isGuardrail)) {
-      degradationCategory = semanticDegradation;
-    }
-  } finally {
-    semanticDurationMs = performance.now() - semanticStartedAt;
-  }
-
-  if (!keywordWindow && !semanticCandidates) {
+  if (!keywordWindow) {
     degradationCategory = 'all-retrievers-failed';
     return finish({ error: KNOWLEDGE_UNAVAILABLE_MESSAGE }, 503);
   }
-
-  let mode: KnowledgeRetrievalMode;
-  if (keywordWindow && semanticCandidates) mode = 'hybrid';
-  else if (semanticCandidates) mode = 'semantic';
-  else mode = 'keyword';
-  const fused = fusePublicKbCandidates({
-    query,
-    keyword: keywordWindow ?? [],
-    semantic: semanticCandidates ?? [],
-    limit: 20,
-  });
-  const strongMatch = semanticCandidates
-    ? semanticCandidates.length > 0 || fused.some(candidate =>
-      candidate.keywordRank !== null && candidate.exactTier > 0)
-    : undefined;
-  const results = (strongMatch === false ? [] : fused).map(candidate =>
-    resultFromCandidate(candidate.record));
+  const results = keywordResults(keywordCandidates ?? keywordWindow);
   return finish({
     query,
     filter: input.filter,
     results,
     total: results.length,
-    mode,
-    ...(strongMatch === undefined ? {} : { strongMatch }),
+    mode: 'keyword',
   }, 200);
 }

@@ -6,21 +6,6 @@ import type {
   ProductAreaSlug,
 } from './types';
 
-const KB_TOPIC_AREAS: Record<string, ProductAreaSlug[]> = {
-  authentication: ['authentication-and-connected-accounts'],
-  'connected-accounts': ['authentication-and-connected-accounts'],
-  'auth-config': ['authentication-and-connected-accounts'],
-  'sessions-and-execution': ['tools-actions-and-execution'],
-  'triggers-and-webhooks': ['triggers-and-workflows'],
-  workflows: ['triggers-and-workflows'],
-  'tool-router-and-mcp': ['sdk-api-and-mcp'],
-  'sdk-and-api': ['sdk-api-and-mcp'],
-  'dashboard-and-projects': ['account-billing-and-security'],
-  'billing-and-plans': ['account-billing-and-security'],
-  'account-and-billing': ['account-billing-and-security'],
-  'security-and-trust': ['account-billing-and-security'],
-};
-
 const DOC_PATH_AREAS: Array<[prefix: string, area: ProductAreaSlug]> = [
   ['/docs/auth-configuration', 'authentication-and-connected-accounts'],
   ['/docs/providers', 'sdk-api-and-mcp'],
@@ -45,9 +30,6 @@ function unique<T>(values: T[]): T[] {
 }
 
 function inferredProductAreas(input: KnowledgeClassificationInput): ProductAreaSlug[] {
-  if (input.sourceType === 'kb') {
-    return unique((input.topics ?? []).flatMap((topic) => KB_TOPIC_AREAS[topic] ?? []));
-  }
   if (input.sourceType === 'docs') {
     return DOC_PATH_AREAS
       .filter(([prefix]) => input.canonicalUrl === prefix || input.canonicalUrl.startsWith(`${prefix}/`))
@@ -62,15 +44,12 @@ function inferredProductAreas(input: KnowledgeClassificationInput): ProductAreaS
 function inferredIntents(input: KnowledgeClassificationInput): KnowledgeIntent[] {
   const intents: KnowledgeIntent[] = [];
   if (input.sourceType === 'oauth-guide') intents.push('setup');
-  if (input.sourceType === 'docs' || input.sourceType === 'kb' || input.sourceType === 'example') {
+  if (input.sourceType === 'docs' || input.sourceType === 'example') {
     intents.push('how-to');
   }
   if (input.sourceType === 'toolkit' || input.sourceType === 'reference' || input.sourceType === 'legacy') {
     intents.push('reference');
   }
-  if (input.topics?.includes('incidents-and-known-issues')) intents.push('known-issue');
-  if (input.topics?.includes('errors-and-troubleshooting')) intents.push('troubleshooting');
-  if (input.topics?.includes('getting-started')) intents.push('setup');
   return unique(intents);
 }
 
