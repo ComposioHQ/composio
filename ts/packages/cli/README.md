@@ -13,6 +13,16 @@ The CLI is built using:
 - [Bun](https://bun.sh/)
 - [Vitest](https://vitest.dev/)
 
+## Windows x64 (experimental)
+
+Run in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+See [INSTALL.md](../../../INSTALL.md#windows-x64-experimental) for options, requirements, and known limitations.
+
 ## 🧑‍💻 Usage
 
 ```
