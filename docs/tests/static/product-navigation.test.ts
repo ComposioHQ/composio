@@ -43,6 +43,7 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/production-readiness')).toBe('platform');
     expect(classifyDocsProduct('/docs')).toBeNull();
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
+    expect(classifyDocsProduct('/docs/oauth-mcp-troubleshooting')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
@@ -83,6 +84,11 @@ describe('Docs product navigation', () => {
     expect(docsProductDestination('/docs/using-composio-skill', 'for-you')).toBe(
       '/docs/using-composio-skill',
     );
+    for (const product of ['for-you', 'platform'] as const) {
+      expect(docsProductDestination('/docs/oauth-mcp-troubleshooting', product)).toBe(
+        '/docs/oauth-mcp-troubleshooting',
+      );
+    }
     expect(docsProductDestination('/docs/security/overview', 'for-you')).toBe(
       '/docs/agent-plugins',
     );
@@ -172,6 +178,8 @@ describe('Docs product navigation', () => {
 
     expect(forYouUrls).toContain('/docs/using-composio-skill');
     expect(platformUrls).toContain('/docs/using-composio-skill');
+    expect(forYouUrls).toContain('/docs/oauth-mcp-troubleshooting');
+    expect(platformUrls).toContain('/docs/oauth-mcp-troubleshooting');
 
     const securityUrls = [
       '/docs/security/overview',
