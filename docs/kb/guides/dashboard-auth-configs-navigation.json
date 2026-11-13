@@ -1,0 +1,39 @@
+{
+  "slug": "dashboard-auth-configs-navigation",
+  "title": "Manage Platform auth configs",
+  "description": "Current dashboard steps for creating and managing Platform auth configs.",
+  "articlePath": "dashboard-auth-configs-navigation.md",
+  "sources": [
+    {
+      "sourcePath": "dashboard/auth-configs-navigation/public.md",
+      "sourceHeading": "Create an auth config from the selected Platform project"
+    },
+    {
+      "sourcePath": "dashboard/auth-configs-navigation/public.md",
+      "sourceHeading": "Connect Account on an auth config is a Playground test connection"
+    },
+    {
+      "sourcePath": "dashboard/auth-configs-navigation/public.md",
+      "sourceHeading": "Manage Config changes future authentication behavior"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "getting-started"
+  ],
+  "tags": [
+    "auth-configs",
+    "dashboard",
+    "platform"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

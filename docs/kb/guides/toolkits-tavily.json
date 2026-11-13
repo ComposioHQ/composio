@@ -1,0 +1,46 @@
+{
+  "slug": "toolkits-tavily",
+  "title": "Tavily",
+  "description": "Public support knowledge for Tavily.",
+  "articlePath": "toolkits-tavily.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/tavily/public.md",
+      "sourceHeading": "Use COMPOSIO_SEARCH_TAVILY for Tavily search"
+    },
+    {
+      "sourcePath": "toolkits/tavily/public.md",
+      "sourceHeading": "Initiate Tavily API-key connections in the legacy JS SDK with generic_api_key"
+    },
+    {
+      "sourcePath": "toolkits/tavily/public.md",
+      "sourceHeading": "Use composio_search for auth-free Exa/Tavily-style search"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "platform",
+    "tavily"
+  ],
+  "aliases": [
+    "/kb/toolkits/tavily-troubleshooting",
+    "initiate-tavily-api-key-connections-in-the-legacy-js-sdk-with-generic",
+    "tavily-troubleshooting",
+    "use-composio-search-for-auth-free-exa-tavily-style-search",
+    "use-composio-search-tavily-for-tavily-search"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "toolkits-onenote",
+  "title": "Microsoft OneNote",
+  "description": "Current authentication setup for the Microsoft OneNote toolkit.",
+  "articlePath": "toolkits-onenote.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/onenote/public.md",
+      "sourceHeading": "OneNote uses a customer-owned Microsoft OAuth app"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "microsoft",
+    "onenote",
+    "platform"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -17,16 +17,16 @@ function fixture(): string {
   roots.push(root);
   mkdirSync(join(root, 'kb/source'), { recursive: true });
   mkdirSync(join(root, 'kb/articles'));
+  mkdirSync(join(root, 'kb/guides'));
   writeFileSync(join(root, 'kb/manifest.json'), JSON.stringify({
     schemaVersion: 2,
     topics: [{ slug: 'authentication', title: 'Authentication', description: 'Authentication guidance.', featuredRank: 1 }],
-    guides: [],
   }));
   return root;
 }
 
 function guide(root: string) {
-  return JSON.parse(readFileSync(join(root, 'kb/manifest.json'), 'utf8')).guides[0];
+  return JSON.parse(readFileSync(join(root, 'kb/guides/sdk-example.json'), 'utf8'));
 }
 
 function contents(root: string): Map<string, string> {

@@ -1,0 +1,36 @@
+{
+  "slug": "toolkits-kommo",
+  "title": "Kommo",
+  "description": "Public authentication and subdomain troubleshooting for Kommo.",
+  "articlePath": "toolkits-kommo.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/kommo/public.md",
+      "sourceHeading": "Enter only the Kommo account subdomain"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "kommo",
+    "oauth",
+    "platform",
+    "subdomain"
+  ],
+  "aliases": [
+    "/kb/toolkits/enter-only-the-kommo-account-subdomain",
+    "enter-only-the-kommo-account-subdomain"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

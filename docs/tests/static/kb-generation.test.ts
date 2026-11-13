@@ -15,7 +15,7 @@ import { join, relative } from 'node:path';
 import GithubSlugger from 'github-slugger';
 import { generateKbContent, markdownForMdx } from '@/lib/kb/generate';
 import { buildKbCatalog } from '@/lib/kb/catalog';
-import { createKbArticleReader, getKbCatalog } from '@/lib/kb/repository';
+import { createKbArticleReader, getKbCatalog, readKbManifest } from '@/lib/kb/repository';
 import type { KbManifest } from '@/lib/kb/types';
 import { evaluate } from '@mdx-js/mdx';
 import { createElement } from 'react';
@@ -300,9 +300,7 @@ describe('public KB content generation', () => {
     expect(files.some(file => file.startsWith('toolkits/'))).toBe(false);
     expect(files.some(file => file.startsWith('sdk-and-api/'))).toBe(false);
 
-    const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8'),
-    ) as KbManifest;
+    const manifest = readKbManifest();
     const published = manifest.guides.filter(guide => guide.state === 'published');
     const newlyAuthored = published.filter(guide => guide.articlePath !== undefined);
     const held = manifest.guides.filter(guide => guide.state === 'needs-review');

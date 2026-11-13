@@ -316,7 +316,7 @@ jobs:
           {
             echo "\`verify:kb\` found published KB guides whose claims no longer match production."
             echo
-            echo "Fix the guide, or demote it to \`state: needs-review\` in \`docs/kb/manifest.json\`"
+            echo "Fix the guide, or demote it to \`state: needs-review\` in its \`docs/kb/guides/<slug>.json\`"
             echo "so it stops serving readers while it is wrong."
             echo
             cat "$RUNNER_TEMP/kb-freshness.md" 2>/dev/null \

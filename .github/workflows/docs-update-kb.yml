@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  # Shared with portal publications so neither snapshots an outdated KB.
+  # Shared with portal publications so each run starts from a settled next.
   group: docs-kb-publication
   cancel-in-progress: false
   queue: max
@@ -23,7 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
     outputs:
       docs_base_sha: ${{ steps.docs-base.outputs.sha }}
       changed: ${{ steps.semantic.outputs.stale }}
@@ -32,31 +31,6 @@ jobs:
         working-directory: ./docs
 
     steps:
-      # A finished workflow may still have a PR waiting on checks or review.
-      # Wait before checkout so each repair starts from the preceding merge.
-      - name: Wait for earlier KB publications
-        timeout-minutes: 31
-        working-directory: .
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PUBLISH_BRANCH: docs/auto-update-kb
-        run: |
-          for ((attempt = 1; attempt <= 60; attempt++)); do
-            pending=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=next&per_page=100" \
-              --jq '.[] | select(.head.repo.full_name == env.GH_REPO) | select(.head.ref == "docs/auto-update-kb" or (.head.ref | startswith("docs/kb-front-desk-"))) | select(.head.ref != env.PUBLISH_BRANCH) | .html_url')
-            if [ -z "$pending" ]; then
-              exit 0
-            fi
-            echo "Waiting for earlier KB publications to merge or close:"
-            echo "$pending"
-            if [ "$attempt" -lt 60 ]; then
-              sleep 30
-            fi
-          done
-          echo "Earlier KB publications are still open. Merge or close them, then rerun this workflow." >&2
-          exit 1
-
       - name: Checkout docs repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -110,9 +84,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kb-semantic-repair
-          path: |
-            docs/kb/
-            docs/content/kb/
+          path: docs/kb/
           if-no-files-found: error
           retention-days: 1
 
@@ -163,7 +135,6 @@ jobs:
           base: next
           add-paths: |
             docs/kb/
-            docs/content/kb/
 
   # Rebuild and PR creation are one pipeline. Report after both jobs so a
   # successful rebuild cannot hide a failed proposal, and close the issue only

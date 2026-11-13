@@ -5,10 +5,11 @@
 - The public knowledge base is hosted with the documentation at
   `docs.composio.dev/kb`.
 - The support portal's Front Desk is the only writer of KB guides. It writes
-  them from public information and person-approved support answers, and a
-  person approves each change before it is published.
-- The docs repository owns the published guides (`kb/manifest.json`,
-  `kb/articles`, `kb/source`), routes, search integration, and presentation.
+  them from public information and person-approved support answers.
+- The docs repository owns the published guides (`kb/manifest.json` for
+  topics, `kb/guides/<slug>.json`, `kb/articles`, `kb/source`), routes, search
+  integration, and presentation. `content/kb` is generated at build time and
+  not committed.
 - The docs Ask AI agent and `/api/knowledge-search` read the same published
   guides; there is no separate agent-only knowledge file.
 - Product documentation remains canonical for product concepts and workflows;
@@ -28,11 +29,13 @@
 
 ## Publication and maintenance
 
-- An approved guide reaches the docs repository as a `kb-guide-approved`
+- A proposed guide change reaches the docs repository as a `kb-guide-approved`
   dispatch. `docs-kb-publish.yml` applies it with `scripts/publish-kb-guide.ts`
   (create, rewrite, or retire), regenerates and validates the KB, and opens a
-  pull request on `next` that merges itself once checks pass.
-- Publications are serialized so overlapping runs cannot race.
+  pull request on `next`. Reviewing and merging that pull request is the
+  approval; closing it dismisses the change. Nothing merges on its own.
+- Each guide lives in its own files, so pull requests for different guides
+  can wait for review side by side without conflicting.
 - A scheduled workflow repairs the semantic artifact when docs or guide changes
   reached `next` without a rebuild.
 - The ComposioHQ/support-knowledge import was retired in 2026-11; that

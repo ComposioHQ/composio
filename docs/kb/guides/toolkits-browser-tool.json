@@ -1,0 +1,34 @@
+{
+  "slug": "toolkits-browser-tool",
+  "title": "Browser Tool",
+  "description": "Public support knowledge for Browser Tool.",
+  "articlePath": "toolkits-browser-tool.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/browser_tool/public.md",
+      "sourceHeading": "Browser Tool profiles do not work in Zero Data Retention projects"
+    }
+  ],
+  "topics": [
+    "security-and-trust",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "browser_tool",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/browser-tool-profiles-do-not-work-in-zero-data-retention-projects",
+    "browser-tool-profiles-do-not-work-in-zero-data-retention-projects"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -1,7 +1,9 @@
 name: Docs - Publish KB Guide
 
-# The support portal sends this when someone approves a KB guide that Front Desk drafted: a new guide, a
-# rewrite or a retirement. It becomes one PR on next that merges itself once checks pass.
+# The support portal sends this when Front Desk proposes a KB change: a new guide, a rewrite or a
+# retirement. It becomes one PR on next, and reviewing and merging that PR is the approval. Each guide
+# lives in its own files (kb/guides/<slug>.json, kb/articles, kb/source) and content/kb is generated
+# at build time, so PRs for different guides can wait for review side by side without conflicting.
 on:
   repository_dispatch:
     types: [kb-guide-approved]
@@ -10,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  # Shared with docs-update-kb: both workflows replace the KB snapshot.
+  # Shared with docs-update-kb so each run starts from a settled next.
   group: docs-kb-publication
   cancel-in-progress: false
   queue: max
@@ -20,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
     defaults:
       run:
         shell: bash
@@ -36,31 +37,6 @@ jobs:
             exit 1
           fi
         working-directory: .
-
-      # A finished workflow may still have a PR waiting on checks or review.
-      # Wait before checkout so each approval starts from the preceding merge.
-      - name: Wait for earlier KB publications
-        timeout-minutes: 31
-        working-directory: .
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PUBLISH_BRANCH: docs/kb-front-desk-${{ github.event.client_payload.draft_id }}
-        run: |
-          for ((attempt = 1; attempt <= 60; attempt++)); do
-            pending=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=next&per_page=100" \
-              --jq '.[] | select(.head.repo.full_name == env.GH_REPO) | select(.head.ref == "docs/auto-update-kb" or (.head.ref | startswith("docs/kb-front-desk-"))) | select(.head.ref != env.PUBLISH_BRANCH) | .html_url')
-            if [ -z "$pending" ]; then
-              exit 0
-            fi
-            echo "Waiting for earlier KB publications to merge or close:"
-            echo "$pending"
-            if [ "$attempt" -lt 60 ]; then
-              sleep 30
-            fi
-          done
-          echo "Earlier KB publications are still open. Merge or close them, then rerun this workflow." >&2
-          exit 1
 
       - name: Checkout docs repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -105,30 +81,20 @@ jobs:
           permission-pull-requests: write
 
       - name: Create pull request
-        id: pr
         uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
         with:
           token: ${{ steps.write-token.outputs.token }}
           commit-message: 'docs(kb): ${{ github.event.client_payload.summary }}'
           title: 'docs(kb): ${{ github.event.client_payload.summary }}'
           body: |
-            KB guide approved in the support portal by ${{ github.event.client_payload.approved_by }}.
+            KB guide change proposed by Front Desk in the support portal.
 
             - Guide: `${{ github.event.client_payload.guide.slug }}` (${{ github.event.client_payload.guide.action }})
             - Draft: ${{ github.event.client_payload.portal_url }}
 
-            Front Desk drafted it; the approver reviewed and edited it in the portal. This PR merges itself
-            once checks pass.
+            Review the article and merge to publish it; close the PR to dismiss it. Nothing merges on its own.
           branch: docs/kb-front-desk-${{ github.event.client_payload.draft_id }}
           base: next
           add-paths: |
             docs/kb/
-            docs/content/kb/
 
-      - name: Merge once checks pass
-        if: steps.pr.outputs.pull-request-number
-        env:
-          GH_TOKEN: ${{ steps.write-token.outputs.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ steps.pr.outputs.pull-request-number }}
-        run: gh pr merge "$PR" --auto --squash

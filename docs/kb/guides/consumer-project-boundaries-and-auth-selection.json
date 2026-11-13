@@ -1,0 +1,43 @@
+{
+  "slug": "consumer-project-boundaries-and-auth-selection",
+  "title": "Consumer and Developer Project Boundaries",
+  "description": "Public support knowledge for Consumer and Developer Project Boundaries.",
+  "articlePath": "consumer-project-boundaries-and-auth-selection.md",
+  "sources": [
+    {
+      "sourcePath": "consumer/project-boundaries-and-auth-selection/public.md",
+      "sourceHeading": "Rotate the Connect MCP consumer key"
+    },
+    {
+      "sourcePath": "consumer/project-boundaries-and-auth-selection/public.md",
+      "sourceHeading": "Workspace members do not automatically share For You connections"
+    },
+    {
+      "sourcePath": "consumer/project-boundaries-and-auth-selection/public.md",
+      "sourceHeading": "Shared connections must be explicitly allowed and pinned"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "getting-started",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "consumer",
+    "for-you",
+    "project-boundaries-and-auth-selection"
+  ],
+  "aliases": [
+    "/kb/composio-for-you/workspace-members-do-not-automatically-share-for-you-connections",
+    "workspace-members-do-not-automatically-share-for-you-connections"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

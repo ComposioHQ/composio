@@ -101,5 +101,5 @@ warnings too. See `docs/decisions/kb-freshness-verification.md` for what is
 checked and why placeholders, bare URLs, and 5xx responses are excluded.
 
 A guide that deliberately cites a removed identifier declares it in
-`verifyIgnoreToolSlugs` in `kb/manifest.json`.
+`verifyIgnoreToolSlugs` in its `kb/guides/<slug>.json`.
 

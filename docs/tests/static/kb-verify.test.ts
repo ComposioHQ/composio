@@ -11,7 +11,7 @@ import {
   verifyKb,
   type CatalogToolkit,
 } from '@/lib/kb/verify';
-import { getKbCatalog } from '@/lib/kb/repository';
+import { getKbCatalog, readKbManifest } from '@/lib/kb/repository';
 import type { KbGuide, KbManifest } from '@/lib/kb/types';
 
 const TOOLKITS: CatalogToolkit[] = [
@@ -281,9 +281,7 @@ describe('live corpus', () => {
    * Published prose belongs in `kb/articles`; `kb/source` must stay verbatim.
    */
   test('no published guide renders from the source snapshot', () => {
-    const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8')
-    ) as { guides: Array<{ slug: string; state: string; articlePath?: string }> };
+    const manifest = readKbManifest();
     const rendersFromSource = manifest.guides
       .filter((guide) => guide.state === 'published' && !guide.articlePath)
       .map((guide) => guide.slug);

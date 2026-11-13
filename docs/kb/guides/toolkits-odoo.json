@@ -1,0 +1,35 @@
+{
+  "slug": "toolkits-odoo",
+  "title": "Odoo",
+  "description": "Public troubleshooting guidance for Odoo tools.",
+  "articlePath": "toolkits-odoo.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/odoo/public.md",
+      "sourceHeading": "JSON-RPC access errors can arrive inside HTTP 200 responses"
+    }
+  ],
+  "topics": [
+    "errors-and-troubleshooting",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "json-rpc",
+    "odoo",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/inspect-odoo-json-rpc-errors-inside-http-200-responses",
+    "inspect-odoo-json-rpc-errors-inside-http-200-responses"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

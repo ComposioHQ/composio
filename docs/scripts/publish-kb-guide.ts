@@ -1,15 +1,16 @@
 /**
- * Publish one KB guide approved in the support portal: create it, rewrite it, or retire it.
+ * Apply one KB guide change proposed by the support portal: create, rewrite, or retire a guide.
+ * The pull request it lands in is the approval.
  *
  * Reads a JSON request from the path given as the first argument (the docs-kb-publish workflow writes
- * it from the repository_dispatch payload), updates kb/manifest.json, the guide's article and, for a new
- * guide, its public source page, and validates the result with the same catalog checks the site uses.
+ * it from the repository_dispatch payload), writes the guide's definition (kb/guides/<slug>.json), its
+ * article and, for a new guide, its public source page, and validates the result with the same catalog checks the site uses.
  * Run `bun run generate:kb` afterwards.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { buildKbCatalog } from '@/lib/kb/catalog';
-import { createKbArticleReader, createKbSourceReader } from '@/lib/kb/repository';
+import { createKbArticleReader, createKbSourceReader, readKbManifest } from '@/lib/kb/repository';
 import type { KbGuideDefinition } from '@/lib/kb/types';
 import { z } from 'zod';
 
@@ -58,8 +59,7 @@ const REVIEW_DAYS = 90;
 export function publishKbGuide(input: unknown, docsRoot = process.cwd(), now = new Date()): void {
   const request = requestSchema.parse(input);
   const root = resolve(docsRoot, 'kb');
-  const manifestPath = join(root, 'manifest.json');
-  const manifest = manifestSchema.parse(JSON.parse(readFileSync(manifestPath, 'utf8')));
+  const manifest = manifestSchema.parse(readKbManifest(root));
   const today = now.toISOString().slice(0, 10);
   const reviewAfter = new Date(now.valueOf() + REVIEW_DAYS * 86_400_000).toISOString().slice(0, 10);
   const existing = manifest.guides.find(guide => guide.slug === request.slug);
@@ -161,7 +161,8 @@ export function publishKbGuide(input: unknown, docsRoot = process.cwd(), now = n
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
   }
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const definition = manifest.guides.find(guide => guide.slug === request.slug);
+  writeFileSync(join(root, 'guides', `${request.slug}.json`), `${JSON.stringify(definition, null, 2)}\n`);
   console.log(`${request.action === 'retire' ? 'Retired' : existing ? 'Updated' : 'Created'} ${request.slug}.`);
 }
 

@@ -1,0 +1,41 @@
+{
+  "slug": "platform-pagination",
+  "title": "Platform Pagination",
+  "description": "Public guidance for endpoint-specific list limits and cursor pagination.",
+  "articlePath": "platform-pagination.md",
+  "sources": [
+    {
+      "sourcePath": "platform/pagination/public.md",
+      "sourceHeading": "Pagination limits are endpoint-specific"
+    },
+    {
+      "sourcePath": "platform/pagination/public.md",
+      "sourceHeading": "Auth-config list pages return at most 50 items"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "errors-and-troubleshooting",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "api",
+    "cursors",
+    "pagination",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/authentication/auth-config-list-pages-return-at-most-50-items",
+    "/kb/sdk-and-api/pagination-limits-are-endpoint-specific",
+    "auth-config-list-pages-return-at-most-50-items",
+    "pagination-limits-are-endpoint-specific"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

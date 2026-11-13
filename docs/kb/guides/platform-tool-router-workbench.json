@@ -1,0 +1,32 @@
+{
+  "slug": "platform-tool-router-workbench",
+  "title": "Tool Router Workbench Retention",
+  "description": "Public support knowledge for Tool Router Workbench Retention.",
+  "articlePath": "platform-tool-router-workbench.md",
+  "sources": [
+    {
+      "sourcePath": "platform/tool-router-workbench/public.md",
+      "sourceHeading": "A “fresh” client label can still reuse the same sandbox"
+    }
+  ],
+  "topics": [
+    "errors-and-troubleshooting",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "platform",
+    "tool-router-workbench"
+  ],
+  "aliases": [
+    "/kb/sdk-and-api/a-fresh-client-label-can-still-reuse-the-same-sandbox",
+    "a-fresh-client-label-can-still-reuse-the-same-sandbox"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

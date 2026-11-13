@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildKbCatalog } from '@/lib/kb/catalog';
-import { createKbArticleReader } from '@/lib/kb/repository';
+import { createKbArticleReader, readKbManifest } from '@/lib/kb/repository';
 import {
   buildProductCatalog,
   renderVerifyReport,
@@ -69,7 +69,7 @@ function parseOptions(argumentsList: string[]): CliOptions {
  * every published guide's review deadline against the real clock.
  */
 function loadCatalogIgnoringExpiry() {
-  const manifest = JSON.parse(readFileSync(join(KB_ROOT, 'manifest.json'), 'utf8')) as KbManifest;
+  const manifest = readKbManifest(KB_ROOT);
   const catalog = buildKbCatalog(
     manifest,
     (sourcePath) => readFileSync(join(KB_ROOT, 'source', sourcePath), 'utf8'),

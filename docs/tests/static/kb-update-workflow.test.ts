@@ -251,7 +251,7 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(workflow).toContain('persist-credentials: false');
   });
 
-  test('serializes both KB writers before checkout and pins artifacts to their docs base', () => {
+  test('serializes both KB writers and pins artifacts to their docs base', () => {
     const workflow = Bun.YAML.parse(readFileSync(workflowPath, 'utf8')) as {
       concurrency?: { group?: string; 'cancel-in-progress'?: boolean; queue?: string };
       jobs?: Record<string, WorkflowJob>;
@@ -263,12 +263,8 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(false);
     expect(workflow.concurrency?.queue).toBe('max');
     for (const job of [workflow.jobs?.refresh, publish.jobs.publish]) {
-      const steps = job?.steps ?? [];
-      const waitIndex = steps.findIndex(step => step.name === 'Wait for earlier KB publications');
-      const checkoutIndex = steps.findIndex(step => step.name === 'Checkout docs repository');
-      expect(waitIndex).toBeGreaterThanOrEqual(0);
-      expect(waitIndex).toBeLessThan(checkoutIndex);
-      expect(steps[checkoutIndex]?.with?.ref).toBe('next');
+      const checkout = job?.steps?.find(step => step.name === 'Checkout docs repository');
+      expect(checkout?.with?.ref).toBe('next');
     }
     const proposalCheckout = workflow.jobs?.propose?.steps?.find(
       step => step.name === 'Checkout docs repository',
@@ -308,7 +304,7 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
 
     expect(download?.with?.path).toBe('docs');
     expect(String(createPullRequest?.with?.['add-paths'])).toContain('docs/kb/');
-    expect(String(createPullRequest?.with?.['add-paths'])).toContain('docs/content/kb/');
+    expect(String(createPullRequest?.with?.['add-paths'])).not.toContain('docs/content/kb/');
   });
 
   test('treats keyword-only production retrieval as a semantic health failure', () => {

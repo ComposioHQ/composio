@@ -1,0 +1,34 @@
+{
+  "slug": "toolkits-netsuite",
+  "title": "NetSuite",
+  "description": "Public support knowledge for NetSuite.",
+  "articlePath": "toolkits-netsuite.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/netsuite/public.md",
+      "sourceHeading": "NetSuite OAuth token exchange failures can be caused by generic OAuth endpoints"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "netsuite",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/netsuite-oauth-token-exchange-failures-can-be-caused-by-generic-oauth",
+    "netsuite-oauth-token-exchange-failures-can-be-caused-by-generic-oauth"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

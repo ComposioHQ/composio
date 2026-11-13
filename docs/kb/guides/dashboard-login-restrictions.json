@@ -1,0 +1,33 @@
+{
+  "slug": "dashboard-login-restrictions",
+  "title": "Dashboard MFA Setup",
+  "description": "Public guidance for completing dashboard MFA setup.",
+  "articlePath": "dashboard-login-restrictions.md",
+  "sources": [
+    {
+      "sourcePath": "dashboard/login-restrictions/public.md",
+      "sourceHeading": "Use the manual setup key when QR scanning does not complete"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "security-and-trust"
+  ],
+  "tags": [
+    "login-restrictions",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/dashboard-and-projects/mfa-setup-qr-countdown-is-short-use-the-setup-key-if-scanning-fails",
+    "mfa-setup-qr-countdown-is-short-use-the-setup-key-if-scanning-fails"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}
