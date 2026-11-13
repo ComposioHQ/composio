@@ -8,7 +8,7 @@ Some services only accept requests from IP addresses you trust, such as a Salesf
 
 ## IP addresses
 
-Composio's requests to connected services, including OAuth authorization, token refreshes, and tool calls, come from these addresses:
+In Composio Cloud, requests to connected services, including OAuth authorization, token refreshes, and tool calls, come from these addresses:
 
 - `52.72.72.59/32`
 - `54.243.138.89/32`
@@ -16,6 +16,8 @@ Composio's requests to connected services, including OAuth authorization, token 
 - `34.233.50.61/32`
 
 Add all four. Requests can come from any of them, so a partial list makes connections fail intermittently.
+
+A [self-hosted deployment](/docs/security/token-custody) uses its own outbound addresses, not this list. Get them from the team that operates it.
 
 If the service keeps separate allowlists, such as one for access tokens and one for refresh tokens, add all four addresses to each. Some services take each address as its own range, with the same start and end IP.
 
