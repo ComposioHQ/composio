@@ -47,7 +47,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.16.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
-    "@google/genai": "^1.1.0"
+    "@google/genai": "^1.6.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
