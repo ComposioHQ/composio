@@ -61,6 +61,11 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
         for item in schema:
             items.append(_to_vertex_schema(item))
         return items
+    if isinstance(schema, bool):
+        # A boolean schema node (``items: true``, which MCP toolkits emit) has no
+        # Vertex equivalent. ``{}`` keeps ``true``; ``false`` loosens to it too,
+        # since Vertex cannot express "no value is valid".
+        return {}
     if not isinstance(schema, dict):
         return schema
     node = dict(schema)
@@ -125,7 +130,9 @@ def _to_vertex_schema(schema: t.Any) -> t.Any:
             for name, prop in value.items():
                 properties[name] = _to_vertex_schema(prop)
             value = properties
-        elif key in ("items", "additionalProperties", "anyOf"):
+        elif key in ("items", "anyOf") or (
+            key == "additionalProperties" and not isinstance(value, bool)
+        ):
             value = _to_vertex_schema(value)
         result[key] = value
     return result

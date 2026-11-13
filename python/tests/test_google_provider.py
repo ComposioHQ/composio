@@ -166,6 +166,26 @@ def test_wrap_tool_drops_keywords_vertex_rejects() -> None:
     assert any_of_stands_alone(parameters)
 
 
+def test_wrap_tool_accepts_boolean_schema_nodes() -> None:
+    """MCP toolkits emit ``items: true``, which Vertex has no field for."""
+    tool = Tool.model_construct(
+        slug="TEST_BOOLEAN_NODE",
+        description="test",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "params": {"type": ["null", "array"], "items": True},
+                "options": {"type": "object", "additionalProperties": True},
+            },
+        },
+    )
+
+    properties = GoogleProvider().wrap_tool(tool).to_dict()["parameters"]["properties"]
+
+    assert properties["params"] == {"type": "ARRAY", "nullable": True, "items": {}}
+    assert properties["options"]["type"] == "OBJECT"
+
+
 def _function_call_response() -> Any:
     return GenerationResponse.from_dict(
         {
