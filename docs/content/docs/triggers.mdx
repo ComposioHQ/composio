@@ -21,13 +21,23 @@ Under the hood, Composio learns about events in one of two ways. It only affects
 | **Realtime** | The provider pushes the event to Composio the moment it happens. | Near-instant | Slack, Asana, Notion, Outlook, Gmail, Google Calendar |
 | **Polling** | Composio checks the provider on a schedule. | Up to the trigger's polling interval, 2 min by default | Google Drive, Google Sheets, OneDrive |
 
-Most trigger types use one kind. Some, including the Gmail and Google Calendar triggers, support both: Composio uses realtime delivery whenever it can, and you can choose with `type`. See [Choosing webhook or polling](/docs/setting-up-triggers/creating-triggers#choosing-webhook-or-polling).
+Most trigger types use one kind. Some, including the Gmail and Google Calendar triggers, support both: Composio uses realtime delivery whenever it can and polls otherwise, reporting why in the instance's `fallback_reason`. You can also choose with `type`. See [Choosing webhook or polling](/docs/setting-up-triggers/creating-triggers#choosing-webhook-or-polling).
 
 Either way, the event lands in the same place: your subscription or webhook URL, in the same payload shape.
 
 <Callout>
 If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 </Callout>
+
+## Delivery guarantees
+
+Delivery is at-least-once. Composio can retry a delivery, so your handler may receive the same event more than once. Make handlers idempotent: deduplicate on the envelope's `id` (see [webhook payload shape](/docs/setting-up-triggers/subscribing-to-events#webhook-payload-shape)), not on `metadata.trigger_id`, which is shared by every event from that trigger.
+
+## Triggers and sessions
+
+Triggers and [sessions](/docs/configuring-sessions) are independent. A trigger decides *when* your code runs; a session is how your agent *executes* tools. Session config has no trigger settings, and a trigger doesn't start a session for you.
+
+To run an agent on an event, create a session in your webhook handler for the event's `metadata.user_id`. See [Run an agent when an email arrives](/examples/email-triggered-agent).
 
 ## Trigger types and instances
 
