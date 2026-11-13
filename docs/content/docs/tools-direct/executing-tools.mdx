@@ -420,6 +420,24 @@ Need an API that isn't supported by any Composio toolkit, or want to extend an e
 
 Automatic file handling is **off by default**. Enable it with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Once enabled, pass file paths to tools that accept files and get local paths back from tools that return files.
 
+### Which tools take files
+
+A tool takes a file when a parameter in its input schema has `file_uploadable: true`. A tool returns a file when a field in its output schema has `file_downloadable: true`; that field holds an `s3url`. Not every action in a toolkit handles files, and the file parameter's name varies by tool (`file_to_upload` on `GOOGLEDRIVE_UPLOAD_FILE`, `attachment` on `GMAIL_SEND_EMAIL`). Check a tool's [schema](/docs/tools-direct/fetching-tools#tool-schemas) before you pass it a file.
+
+### S3 keys and public URLs
+
+A file parameter takes a descriptor that points at a file in Composio storage:
+
+```json
+{ "name": "report.pdf", "mimetype": "application/pdf", "s3key": "<key>" }
+```
+
+When you call the API directly, build this yourself: request an upload from the [Files API](/reference/api-reference/files), `PUT` the file to the presigned URL it returns, then pass the descriptor with the returned key.
+
+The SDKs build it for you. With automatic file handling on, pass a local path or a public `http(s)` URL (or a `File` object in TypeScript). The SDK fetches the file, uploads it to Composio storage, and swaps in the descriptor. A value that's already a descriptor passes through unchanged.
+
+In a session, files the agent writes live in the sandbox at `/mnt/files`, and those paths aren't `s3key`s. See [Tool Router files](/kb/guide/mcp-tool-router-files) for how the agent turns them into descriptors.
+
 ### File Upload
 
 Pass local file paths, URLs, or File objects to tools that accept files. The SDK uploads the file to Composio's storage and converts it to the format the tool expects — you don't need to construct the file metadata object (`s3key`, `name`, `mimetype`) yourself.
