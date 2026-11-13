@@ -95,6 +95,20 @@ const localProject = (orgId: string) =>
     })
   );
 
+const orgList = (ids: ReadonlyArray<string>, nextCursor: string | null = null) =>
+  jsonResponse({
+    organizations: ids.map(id => ({
+      id,
+      name: id,
+      created_at: '2024-01-01T00:00:00.000Z',
+      updated_at: '2024-01-01T00:00:00.000Z',
+    })),
+    next_cursor: nextCursor,
+    total_pages: 1,
+    current_page: 1,
+    total_items: ids.length,
+  });
+
 describe('resolveCommandProject', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -125,6 +139,72 @@ describe('resolveCommandProject', () => {
         message: 'No developer project configured for this directory. Run `composio dev init`.',
       });
     }).pipe(Effect.provide(testLayer))
+  );
+
+  it.effect('refuses a directory project outside the logged-in org without a request', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const error = yield* resolveCommandProject({ mode: 'developer' }).pipe(Effect.flip);
+
+      expect(error).toMatchObject({ reason: 'org_mismatch' });
+      expect(error.message).toContain('"org_other"');
+      expect(error.message).toContain('composio orgs switch');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_other'))
+      )
+    )
+  );
+
+  it.effect('resolves a directory project in the logged-in org without a request', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const project = yield* resolveCommandProject({ mode: 'developer' });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      expect(project).toMatchObject({
+        orgId: 'org_1',
+        projectId: 'pr_local',
+        source: 'developer-local-config',
+      });
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_1'))
+      )
+    )
+  );
+
+  it.effect(
+    'checks a directory project against every page of the key orgs when none is stored',
+    () =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValueOnce(orgList(['org_a'], 'cursor_2'))
+          .mockResolvedValueOnce(orgList(['org_2']));
+
+        const project = yield* resolveCommandProject({ mode: 'developer' });
+
+        expect(project).toMatchObject({ orgId: 'org_2', projectId: 'pr_local' });
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+      }).pipe(
+        Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
+      )
+  );
+
+  it.effect('refuses a directory project from another org when no org is stored', () =>
+    Effect.gen(function* () {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(orgList(['org_mine']));
+
+      const error = yield* resolveCommandProject({ mode: 'developer' }).pipe(Effect.flip);
+
+      expect(error).toMatchObject({ reason: 'org_mismatch' });
+      expect(error.message).toContain('cannot access');
+    }).pipe(
+      Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
+    )
   );
 
   it.effect('turns an unknown project name into project_not_found with the remedy', () =>
@@ -296,6 +376,66 @@ describe('resolveDeveloperProjectOrDefault', () => {
     }).pipe(Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), noLocalProject)))
   );
 
+  it.effect(
+    'ignores a directory project outside the logged-in org and names it in the notice',
+    () =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValue(defaultProjectInfo('org_1'));
+
+        const { project, notice } = yield* resolveDeveloperProjectOrDefault({});
+
+        expect(project).toMatchObject({
+          orgId: 'org_1',
+          projectId: 'pr_newest',
+          source: 'developer-default',
+        });
+        expect(notice).toEqual(
+          Option.some(
+            'This directory\'s developer project is in org "org_other", not the org you are logged in to ("org_1"); using "Newest App" (pr_newest), the newest developer project in the org you are logged in to, instead. Run `composio orgs switch` to use the directory\'s org, or `composio dev init` to set this directory up in yours.'
+          )
+        );
+        // No request ever names the directory's project.
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(requestOf(fetchSpy.mock.calls[0]).headers.get('x-org-id')).toBe('org_1');
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_other'))
+        )
+      )
+  );
+
+  it.effect(
+    'ignores a directory project in an org the key cannot access when no org is stored',
+    () =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValueOnce(orgList(['org_mine']))
+          .mockResolvedValueOnce(defaultProjectInfo('org_mine'));
+
+        const { project, notice } = yield* resolveDeveloperProjectOrDefault({});
+
+        expect(project).toMatchObject({
+          orgId: 'org_mine',
+          projectId: 'pr_newest',
+          source: 'developer-default',
+        });
+        expect(notice).toEqual(
+          Option.some(
+            'This directory\'s developer project is in org "org_2", which your API key cannot access; using "Newest App" (pr_newest), the newest developer project in the org you joined most recently, instead. Run `composio dev init` to set this directory up in one of your orgs.'
+          )
+        );
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+        const sessionRequest = requestOf(fetchSpy.mock.calls[1]);
+        expect(sessionRequest.path).toBe(SESSION_INFO_PATH);
+        expect(sessionRequest.headers.has('x-org-id')).toBe(false);
+      }).pipe(
+        Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), localProject('org_2')))
+      )
+  );
+
   it.effect.each([
     {
       given: 'session info without a project',
@@ -324,6 +464,26 @@ describe('resolveDeveloperProjectOrDefault', () => {
             'No developer project is set up for this directory, and no developer project was found in your org to use instead. Run `composio dev init` to set one up.',
         });
       }).pipe(Effect.provide(testLayer))
+  );
+
+  it.effect('names the ignored directory project when no default can be found either', () =>
+    Effect.gen(function* () {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        jsonResponse({ ...makeSessionInfo(), project: null })
+      );
+
+      const error = yield* resolveDeveloperProjectOrDefault({}).pipe(Effect.flip);
+
+      expect(error).toMatchObject({
+        reason: 'missing_developer_project',
+        message:
+          'This directory\'s developer project is in org "org_other", not the org you are logged in to ("org_1"), and no developer project was found in your org to use instead. Run `composio dev init` to set one up.',
+      });
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_other'))
+      )
+    )
   );
 
   it.effect.each([
