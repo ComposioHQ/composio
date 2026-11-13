@@ -203,6 +203,7 @@ describe('Docs product navigation', () => {
     expect(securityPages.slice(1).map(node => node.type)).toEqual(['folder', 'folder', 'folder']);
     const compliance = securityPages[1];
     if (compliance.type !== 'folder') throw new Error('Compliance group missing');
+    expect(compliance.index).toBeUndefined();
     expect(compliance.children).toContainEqual(expect.objectContaining({
       type: 'page', url: 'https://trust.composio.dev', external: true,
     }));
