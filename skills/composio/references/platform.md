@@ -144,6 +144,7 @@ Do not force advanced requests through first-time setup. Route them to current d
 - Asking the user before a tool runs: `approvals.md`, covered in [Require approval before tools run](#require-approval-before-tools-run)
 - Blocking tool calls, tool results, or prompt injection: `firewall.md`, covered in [Block calls and results with Firewall](#block-calls-and-results-with-firewall)
 - Adding a remote MCP server as a toolkit: `extending-sessions/custom-mcp.md`, covered in [Add a remote MCP server](#add-a-remote-mcp-server)
+- Per-user OAuth for the application's own tools or backend code, with no predefined tools, MCP, or LLM: `authentication/managed-auth-for-custom-tools.md`. Composio handles Connect Links and authenticates provider requests through proxy execution; the application never handles provider tokens.
 - Custom tools and toolkits that run in the application, or proxy execution: the other `extending-sessions` guides
 - Custom connection UI: `authentication/manually-authenticating.md`
 - Triggers and webhooks: `triggers.md` and the setting-up-triggers guides

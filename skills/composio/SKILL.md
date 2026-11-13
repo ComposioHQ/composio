@@ -1,6 +1,6 @@
 ---
 name: composio
-description: Route and complete Composio work across Composio For You and Composio Platform. Use when the user mentions Composio; wants an agent to use apps such as Gmail, Slack, GitHub, Notion, Calendar, or Linear; needs first-time setup, an SDK or MCP integration, CLI operation, tool approvals, Firewall hooks, a custom MCP server, migration guidance, current documentation, or help diagnosing a connection or tool call.
+description: Route and complete Composio work across Composio For You and Composio Platform. Use when the user mentions Composio; wants an agent to use apps such as Gmail, Slack, GitHub, Notion, Calendar, or Linear; needs first-time setup, an SDK or MCP integration, per-user OAuth for their own tools or a multi-tenant application, CLI operation, tool approvals, Firewall hooks, a custom MCP server, migration guidance, current documentation, or help diagnosing a connection or tool call.
 ---
 
 # Composio
