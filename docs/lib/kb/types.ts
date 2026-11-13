@@ -62,12 +62,6 @@ export interface KbGuide extends KbGuideDefinition {
 
 export interface KbManifest {
   schemaVersion: 2;
-  source: {
-    repository: string;
-    commit: string;
-    capturedAt: string;
-    contentHash: string;
-  };
   topics: KbTopic[];
   guides: KbGuideDefinition[];
 }

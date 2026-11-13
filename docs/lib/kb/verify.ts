@@ -24,7 +24,6 @@ export type KbVerifyKind =
   | 'review-window-cliff'
   | 'verification-stale'
   | 'unreachable-link'
-  | 'source-pin-unresolvable'
   | 'unedited-support-prose';
 
 /**
@@ -54,15 +53,6 @@ const SUPPORT_PROSE_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
       /\bincident\b|\bregression\b|\bknown (bug|issue)\b|\bcurrently (broken|failing)\b|\bawaiting a fix\b|\btemporarily (unavailable|disabled)\b|\bsuspended\b/i,
   },
 ];
-
-/**
- * Whether `manifest.source.commit` can be resolved on the upstream remote.
- *
- * `unverifiable` is deliberately distinct from `missing`: a token without read
- * access to the upstream repository cannot tell the two apart, and reporting
- * "provenance is broken" every run in that case would be crying wolf.
- */
-export type SourcePinStatus = 'resolved' | 'missing' | 'unverifiable';
 
 export interface KbVerifyFinding {
   severity: KbVerifySeverity;
@@ -95,8 +85,6 @@ export interface KbVerifyOptions {
   reviewCliffThreshold: number;
   /** Resolved external link statuses, keyed by URL. Absent when `--check-links` is off. */
   linkStatuses?: Map<string, number | 'unreachable'>;
-  /** Upstream resolution of `manifest.source.commit`. Absent when the check is off. */
-  sourcePinStatus?: SourcePinStatus;
 }
 
 export const DEFAULT_VERIFY_OPTIONS: KbVerifyOptions = {
@@ -349,22 +337,6 @@ export function verifyKb(input: KbVerifyInput): KbVerifyReport {
         });
       }
     }
-  }
-
-  // The manifest sources are vendored under kb/source, so an unresolvable pin does
-  // not break the build — it breaks the audit trail, and it blocks source-drift
-  // detection, which has to diff the vendored copy against the upstream commit.
-  if (options.sourcePinStatus === 'missing') {
-    const { repository, commit } = input.manifest.source;
-    findings.push({
-      severity: 'warning',
-      kind: 'source-pin-unresolvable',
-      guideSlug: '',
-      detail:
-        `${repository}@${commit} does not resolve upstream, so the provenance of ` +
-        'every published guide is unverifiable. Push the commit or repin the manifest.',
-      evidence: `manifest.source.commit=${commit}`,
-    });
   }
 
   // A cohort of guides sharing one reviewAfter date all expire together. When that

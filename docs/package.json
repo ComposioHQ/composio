@@ -11,7 +11,6 @@
     "build:kb-semantic": "bun run generate:kb && fumadocs-mdx && bun scripts/build-kb-semantic-index.ts",
     "check:kb-semantic": "bun run check:kb && fumadocs-mdx && bun scripts/build-kb-semantic-index.ts --check",
     "verify:kb": "bun scripts/verify-kb.ts",
-    "import:kb": "bun scripts/import-support-knowledge.ts",
     "generate:kb": "bun scripts/generate-kb.ts",
     "check:kb": "bun scripts/generate-kb.ts --check",
     "prebuild": "bun run generate:kb && bun scripts/build-agent-index.ts && bun run build:content-freshness",

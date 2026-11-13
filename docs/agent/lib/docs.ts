@@ -1,9 +1,10 @@
 /**
  * Shared docs access for the agent's retrieval tools.
  *
- * Builds a lazy in-memory index over `content/` plus the curated
- * `agent/knowledge.md`, maps page URLs to files, and flags legacy pages so the
- * search tool can heavily downrank them.
+ * Builds a lazy in-memory index over `content/` (docs, reference, examples,
+ * toolkits and the public knowledge base guides under `content/kb`), maps page
+ * URLs to files, and flags legacy pages so the search tool can heavily downrank
+ * them.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -42,8 +43,7 @@ function resolveAppRoot(): string {
 
 const APP_ROOT = resolveAppRoot();
 const CONTENT_ROOT = join(APP_ROOT, 'content');
-const KNOWLEDGE_FILE = join(APP_ROOT, 'agent', 'knowledge.md');
-const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits'] as const;
+const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits', 'kb'] as const;
 
 /** URL prefixes for the legacy, pre-session / direct-execution docs. */
 const LEGACY_URL_PATTERNS = [
@@ -110,7 +110,7 @@ const STOPWORDS = new Set([
   'up',
 ]);
 
-export type Collection = 'docs' | 'examples' | 'reference' | 'toolkits' | 'knowledge';
+export type Collection = (typeof COLLECTIONS)[number];
 
 export interface DocPage {
   collection: Collection;
@@ -175,6 +175,7 @@ export function urlFromContentPath(absPath: string): string | undefined {
   if (collection === 'docs') return `/docs/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'examples') return `/examples/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'reference') return `/reference/${parts.join('/')}`.replace(/\/index$/, '');
+  if (collection === 'kb') return `/kb/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'toolkits') {
     if (parts[0] === 'faq') return undefined;
     return `/toolkits/${parts.join('/')}`.replace(/\/index$/, '');
@@ -287,34 +288,6 @@ function makePage(args: {
 }
 
 /**
- * Parse `agent/knowledge.md` into searchable entries. Each `## Title (/url)`
- * section becomes one entry linked to its canonical doc page.
- */
-function loadKnowledge(): DocPage[] {
-  let raw: string;
-  try {
-    raw = readFileSync(KNOWLEDGE_FILE, 'utf8');
-  } catch {
-    return [];
-  }
-  const pages: DocPage[] = [];
-  const sectionRe = /^##\s+(.+?)\s*(?:\(([^)]+)\))?\s*$/gm;
-  const matches = [...raw.matchAll(sectionRe)];
-  for (let i = 0; i < matches.length; i++) {
-    const m = matches[i];
-    const title = m[1].trim();
-    const url = (m[2] ?? '').trim() || '/docs';
-    const bodyStart = m.index! + m[0].length;
-    const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : raw.length;
-    const body = raw.slice(bodyStart, bodyEnd).trim();
-    pages.push(
-      makePage({ collection: 'knowledge', title, description: '', url, legacy: false, body })
-    );
-  }
-  return pages;
-}
-
-/**
  * Index the toolkit catalog from `public/data/toolkits.json` so the assistant
  * can answer "do you have <toolkit>?" — individual toolkit pages are generated
  * from this data, not from MDX, so they aren't covered by the content scan.
@@ -396,9 +369,7 @@ let indexCache: DocPage[] | undefined;
 
 export function buildBundledIndex(): DocPage[] {
   const pages: DocPage[] = [];
-  let bundleHasKnowledge = false;
   for (const p of BUNDLE.pages) {
-    if (p.collection === 'knowledge') bundleHasKnowledge = true;
     pages.push(
       makePage({
         collection: p.collection,
@@ -410,7 +381,6 @@ export function buildBundledIndex(): DocPage[] {
       })
     );
   }
-  if (!bundleHasKnowledge) pages.push(...loadKnowledge());
   pages.push(...loadBundledToolkits());
   return pages;
 }
@@ -457,7 +427,6 @@ export function buildIndex(): DocPage[] {
     indexCache = pages;
     return pages;
   }
-  pages.push(...loadKnowledge());
   pages.push(...loadToolkits());
   indexCache = pages;
   return pages;

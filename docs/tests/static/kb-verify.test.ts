@@ -39,12 +39,6 @@ const catalog = buildProductCatalog(TOOLKITS);
 
 const MANIFEST: KbManifest = {
   schemaVersion: 2,
-  source: {
-    repository: 'ComposioHQ/example-knowledge',
-    commit: 'abc1234',
-    capturedAt: '2026-07-22',
-    contentHash: 'sha256:fixture',
-  },
   topics: [],
   guides: [],
 };
@@ -244,32 +238,6 @@ describe('verifyKb', () => {
       options: { staleVerificationDays: 30 },
     });
     expect(report.findings.some((entry) => entry.kind === 'verification-stale')).toBe(true);
-  });
-
-  test('reports an unresolvable source pin', () => {
-    const report = verifyKb({
-      manifest: MANIFEST,
-      catalog,
-      now,
-      guides: [guide({ slug: 'any', body: 'text' })],
-      options: { sourcePinStatus: 'missing' },
-    });
-    const finding = report.findings.find((entry) => entry.kind === 'source-pin-unresolvable');
-    expect(finding?.severity).toBe('warning');
-    expect(finding?.detail).toContain('abc1234');
-  });
-
-  test('stays silent when the pin cannot be verified by this token', () => {
-    for (const status of ['resolved', 'unverifiable'] as const) {
-      const report = verifyKb({
-        manifest: MANIFEST,
-        catalog,
-        now,
-        guides: [guide({ slug: 'any', body: 'text' })],
-        options: { sourcePinStatus: status },
-      });
-      expect(report.findings.some((entry) => entry.kind === 'source-pin-unresolvable')).toBe(false);
-    }
   });
 
   test('treats provider rate-limiting as inconclusive, not as rot', () => {

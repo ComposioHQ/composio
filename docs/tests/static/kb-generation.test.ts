@@ -315,8 +315,8 @@ describe('public KB content generation', () => {
     expect(new Set(newlyAuthored.map(guide => `/kb/guide/${guide.slug}`)).size).toBe(
       published.length
     );
-    // The reconciled support-knowledge snapshot only contains reviewed public
-    // leaves. Importing it must not invent editorial holds downstream.
+    // The published snapshot only contains reviewed public
+    // leaves. Generating it must not invent editorial holds downstream.
     expect(held).toHaveLength(0);
 
     expect(JSON.parse(readFileSync(join(outputDir, 'meta.json'), 'utf8'))).toEqual({
@@ -345,31 +345,6 @@ describe('public KB content generation', () => {
       expect(generated).toContain(`lastVerifiedAt: "${definition.lastVerifiedAt}"`);
       expect(generated).toContain(`reviewAfter: "${definition.reviewAfter}"`);
       expect(generated).not.toContain('articlePath:');
-    }
-  });
-
-  test('keeps generated page bytes independent of the source snapshot commit', () => {
-    const originalDir = mkdtempSync(join(tmpdir(), 'composio-kb-original-'));
-    const repinnedDir = mkdtempSync(join(tmpdir(), 'composio-kb-repinned-'));
-    temporaryDirectories.push(originalDir, repinnedDir);
-    const catalog = getKbCatalog();
-    const repinnedCatalog = {
-      ...catalog,
-      manifest: {
-        ...catalog.manifest,
-        source: { ...catalog.manifest.source, commit: 'different-source-commit' },
-      },
-    };
-
-    generateKbContent({ outputDir: originalDir, catalog });
-    generateKbContent({ outputDir: repinnedDir, catalog: repinnedCatalog });
-
-    const files = listFiles(originalDir);
-    expect(listFiles(repinnedDir)).toEqual(files);
-    for (const file of files) {
-      expect(readFileSync(join(repinnedDir, file), 'utf8')).toBe(
-        readFileSync(join(originalDir, file), 'utf8'),
-      );
     }
   });
 
@@ -422,12 +397,6 @@ describe('public KB content generation', () => {
     );
     const manifest: KbManifest = {
       schemaVersion: 2,
-      source: {
-        repository: 'ComposioHQ/example-knowledge',
-        commit: '5eed614',
-        capturedAt: '2026-07-21',
-        contentHash: 'sha256:fixture',
-      },
       topics: [
         { slug: 'platform', title: 'Platform', description: 'Platform guidance.', featuredRank: 1 },
       ],
@@ -476,12 +445,6 @@ describe('public KB content generation', () => {
     temporaryDirectories.push(outputDir);
     const manifest: KbManifest = {
       schemaVersion: 2,
-      source: {
-        repository: 'ComposioHQ/example-knowledge',
-        commit: '5eed614',
-        capturedAt: '2026-07-21',
-        contentHash: 'sha256:fixture',
-      },
       topics: [],
       guides: [
         {

@@ -28,9 +28,6 @@ const requestSchema = z.object({
 
 const manifestSchema = z.object({
   schemaVersion: z.literal(2),
-  source: z.object({
-    repository: z.string(), commit: z.string(), capturedAt: z.string(), contentHash: z.string(),
-  }),
   topics: z.array(z.object({
     slug: z.string(), title: z.string(), description: z.string(), featuredRank: z.number().nullable(),
   })),

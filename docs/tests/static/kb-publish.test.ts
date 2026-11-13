@@ -19,7 +19,6 @@ function fixture(): string {
   mkdirSync(join(root, 'kb/articles'));
   writeFileSync(join(root, 'kb/manifest.json'), JSON.stringify({
     schemaVersion: 2,
-    source: { repository: 'ComposioHQ/support-knowledge', commit: 'initial', capturedAt: '2026-08-18', contentHash: 'sha256:fixture' },
     topics: [{ slug: 'authentication', title: 'Authentication', description: 'Authentication guidance.', featuredRank: 1 }],
     guides: [],
   }));

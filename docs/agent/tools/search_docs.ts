@@ -13,7 +13,7 @@ import { DEFAULT_SEARCH_LIMIT, searchDocs } from '../lib/docs-search';
 
 export default defineTool({
   description:
-    'Search the Composio documentation with a fast BM25-style local retriever. Returns relevant pages and includes full bounded content for the top matches, so you can answer from the returned context. Call read_doc only if you need a page beyond the included content.',
+    'Search the Composio documentation and Knowledge Base troubleshooting guides (/kb/guide/...) with a fast BM25-style local retriever. Returns relevant pages and includes full bounded content for the top matches, so you can answer from the returned context. Call read_doc only if you need a page beyond the included content.',
   inputSchema: z.object({
     query: z
       .string()

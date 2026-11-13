@@ -4,9 +4,13 @@
 
 - The public knowledge base is hosted with the documentation at
   `docs.composio.dev/kb`.
-- `ComposioHQ/support-knowledge` is the source of support-specific public prose.
-- The docs repository owns the reviewed publication snapshot, routes, search
-  integration, and presentation.
+- The support portal's Front Desk is the only writer of KB guides. It writes
+  them from public information and person-approved support answers, and a
+  person approves each change before it is published.
+- The docs repository owns the published guides (`kb/manifest.json`,
+  `kb/articles`, `kb/source`), routes, search integration, and presentation.
+- The docs Ask AI agent and `/api/knowledge-search` read the same published
+  guides; there is no separate agent-only knowledge file.
 - Product documentation remains canonical for product concepts and workflows;
   KB guides cover support questions and troubleshooting gaps.
 
@@ -24,19 +28,15 @@
 
 ## Publication and maintenance
 
-- A source change triggers a refresh after it reaches the source repository's
-  main branch; periodic reconciliation catches missed events.
-- The refresh validates the repository, source commit, and mainline ancestry
-  before importing any content.
-- Delayed events resolve to the newest mainline commit that changed public
-  content. Non-public or repository-maintenance changes do not advance the
-  published snapshot.
-- Refreshes are serialized so overlapping runs cannot race.
-- The importer treats upstream files as data, never executes upstream code, and
-  never writes back to the source repository.
-- Import, page generation, search-artifact generation, and validation complete
-  before an automated refresh pull request is opened.
-- A human review and merge remains the final publication gate.
+- An approved guide reaches the docs repository as a `kb-guide-approved`
+  dispatch. `docs-kb-publish.yml` applies it with `scripts/publish-kb-guide.ts`
+  (create, rewrite, or retire), regenerates and validates the KB, and opens a
+  pull request on `next` that merges itself once checks pass.
+- Publications are serialized so overlapping runs cannot race.
+- A scheduled workflow repairs the semantic artifact when docs or guide changes
+  reached `next` without a rebuild.
+- The ComposioHQ/support-knowledge import was retired in 2026-11; that
+  repository is no longer a source.
 
 ## Rendering and discovery
 
@@ -55,9 +55,8 @@
 
 ## Freshness and safety
 
-- The manifest records source provenance, a deterministic content hash,
-  canonical routes, verification dates, review deadlines, and publication
-  state.
+- The manifest records each guide's sources, canonical routes, verification
+  dates, review deadlines, and publication state.
 - Publication rejects content that is not explicitly public, contains known
   private-data markers, has expired time-sensitive verification, has broken
   references, or conflicts with an existing route.
@@ -65,8 +64,8 @@
 - Evergreen review deadlines remain freshness-check errors for follow-up, but
   do not block the docs build or remove previously reviewed guides. Dates are
   extended only after review.
-- The running docs application reads only the checked-in public snapshot; it
-  does not access the source repository at runtime.
+- The running docs application reads only the checked-in public guides; it
+  does not call the support portal at runtime.
 
 ## Failure handling
 

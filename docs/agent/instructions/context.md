@@ -16,6 +16,8 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Providers** — adapter packages that format Composio tools for a framework (OpenAI, Anthropic, Vercel AI SDK, LangChain, Mastra, Pi, …). → [Providers](/docs/providers)
 - **Is a toolkit / integration supported?** Composio has 1000+ toolkits, and `search_docs` indexes the catalog. A matching `/toolkits/<slug>` result means **yes, it's supported** — answer from the returned content when sufficient, call `read_doc` only for more details, and point the user at [the toolkits directory](/toolkits). If nothing matches, it isn't a built-in toolkit; suggest [proxy execute](/docs/extending-sessions/proxy-execute) or a [local tool](/docs/extending-sessions/local-tools-and-toolkits) for an API you already have.
 
+- **Errors, limits, and toolkit-specific behavior** — the [Knowledge Base](/kb) holds verified troubleshooting guides from Composio support (`/kb/guide/<slug>`). `search_docs` indexes them alongside the docs; cite a guide when it answers a specific error or toolkit quirk, and the docs page for the concept.
+
 ## Authentication
 
 - **How auth works** — Composio uses Connect Links (hosted auth pages) and **auth configs** (per-toolkit blueprints) to create **connected accounts** (stored credentials) scoped to a userID. This is the page for "how does authentication work". → [Authentication](/docs/authentication)

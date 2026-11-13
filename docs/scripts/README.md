@@ -103,7 +103,3 @@ checked and why placeholders, bare URLs, and 5xx responses are excluded.
 A guide that deliberately cites a removed identifier declares it in
 `verifyIgnoreToolSlugs` in `kb/manifest.json`.
 
-`--check-source-pin` resolves `manifest.source.commit` against the upstream KB
-repository. It needs `GH_TOKEN`/`GITHUB_TOKEN` with read access there; without
-it the check reports "unverifiable" and emits nothing, so a narrow token
-degrades quietly instead of reporting false provenance breakage.

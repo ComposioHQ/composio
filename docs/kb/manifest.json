@@ -1,11 +1,5 @@
 {
   "schemaVersion": 2,
-  "source": {
-    "repository": "ComposioHQ/support-knowledge",
-    "commit": "5eac683455ff252a7a3b62f33ab6566445009b52",
-    "capturedAt": "2026-08-25",
-    "contentHash": "sha256:491f469688b25190d96a01f233067b10c5027db25d1a4da5b754dfcb666ddcb4"
-  },
   "topics": [
     {
       "slug": "account-and-billing",

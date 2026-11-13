@@ -19,7 +19,6 @@ import {
   verifyKb,
   type CatalogToolkit,
   type KbVerifyReport,
-  type SourcePinStatus,
 } from '@/lib/kb/verify';
 import type { KbManifest } from '@/lib/kb/types';
 
@@ -30,7 +29,6 @@ const LINK_TIMEOUT_MS = 10_000;
 
 interface CliOptions {
   checkLinks: boolean;
-  checkSourcePin: boolean;
   json: boolean;
   markdownPath: string | null;
   warningsAsErrors: boolean;
@@ -39,14 +37,12 @@ interface CliOptions {
 function parseOptions(argumentsList: string[]): CliOptions {
   const allowed = new Set([
     '--check-links',
-    '--check-source-pin',
     '--json',
     '--markdown',
     '--warnings-as-errors',
   ]);
   const options: CliOptions = {
     checkLinks: argumentsList.includes('--check-links'),
-    checkSourcePin: argumentsList.includes('--check-source-pin'),
     json: argumentsList.includes('--json'),
     markdownPath: null,
     warningsAsErrors: argumentsList.includes('--warnings-as-errors'),
@@ -116,42 +112,6 @@ async function probe(url: string): Promise<number | 'unreachable'> {
   return 'unreachable';
 }
 
-/**
- * Resolve `manifest.source.commit` against the upstream repository.
- *
- * The upstream is a separate internal repo, so a token scoped to this repository
- * gets 403/404 whether or not the commit exists. Only an authenticated 422/404
- * with read access proves absence, so anything ambiguous returns `unverifiable`
- * and produces no finding.
- */
-async function resolveSourcePin(
-  repository: string,
-  commit: string
-): Promise<SourcePinStatus> {
-  const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
-  if (!token) return 'unverifiable';
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${repository}/commits/${commit}`,
-      {
-        headers: {
-          authorization: `Bearer ${token}`,
-          accept: 'application/vnd.github+json',
-          'user-agent': 'composio-docs-kb-verify',
-        },
-        signal: AbortSignal.timeout(LINK_TIMEOUT_MS),
-      }
-    );
-    if (response.ok) return 'resolved';
-    // 401/403 is "this token cannot see that repository", not "the commit is gone".
-    if (response.status === 401 || response.status === 403) return 'unverifiable';
-    if (response.status === 404 || response.status === 422) return 'missing';
-    return 'unverifiable';
-  } catch {
-    return 'unverifiable';
-  }
-}
-
 function exitCodeFor(report: KbVerifyReport, options: CliOptions): number {
   const failing = report.findings.filter(
     (finding) => finding.severity === 'error' || options.warningsAsErrors
@@ -179,18 +139,15 @@ export async function runVerifyKb(argumentsList: string[]): Promise<number> {
   const linkStatuses = options.checkLinks
     ? await resolveLinkStatuses(dryRun.externalLinks)
     : undefined;
-  const sourcePinStatus = options.checkSourcePin
-    ? await resolveSourcePin(catalog.manifest.source.repository, catalog.manifest.source.commit)
-    : undefined;
 
   const report =
-    linkStatuses || sourcePinStatus
+    linkStatuses
       ? verifyKb({
           manifest: catalog.manifest,
           guides: catalog.guides,
           catalog: productCatalog,
           now: new Date(),
-          options: { linkStatuses, sourcePinStatus },
+          options: { linkStatuses },
         })
       : dryRun;
 

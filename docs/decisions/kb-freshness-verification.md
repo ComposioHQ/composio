@@ -49,15 +49,6 @@ guides sharing a review date so the maintenance queue is visible before expiry.
 | Review window not expired | manifest | error |
 | Guides sharing one `reviewAfter` date | manifest | warning |
 | Verification age past threshold | manifest | warning |
-| `manifest.source.commit` resolves upstream | GitHub API, `--check-source-pin` | warning |
-
-The source pin is a provenance claim, not a build dependency: the cited sections
-are vendored under `kb/source`, so the site builds whether or not the commit
-resolves. An unresolvable pin means no one can audit what a published guide was
-derived from, and it blocks source-drift detection, which must diff the vendored
-copy against upstream. Resolution distinguishes "missing" from "this token
-cannot read that repository" so a narrow token reports nothing rather than
-reporting false breakage.
 
 Three exclusions keep the report trustworthy enough to act on. A permanently red
 report is one nobody reads.
