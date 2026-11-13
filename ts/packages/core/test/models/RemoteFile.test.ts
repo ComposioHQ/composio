@@ -284,6 +284,50 @@ describe('RemoteFile', () => {
       expect(new Uint8Array(written)).toEqual(content);
     });
 
+    it('should save to an explicit path without resolving a home directory', async () => {
+      const { platform } = await import('../../src/platform/node');
+      const { mkdtempSync, readFileSync, rmSync, rmdirSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const { tmpdir } = await import('node:os');
+      const directory = mkdtempSync(join(tmpdir(), 'composio-remote-file-explicit-'));
+      const savePath = join(directory, 'report.pdf');
+      const content = new Uint8Array([1, 2, 3]);
+      const homedir = vi.spyOn(platform, 'homedir').mockReturnValue(null);
+      globalThis.fetch = vi.fn().mockResolvedValue(new Response(content));
+
+      try {
+        await expect(new RemoteFile(validCamelCaseData).save(savePath)).resolves.toBe(savePath);
+        expect(new Uint8Array(readFileSync(savePath))).toEqual(content);
+        expect(homedir).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+        rmSync(savePath, { force: true });
+        rmdirSync(directory);
+      }
+    });
+
+    it('should reject a default save without a home directory before downloading or writing', async () => {
+      const { platform } = await import('../../src/platform/node');
+      vi.spyOn(platform, 'homedir').mockReturnValue(null);
+      const mkdir = vi.spyOn(platform, 'mkdirSync');
+      const write = vi.spyOn(platform, 'writeFileSync');
+      const writeExclusive = vi.spyOn(platform, 'writeFileExclusiveSync');
+      const fetch = vi.fn();
+      globalThis.fetch = fetch;
+
+      try {
+        await expect(new RemoteFile(validCamelCaseData).save()).rejects.toThrow(
+          'Cannot determine save location: home directory is not available'
+        );
+        expect(fetch).not.toHaveBeenCalled();
+        expect(mkdir).not.toHaveBeenCalled();
+        expect(write).not.toHaveBeenCalled();
+        expect(writeExclusive).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+      }
+    });
+
     describe('default location', () => {
       // `save()` without a path derives the filename from `mountRelativePath`,
       // a server-controlled response field. These cover the SEC-316 guard the
