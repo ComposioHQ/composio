@@ -795,6 +795,22 @@ class TriggerSubscription(Resource):
             return False
         return True
 
+    def _close_returned_coroutine(self, result: t.Any, name: str) -> None:
+        """Close and log a coroutine that a regular callback returned.
+
+        Registration rejects ``async def`` callbacks, but a regular function can
+        still return a coroutine, such as ``lambda event: handler(event)``.
+        Nothing here runs an event loop, so the coroutine's body would never
+        run; closing it replaces Python's ``RuntimeWarning`` with a clear error.
+        """
+        if not inspect.iscoroutine(result):
+            return
+        result.close()
+        self.logger.error(
+            f"`{name}` returned a coroutine, which trigger callbacks never run. "
+            "Use a regular 'def' function that does its work synchronously."
+        )
+
     def _handle_callback(
         self,
         callback: TriggerCallback,
@@ -806,7 +822,10 @@ class TriggerSubscription(Resource):
             return
 
         try:
-            callback(data)
+            # ``TriggerCallback`` is typed to return ``None``, but a regular
+            # function can still return a coroutine at runtime.
+            returned = t.cast(t.Callable[[TriggerEvent], object], callback)(data)
+            self._close_returned_coroutine(returned, callback.__name__)
         except Exception:
             self.logger.error(
                 f"Error executing `{callback.__name__}` for "
@@ -859,7 +878,9 @@ class TriggerSubscription(Resource):
         if callback is None:
             return
         try:
-            callback({"error": str(error)})
+            self._close_returned_coroutine(
+                callback({"error": str(error)}), "on_subscription_error"
+            )
         except Exception:
             self.logger.error(
                 f"Error in subscription error callback:\n {traceback.format_exc()}"
@@ -889,7 +910,7 @@ class TriggerSubscription(Resource):
         except Exception:
             payload = {"raw": event}
         try:
-            callback(payload)
+            self._close_returned_coroutine(callback(payload), "on_subscription_error")
         except Exception:
             self.logger.error(
                 f"Error in subscription error callback:\n {traceback.format_exc()}"

@@ -2110,6 +2110,37 @@ class TestAsyncCallbackRejection:
 
         assert ran == ["ti_1"]
 
+    def test_coroutine_returned_by_sync_handler_is_closed_and_logged(
+        self, subscription
+    ):
+        ran = []
+
+        async def on_event(event):
+            ran.append(event["id"])
+
+        subscription.handle()(lambda event: on_event(event))
+
+        with patch.object(subscription, "_logger") as logger:
+            subscription._handle_event(self._FRAME)
+
+        assert ran == []
+        logger.error.assert_called_once()
+        assert "returned a coroutine" in logger.error.call_args.args[0]
+
+    def test_coroutine_returned_by_subscription_error_callback_is_logged(
+        self, subscription
+    ):
+        async def on_error(payload):
+            pass
+
+        subscription._on_subscription_error = lambda payload: on_error(payload)
+
+        with patch.object(subscription, "_logger") as logger:
+            subscription._handle_subscription_error('{"error": "auth failed"}')
+
+        messages = [call.args[0] for call in logger.error.call_args_list]
+        assert any("returned a coroutine" in message for message in messages)
+
     def test_async_subscription_error_callback_is_rejected_before_connecting(self):
         async def on_error(payload):
             pass
