@@ -92,7 +92,8 @@ const fixture = () => {
           argv: [
             process.execPath,
             '-e',
-            'console.log("first line");console.log("x".repeat(200000));console.error("final type error");process.exitCode=2',
+            // Keep the markers on one stream; stdout and stderr can arrive in either order.
+            'console.log("first line");console.log("x".repeat(200000));console.log("final type error");process.exitCode=2',
           ],
         },
       ],
