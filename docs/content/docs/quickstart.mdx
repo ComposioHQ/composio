@@ -1,15 +1,15 @@
 ---
 title: Quickstart
-description: Build an agent that discovers and runs Composio tools
+description: Run an agent, connect an app, and try five copy-and-paste tasks
 keywords: [tutorial, setup, first agent, sessions, tool router]
 ---
 
-Build an agent that chooses Composio tools at runtime. Type a task, connect an app if needed, and continue in the same conversation.
+Run an agent, connect an app, and get a result. Start with [five tasks you can paste into the agent](#try-five-examples): read Gmail, list GitHub issues, find a Slack message, search Drive, or check your calendar.
 
 <div className="not-prose my-6 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
   <div>
     <div className="mb-6">
-      Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [1000+ apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
+      Pick your framework, install its packages, and copy the code below.
     </div>
     <AgentSetupActions />
   </div>
@@ -40,7 +40,7 @@ The current Python package is `composio`. The package `composio-core` is the leg
 The TypeScript SDK is ESM-only and requires **Node.js 22.22.3 or newer**. Use `import` syntax rather than CommonJS `require()`.
 
 <PackageInstall
-  packages="@composio/core @composio/openai-agents @openai/agents"
+  packages="@composio/core @composio/openai-agents @openai/agents dotenv"
   comment={[
     '@composio/core ships its docs and TypeScript source in the package,',
     'so it is inspectable to coding agents.',
@@ -372,7 +372,7 @@ readline.close();
 <StepTitle>Install</StepTitle>
 
 <PackageInstall
-  packages="@composio/core @composio/vercel ai @ai-sdk/anthropic"
+  packages="@composio/core @composio/vercel ai @ai-sdk/anthropic dotenv"
   comment={[
     '@composio/core ships its docs and TypeScript source in the package,',
     'so it is inspectable to coding agents.',
@@ -471,20 +471,81 @@ readline.close();
 
 </QuickstartFlow>
 
-Ask for any task that needs an app tool: `Summarize my unread emails from today`, or `List all open issues on the composio github repository`. If a task needs access to an account, the agent gives you a Connect Link. Open it, approve the connection, and tell the agent to continue.
+## Run the agent
 
-## What just happened?
+Save the code above and `.env` in the same directory. Run the command for your language from that directory. Vercel AI SDK uses TypeScript.
 
-- The provider you picked formats Composio tools for your framework and wires in execution.
-- `composio.sessions.create()` creates a [Composio session](/docs/how-composio-works) for `user_123`. The session scopes connections and tool calls to that ID.
-- Composio sessions persist. In an application, store the session ID (`session.session_id` in Python, `session.sessionId` in TypeScript) and restore it with `composio.use(session_id)` instead of creating a new session for every turn. See [Reusing a session](/docs/how-composio-works#how-sessions-behave).
-- `session.tools()` gives the agent a small set of meta tools for finding, connecting, and running app tools. It does not load thousands of tool schemas into the model context.
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+Save the code as `quickstart.py`.
+
+```bash
+uv run python quickstart.py
+```
+
+If you installed with `pip`, use `python quickstart.py` in the environment where you installed the packages.
+</Tab>
+<Tab value="TypeScript">
+Save the code as `quickstart.mts`. The `.mts` extension lets Node.js run it as an ES module.
+
+```bash
+node quickstart.mts
+```
+</Tab>
+</Tabs>
+
+You'll see `You:` in your terminal. Paste one of the tasks below. When the agent gives you a Connect Link, open it, sign in to that app, and return to the terminal. Enter `I've connected my account. Continue.` to finish the task in the same conversation.
+
+## Try five examples
+
+Each example reads data from one app. Paste only the task line at the `You:` prompt. The comments describe what to expect rather than exact output. If nothing matches, the agent should report that it found no results.
+
+### Read your latest Gmail messages
+
+```text
+Show my 5 most recent inbox emails with the sender and subject. Do not change them.
+# Expected: up to 5 senders and subject lines from your connected Gmail inbox.
+```
+
+### List open GitHub issues
+
+```text
+List 5 open issues in ComposioHQ/composio on GitHub, with titles and links.
+# Expected: up to 5 open issues, each with a title and GitHub URL.
+```
+
+### Find a Slack message
+
+Replace `onboarding` with a word you expect to find in your workspace.
+
+```text
+Find 5 Slack messages containing "onboarding". Show the text and a link to each.
+# Expected: up to 5 matching messages from conversations your account can access.
+```
+
+### Find a Google Drive file
+
+Replace `meeting` with part of a filename in your Drive.
+
+```text
+Find 5 files in Google Drive with "meeting" in the name. Show their names and links.
+# Expected: up to 5 matching files that your connected account can access.
+```
+
+### Check your Google Calendar
+
+```text
+List today's events from my primary Google Calendar, with titles and start times.
+# Expected: today's events, or a message that there are no events today.
+```
+
+If an app reports a permissions error, check the connected account and [authentication setup](/docs/authentication/manually-authenticating). Type `exit` when you're done.
 
 <Callout type="warn" title="Use your application's user ID in production">
 `user_123` is only for this local example. Replace it with a stable ID from your database. Each ID gets separate connections and tool calls.
 </Callout>
 
-Note: Sessions are recommended for new integrations. If you maintain a legacy direct-execution integration, see [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions). You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).
+To see how the agent finds and runs tools, read [How Composio works](/docs/how-composio-works). For a multi-turn application, [save and reuse its session ID](/docs/how-composio-works#how-sessions-behave).
 
 ## Adapt the example
 
