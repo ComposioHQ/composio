@@ -54,14 +54,15 @@ Do not turn an explanation, documentation lookup, or narrow bug fix into onboard
 1. Establish the product before choosing credentials, URLs, SDKs, or commands.
 2. Treat dashboard onboarding as a context, not the skill's identity. When the developer arrives with an existing `COMPOSIO_API_KEY` from Getting Started, use it and never create, rotate, replace, print, or request it in chat. Do not run `composio dev init` in that path.
 3. For a general first-time Platform setup with no dashboard credential handoff, follow the current setup path in the Platform guide.
-4. Never invent toolkit or tool slugs. Discover them at runtime or with the CLI.
-5. Do not build a provider OAuth flow. Composio returns a Connect Link when authentication is needed.
-6. Use sessions for new Platform integrations. Preserve the application's existing user identity and agent architecture.
-7. Keep credentials out of source control, URLs, logs, chat, and command output.
-8. Get the log or request ID before diagnosing a failed tool call.
-9. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, approvals, Firewall hooks, Custom MCP toolkits, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them. When the request does ask for one, such as "ask before sending" or "block prompt injection", use the documented feature instead of building a substitute in prompts or application code.
-10. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
-11. In SDK or API examples, use exact identifiers and call shapes from a current public page or schema. Copy the documented shape for the requested language instead of translating names between TypeScript and Python; if a required detail is not documented, explain the behavior without inventing code.
+4. Reuse an existing Composio credential first: a `COMPOSIO_API_KEY`, a saved CLI login, or a saved agent identity. Only when the task needs Composio, no credential exists, and no human is available to log in, follow [Authenticate an unattended agent](https://docs.composio.dev/docs/agent-setup/unattended-authentication) and run `composio login --agent`. A mention of Composio is not a reason to create an account, and an agent account does not authorize anyone's apps.
+5. Never invent toolkit or tool slugs. Discover them at runtime or with the CLI.
+6. Do not build a provider OAuth flow. Composio returns a Connect Link when authentication is needed.
+7. Use sessions for new Platform integrations. Preserve the application's existing user identity and agent architecture.
+8. Keep credentials out of source control, URLs, logs, chat, and command output.
+9. Get the log or request ID before diagnosing a failed tool call.
+10. Prefer the smallest configuration that completes the current job. Keep toolkit filters, tag policies, approvals, Firewall hooks, Custom MCP toolkits, sandbox controls, custom auth, provider-specific hardening, and other advanced options out of the first path unless the request or existing code requires them. When the request does ask for one, such as "ask before sending" or "block prompt injection", use the documented feature instead of building a substitute in prompts or application code.
+11. Do not invent repository facts. Never claim that a file, framework, environment loader, identity field, agent path, or dependency exists until it was provided or inspected. If codebase context is unavailable, state the unknown and ask for access or one necessary detail.
+12. In SDK or API examples, use exact identifiers and call shapes from a current public page or schema. Copy the documented shape for the requested language instead of translating names between TypeScript and Python; if a required detail is not documented, explain the behavior without inventing code.
 
 ## Canonical information
 
