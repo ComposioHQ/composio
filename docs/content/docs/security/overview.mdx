@@ -1,7 +1,7 @@
 ---
 title: Security
 description: How Composio secures your data, credentials, and tool execution, and where to find our compliance reports.
-keywords: [security, compliance, SOC 2, trust center, encryption, isolation]
+keywords: [security, compliance, SOC 2, trust center, encryption, isolation, security review, data flow, self-hosted, on-prem, VPC, deployment options]
 ---
 
 Composio is built with security at its core. We use least-privilege defaults, isolate every organization and project, encrypt credentials, and give you controls over what we store.
@@ -9,6 +9,19 @@ Composio is built with security at its core. We use least-privilege defaults, is
 ## Compliance and the Trust Center
 
 Composio is SOC 2 Type II compliant. For our latest reports and certifications (the SOC 2 Type II report, our sub-processor list, and more), visit the [Composio Trust Center](https://trust.composio.dev).
+
+## Common questions from security reviews
+
+| Question | Short answer |
+| --- | --- |
+| Where does our data go during a tool call? | To the destination provider, Composio's execution infrastructure, temporary file storage, your trigger destinations, and a code sandbox if you use Workbench. See [Where your data goes](/docs/security/data-retention#where-your-data-goes). |
+| What do you store, and for how long? | Execution and trigger logs, including payloads by default, for up to one year. Files are deleted after 24 hours. See [Data retention and handling](/docs/security/data-retention). |
+| Can you stop storing our payloads? | Yes. [Zero Data Retention](/docs/security/zero-data-retention) keeps metadata only for covered calls. |
+| Do you train models on our data? | Not on request arguments, response data, or trigger payloads. See [Model training](/docs/security/data-retention#model-training). |
+| Can we run Composio in our own VPC or on-prem? | Private VPC and self-hosted deployments are Enterprise arrangements. See [Deployment options](/docs/security/token-custody#deployment-options). |
+| Who holds our users' provider credentials? | In Composio Cloud, Composio does, encrypted at rest. If Composio must not be able to decrypt them, ask about a customer-managed key deployment, which keeps the keys in your KMS. See [Token custody architecture](/docs/security/token-custody). |
+| Who are your sub-processors? | The current list is in the [Trust Center](https://trust.composio.dev/subprocessors). |
+| Which IP addresses should we allowlist? | See [Outbound IP addresses](/docs/security/outbound-ips). |
 
 ## Isolation and access control
 
@@ -33,10 +46,3 @@ Composio executes the tools and connections you configure. You control which too
 ## Reporting a vulnerability
 
 To report a security issue, contact `security@composio.dev`. Please do not disclose vulnerabilities publicly until we have addressed them.
-
-## Related resources
-
-- [Data retention and handling](/docs/security/data-retention): what we store and for how long, on every plan.
-- [Zero Data Retention](/docs/security/zero-data-retention): how to stop storing call payloads, and what ZDR covers.
-- [Outbound IP addresses](/docs/security/outbound-ips): the addresses to allowlist for services that only accept trusted IPs.
-- [Composio Trust Center](https://trust.composio.dev): security certifications and compliance.
