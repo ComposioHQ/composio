@@ -337,12 +337,6 @@
   },
   {
     "ruleId": "ts-double-assertion",
-    "file": "ts/packages/providers/google/src/index.ts",
-    "source": "      parameters: {\n        type: 'object',\n        description: tool.description || '',\n        properties: inputParameters?.properties || {},\n        required: inputParameters?.required || [],\n      } as unknown as Schema,",
-    "count": 1
-  },
-  {
-    "ruleId": "ts-double-assertion",
     "file": "ts/packages/providers/llamaindex/src/index.ts",
     "source": "    return new FunctionTool(\n      execute,\n      {\n        name: tool.slug,\n        description: tool.description ?? tool.name ?? '',\n        parameters: parameters as LlamaindexToolParameters,\n      },\n      jsonSchemaToZodSchema(parameters)\n    ) as unknown as LlamaindexTool;",
     "count": 1
