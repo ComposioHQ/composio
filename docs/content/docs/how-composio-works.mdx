@@ -116,6 +116,23 @@ The agent searches for relevant tools, authenticates if needed, and executes the
 
 Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) returns them directly from `session.tools()` with no search step, while keeping session auth, connected accounts, and the workbench.
 
+#### How search finds tools
+
+Search is not a black box that picks tools for you. The agent calls `COMPOSIO_SEARCH_TOOLS` and then decides what to run:
+
+1. The agent splits the task into queries, one per tool call. Each query has a `use_case` such as `"send an email to someone"` and optional `known_fields` such as `"channel_name: general"`.
+2. Search looks only inside the toolkits and tools your session allows. Each query returns 4 to 6 candidate tools with their input schemas.
+3. The response also includes a recommended plan, common pitfalls, and whether your user has an active connection for each toolkit.
+4. The agent reads that response and calls the tools it chooses through `COMPOSIO_MULTI_EXECUTE_TOOL`.
+
+#### When the agent picks the wrong tool
+
+- **See what search returns.** Run `session.execute("COMPOSIO_SEARCH_TOOLS", ...)` yourself, as shown [below](#executing-session-tools), with the same `use_case` the agent sent.
+- **Name the app.** A `use_case` that includes the app name (`"fetch Gmail emails"`) stays scoped to that toolkit.
+- **Narrow the session.** Fewer allowed toolkits and tools means fewer candidates. For example, if both `monday` and `monday_mcp` are enabled, search may return either. Restrict [toolkits or tools](/docs/configuring-sessions#enabling-or-disabling-specific-tools) to the ones you want.
+- **Bypass cached plans.** If the plan doesn't match the request or an expected tool is missing, retry with `search_strategy: "tool_search"` to run a direct tool search.
+- **Skip search.** If you already know the tools, [preload them](/docs/configuring-sessions#preloading-tools) or use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset).
+
 ### Executing session tools
 
 When your model asks to call a session tool, execute it with `session.execute()`. It routes the call through the session's tool router, which is the only place session meta-tools run:
