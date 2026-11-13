@@ -246,6 +246,27 @@ importers:
         specifier: workspace:*
         version: link:../../_utils
 
+  ts/e2e-tests/cli/fake-backend:
+    devDependencies:
+      '@composio/client':
+        specifier: 'catalog:'
+        version: 2.1.17(effect@4.1.1)
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../_utils
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.4.3
+      effect:
+        specifier: 'catalog:'
+        version: 4.1.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+
   ts/e2e-tests/cli/install:
     devDependencies:
       '@e2e-tests/utils':
