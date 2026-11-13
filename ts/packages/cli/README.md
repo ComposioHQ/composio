@@ -112,7 +112,7 @@ By default, both files are stored in `~/.composio`, but you can specify a custom
 
 `composio login` records the backend it logged in to as `base_url` and `web_url` in `user_data.json`, and later commands keep using it. Setting `COMPOSIO_BASE_URL` or `COMPOSIO_ENVIRONMENT` overrides it; when that sends the stored API key to a different backend, the CLI prints a warning on stderr. A key from `COMPOSIO_USER_API_KEY` always uses the backend the environment selects. `composio logout` forgets the recorded backend.
 
-The CLI and its installer use these variables to coordinate nested commands. They aren't intended for manual configuration.
+The CLI, its installer, and the Composio agent plugins use these variables to coordinate nested commands. They aren't intended for manual configuration.
 
 | Environment Variable           | Description                                                                                          | Default |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------- |
@@ -120,6 +120,8 @@ The CLI and its installer use these variables to coordinate nested commands. The
 | COMPOSIO_CLI_PARENT_RUN_ID     | Reuses the parent run ID for nested command telemetry                                                | None    |
 | COMPOSIO_RUN_OUTPUT_DIR        | Shares one artifact directory across nested `composio run` commands                                  | None    |
 | COMPOSIO_RUN_STAGED_FILES_FILE | Points to the temporary JSON file containing upload names and types for the child `composio execute` | None    |
+| COMPOSIO_AGENT_HOST            | Names the agent host (`claude` or `codex`) whose chat the command runs in; set by the plugin's hook  | None    |
+| COMPOSIO_AGENT_SESSION_ID      | Carries that host's ID for the chat; read only together with `COMPOSIO_AGENT_HOST`                   | None    |
 
 Additionally, `composio upgrade` supports the following environment variables:
 
