@@ -32,7 +32,6 @@ from pydantic import BaseModel, Field
 from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
-from composio.core.provider import get_execution_target
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -53,6 +52,7 @@ from composio.core.models.tool_router_session import (
     ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
+from composio.core.provider import get_execution_target
 from composio.exceptions import (
     ComposioDeprecationWarning,
     InvalidParams,
@@ -2316,11 +2316,12 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Provider-wrapped session tools pass inline custom definitions."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_execute_response.result_type = "completed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"result": "success"},
+            error=None,
+            result_type="completed",
+            log_id="log-inline",
+        )
 
         from composio.core.models.tools import Tools as RealTools
 
@@ -2358,11 +2359,12 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Test that modifiers are applied before and after tool execution."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_execute_response.result_type = "completed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"result": "success"},
+            error=None,
+            result_type="completed",
+            log_id="log-modified",
+        )
 
         # Create modifier functions
         def before_modifier(tool, toolkit, params):
@@ -3133,6 +3135,10 @@ class TestSessionHooks:
         assert result.hook_results == [
             {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
         ]
+        assert (
+            ToolRouterSessionExecuteResponse.model_validate(result.model_dump())
+            == result
+        )
 
     @pytest.mark.parametrize(
         "body",
@@ -3441,7 +3447,13 @@ class TestSessionExecutionSuccess:
         result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
 
         # The error is passed through as the API sent it.
-        assert result == {"data": {}, "error": error, "successful": successful}
+        assert result == {
+            "data": {},
+            "error": error,
+            "successful": successful,
+            "log_id": "log",
+            "result_type": result_type,
+        }
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
     def test_provider_tool_call_bound_to_a_session(
@@ -3455,7 +3467,13 @@ class TestSessionExecutionSuccess:
             target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
         )
 
-        assert result == {"data": {}, "error": error, "successful": successful}
+        assert result == {
+            "data": {},
+            "error": error,
+            "successful": successful,
+            "log_id": "log",
+            "result_type": result_type,
+        }
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
     def test_session_execute_exposes_result_type(self, result_type, error, successful):

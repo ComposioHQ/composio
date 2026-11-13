@@ -145,7 +145,7 @@ Do not force advanced requests through first-time setup. Route them to current d
 - Blocking tool calls, tool results, or prompt injection: `firewall.md`, covered in [Block calls and results with Firewall](#block-calls-and-results-with-firewall)
 - Adding a remote MCP server as a toolkit: `extending-sessions/custom-mcp.md`, covered in [Add a remote MCP server](#add-a-remote-mcp-server)
 - Custom tools and toolkits that run in the application, or proxy execution: the other `extending-sessions` guides
-- Custom connection UI: `manually-authenticating.md`
+- Custom connection UI: `authentication/manually-authenticating.md`
 - Triggers and webhooks: `triggers.md` and the setting-up-triggers guides
 - Legacy direct execution, MCP servers, or Tool Router migrations: the migration and sessions guides
 - White labeling and custom OAuth apps: `white-labeling-authentication.md`

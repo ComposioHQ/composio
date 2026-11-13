@@ -1,18 +1,18 @@
 import {
   Config,
+  Console,
   Context,
   Data,
+  Duration,
   Effect,
   FileSystem,
   Layer,
   Option,
   Path,
-  Schedule,
   Schema,
   Stdio,
 } from 'effect';
 import { ChildProcessSpawner } from 'effect/process';
-import type { Duration } from 'effect';
 import { FetchHttpClient, HttpClient } from 'effect/http';
 import semver from 'semver';
 import {
@@ -36,9 +36,19 @@ import {
   Language,
   type Language as Lang,
 } from './lanes';
-import { verifyNpmProvenance, verifyPypiProvenance, type ProvenanceWait } from './provenance';
+import { verifyNpmProvenance, verifyPypiProvenance } from './provenance';
+import {
+  REGISTRY_WAIT,
+  isPending,
+  isSuccess,
+  pollRegistry,
+  registryDeadline,
+  type RegistryDeadline,
+} from './registry-wait';
 import { discoverPythonPackages } from './python-metadata';
 import {
+  CommandError,
+  ReleaseError,
   appendFile,
   ensure,
   fail,
@@ -50,6 +60,11 @@ import {
   withoutReleaseTokens,
 } from './runtime';
 import { BATCH_PATH, ReleaseBatch, batchLanguages, releaseTag } from './source';
+import {
+  NPM_TRUSTED_PUBLISHING_RUNBOOK,
+  checkNpmLogin,
+  npmTrustedPublisherSettings,
+} from './npm-oidc';
 
 /** One reviewed distribution file: an npm tarball or a Python wheel/sdist. */
 export interface Distribution {
@@ -75,13 +90,9 @@ export interface RegistryState {
   readonly tagsToRepair: ReadonlyArray<ChannelTag>;
 }
 
-const REGISTRY_TIMEOUT = '30 seconds';
-
 const Url = Schema.String.check(
   Schema.makeFilter(value => (URL.canParse(value) ? undefined : 'Expected a URL'))
 );
-
-const isSuccess = (status: number) => status >= 200 && status < 300;
 
 const registryGet = (url: string) =>
   Effect.gen(function* () {
@@ -93,27 +104,33 @@ const registryGet = (url: string) =>
 class RegistryIncomplete extends Data.TaggedError('RegistryIncomplete')<{
   readonly message: string;
 }> {}
-const incomplete = (condition: boolean, message: string) =>
-  condition ? Effect.void : Effect.fail(new RegistryIncomplete({ message }));
+/** Fails at once on an answer waiting cannot fix, and as still pending on any other failure. */
+const served = (status: number, pending: string, failed = pending) =>
+  isSuccess(status)
+    ? Effect.void
+    : isPending(status)
+      ? Effect.fail(new RegistryIncomplete({ message: pending }))
+      : fail(failed);
 
 /** Registry metadata at `url`, or `None` when the registry answers 404. */
 const registryJson = <S extends Schema.Top>(url: string, schema: S) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
     if (response.status === 404) return Option.none<S['Type']>();
-    yield* incomplete(
-      isSuccess(response.status),
-      `Registry lookup incomplete: ${url} (${response.status})`
+    yield* served(
+      response.status,
+      `Registry lookup incomplete: ${url} (${response.status})`,
+      `Registry lookup failed: ${url} (${response.status})`
     );
     return Option.some(yield* parseJson(schema, yield* response.text));
-  }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
+  }).pipe(Effect.timeout(REGISTRY_WAIT.requestTimeout));
 
 const registryBytes = (url: string, failure: (status: number) => string) =>
   Effect.gen(function* () {
     const response = yield* registryGet(url);
-    yield* incomplete(isSuccess(response.status), failure(response.status));
+    yield* served(response.status, failure(response.status));
     return new Uint8Array(yield* response.arrayBuffer);
-  }).pipe(Effect.timeout(REGISTRY_TIMEOUT));
+  }).pipe(Effect.timeout(REGISTRY_WAIT.requestTimeout));
 
 const servedBy = (language: Lang, url: string) =>
   URL.canParse(url) &&
@@ -330,39 +347,38 @@ const incompleteInventory = (state: RegistryState, channelTags: boolean) =>
 
 /**
  * Polls the registries until every file is visible, and every channel tag too unless
- * `channelTags` is false (right after an upload, before the channel tag moves).
+ * `channelTags` is false (right after an upload, before the channel tag moves). npm serves a new
+ * version only after its publish-time scan, so the wait runs until `deadline` (the registry wait
+ * deadline from now, when omitted). Served bytes that differ from the candidate fail at once.
  */
 export const waitForRegistry = (
   files: ReadonlyArray<Distribution>,
   options: {
-    readonly attempts?: number;
-    readonly spacing?: Duration.Input;
     readonly channelTags?: boolean;
     readonly channel?: Channel;
+    readonly deadline?: RegistryDeadline;
   } = {}
-) => {
-  const attempts = options.attempts ?? 6;
-  return reconcileRegistry(files, options.channel).pipe(
-    Effect.flatMap(state => {
-      const missing = incompleteInventory(state, options.channelTags ?? true);
-      return missing
-        ? Effect.fail(new RegistryIncomplete({ message: missing }))
-        : Effect.succeed(state);
-    }),
-    Effect.retry({
-      schedule: Schedule.spaced(options.spacing ?? '10 seconds'),
-      times: attempts - 1,
-      while: error => error instanceof RegistryIncomplete,
-    }),
+) =>
+  pollRegistry(
+    reconcileRegistry(files, options.channel).pipe(
+      Effect.flatMap(state => {
+        const missing = incompleteInventory(state, options.channelTags ?? true);
+        return missing
+          ? Effect.fail(new RegistryIncomplete({ message: missing }))
+          : Effect.succeed(state);
+      })
+    ),
+    error => error instanceof RegistryIncomplete,
+    options.deadline
+  ).pipe(
     Effect.catchTag('RegistryIncomplete', error =>
       Effect.fail(
         new RegistryIncomplete({
-          message: `Registry verification incomplete after ${attempts} attempts: ${error.message}`,
+          message: `Registry verification incomplete when the registry wait (${REGISTRY_WAIT.deadline}) ended: ${error.message}`,
         })
       )
     )
   );
-};
 
 /**
  * Downloads the approved release-PR artifact pinned for `language` and checks its files
@@ -438,9 +454,40 @@ export class NpmCli extends Context.Service<
 }
 
 /**
- * Publishes under a release-only dist-tag, checks that each tarball's provenance names this
- * release, then moves the channel's tag and drops the release-only tag. A failed check leaves
- * the channel tag where it was.
+ * Runs `npm dist-tag add|rm` for `name`. npm refuses a trusted publisher without the dist-tag
+ * permission with a bare E403, so that refusal is reported with the setting that fixes it.
+ */
+export const npmDistTag = (args: readonly ['add' | 'rm', string, string], name: string) =>
+  Effect.gen(function* () {
+    const cli = yield* NpmCli;
+    return yield* cli.run(['dist-tag', ...args]);
+  }).pipe(
+    Effect.mapError(error =>
+      error instanceof CommandError && error.message.includes('cannot manage dist-tags')
+        ? new ReleaseError({
+            message: `npm refused \`npm dist-tag ${args.join(' ')}\`: the trusted publisher of ${name} lacks the "Allow npm dist-tag" permission. A package maintainer must enable it at ${npmTrustedPublisherSettings(name)}; the npm CLI cannot. Then re-run this job. See ${NPM_TRUSTED_PUBLISHING_RUNBOOK}.\n${error.message}`,
+          })
+        : error
+    )
+  );
+
+/**
+ * How npm 11.21.0 refuses to upload a version the registry already holds. npm holds a version
+ * from its upload on, before its publish-time scan ends and the registry serves it, so a re-run
+ * during the scan meets this refusal.
+ */
+const alreadyUploaded = (error: unknown, file: Distribution) =>
+  error instanceof CommandError &&
+  error.message.includes(
+    `You cannot publish over the previously published versions: ${file.version}.`
+  );
+
+/**
+ * Checks the npm trusted-publishing login for every package, publishes under a release-only
+ * dist-tag, checks that each tarball's provenance names this release, then moves the channel's
+ * tag and drops the release-only tag. A failed check leaves the channel tag where it was. A
+ * version npm already holds is not uploaded again: the wait for the registry then compares the
+ * bytes npm serves with the reviewed tarball.
  */
 export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArray<Distribution>) =>
   Effect.gen(function* () {
@@ -448,6 +495,7 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
     const channel = batch.plan.choices.channel;
     const cli = yield* NpmCli;
     const npm = cli.run;
+    yield* checkNpmLogin(files.map(file => file.name));
     for (const file of (yield* reconcileRegistry(files, channel)).missing)
       yield* npm([
         'publish',
@@ -456,12 +504,22 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
         '--provenance',
         '--access=public',
         `--tag=sdk-release-${batch.id}`,
-      ]);
-    const visible = yield* waitForRegistry(files, { channelTags: false, channel });
+      ]).pipe(
+        Effect.catchIf(
+          error => alreadyUploaded(error, file),
+          () =>
+            Console.log(
+              `npm already holds ${file.name}@${file.version} but does not serve it yet, as during its publish-time scan; waiting for it instead of uploading again.`
+            )
+        )
+      );
+    // Visibility and provenance share one deadline, which npm's publish-time scan fits in.
+    const deadline = yield* registryDeadline;
+    const visible = yield* waitForRegistry(files, { channelTags: false, channel, deadline });
     // Users only install a version once its channel tag moves, so it moves after the checks.
-    for (const file of files) yield* verifyNpmProvenance(file, batch.id);
+    for (const file of files) yield* verifyNpmProvenance(file, batch.id, deadline);
     for (const tag of visible.tagsToRepair)
-      yield* npm(['dist-tag', 'add', `${tag.name}@${tag.version}`, tag.tag]);
+      yield* npmDistTag(['add', `${tag.name}@${tag.version}`, tag.tag], tag.name);
     yield* waitForRegistry(files, { channel });
     // The release-only tag only served the upload; a re-run finds it already gone.
     const releaseOnly = `sdk-release-${batch.id}`;
@@ -471,7 +529,7 @@ export const publishNpm = (cwd: string, batch: ReleaseBatch, files: ReadonlyArra
         Schema.Record(Schema.String, Schema.String)
       );
       if (Option.exists(tags, value => releaseOnly in value))
-        yield* npm(['dist-tag', 'rm', file.name, releaseOnly]);
+        yield* npmDistTag(['rm', file.name, releaseOnly], file.name);
     }
   });
 
@@ -483,11 +541,11 @@ export const npmSpecs = (files: ReadonlyArray<Distribution>) =>
  * Checks that every PyPI file is attested by this release, and returns the file URLs for the
  * signature check that `pypi-attestations` runs next.
  */
-export const verifyPypiFiles = (files: ReadonlyArray<Distribution>, wait: ProvenanceWait = {}) =>
+export const verifyPypiFiles = (files: ReadonlyArray<Distribution>, deadline?: RegistryDeadline) =>
   Effect.gen(function* () {
     const urls: string[] = [];
     for (const file of files) {
-      yield* verifyPypiProvenance(file, wait);
+      yield* verifyPypiProvenance(file, deadline);
       const metadata = yield* registryJson(
         REGISTRY_LANES.python.versionUrl(file.name, file.version),
         PypiVersion
@@ -550,12 +608,18 @@ const main = Effect.gen(function* () {
   );
   yield* Effect.gen(function* () {
     if (mode === 'verify') {
-      yield* waitForRegistry(files, { channel: batch.plan.choices.channel });
-      return yield* appendFile(env.output, `files=${(yield* verifyPypiFiles(files)).join(' ')}\n`);
+      const deadline = yield* registryDeadline;
+      yield* waitForRegistry(files, { channel: batch.plan.choices.channel, deadline });
+      const urls = yield* verifyPypiFiles(files, deadline);
+      return yield* appendFile(env.output, `files=${urls.join(' ')}\n`);
     }
     if (language === 'typescript') {
       yield* publishNpm(cwd, batch, files);
-      return yield* appendFile(env.output, `specs=${npmSpecs(files)}\n`);
+      // The fresh-install step retries for as long as the registry wait.
+      return yield* appendFile(
+        env.output,
+        `specs=${npmSpecs(files)}\nwait_seconds=${Duration.toSeconds(REGISTRY_WAIT.deadline)}\n`
+      );
     }
     yield* stageMissingPython(cwd, files, env.output);
   }).pipe(Effect.provide(NpmCli.layer(cwd)));

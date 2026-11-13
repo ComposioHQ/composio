@@ -20,11 +20,12 @@ from typing import TYPE_CHECKING
 from composio import Composio
 
 if TYPE_CHECKING:
+    from anthropic.types import Message, ToolUseBlock
+    from anthropic.types.tool_param import ToolParam
+    from composio_anthropic import AnthropicProvider, AnthropicToolExecutionResponse
     from typing_extensions import assert_type
 
-    from anthropic.types.tool_param import ToolParam
-
-    from composio_anthropic import AnthropicProvider
+    from composio.core.models.tool_router_session import ToolRouterSession
 
 
 def test_anthropic_provider_toolkits() -> None:
@@ -83,3 +84,30 @@ def test_anthropic_provider_inferred() -> None:
 
         # Should infer list[ToolParam] from provider type
         assert_type(tools, list[ToolParam])
+
+
+if TYPE_CHECKING:
+
+    def check_anthropic_execution_results(
+        provider: AnthropicProvider,
+        session: ToolRouterSession,
+        response: Message,
+        tool_call: ToolUseBlock,
+    ) -> None:
+        """Both execution targets expose the same correlated dictionary contract."""
+        assert_type(
+            provider.execute_tool_call(session=session, tool_call=tool_call),
+            AnthropicToolExecutionResponse,
+        )
+        assert_type(
+            provider.execute_tool_call(user_id="test", tool_call=tool_call),
+            AnthropicToolExecutionResponse,
+        )
+        assert_type(
+            provider.handle_tool_calls(session=session, response=response),
+            list[AnthropicToolExecutionResponse],
+        )
+        assert_type(
+            provider.handle_tool_calls(user_id="test", response=response),
+            list[AnthropicToolExecutionResponse],
+        )

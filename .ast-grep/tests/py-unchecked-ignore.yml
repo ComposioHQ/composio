@@ -1,0 +1,9 @@
+id: py-unchecked-ignore
+valid:
+  - 'value = external()  # type: ignore[attr-defined] - upstream stub omits the field'
+  - 'value = external()  # type: ignore [attr-defined, assignment]'
+  - 'help = "# type: ignore"'
+invalid:
+  - 'value = external()  # type: ignore'
+  - 'value = external()  # type: ignore - dynamic input'
+  - 'value = external()  # type: ignore[]'

@@ -17,6 +17,8 @@ packages:
   - ts/packages/ts-builders
 
 allowBuilds:
+  # The package's Node shim resolves its platform binary without postinstall.
+  '@ast-grep/cli': false
   '@google/genai': false
   '@parcel/watcher': true
   esbuild: true
@@ -34,7 +36,7 @@ catalog:
   '@clack/prompts': '^1.8.1'
   '@cloudflare/vitest-pool-workers': 0.23.0
   '@cloudflare/workers-types': ^5.20261019.1
-  '@composio/client': 2.1.0
+  '@composio/client': 2.1.17
   '@effect/language-service': ^0.87.5
   '@effect/platform-bun': ^4.1.0
   '@effect/vitest': ^4.1.0

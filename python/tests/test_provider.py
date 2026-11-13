@@ -12,13 +12,12 @@ from types import SimpleNamespace
 from unittest.mock import Mock, call
 
 import pytest
+from pydantic import ValidationError
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 from composio.core.provider import AgenticProvider, NonAgenticProvider
-from pydantic import ValidationError
-
 from tests.conftest import mock_http_client
 from tests.fixtures.json_schema_conversion_corpus import find_case
 
@@ -479,6 +478,8 @@ class TestNonAgenticProviderHelperMethods:
                 "data": {"tools": ["GMAIL_SEND_EMAIL"]},
                 "error": None,
                 "successful": True,
+                "log_id": "log-session",
+                "result_type": "completed",
             }
         ]
 
@@ -534,8 +535,20 @@ class TestNonAgenticProviderHelperMethods:
         ]
         mock_client.tools.execute.assert_not_called()
         assert results == [
-            {"data": {"index": 1}, "error": None, "successful": True},
-            {"data": {"index": 2}, "error": "failed", "successful": False},
+            {
+                "data": {"index": 1},
+                "error": None,
+                "successful": True,
+                "log_id": "log-1",
+                "result_type": "completed",
+            },
+            {
+                "data": {"index": 2},
+                "error": "failed",
+                "successful": False,
+                "log_id": "log-2",
+                "result_type": "failed",
+            },
         ]
 
     def test_openai_responses_provider_propagates_session_exceptions(self):

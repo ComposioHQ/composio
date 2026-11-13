@@ -111,6 +111,12 @@ describe('OpenAIAgentsProvider', () => {
       ) as unknown as MockedOpenAIAgentTool;
 
       expect(wrapped._isMockedOpenAIAgentTool).toBe(true);
+      expect(wrapped.parameters).toEqual({
+        type: 'object',
+        properties: {},
+        required: [],
+        additionalProperties: true,
+      });
     });
 
     it('deduplicates required entries for directly wrapped tools', () => {

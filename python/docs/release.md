@@ -4,7 +4,7 @@ Request a stable Python release through the shared [SDK release procedure](../..
 
 Public Python SDK/provider changes include a changeset targeting the private `@composio/python-sdk` marker. Core and supported providers form one stable train. The bot updates the version mirrors and `uv.lock` and opens one release PR. Its `SDK candidate (python)` check builds the wheels and sdists; `SDK candidate smoke (python)` installs them in a clean venv and tests the new core with the latest published providers. A repository writer who did not request the release approves the head, and a person merges it. The tag run publishes those exact files through the tag-only `pypi-release` identity.
 
-If publishing fails, choose **Re-run failed jobs** on the tag run within 30 days of the candidate build. After that, add a changeset for `@composio/python-sdk` and request a new release; the train moves to the next version.
+If publishing fails, choose **Re-run failed jobs** on the tag run within 30 days of the candidate build. After that, add a changeset for `@composio/python-sdk` and request a new release; the train moves to the next version. If the merged release was never tagged, follow the recovery table in the [SDK release procedure](../../ts/docs/internal/release.md#recover-a-failed-release).
 
 For local packaging checks, run from `python/`:
 

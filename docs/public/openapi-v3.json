@@ -7068,11 +7068,15 @@
                         "type": "boolean"
                       },
                       "logo_url": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "URL of the logo shown to end users on the hosted Connect Link page. Use a publicly reachable https image URL. The Composio logo is shown when omitted.",
+                        "example": "https://example.com/logo.png"
                       },
                       "display_name": {
                         "type": "string",
-                        "maxLength": 75
+                        "maxLength": 75,
+                        "description": "App name shown to end users on the hosted Connect Link page, up to 75 characters. The page shows Composio when omitted.",
+                        "example": "Acme Assistant"
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -7113,7 +7117,7 @@
                         "description": "Enable Zero Data Retention for the new project. Hobby cannot enable it. Enterprise defaults to enabled; other paid plans default to disabled. An explicit value overrides the default."
                       }
                     },
-                    "description": "Configuration for the project. Use zdr_enabled for Zero Data Retention; log_visibility_setting remains supported for existing clients. Do not send both fields."
+                    "description": "Configuration for the project. Use display_name and logo_url to brand the hosted Connect Link page. Use zdr_enabled for Zero Data Retention; log_visibility_setting remains supported for existing clients. Do not send both fields."
                   }
                 },
                 "required": [
@@ -7124,6 +7128,15 @@
                 "Simple project": {
                   "value": {
                     "name": "my_production_api"
+                  }
+                },
+                "Project with a branded Connect Link page": {
+                  "value": {
+                    "name": "acme_production",
+                    "config": {
+                      "display_name": "Acme Assistant",
+                      "logo_url": "https://example.com/logo.png"
+                    }
                   }
                 }
               }
@@ -9550,12 +9563,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 256,
-              "description": "[EXPERIMENTAL] List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
-              "example": "user_123",
-              "x-experimental": true
+              "description": "List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
+              "example": "user_123"
             },
             "required": false,
-            "description": "[EXPERIMENTAL] List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
+            "description": "List the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are listed.",
             "name": "user_id",
             "in": "query"
           },
@@ -9611,6 +9623,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -9632,9 +9658,8 @@
                               "all",
                               "user"
                             ],
-                            "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
-                            "example": "all",
-                            "x-experimental": true
+                            "description": "Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -9772,6 +9797,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -9971,8 +9998,9 @@
     },
     "/api/v3/custom/toolkits/upsert": {
       "post": {
-        "summary": "Upsert a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. mcp_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "summary": "Upsert a custom toolkit (DEPRECATED)",
+        "description": "DEPRECATED: use POST /api/v3.1/custom/toolkits to create a toolkit and PATCH /api/v3.1/custom/toolkits/{slug} to update it. Creates a custom toolkit for the project with the provided slug, or updates its display metadata (name, API key field copy) when the project already owns a toolkit with that slug. A toolkit created here is shared with every user in the project; an existing toolkit keeps its access. mcp_url and auth_schemes cannot be changed on an existing toolkit: re-sending them unchanged is a no-op, changing them returns 409 (delete and re-register the toolkit instead, which revokes its connections).",
+        "deprecated": true,
         "tags": [
           "Toolkits"
         ],
@@ -10276,7 +10304,7 @@
     "/api/v3/custom/toolkits/sync": {
       "post": {
         "summary": "Sync a custom toolkit",
-        "description": "Experimental: custom toolkits are in pilot and this contract may change. Re-fetches tool definitions from the remote MCP server for the custom toolkit with the provided slug. Call it when automatic sync fails or the remote tool definitions change.",
+        "description": "Re-fetches tool definitions from the remote MCP server for the custom toolkit with the provided slug. Call it when automatic sync fails or the remote tool definitions change.",
         "tags": [
           "Toolkits"
         ],
@@ -10505,9 +10533,8 @@
                         "all",
                         "user"
                       ],
-                      "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
-                      "example": "all",
-                      "x-experimental": true
+                      "description": "Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                      "example": "all"
                     },
                     "composio_managed_auth_schemes": {
                       "type": "array",
@@ -10594,8 +10621,25 @@
                         "properties": {
                           "mode": {
                             "type": "string",
-                            "description": "The type of authentication mode (e.g., oauth2, basic_auth, api_key)",
-                            "example": "oauth2"
+                            "enum": [
+                              "OAUTH2",
+                              "OAUTH1",
+                              "API_KEY",
+                              "BASIC",
+                              "BILLCOM_AUTH",
+                              "BEARER_TOKEN",
+                              "GOOGLE_SERVICE_ACCOUNT",
+                              "NO_AUTH",
+                              "BASIC_WITH_JWT",
+                              "CALCOM_AUTH",
+                              "SERVICE_ACCOUNT",
+                              "SAML",
+                              "DCR_OAUTH",
+                              "CIMD_OAUTH",
+                              "S2S_OAUTH2"
+                            ],
+                            "description": "The type of authentication mode (e.g., OAUTH2, BASIC, API_KEY)",
+                            "example": "OAUTH2"
                           },
                           "required_scopes": {
                             "type": "array",
@@ -11661,6 +11705,20 @@
                             "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                             "example": "native"
                           },
+                          "app": {
+                            "type": "string",
+                            "description": "Name used to group related toolkits. Falls back to the toolkit name.",
+                            "example": "GitHub"
+                          },
+                          "toolkit_type": {
+                            "type": "string",
+                            "enum": [
+                              "api",
+                              "mcp"
+                            ],
+                            "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                            "example": "api"
+                          },
                           "instant": {
                             "type": "object",
                             "properties": {
@@ -11682,9 +11740,8 @@
                               "all",
                               "user"
                             ],
-                            "description": "[EXPERIMENTAL] Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
-                            "example": "all",
-                            "x-experimental": true
+                            "description": "Custom toolkits only. \"all\": every user in the project can use it. \"user\": only the user it was created for can.",
+                            "example": "all"
                           },
                           "auth_schemes": {
                             "type": "array",
@@ -11822,6 +11879,8 @@
                           "slug",
                           "name",
                           "type",
+                          "app",
+                          "toolkit_type",
                           "is_local_toolkit",
                           "deprecated",
                           "meta"
@@ -17763,7 +17822,7 @@
     "/api/v3/files/upload/request": {
       "post": {
         "summary": "Create presigned URL for request file upload to S3",
-        "description": "Generates a presigned URL for uploading a file to S3. This endpoint handles deduplication by checking if a file with the same MD5 hash already exists.",
+        "description": "Generates a presigned URL for uploading a file to S3. Every request returns a new file ID and storage key, including repeat uploads of the same file.",
         "tags": [
           "Files"
         ],
@@ -17797,7 +17856,7 @@
                   },
                   "md5": {
                     "type": "string",
-                    "description": "MD5 hash of the file for deduplication and integrity verification. Example: \"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6\""
+                    "description": "MD5 hash of the file for integrity verification. Example: \"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6\""
                   }
                 },
                 "required": [
@@ -18884,6 +18943,11 @@
                       "fast_mode": {
                         "type": "boolean",
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
+                        "x-experimental": true
+                      },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session. Unlike fast_mode, tool search quality is unaffected. Defaults to false.",
                         "x-experimental": true
                       },
                       "submit_feedback": {
@@ -22818,6 +22882,11 @@
                         "description": "Fast mode reduces search latency. It is experimental, so tool search quality may be affected.",
                         "x-experimental": true
                       },
+                      "disable_plan_search": {
+                        "type": "boolean",
+                        "description": "Set to true to stop tool search from returning cached plans (recommended_plan_steps, known_pitfalls, reference_workbench_snippets) in this session, false to return them again. Unlike fast_mode, tool search quality is unaffected.",
+                        "x-experimental": true
+                      },
                       "submit_feedback": {
                         "type": "object",
                         "properties": {
@@ -26260,12 +26329,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 256,
-              "description": "[EXPERIMENTAL] Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
-              "example": "user_123",
-              "x-experimental": true
+              "description": "Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
+              "example": "user_123"
             },
             "required": false,
-            "description": "[EXPERIMENTAL] Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
+            "description": "Include the custom toolkits this user can use. Without it, only custom toolkits with access \"all\" are included.",
             "name": "user_id",
             "in": "query"
           }

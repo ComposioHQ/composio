@@ -31,7 +31,7 @@
     "@langchain/anthropic": "^1.5.12",
     "@langchain/mcp-adapters": "^2.0.1",
     "@langchain/openai": "^1.6.2",
-    "@openai/agents": "^0.20.0",
+    "@openai/agents": "^0.21.0",
     "ai": "catalog:",
     "dotenv": "catalog:",
     "langchain": "^1.5.18",
