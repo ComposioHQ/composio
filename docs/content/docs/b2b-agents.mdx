@@ -149,7 +149,9 @@ Provider quotas can apply to apps, accounts, workspaces, or operations. Bringing
 
 For an individual connection, [disable access or revoke upstream credentials](/docs/auth-configuration/connected-accounts#enable-and-disable-accounts). Upstream revocation is best effort and depends on toolkit support. This per-connection operation doesn't establish an app-wide revocation guarantee.
 
-Before migrating existing customers, confirm provider audience restrictions, credential rotation, emergency app-wide revocation, and reconnection requirements with Solutions/Platform. Don't assume changing a session's auth config moves an existing connected account to a new OAuth app. Confirm plan entitlements, provisioning limits, and contractual isolation with your account team.
+Treat allowed audiences as provider-specific. Confirm your provider's requirements, credential rotation, and emergency app-wide revocation with Solutions/Platform.
+
+Before migrating existing managed-auth customers, confirm reconnection requirements with Solutions/Platform. Don't assume changing a session's auth config moves an existing connected account to a new OAuth app or avoids reauthorization. Confirm provisioning, billing, plan entitlements, and contractual isolation with your account team.
 
 ## Route events back to the right tenant
 
