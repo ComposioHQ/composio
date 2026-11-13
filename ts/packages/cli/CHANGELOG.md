@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.32 to include the latest API changes.
+
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root
   `composio link …` examples, which link the consumer user, not a user of the
