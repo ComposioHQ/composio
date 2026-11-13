@@ -1,5 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
+import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { AuthConfigItem } from 'src/models/auth-configs';
@@ -238,6 +239,42 @@ describe('CLI: composio dev auth-configs list acts on the developer project', ()
           ]);
           expect(calls).toEqual([
             { method: 'listAuthConfigs', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
+        })
+    );
+  });
+
+  layer(
+    TestLive({
+      ...inProject,
+      authConfigsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
+    it.effect(
+      '[Given] a directory set up for a project in another org [Then] never names it, using the default project',
+      () =>
+        Effect.gen(function* () {
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_mine');
+          const terminal = redirectedTerminalUI();
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes(
+            ['dev', 'auth-configs', 'list'],
+            terminal.layer
+          );
+
+          expect(exitCode).toBe(0);
+          expect(terminal.stderr()).toContain(
+            'Warning: This directory\'s developer project is in org "org_test", not the org you are logged in to ("org_mine"); using "newest-project" (proj_newest)'
+          );
+          expect(calls).toEqual([
+            {
+              method: 'listAuthConfigs',
+              scope: expect.objectContaining({
+                orgId: 'org_mine',
+                projectId: DEFAULT_PROJECT_SCOPE.projectId,
+              }),
+            },
           ]);
         })
     );
