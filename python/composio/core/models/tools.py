@@ -1004,7 +1004,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         """Proxy a tool call to the Composio API.
 
         ``user_id`` is the user the connected account belongs to. Projects with
-        2FA enabled check it against the connected account and may require it.
+        connection user binding enabled check it against the connected account
+        and may require it.
         """
         # Disable retries: a proxied call is a non-idempotent write, and a silent
         # retry after a read timeout can duplicate the side effect.

@@ -211,8 +211,8 @@ class CustomToolkits:
         Update a custom toolkit's name, logo or API key field copy. Omitted
         fields keep their current value.
 
-        On a project with 2FA enabled, updating a private toolkit requires the
-        ``user_id`` it is private to.
+        On a project with connection user binding enabled, updating a private
+        toolkit requires the ``user_id`` it is private to.
 
         :param slug: The custom toolkit slug returned by :meth:`create`.
         :param name: New display name.

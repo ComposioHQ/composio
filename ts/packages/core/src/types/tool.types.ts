@@ -427,8 +427,8 @@ export const ToolProxyParamsSchema = z.object({
     .optional(),
   connectedAccountId: z.string().optional(),
   /**
-   * The user the connected account belongs to. Projects with 2FA enabled check it
-   * against the connected account, and require it for orgs created on or after
+   * The user the connected account belongs to. Projects with connection user
+   * binding enabled check it against the connected account and may require it.
    */
   userId: z.string().optional(),
   /**
