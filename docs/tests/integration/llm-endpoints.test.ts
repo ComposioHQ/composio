@@ -69,6 +69,15 @@ describe("LLM endpoints - API reference version labelling", () => {
     expect(text).not.toContain("/reference/v3/");
     expect(text).toContain("# Tools (/reference/api-reference/tools)");
   });
+
+  test("/llms-full.txt omits legacy-flagged guide bodies", async () => {
+    const text = await (await fetchPage("/llms-full.txt")).text();
+    expect(text).not.toContain("# Our next generation SDKs (/docs/migration-guide/new-sdk)");
+    expect(text).not.toContain(
+      "# Migrating from Experimental Tool Router (/docs/migration-guide/tool-router-beta)",
+    );
+    expect(text).toContain("# Migrating from Direct Tools to Sessions (/docs/migration-guide/direct-to-sessions)");
+  });
 });
 
 describe("LLM endpoints - .md pages", () => {

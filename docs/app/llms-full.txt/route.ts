@@ -140,7 +140,9 @@ export async function GET() {
     const treeChildren = source.pageTree.children as TreeNode[];
     const legacyUrls = collectLegacyUrls(treeChildren);
     const orderedDocsPages = orderDocPages(
-      source.getPages().filter(page => !legacyUrls.has(page.url)),
+      // Also drop `legacy: true` pages filed outside the legacy section (e.g.
+      // the v1 SDK migration guide), which still teach retired APIs.
+      source.getPages().filter(page => !legacyUrls.has(page.url) && page.data.legacy !== true),
       treeChildren
     );
     const knowledgeDiscoveryLinks = formatKnowledgeDiscoveryLinks(
