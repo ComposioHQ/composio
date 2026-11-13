@@ -13,6 +13,7 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 ## Isolation and access control
 
 - Organizations and projects isolate your resources. Data from one project is not visible to another.
+- Sessions select private connected accounts by their configured `user_id`; cross-user access through sessions requires an explicit [shared connection](/docs/extending-sessions/shared-connections). Direct Proxy Execute validates a private account's owner only when project 2FA is enabled. Your backend must authorize the selected account and derive `user_id` from the signed-in user. See [how user isolation works](/docs/security/token-custody#how-user-isolation-works).
 - API keys are scoped, support per-key IP allowlisting, and can opt in to capabilities such as Proxy Execute at creation.
 - Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, proxy execution, and session-linked MCP access). See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
 - Multi-factor authentication (MFA) is available for Dashboard sign-in and can be enforced by an organization admin.
@@ -20,9 +21,9 @@ Composio is SOC 2 Type II compliant. For our latest reports and certifications (
 
 ## Credential protection
 
-See [Token custody architecture](/docs/security/token-custody) for credential boundaries, server-side execution, default API redaction, and deployment options.
+See [Token custody and credential isolation](/docs/security/token-custody) for credential boundaries, user isolation, server-side execution, default API redaction, and deployment options.
 
-- Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
+- Provider credentials are encrypted at rest using AES-256-GCM. Composio API keys and session keys are stored as hashes. Traffic is encrypted in transit using TLS.
 - Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
 - Webhook deliveries are signed; verify the `webhook-signature` header when handling trigger events. For custom OAuth webhook setup, see [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 
@@ -36,6 +37,8 @@ To report a security issue, contact `security@composio.dev`. Please do not discl
 
 ## Related resources
 
+- [Token custody and credential isolation](/docs/security/token-custody): how credentials are protected and how users are kept apart.
+- [Bring your own cloud (BYOC)](/docs/security/byoc): Composio-operated deployment in your AWS account.
 - [Data retention and handling](/docs/security/data-retention): what we store and for how long, on every plan.
 - [Zero Data Retention](/docs/security/zero-data-retention): how to stop storing call payloads, and what ZDR covers.
 - [Outbound IP addresses](/docs/security/outbound-ips): the addresses to allowlist for services that only accept trusted IPs.

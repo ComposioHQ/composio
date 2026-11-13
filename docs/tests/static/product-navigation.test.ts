@@ -45,6 +45,7 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
+    expect(classifyDocsProduct('/docs/security/byoc')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
@@ -177,6 +178,7 @@ describe('Docs product navigation', () => {
       '/docs/security/overview',
       '/docs/security/audit-logs',
       '/docs/security/token-custody',
+      '/docs/security/byoc',
       '/docs/security/outbound-ips',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',

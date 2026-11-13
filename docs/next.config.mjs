@@ -1205,12 +1205,12 @@ const config = {
       },
       {
         source: '/docs/:legacy(self-hosting|deployment)',
-        destination: '/docs/security/token-custody#deployment-options',
+        destination: '/docs/security/byoc',
         permanent: true,
       },
       {
         source: '/docs/hosting/:path*',
-        destination: '/docs/security/token-custody#deployment-options',
+        destination: '/docs/security/byoc',
         permanent: true,
       },
       {
