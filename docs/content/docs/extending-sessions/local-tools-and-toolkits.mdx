@@ -15,7 +15,9 @@ Local tools let you define tools that run in-process alongside remote Composio t
 - **Extension tools**: wrap a Composio toolkit's API with custom business logic via `extendsToolkit` / `extends_toolkit`, using `ctx.proxyExecute()` / `ctx.proxy_execute()` for authenticated requests.
 - **Local toolkits**: group related standalone tools under a namespace.
 
-Local tools were previously called custom tools. The SDK options keep their names: `customTools` / `custom_tools` and `customToolkits` / `custom_toolkits`.
+Local tools were previously called custom tools. The examples below use the backward-compatible `customTools` / `custom_tools` and `customToolkits` / `custom_toolkits` options. The current names are `localTools` / `local_tools` and `localToolkits` / `local_toolkits`.
+
+For project-owned toolkits backed by a remote MCP server, see [Custom MCP](/docs/extending-sessions/custom-mcp). That guide covers creating, syncing tool versions, and deleting `CUSTOM_*` toolkits. The `LOCAL_*` tools on this page run in your application and have a different lifecycle.
 
 <IntegrationTabs tabs={[
   { value: "standalone", label: "Standalone Tool" },
@@ -124,7 +126,7 @@ const getUserProfile = experimental_createTool("GET_USER_PROFILE", {
 <Step>
 **Bind to a session**
 
-Pass local tools via the `experimental` option. `session.tools()` returns both remote Composio tools and your local tools.
+Pass local tools via the `experimental` option. The agent discovers them through search. To include them directly in `session.tools()`, [preload them](#preloading-local-tools).
 
 {/* code-example: no-api reason="binding custom tools needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -444,7 +446,7 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
 <Step>
 **Bind to a session**
 
-Pass local toolkits via the `experimental` option. `session.tools()` returns both remote Composio tools and your local toolkit's tools.
+Pass local toolkits via the `experimental` option. The agent discovers their tools through search. To include them directly in `session.tools()`, [preload them](#preloading-local-tools).
 
 {/* code-example: no-api reason="binding custom toolkits needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -488,6 +490,18 @@ const tools = await session.tools();
 </IntegrationContent>
 
 </IntegrationTabs>
+
+## Local tool lifecycle
+
+Local tool definitions belong to your application code. The SDK sends their names, descriptions, and schemas to Composio for discovery, and keeps the executable callbacks in your process.
+
+| Task | What to do |
+|------|------------|
+| Create | Define a tool or toolkit with the helpers above, then pass it in the session's `experimental` options. |
+| Update or version | Change the callback or schema in your code and create a new session with the revised definitions. Local tools have no toolkit version parameter or version history API. Track versions with your application releases; use a new slug when incompatible definitions must coexist. |
+| Remove | Omit the tool or toolkit from the definitions you pass when creating a new session. Stop using the old session object and its wrapped tools; they retain their callbacks. [Delete the old session](/docs/configuring-sessions#delete) when you no longer need it. There is no individual local tool or toolkit delete method. |
+
+When you [reuse a session](#reusing-a-session-with-local-tools) in another process, supply its local definitions and callbacks again. A stored session ID does not restore executable application code.
 
 ## Preloading local tools
 
@@ -577,10 +591,12 @@ Local tools work automatically with Composio's meta tools:
 
 | Meta tool | Behavior |
 |-----------|----------|
-| `COMPOSIO_SEARCH_TOOLS` | Includes local tools in search results, with slight priority for tools that don't require auth |
+| `COMPOSIO_SEARCH_TOOLS` | Searches the local definitions supplied to this session alongside remote tools |
 | `COMPOSIO_GET_TOOL_SCHEMAS` | Returns schemas for local tools alongside remote tools |
 | `COMPOSIO_MULTI_EXECUTE_TOOL` | Runs local tools in-process while remote tools go to the backend, merging results transparently |
 | `COMPOSIO_MANAGE_CONNECTIONS` | Handles auth for extension tools. If a tool extends `gmail`, the agent can prompt the user to connect Gmail |
+
+Search selects tools relevant to the agent's query. Write specific names and descriptions to help the agent find the right tool. To inspect all registered local definitions, use [Verifying registration](#verifying-registration). Preloading exposes selected tools immediately without requiring a search first.
 
 <Callout type="info">
 Local tools are not supported in the sandbox.
@@ -722,6 +738,13 @@ Use the final `LOCAL_*` slug when you call a local tool directly. The original s
 when it identifies exactly one local tool. If two local toolkits both define `SEARCH`, call
 `LOCAL_CATALOG_SEARCH` or `LOCAL_SUPPORT_SEARCH`. Calling `SEARCH` directly raises an error with the
 qualified slugs instead of choosing one toolkit silently.
+
+## Limitations
+
+- Local tools and toolkits are experimental. Their APIs may change.
+- Callbacks require execution through the SDK in your application process. The [hosted session MCP endpoint](/docs/sessions-via-mcp#trade-offs) and sandbox cannot run them.
+- Local toolkit tools cannot set `extendsToolkit` / `extends_toolkit`. Use a standalone extension tool when you need to inherit a Composio toolkit's authentication.
+- Local definitions have no built-in versioning or individual deletion API. Use the [local tool lifecycle](#local-tool-lifecycle) above. The Custom MCP sync and delete APIs apply to remote `CUSTOM_*` toolkits.
 
 ## Next
 
