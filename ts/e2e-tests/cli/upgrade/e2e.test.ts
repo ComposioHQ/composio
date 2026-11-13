@@ -88,6 +88,33 @@ fi
 exit 1
 `;
 
+/**
+ * An upgrade the process is not allowed to perform: the install directory is
+ * read-only and the CLI runs as an ordinary user (root would ignore the mode).
+ */
+const readOnlyInstallCommand = `
+set -u
+install_dir=/opt/composio-readonly
+source_dir=/tmp/composio-upgrade-source
+mkdir -p "$install_dir" "$source_dir"
+cp -r /usr/local/bin/. "$install_dir/"
+cp /usr/local/bin/composio "$source_dir/composio"
+${sourceBundleSetup}
+chmod -R a+rX "$source_dir"
+chmod -R a-w "$install_dir"
+
+before=$(stat -c '%i %s' "$install_dir/composio")
+upgrade_status=0
+HOME=/tmp/unprivileged-home DEBUG_OVERRIDE_UPGRADE_TARGET="$source_dir/composio" \
+  setpriv --reuid=1000 --regid=1000 --clear-groups "$install_dir/composio" upgrade || upgrade_status=$?
+after=$(stat -c '%i %s' "$install_dir/composio")
+version_output=$("$install_dir/composio" version)
+version_status=$?
+leftovers=$(find "$install_dir" -name '.composio-atomic-replace-*' | wc -l)
+printf 'upgrade_status=%s\nbefore=%s\nafter=%s\nversion_status=%s\nversion=%s\nleftovers=%s\n' \
+  "$upgrade_status" "$before" "$after" "$version_status" "$version_output" "$leftovers"
+`;
+
 const outputField = (result: E2ETestResult, name: string): string => {
   const match = result.stdout.match(new RegExp(`^${name}=(.*)$`, 'm'));
   expect(match).not.toBeNull();
@@ -113,6 +140,7 @@ e2e(import.meta.url, {
   defineTests: ({ runCmd }) => {
     let installedResult: E2ETestResult;
     let copiedResult: E2ETestResult;
+    let readOnlyResult: E2ETestResult;
 
     beforeAll(async () => {
       installedResult = await runCmd(
@@ -121,6 +149,7 @@ e2e(import.meta.url, {
       copiedResult = await runCmd(
         upgradeCommand({ executablePath: '/tmp/composio-copy/composio', copyExecutable: true })
       );
+      readOnlyResult = await runCmd(readOnlyInstallCommand);
     }, TIMEOUTS.FIXTURE);
 
     describe('composio upgrade', () => {
@@ -130,6 +159,24 @@ e2e(import.meta.url, {
 
       it('replaces an executable running from a copied path', () => {
         expectAtomicUpgrade(copiedResult);
+      });
+    });
+
+    describe('composio upgrade without write permission on the install directory', () => {
+      it('fails and says which file it could not replace', () => {
+        expect(outputField(readOnlyResult, 'upgrade_status')).toBe('1');
+        expect(readOnlyResult.stderr).toContain('permission denied');
+        expect(readOnlyResult.stderr).toContain('/opt/composio-readonly/');
+      });
+
+      it('leaves the installed executable untouched and runnable', () => {
+        expect(outputField(readOnlyResult, 'after')).toBe(outputField(readOnlyResult, 'before'));
+        expect(outputField(readOnlyResult, 'version_status')).toBe('0');
+        expect(outputField(readOnlyResult, 'version')).toMatch(/\d+\.\d+\.\d+/);
+      });
+
+      it('leaves no temporary files behind', () => {
+        expect(outputField(readOnlyResult, 'leftovers')).toBe('0');
       });
     });
   },
