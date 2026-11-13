@@ -1,0 +1,139 @@
+---
+title: OAuth2 setup guides
+description: Choose managed or custom OAuth, find provider setup guides, and troubleshoot common connection errors
+keywords: [oauth2, custom oauth, client id, client secret, redirect uri, setup guides]
+---
+
+Use these guides to register your own OAuth app with a provider and connect it to Composio.
+
+## When you need custom OAuth credentials
+
+Use your own OAuth app when you need your app's name on the provider's consent screen, scopes that Composio's managed app isn't approved for, or an OAuth toolkit without managed auth. You supply the app's client ID and client secret through a custom auth config. Composio still stores and refreshes the connected account's tokens.
+
+### Choose managed or custom OAuth
+
+1. Check [Managed OAuth apps](/toolkits/managed-auth). If your OAuth toolkit has no managed app, follow its [setup guide](#provider-setup-guides) to create your own.
+2. If a managed app is available, check whether its consent branding and approved scopes meet your needs. If either doesn't, use a custom OAuth app.
+3. Otherwise, use Composio-managed OAuth. You don't need to register an app or supply OAuth client credentials. Follow the [authentication guide](/docs/authentication).
+
+You can make this choice separately for each toolkit. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for the full comparison.
+
+## Set up your OAuth app
+
+1. Open the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=oauth2-guides), create an auth config, and select your toolkit and OAuth2 scheme.
+2. Follow the provider guide below to register your OAuth app. Register the exact redirect URI shown by Composio in the provider's developer portal.
+3. Enter your client ID, client secret, and any other required fields in the custom auth config. Save it and copy its ID.
+4. [Pass the auth config ID to your session](/docs/authentication/custom-app-vs-managed-app#pass-the-auth-config-id-in-your-session), keyed by toolkit. Creating the config alone doesn't select it for a session.
+
+The provider's OAuth redirect URI is separate from the callback URL that returns users to your app after authentication. See [Custom callback URL](/docs/authentication#custom-callback-url).
+
+## Provider setup guides
+
+These links open the guides on [composio.dev/auth](https://composio.dev/auth), which also lists new guides as they become available. The directory includes API key and bot token guides for providers that use those credentials. Follow the auth scheme in the provider's guide.
+
+- [Airtable](https://composio.dev/auth/airtable)
+- [Apollo](https://composio.dev/auth/apollo)
+- [Asana](https://composio.dev/auth/asana)
+- [Azure Monitor Activity Log](https://composio.dev/auth/azure_monitor_activity_log)
+- [Bitbucket](https://composio.dev/auth/bitbucket)
+- [Calendly](https://composio.dev/auth/calendly)
+- [Canva](https://composio.dev/auth/canva)
+- [Confluence](https://composio.dev/auth/confluence)
+- [Daytona](https://composio.dev/auth/daytona)
+- [DocuSign](https://composio.dev/auth/docusign)
+- [Dropbox](https://composio.dev/auth/dropbox)
+- [Dynamics 365](https://composio.dev/auth/dynamics365)
+- [Excel](https://composio.dev/auth/excel)
+- [Facebook](https://composio.dev/auth/facebook)
+- [Fathom](https://composio.dev/auth/fathomai)
+- [GitHub](https://composio.dev/auth/github)
+- [GitLab](https://composio.dev/auth/gitlab)
+- [Gmail](https://composio.dev/auth/gmail)
+- [Gong](https://composio.dev/auth/gong)
+- [Google Admin](https://composio.dev/auth/google_admin)
+- [Google Ads](https://composio.dev/auth/googleads)
+- [Google AdSense](https://composio.dev/auth/google_adsense)
+- [Google Analytics](https://composio.dev/auth/google-analytics)
+- [Google Apps](https://composio.dev/auth/googleapps)
+- [Google BigQuery](https://composio.dev/auth/googlebigquery)
+- [Google Business Profile](https://composio.dev/auth/google_business_profile)
+- [Google Calendar](https://composio.dev/auth/googlecalendar)
+- [Google Chat](https://composio.dev/auth/google_chat)
+- [Google Classroom](https://composio.dev/auth/google_classroom)
+- [Google Contacts](https://composio.dev/auth/googlecontacts)
+- [Google Data Studio](https://composio.dev/auth/google_data_studio)
+- [Google Docs](https://composio.dev/auth/googledocs)
+- [Google Drive](https://composio.dev/auth/googledrive)
+- [Google Forms](https://composio.dev/auth/googleforms)
+- [Google Maps](https://composio.dev/auth/google_maps)
+- [Google Meet](https://composio.dev/auth/googlemeet)
+- [Google Merchant Center](https://composio.dev/auth/google_merchant)
+- [Google Photos](https://composio.dev/auth/googlephotos)
+- [Google Search Console](https://composio.dev/auth/google-search-console)
+- [Google Sheets](https://composio.dev/auth/googlesheets)
+- [Google Slides](https://composio.dev/auth/googleslides)
+- [Google Super](https://composio.dev/auth/googlesuper)
+- [Google Tasks](https://composio.dev/auth/googletasks)
+- [Gorgias](https://composio.dev/auth/gorgias)
+- [HighLevel Location](https://composio.dev/auth/highlevel_location)
+- [HubSpot](https://composio.dev/auth/hubspot)
+- [Instantly](https://composio.dev/auth/instantly)
+- [Jira](https://composio.dev/auth/jira)
+- [Linear](https://composio.dev/auth/linear)
+- [LinkedIn](https://composio.dev/auth/linkedin)
+- [Microsoft Advertising](https://composio.dev/auth/microsoft_advertising)
+- [Microsoft Bookings](https://composio.dev/auth/microsoft_bookings)
+- [Microsoft Entra ID](https://composio.dev/auth/microsoft_entra_id)
+- [Microsoft Power BI](https://composio.dev/auth/microsoft_power_bi)
+- [Microsoft PowerPoint](https://composio.dev/auth/powerpoint)
+- [Microsoft Teams](https://composio.dev/auth/microsoft_teams)
+- [Microsoft To Do](https://composio.dev/auth/microsoft_todo)
+- [Microsoft Word](https://composio.dev/auth/word)
+- [Monday](https://composio.dev/auth/monday)
+- [NotebookLM](https://composio.dev/auth/notebook_lm)
+- [Notion](https://composio.dev/auth/notion)
+- [OneDrive](https://composio.dev/auth/one_drive)
+- [OneNote](https://composio.dev/auth/onenote)
+- [Outlook](https://composio.dev/auth/outlook)
+- [PagerDuty](https://composio.dev/auth/pagerduty)
+- [Pipedrive](https://composio.dev/auth/pipedrive)
+- [PostHog](https://composio.dev/auth/posthog)
+- [Ramp](https://composio.dev/auth/ramp)
+- [Rocketlane](https://composio.dev/auth/rocketlane)
+- [Salesforce](https://composio.dev/auth/salesforce)
+- [ServiceM8](https://composio.dev/auth/servicem8)
+- [SharePoint](https://composio.dev/auth/share_point)
+- [SharePoint Graph](https://composio.dev/auth/sharepoint_graph)
+- [Shopify](https://composio.dev/auth/shopify)
+- [Slack, custom OAuth app](https://composio.dev/auth/slack_custom)
+- [Slack, managed auth](https://composio.dev/auth/slack)
+- [Snowflake](https://composio.dev/auth/snowflake)
+- [Stripe](https://composio.dev/auth/stripe)
+- [Supabase](https://composio.dev/auth/supabase)
+- [Telegram](https://composio.dev/auth/telegram)
+- [TickTick](https://composio.dev/auth/ticktick)
+- [Trello](https://composio.dev/auth/trello)
+- [Workday](https://composio.dev/auth/workday)
+- [X (Twitter)](https://composio.dev/auth/twitter)
+- [Xero](https://composio.dev/auth/xero)
+- [YouTube](https://composio.dev/auth/youtube)
+- [Zendesk](https://composio.dev/auth/zendesk)
+- [Zoho Bigin](https://composio.dev/auth/zoho_bigin)
+- [Zoho Books](https://composio.dev/auth/zoho_books)
+- [Zoho CRM](https://composio.dev/auth/zoho)
+- [Zoho Desk](https://composio.dev/auth/zoho_desk)
+- [Zoho Inventory](https://composio.dev/auth/zoho_inventory)
+- [Zoho Invoice](https://composio.dev/auth/zoho_invoice)
+- [Zoho Mail](https://composio.dev/auth/zoho_mail)
+- [Zoom](https://composio.dev/auth/zoom)
+
+## Common OAuth2 troubleshooting
+
+| Problem | What to check |
+| --- | --- |
+| `redirect_uri_mismatch` | The redirect URI registered with the provider must exactly match the one in your Composio auth config. Copy it from the current auth-config flow. Don't substitute your application's post-authentication callback URL. |
+| `invalid_client` | Confirm that the client ID and secret belong to the same provider app and match the values in your auth config. Check the provider guide for app installation or approval requirements. |
+| `invalid_scope` or blocked consent | Check the scope names and whether the provider has approved them for the selected OAuth app. For Google, see [OAuth setup and consent](/kb/guide/platform-google-oauth). |
+| Microsoft shows "Needs Admin Approval" | Ask a tenant administrator to approve the app and requested permissions, then start a fresh connection. See [Microsoft tenant consent](/kb/guide/platform-microsoft-oauth). |
+| Users still see Composio's OAuth app | Confirm that the session uses your custom auth config ID for that toolkit. For consent-screen branding, see [White-label authentication](/docs/authentication/white-labeling-authentication). |
+| A connection still lacks permissions after changing scopes | Have the user reconnect to grant the new scopes. Existing connections keep their previously granted scopes. See [Controlling scopes](/docs/authentication/controlling-scopes#update-scopes-on-an-existing-config). |

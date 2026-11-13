@@ -23,6 +23,7 @@
     "governance/approvals",
     "firewall",
     "---Guides---",
+    "auth/oauth2-guides",
     "consumer-agents",
     "b2b-agents",
     "production-readiness",
