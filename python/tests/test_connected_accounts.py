@@ -197,8 +197,11 @@ class TestConnectionRequestPolling:
         assert self._request(client).wait_for_connection(timeout=60.0) is active
         assert clock["now"] == 10.0
 
-    def test_runs_past_the_timeout_while_the_real_client_retries_a_429(
-        self, monkeypatch
+    @pytest.mark.parametrize(
+        "timeout,retry_after,elapsed", [(1.0, "3", 6.0), (25.0, "10", 25.0)]
+    )
+    def test_does_not_restart_client_retries_after_timeout(
+        self, monkeypatch, timeout, retry_after, elapsed
     ):
         clock = self._clock(monkeypatch)
         requests = []
@@ -206,7 +209,9 @@ class TestConnectionRequestPolling:
         def handler(request):
             requests.append(request)
             return httpx.Response(
-                429, headers={"retry-after": "3"}, json={"error": {"message": "x"}}
+                429,
+                headers={"retry-after": retry_after},
+                json={"error": {"message": "x"}},
             )
 
         client = HttpClient(
@@ -217,9 +222,9 @@ class TestConnectionRequestPolling:
         )
 
         with pytest.raises(exceptions.ComposioSDKTimeoutError):
-            self._request(client).wait_for_connection(timeout=1.0)
+            self._request(client).wait_for_connection(timeout=timeout)
 
-        assert clock["now"] == 6.0
+        assert clock["now"] == elapsed
         assert len(requests) == 3
 
     def test_waiting_by_id_survives_a_429_on_its_first_request(self, monkeypatch):
@@ -259,16 +264,19 @@ class TestConnectionRequestPolling:
         assert clock["now"] == 0.0
         assert client.connected_accounts.retrieve.call_count == 1
 
-    def test_stops_its_own_delay_at_the_timeout_after_a_429(self, monkeypatch):
+    @pytest.mark.parametrize("retry_after", ["5", "60"])
+    def test_does_not_repoll_at_the_deadline_after_a_429(
+        self, monkeypatch, retry_after
+    ):
         clock = self._clock(monkeypatch)
         client = Mock()
-        client.connected_accounts.retrieve.side_effect = self._rate_limited("60")
+        client.connected_accounts.retrieve.side_effect = self._rate_limited(retry_after)
 
         with pytest.raises(exceptions.ComposioSDKTimeoutError):
             self._request(client).wait_for_connection(timeout=5.0)
 
         assert clock["now"] == 5.0
-        assert client.connected_accounts.retrieve.call_count == 2
+        assert client.connected_accounts.retrieve.call_count == 1
 
     def test_reads_a_date_format_retry_after(self, monkeypatch):
         clock = self._clock(monkeypatch)
