@@ -41,7 +41,7 @@
     "check:python-snippets": "bun scripts/check-python-snippets.ts",
     "test:python-snippets": "bun scripts/python-snippets/test-helper.ts",
     "check:typescript-snippets": "bun scripts/check-typescript-snippets.ts",
-    "pretest": "bun run generate:kb",
+    "pretest": "bun run generate:kb && bun scripts/build-agent-index.ts",
     "test": "bun test tests/static/",
     "test:integration": "bun test tests/integration/ --timeout 30000"
   },
