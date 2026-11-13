@@ -8,13 +8,13 @@ The public `composio` skill gives coding agents current instructions for buildin
 
 ## Install the skill
 
-Run this command from your project root:
+Use a coding agent that supports Agent Skills and a local Node.js installation with `npx`. Run this command from your project root:
 
 ```bash
 npx skills add ComposioHQ/composio --skill composio -y
 ```
 
-Then ask your coding agent for a concrete outcome. Include the apps, agent framework, and user model when you know them.
+The installer adds the `composio` skill to your selected agent's skills directory. Check the installer's output for the destination, then start your coding agent in this project and ask it to use the skill for a concrete outcome. Include the apps, agent framework, and user model when you know them.
 
 ```text
 Use Composio to add Gmail and Google Calendar tools to this existing agent.
@@ -43,6 +43,17 @@ For product integrations, the agent should preserve your framework and applicati
 <Callout type="info" title="The skill is guidance, not a credential">
 Installing the skill does not connect accounts or expose credentials. Your product still uses the Composio SDK, API key, sessions, and Connect Links. For personal agent use, the agent may guide you through a CLI, plugin, or MCP connection instead.
 </Callout>
+
+## Look up current API details
+
+Use the skill to choose a path and follow the procedure. Before writing integration code, have the agent read the relevant live guide and SDK reference for exact method names, options, response fields, and version requirements:
+
+- [Create and reuse sessions](/docs/how-composio-works), with [TypeScript](/reference/sdk-reference/typescript/session) and [Python](/reference/sdk-reference/python/session) method references.
+- [Choose a provider](/docs/providers) for framework-specific installation and tool handling.
+- [Configure sessions](/docs/configuring-sessions) for toolkit restrictions and account selection.
+- [Migrate legacy direct execution](/docs/migration-guide/direct-to-sessions) when updating an older integration.
+
+Keep those API details in the documentation when you write or adapt a skill. A skill should route to the appropriate page, describe what to inspect, and say how to verify the result. Copying signatures, version limits, or tool inventories into it creates another copy to maintain.
 
 ## Give the agent enough context
 

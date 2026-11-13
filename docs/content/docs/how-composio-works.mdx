@@ -4,28 +4,60 @@ description: What Composio sessions do, and how they scope users, tools, toolkit
 keywords: [session, userID, tools, toolkits, meta tools, mcp, workbench]
 ---
 
-A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
+A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.sessions.create()`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
+
+## Prerequisites
+
+Use a server-side environment with Python 3.11 through 3.15, or Node.js 22.22.3 or newer with ESM imports. For the API examples, install `curl` and `jq` instead of an SDK.
+
+Get a project API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=how-composio-works). Set it in the shell where you run the examples:
+
+```bash
+export COMPOSIO_API_KEY="your_project_api_key"
+```
+
+Both SDKs read `COMPOSIO_API_KEY` automatically. Keep it on your server. Use a stable ID from your application for the user; `user_123` below is a local example.
+
+### Install the Python SDK
+
+<PackageInstall ecosystem="python" packages="composio" />
+
+The installed package provides `from composio import Composio`. The legacy `composio-core` package does not support sessions. If you use it, follow the [SDK migration guide](/docs/migration-guide/new-sdk).
+
+### Install the TypeScript SDK
+
+<PackageInstall packages="@composio/core" />
+
+The installed package provides `import { Composio } from '@composio/core'`. Continue with session creation below. For an agent framework other than the default OpenAI tool format, choose its [provider adapter](/docs/providers) before requesting tools.
 
 ## The basics
 
-Create a session for a user, then read its tools formatted for your framework. To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
+### Create a session
+
+Create a session for a user, then read its tools formatted for your framework. These SDK examples use the default OpenAI tool format. Creating a session and fetching tools do not require an LLM API key or a connected app account. To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-session = composio.sessions.create(user_id="user_123")
+from composio import Composio
 
+composio = Composio()
+session = composio.sessions.create(user_id="user_123")
 tools = session.tools()
+
+print(session.session_id)
+print(tools)
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create("user_123");
-
+const composio = new Composio();
+const session = await composio.sessions.create("user_123");
 const tools = await session.tools();
+
+console.log(session.sessionId);
+console.log(tools);
 ```
 </Tab>
 <Tab value="API">
@@ -35,11 +67,19 @@ SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/s
   -H "Content-Type: application/json" \
   -d '{"user_id": "user_123"}' | jq -r '.session_id')
 
+printf '%s\n' "$SESSION_ID"
+
 curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/tools \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 </Tab>
 </Tabs>
+
+Expect a nonempty session ID and tool definitions. Store the ID with this user's conversation so you can [reuse the session](#how-sessions-behave) on the next turn. If you get an authentication error, check the project key before continuing.
+
+Next, pass `tools` to your framework's tool interface using the [quickstart](/docs/quickstart), or [execute a session tool](#executing-session-tools) yourself if you own the tool loop. Session creation alone does not verify that an app tool can run.
+
+`composio.create()` remains a supported alias. The older `composio.toolRouter` name is a legacy alias for `composio.sessions`. New integrations should use sessions; see [Sessions vs direct execution](/docs/sessions-vs-direct-execution) if you maintain a direct-execution integration.
 
 A session scopes four things:
 
