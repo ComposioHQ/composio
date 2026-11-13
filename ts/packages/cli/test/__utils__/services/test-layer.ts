@@ -335,7 +335,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository.of({
         ...toolkitCatalogMethods(toolkitsData),
         ...connectedAccountRepositoryMethods(authConfigsData, connectedAccountsData),
-        listActiveTriggers: (params: TriggerInstanceListActiveParams) => {
+        listActiveTriggers: (_scope, params: TriggerInstanceListActiveParams) => {
           let results = [...triggersData.items];
 
           const userIds = params.user_ids;
@@ -383,7 +383,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             next_cursor: null,
           });
         },
-        createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
+        createTrigger: (_scope, triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
             type: 'webhook' as const,

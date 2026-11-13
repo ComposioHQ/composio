@@ -234,24 +234,14 @@ describe('identity: the two command trees', () => {
     };
 
     it(
-      "today: `dev auth-configs list` in another project's directory sends no scope and gets the key's default project",
+      '`dev auth-configs list` is scoped to the project the directory is set up for',
       async () => {
         const { result, listing } = await listInOtherDirectory();
         expect(result.exitCode).toBe(0);
         expect(listing).toMatchObject({
-          project: DEVELOPER_PROJECT.label,
-          projectFrom: 'key-default',
+          project: OTHER_DEVELOPER_PROJECT.label,
+          projectFrom: 'scope-headers',
         });
-      },
-      TEST_TIMEOUT_MS
-    );
-
-    // CLI defect: commands on the shared backend client send the user key with no org or project scope, so the backend picks the project.
-    it.failing(
-      '`dev auth-configs list` is scoped to the project the directory is set up for',
-      async () => {
-        const { listing } = await listInOtherDirectory();
-        expect(listing?.projectFrom).toBe('scope-headers');
       },
       TEST_TIMEOUT_MS
     );

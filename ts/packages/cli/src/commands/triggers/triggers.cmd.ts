@@ -24,10 +24,10 @@ export const triggersCmd = Command.make('triggers').pipe(
     triggersCmd$Listen,
     triggersCmd$List.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
     triggersCmd$Info.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
-    triggersCmd$Status.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
-    triggersCmd$Create.pipe(withCommandMeta({ sharedFlags: { projectName: false } })),
-    triggersCmd$Enable.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
-    triggersCmd$Disable.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    triggersCmd$Status.pipe(withCommandMeta({ sharedFlags: { userId: false } })),
+    triggersCmd$Create,
+    triggersCmd$Enable.pipe(withCommandMeta({ sharedFlags: { userId: false } })),
+    triggersCmd$Disable.pipe(withCommandMeta({ sharedFlags: { userId: false } })),
   ]),
   withCommandMeta({ requiresLogin: true })
 );

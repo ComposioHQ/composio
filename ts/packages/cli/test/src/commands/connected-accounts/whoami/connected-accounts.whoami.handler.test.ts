@@ -8,6 +8,7 @@ import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ConnectedAccountsTest, MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
+import { DirectoryProjectTest } from 'test/__utils__/layers/developer-project';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const account = (overrides: Partial<ConnectedAccountItem> = {}): ConnectedAccountItem => ({
@@ -42,6 +43,7 @@ const whoamiTest = () => {
   const outputs: Array<string> = [];
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
+    DirectoryProjectTest,
     Layer.succeed(
       TerminalUI,
       TerminalUI.of({

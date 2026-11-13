@@ -1,6 +1,5 @@
 import { withCommandMeta } from 'src/invocation/command-identity';
 import { Command } from 'effect/cli';
-import { NO_SHARED_FLAGS } from 'src/commands/surface';
 import { connectedAccountsCmd$List } from './list/connected-accounts.list.cmd';
 import { connectedAccountsCmd$Info } from './info/connected-accounts.info.cmd';
 import { connectedAccountsCmd$Whoami } from './whoami/connected-accounts.whoami.cmd';
@@ -20,8 +19,8 @@ export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
   withRegisteredSubcommands([
     connectedAccountsCmd$Link,
     connectedAccountsCmd$List,
-    connectedAccountsCmd$Info.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
-    connectedAccountsCmd$Whoami.pipe(withCommandMeta({ sharedFlags: NO_SHARED_FLAGS })),
+    connectedAccountsCmd$Info.pipe(withCommandMeta({ sharedFlags: { userId: false } })),
+    connectedAccountsCmd$Whoami.pipe(withCommandMeta({ sharedFlags: { userId: false } })),
   ]),
   withCommandMeta({ requiresLogin: true })
 );

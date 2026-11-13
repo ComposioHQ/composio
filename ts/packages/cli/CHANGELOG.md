@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- `composio dev` resource commands now act on the directory's developer project or `--project-name`, rather than leaving the backend to choose. Without a directory project they keep working by resolving the default developer project once from session info and naming it on stderr, including in scripts. Project lookup failures preserve their cause and recovery advice.
+
 - A command whose stdout reader stops reading early, as in
   `composio search "send a slack message" | head -1`, now drops the rest of
   its output and exits as it would have. It printed an `EPIPE: broken pipe`

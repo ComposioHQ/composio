@@ -66,7 +66,7 @@ describe('runAuthConfigsList', () => {
     const limits: Array<number | undefined> = [];
     const { layer } = AuthConfigsHandlerTest({
       repository: {
-        listAuthConfigs: params =>
+        listAuthConfigs: (_scope, params) =>
           Effect.sync(() => {
             limits.push(params.limit);
             return {

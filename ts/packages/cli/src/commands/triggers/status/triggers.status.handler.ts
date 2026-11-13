@@ -1,4 +1,5 @@
 import { Array as Arr, Effect, Option } from 'effect';
+import { resolveDeveloperResourceProject } from 'src/commands/surface';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import {
@@ -52,7 +53,9 @@ const filterByToolkits = (
   });
 
 /**
- * Display active trigger instances with optional filters.
+ * Display the developer project's active trigger instances with optional filters. Fails with
+ * `ProjectResolutionError` when no developer project can be found
+ * (`resolveDeveloperResourceProject`).
  *
  * @example
  * ```bash
@@ -72,6 +75,7 @@ export const runTriggersStatus = ({
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
+    const project = yield* resolveDeveloperResourceProject;
 
     // An empty list (`--toolkits ","`) filters nothing.
     const toolkitFilter = Option.flatMap(toolkits, csv =>
@@ -84,7 +88,7 @@ export const runTriggersStatus = ({
     const page = yield* ui
       .withSpinner(
         'Fetching trigger status...',
-        repo.listActiveTriggers({
+        repo.listActiveTriggers(project, {
           user_ids: csvOption(userIds),
           connected_account_ids: csvOption(connectedAccountIds),
           trigger_ids: csvOption(triggerIds),

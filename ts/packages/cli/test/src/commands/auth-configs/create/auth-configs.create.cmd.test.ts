@@ -4,10 +4,23 @@ import type { AuthConfigCreateParams } from '@composio/client/resources/auth-con
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+  runRecordingRepositoryScopes,
+} from 'test/__utils__/layers/developer-project';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
+
+// Logged in, in a directory set up for a developer project.
+const inProject = { ...inDeveloperProjectDirectory, baseConfigProvider: testConfigProvider };
 
 const dangerousDevConfig = {
   cliUserConfig: {
@@ -16,7 +29,7 @@ const dangerousDevConfig = {
 } satisfies TestLiveInput;
 
 describe('CLI: composio dev auth-configs create', () => {
-  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
+  layer(TestLive({ ...inProject, ...dangerousDevConfig }))(
     '[Given] --toolkit "gmail" [Then] creates with Composio managed auth',
     it => {
       it.effect('creates successfully', () =>
@@ -33,7 +46,7 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
+  layer(TestLive({ ...inProject, ...dangerousDevConfig }))(
     '[Given] named config --toolkit "gmail" [Then] creates with name',
     it => {
       it.effect('creates with name successfully', () =>
@@ -49,7 +62,7 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
+  layer(TestLive({ ...inProject, ...dangerousDevConfig }))(
     '[Given] --auth-scheme "OAUTH2" [Then] creates with custom auth',
     it => {
       it.effect('creates with custom auth scheme', () =>
@@ -74,7 +87,7 @@ describe('CLI: composio dev auth-configs create', () => {
 
   layer(
     TestLive({
-      baseConfigProvider: testConfigProvider,
+      ...inProject,
       ...dangerousDevConfig,
       authConfigsData: {
         createResponse: {
@@ -97,7 +110,7 @@ describe('CLI: composio dev auth-configs create', () => {
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
+  layer(TestLive({ ...inProject, ...dangerousDevConfig }))(
     '[Given] invalid JSON in --custom-credentials [Then] fails with a usage error',
     it => {
       it.effect('raises a CommandInputError naming --custom-credentials', () =>
@@ -141,7 +154,7 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
+  layer(TestLive({ ...inProject, ...dangerousDevConfig }))(
     '[Given] next step hint [Then] includes auth config ID',
     it => {
       it.effect('shows next step hint', () =>
@@ -160,7 +173,7 @@ describe('CLI: composio dev auth-configs create', () => {
 
   layer(
     TestLive({
-      baseConfigProvider: testConfigProvider,
+      ...inProject,
       ...dangerousDevConfig,
       authConfigsData: {
         createResponse: {
@@ -210,4 +223,59 @@ describe('CLI: composio dev auth-configs create', () => {
       );
     }
   );
+});
+
+// The request goes to the developer project the command resolved, never to the one the backend
+// would pick for the key.
+describe('CLI: composio dev auth-configs create acts on the developer project', () => {
+  layer(TestLive({ ...inProject, ...dangerousDevConfig }))(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] creates the auth config in that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+          ...['dev', 'auth-configs', 'create', '--toolkit', 'gmail'],
+          ...args,
+        ]);
+
+        expect(exitCode).toBe(0);
+        expect(calls).toEqual([
+          { method: 'createAuthConfig', scope: expect.objectContaining(scope) },
+        ]);
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      ...dangerousDevConfig,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
+    it.effect(
+      '[Given] a directory set up for no project [Then] acts on the default developer project',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+            'dev',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'gmail',
+          ]);
+
+          expect(exitCode).toBe(0);
+          expect(calls).toEqual([
+            { method: 'createAuthConfig', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
+        })
+    );
+  });
 });
