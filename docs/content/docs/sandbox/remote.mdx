@@ -20,6 +20,12 @@ Use the sandbox when a task is too complex for individual tool calls. Your agent
 
 <WorkbenchFlow />
 
+### Large tool responses
+
+The sandbox also keeps big tool outputs out of your model's context window. When a `COMPOSIO_MULTI_EXECUTE_TOOL` response is too large, the full response is saved to a file in the sandbox and the agent gets back an inline preview plus `remote_file_info` pointing at that file. The agent can also set `sync_response_to_workbench: true` when it expects a large result. It then reads, filters, or summarizes the file with `COMPOSIO_REMOTE_WORKBENCH` or `COMPOSIO_REMOTE_BASH_TOOL` and passes only what it needs back to the model. [`COMPOSIO_PROXY_EXECUTE`](/docs/extending-sessions/proxy-execute) offloads large responses the same way.
+
+If you [disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox), large responses have nowhere to go but the context window.
+
 ## What the sandbox provides
 
 ### Built-in helpers

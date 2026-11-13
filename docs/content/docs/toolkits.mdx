@@ -73,6 +73,7 @@ In a default [session](/docs/how-composio-works), your agent works through meta 
 1. **Discover.** The agent describes its task to `COMPOSIO_SEARCH_TOOLS`, which finds relevant tools within the session's allowed toolkits and returns their schemas.
 2. **Connect.** If a tool needs an account that isn't connected, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to get a Connect Link for your user.
 3. **Execute.** The agent calls the discovered tools through `COMPOSIO_MULTI_EXECUTE_TOOL` with the required arguments.
+4. **Process.** If a response is large, the full result is saved to the [sandbox](/docs/sandbox/remote#large-tool-responses) and the agent works on it there with `COMPOSIO_REMOTE_WORKBENCH`, keeping it out of the model's context.
 
 Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_AN_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
 
