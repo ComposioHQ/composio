@@ -1,0 +1,31 @@
+---
+title: Outbound IP addresses
+description: The IP addresses Composio uses to reach connected services, for apps and integrations that only accept requests from trusted IPs.
+keywords: [ip allowlist, trusted ips, outbound ip, egress ip, static ip, ip restrictions, salesforce, gong, firewall]
+---
+
+Some services only accept requests from IP addresses you trust, such as a Salesforce connected app with IP restrictions or a Gong OAuth integration with trusted IPs. If you use your own OAuth app or API credentials with one of these services, add Composio's outbound IP addresses to its allowlist.
+
+## IP addresses
+
+Composio's requests to connected services, including OAuth authorization, token refreshes, and tool calls, come from these addresses:
+
+- `52.72.72.59/32`
+- `54.243.138.89/32`
+- `54.224.131.195/32`
+- `34.233.50.61/32`
+
+Add all four. Requests can come from any of them, so a partial list makes connections fail intermittently.
+
+If the service keeps separate allowlists, such as one for access tokens and one for refresh tokens, add all four addresses to each. Some services take each address as its own range, with the same start and end IP.
+
+## Symptoms of a missing IP
+
+When a service rejects a request from an IP it doesn't trust, new connections fail during OAuth and existing connections expire when their tokens refresh. For example, Salesforce returns `invalid_grant` with `ip restricted by app developer`.
+
+After you add the missing addresses, ask affected users to reconnect. Connections that expired don't recover on their own.
+
+## Service-specific steps
+
+- [Salesforce](/toolkits/salesforce): see the FAQ on `ip restricted by app developer`.
+- [Gong](/toolkits/gong): see the FAQ on trusted IPs for Gong OAuth.
