@@ -106,7 +106,7 @@ To call a provider API, use [Proxy Execute](/docs/extending-sessions/proxy-execu
 ## Refresh credentials
 
 <Callout type="warn">
-`composio.connected_accounts.refresh()` in Python and `composio.connectedAccounts.refresh()` in TypeScript are deprecated. Re-initiate authentication with `link()` or `composio.toolkits.authorize()` instead. The refresh endpoint no longer validates credentials. TypeScript ignores `validateCredentials` and logs a warning when you set it.
+`composio.connected_accounts.refresh()` in Python and `composio.connectedAccounts.refresh()` in TypeScript are deprecated. Re-initiate authentication with `link()` or `session.authorize()` instead. The refresh endpoint no longer validates credentials. TypeScript ignores `validateCredentials` and logs a warning when you set it.
 </Callout>
 
 Manually refresh credentials for a connected account:

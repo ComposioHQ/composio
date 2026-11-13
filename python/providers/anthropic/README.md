@@ -10,6 +10,8 @@ pip install composio composio-anthropic anthropic
 
 Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `ANTHROPIC_API_KEY` in your environment.
 
+Upgrading from the legacy SDK? This package no longer exports `ComposioToolSet`, `Action`, or `App`, and `Composio` has no `get_tools()`. Pass `AnthropicProvider()` to `Composio`, create a session, and call `session.tools()` as shown below. See the [SDK migration guide](https://docs.composio.dev/docs/migration-guide/new-sdk).
+
 ## Quickstart
 
 `AnthropicProvider` is non-agentic: Claude returns `tool_use` blocks, `handle_tool_calls` executes them, and you send the results back as `tool_result` blocks.

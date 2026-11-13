@@ -165,6 +165,81 @@ fi
 
 For most integrations the auth config is hard-coded per integration, so you'll know up front which path to use and can drop the branching.
 
+## If you don't have an auth config ID
+
+`link()` takes an auth config ID. Don't reach for `composio.toolkits.authorize()` to avoid it: that helper still calls `initiate()`, so it fails for Composio-managed OAuth after the cutover. Don't call the private `_get_auth_config_id()` helper either.
+
+With sessions, you don't need the ID. `session.authorize()` takes a toolkit slug and returns the same connection request through Connect Link:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+request = session.authorize("github")
+print(request.redirect_url)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123');
+const request = await session.authorize('github');
+console.log(request.redirectUrl);
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123"}' | jq -r '.session_id')
+
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "github"}' | jq -r '.redirect_url'
+```
+</Tab>
+</Tabs>
+
+Without a session, look up the toolkit's Composio-managed auth config with the public list method and pass its ID to `link()`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+configs = composio.auth_configs.list(toolkit_slug="github", is_composio_managed=True)
+request = composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id=configs.items[0].id,
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const { items } = await composio.authConfigs.list({ toolkit: 'github', isComposioManaged: true });
+const request = await composio.connectedAccounts.link('user_123', items[0].id);
+```
+</Tab>
+<Tab value="API">
+```bash
+AUTH_CONFIG_ID=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/auth_configs?toolkit_slug=github&is_composio_managed=true" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[0].id')
+
+curl -s -X POST https://backend.composio.dev/api/v3.1/connected_accounts/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"auth_config_id\": \"$AUTH_CONFIG_ID\", \"user_id\": \"user_123\"}" | jq -r '.redirect_url'
+```
+</Tab>
+</Tabs>
+
+If the list is empty, create the auth config first. See [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).
+
 ## Related
 
 - [Connected accounts → Multiple accounts](/docs/auth-configuration/connected-accounts#multiple-accounts) — using `link()` for multi-account flows

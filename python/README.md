@@ -168,6 +168,18 @@ subscription.wait_forever()
 
 `subscribe()` streams events over a WebSocket for local development. In production, register a webhook URL and parse deliveries with `composio.triggers.parse()`. See [setting up triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers).
 
+## Upgrading from the legacy SDK
+
+Code written for `composio-core` (v1) doesn't run on this package. `ComposioToolSet`, `Action`, `App`, `get_tools()`, and `initiate_connection()` no longer exist, and importing them raises `ImportError` or `AttributeError`. Use these instead:
+
+| Legacy | Current |
+| --- | --- |
+| `from composio_openai import ComposioToolSet` | `from composio_openai import OpenAIProvider`, then `Composio(provider=OpenAIProvider())` |
+| `toolset.get_tools(...)` | `composio.create(user_id=...).tools()` |
+| `toolset.initiate_connection(...)` | `session.authorize("gmail")` |
+
+For Composio-managed OAuth, `connected_accounts.initiate()` is retired; use `session.authorize()` or `connected_accounts.link()`. See the [SDK migration guide](https://docs.composio.dev/docs/migration-guide/new-sdk) and [migrating from initiate() to link()](https://docs.composio.dev/docs/auth-configuration/migrating-initiate-to-link).
+
 ## Development
 
 This package lives in the [Composio SDK monorepo](https://github.com/ComposioHQ/composio) under `python/`. See the [contribution guidelines](https://github.com/ComposioHQ/composio/blob/next/CONTRIBUTING.md) to get set up.
