@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { Context, Data, Effect, Layer, Option, Schema, pipe } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
@@ -160,5 +161,5 @@ export class JsPackageManagerDetector extends Context.Service<
   static readonly Default: Layer.Layer<JsPackageManagerDetector> = Layer.effect(
     JsPackageManagerDetector,
     makeJsPackageManagerDetector
-  ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));
+  ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
 }

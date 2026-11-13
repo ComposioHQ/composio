@@ -14,7 +14,7 @@ When no human is available to log in, `composio login --agent` provisions or reu
 
 ## Install
 
-Install the CLI with one command:
+On Linux or macOS, install the CLI with one command:
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
@@ -46,6 +46,28 @@ If you explicitly need the standalone skill without the native plugin, install i
 composio setup skill claude
 composio setup skill codex
 ```
+
+### Windows x64 (experimental)
+
+Run in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME\.composio`, and adds that directory to your User PATH. Then run `composio login`. You don't need administrator access.
+
+To install a specific stable or beta release, set `COMPOSIO_INSTALL_VERSION` first:
+
+```powershell
+$env:COMPOSIO_INSTALL_VERSION = "X.Y.Z"; irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_SHELL` to `none` to leave PATH unchanged. Keep the complete bundle together when moving it.
+
+Windows support is experimental. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
+
+Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. For a fully supported setup, run the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 ### Backend and Dashboard configuration
 
@@ -133,7 +155,7 @@ composio --version
 which composio
 ```
 
-The installer supports Linux x64, Linux ARM64, macOS Intel, and macOS Apple Silicon. On Windows, install and run it inside [WSL](https://learn.microsoft.com/windows/wsl/install).
+The CLI supports Linux x64, Linux ARM64, macOS Intel, and macOS Apple Silicon. Windows x64 support is experimental: use the [PowerShell installer](#windows-x64-experimental).
 
 ### Update
 

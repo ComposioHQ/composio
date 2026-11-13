@@ -6,10 +6,12 @@
 # bounded retry while uploads settle.
 #
 # Inputs (env): RELEASE_TAG, GH_TOKEN
+#               WINDOWS_VERIFIED (optional): "false" when the experimental Windows build failed
+#               its native checks, so the release ships without the Windows archive
 #               VERIFY_ATTEMPTS / VERIFY_SLEEP_SECONDS (optional, for fast tests)
 set -euo pipefail
 
-# Keep this list in lock-step with the build matrix in build-cli-binaries.yml (4 platforms)
+# Keep this list in lock-step with build-cli-binaries.yml and cli.windows.yml (5 platforms)
 # plus the skill bundle and checksums. Adding a platform to the matrix must extend this list.
 expected=(
   composio-linux-x64.zip
@@ -19,6 +21,9 @@ expected=(
   composio-skill.zip
   checksums.txt
 )
+if [[ "${WINDOWS_VERIFIED:-true}" != "false" ]]; then
+  expected+=(composio-windows-x64.zip)
+fi
 
 attempts="${VERIFY_ATTEMPTS:-10}"
 sleep_seconds="${VERIFY_SLEEP_SECONDS:-15}"
@@ -27,12 +32,23 @@ for attempt in $(seq 1 "$attempts"); do
   # Single snapshot per attempt — querying names and state separately would open a
   # time-of-check/time-of-use gap in the very gate meant to close one.
   payload=$(gh release view "$RELEASE_TAG" --json assets)
-  mapfile -t uploaded < <(jq -r '.assets[] | select(.state == "uploaded") | .name' <<<"$payload" | sort)
+  uploaded=$(jq -r '.assets[] | select(.state == "uploaded") | .name' <<<"$payload" | sort)
 
   missing=()
   for want in "${expected[@]}"; do
-    printf '%s\n' "${uploaded[@]}" | grep -qxF "$want" || missing+=("$want")
+    printf '%s\n' "$uploaded" | grep -qxF "$want" || missing+=("$want")
   done
+
+  # An asset outside the expected set is not covered by checksums.txt, for example a Windows
+  # archive left on a resumed draft. Waiting cannot fix that, so fail at once.
+  unexpected=()
+  while IFS= read -r have; do
+    [[ -z "$have" ]] || printf '%s\n' "${expected[@]}" | grep -qxF "$have" || unexpected+=("$have")
+  done < <(jq -r '.assets[].name' <<<"$payload")
+  if [[ ${#unexpected[@]} -gt 0 ]]; then
+    echo "::error::Release $RELEASE_TAG has unexpected assets: ${unexpected[*]}"
+    exit 1
+  fi
 
   if [[ ${#missing[@]} -eq 0 ]]; then
     echo "✅ All ${#expected[@]} expected assets present and uploaded."

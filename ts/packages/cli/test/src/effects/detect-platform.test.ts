@@ -88,9 +88,22 @@ describe('detect-platform.ts', () => {
       );
     });
 
+    it.effect('maps Windows x64 to the Windows release asset platform', () =>
+      Effect.gen(function* () {
+        expect(yield* detectPlatform).toEqual({ platform: 'windows', arch: 'x64' });
+      }).pipe(Effect.provide(createMockNodeOs('win32', 'x64')))
+    );
+
+    it.effect('rejects Windows ARM64 without a published binary', () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(detectPlatform);
+        expect(error).toBeInstanceOf(UnsupportedPlatformError);
+        expect(error.arch).toBe('arm64');
+      }).pipe(Effect.provide(createMockNodeOs('win32', 'arm64')))
+    );
+
     describe('Unsupported Platforms', () => {
       const unsupportedPlatforms = [
-        'win32',
         'freebsd',
         'openbsd',
         'sunos',
