@@ -92,8 +92,18 @@ const fixture = () => {
           argv: [
             process.execPath,
             '-e',
-            'console.log("first line");console.log("x".repeat(200000));console.error("final type error");process.exitCode=2',
+            // Keep the markers on one stream; stdout and stderr can arrive in either order.
+            'console.log("first line");console.log("x".repeat(200000));console.log("final type error");process.exitCode=2',
           ],
+        },
+      ],
+    },
+    stderr: {
+      boundary: 'offline',
+      commands: [
+        {
+          cwd: '.',
+          argv: [process.execPath, '-e', 'console.error("saved error");process.exitCode=2'],
         },
       ],
     },
@@ -417,6 +427,15 @@ test('long output keeps its start and end in the capped log', () => {
   assert.match(log, /^first line\n/);
   assert.match(log, /bytes of output omitted/);
   assert.match(log, /final type error\n$/);
+});
+
+test('command stderr is saved in the output log', () => {
+  const f = fixture();
+  assert.equal(f.init('case', 'stderr').status, 0);
+  assert.equal(f.run('verify', 'case').status, 1);
+  const receiptPath = path.join(f.root, f.state('case').receipt);
+  const log = readFileSync(path.join(path.dirname(receiptPath), 'output.log'), 'utf8');
+  assert.equal(log, 'saved error\n');
 });
 
 test('a successful command that edits its verification subject cannot establish fresh proof', () => {
