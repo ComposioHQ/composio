@@ -46,7 +46,7 @@ result = composio.tools.execute(
 
 ### before_execute
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L278)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L288)
 
 ```python
 @before_execute(modifier: BeforeExecute | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
@@ -55,6 +55,8 @@ def my_modifier(...):
 ```
 
 ### after_execute
+
+Build an execution-result modifier.  Your callback receives `(tool, toolkit, response)` and returns a `ToolExecutionResponse` dictionary. Check `response["successful"]`, not the session model's `result_type` attribute. Session adapters retain `log_id` and `result_type` as dictionary keys. Serialize with `json.dumps(response)` if needed; it is not a provider message. Register this on tool execution or `session.tools(modifiers=[...])`. Calling `session.execute` directly does not invoke it.
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L239)
 
@@ -68,7 +70,7 @@ def my_modifier(...):
 
 Build a `Modifier` for the file-upload hook (same scoping pattern as `before_execute`).  Your callable may take **either**:  - a single `context` argument (`BeforeFileUploadContext`) — the preferred form, exposes `context["source"]` (`"path"` or `"url"`), or - three positional arguments `(path, tool, toolkit)` — legacy form, kept for back-compat.  Return a new path/URL string to substitute, or `False` to abort the upload (raises `FileUploadAbortedError`).  Pass the returned `Modifier` in `modifiers=[...]` on `composio.core.models.tools.Tools.execute` or `tools.get`. Multiple such modifiers are composed in list order.
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L317)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L327)
 
 ```python
 @before_file_upload(modifier: BeforeFileUploadLike | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
@@ -78,7 +80,7 @@ def my_modifier(...):
 
 ### schema_modifier
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L375)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L385)
 
 ```python
 @schema_modifier(modifier: SchemaModifier | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
