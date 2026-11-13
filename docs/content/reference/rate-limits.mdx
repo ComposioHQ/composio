@@ -69,7 +69,7 @@ Follow the provider's retry or reset window. A short burst limit and an exhauste
 
 Upgrading your Composio plan alone does not move an existing managed connection to a different provider app or dedicated quota. Reconnecting the same managed connection does not switch it to your own OAuth app either.
 
-On the Developer Platform, you can [create a custom auth config](/docs/authentication/custom-app-vs-managed-app) with your own provider credentials where supported. Authorize a new connected account under that config and select it in your workflow. The provider's approval requirements and limits still apply. Google Ads, for example, uses a developer token in addition to an OAuth client ID and secret.
+On the Developer Platform, you can [create a custom auth config](/docs/authentication/custom-app-vs-managed-app) with your own provider credentials where supported. Authorize a new connected account under that config and select it in your workflow. For OAuth, every user must [grant fresh consent to the new client](/docs/authentication/custom-app-vs-managed-app#switch-from-managed-auth-to-your-own-oauth-app); existing managed-auth connections cannot be transferred. The provider's approval requirements and limits still apply. Google Ads, for example, uses a developer token in addition to an OAuth client ID and secret.
 
 Auth configs belong to a project. A custom config in your Developer Platform project does not change an existing Composio For You connection.
 
