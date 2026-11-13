@@ -1,0 +1,32 @@
+{
+  "$comment": "Hand-authored: no model produced this file. It scripts the path the composio-cli skill teaches, one fixture per model turn. After the first turn each fixture is gated on the id of the previous shell call and on a substring of what that command printed, so a CLI that answers differently leaves the next turn without a match and the strict replay fails.",
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "Use a single `composio run` inline script",
+        "hasToolResult": false,
+        "turnIndex": 0
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_run",
+            "name": "shell",
+            "arguments": {
+              "command": "composio run 'const sent = await execute(\"SLACK_SEND_MESSAGE\", { channel: \"general\", text: \"build passed\" }); console.log(sent.data.ts);'"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_run",
+        "toolResultContains": "1767225600.000100"
+      },
+      "response": {
+        "content": "Sent \"build passed\" to #general; timestamp 1767225600.000100."
+      }
+    }
+  ]
+}
