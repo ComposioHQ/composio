@@ -6,32 +6,26 @@ Use this guide for failures shared by Composio For You and Composio Platform. Ke
 
 Get the Composio log or request ID and inspect Dashboard Logs before changing credentials or code. Agent frameworks often wrap the underlying provider error.
 
-When the CLI is already installed and authenticated for the applicable product, these commands can provide additional evidence:
-
-```bash
-composio dev logs tools
-composio dev logs triggers
-composio connections list
-```
+When the CLI is already installed and authenticated for the applicable product, consult the [CLI guide](https://docs.composio.dev/docs/cli.md) and installed command help for log and connection inspection commands.
 
 Do not install or reinitialize the CLI solely to diagnose a dashboard log that already contains the failure.
 
 ## Tool does not exist
 
-Never guess a slug. In a Platform session, discover tools through the session meta tools. In a CLI workflow, use `composio search`, then inspect the returned tool.
+Never guess a slug. In a Platform session, use the [meta-tool reference](https://docs.composio.dev/toolkits/meta-tools.md) and returned schemas for discovery. In a CLI workflow, follow the [CLI discovery procedure](https://docs.composio.dev/docs/cli.md), then inspect the returned tool.
 
 For legacy manual execution, a missing tool may be a toolkit-version problem. Fetch current migration and execution docs rather than assuming the provider lacks the operation. New session integrations should use runtime discovery.
 
 ## Tool call paused or blocked by session policy
 
-Some results are the session working as configured, not failures. Check the result type before diagnosing auth or the provider:
+Some results are the session working as configured. Read the current result-handling instructions before diagnosing auth or the provider:
 
-- **`input_required`** (`ToolInputRequiredError` in Python, `ComposioToolInputRequiredError` in TypeScript): an [Approvals](https://docs.composio.dev/docs/approvals.md) rule gated the tool. It didn't run. Ask the user, then retry with `input_responses` and `request_state`. Over MCP, a client without elicitation support gets these calls denied.
-- **`blocked`** with `Blocked by session policy`: a [Firewall](https://docs.composio.dev/docs/firewall.md) hook matched. `block_reason` and `hook_results` name the hook. Don't reconnect the account or retry the same call. Change the request, or change the hook if it blocked something it shouldn't.
+- For a call waiting on user input, follow [Approvals](https://docs.composio.dev/docs/governance/approvals.md). Ask the user before resuming, preserve their answer, and use the documented continuation procedure. Check client support before configuring an MCP fallback.
+- For a policy block, follow [Firewall](https://docs.composio.dev/docs/firewall.md) to inspect the matching policy. Don't reconnect the account or retry the same call to bypass it. Change the request, or change the policy only when the requested work authorizes that change.
 
 ## Custom MCP tools missing
 
-If a `CUSTOM_*` toolkit synced but its tools don't appear in search, list the toolkit's tools directly or fetch them with `COMPOSIO_GET_TOOL_SCHEMAS`, then call the tool by slug. Resyncing doesn't fix search. If the v3 tools API returns an empty list, use v3.1 or request the latest toolkit version. See [Custom MCP troubleshooting](https://docs.composio.dev/docs/extending-sessions/custom-mcp.md).
+Read [Custom MCP troubleshooting](https://docs.composio.dev/docs/extending-sessions/custom-mcp.md) for current discovery, synchronization, and API-version behavior. Compare the stored toolkit identifier, connection state, and returned schemas before choosing a recovery step. Do not assume resynchronizing fixes every discovery failure.
 
 ## Identify the authentication boundary
 
@@ -39,7 +33,7 @@ If a `CUSTOM_*` toolkit synced but its tools don't appear in search, list the to
 
 This happens before a provider tool call succeeds. The Platform project credential may be missing, masked, invalid, or associated with a different project.
 
-Re-run the no-output credential checks from the Platform guide. Do not print, rotate, replace, or request the key in chat. If the developer arrived from Dashboard Getting Started, direct them back to that project's Step 1 rather than running `composio dev init`.
+Re-run the no-output credential checks from the Platform guide. Do not print, rotate, replace, or request the key in chat. If the developer arrived from Dashboard Getting Started, direct them back to the same project's credential source rather than provisioning another project.
 
 ### Provider connected-account 401
 
@@ -49,26 +43,21 @@ Keep the same project key and application user ID. Generate a fresh Connect Link
 
 ### For You client authentication
 
-If the MCP client itself cannot authenticate, verify the consumer endpoint, OAuth session, or `ck_...` header path from the For You guide. Do not substitute a Platform project key.
+If the MCP client itself cannot authenticate, check its endpoint and authentication against [Composio Connect](https://docs.composio.dev/docs/composio-connect.md). Do not substitute a Platform project key.
 
 ## Common provider constraints
 
-- **Google "App is blocked":** remove unnecessary scopes or use a verified custom OAuth app.
-- **Google API disabled:** enable the required provider API in the Google Cloud project that owns the custom credentials.
-- **Slack 429:** managed apps share provider quota; use a custom Slack app for a dedicated bucket when needed.
-- **Microsoft 403:** the tenant may require administrator consent.
-- **GitHub App access:** OAuth credentials and repository installation are separate steps.
-- **Payment toolkit session restriction:** treat it as a surface policy restriction, not a plan or connection failure.
+Read the affected [toolkit's current guide](https://docs.composio.dev/toolkits) and [managed versus custom auth guidance](https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app.md) before diagnosing provider restrictions. Check the specific error, requested scopes, provider configuration, quotas, and administrator requirements against those sources. Do not prescribe a provider-specific fix from an error code alone.
 
 ## Branding and production auth
 
-Managed auth is intended to make initial development easy. Before launch, move integrations that require the application's branding, scopes, or dedicated quotas onto its own OAuth apps.
+Read [managed versus custom auth](https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app.md) before choosing a production authentication path. Match the choice to the application's branding, scopes, and quota requirements.
 
-When someone asks to remove Composio branding, identify the surface first: Connect Link page, provider consent screen, secured badge, callback domain, or success page. They have different fixes. Fetch `white-labeling-authentication.md` before proposing an implementation.
+When someone asks to remove Composio branding, identify the surface first: Connect Link page, provider consent screen, secured badge, callback domain, or success page. They have different fixes. Read [authentication branding](https://docs.composio.dev/docs/authentication/white-labeling-authentication.md) before proposing an implementation.
 
 ## Triggers and webhooks
 
-Check the Composio status page and trigger logs before changing a trigger. Use current trigger documentation for event names, polling limits, and connection-state verification. Do not promise static outbound IPs; use documented webhook signature verification.
+Check the Composio status page and trigger logs before changing a trigger. Follow [trigger troubleshooting](https://docs.composio.dev/docs/setting-up-triggers/troubleshooting.md) for connection and delivery checks. Use [event subscriptions](https://docs.composio.dev/docs/setting-up-triggers/subscribing-to-events.md) for webhook verification and [outbound IP documentation](https://docs.composio.dev/docs/security/outbound-ips.md) for network allowlisting. Do not copy event names, polling limits, or IP addresses into the skill.
 
 ## Canonical follow-up
 

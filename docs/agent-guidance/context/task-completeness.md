@@ -21,7 +21,7 @@ The shipped customer skill lives in `skills/composio/`; contributor skills live 
 
 Keep product routing, inspection steps, identity and credential handling, and verification procedure in skills. Link to live documentation for signatures, option shapes, tool inventories, package versions, and feature limits. Link to the installed SDK's reference when a task targets that version. Do not copy those facts into a second reference file.
 
-The public skill already directs agents to canonical documentation, but `skills/composio/references/platform.md` still contains copied session examples, a meta-tool inventory, and detailed experimental API options. Those files are outside this docs-only pass and still need a procedural-content review.
+The shipped skill's bundled Platform, For You, and troubleshooting references now route API shapes, commands, credentials, feature limits, and provider-specific details to canonical documentation. They retain task selection, inspection, credential handling, and verification procedures. Contributor skills under `.agents/skills/` remain outside this pass.
 
 ## Benchmark handoff
 
