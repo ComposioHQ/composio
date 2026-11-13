@@ -244,7 +244,41 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
-          { type: 'folder', path: 'security', label: 'Security and data' },
+        ],
+      },
+      {
+        label: 'Security and Compliance',
+        items: [
+          { type: 'page', url: '/docs/security/overview' },
+          {
+            type: 'group',
+            label: 'Compliance',
+            links: [
+              {
+                type: 'link',
+                url: '/kb/guide/platform-compliance-data-handling',
+                label: 'Vendor security review',
+              },
+              { type: 'link', url: 'https://trust.composio.dev', label: 'Trust Center', external: true },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Data privacy',
+            links: [
+              { url: '/docs/security/data-retention' },
+              { url: '/docs/security/zero-data-retention' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Security controls',
+            links: [
+              { url: '/docs/security/token-custody' },
+              { url: '/docs/security/audit-logs' },
+              { url: '/docs/security/outbound-ips' },
+            ],
+          },
         ],
       },
       {

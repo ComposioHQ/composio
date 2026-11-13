@@ -112,10 +112,15 @@ async function buildPopulateEntries(src: AnySource) {
 
 const toolkitSlugsSchema = z.array(z.object({ slug: z.string() }));
 
-async function getDynamicToolkitEntries() {
+export async function getDynamicToolkitEntries() {
   const raw = await readFile('public/data/toolkits.json', 'utf-8');
   const toolkits = toolkitSlugsSchema.parse(JSON.parse(raw));
-  return toolkits.map(t => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
+  return toolkits.flatMap(t =>
+    ['', '.md', '.mdx'].map(suffix => ({
+      value: { slug: [`${t.slug}${suffix}`] },
+      hashes: [] as string[],
+    })),
+  );
 }
 
 export async function getKnowledgeToolkitRouteEntries() {

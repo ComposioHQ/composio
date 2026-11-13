@@ -11,7 +11,7 @@ import {
   shouldAnimateDocsProductSwitch,
 } from '../../lib/home-navigation';
 import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree';
-import { referenceSource, source } from '../../lib/source';
+import { knowledgeBaseSource, referenceSource, source } from '../../lib/source';
 
 describe('Docs product navigation', () => {
   test('defines the product labels, descriptions, landings, and themes once', () => {
@@ -175,24 +175,50 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
-      '/docs/security/audit-logs',
-      '/docs/security/token-custody',
-      '/docs/security/outbound-ips',
+      '/kb/guide/platform-compliance-data-handling',
+      'https://trust.composio.dev',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
+      '/docs/security/token-custody',
+      '/docs/security/audit-logs',
+      '/docs/security/outbound-ips',
     ];
-    const security = platformTree.children.flatMap(node =>
-      node.type === 'folder' ? [node, ...node.children] : [node],
-    ).find(node => node.type === 'folder' && node.name === 'Security and data');
-    expect(security?.type).toBe('folder');
-    if (security?.type !== 'folder') throw new Error('Security and data folder missing');
-    expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
-      securityUrls,
+    const securityStart = platformTree.children.findIndex(
+      node => node.type === 'separator' && node.name === 'Security and Compliance',
     );
+    expect(securityStart).toBeGreaterThan(-1);
+    const securityPages = platformTree.children.slice(
+      securityStart + 1,
+      platformTree.children.findIndex(
+        (node, index) => index > securityStart && node.type === 'separator',
+      ),
+    );
+    expect(securityPages).toMatchObject([
+      { type: 'page', url: '/docs/security/overview' },
+      { type: 'folder', name: 'Compliance' },
+      { type: 'folder', name: 'Data privacy' },
+      { type: 'folder', name: 'Security controls' },
+    ]);
+    expect(pageTreeUrls({ children: securityPages })).toEqual(securityUrls);
+    expect(securityPages.slice(1).map(node => node.type)).toEqual(['folder', 'folder', 'folder']);
+    const compliance = securityPages[1];
+    if (compliance.type !== 'folder') throw new Error('Compliance group missing');
+    expect(compliance.index).toBeUndefined();
+    expect(compliance.children).toContainEqual(expect.objectContaining({
+      type: 'page', url: 'https://trust.composio.dev', external: true,
+    }));
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       expect(forYouUrls).not.toContain(url);
     }
+    expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])?.url).toBe(
+      '/kb/guide/platform-compliance-data-handling',
+    );
+    const governance = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Governance',
+    );
+    expect(governance?.type).toBe('folder');
+    expect(securityPages).not.toContain(governance);
 
     const readiness = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],

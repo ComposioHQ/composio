@@ -39,7 +39,12 @@ function resolveSidebarItem(tree: Root, item: ProductSidebarItem): Node {
     if (first.type !== 'page') {
       throw new Error(`Product sidebar group has no first page: ${item.label}`);
     }
-    return { type: 'folder', name: item.label, index: first, children };
+    return {
+      type: 'folder',
+      name: item.label,
+      index: first.url.startsWith('/docs/') ? first : undefined,
+      children,
+    };
   }
 
   const sourceNode =

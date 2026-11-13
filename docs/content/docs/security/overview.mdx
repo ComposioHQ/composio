@@ -1,42 +1,50 @@
 ---
-title: Security
-description: How Composio secures your data, credentials, and tool execution, and where to find our compliance reports.
+title: Security overview
+description: Start a security and compliance review of Composio with links to data handling, credential architecture, controls, and review evidence.
 keywords: [security, compliance, SOC 2, trust center, encryption, isolation]
 ---
 
-Composio is built with security at its core. We use least-privilege defaults, isolate every organization and project, encrypt credentials, and give you controls over what we store.
+Composio is built with security at its core. We use least-privilege defaults, isolate organizations and projects, protect credentials, and give you controls over what we store. Start with the resources for your role.
 
-## Compliance and the Trust Center
+<span id="start-your-review" className="block scroll-m-28" />
 
-Composio is SOC 2 Type II compliant. For our latest reports and certifications (the SOC 2 Type II report, our sub-processor list, and more), visit the [Composio Trust Center](https://trust.composio.dev).
+## I'm evaluating Composio
 
-## Isolation and access control
+Gather the evidence and data-handling terms you need for a vendor security review.
 
-- Organizations and projects isolate your resources. Data from one project is not visible to another.
-- API keys are scoped, support per-key IP allowlisting, and can opt in to capabilities such as Proxy Execute at creation.
-- Scoped project API keys separate **Session management** (creating, viewing, configuring, and deleting sessions) from **Session tool execution** (search, tool execution, proxy execution, and session-linked MCP access). See [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) to configure access.
-- Multi-factor authentication (MFA) is available for Dashboard sign-in and can be enforced by an organization admin.
-- Organization admins can see who changed members, projects, API keys, and other settings in [audit logs](/docs/security/audit-logs).
+<span id="compliance-and-the-trust-center" className="block scroll-m-28" />
+<span id="related-resources" className="block scroll-m-28" />
 
-## Credential protection
+| Review area | Where to go |
+| --- | --- |
+| Compliance reports and certifications | [Composio Trust Center](https://trust.composio.dev) |
+| Downstream providers | [Subprocessor register](https://trust.composio.dev/subprocessors) |
+| Data-processing agreements | [Data Processing Addendum](https://composio.dev/legal/dpa) and [Business Associate Agreement](https://composio.dev/legal/baa) |
+| Logs, files, model processing, and retention | [Data retention and handling](/docs/security/data-retention) |
+| Vendor-review requirements | [Compliance and vendor-review guidance](/kb/guide/platform-compliance-data-handling) |
 
-See [Token custody architecture](/docs/security/token-custody) for credential boundaries, server-side execution, default API redaction, and deployment options.
+## I'm building with Composio
 
-- Connected-account credentials, auth configs, and API keys are encrypted at rest using AES-256-GCM, and all traffic is encrypted in transit using TLS.
-- Connected-account tokens are redacted by default in API responses, for both Composio-managed and custom auth configs. To act on a provider directly, use [Proxy Execute](/docs/extending-sessions/proxy-execute).
-- Webhook deliveries are signed; verify the `webhook-signature` header when handling trigger events. For custom OAuth webhook setup, see [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+Review the controls for your application's credentials, permissions, and retained data.
 
-## Your responsibilities
+<span id="isolation-and-access-control" className="block scroll-m-28" />
 
-Composio executes the tools and connections you configure. You control which toolkits are enabled, which accounts are connected, and what your agents are allowed to do. Review the access you grant, and treat connected-account scopes as you would any production credential.
+| Review area | Where to go |
+| --- | --- |
+| Credential custody and deployment options | [Token custody architecture](/docs/security/token-custody) |
+| Permissions for your application | [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) and [provider scopes](/docs/authentication/controlling-scopes) |
+| Payload storage, coverage, and exclusions | [Zero Data Retention](/docs/security/zero-data-retention) |
+| Administrative changes | [Audit logs](/docs/security/audit-logs) |
+| Network allowlists | [Outbound IP addresses](/docs/security/outbound-ips) |
+
+### Credential protection
+
+Provider credentials are encrypted at rest using AES-256-GCM, and traffic uses TLS. Composio uses credentials during execution. ZDR controls storage of covered payloads, not processing during execution.
+
+### Your responsibilities
+
+You authenticate your users and decide which accounts and tools they can access. Review those choices alongside your application's own logs and model-provider policies.
 
 ## Reporting a vulnerability
 
-To report a security issue, contact `security@composio.dev`. Please do not disclose vulnerabilities publicly until we have addressed them.
-
-## Related resources
-
-- [Data retention and handling](/docs/security/data-retention): what we store and for how long, on every plan.
-- [Zero Data Retention](/docs/security/zero-data-retention): how to stop storing call payloads, and what ZDR covers.
-- [Outbound IP addresses](/docs/security/outbound-ips): the addresses to allowlist for services that only accept trusted IPs.
-- [Composio Trust Center](https://trust.composio.dev): security certifications and compliance.
+Report vulnerabilities privately to [security@composio.dev](mailto:security@composio.dev).
