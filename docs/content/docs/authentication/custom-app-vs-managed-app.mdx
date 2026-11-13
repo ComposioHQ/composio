@@ -6,37 +6,43 @@ keywords: [custom auth config, managed auth, oauth, auth config, white label, ow
 
 Composio supports two ways to authenticate users with toolkits.
 
-- **[Composio managed apps](/toolkits/managed-auth)**: Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You do not need to register your own OAuth app.
+- **[Composio-managed apps](/toolkits/managed-auth)**: Composio registers and maintains OAuth apps for popular toolkits such as GitHub, Gmail, and Slack. You don't register an OAuth app.
 - **Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.
 
-This page covers when to use each, how to create a custom auth config, and how to wire it into a session.
+A Composio-managed app works in production. Its OAuth app is shared with other Composio customers, so you may run into shared provider rate limits as your usage grows. When you're ready for higher volume, we recommend your own OAuth app.
 
 Both options use Composio to store and refresh connected-account credentials. Choosing your own OAuth app changes app ownership, branding, scopes, and provider quota, not [token custody](/docs/security/token-custody#oauth-app-ownership-and-token-custody).
 
-## When to use Composio managed apps
+## What a managed app gives you
 
-Managed apps are the default when they are available. Keep them in production when their consent branding, scopes, and shared provider quotas fit your product. Use them when:
+- **No app registration.** You skip the provider's developer portal, client credentials, redirect URIs, and app review.
+- **A fast start.** Create a session and connect a test account right away. Composio requests a default set of scopes for each toolkit.
 
-- **You're building and iterating.** No OAuth app registration, no credentials to manage. Create a session and start testing immediately.
-- **Default scopes cover your needs.** Composio requests sensible defaults for each toolkit.
-- **Composio branding on consent screens fits your product.** Users see Composio's app name during OAuth. You can still [white-label the Connect Link page](/docs/authentication/white-labeling-authentication#customizing-the-connect-link) with your logo and app title without needing your own OAuth app.
+You can still [white-label the Connect Link page](/docs/authentication/white-labeling-authentication#customizing-the-connect-link) with your logo and app title on a managed app.
 
-## When to use a custom auth config
+## What changes with your own app
 
-Bring your own credentials when any of these apply:
+- **Dedicated provider rate limits.** Some provider limits apply per OAuth app. On a managed app, connections share them with other Composio customers. Your own app has its own. See [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits) and [provider quota errors](/reference/rate-limits#provider-quota-errors).
+- **Your name on the consent screen.** Users see your app name when they approve access.
+- **Your own scopes.** You can [adjust scopes](/docs/authentication/controlling-scopes) on a managed config, but only within what Composio's app is set up to request. A scope outside that set needs your own app.
 
-- **You need your app name on OAuth consent screens.** Use your own OAuth app when your product's branding requirements call for it.
-- **You need custom scopes.** Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).
-- **You're hitting rate limits.** Managed apps share quota across all Composio users. Your own app gets a dedicated quota.
-- **You need faster polling triggers.** Managed auth enforces a 2-minute minimum polling interval; your own app can use shorter polling intervals where supported.
-- **You're connecting to a custom instance.** Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.
-- **Enterprise customers require your branding end-to-end.**
+## When your own app makes sense
+
+If you expect high volume, we suggest setting up your own app early. Managed connections keep working until you move them, and users reconnect once when you do, so an earlier move means fewer people to reconnect. Your own app also makes sense when any of these apply:
+
+- **You need your app name on OAuth consent screens.** Your product or your enterprise customers require your branding end to end.
+- **You need custom scopes.** Composio's scopes may not include everything you need, for example write access to a specific Google API.
+- **You're hitting provider rate limits.** Your own app stops sharing quota with other Composio customers.
+- **You need faster polling triggers.**
+- **You're connecting to a custom instance.** Self-hosted or regional variants, such as a private Salesforce subdomain, need their own OAuth app.
+
+Some toolkits have no managed app at all. See [Toolkits without managed auth](#toolkits-without-managed-auth).
+
+Ready to move? Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app). Existing connections keep working while you switch.
 
 ## Create a custom auth config
 
-To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth). You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.
-
-The steps below use the dashboard. To create auth configs in code instead, for example one per customer, see [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).
+To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth). The steps below use the dashboard. To create auth configs in code instead, for example one per customer, see [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).
 
 <Steps>
 <Step>
@@ -44,7 +50,7 @@ The steps below use the dashboard. To create auth configs in code instead, for e
 
 In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=docs-custom-app-vs-managed-app):
 
-1. Click **Create Auth Config**
+1. Click **Create**
 2. Select the toolkit
 3. Choose the auth scheme (OAuth2, API Key, Bearer Token, etc.)
 4. Follow the dashboard instructions for the required credential fields
@@ -65,7 +71,7 @@ Step-by-step OAuth guides: [Google](https://composio.dev/auth/googleapps) | [Git
 <Step>
 <StepTitle>Save and copy the auth config ID</StepTitle>
 
-After you enter the required credentials, click **Create** and copy the auth config ID (for example, `ac_1234abcd`).
+After you enter the required credentials, click **Create Auth Config** and copy the auth config ID (for example, `ac_1234abcd`).
 </Step>
 
 <Step>
@@ -165,4 +171,8 @@ Some OAuth toolkits do not have a Composio-managed OAuth app. Check [Managed OAu
 
 ## Next
 
-<Card icon={<Code />} title="Programmatic auth configs" href="/docs/authentication/programmatic-auth-configs" description="Create auth configs in code and pass them to a session" />
+<Cards>
+  <Card icon={<Code />} title="Programmatic auth configs" href="/docs/authentication/programmatic-auth-configs" description="Create auth configs in code and pass them to a session" />
+  <Card icon={<RouteIcon />} title="Move to your own OAuth app" href="/docs/migration-guide/managed-to-own-app" description="Switch existing users from a Composio-managed app to your own" />
+  <Card icon={<Zap />} title="Avoid and recover from rate limits" href="/docs/poc-to-prod/avoid-rate-limits" description="Spot which limit you hit, retry well, and shape traffic" />
+</Cards>

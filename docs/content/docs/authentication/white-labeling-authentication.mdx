@@ -241,11 +241,8 @@ Set `COMPOSIO_API_KEY` in your server environment. Persist `request.id` with the
 
 ### Switching from Composio-managed to your own OAuth app
 
-Existing connected accounts are tied to the auth config they were created with. Switching to a custom auth config affects new connections for that toolkit; existing users keep using their current connected accounts until they re-authenticate or you import/migrate their credentials.
-
-- To use the custom config for new connections, pass `authConfigs` when creating or updating the session.
-- Existing connections continue refreshing with their original auth config.
-- To fully migrate an existing user, delete the old connected account and have them re-authenticate with the new auth config, or import their credentials into the new config where supported.
+Existing connected accounts stay on the auth config they were created with, and tokens issued to Composio's app can't move to yours, so existing users reconnect.
+Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app) to run both configs side by side, reconnect users, and recreate their triggers.
 
 ## Build an app-owned connection UI
 
