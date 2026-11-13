@@ -1,9 +1,8 @@
 import { Array as Arr, Effect, Option, String as Str } from 'effect';
-import { CommandSurface } from 'src/commands/surface';
+import { CommandSurface, developerProjectClient } from 'src/commands/surface';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { failedWith } from 'src/effects/request-error';
 import { commandHintStep } from 'src/services/command-hints';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -73,7 +72,7 @@ export const buildToolLogShorthandSearchParams = (
 const showToolLog = (toolLogId: string) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const client = yield* (yield* ComposioClientSingleton).get();
+    const client = yield* developerProjectClient;
     const toolLog = yield* ui.withSpinner(
       `Fetching tool log "${toolLogId}"...`,
       client._internal.logs.tools
@@ -106,7 +105,7 @@ const listToolLogs = ({
   Effect.gen(function* () {
     const userIdFilter = Option.orElse((yield* CommandSurface).userId, () => userId);
     const ui = yield* TerminalUI;
-    const client = yield* (yield* ComposioClientSingleton).get();
+    const client = yield* developerProjectClient;
     const searchParams = buildToolLogShorthandSearchParams(
       optionalParams({
         tool,

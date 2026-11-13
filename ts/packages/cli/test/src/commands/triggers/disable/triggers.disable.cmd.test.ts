@@ -6,15 +6,27 @@ import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+  runRecordingRepositoryScopes,
+} from 'test/__utils__/layers/developer-project';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
 
-const dangerousDevConfig = {
+const devConfigWithoutProject = {
   baseConfigProvider: testConfigProvider,
   cliUserConfig: { developerDangerousCommandsEnabled: true },
 } as const;
+
+const dangerousDevConfig = { ...inDeveloperProjectDirectory, ...devConfigWithoutProject } as const;
 
 describe('CLI: composio dev triggers disable', () => {
   layer(TestLive(dangerousDevConfig))('[Given] disable with ID [Then] disables trigger', it => {
@@ -70,7 +82,7 @@ describe('CLI: composio dev triggers disable', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+  layer(TestLive({ ...inDeveloperProjectDirectory, baseConfigProvider: testConfigProvider }))(
     '[Given] destructive dev commands disabled by config [Then] fails before the flag check',
     it => {
       it.effect('raises a CommandInputError naming the config setting', () =>
@@ -118,4 +130,55 @@ describe('CLI: composio dev triggers disable', () => {
       );
     }
   );
+});
+
+// The request goes to the developer project the command resolved, never to the one the backend
+// would pick for the key.
+describe('CLI: composio dev triggers disable acts on the developer project', () => {
+  layer(TestLive(dangerousDevConfig))(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] disables the trigger in that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+          ...['dev', 'triggers', 'disable', 'trg_123', '--dangerously-allow'],
+          ...args,
+        ]);
+
+        expect(exitCode).toBe(0);
+        expect(calls).toEqual([
+          { method: 'disableTrigger', scope: expect.objectContaining(scope) },
+        ]);
+      })
+    );
+  });
+
+  layer(
+    TestLive({ ...devConfigWithoutProject, accountData: defaultDeveloperProjectAccountData() })
+  )(it => {
+    it.effect(
+      '[Given] a directory set up for no project [Then] acts on the default developer project',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+            'dev',
+            'triggers',
+            'disable',
+            'trg_123',
+            '--dangerously-allow',
+          ]);
+
+          expect(exitCode).toBe(0);
+          expect(calls).toEqual([
+            { method: 'disableTrigger', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
+        })
+    );
+  });
 });

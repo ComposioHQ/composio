@@ -10,15 +10,27 @@ import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+  runRecordingRepositoryScopes,
+} from 'test/__utils__/layers/developer-project';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
 });
 
-const dangerousDevConfig = {
+const devConfigWithoutProject = {
   baseConfigProvider: testConfigProvider,
   cliUserConfig: { developerDangerousCommandsEnabled: true },
 } as const;
+
+const dangerousDevConfig = { ...inDeveloperProjectDirectory, ...devConfigWithoutProject } as const;
 
 const createArgs = [
   'triggers',
@@ -95,7 +107,7 @@ describe('CLI: composio dev triggers create', () => {
             const repository = Layer.succeed(
               ComposioToolkitsRepository,
               makeToolkitsRepositoryStub({
-                createTrigger: (slug, params) =>
+                createTrigger: (_scope, slug, params) =>
                   Effect.sync(() => {
                     calls.push({ slug, params });
                     return {
@@ -179,7 +191,7 @@ describe('CLI: composio dev triggers create', () => {
           const repository = Layer.succeed(
             ComposioToolkitsRepository,
             makeToolkitsRepositoryStub({
-              createTrigger: (slug, params) =>
+              createTrigger: (_scope, slug, params) =>
                 Effect.sync(() => {
                   calls.push({ slug, params });
                   return {
@@ -205,7 +217,11 @@ describe('CLI: composio dev triggers create', () => {
           expect(calls).toEqual([
             {
               slug: 'GMAIL_NEW_GMAIL_MESSAGE',
-              params: { connected_account_id: 'con_123', trigger_config: { labelIds: 'INBOX' } },
+              params: {
+                connected_account_id: 'con_123',
+                trigger_config: { labelIds: 'INBOX' },
+                user_id: 'global-default',
+              },
             },
           ]);
         })
@@ -292,4 +308,61 @@ describe('CLI: composio dev triggers create', () => {
       );
     }
   );
+});
+
+// The request goes to the developer project the command resolved, never to the one the backend
+// would pick for the key.
+describe('CLI: composio dev triggers create acts on the developer project', () => {
+  layer(TestLive(dangerousDevConfig))(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] creates the trigger in that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+          ...[
+            'dev',
+            'triggers',
+            'create',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--connected-account-id',
+            'con_123',
+          ],
+          ...args,
+        ]);
+
+        expect(exitCode).toBe(0);
+        expect(calls).toEqual([{ method: 'createTrigger', scope: expect.objectContaining(scope) }]);
+      })
+    );
+  });
+
+  layer(
+    TestLive({ ...devConfigWithoutProject, accountData: defaultDeveloperProjectAccountData() })
+  )(it => {
+    it.effect(
+      '[Given] a directory set up for no project [Then] acts on the default developer project',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const { exitCode, calls } = yield* runRecordingRepositoryScopes([
+            'dev',
+            'triggers',
+            'create',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--connected-account-id',
+            'con_123',
+          ]);
+
+          expect(exitCode).toBe(0);
+          expect(calls).toEqual([
+            { method: 'createTrigger', scope: expect.objectContaining(DEFAULT_PROJECT_SCOPE) },
+          ]);
+        })
+    );
+  });
 });

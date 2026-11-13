@@ -4,9 +4,11 @@ import { ExpectedFailure } from 'src/effects/expected-failure';
 import type { CommandIdentity, SharedFlagName } from 'src/invocation/command-identity';
 import {
   resolveCommandProject,
+  resolveDeveloperProjectOrDefault,
   type ProjectMode,
   type ResolvedCommandProject,
 } from 'src/services/command-project';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -55,6 +57,49 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
       projectName: Option.getOrUndefined(surface.projectName),
     });
   });
+
+/**
+ * A warning that reaches stderr even off a terminal, where `ui.log.*` decoration is dropped: a
+ * script or agent reading stderr must see a fallback that affects the result.
+ */
+export const warnOnStderr = (message: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.warn(message);
+    } else {
+      yield* ui.error(`Warning: ${message}`);
+    }
+  });
+
+/**
+ * The developer project of a dev command that reads or writes the project's resources (auth
+ * configs, connected accounts, trigger instances, logs): `--project-name`'s, else the
+ * directory's, else the backend's default developer project, named on stderr every time
+ * (`resolveDeveloperProjectOrDefault`). These commands once sent no project and let the backend
+ * pick that default, so a directory without a usable project of its own keeps working; a command
+ * that always required one uses `resolveSurfaceProject('developer')`. Resolved once, so every
+ * request of the command names the same project.
+ */
+export const resolveDeveloperResourceProject = Effect.gen(function* () {
+  const { projectName } = yield* CommandSurface;
+  const { project, notice } = yield* resolveDeveloperProjectOrDefault({
+    projectName: Option.getOrUndefined(projectName),
+  });
+  yield* Effect.transposeOption(Option.map(notice, warnOnStderr));
+  return project;
+});
+
+/**
+ * The client for the developer project a dev command acts on (`resolveDeveloperResourceProject`),
+ * for a command whose requests all read or write that project's resources: they name it rather
+ * than leaving the backend to pick the key's default project.
+ */
+export const developerProjectClient = Effect.gen(function* () {
+  const project = yield* resolveDeveloperResourceProject;
+  const clientSingleton = yield* ComposioClientSingleton;
+  return yield* clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId });
+});
 
 // --- acting user ------------------------------------------------------------------------------
 
@@ -244,6 +289,20 @@ export const actingUserOption = () =>
       ...found,
       project: namedProject,
     }));
+  });
+
+/**
+ * The dev tree's acting user for a command that also runs without one, against the developer
+ * project the command resolved (`resolveSurfaceProject('developer')`), by the same rule as
+ * `actingUser`: `--user-id`, then the directory test user (only for the directory's own project),
+ * then the global test user. Names a test user standing in on stderr, as `actingUser` does; none
+ * when no step finds a user.
+ */
+export const devActingUserOption = (project: ResolvedCommandProject) =>
+  Effect.gen(function* () {
+    const user = yield* devUser(Option.some(project.projectId));
+    yield* announceFallback(user);
+    return Option.map(user, (found): ActingUser => ({ ...found, project }));
   });
 
 /** A shared flag of the `dev` group. */
