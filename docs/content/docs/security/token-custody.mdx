@@ -53,6 +53,22 @@ curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
 
 Replace the account ID with your connected account. Both SDKs read `COMPOSIO_API_KEY` from your environment. The key must belong to that project and have the **Proxy execute** permission. The request contains a Composio API key, which authorizes execution, but no GitHub token. Composio injects that token and returns the provider response.
 
+## Choose the controls you need
+
+Choose tool behavior, connection ownership, OAuth app ownership, and credential custody separately. This table describes Composio Cloud unless it links to a deployment-specific arrangement.
+
+| Choice | What your application controls | What Composio operates | Availability and constraints |
+| --- | --- | --- | --- |
+| Tool schemas and business logic | Define your own tools, validate inputs, and run your business logic in your process. | Authenticates and sends the provider requests you delegate to Proxy Execute. | [Managed auth for your own tools](/docs/authentication/managed-auth-for-custom-tools) works without predefined tools or MCP. Optional [session extension tools](/docs/extending-sessions/local-tools-and-toolkits) are experimental. |
+| OAuth app and scopes | Choose a managed app or register your own app, then configure the scopes your product needs. | Hosts the connection flow, stores credentials, and refreshes them where supported. | [Managed app availability](/toolkits/managed-auth) varies by toolkit. Scopes must be available to the selected OAuth app. [Scope recommendation APIs](/docs/authentication/controlling-scopes) are experimental. |
+| Member-owned or workspace-owned connections | Assign immutable owner IDs and authorize which members may act on each account. | Associates connected accounts and sessions with those IDs. | Follow the [B2B ownership model](/docs/b2b-agents#choose-the-connection-owner). Optional [shared connections](/docs/extending-sessions/shared-connections) are experimental. |
+| Credential retrieval and export | Use account identifiers to request execution and plan your migration requirements. | Stores credentials and redacts sensitive fields in connected-account reads. | Reads are [not a supported token-export workflow](#default-redaction-is-an-api-boundary), including with your own OAuth app. |
+| Provider access through the proxy | Validate endpoints and inputs, choose provider scopes, and restrict project API-key permissions. | Resolves the connected account, injects authentication, and sends the provider request. | [Proxy Execute](#execution-paths) needs its own API-key permission and enforces provider URL boundaries. Tool selection alone does not limit proxy operations. |
+| Execution location | Run your own tool logic in your process or call Composio's native tools. | Runs native tool calls and proxied provider requests in the selected Composio deployment. | Local business logic still depends on Composio for requests it delegates. See [execution paths](#execution-paths). |
+| Deployment and key custody | Select the required infrastructure, operator access, key ownership, and data-location requirements with the team. | Operates the services specified by the deployment agreement. | See [deployment options](#deployment-options) for Composio Cloud, Enterprise private VPC and self-hosted deployments, and separately arranged customer-managed keys. |
+
+Your own tool schemas reduce coupling to Composio's action names. They do not remove the dependency on Composio's execution service for proxy calls or make stored credentials portable. Before planning an exit, confirm provider/client ownership, possible re-consent, credential revocation or deletion, and data/schema migration with the responsible security and product owners. Confirm any separately arranged credential-transfer path before relying on it.
+
 ## Token boundaries in Composio Cloud
 
 The following flow covers hosted OAuth and execution through Composio:
