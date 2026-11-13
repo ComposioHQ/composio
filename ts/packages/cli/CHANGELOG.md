@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- A failed request that is safe to send again now exits 75 (`EX_TEMPFAIL`) instead of 1 and says so on stderr: one the API refused with a 429, or a read that timed out, lost its connection, or got a 408 or 5xx. Scripts and agents can retry on 75 without guessing. A failed `composio execute` adds `"retry": "safe"`, or `"retry": "check-first"` when the tool may have run before the request failed, to its `{ "successful": false }` result. Every other failed request still exits 1.
+- A failed request that is safe to send again now exits 75 (`EX_TEMPFAIL`) instead of 1 and says so on stderr: one the API refused with a 429, or a read that timed out, lost its connection, or got a 408 or 5xx. Scripts and agents can retry on 75 without guessing. A failed `composio execute` adds `"retry": "safe"`, or `"retry": "check-first"` when the tool may have run before the request failed, to its `{ "successful": false }` result, and the `composio-cli` skill tells agents what both mean. Every other failed request still exits 1.
 
 - `composio dev toolkits list` and `info` now read a user's connection status in the resolved developer project. When no directory project applies, `--user-id` or the global test user can use the default developer project. A failed project lookup leaves the catalog available and warns when `--connected` cannot be applied.
 
