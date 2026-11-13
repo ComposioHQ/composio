@@ -4,6 +4,17 @@
 
 ### Patch Changes
 
+- A command the Composio API answers with 401 now prints the API's message
+  and how to recover: `composio logout && composio login` when the stored
+  login's key may have expired, `composio agent login <composio_agent_key>`
+  with the key from `~/.composio/agent.json` when that login is the saved
+  Composio agent identity's, or replacing `COMPOSIO_USER_API_KEY` when the key
+  came from there. Agent recovery reuses the identity without signing up a
+  replacement or printing its key. `composio search` and other commands printed only the
+  API's `Invalid API key` (inside a defect report), so an agent had no command
+  to get unstuck. The hint was shown only when the API said the user API key
+  itself was rejected; any other 401 now names the login as the likely cause.
+
 - The `composio-cli` skill now says how to run a tool inside a developer
   project: `composio dev playground-execute`, with
   `composio dev connected-accounts link <toolkit>` for a missing connection.

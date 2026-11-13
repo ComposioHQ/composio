@@ -117,8 +117,7 @@ describe('auth faults: a stored key the backend stops accepting', () => {
     );
   }
 
-  // CLI gap: `search` prints only the backend's "Invalid API key", with no command to recover.
-  it.failing(
+  it(
     'a rejected stored key names `composio login` as the way out',
     async () => {
       reject();
