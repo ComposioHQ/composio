@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -603,5 +604,5 @@ export class ProjectEnvironmentDetector extends Context.Service<
   static readonly Default = Layer.effect(
     ProjectEnvironmentDetector,
     makeProjectEnvironmentDetector
-  ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));
+  ).pipe(Layer.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
 }

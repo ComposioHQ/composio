@@ -5,113 +5,47 @@
  *
  * Usage: `bun scripts/build-binary-cross.ts --target <target>`
  *
- * Valid targets:
- *   bun-darwin-arm64  → composio-darwin-aarch64
- *   bun-darwin-x64    → composio-darwin-x64
- *   bun-linux-x64     → composio-linux-x64
- *   bun-linux-arm64   → composio-linux-aarch64
+ * Valid targets are the `bunTarget` values of `RELEASE_TARGETS`.
  *
- * Output: `dist/binaries/<artifact-name>`
+ * Output: `dist/binaries/<artifact-name>` (`.exe` on Windows)
  */
 
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, References } from 'effect';
-import { ChildProcess as Command } from 'effect/process';
+import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
-import { BinaryBuildError } from './build-error';
-import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
+import { buildCompanionModules, compileBinary, teardown } from './_shared';
+import { RELEASE_TARGETS, type ReleaseTarget } from './_release-artifacts';
 
-/**
- * Maps Bun cross-compilation targets to Composio artifact names.
- */
-const TARGET_MAP: Record<string, string> = {
-  'bun-darwin-arm64': 'composio-darwin-aarch64',
-  'bun-darwin-x64': 'composio-darwin-x64',
-  'bun-linux-x64': 'composio-linux-x64',
-  'bun-linux-arm64': 'composio-linux-aarch64',
-};
-
-const VALID_TARGETS = Object.keys(TARGET_MAP);
-
-function parseTarget(): { target: string; artifact: string } {
+function parseTarget(): ReleaseTarget {
   const targetIdx = process.argv.indexOf('--target');
-  if (targetIdx === -1 || !process.argv[targetIdx + 1]) {
-    process.stderr.write(`Usage: bun scripts/build-binary-cross.ts --target <target>\n`);
-    process.stderr.write(`Valid targets: ${VALID_TARGETS.join(', ')}\n`);
+  const requested = targetIdx === -1 ? undefined : process.argv[targetIdx + 1];
+  const target = RELEASE_TARGETS.find(({ bunTarget }) => bunTarget === requested);
+  if (!target) {
+    process.stderr.write(
+      requested
+        ? `Invalid target: ${requested}\n`
+        : `Usage: bun scripts/build-binary-cross.ts --target <target>\n`
+    );
+    process.stderr.write(
+      `Valid targets: ${RELEASE_TARGETS.map(({ bunTarget }) => bunTarget).join(', ')}\n`
+    );
     process.exit(1);
   }
-
-  const target = process.argv[targetIdx + 1];
-  const artifact = TARGET_MAP[target];
-  if (!artifact) {
-    process.stderr.write(`Invalid target: ${target}\n`);
-    process.stderr.write(`Valid targets: ${VALID_TARGETS.join(', ')}\n`);
-    process.exit(1);
-  }
-
-  return { target, artifact };
+  return target;
 }
 
 export function buildBinaryCross() {
-  const { target, artifact } = parseTarget();
+  const target = parseTarget();
 
   return Effect.gen(function* () {
-    const cwd = process.cwd();
-    yield* Effect.logDebug(`Cross-compiling binary in ${cwd} for target ${target}`);
-
-    const outfile = `./dist/binaries/${artifact}`;
-
-    const args = [
-      'bun',
-      'build',
-      './src/bin.ts',
-      '--env',
-      'DEBUG_OVERRIDE_*',
-      ...posthogBakeArgs(),
-      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
-      '--compile',
-      '--production',
-      '--target',
-      target,
-      '--outfile',
-      outfile,
-    ] as const satisfies ReadonlyArray<string>;
-
-    const child = yield* Command.make(args[0], args.slice(1));
-
-    yield* Effect.logDebug('Running build command with', args.join(' '), '');
-
-    const { exitCode } = yield* Effect.all(
-      {
-        exitCode: child.exitCode,
-        output: Stream.merge(
-          Stream.decodeText(child.stdout, { encoding: 'utf-8' }),
-          Stream.decodeText(child.stderr, { encoding: 'utf-8' }),
-          { haltStrategy: 'left' }
-        ).pipe(
-          Stream.tap(chunk => Console.log(chunk)),
-          Stream.runDrain
-        ),
-      },
-      {
-        concurrency: 'unbounded',
-      }
+    yield* Effect.logDebug(
+      `Cross-compiling binary in ${process.cwd()} for target ${target.bunTarget}`
     );
 
-    process.exitCode = exitCode;
+    const outfile = yield* compileBinary(target);
 
-    if (exitCode !== 0) {
-      return yield* new BinaryBuildError({
-        message: `Failed to cross-compile binary for ${target}`,
-        target,
-        exitCode,
-      });
-    }
-
-    const companionOutputDir = './dist/binaries/companions';
-    yield* buildCompanionModules(companionOutputDir);
+    yield* buildCompanionModules('./dist/binaries/companions');
 
     yield* Console.log(`Binary cross-compiled: ${outfile}`);
   });

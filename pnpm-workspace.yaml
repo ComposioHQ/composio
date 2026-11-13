@@ -102,6 +102,12 @@ minimumReleaseAgeExclude:
   # scripts were checked by hand for this exact version only, so later releases
   # still wait out the cooldown. Remove once 0.6.0 is older than the cutoff.
   - '@typesafe-ai/sdk@0.6.0'
+  # temporary: 0.7.0 (2026-11-11) is the first release with `uniku/uuid/v5`,
+  # which the CLI uses to derive agent session IDs. Publisher (GitHub Actions),
+  # npm provenance, and the absence of install scripts were checked by hand for
+  # this exact version only, so later releases still wait out the cooldown.
+  # Remove once 0.7.0 is older than the cutoff (after 2026-11-14).
+  - uniku@0.7.0
 
 peerDependencyRules:
   allowedVersions:

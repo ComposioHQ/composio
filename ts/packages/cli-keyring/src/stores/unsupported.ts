@@ -1,5 +1,5 @@
 /**
- * Fallback store used on unsupported platforms (Windows, BSDs, …).
+ * Fallback store used on unsupported platforms (BSDs, Windows outside Bun, …).
  *
  * Every operation throws `KeyringError({ kind: 'NoStorageAccess' })`
  * so the CLI can fall back to the legacy on-disk config without the
@@ -37,7 +37,7 @@ export class UnsupportedPlatformStore implements CredentialStore {
       kind: 'NoStorageAccess',
       cause: new Error(
         `@composio/cli-keyring does not yet support ${this.vendor}. ` +
-          'Only macOS (Keychain via /usr/bin/security) and Linux (Secret Service via secret-tool) are implemented.'
+          'Only macOS (Keychain), Linux (Secret Service via secret-tool), and Windows under Bun (Credential Manager) are implemented.'
       ),
     });
   }
