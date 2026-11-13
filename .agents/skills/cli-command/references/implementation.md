@@ -6,7 +6,7 @@ The [contributor guide](../../../../ts/packages/cli/CONTRIBUTING.md) traces one 
 
 - Groups register children through `withRegisteredSubcommands`, which supplies parsed identity and inherited policy. Direct `Command.withSubcommands` bypasses it.
 - `withCommandMeta` declares login, hooks, telemetry family, and unsupported shared flags. Handlers do not repeat login gates or lifecycle reporting.
-- `CommandSurface` supplies root/dev context and dev shared flags. `actingUser()` resolves the acting user and project; `actingUserOption()` or `devActingUserOption(project)` finds an optional one for a developer project the command resolved. A user filter does not use a test-user fallback.
+- `CommandSurface` supplies root/dev context and dev shared flags. `actingUser()` resolves the acting user and project; `devActingUserOption(project)` finds an optional one for a developer project the command resolved. A user filter does not use a test-user fallback.
 - The same command definition can have multiple registrations. Root shortcuts do not need copied handlers or descriptions.
 - Changes to command paths or help summaries regenerate `COMMANDS.md` with `pnpm --filter @composio/cli run commands:map`.
 
