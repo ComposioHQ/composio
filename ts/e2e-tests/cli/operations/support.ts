@@ -54,6 +54,7 @@ export const ExecutionResult = z.looseObject({
   error: z.string().nullable().optional(),
   slug: z.string().optional(),
   data: z.record(z.string(), z.unknown()).optional(),
+  retry: z.enum(['safe', 'check-first']).optional(),
 });
 
 export const SearchResult = z.looseObject({

@@ -3,6 +3,7 @@ import { assert, describe, expect, layer } from '@effect/vitest';
 import { isUsageFailure } from 'src/commands/errors';
 import { ConfigProvider, Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { retryHint, TEMPORARY_FAILURE_EXIT_CODE } from 'src/effects/retry-advice';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeSessionInfo } from 'test/__utils__/models/account';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
@@ -132,14 +133,15 @@ describe('CLI: composio whoami', () => {
       },
     })
   )('when the backend fails to answer', it => {
-    it.effect('[Then] exits 1 with nothing on stdout and the failure on stderr', () =>
+    it.effect('[Then] exits 75 with nothing on stdout and says it is safe to run again', () =>
       Effect.gen(function* () {
         const terminal = redirectedTerminalUI();
         const exit = yield* Effect.exit(cli(['whoami']).pipe(Effect.provide(terminal.layer)));
 
-        expect(exitCodeOf(exit)).toBe(1);
+        expect(exitCodeOf(exit)).toBe(TEMPORARY_FAILURE_EXIT_CODE);
         expect(terminal.stdout()).toBe('');
         expect(terminal.stderr()).toContain('Internal Server Error');
+        expect(terminal.stderr()).toContain(retryHint('safe'));
       })
     );
   });

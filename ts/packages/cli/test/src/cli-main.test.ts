@@ -285,7 +285,12 @@ describe('reported tool execution failures', () => {
     {
       name: 'a Dashboard outage',
       args: ['execute', 'HACKERNEWS_GET_ITEM', '-d', '{"id":1}'],
-      stdout: { successful: false, error: expect.stringContaining('(HTTP 503)') },
+      // The tool may have run before the Dashboard failed, so the result says to check first.
+      stdout: {
+        successful: false,
+        error: expect.stringContaining('(HTTP 503)'),
+        retry: 'check-first',
+      },
     },
     {
       name: 'a meta tool that reports a failure',
