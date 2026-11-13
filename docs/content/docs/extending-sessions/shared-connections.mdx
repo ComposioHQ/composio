@@ -6,6 +6,10 @@ llmGuardrails: "direct-execution"
 experimental: true
 ---
 
+<Callout type="warn" title="Experimental">
+Shared connections are experimental. The `experimental` fields on create, update, and get may change in future SDK and API releases. See [current limitations](#current-limitations).
+</Callout>
+
 By default, a connected account is **PRIVATE**: only the `userID` that created it can use it. A **SHARED** connection can be reached by other `userID`s, subject to a per-connection access control list (ACL).
 
 You use a shared connection by [pinning it into a session](#using-a-shared-connection): the session's `userID` doesn't own the connection, but the pin makes it available. A SHARED connection is never resolved implicitly, so a session reaches one only when you pin it explicitly.
@@ -396,6 +400,14 @@ curl -s -X GET https://backend.composio.dev/api/v3.1/connected_accounts/ca_gmail
 | `ComposioSharedConnectionNotAccessibleError` (400) | A session pinned a SHARED connection that the session's `userID` cannot use. The error is raised at session create time, so the session never enters a state that fails mid-execution. |
 
 The access errors are caught the same way as any other Composio exception (`ComposioAclOnlyForSharedError` and `ComposioSharedAccessDeniedError` are exported from `@composio/core`, and live under `composio.exceptions` in Python).
+
+## Current limitations
+
+- A session can pin at most one SHARED connection per toolkit.
+- A SHARED connection is never picked up automatically. Each session has to pin it by ID.
+- `list()` returns PRIVATE connections unless you pass `accountType: 'SHARED'` or `'ALL'`.
+- Only the connection's creator or an API key caller can read or change the ACL.
+- Each ACL list holds up to 1000 user IDs.
 
 ## Next
 
