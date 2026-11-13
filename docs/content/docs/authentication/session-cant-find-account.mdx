@@ -17,15 +17,14 @@ Use your application's own stable user ID everywhere: when you create sessions a
 
 ## Find the user ID that owns the account
 
-List the toolkit's accounts without a user filter and read each account's `user_id`:
+Look up the account by its ID (`ca_...`, shown in the dashboard) and read its `user_id`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-accounts = composio.connected_accounts.list(toolkit_slugs=["gmail"])
+account = composio.connected_accounts.get("ca_123")
 
-for account in accounts.items:
-    print(account.id, account.user_id, account.status, account.auth_config.id)
+print(account.user_id, account.status, account.auth_config.id)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -33,23 +32,22 @@ for account in accounts.items:
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const accounts = await composio.connectedAccounts.list({ toolkitSlugs: ['gmail'] });
+// connectedAccounts.get() doesn't return user_id, so use the raw API client
+const account = await composio.getClient().connectedAccounts.retrieve('ca_123');
 
-for (const account of accounts.items) {
-  console.log(account.id, account.userId, account.status, account.authConfig.id);
-}
+console.log(account.user_id, account.status, account.auth_config.id);
 ```
 </Tab>
 <Tab value="API">
 ```bash
-curl -s "https://backend.composio.dev/api/v3.1/connected_accounts?toolkit_slugs=gmail" \
+curl -s https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
   -H "x-api-key: $COMPOSIO_API_KEY" \
-  | jq '.items[] | {id, user_id, status, auth_config: .auth_config.id}'
+  | jq '{user_id, status, auth_config: .auth_config.id}'
 ```
 </Tab>
 </Tabs>
 
-If the `user_id` isn't the one your session uses, the session won't find the account. This happens most often with accounts connected outside your app, such as from the dashboard or a developer tool. For example, `composio init` writes a playground test user (`pg-test-<your member ID>`) to `COMPOSIO_TEST_USER_ID`, which is not one of your application's users.
+If the `user_id` isn't the one your session uses, the session won't find the account. This happens most often with accounts connected outside your app, such as from the dashboard or a developer tool. For example, `composio dev init` writes a playground test user (`pg-test-<your member ID>`) to `COMPOSIO_TEST_USER_ID`, which is not one of your application's users.
 
 You can't change the `user_id` of an existing connected account. [Reconnect it](#reconnect-under-the-right-user) under the right user instead.
 
