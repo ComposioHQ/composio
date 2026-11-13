@@ -25874,7 +25874,7 @@
     ],
     "toolCount": 65,
     "triggerCount": 0,
-    "version": "20261101_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "EXA_ANSWER",
@@ -25884,7 +25884,7 @@
           "supported": true,
           "price": {
             "description": "$0.005 per answer",
-            "discount": "0"
+            "discount": "100"
           }
         }
       },
@@ -26031,7 +26031,7 @@
           "supported": true,
           "price": {
             "description": "$0.001 per page per content type",
-            "discount": "0"
+            "discount": "100"
           }
         }
       },
@@ -26173,7 +26173,7 @@
           "supported": true,
           "price": {
             "description": "$0.007 per search",
-            "discount": "0"
+            "discount": "100"
           }
         }
       },
@@ -54889,9 +54889,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 277,
+    "toolCount": 278,
     "triggerCount": 4,
-    "version": "20261101_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "MAILCHIMP_ADD_AUTOMATION",
@@ -55737,6 +55737,11 @@
         "slug": "MAILCHIMP_LIST_CONVERSATIONS",
         "name": "List conversations",
         "description": "List of conversations for an account is available via an endpoint, but it's deprecated in favor of Inbox. The endpoint excludes new Inbox data including campaign replies and messages. Past conversations remain accessible."
+      },
+      {
+        "slug": "MAILCHIMP_LIST_CUSTOMER_JOURNEYS",
+        "name": "List customer journeys",
+        "description": "List Customer Journeys and their provider-defined metadata in the Mailchimp account."
       },
       {
         "slug": "MAILCHIMP_LIST_CUSTOMERS",
@@ -135215,9 +135220,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 10,
+    "toolCount": 12,
     "triggerCount": 0,
-    "version": "00000000_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "7SHIFTS_CREATE_DEPARTMENT",
@@ -135255,9 +135260,19 @@
         "description": "List one page of locations in a company and return location IDs used to filter schedules, users, and departments, with a cursor when more are available."
       },
       {
+        "slug": "7SHIFTS_LIST_ROLES",
+        "name": "List Roles",
+        "description": "List one page of company scheduling roles, optionally filtered by workplace, department, IDs, or modification date."
+      },
+      {
         "slug": "7SHIFTS_LIST_SHIFTS",
         "name": "List Shifts",
         "description": "List one page of scheduled shifts for a company with employee, location, department, role, time-range, publication-state, and open-shift filters, with a cursor when more are available."
+      },
+      {
+        "slug": "7SHIFTS_LIST_TIME_PUNCHES",
+        "name": "List Time Punches",
+        "description": "List one page of actual employee time punches for a company, with worker, workplace, approval, clock-time, business-date, status, and ordering filters."
       },
       {
         "slug": "7SHIFTS_LIST_USERS",
@@ -348416,6 +348431,116 @@
     ]
   },
   {
+    "slug": "metricool_mcp",
+    "name": "Metricool MCP",
+    "logo": "https://logos.composio.dev/api/metricool_mcp",
+    "description": "Analyze social media performance, inspect scheduled posts, identify optimal publishing times, and create or update scheduled content through Metricool's official hosted MCP server.",
+    "category": "social media marketing",
+    "authSchemes": [
+      "DCR_OAUTH"
+    ],
+    "toolCount": 9,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "METRICOOL_MCP_CREATE_SCHEDULED_POST",
+        "name": "Create scheduled post",
+        "description": "    Schedule a post to Metricool at a specific date and time.\n    To be able to schedule the post, you need to maintain the structure.\n    You can use the tool getBestTimeToPostByNetwork to get the best time to post for a specific provider if the user doesn't specify the time to post.\n    If the post include Instagram, is a must to have at least one image or video. Posts must include an image or a carousel, Reels and Trial Reels must include a video, and Stories can include either an image or a video. If you don't have more information, you can ask the user about it and wait until you have the information.\n    If the post include Pinterest, is a must to have a image and the board where to publish the pin. If you don't have more information, you can ask the user about it and wait until you have the information.\n    If the post include Youtube, is a must to have a video, select the audience (if it's video made for kids or not) and the title of the video. If you don't have more information, you can ask the user about it and wait until you have the information.\n    If the post include Tiktok, is a must to have at least one image or video. If you don't have more information, you can ask the user about it and wait until you have the information.\n    If the post is Facebook Reel, is a must to have a video. If is Facebook Story, image or video is needed. If you don't have more information, you can ask the user about it and wait until you have the information.\n    If the post include Google Business Profile (\"gmb\"), ask which of the two publication types the user wants and send it in \"gmbData\". A \"publication\" is a text update on the profile and needs text, up to 1500 characters. A \"photo\" adds media to the profile gallery, needs at least one image or video, and carries no text of its own — it is the only way to send a video to Google Business Profile.\n    If the post is Bluesky, make sure the text does not exceed 300 characters. If the content exceeds that limit, do not retry and return an error informing the user: \"Error: The text exceeds the 300-character limit allowed on Bluesky. Please edit it.\"\n    If the post is for X (formerly Twitter), you must NOT split the message into multiple tweets or threads: it has to be scheduled as a single post. Do NOT enforce a character limit yourself, because the maximum length depends on the brand's X subscription: standard accounts are limited to 280 characters, while X Premium accounts can publish long-form posts. Schedule the post and, if the text is too long for that particular brand, this tool returns an error that you must relay to the user without modifying the text.\n    The date can't be in the past.\n    The response includes a `plannerUrl` for each scheduled post, pointing to it in Metricool.\n    On error, the tool returns it without altering the submitted text.\n"
+      },
+      {
+        "slug": "METRICOOL_MCP_CREATE_SCHEDULED_POST_FOR_REVIEW",
+        "name": "Create scheduled post for review",
+        "description": "    Schedule a NEW post and send it to review (approval flow) in Metricool, replicating the web \"Send for review\".\n    Use this instead of createScheduledPost ONLY when the user wants a brand-new post reviewed/approved before publishing.\n    To send an ALREADY scheduled post to review, use sendScheduledPostForReview instead.\n    The post content ('info') follows the SAME structure as createScheduledPost.\n    Reviewers are a comma-separated list of emails. Emails of a Metricool collaborator of the brand become internal reviewers; unknown emails become external (always emailed).\n    approvalSystem: \"any\" (one approval is enough), \"all\" (everyone must approve) or \"optional\" (auto-approve if no one rejects). A single rejection always stops publication.\n    notify (default true) controls whether internal Metricool reviewers get an email; external reviewers always get one.\n    Requires a plan with team management; if the plan does not allow it, this tool returns an error you must relay without retrying.\n    The date can't be in the past. The response includes a `plannerUrl` pointing at the post in Metricool.\n    On error, the tool returns it without altering the submitted text.\n"
+      },
+      {
+        "slug": "METRICOOL_MCP_GET_ANALYTICS_AVAILABLE_METRICS",
+        "name": "Get analytics available metrics",
+        "description": "Retrieves the list of available metrics for a specific social network and connector. If any metric is deprecated, the tool notifies the user and provides suggested alternatives."
+      },
+      {
+        "slug": "METRICOOL_MCP_GET_ANALYTICS_DATA_BY_METRICS",
+        "name": "Get analytics data by metrics",
+        "description": "Retrieves analytical data for a specified Metricool account over a given date range, based on a selected list of metrics. The tool processes the requested metrics and returns the corresponding analytical insights for those fields."
+      },
+      {
+        "slug": "METRICOOL_MCP_GET_BEST_TIME_TO_POST_BY_NETWORK",
+        "name": "Get best time to post by network",
+        "description": "    Get the best time to post for a specific provider. The return is a list of hours and days with a value. The higher the value, the best time to post.\n    Try to get the best for as maximum of 1 week. If you have day to publish but not hours, choose the start and end of this day.\n"
+      },
+      {
+        "slug": "METRICOOL_MCP_GET_BRAND_SETTINGS",
+        "name": "Get brand settings",
+        "description": "Get the list of brands from your Metricool account.\nOnly Instagram, Facebook, Twitch, YouTube, Twitter, and Bluesky support competitors.\n"
+      },
+      {
+        "slug": "METRICOOL_MCP_GET_SCHEDULED_POSTS",
+        "name": "Get scheduled posts",
+        "description": "    Get the list of scheduled posts for a specific Metricool brand (brandId).\n    Only retrieves posts that are scheduled (not yet published).\n    brandId is required.\n"
+      },
+      {
+        "slug": "METRICOOL_MCP_SEND_SCHEDULED_POST_FOR_REVIEW",
+        "name": "Send scheduled post for review",
+        "description": "    Send an ALREADY scheduled post to review (approval flow) in Metricool. Use this when the post already exists\n    (you have its id and uuid from getScheduledPosts) and the user just wants it reviewed/approved.\n    Like updateScheduledPost, this changes the post's id; its uuid stays the same. The response includes the post's new id, if you need to act on this same post again later in the conversation, use that id instead of the one you started with or call getScheduledPosts to obtain the unique id.\n    To create a new post AND send it to review in one step, use createScheduledPostForReview instead.\n    You MUST include the full original content of the post in 'info' (same JSON structure as updateScheduledPost),\n    keeping every field as returned by getScheduledPosts and changing only what the user asks for.\n    Reviewers are a comma-separated list of emails. Emails of a Metricool collaborator of the brand become internal reviewers; unknown emails become external (always emailed).\n    approvalSystem: \"any\" (one approval is enough), \"all\" (everyone must approve) or \"optional\" (auto-approve if no one rejects). A single rejection always stops publication.\n    notify (default true) controls whether internal Metricool reviewers get an email; external reviewers always get one.\n    Requires a plan with team management; if the plan does not allow it, this tool returns an error you must relay without retrying.\n    The response includes a `plannerUrl` pointing at the post in Metricool.\n"
+      },
+      {
+        "slug": "METRICOOL_MCP_UPDATE_SCHEDULED_POST",
+        "name": "Update scheduled post",
+        "description": "Update a scheduled post in Metricool. You need the id of the post to update. Get it from the getScheduledPosts tool previous on the conversation.\nUpdating a post changes its id; its uuid stays the same. The response includes the post's new id, if you need to update this same post again later in the conversation, use that id instead of the one you started with or call getScheduledPosts to obtain the unique id.\nUpdating a scheduled post overwrites its content immediately; there is no confirmation step or undo in the API.\nErrors from this endpoint are final; retrying with the same input will not change the result.\nTo update the post, ensure the full original content is included in the request, modifying only the new information while keeping the rest unchanged and maintaining the original structure.\nKeep instagramData.carouselTags as getScheduledPosts returns it unless the user asks to change the people tags or the media: the update replaces the whole post, so leaving it out removes every people tag.\nIf the post include Instagram, is a must to have at least one image or video. Posts must include an image or a carousel, Reels and Trial Reels must include a video, and Stories can include either an image or a video. If you don't have more information, you can ask the user about it and wait until you have the information.\nIf the post include Pinterest, is a must to have a image and the board where to publish the pin. If you don't have more information, you can ask the user about it and wait until you have the information.\nIf the post include Youtube, is a must to have a video, select the audience (if it's video made for kids or not) and the title of the video. If you don't have more information, you can ask the user about it and wait until you have the information.\nIf the post include Tiktok, is a must to have at least one image or video. If you don't have more information, you can ask the user about it and wait until you have the information.\nIf the post is Facebook Reel, is a must to have a video. If is Facebook Story, image or video is needed. If you don't have more information, you can ask the user about it and wait until you have the information.\nIf the post include Google Business Profile (\"gmb\"), keep the \"gmbData\" type of the original post unless the user asks to change it. A \"publication\" is a text update on the profile and needs text, up to 1500 characters. A \"photo\" adds media to the profile gallery, needs at least one image or video, and carries no text of its own.\nIf the post is Bluesky, make sure the text does not exceed 300 characters. If the content exceeds that limit, do not retry and return an error informing the user: \"Error: The text exceeds the 300-character limit allowed on Bluesky. Please edit it.\"\nIf the post is for X (formerly Twitter), you must NOT split the message into multiple tweets or threads: it has to be scheduled as a single post. Do NOT enforce a character limit yourself, because the maximum length depends on the brand's X subscription: standard accounts are limited to 280 characters, while X Premium accounts can publish long-form posts. Schedule the post and, if the text is too long for that particular brand, this tool returns an error that you must relay to the user without modifying the text.\nThe date can't be in the past.\nThe response includes a `plannerUrl` for each post, pointing to it in Metricool.\n"
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "DCR_OAUTH",
+        "name": "metricool_mcp_DCR_OAuth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": false,
+                "default": null
+              },
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "mcp:read,mcp:write"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "mezmo",
     "name": "Mezmo",
     "logo": "https://logos.composio.dev/api/mezmo",
@@ -420621,9 +420746,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 35,
+    "toolCount": 36,
     "triggerCount": 0,
-    "version": "20261101_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "REPLY_IO_ADD_CONTACT_TO_SEQUENCE",
@@ -420734,6 +420859,11 @@
         "slug": "REPLY_IO_GET_SEQUENCE_STEP_BY_ID",
         "name": "Get Sequence Step by ID",
         "description": "Tool to retrieve details of a specific sequence step. Use when you need to inspect step configuration including type, delays, execution mode, and type-specific settings."
+      },
+      {
+        "slug": "REPLY_IO_LIST_CAMPAIGN_STEPS",
+        "name": "List Campaign Steps",
+        "description": "Return the configured steps and email variants for a legacy campaign."
       },
       {
         "slug": "REPLY_IO_LIST_CONTACTS_BASIC",
@@ -435945,9 +436075,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 11,
+    "toolCount": 13,
     "triggerCount": 0,
-    "version": "20261101_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "SENDER_CREATE_FIELD",
@@ -435988,6 +436118,16 @@
         "slug": "SENDER_GET_SUBSCRIBER_EVENTS",
         "name": "Get Subscriber Events",
         "description": "Return filtered event history and campaign activity totals for a subscriber."
+      },
+      {
+        "slug": "SENDER_GET_WORKFLOW_REPORT",
+        "name": "Get Workflow Report",
+        "description": "Return workflow traffic, messaging, sales, attention, and report metadata."
+      },
+      {
+        "slug": "SENDER_GET_WORKFLOW_STEPS",
+        "name": "Get Workflow Steps",
+        "description": "Return one batch of configured steps for a Sender automation workflow."
       },
       {
         "slug": "SENDER_LIST_GROUPS",
@@ -481457,7 +481597,7 @@
     ],
     "toolCount": 404,
     "triggerCount": 0,
-    "version": "20261103_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "TIKTOK_ADS_ADD_BC_PARTNER",
@@ -496002,9 +496142,9 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 44,
+    "toolCount": 45,
     "triggerCount": 0,
-    "version": "20261101_00",
+    "version": "20261112_00",
     "tools": [
       {
         "slug": "V0_ASSIGN_CHAT_TO_PROJECT",
@@ -496205,6 +496345,11 @@
         "slug": "V0_UPDATE_CHAT",
         "name": "Update Chat",
         "description": "Tool to update metadata of an existing v0 chat. Use when you need to rename a chat or change its privacy setting after creation."
+      },
+      {
+        "slug": "V0_UPDATE_CHAT_FILES",
+        "name": "Update Chat Files",
+        "description": "Create, replace, or delete source files in an existing v0 chat."
       },
       {
         "slug": "V0_UPDATE_CHAT_VERSION",
