@@ -29,6 +29,7 @@
     "eval:agent": "eve eval docs-agent --skip-report",
     "eval:agent:flows": "bun scripts/eval-agent-flows.ts",
     "eval:kb-search": "bun scripts/eval-kb-search.ts",
+    "test:kb-publish": "bun tests/e2e/kb-publish.ts",
     "generate:toolkits": "bun scripts/generate-toolkits.ts",
     "generate:toolkit-versions": "bun scripts/refresh-toolkit-versions.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",

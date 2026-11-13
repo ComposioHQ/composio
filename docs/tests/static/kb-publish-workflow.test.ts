@@ -91,7 +91,7 @@ describe('KB publication workflow', () => {
     }
   });
 
-  test('allows advisory review cohorts while retaining verification errors', () => {
+  test("blocks on this guide's or KB-wide errors, not on other guides' errors", () => {
     const root = fixture();
     try {
       writeFileSync(join(root, 'report.json'), JSON.stringify({
@@ -100,9 +100,22 @@ describe('KB publication workflow', () => {
       expect(runStep('Regenerate KB pages', root).status).toBe(0);
 
       writeFileSync(join(root, 'report.json'), JSON.stringify({
-        findings: [{ severity: 'error', kind: 'unknown-tool-slug' }],
+        findings: [{ severity: 'error', kind: 'review-window-expired', guideSlug: 'other-guide' }],
+      }));
+      expect(runStep('Regenerate KB pages', root, { VERIFY_EXIT: '1' }).status).toBe(0);
+
+      writeFileSync(join(root, 'report.json'), JSON.stringify({
+        findings: [{ severity: 'error', kind: 'unknown-tool-slug', guideSlug: 'sdk-example' }],
       }));
       expect(runStep('Regenerate KB pages', root, { VERIFY_EXIT: '1' }).status).toBe(1);
+
+      writeFileSync(join(root, 'report.json'), JSON.stringify({
+        findings: [{ severity: 'error', kind: 'manifest-error', guideSlug: '' }],
+      }));
+      expect(runStep('Regenerate KB pages', root, { VERIFY_EXIT: '1' }).status).toBe(1);
+
+      writeFileSync(join(root, 'report.json'), 'crashed');
+      expect(runStep('Regenerate KB pages', root, { VERIFY_EXIT: '1' }).status).not.toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

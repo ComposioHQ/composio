@@ -63,9 +63,18 @@ jobs:
         run: |
           bun run generate:kb
           bun run check:kb
-          bun run verify:kb --json | tee "$RUNNER_TEMP/kb-verify.json"
+          # verify:kb exits 1 for any finding in the whole KB. Other guides' findings (such as
+          # expired review dates) are tracked by the data-sync freshness check; only this guide's
+          # errors and support prose, and KB-wide errors, block its publication.
+          bun run verify:kb --json > "$RUNNER_TEMP/kb-verify.json" || true
+          jq -e '.findings | type == "array"' "$RUNNER_TEMP/kb-verify.json" > /dev/null
           if ! jq -e '[.findings[] | select(.kind == "unedited-support-prose" and .guideSlug == env.GUIDE_SLUG)] | length == 0' "$RUNNER_TEMP/kb-verify.json"; then
             echo "KB publication contains support-facing prose. Rewrite it for public readers before approving again." >&2
+            exit 1
+          fi
+          if ! jq -e '[.findings[] | select(.severity == "error" and ((.guideSlug // "") == env.GUIDE_SLUG or (.guideSlug // "") == ""))] | length == 0' "$RUNNER_TEMP/kb-verify.json"; then
+            jq -r '.findings[] | select(.severity == "error" and ((.guideSlug // "") == env.GUIDE_SLUG or (.guideSlug // "") == "")) | "\(.kind): \(.detail)"' "$RUNNER_TEMP/kb-verify.json" >&2
+            echo "KB publication fails verification. Fix the guide before approving again." >&2
             exit 1
           fi
 
