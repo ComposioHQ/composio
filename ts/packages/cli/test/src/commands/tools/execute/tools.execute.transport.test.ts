@@ -3,10 +3,17 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { APIConnectionError, APIError, type ComposioError } from '@composio/client/effect';
+import {
+  APIConnectionError,
+  APIConnectionTimeoutError,
+  APIError,
+  RateLimitError,
+  type ComposioError,
+} from '@composio/client/effect';
 import type { SessionExecuteResponse } from '@composio/client/resources/tool-router';
 import { ConfigProvider, Effect, Exit, Fiber, Option, Schema } from 'effect';
 import { TestClock } from 'effect/testing';
+import { TEMPORARY_FAILURE_EXIT_CODE } from 'src/effects/retry-advice';
 import * as composioAccount from 'src/services/composio-account';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
@@ -19,6 +26,7 @@ import {
   TestLive,
   type DashboardTestRequest,
 } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
 vi.mock('node:dns/promises', () => ({
@@ -533,6 +541,54 @@ describe('CLI: composio execute transport', () => {
       expect(output).toContain('requires interactive approval');
       expect(world.dashboardRequests).toEqual([]);
       expect(world.toolRouterCalls).toEqual([]);
+    })
+  );
+
+  it.effect('says to check first when an execution timed out, since the tool may have run', () =>
+    Effect.gen(function* () {
+      const world = makeWorld({
+        env: backendOnlyEnv,
+        backendExecute: () =>
+          Effect.fail(
+            new APIConnectionTimeoutError({
+              message: 'Request timed out.',
+              method: 'POST',
+              url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/execute',
+            })
+          ),
+      });
+
+      const { exit, lines } = yield* world.run(EXECUTE_GMAIL);
+
+      expect(lastJson(lines)).toMatchObject({ successful: false, retry: 'check-first' });
+      expect(exitCodeOf(exit)).toBe(1);
+      // Sent once: the client never repeats an execution.
+      expect(world.toolRouterCalls.filter(call => call.method === 'execute')).toHaveLength(1);
+    })
+  );
+
+  it.effect('says a rate-limited execution is safe to run again and exits 75', () =>
+    Effect.gen(function* () {
+      const world = makeWorld({
+        env: backendOnlyEnv,
+        backendExecute: () =>
+          Effect.fail(
+            new RateLimitError({
+              message: '429 Too many requests',
+              method: 'POST',
+              url: 'https://mock.invalid/api/v3.1/tool_router/session/{session_id}/execute',
+              status: 429,
+              requestId: 'req_rate',
+              details: undefined,
+              body: undefined,
+            })
+          ),
+      });
+
+      const { exit, lines } = yield* world.run(EXECUTE_GMAIL);
+
+      expect(lastJson(lines)).toMatchObject({ successful: false, retry: 'safe' });
+      expect(exitCodeOf(exit)).toBe(TEMPORARY_FAILURE_EXIT_CODE);
     })
   );
 

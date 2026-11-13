@@ -5,6 +5,11 @@
  * heals or fails with exit 1, empty stdout, and the cause on stderr. A tool
  * execution is sent exactly once whatever happens, because a second attempt
  * could act twice.
+ *
+ * A failure that is safe to send again as it is (a 429, which the API refused
+ * before acting) exits 75 instead of 1, so a caller can retry on the code alone.
+ * A failed execution says in its result whether it is safe to run again or may
+ * have run (`retry`).
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'bun:test';
@@ -23,6 +28,10 @@ import {
 } from './support';
 
 const SEARCH = 'toolRouter.session.search';
+
+/** The exit code of a failure that is safe to send again as it is (`EX_TEMPFAIL`). */
+const TEMPORARY_FAILURE = 75;
+const RETRY_HINT = 'run the same command again';
 
 describe('network faults on a read (`search`)', () => {
   let rig: CliRig;
@@ -62,6 +71,7 @@ describe('network faults on a read (`search`)', () => {
     fault: Fault;
     stderr: ReadonlyArray<string>;
     attempts: number;
+    exitCode?: number;
   }> = [
     {
       name: 'HTTP 500 on every attempt',
@@ -72,8 +82,9 @@ describe('network faults on a read (`search`)', () => {
     {
       name: 'HTTP 429 on every attempt',
       fault: { kind: 'status', status: 429, headers: { 'retry-after': '1' } },
-      stderr: ['Injected HTTP 429'],
+      stderr: ['Injected HTTP 429', RETRY_HINT],
       attempts: 3,
+      exitCode: TEMPORARY_FAILURE,
     },
     {
       name: 'an HTML error page from a proxy',
@@ -101,14 +112,14 @@ describe('network faults on a read (`search`)', () => {
     },
   ];
 
-  for (const { name, fault, stderr, attempts } of persistent) {
+  for (const { name, fault, stderr, attempts, exitCode = 1 } of persistent) {
     it(
-      `${name}: exit 1, empty stdout, cause on stderr`,
+      `${name}: exit ${exitCode}, empty stdout, cause on stderr`,
       async () => {
         rig.fake.faults.inject({ route: SEARCH, fault });
         const result = await rig.run(SEARCH_SLACK);
 
-        expect(result.exitCode).toBe(1);
+        expect(result.exitCode).toBe(exitCode);
         expect(result.stdout).toBe('');
         for (const text of stderr) expect(clean(result.stderr)).toContain(text);
         expect(searchRequests(result)).toHaveLength(attempts);
@@ -184,13 +195,45 @@ describe('network faults on a read (`search`)', () => {
   }
 });
 
-const EXECUTION_FAULTS: ReadonlyArray<{ name: string; fault: Fault }> = [
-  { name: 'HTTP 500', fault: { kind: 'status', status: 500 } },
-  { name: 'HTTP 429', fault: { kind: 'status', status: 429, headers: { 'retry-after': '1' } } },
-  { name: 'an HTML error page', fault: { kind: 'html', status: 502 } },
-  { name: 'a body that is not JSON', fault: { kind: 'malformed-json' } },
-  { name: 'connection reset before any response', fault: { kind: 'reset' } },
-  { name: 'connection reset in the middle of the body', fault: { kind: 'reset-mid-body' } },
+// A 429 refused the execution, so it is safe to send again; after any other fault the tool may
+// have run, so the result says to check first.
+const EXECUTION_FAULTS: ReadonlyArray<{
+  name: string;
+  fault: Fault;
+  exitCode: number;
+  retry: 'safe' | 'check-first';
+}> = [
+  { name: 'HTTP 500', fault: { kind: 'status', status: 500 }, exitCode: 1, retry: 'check-first' },
+  {
+    name: 'HTTP 429',
+    fault: { kind: 'status', status: 429, headers: { 'retry-after': '1' } },
+    exitCode: TEMPORARY_FAILURE,
+    retry: 'safe',
+  },
+  {
+    name: 'an HTML error page',
+    fault: { kind: 'html', status: 502 },
+    exitCode: 1,
+    retry: 'check-first',
+  },
+  {
+    name: 'a body that is not JSON',
+    fault: { kind: 'malformed-json' },
+    exitCode: 1,
+    retry: 'check-first',
+  },
+  {
+    name: 'connection reset before any response',
+    fault: { kind: 'reset' },
+    exitCode: 1,
+    retry: 'check-first',
+  },
+  {
+    name: 'connection reset in the middle of the body',
+    fault: { kind: 'reset-mid-body' },
+    exitCode: 1,
+    retry: 'check-first',
+  },
 ];
 
 for (const transport of [
@@ -227,19 +270,20 @@ for (const transport of [
       TEST_TIMEOUT_MS
     );
 
-    for (const { name, fault } of EXECUTION_FAULTS) {
+    for (const { name, fault, exitCode, retry } of EXECUTION_FAULTS) {
       it(
-        `${name}: sent exactly once, reported as a failed result on stdout`,
+        `${name}: sent exactly once, reported as a failed result on stdout with retry "${retry}"`,
         async () => {
           rig.fake.faults.inject({ route: transport.route, fault });
           const result = await rig.run(EXECUTE_SLACK);
 
-          expect(result.exitCode).toBe(1);
+          expect(result.exitCode).toBe(exitCode);
           expect(result.requests.filter(entry => entry.route === transport.route)).toHaveLength(1);
           const outcome = stdoutJson(result, ExecutionResult);
           expect(outcome.successful).toBe(false);
           expect(outcome.error ?? '').not.toBe('');
           expect(outcome.data).toBeUndefined();
+          expect(outcome.retry).toBe(retry);
         },
         TEST_TIMEOUT_MS
       );

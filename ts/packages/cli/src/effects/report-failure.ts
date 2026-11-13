@@ -1,21 +1,25 @@
 import { Data, Effect, Runtime } from 'effect';
+import { TEMPORARY_FAILURE_EXIT_CODE } from 'src/effects/retry-advice';
 import type { TerminalUI } from 'src/services/terminal-ui';
 
 /**
  * A failure already shown to the user. It only makes the command fail: the runner does not
- * log it (`[Runtime.errorReported]` is false) and `Runtime.defaultTeardown` exits 1.
+ * log it (`[Runtime.errorReported]` is false) and `Runtime.defaultTeardown` exits 1, or
+ * `TEMPORARY_FAILURE_EXIT_CODE` (75) when it is `retryable`: running the same command again is
+ * safe and may pass (see `src/effects/retry-advice.ts`).
  *
  * The markers are getters, like `ExpectedFailure`, so they stay off the instance's own properties.
  */
 export class ReportedFailure extends Data.TaggedError('effects/ReportedFailure')<{
   readonly message: string;
+  readonly retryable?: boolean;
 }> {
   get [Runtime.errorReported]() {
     return false;
   }
 
   get [Runtime.errorExitCode]() {
-    return 1;
+    return this.retryable === true ? TEMPORARY_FAILURE_EXIT_CODE : 1;
   }
 }
 
@@ -39,15 +43,22 @@ export const printFailure = (ui: TerminalUI, message: string, hint?: string) =>
 
 /**
  * Reports a failure the command handles itself: prints it like `printFailure`, then fails with a
- * `ReportedFailure`, so the process exits 1 without printing more.
+ * `ReportedFailure`, so the process exits 1 (75 when `retryable`) without printing more.
  *
  * A usage mistake fails with a `CommandInputError` instead; see `src/commands/errors.ts`.
  */
 export const reportFailure = (
   ui: TerminalUI,
   message: string,
-  hint?: string
+  hint?: string,
+  options?: { readonly retryable?: boolean }
 ): Effect.Effect<never, ReportedFailure> =>
   printFailure(ui, message, hint).pipe(
-    Effect.andThen(Effect.fail(new ReportedFailure({ message })))
+    Effect.andThen(
+      Effect.fail(
+        new ReportedFailure(
+          options?.retryable === true ? { message, retryable: true } : { message }
+        )
+      )
+    )
   );
