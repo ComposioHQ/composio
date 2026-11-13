@@ -8,3 +8,5 @@
 # node_modules.
 **/node_modules
 .git
+# Live eval batches: local, and they change on every run
+**/agent-journeys/results
