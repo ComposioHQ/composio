@@ -60,9 +60,9 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
 
 /**
  * A warning that reaches stderr even off a terminal, where `ui.log.*` decoration is dropped: a
- * script or agent reading stderr must see which project its command acted on.
+ * script or agent reading stderr must see a fallback that affects the result.
  */
-const warnOnStderr = (message: string) =>
+export const warnOnStderr = (message: string) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     if ((yield* ui.capabilities).canDecorate) {

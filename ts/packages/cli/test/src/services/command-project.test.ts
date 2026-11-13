@@ -486,6 +486,24 @@ describe('resolveDeveloperProjectOrDefault', () => {
     )
   );
 
+  it.effect.each([
+    { status: 401, message: 'Invalid API key' },
+    { status: 403, message: 'Access denied' },
+    { status: 500, message: 'Session service unavailable' },
+  ])(
+    'preserves a $status session lookup failure instead of recommending setup',
+    ({ status, message }) =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          jsonResponse({ error: { status, code: status, message } }, status)
+        );
+
+        const error = yield* resolveDeveloperProjectOrDefault({}).pipe(Effect.flip);
+
+        expect(error).toMatchObject({ reason: 'request_failed', message, cause: { status } });
+      }).pipe(Effect.provide(testLayer))
+  );
+
   it.effect('resolves --project-name as before, never falling back', () =>
     Effect.gen(function* () {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(projectsPage(['Other']));

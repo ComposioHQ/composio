@@ -335,7 +335,7 @@ describe('CLI: composio dev toolkits list', () => {
         const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
 
         expect(stderr).toContain(
-          '`--connected` filter could not be applied — session data unavailable.'
+          'Warning: `--connected` filter could not be applied — session data unavailable.'
         );
         expect(
           (JSON.parse(String(stdout.at(-1))) as Array<{ slug: string }>).map(row => row.slug)
@@ -370,7 +370,7 @@ describe('CLI: composio dev toolkits list', () => {
           const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
 
           expect(stderr[0]).toBe(
-            '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
+            'Warning: `--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
           );
           expect(stderr.join('\n')).toContain('Listing 3 of 3 toolkits');
           expect(
@@ -524,6 +524,39 @@ describe('CLI: composio dev toolkits list reads connection status in the develop
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(it => {
     it.effect(
+      '[Given] a failed project lookup with redirected stderr [Then] names the skipped filter and keeps the catalog and successful exit',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubClientResources(['auth'], () =>
+            Response.json(
+              { error: { message: 'Session service unavailable', status: 500, code: 500 } },
+              { status: 500, headers: { 'x-should-retry': 'false' } }
+            )
+          );
+          const terminal = redirectedTerminalUI();
+          const { exitCode } = yield* cliExit([
+            'dev',
+            'toolkits',
+            'list',
+            '--connected',
+            '--user-id',
+            'alice',
+          ]).pipe(Effect.provide([stub.layer, terminal.layer]));
+
+          expect(exitCode).toBe(0);
+          expect(JSON.parse(terminal.stdout()).map((row: { slug: string }) => row.slug)).toEqual([
+            'gmail',
+            'slack',
+            'github',
+          ]);
+          expect(terminal.stderr()).toBe(
+            'Warning: `--connected` filter could not be applied — developer project unavailable. Showing the unfiltered catalog.\n'
+          );
+        })
+    );
+
+    it.effect(
       '[Given] --connected in a directory set up for no project [Then] warns that the filter needs a developer project and lists the catalog',
       () =>
         Effect.gen(function* () {
@@ -537,7 +570,7 @@ describe('CLI: composio dev toolkits list reads connection status in the develop
           expect(exitCode).toBe(0);
           expect(stub.requests).toEqual([]);
           expect(stderr).toContain(
-            '`--connected` requires a developer project. Run `composio dev init` or pass --project-name.'
+            'Warning: `--connected` filter could not be applied — developer project unavailable. Showing the unfiltered catalog.'
           );
           expect(stderr.join('\n')).not.toContain('`--connected` requires a user id.');
           expect(stderr.join('\n')).toContain('Listing 3 of 3 toolkits');

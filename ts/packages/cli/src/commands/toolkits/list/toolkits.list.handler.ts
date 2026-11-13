@@ -1,6 +1,10 @@
 import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import { Array as Arr, Effect, Option } from 'effect';
-import { fallbackNotice, resolveSurfaceProjectAndUserOption } from 'src/commands/surface';
+import {
+  fallbackNotice,
+  resolveSurfaceProjectAndUserOption,
+  warnOnStderr,
+} from 'src/commands/surface';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
@@ -73,9 +77,9 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
     }
 
     if (Option.isSome(connected) && Option.isNone(user)) {
-      yield* ui.log.warn(
+      yield* warnOnStderr(
         Option.isNone(project)
-          ? '`--connected` requires a developer project. Run `composio dev init` or pass --project-name.'
+          ? '`--connected` filter could not be applied — developer project unavailable. Showing the unfiltered catalog.'
           : '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
       );
     }
@@ -150,7 +154,7 @@ export const runToolkitsList = ({ query, limit, connected }: ToolkitsListParams)
       }
     );
     if (filterSkipped) {
-      yield* ui.log.warn('`--connected` filter could not be applied — session data unavailable.');
+      yield* warnOnStderr('`--connected` filter could not be applied — session data unavailable.');
     }
 
     if (rows.length === 0) {

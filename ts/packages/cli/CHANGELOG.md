@@ -11,19 +11,26 @@
   the user key, so the backend answered from the key's default project:
   `dev auth-configs list` listed another project's auth configs even in a
   directory set up with `composio dev init`. A directory with no developer
-  project of its own still gets that default (the newest developer project in
-  the org you are logged in to), now named on stderr with how to choose
-  another, and every request of the command goes to that one project. No
+  project of its own uses the newest developer project in the org you are
+  logged in to, named on stderr with how to choose another, and every request
+  of the command goes to that one project. This fallback now honors
+  `composio orgs switch`; the old unscoped requests used the key's default org. No
   `dev` command uses a directory set up for a project outside the org you are
-  logged in to any more, so a cloned repository's `.composio/` cannot send your
-  requests to a project its author chose; with no stored org, as with a key
-  from `COMPOSIO_USER_API_KEY`, the project's org must be one the key belongs
+  logged in to any more, so a cloned repository's `.composio/` cannot redirect
+  requests to another org; projects within the logged-in org remain supported.
+  With no stored org, as with a key from `COMPOSIO_USER_API_KEY`, the project's
+  org must be one the key belongs
   to. The commands above use the default project instead and say why on
   stderr; `dev playground-execute`, `dev triggers listen`, and
   `dev connected-accounts list` and `link`, which already required a
   developer project, refuse it. `dev toolkits list` and `info` read connection
   status in the same project, and show the catalog without it when there is
   no project or user to read it for.
+
+- Failed default-project lookups preserve authentication, permission, and
+  server errors instead of recommending project setup. When
+  `dev toolkits list --connected` skips its filter, it now warns on stderr even
+  when redirected, while keeping the catalog output and successful exit.
 
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root

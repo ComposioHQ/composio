@@ -189,8 +189,8 @@ const defaultProjectNotice = (
  * developer project of the stored org (sent as `x-org-id`, so `composio orgs switch` holds), or
  * without one, of the org the user joined most recently. Read once from session info, so every
  * request of the command names this one project even if another becomes the newest meanwhile.
- * Session info without a project, or an API error, means there is no such project; a connection
- * failure keeps its type.
+ * Session info without a project, or a 404, means there is no such project. Other request
+ * failures keep their cause and message instead of recommending project setup.
  */
 const defaultDeveloperProject = (params: {
   apiKey: string;
@@ -212,7 +212,8 @@ const defaultDeveloperProject = (params: {
         }) satisfies ResolvedCommandProject
     ),
     Effect.mapError(error =>
-      isAPIError(error) || Predicate.isTagged(error, 'services/HttpDecodingError')
+      (isAPIError(error) && error.status === 404) ||
+      Predicate.isTagged(error, 'services/HttpDecodingError')
         ? new ProjectResolutionError({
             reason: 'missing_developer_project',
             message: `${refusalSummary(params.refusal)}, and no developer project was found in your org to use instead. Run \`composio dev init\` to set one up.`,
@@ -246,38 +247,6 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       onSome: value => Effect.succeed(value),
     });
 
-    if (params.mode === 'consumer') {
-      if (params.projectName) {
-        const developerProject = yield* findDeveloperProjectByName({
-          apiKey,
-          orgId: currentOrgId,
-          name: params.projectName,
-        });
-
-        return {
-          orgId: currentOrgId,
-          projectId: developerProject.id,
-          projectName: developerProject.name,
-          projectType: 'DEVELOPER',
-          source: 'developer-project-name',
-        } satisfies ResolvedCommandProject;
-      }
-
-      const consumerProject = yield* resolveConsumerProject({
-        apiKey,
-        orgId: currentOrgId,
-      });
-
-      return {
-        orgId: consumerProject.org_id,
-        projectId: consumerProject.project_nano_id,
-        projectName: consumerProject.project_name,
-        projectType: 'CONSUMER',
-        consumerUserId: consumerProject.consumer_user_id,
-        source: 'consumer-default',
-      } satisfies ResolvedCommandProject;
-    }
-
     if (params.projectName) {
       const developerProject = yield* findDeveloperProjectByName({
         apiKey,
@@ -290,15 +259,23 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
         projectId: developerProject.id,
         projectName: developerProject.name,
         projectType: 'DEVELOPER',
-        source: 'developer-explicit',
+        source: params.mode === 'consumer' ? 'developer-project-name' : 'developer-explicit',
       } satisfies ResolvedCommandProject;
     }
 
-    return yield* resolveLocalDeveloperProject({
-      projectContext,
+    const consumerProject = yield* resolveConsumerProject({
       apiKey,
-      storedOrgId: Option.some(currentOrgId),
+      orgId: currentOrgId,
     });
+
+    return {
+      orgId: consumerProject.org_id,
+      projectId: consumerProject.project_nano_id,
+      projectName: consumerProject.project_name,
+      projectType: 'CONSUMER',
+      consumerUserId: consumerProject.consumer_user_id,
+      source: 'consumer-default',
+    } satisfies ResolvedCommandProject;
   }).pipe(Effect.mapError(normalizeLookupError));
 
 /**
