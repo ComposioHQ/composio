@@ -1,0 +1,106 @@
+---
+title: Debugging auth failures
+description: Diagnose invalid auth configs, expired connections, OAuth consent failures, and permission errors
+keywords: [auth troubleshooting, invalid auth config, token expired, connection failed, 401, 403, OAuth]
+---
+
+Start by finding which request failed: your request to Composio, the provider's OAuth consent flow, or a tool call to the provider. A `403` alone doesn't tell you which credential or permission to fix.
+
+## Find the failing step
+
+1. Record the failing operation, error message, HTTP status, and request or log ID before changing configuration. For tool execution, inspect the tool result's error as well as the HTTP response.
+2. Confirm that your API key belongs to the project containing the auth config and connected account. Use the same application user ID when connecting and executing tools. Your application's `user_id` or `userId` is separate from your Composio dashboard login.
+3. If you have a connected account ID, [inspect that exact connection](#inspect-the-connection). If creating the Connect Link failed before you received an account ID, start with the auth config checks in the table below.
+4. If the connection is `ACTIVE` but a tool fails, [check scopes and account selection](#check-scopes-and-account-selection). `ACTIVE` doesn't establish permission to every provider operation.
+
+| Error or symptom | Check next |
+| --- | --- |
+| Composio rejects your request with `401` | Check that your backend sends a valid project API key as `x-api-key`. See [API authentication](/reference/authenticating-to-composio). |
+| Composio rejects your request with `403` | Check the project's [API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operation you're calling. |
+| "Invalid auth config" or auth config not found | Verify the auth config ID, project, toolkit, and enabled state. Pass the intended config when [creating the session](/docs/authentication/controlling-scopes#use-the-auth-config-in-a-session). An auth config ID and a connected account ID aren't interchangeable. |
+| Provider rejects OAuth consent or reports a redirect URI mismatch | For your own OAuth app, check its client credentials, approved scopes, and registered redirect URI. The provider's redirect URI must match Composio's OAuth callback, not your app's post-authentication `callback_url`. See [OAuth app setup](/docs/authentication/white-labeling-authentication#using-your-own-oauth-apps). For Google consent blocks, see [Google OAuth setup](/kb/guide/platform-google-oauth). |
+| "Connection failed" or connection stays pending | Inspect the connection's status and reason below. Confirm the person opened the Connect Link and completed consent. A wait timeout alone doesn't identify why authentication hasn't finished. |
+| "Token expired", auth refresh required, or provider `401` | Inspect the connection status and reason, then [reconnect](#reconnect-after-fixing-the-cause) if credentials have expired or been revoked. For [imported bearer tokens](/docs/authentication/importing-existing-connections#bearer-tokens), your application must supply fresh credentials. |
+| Provider returns `403` or insufficient permissions during a tool call | Check the selected account, granted scopes, and that person's access to the target resource. Changing the Composio API key won't add provider permissions. |
+
+## Inspect the connection
+
+Use the connected account ID from the failing operation. Set `COMPOSIO_API_KEY` in your backend environment and replace `ca_123` with that ID.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+account = composio.connected_accounts.get("ca_123")
+print({
+    "id": account.id,
+    "status": account.status,
+    "reason": account.status_reason,
+    "toolkit": account.toolkit.slug,
+    "auth_config": account.auth_config.id,
+})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const account = await composio.connectedAccounts.get('ca_123');
+console.log({
+  id: account.id,
+  status: account.status,
+  reason: account.statusReason,
+  toolkit: account.toolkit.slug,
+  auth_config: account.authConfig.id,
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq '{id, status, reason: .status_reason, toolkit: .toolkit.slug, auth_config: .auth_config.id}'
+```
+</Tab>
+</Tabs>
+
+The reason field can be `null`. Use it alongside the original error and the provider's consent response. Python and the API return `status_reason`; TypeScript returns `statusReason`.
+
+| Status | What to do |
+| --- | --- |
+| `INITIALIZING` or `INITIATED` | Complete the hosted authentication flow, then check status again. If waiting times out, retrieve the connection again before deciding to retry. |
+| `ACTIVE` | Check scopes, account selection, and provider resource access if the tool still fails. |
+| `FAILED` | Read the reason, fix the auth config or consent failure, and create a fresh Connect Link. |
+| `EXPIRED` or `REVOKED` | Have the person reconnect if they still want to grant access. |
+| `INACTIVE` | Confirm the account should be used, then [re-enable it](/docs/auth-configuration/connected-accounts#enable-and-disable-accounts). |
+
+Avoid logging the full connected-account response. These examples select diagnostic fields and leave out credential state.
+
+## Check scopes and account selection
+
+Compare the failing tool's required permissions with the scopes granted to the connection. See [Controlling scopes](/docs/authentication/controlling-scopes) to choose scopes and configure them on the auth config your session uses.
+
+Updating an auth config's scopes doesn't update existing grants. After changing scopes, have the person complete a fresh consent flow. If the provider won't approve a required scope for Composio's managed app, use [your own OAuth app](/docs/authentication/controlling-scopes#set-scopes-with-your-own-oauth-app).
+
+Also verify the provider account and target resource. A work account with the right scopes can still lack access to a file owned by a personal account. If you use multiple connections, [select the intended connected account](/docs/authentication/managing-multiple-connected-accounts). After reconnecting, update any explicitly pinned account IDs to the new connection.
+
+## Reconnect after fixing the cause
+
+Composio manages OAuth token refresh for hosted OAuth connections. When a connection expires or access is revoked, send a fresh Connect Link using the [connection lifecycle flow](/docs/authentication#connection-lifecycle), or use [`connected_accounts.link()` / `connectedAccounts.link()`](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) with the intended user and auth config. Wait until the new connection is `ACTIVE` before retrying the tool.
+
+The SDK `refresh()` methods are deprecated. Don't use them as a credential-validity check. For credentials your application imports as bearer tokens, [update the credentials](/docs/authentication/importing-existing-connections#updating-credentials) when your application refreshes them.
+
+If you're reconnecting to change scopes while an `ACTIVE` account already exists, the SDK's `link()` method rejects an additional account by default. Use `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript only when you intend to create another connection, then explicitly select it for execution. See [multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
+
+## Isolate an unresolved failure
+
+Retry one failing operation with the intended user, auth config, connected account, and minimal valid arguments. Prefer a read-only operation while diagnosing. Compare where it stops:
+
+- If Composio rejects the request before a provider call, check your request, project, API key permissions, and identifiers.
+- If the provider rejects consent or access, check its error, OAuth app setup, granted scopes, and resource permissions.
+- If those checks pass and the failure persists, send a [support report](/reference/errors#getting-help). A generic "connection failed" message alone doesn't establish whether your configuration, the provider, or Composio caused it.
+
+Include the project ID, toolkit, auth config ID, connected account ID, SDK version, UTC timestamp, request or execution log ID, and a redacted error. Say whether you use Composio-managed OAuth, your own OAuth app, or imported credentials, and list the checks you've completed. Keep API keys, client secrets, tokens, and Connect Link URLs out of the report.

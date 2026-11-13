@@ -8,6 +8,8 @@ Scopes are the permissions an OAuth toolkit grants your app: read email, write t
 
 You control scopes on an [auth config](/docs/authentication#behind-the-scenes), then [pass that auth config to a session](#use-the-auth-config-in-a-session) so the session requests your scopes when users connect.
 
+If a connected account returns `403` or insufficient permissions, follow [Debugging auth failures](/docs/authentication/troubleshooting#check-scopes-and-account-selection) to check scopes, account selection, and resource access.
+
 <Callout type="info">
 Scopes apply to OAuth toolkits. Toolkits that authenticate with API keys or bearer tokens don't have scopes to set.
 </Callout>

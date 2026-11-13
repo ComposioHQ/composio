@@ -7,6 +7,7 @@
     "importing-existing-connections",
     "programmatic-auth-configs",
     "controlling-scopes",
+    "troubleshooting",
     "white-labeling-authentication"
   ]
 }
