@@ -153,20 +153,11 @@ describe('streams', () => {
   const CLOSED_EARLY = `{ ${SEARCH_SLACK}; echo $? > /tmp/pipe.rc; } | true; cat /tmp/pipe.rc`;
 
   it(
-    'today: a reader that closes stdout before the CLI writes makes it exit 1 with an EPIPE trace',
-    async () => {
-      const result = await rig.run(CLOSED_EARLY);
-      expect(result.stdout).toBe('1\n');
-      expect(result.stderr).toContain('EPIPE');
-    },
-    TEST_TIMEOUT_MS
-  );
-
-  // CLI defect: a closed stdout is reported as an EPIPE stack trace, and the command fails.
-  it.failing(
     'a reader that closes stdout early does not fail the command',
     async () => {
       const result = await rig.run(CLOSED_EARLY);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('0\n');
       expect(result.stderr).not.toContain('EPIPE');
     },
     TEST_TIMEOUT_MS

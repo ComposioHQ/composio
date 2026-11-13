@@ -24,6 +24,7 @@ export const terminalUITestImpl = TerminalUI.of({
   // channel immune to it, matching production, where `ui.output()` never goes
   // through the Effect `Console` service at all and so is never affected.
   output: data => Console.info(data),
+  stdoutClosed: Effect.never,
   error: data => Console.error(data),
 
   intro: title => Console.log(`-- ${title} --`),
