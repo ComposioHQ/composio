@@ -4,9 +4,9 @@ For a step-by-step guide on creating and configuring your own Google OAuth crede
 
 ## Why am I seeing "App is blocked" when connecting Google Super?
 
-Google Super requires broad Google Workspace scopes for some cross-product workflows, and some of those scopes are not available on Composio-managed Google Super auth today. If users see Google's "App is blocked" or unverified-app screen with managed Google Super auth, use your own verified Google OAuth app and reconnect through a custom auth config.
+Google can block consent when the OAuth client requests scopes that Google hasn't approved for that client. Follow [Google scope approvals and blocked-app troubleshooting](/docs/authentication/controlling-scopes#google-scope-approvals) to check the auth config and requested scopes. Toolkit defaults and scope recommendations don't establish the managed app's approved scopes.
 
-Composio is working on getting the managed Google Super app approved for the needed scopes, but until that is complete, custom Google OAuth is the workaround for production usage. See [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+If a required scope isn't approved for the managed app, use your own Google OAuth app with the required verification and reconnect through a custom auth config. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) and [Google OAuth setup](https://composio.dev/auth/googleapps).
 
 ## Why am I getting the "API has not been used in project" error?
 

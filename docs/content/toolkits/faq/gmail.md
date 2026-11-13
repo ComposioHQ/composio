@@ -4,9 +4,9 @@ For a step-by-step guide on creating and configuring your own Google OAuth crede
 
 ## Why am I seeing "App is blocked" when connecting Gmail?
 
-The OAuth client is requesting scopes that Google hasn't verified for that client. This usually happens when you add extra scopes beyond the defaults.
+Google can block consent when the OAuth client requests scopes that Google hasn't approved for that client. This can happen after you add scopes beyond the defaults.
 
-Remove the additional scopes from your auth config, or create your own OAuth app and submit the scopes for verification. See [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+Follow [Google scope approvals and blocked-app troubleshooting](/docs/authentication/controlling-scopes#google-scope-approvals). Toolkit defaults and scope recommendations don't establish the managed app's approved scopes. If you need your own OAuth app, see [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) and [Google OAuth setup](https://composio.dev/auth/googleapps).
 
 ## Why am I getting "Gmail API has not been used in project" error?
 

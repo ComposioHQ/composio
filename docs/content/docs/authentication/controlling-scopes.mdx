@@ -24,6 +24,20 @@ Scope recommendations and grant-context APIs are experimental. Review the recomm
 
 Toolkit auth details also expose `required_scopes` (Python) or `requiredScopes` (TypeScript): scopes the auth method always requests, regardless of tool-specific scopes. Auth fields expose `user_visible` or `userVisible` to indicate whether the hosted connection flow displays them. These fields may be absent when the API does not provide them.
 
+## Google scope approvals
+
+For [Gmail](/toolkits/gmail) and [Google Super](/toolkits/googlesuper), the toolkit's default `scopes` value describes the permissions to request. It doesn't list the scopes Google has approved for Composio's managed OAuth app. Scope recommendations identify permissions needed by tools, and `available_scopes` is a constraint you supply, not an approval list returned by Google.
+
+Confirm that the managed app supports your exact scope URLs with [Composio support](mailto:support@composio.dev) before relying on a different scope set. Setting `credentials.scopes` passes scopes to Composio's API; it doesn't verify the OAuth app with Google.
+
+If Google shows "This app is blocked" after you add scopes:
+
+1. Check which auth config your session uses and which scopes it requests.
+2. Remove the added scopes if your tools don't need them. If a required scope isn't approved for the managed app, use your own Google OAuth app and complete Google's required verification for that app and its requested scopes.
+3. [Reconnect the account](#update-scopes-on-an-existing-config) so the user grants the new scope set.
+
+With your own OAuth app, configure the scopes your tools need in the provider's portal and in your custom auth config. Google consent uses that app's identity; managed auth uses Composio's app identity. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) to choose an app and set up its credentials.
+
 ## Set scopes with Composio managed auth
 
 Pass a `scopes` field in `credentials` to override the defaults while still using Composio's managed OAuth app. Give scopes as a comma-separated string.
