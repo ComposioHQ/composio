@@ -10,11 +10,16 @@ Manual authentication lets you connect users to toolkits outside the chat flow. 
 
 ## Authorize a toolkit
 
-Call `session.authorize()` to generate a [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to finish:
+Run this code on your backend. Set `COMPOSIO_API_KEY` to your [Composio project API key](/reference/authenticating-to-composio#project-api-key); both SDKs read it from the environment. This key authenticates your app to Composio. Each user's provider credentials, such as their Gmail OAuth tokens or a provider API key, belong to a separate connected account.
+
+Create a session with a stable ID from your authenticated application user, then call `session.authorize()` to start a [hosted Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) flow:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
+from composio import Composio
+
+composio = Composio()
 session = composio.create(user_id="user_123")
 
 connection_request = session.authorize("gmail")
@@ -29,8 +34,8 @@ print(f"Connected: {connected_account.id}")
 <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+
+const composio = new Composio();
 const session = await composio.create("user_123");
 
 const connectionRequest = await session.authorize("gmail");
@@ -76,11 +81,21 @@ done
 </Tab>
 </Tabs>
 
-Redirect the user to the `redirectUrl`. After they authenticate, they'll return to your callback URL. The connection request polls until the user completes authentication (default timeout: 60 seconds).
+If the request includes a `redirectUrl` (Python: `redirect_url`), send it to the user or redirect their browser there. The hosted Connect Link collects the credentials required by the toolkit; for OAuth, the user signs in and grants consent on the provider's page. The redirect URL is optional and can be `null`, so check it before redirecting. Set a callback URL as shown below if you want the user to return to your app.
+
+Your backend observes completion through `connectionRequest.waitForConnection(60000)` (Python: `connection_request.wait_for_connection(60)`). It polls the connected account and returns it when its status is `ACTIVE`. Only then continue with tool execution for that user. A browser redirect alone doesn't establish that the connection succeeded.
+
+Handle errors before executing tools: a failed, expired, or revoked connection causes the wait to fail, and an unfinished flow can time out. TypeScript timeouts are in milliseconds; Python timeouts are in seconds. Let the user retry if they deny consent or the flow fails.
 
 <Callout type="info">
 If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
 </Callout>
+
+## Auth methods and permissions
+
+The available auth methods depend on the toolkit. Alongside OAuth, toolkits can support API keys, bearer tokens, or Basic auth. Check the [toolkit catalog](/toolkits) for supported schemes and required fields. An **auth config** defines the method and, for OAuth, the requested scopes; a **connected account** holds one user's credentials. Use [custom auth configs](/docs/authentication/custom-app-vs-managed-app) and [scope controls](/docs/authentication/controlling-scopes) when the managed configuration doesn't fit your app.
+
+Composio [stores connected-account credentials encrypted at rest](/docs/authentication#where-credentials-live) and handles OAuth token refresh. If authorization is revoked or credentials expire and can't be refreshed, the user may need to reconnect. See the [connection lifecycle](/docs/authentication#connection-lifecycle) for expiry handling.
 
 ## Reusing an active connection
 
