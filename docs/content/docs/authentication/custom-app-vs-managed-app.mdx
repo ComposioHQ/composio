@@ -163,6 +163,12 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 Some OAuth toolkits do not have a Composio-managed OAuth app. Check [Managed OAuth apps](/toolkits/managed-auth) to find them. For API keys, instance details, and other authentication methods, check the individual pages in the [toolkit catalog](/toolkits).
 
+## Where your auth config applies
+
+An auth config belongs to one Composio project. Sessions in that project use it when you pass its ID in `authConfigs`. The setting also covers the session's [MCP URL](/docs/sessions-via-mcp), because the MCP endpoint and `session.tools()` share one session.
+
+Composio Connect and the For You clients run in your organization's separate [consumer project](/docs/consumer-agents#run-sessions-in-your-organizations-consumer-project). Auth configs and connected accounts from a developer project aren't available there, and consumer connections aren't available in a developer project. In For You, toolkits with a managed OAuth app use it. For toolkits without one, enter your own credentials under **Manage Auth**. See [Consumer and developer project boundaries](/kb/guide/consumer-project-boundaries-and-auth-selection).
+
 ## Next
 
 <Card icon={<Code />} title="Programmatic auth configs" href="/docs/authentication/programmatic-auth-configs" description="Create auth configs in code and pass them to a session" />
