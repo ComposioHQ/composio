@@ -1,5 +1,25 @@
 # @composio/core
 
+## 0.30.0
+
+### Minor Changes
+
+- 6f8a704: Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.
+
+### Patch Changes
+
+- 41c4666: Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.
+- 19a7a09: Update the API client dependencies to 2.1.32 to include the latest API changes.
+- 4ee12da: Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+- 6aa3f31: Tolerate malformed tool schemas instead of failing a whole toolkit's tool list. `getRawComposioTools` and the raw list path previously ran every tool's parameters through the strict schema validator with `parse`, so one tool whose schema used a valid-but-unusual JSON Schema shape — a boolean schema node (`items: true`, still emitted by MCP toolkits), a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum`, or a bare combinator root with no `type: "object"` — threw a `ZodError` and returned no tools at all for that toolkit (8 of 1562 toolkits ship such tools). Those shapes are now rewritten into the strict subset, preserving their meaning (`true` becomes `{}`, `false` becomes `{ not: {} }` — coercing it to `{}` would invert the schema). If a schema still cannot be repaired, the tool is skipped with a warning when its _input_ schema failed — providers build their call schema from it, so a tool without one is not callable — and returned without the _output_ schema when only that side failed. Identity-field failures stay loud.
+- b2b9d38: Match the `toolkits` filter of `triggers.subscribe()` for toolkits whose slug contains an underscore
+
+  The toolkit of an incoming event is derived from the first `_` segment of its trigger slug, so `ONE_DRIVE_FILE_CREATED_TRIGGER` was attributed to `ONE` and `subscribe(fn, { toolkits: ['one_drive'] })` dropped every OneDrive event. The same happened to `launch_darkly` and `agent_mail`. A `toolkits` entry now also matches when the trigger slug starts with `<toolkit>_`.
+
+- Updated dependencies [d5c1861]
+  - @composio/json-schema-to-zod@0.4.1
+
 ## 0.29.0
 
 ### Minor Changes

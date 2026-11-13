@@ -1,0 +1,61 @@
+---
+title: "SDK release 43492577778"
+date: "2026-11-13"
+sdkRelease: "43492577778"
+sdkReleaseTargets: {"@composio/anthropic":"0.11.8","@composio/claude-agent-sdk":"0.13.1","@composio/core":"0.30.0","@composio/experimental":"0.2.9","@composio/google":"0.13.0","@composio/json-schema-to-zod":"0.4.1","@composio/langchain":"0.11.3","@composio/mastra":"0.10.7","@composio/openai-agents":"0.11.3","@composio/python-sdk":"0.33.0","@composio/slim":"0.30.0","@composio/typesafe":"0.1.2"}
+---
+
+See the [release request](https://github.com/ComposioHQ/composio/issues/5390) for publication status.
+
+### SDK Versions
+
+| SDK | Version |
+| --- | --- |
+| TypeScript `@composio/anthropic` | `0.11.8` |
+| TypeScript `@composio/claude-agent-sdk` | `0.13.1` |
+| TypeScript `@composio/core` | `0.30.0` |
+| TypeScript `@composio/experimental` | `0.2.9` |
+| TypeScript `@composio/google` | `0.13.0` |
+| TypeScript `@composio/json-schema-to-zod` | `0.4.1` |
+| TypeScript `@composio/langchain` | `0.11.3` |
+| TypeScript `@composio/mastra` | `0.10.7` |
+| TypeScript `@composio/openai-agents` | `0.11.3` |
+| Python `composio` | `0.33.0` |
+| TypeScript `@composio/slim` | `0.30.0` |
+| TypeScript `@composio/typesafe` | `0.1.2` |
+
+### Changes
+
+Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.
+
+Preserve the originating `tool_use_id` in Python Anthropic tool results and retain session execution status, log IDs, and returned Instant charges in provider execution results. Clarify the TypeScript Anthropic helpers' existing result projection and message correlation in their API documentation.
+
+Include `blocked` in the Python session execution result type so blocked results can be parsed by `ToolRouterSessionExecuteResponse`.
+
+Exclude the Claude Agent SDK provider's tests package from its wheel to avoid shadowing consuming projects' tests.
+
+Update the API client dependencies to 2.1.32 to include the latest API changes.
+
+Stop emitting a `DeprecationWarning` on Python 3.14+ when registering custom tools. The async-function check now uses `inspect.iscoroutinefunction`, and async tools are still rejected as before.
+
+Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.
+
+Fix Gemini rejecting Composio tools with a 400 such as `Unknown name "examples"`. `wrapTool` and `wrapTools` now put each tool's schema in `parametersJsonSchema` instead of `parameters`, so JSON Schema keywords that Composio tools carry, such as `examples`, `const`, `null` types, and integer enums, reach Gemini intact. The `@google/genai` peer dependency now requires `^1.6.0`, the first release that supports `parametersJsonSchema` on function declarations.
+
+Fix `composio_google` raising `ParseError` while wrapping tools whose schemas use JSON Schema keywords outside the Vertex AI `Schema` subset, such as `human_parameter_name`, `examples`, `const`, `oneOf`, type lists, and non-string enums. `wrap_tool` now reduces each schema to that subset: it drops unsupported keywords, turns `oneOf` into `anyOf`, a `null` type or enum member into `nullable`, a string `const` into a one-value `enum`, and moves non-string enum values into the description.
+
+Allow OpenAI Agents SDK 0.21 in the TypeScript provider's peer dependencies. Require composio 0.32.0 or newer for the Python OpenAI Agents provider so installs cannot retain an older core.
+
+Match the `toolkit` filter of trigger subscriptions for toolkits whose slug contains an underscore
+
+The toolkit of an incoming event is derived from the first `_` segment of its trigger slug, so `ONE_DRIVE_FILE_CREATED_TRIGGER` was attributed to `ONE` and `handle(toolkit="one_drive")` skipped every OneDrive event. The same happened to `launch_darkly` and `agent_mail`. A `toolkit` filter now also matches when the trigger slug starts with `<toolkit>_`.
+
+Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.
+
+Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+
+Tolerate malformed tool schemas instead of failing a whole toolkit's tool list. `getRawComposioTools` and the raw list path previously ran every tool's parameters through the strict schema validator with `parse`, so one tool whose schema used a valid-but-unusual JSON Schema shape — a boolean schema node (`items: true`, still emitted by MCP toolkits), a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum`, or a bare combinator root with no `type: "object"` — threw a `ZodError` and returned no tools at all for that toolkit (8 of 1562 toolkits ship such tools). Those shapes are now rewritten into the strict subset, preserving their meaning (`true` becomes `{}`, `false` becomes `{ not: {} }` — coercing it to `{}` would invert the schema). If a schema still cannot be repaired, the tool is skipped with a warning when its *input* schema failed — providers build their call schema from it, so a tool without one is not callable — and returned without the *output* schema when only that side failed. Identity-field failures stay loud.
+
+Match the `toolkits` filter of `triggers.subscribe()` for toolkits whose slug contains an underscore
+
+The toolkit of an incoming event is derived from the first `_` segment of its trigger slug, so `ONE_DRIVE_FILE_CREATED_TRIGGER` was attributed to `ONE` and `subscribe(fn, { toolkits: ['one_drive'] })` dropped every OneDrive event. The same happened to `launch_darkly` and `agent_mail`. A `toolkits` entry now also matches when the trigger slug starts with `<toolkit>_`.

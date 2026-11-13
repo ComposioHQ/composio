@@ -1,5 +1,13 @@
 # @composio/claude-code-agents
 
+## 0.13.1
+
+### Patch Changes
+
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+- Updated dependencies [d5c1861]
+  - @composio/json-schema-to-zod@0.4.1
+
 ## 0.13.0
 
 ### Minor Changes

@@ -1,158 +1,368 @@
 {
-  "id": "42589989280",
-  "inputBase": "f22ab26848dbcc600131fb0b1d7261ab576ebb48",
+  "id": "43492577778",
+  "inputBase": "78c83c606cdbaad4fa40ba8c3df0a0954ac74fc3",
   "requestedBy": "jkomyno",
-  "issue": 5277,
-  "date": "2026-11-09",
+  "issue": 5390,
+  "date": "2026-11-13",
   "plan": {
     "schemaVersion": 1,
-    "inputFingerprint": "ca87e5d8d9b4b77af52b8258910a562e111182fb3bb36d2567068d7352ea091b",
+    "inputFingerprint": "4ee5516da707714ea506b1b7730ae68d02376f0272b6df00da54c4ec67a04854",
     "choices": {
       "typescript": "auto",
       "python": "auto",
       "channel": "stable",
-      "run": "42589989280"
+      "run": "43492577778"
     },
     "recommended": [
       {
+        "name": "@composio/anthropic",
+        "type": "patch",
+        "oldVersion": "0.11.7",
+        "newVersion": "0.11.8",
+        "changesets": [
+          "anthropic-tool-result-correlation",
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/claude-agent-sdk",
+        "type": "patch",
+        "oldVersion": "0.13.0",
+        "newVersion": "0.13.1",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
         "name": "@composio/core",
         "type": "minor",
-        "oldVersion": "0.28.0",
-        "newVersion": "0.29.0",
+        "oldVersion": "0.29.0",
+        "newVersion": "0.30.0",
         "changesets": [
+          "all-bags-begin",
           "composio-client-update",
-          "custom-toolkit-mcp-url",
-          "local-tools-rename",
-          "sdk-rate-limit-handling"
+          "custom-toolkits-top-level",
+          "session-execution-types",
+          "tidy-dependency-consolidation",
+          "tolerate-malformed-tool-schemas",
+          "trigger-toolkit-filter-underscore"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/experimental",
+        "type": "patch",
+        "oldVersion": "0.2.8",
+        "newVersion": "0.2.9",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/google",
+        "type": "minor",
+        "oldVersion": "0.12.0",
+        "newVersion": "0.13.0",
+        "changesets": [
+          "google-parameters-json-schema"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/json-schema-to-zod",
+        "type": "patch",
+        "oldVersion": "0.4.0",
+        "newVersion": "0.4.1",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/langchain",
+        "type": "patch",
+        "oldVersion": "0.11.2",
+        "newVersion": "0.11.3",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/mastra",
+        "type": "patch",
+        "oldVersion": "0.10.6",
+        "newVersion": "0.10.7",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/openai-agents",
+        "type": "patch",
+        "oldVersion": "0.11.2",
+        "newVersion": "0.11.3",
+        "changesets": [
+          "openai-agents-dependency-compatibility"
         ],
         "language": "typescript"
       },
       {
         "name": "@composio/python-sdk",
         "type": "minor",
-        "oldVersion": "0.31.0",
-        "newVersion": "0.32.0",
+        "oldVersion": "0.32.0",
+        "newVersion": "0.33.0",
         "changesets": [
-          "python-client-2-1-0",
-          "python-local-tools-rename",
-          "python-missing-api-key-message",
-          "python-rate-limit-handling"
+          "anthropic-tool-result-correlation",
+          "blocked-session-result-type",
+          "claude-agent-sdk-wheel-tests",
+          "composio-client-update",
+          "custom-tool-coroutine-check",
+          "custom-toolkits-top-level",
+          "google-python-vertex-schema",
+          "openai-agents-dependency-compatibility",
+          "python-trigger-toolkit-filter-underscore",
+          "session-execution-types",
+          "tidy-dependency-consolidation"
         ],
         "language": "python"
       },
       {
         "name": "@composio/slim",
         "type": "minor",
-        "oldVersion": "0.28.0",
-        "newVersion": "0.29.0",
+        "oldVersion": "0.29.0",
+        "newVersion": "0.30.0",
         "changesets": [
-          "custom-toolkit-mcp-url",
-          "local-tools-rename"
+          "all-bags-begin",
+          "custom-toolkits-top-level",
+          "session-execution-types",
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/typesafe",
+        "type": "patch",
+        "oldVersion": "0.1.1",
+        "newVersion": "0.1.2",
+        "changesets": [
+          "tidy-dependency-consolidation"
         ],
         "language": "typescript"
       }
     ],
     "releases": [
       {
+        "name": "@composio/anthropic",
+        "type": "patch",
+        "oldVersion": "0.11.7",
+        "newVersion": "0.11.8",
+        "changesets": [
+          "anthropic-tool-result-correlation",
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/claude-agent-sdk",
+        "type": "patch",
+        "oldVersion": "0.13.0",
+        "newVersion": "0.13.1",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
         "name": "@composio/core",
         "type": "minor",
-        "oldVersion": "0.28.0",
-        "newVersion": "0.29.0",
+        "oldVersion": "0.29.0",
+        "newVersion": "0.30.0",
         "changesets": [
+          "all-bags-begin",
           "composio-client-update",
-          "custom-toolkit-mcp-url",
-          "local-tools-rename",
-          "sdk-rate-limit-handling"
+          "custom-toolkits-top-level",
+          "session-execution-types",
+          "tidy-dependency-consolidation",
+          "tolerate-malformed-tool-schemas",
+          "trigger-toolkit-filter-underscore"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/experimental",
+        "type": "patch",
+        "oldVersion": "0.2.8",
+        "newVersion": "0.2.9",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/google",
+        "type": "minor",
+        "oldVersion": "0.12.0",
+        "newVersion": "0.13.0",
+        "changesets": [
+          "google-parameters-json-schema"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/json-schema-to-zod",
+        "type": "patch",
+        "oldVersion": "0.4.0",
+        "newVersion": "0.4.1",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/langchain",
+        "type": "patch",
+        "oldVersion": "0.11.2",
+        "newVersion": "0.11.3",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/mastra",
+        "type": "patch",
+        "oldVersion": "0.10.6",
+        "newVersion": "0.10.7",
+        "changesets": [
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/openai-agents",
+        "type": "patch",
+        "oldVersion": "0.11.2",
+        "newVersion": "0.11.3",
+        "changesets": [
+          "openai-agents-dependency-compatibility"
         ],
         "language": "typescript"
       },
       {
         "name": "@composio/python-sdk",
         "type": "minor",
-        "oldVersion": "0.31.0",
-        "newVersion": "0.32.0",
+        "oldVersion": "0.32.0",
+        "newVersion": "0.33.0",
         "changesets": [
-          "python-client-2-1-0",
-          "python-local-tools-rename",
-          "python-missing-api-key-message",
-          "python-rate-limit-handling"
+          "anthropic-tool-result-correlation",
+          "blocked-session-result-type",
+          "claude-agent-sdk-wheel-tests",
+          "composio-client-update",
+          "custom-tool-coroutine-check",
+          "custom-toolkits-top-level",
+          "google-python-vertex-schema",
+          "openai-agents-dependency-compatibility",
+          "python-trigger-toolkit-filter-underscore",
+          "session-execution-types",
+          "tidy-dependency-consolidation"
         ],
         "language": "python"
       },
       {
         "name": "@composio/slim",
         "type": "minor",
-        "oldVersion": "0.28.0",
-        "newVersion": "0.29.0",
+        "oldVersion": "0.29.0",
+        "newVersion": "0.30.0",
         "changesets": [
-          "custom-toolkit-mcp-url",
-          "local-tools-rename"
+          "all-bags-begin",
+          "custom-toolkits-top-level",
+          "session-execution-types",
+          "tidy-dependency-consolidation"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/typesafe",
+        "type": "patch",
+        "oldVersion": "0.1.1",
+        "newVersion": "0.1.2",
+        "changesets": [
+          "tidy-dependency-consolidation"
         ],
         "language": "typescript"
       }
     ],
     "changesets": [
       {
+        "id": "all-bags-begin",
+        "summary": "Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/slim",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "anthropic-tool-result-correlation",
+        "summary": "Preserve the originating `tool_use_id` in Python Anthropic tool results and retain session execution status, log IDs, and returned Instant charges in provider execution results. Clarify the TypeScript Anthropic helpers' existing result projection and message correlation in their API documentation.",
+        "releases": [
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/anthropic",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "blocked-session-result-type",
+        "summary": "Include `blocked` in the Python session execution result type so blocked results can be parsed by `ToolRouterSessionExecuteResponse`.",
+        "releases": [
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "claude-agent-sdk-wheel-tests",
+        "summary": "Exclude the Claude Agent SDK provider's tests package from its wheel to avoid shadowing consuming projects' tests.",
+        "releases": [
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
         "id": "composio-client-update",
-        "summary": "Update @composio/client to 2.1.0 to include the latest API changes.",
+        "summary": "Update the API client dependencies to 2.1.32 to include the latest API changes.",
         "releases": [
           {
             "name": "@composio/core",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/python-sdk",
             "type": "patch"
           }
         ]
       },
       {
-        "id": "custom-toolkit-mcp-url",
-        "summary": "Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.",
-        "releases": [
-          {
-            "name": "@composio/core",
-            "type": "minor"
-          },
-          {
-            "name": "@composio/slim",
-            "type": "minor"
-          }
-        ]
-      },
-      {
-        "id": "local-tools-rename",
-        "summary": "Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.customToolkits`. Pass `experimental.localTools` and `experimental.localToolkits` to `composio.create()`, and `localTools` and `localToolkits` to `composio.use()`. List them with `session.localTools()` and `session.localToolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool`, `RegisteredLocalToolkit`, `CreateLocalToolParams`, `CreateLocalToolkitParams` and `LocalToolExecuteFn`. The `customTools` and `customToolkits` options, the `session.customTools()` and `session.customToolkits()` methods, and the `Custom*` type names are deprecated and keep working. Passing both a new option and its deprecated alias throws `ValidationError`. The request sent to the API is unchanged.",
-        "releases": [
-          {
-            "name": "@composio/core",
-            "type": "minor"
-          },
-          {
-            "name": "@composio/slim",
-            "type": "minor"
-          }
-        ]
-      },
-      {
-        "id": "python-client-2-1-0",
-        "summary": "Update `composio-client` to 2.1.0. Breaking (experimental API): `composio.experimental.custom_toolkits.create()` and `upsert()` take the MCP server URL as `mcp_url` instead of `app_url`.",
-        "releases": [
-          {
-            "name": "@composio/python-sdk",
-            "type": "minor"
-          }
-        ]
-      },
-      {
-        "id": "python-local-tools-rename",
-        "summary": "Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.custom_toolkits`. Pass `experimental={\"local_tools\": ..., \"local_toolkits\": ...}` to `composio.create()`, and `local_tools=` and `local_toolkits=` to `composio.use()`. List them with `session.local_tools()` and `session.local_toolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool` and `RegisteredLocalToolkit`. The `custom_tools` and `custom_toolkits` options and session methods still work but emit `ComposioDeprecationWarning`, and the `Custom*` type names remain as aliases. Passing both a new option and its deprecated alias raises `InvalidParams`. The request sent to the API is unchanged.",
-        "releases": [
-          {
-            "name": "@composio/python-sdk",
-            "type": "minor"
-          }
-        ]
-      },
-      {
-        "id": "python-missing-api-key-message",
-        "summary": "The error for a missing API key now explains how to set `COMPOSIO_API_KEY` or pass `api_key=`, and links to where to get a project API key, instead of suggesting `composio login`, which the Python package doesn't install.",
+        "id": "custom-tool-coroutine-check",
+        "summary": "Stop emitting a `DeprecationWarning` on Python 3.14+ when registering custom tools. The async-function check now uses `inspect.iscoroutinefunction`, and async tools are still rejected as before.",
         "releases": [
           {
             "name": "@composio/python-sdk",
@@ -161,9 +371,17 @@
         ]
       },
       {
-        "id": "python-rate-limit-handling",
-        "summary": "`wait_for_connection()` handles rate limits: the delay between polls grows from 1 to 5 seconds, and a poll rejected with a 429 waits as long as its `Retry-After` header asks (up to the timeout) and polls again instead of failing the wait. A NaN timeout now times out instead of polling forever.",
+        "id": "custom-toolkits-top-level",
+        "summary": "Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.",
         "releases": [
+          {
+            "name": "@composio/core",
+            "type": "minor"
+          },
+          {
+            "name": "@composio/slim",
+            "type": "minor"
+          },
           {
             "name": "@composio/python-sdk",
             "type": "minor"
@@ -171,12 +389,130 @@
         ]
       },
       {
-        "id": "sdk-rate-limit-handling",
-        "summary": "Handle rate limits better: `tools.execute()` reuses tool schemas instead of fetching one per call, `waitForConnection()` backs off between polls and waits out a 429, and tool fetches and executions rejected with a 429 throw `ComposioToolFetchRateLimitError` or `ComposioToolExecutionRateLimitError` (check with `isComposioRateLimitError`).",
+        "id": "google-parameters-json-schema",
+        "summary": "Fix Gemini rejecting Composio tools with a 400 such as `Unknown name \"examples\"`. `wrapTool` and `wrapTools` now put each tool's schema in `parametersJsonSchema` instead of `parameters`, so JSON Schema keywords that Composio tools carry, such as `examples`, `const`, `null` types, and integer enums, reach Gemini intact. The `@google/genai` peer dependency now requires `^1.6.0`, the first release that supports `parametersJsonSchema` on function declarations.",
+        "releases": [
+          {
+            "name": "@composio/google",
+            "type": "minor"
+          }
+        ]
+      },
+      {
+        "id": "google-python-vertex-schema",
+        "summary": "Fix `composio_google` raising `ParseError` while wrapping tools whose schemas use JSON Schema keywords outside the Vertex AI `Schema` subset, such as `human_parameter_name`, `examples`, `const`, `oneOf`, type lists, and non-string enums. `wrap_tool` now reduces each schema to that subset: it drops unsupported keywords, turns `oneOf` into `anyOf`, a `null` type or enum member into `nullable`, a string `const` into a one-value `enum`, and moves non-string enum values into the description.",
+        "releases": [
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "openai-agents-dependency-compatibility",
+        "summary": "Allow OpenAI Agents SDK 0.21 in the TypeScript provider's peer dependencies. Require composio 0.32.0 or newer for the Python OpenAI Agents provider so installs cannot retain an older core.",
+        "releases": [
+          {
+            "name": "@composio/openai-agents",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "python-trigger-toolkit-filter-underscore",
+        "summary": "Match the `toolkit` filter of trigger subscriptions for toolkits whose slug contains an underscore\n\nThe toolkit of an incoming event is derived from the first `_` segment of its trigger slug, so `ONE_DRIVE_FILE_CREATED_TRIGGER` was attributed to `ONE` and `handle(toolkit=\"one_drive\")` skipped every OneDrive event. The same happened to `launch_darkly` and `agent_mail`. A `toolkit` filter now also matches when the trigger slug starts with `<toolkit>_`.",
+        "releases": [
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "session-execution-types",
+        "summary": "Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.",
         "releases": [
           {
             "name": "@composio/core",
-            "type": "minor"
+            "type": "patch"
+          },
+          {
+            "name": "@composio/slim",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "tidy-dependency-consolidation",
+        "summary": "Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/slim",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/experimental",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/json-schema-to-zod",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/anthropic",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/claude-agent-sdk",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/mastra",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/langchain",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/typesafe",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/python-sdk",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "tolerate-malformed-tool-schemas",
+        "summary": "Tolerate malformed tool schemas instead of failing a whole toolkit's tool list. `getRawComposioTools` and the raw list path previously ran every tool's parameters through the strict schema validator with `parse`, so one tool whose schema used a valid-but-unusual JSON Schema shape — a boolean schema node (`items: true`, still emitted by MCP toolkits), a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum`, or a bare combinator root with no `type: \"object\"` — threw a `ZodError` and returned no tools at all for that toolkit (8 of 1562 toolkits ship such tools). Those shapes are now rewritten into the strict subset, preserving their meaning (`true` becomes `{}`, `false` becomes `{ not: {} }` — coercing it to `{}` would invert the schema). If a schema still cannot be repaired, the tool is skipped with a warning when its *input* schema failed — providers build their call schema from it, so a tool without one is not callable — and returned without the *output* schema when only that side failed. Identity-field failures stay loud.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "trigger-toolkit-filter-underscore",
+        "summary": "Match the `toolkits` filter of `triggers.subscribe()` for toolkits whose slug contains an underscore\n\nThe toolkit of an incoming event is derived from the first `_` segment of its trigger slug, so `ONE_DRIVE_FILE_CREATED_TRIGGER` was attributed to `ONE` and `subscribe(fn, { toolkits: ['one_drive'] })` dropped every OneDrive event. The same happened to `launch_darkly` and `agent_mail`. A `toolkits` entry now also matches when the trigger slug starts with `<toolkit>_`.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "patch"
           }
         ]
       }

@@ -1,5 +1,19 @@
 # @composio/slim
 
+## 0.30.0
+
+### Minor Changes
+
+- 6f8a704: Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.
+
+### Patch Changes
+
+- 41c4666: Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.
+- 4ee12da: Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+- Updated dependencies [d5c1861]
+  - @composio/json-schema-to-zod@0.4.1
+
 ## 0.29.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @composio/experimental
 
+## 0.2.9
+
+### Patch Changes
+
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+
 ## 0.2.8
 
 ### Patch Changes
