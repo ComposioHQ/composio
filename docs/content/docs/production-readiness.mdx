@@ -54,6 +54,8 @@ Use a [custom auth config](/docs/authentication/custom-app-vs-managed-app) when 
 - A custom, regional, or self-hosted provider instance
 - Customer-specific OAuth credentials
 
+With either option, derive the Composio user ID from your application's signed-in session on the server. Before enabling a new connection, [verify it on your server](/docs/authentication/white-labeling-authentication#verify-the-connection-on-your-server): match it to the attempt your backend started, require `ACTIVE` status, and reject mismatched users, accounts, or auth configs. Treat callback parameters as hints, and handle denied, failed, expired, and abandoned attempts without enabling access.
+
 Test both first-time authentication and a returning user whose connected account already exists. If you need a branded flow, follow the [white-labeling guide](/docs/authentication/white-labeling-authentication).
 
 ## 4. Bound the agent's authority
@@ -122,6 +124,7 @@ Document who can access production projects, rotate keys, manage auth configs, a
 - Development, staging, and production use the intended project boundaries.
 - API keys are server-side and stored in a secret manager.
 - Authentication, reconnect, and returning-user flows work.
+- New connections are verified on your server against the signed-in user before access is enabled.
 - Session IDs are persisted for multi-turn work.
 - Tool access and confirmation rules match the product's intended authority.
 - Cross-user or cross-tenant isolation has been tested.

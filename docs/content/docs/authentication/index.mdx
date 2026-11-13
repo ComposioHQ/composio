@@ -10,6 +10,8 @@ This is the core idea: your agent runs the same tools for many people, and every
 
 Because connections are stored under the `userID`, use a stable identifier, like your database ID, never one that can change.
 
+Composio doesn't sign in your users. It trusts the `userID` your backend sends with your API key. Authenticate the person in your app first, then derive the `userID` on your server from their signed-in session, never from a value the browser or model supplies. Before enabling a new connection, [verify it on your server](/docs/authentication/white-labeling-authentication#verify-the-connection-on-your-server).
+
 <Accordions>
 <Accordion title="userID best practices">
 - **Recommended:** database UUID or primary key (`user.id`)

@@ -92,14 +92,14 @@ Use `session.authorize()` and `waitForConnection()` when you need to display or 
 
 ## Redirecting users after authentication
 
-Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which `userID` or session triggered the connection.
+Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, such as where the user started. Don't put the user ID in the URL: your callback route should read the user from your application's signed-in session.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 connection_request = session.authorize(
     "gmail",
-    callback_url="https://your-app.com/callback?user_id=user_123&source=onboarding"
+    callback_url="https://your-app.com/callback?source=onboarding"
 )
 
 print(connection_request.redirect_url)
@@ -112,7 +112,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
 const connectionRequest = await session.authorize("gmail", {
-  callbackUrl: "https://your-app.com/callback?user_id=user_123&source=onboarding",
+  callbackUrl: "https://your-app.com/callback?source=onboarding",
 });
 
 console.log(connectionRequest.redirectUrl);
@@ -124,7 +124,7 @@ console.log(connectionRequest.redirectUrl);
 curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"toolkit": "gmail", "callback_url": "https://your-app.com/callback?user_id=user_123&source=onboarding"}'
+  -d '{"toolkit": "gmail", "callback_url": "https://your-app.com/callback?source=onboarding"}'
 ```
 </Tab>
 </Tabs>
@@ -137,8 +137,10 @@ After authentication, Composio redirects the user to your callback URL with the 
 | `connected_account_id` | The ID of the newly created connected account |
 
 ```
-https://your-app.com/callback?user_id=user_123&source=onboarding&status=success&connected_account_id=ca_abc123
+https://your-app.com/callback?source=onboarding&status=success&connected_account_id=ca_abc123
 ```
+
+Anyone can open your callback URL with these parameters, so treat them as navigation hints. Before enabling access, [verify the connection on your server](/docs/authentication/white-labeling-authentication#verify-the-connection-on-your-server): match the account to the attempt your backend started for the signed-in user, confirm it's `ACTIVE`, and handle `failed`, expired, and abandoned attempts.
 
 ## Identify the connected account
 
