@@ -1,0 +1,56 @@
+---
+title: Get reliable tool calls
+description: Fix agents that describe an action, such as "I'll save that to Google Docs", instead of calling a Composio tool
+keywords: [tool calling, system prompt, tool_choice, prompt engineering, no tool calls, custom agent loop]
+---
+
+Sometimes a model replies "I'll save that to Google Docs" and returns no tool calls. Composio runs only the tool calls your model makes, so when the response has none, nothing reaches Composio and nothing happens. Fix it on the model side: check what tools it received, tell it to act, force a call when a turn must act, and catch text-only replies in your loop.
+
+This happens with every model provider, including Claude, GPT, Gemini, and Mistral.
+
+## 1. Confirm the model received the tools
+
+Log the tool names you pass to the model before the first call. An empty list, or tools passed to one call but not the next, produces text-only replies.
+
+By default, [`session.tools()`](/docs/how-composio-works#meta-tools) returns meta tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`, not app tools like `GOOGLEDOCS_CREATE_DOCUMENT`. The model must search before it can act. If you know the exact tools upfront, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) so the model sees them by name.
+
+## 2. Tell the model to act
+
+Start from this system prompt and add your product's rules:
+
+```text
+You complete tasks by calling tools. When a task needs an action, call a tool in this turn. Never describe the action instead of taking it.
+
+- To work with an app such as Gmail, Google Docs, or GitHub, call COMPOSIO_SEARCH_TOOLS to find the right tool, then execute it. Don't say a tool is unavailable until you have searched.
+- If the app isn't connected, share the Connect Link and wait for the user.
+- Before you send, delete, or publish anything, ask the user to confirm. Otherwise, act without asking.
+- Never say you did something unless a tool result confirms it.
+```
+
+A prompt like "ask for confirmation before creating data" with no "otherwise, act" line can make the model stop and ask instead of calling a tool.
+
+## 3. Force a tool call when the turn must act
+
+When you know a turn must call a tool, such as the first turn of a task the user started from a button, set the model's tool choice:
+
+| Model API | Setting |
+| --- | --- |
+| OpenAI Chat Completions and Responses | `tool_choice: "required"` |
+| OpenAI Agents SDK | `ModelSettings(tool_choice="required")` |
+| Anthropic Messages | `tool_choice: {"type": "any"}` |
+| Gemini | `tool_config.function_calling_config.mode: "ANY"` |
+| Vercel AI SDK | `toolChoice: "required"` |
+
+Forcing a tool call on every turn stops the model from ever giving a final answer, so force only the turns that must act and switch back to `auto` afterwards. The OpenAI Agents SDK resets tool choice after a tool call by default. Anthropic does not allow forced tool choice with extended thinking.
+
+## 4. Catch text-only replies
+
+If a response has no tool calls but the user asked for an action, send the model one follow-up such as "You didn't call a tool. Call the tool now." and retry. Retry once or twice at most, then return the reply to the user.
+
+## Run your own agent loop
+
+You don't need a provider package or agent framework. To give the schemas to your model and run the calls in your backend:
+
+1. Get tool schemas from `session.tools()`. They're formatted for the [provider](/docs/providers/custom-providers) you configured.
+2. Pass them to your model.
+3. Run each tool call the model returns with [`session.execute()`](/docs/how-composio-works#executing-session-tools) and send the result back to the model.
