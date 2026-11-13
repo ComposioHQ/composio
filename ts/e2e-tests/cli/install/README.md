@@ -13,6 +13,8 @@ COMPOSIO_INSTALL_E2E_RELEASE_DIR="$PWD/fixture" \
 pnpm test:e2e:install
 ```
 
+The local server also serves the failure cases under path prefixes: an archive that fails its checksum, a corrupt archive, a release with no archive for the platform (`/missing-asset`), and a download dropped partway (`/truncated`).
+
 Run the same command with `COMPOSIO_INSTALL_E2E_SHELL=zsh` for the shell-variant and bundle-layout assertions. The host server serves the checked-out installer scripts and the local release fixture without publishing it.
 
 ## Production mode
