@@ -6,6 +6,16 @@ keywords: [session, userID, tools, toolkits, meta tools, mcp, workbench]
 
 A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
 
+## Why use a session?
+
+You can write your own functions that call each app's API and hand them to your agent as tools. That works for one app and one account. A session takes over the parts that get hard once many users connect their own accounts:
+
+- **Auth for every user.** Composio runs the OAuth flow, stores each user's credentials, and refreshes tokens. Your code and the model get tool results, never raw tokens.
+- **Choosing tools.** The agent searches the whole catalog for the tools a task needs and loads only those schemas. You don't pick tools upfront or fill the context window with definitions the agent won't use.
+- **Large responses.** The [sandbox](#sandbox) keeps big tool outputs and bulk work outside the model's context.
+
+Already know the exact tools your agent needs? The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) returns just those tools and keeps session auth. For a side-by-side comparison with fetching and executing tools yourself, see [Sessions vs direct execution](/docs/sessions-vs-direct-execution).
+
 ## The basics
 
 Create a session for a user, then read its tools formatted for your framework. To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
