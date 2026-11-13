@@ -57,6 +57,35 @@ describe('composio-error-overrides', () => {
     );
   });
 
+  it('names the dev-tree link when the failing command ran on the dev tree', () => {
+    const result = mapComposioError({
+      toolkit: 'slack',
+      tree: 'dev',
+      error: apiError({
+        code: 4302,
+        slug: 'ToolRouterV2_NoActiveConnection',
+        message: 'No active connection',
+      }),
+    });
+
+    expect(result.message).toBe(
+      'No active connection found for toolkit "slack". Run `composio dev connected-accounts link slack` (with the same `--user-id`, if you passed one), then retry.'
+    );
+    expect(result.normalized).toHaveProperty('message', result.message);
+  });
+
+  it('renames the link of an error the executor raised without knowing the tree', () => {
+    const raised = new ComposioNoActiveConnectionError({ details: {}, toolkit: 'slack' });
+    expect(raised.message).toContain('`composio link slack`');
+
+    const onDevTree = mapComposioError({ error: raised, tree: 'dev' });
+    expect(onDevTree.message).toContain('`composio dev connected-accounts link slack`');
+    expect(onDevTree.message).not.toContain('`composio link slack`');
+
+    // Reported from the root tree, the same error keeps its message and identity.
+    expect(mapComposioError({ error: raised }).normalized).toBe(raised);
+  });
+
   it('still recognizes an API error wrapped in an Effect cause chain', () => {
     const result = mapComposioError({
       toolkit: 'gmail',
