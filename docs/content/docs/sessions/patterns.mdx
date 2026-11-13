@@ -1,0 +1,200 @@
+---
+title: Session patterns
+description: Choose connections, isolate users, and reuse sessions across agent runs
+keywords: [sessions, patterns, multiple connections, multiple users, backend, lifecycle, reuse]
+---
+
+Use sessions to scope your agent's connections and execution context to a user and a task. These patterns build on [Configuring sessions](/docs/configuring-sessions).
+
+## One user, multiple connections
+
+Keep the same `user_id` when someone connects several apps or multiple accounts for one app. Pin connected account IDs to choose exactly which accounts a session uses.
+
+For example, let an agent work with both work and personal Gmail accounts. Replace the IDs below with active connections belonging to `user_123`.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    connected_accounts={"gmail": ["ca_work_gmail", "ca_personal_gmail"]},
+    multi_account={"enable": True, "require_explicit_selection": True},
+)
+print(session.session_id)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const session = await composio.sessions.create("user_123", {
+  toolkits: ["gmail"],
+  connectedAccounts: { gmail: ["ca_work_gmail", "ca_personal_gmail"] },
+  multiAccount: { enable: true, requireExplicitSelection: true },
+});
+console.log(session.sessionId);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["gmail"]},
+    "connected_accounts": {"gmail": ["ca_work_gmail", "ca_personal_gmail"]},
+    "multi_account": {"enable": true, "require_explicit_selection": true}
+  }'
+```
+</Tab>
+</Tabs>
+
+Multi-account mode lets a session use several accounts for the same toolkit. With explicit selection enabled, the agent must supply the `account` parameter when multiple active accounts are available. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts) for connecting accounts, aliases, and selection.
+
+For connections to different apps, such as Gmail and GitHub, add each toolkit and its account IDs to the configuration. You only need multi-account mode when a toolkit needs more than one account in the session.
+
+## One agent, multiple users' connections
+
+Reuse your agent implementation, and create a separate session for each connection owner. For example, a background worker processing Alice's and Bob's inboxes uses two sessions:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+alice_session = composio.sessions.create(user_id="user_alice", toolkits=["gmail"])
+bob_session = composio.sessions.create(user_id="user_bob", toolkits=["gmail"])
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const aliceSession = await composio.sessions.create("user_alice", {
+  toolkits: ["gmail"],
+});
+const bobSession = await composio.sessions.create("user_bob", {
+  toolkits: ["gmail"],
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_alice", "toolkits": {"enable": ["gmail"]}}'
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_bob", "toolkits": {"enable": ["gmail"]}}'
+```
+</Tab>
+</Tabs>
+
+Route Alice's work through Alice's session and Bob's work through Bob's session. Derive the connection owner from your authenticated application or trusted job record. Check that the caller can act for that owner before creating or restoring a session.
+
+A private connection belongs to its owning user ID. To make a connection available across user IDs, use the experimental [shared connections](/docs/extending-sessions/shared-connections) feature with an explicit access control list and account pinning.
+
+## Pre-authorized backend connections
+
+For a scheduled job or backend agent, connect the required accounts before the job runs. Use a stable integration identity, such as `org_42:integration`, for an organization-owned connection. Complete [authentication in your own UI](/docs/authentication/manually-authenticating), wait for the connection to become active, and store its ID with the owner in your backend.
+
+Pin that connection when creating the job's session and disable in-chat connection management:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.sessions.create(
+    user_id="org_42:integration",
+    toolkits=["github"],
+    connected_accounts={"github": ["ca_org_github"]},
+    manage_connections=False,
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const session = await composio.sessions.create("org_42:integration", {
+  toolkits: ["github"],
+  connectedAccounts: { github: ["ca_org_github"] },
+  manageConnections: false,
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "org_42:integration",
+    "toolkits": {"enable": ["github"]},
+    "connected_accounts": {"github": ["ca_org_github"]},
+    "manage_connections": {"enable": false}
+  }'
+```
+</Tab>
+</Tabs>
+
+Disabling connection management removes the agent's `COMPOSIO_MANAGE_CONNECTIONS` tool. It doesn't authenticate an account or repair a revoked connection. Handle connection failures in your application and send the owner through authentication again when required. See [B2B agents](/docs/b2b-agents) for workspace-owned identity models.
+
+## Session lifecycle
+
+Store `session.session_id` in Python or `session.sessionId` in TypeScript with the connection owner and your conversation or job ID. Restore that session on later turns with `sessions.use()`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.sessions.use("session_id")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const session = await composio.sessions.use("session_id");
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
+
+Every `sessions.create()` call creates a new session. `sessions.use()` retrieves an existing session and its configuration. Your application should retain conversation messages separately.
+
+### When to create or reuse
+
+| Situation | Action |
+| --- | --- |
+| Another message or a resumed step in the same conversation or task | Reuse the stored session ID. |
+| Work for a different connection owner | Create or restore that owner's session. |
+| An independent task that should have a separate execution context | Create a new session for the same owner. |
+| A policy or account selection change within the same task | [Update the session](/docs/configuring-sessions#updating-a-session). |
+| A task is complete and its session should no longer execute | [Delete the session](/docs/configuring-sessions#delete). |
+
+Reuse keeps the same session context, including its configuration and sandbox. Create a new session when you need an independent sandbox rather than carrying state into another task. See [Sandbox](/docs/sandbox/remote) for storage and persistence details.
+
+Keep session IDs in your backend and verify ownership before restoring them. For policy changes, review the update's replacement semantics and [concurrent update handling](/docs/configuring-sessions#concurrent-updates). If retrieval fails because a session was deleted, create a replacement only after checking that the task should continue, and store the new ID.

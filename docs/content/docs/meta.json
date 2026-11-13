@@ -26,6 +26,7 @@
     "consumer-agents",
     "b2b-agents",
     "production-readiness",
+    "sessions/patterns",
     "sessions-via-mcp",
     "sandbox",
     "extending-sessions",
