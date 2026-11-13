@@ -127,8 +127,7 @@ describe('auth faults: a stored key the backend stops accepting', () => {
     TEST_TIMEOUT_MS
   );
 
-  // CLI defect: `whoami` answers a 401 with exit 0 and a JSON object of nulls, so "check the login with whoami" passes on a dead key.
-  it.failing(
+  it(
     '`whoami` fails when the backend rejects the stored key',
     async () => {
       reject();
