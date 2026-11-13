@@ -1,0 +1,86 @@
+---
+title: OAuth and MCP connection troubleshooting
+description: Diagnose TikTok, HighLevel, Reddit, and MCP client connection failures
+keywords: [oauth, mcp, troubleshooting, tiktok, highlevel, reddit, enhanced controls, unauthorized_client, INITIATED]
+---
+
+Find the step that fails before changing credentials: opening provider consent, returning to Composio, exchanging the code for a token, or connecting your MCP client.
+
+For unresolved failures, contact [support@composio.dev](mailto:support@composio.dev) with the toolkit, UTC timestamp, exact error, auth config ID, connected account ID, and request or tool log ID. For MCP, include the client version, endpoint type, and session ID. Redact secrets, tokens, authorization codes, and OAuth `state` values from URLs and logs. A failure after these checks can require a Composio or provider fix.
+
+## TikTok
+
+### `unauthorized_client` or a `client_key` error before consent
+
+1. Check the app environment in TikTok's developer portal. Use credentials from the same sandbox or live app you configured. In a [sandbox](https://developers.tiktok.com/docs/en/add-a-sandbox), add the signing-in account as a target user and apply your changes. Sandbox mode doesn't support public video posting.
+2. Enable [Login Kit](https://developers.tiktok.com/docs/en/login-kit-overview). Posting also needs the Content Posting API and its approved scopes. Public posting requires TikTok's content posting audit. Successful login alone doesn't grant posting access.
+3. Copy TikTok's **Client key** into Composio's `client_id` field and **Client secret** into `client_secret`. Check for swapped values and whitespace. TikTok's authorization request must use `client_key`, even though Composio's configuration field is named `client_id`.
+4. Compare the outgoing `redirect_uri` with `oauth_redirect_uri` in your auth config and the URI registered under Login Kit. They must match exactly. TikTok's [web redirect rules](https://developers.tiktok.com/docs/en/login-kit-web) require a static HTTPS URI without query parameters or fragments. Use the callback configured for your flow, rather than replacing it with your application's post-login landing page.
+5. Set an explicit comma-separated `scopes` value containing only scopes approved for your app. The toolkit defaults include profile, statistics, video listing, upload, and publishing permissions; an app approved only for basic login shouldn't request all of them. Start a fresh connection after correcting the config.
+
+If the generated authorization URL sends `client_id` instead of `client_key`, or the same error persists with matching app settings, send the redacted URL and TikTok's error details to Composio support. Don't rewrite the generated OAuth URL or bypass state validation.
+
+### The token exchange response has no `access_token`
+
+Missing `access_token` is a symptom, not a diagnosis. Preserve the HTTP status and provider error body, including `error`, `error_description`, and `log_id` when present. TikTok's [token endpoint](https://developers.tiktok.com/docs/en/oauth-get-a-user-access-token) expects form-encoded `client_key`, `client_secret`, `code`, `grant_type=authorization_code`, and the same `redirect_uri` used for authorization.
+
+After fixing a mismatch, start a fresh authorization flow. If Composio performs the exchange, ask support to inspect its upstream request and response. A completed consent screen doesn't prove that the exchange succeeded, and a generic missing-token error doesn't prove that your credentials are wrong.
+
+## HighLevel
+
+### Installation fails, loops, or remains `INITIATED`
+
+First confirm which toolkit your auth config uses. The current catalog separates `highlevel_agency` for company-level access from `highlevel_location` for sub-account access. Both support custom OAuth. The agency config also requires the Marketplace OAuth `app_id`.
+
+1. In your [Marketplace app's Auth settings](https://marketplace.gohighlevel.com/docs/Authorization/OAuth2.0/index.html), verify the client credentials, redirect URL, **Target User**, and **Who can install**. Public distribution requires approval; private apps support controlled testing. Publishing publicly isn't a universal fix for an install failure.
+2. Request only valid scopes for the intended endpoints and account type. Use HighLevel's [scope reference](https://marketplace.gohighlevel.com/docs/Authorization/Scopes/). Composio's OAuth `scopes` override is comma-separated. The current location toolkit defaults to `locations.readonly`; add the permissions your tools need and authorize again.
+3. Compare the generated authorization URL with the app's current Marketplace installation link. For an error naming `versionId` or a missing app version, record the app/version and link for support. `versionId` isn't an exposed auth-config field in the current agency or location schemas, so don't invent a config override or substitute an API version header.
+4. Match `oauth_redirect_uri` to the provider callback in the generated URL and the Marketplace allowlist. Your application's final return URL is a separate redirect. Record the redirect chain to locate a loop.
+5. Confirm that the installing administrator selected the intended agency or sub-account. HighLevel [issues different token types](https://marketplace.gohighlevel.com/docs/Authorization/AccessTokenUseCase/index.html) depending on the install context and app distribution settings.
+
+Create a fresh connection after correcting settings. `INITIATED` means the connection hasn't completed; closing the browser can leave it there. If the callback completed but the account never becomes `ACTIVE`, escalate with the connection ID, install context, redirect chain, and error. Repeatedly reinstalling or deleting the auth config can hide the original failure without fixing it.
+
+## Reddit and stale managed OAuth
+
+### An invalid client ID error appears before consent
+
+Check whether the auth config uses Composio-managed credentials or your own Reddit app. For custom OAuth, verify the app's client ID, secret, registered callback, and approval for the intended access. For managed OAuth, you can't repair Composio's provider app by editing your own Reddit developer settings.
+
+Start a fresh connection through [hosted authentication](/docs/authentication/manually-authenticating). Managed OAuth uses Connect Link or session authorization; the legacy `initiate()` path for managed OAuth has been retired. See [Migrating from initiate to link](/docs/auth-configuration/migrating-initiate-to-link).
+
+If managed OAuth still fails before consent, send support the auth config ID, its age, and the redacted provider error. Ask support to confirm whether the config references outdated managed credentials before replacing it. Recreating a config isn't a validated general fix for an invalid client ID.
+
+<Callout type="warn">
+Deleting an auth config is permanent and prevents its dependent connected accounts from functioning. Before any migration, inventory those accounts and the sessions or application settings that reference the config. Validate a replacement with a test connection, then plan updates and any required reauthorization with support. Keep the existing config until that migration is verified.
+</Callout>
+
+## MCP clients and Enhanced Controls
+
+### Choose the endpoint and authentication together
+
+Use the [Composio Connect setup guide](/docs/composio-connect) for hosted client setup. All four clients below use `https://connect.composio.dev/mcp` for Connect.
+
+| Client | Connect authentication and setup |
+| --- | --- |
+| Claude Desktop | Add a remote custom connector with the Connect URL and complete browser authorization. |
+| Claude Web | Add the same remote custom connector and complete browser authorization. Follow [Claude's connector instructions](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp) for workspace permissions. |
+| Claude Code | If you explicitly want MCP, add the Connect URL as a remote HTTP server, then use `/mcp` to authenticate. See [Claude Code's MCP instructions](https://code.claude.com/docs/en/mcp). The [native Composio plugin](/docs/agent-plugins) is also available. |
+| ChatGPT | Add the Connect URL as a custom MCP server, complete browser authorization, and enable Composio in the conversation. See the [ChatGPT setup steps](/docs/composio-connect) and [OpenAI's MCP authentication guidance](https://developers.openai.com/plugins/build/auth). |
+
+For these browser authorization flows, leave custom request headers and provider OAuth credentials unset. Fixed headers are appropriate only when you deliberately choose a header-authenticated setup. Connect's generic header setup uses `x-consumer-api-key` with the consumer key from AI Clients setup, not a project `x-api-key`.
+
+If you build an application that creates a [session MCP endpoint](/docs/sessions-via-mcp), use the exact returned `session.mcp.url` and `session.mcp.headers`. Those headers carry your SDK credential, such as `x-api-key` or `x-user-api-key`. They aren't interchangeable with Connect's consumer key. For legacy server URLs, follow the [migration guide](/docs/migration-guide/mcp-servers-to-sessions); a server ID in a URL isn't an authentication credential. Use HTTP transport rather than the retired legacy SSE route.
+
+### `Origin not allowed`, `401`, or "couldn't sign in"
+
+Confirm the endpoint type first. Remove a copied legacy URL or headers and re-add the Connect connector using its browser authorization flow. A session endpoint instead needs its returned SDK headers.
+
+If `Origin not allowed` persists, record which request failed, the client version, and the origin shown in the error, then escalate. Don't forge an `Origin` header or disable browser security. A valid credential rejected by the server, or a `tools/list` server error, needs investigation beyond repeating sign-in.
+
+### Approval fails or changed controls don't take effect
+
+Enhanced Controls rely on MCP elicitation, which lets the server ask for approval through the client. Connecting successfully doesn't establish elicitation support. [Claude Code documents elicitation support](https://code.claude.com/docs/en/mcp#respond-to-mcp-elicitation-requests); for other clients, include the exact version and advertised capabilities when reporting an approval failure. A client's own tool-confirmation dialog doesn't establish that it supports Composio's elicitation flow.
+
+For Connect, after changing Enhanced Controls under **For You > Settings > General**, reconnect the client and start a new conversation with Composio enabled. If the old behavior persists there, send support the setting, timestamp, client version, and new session details.
+
+For SDK-created sessions, use the [approval fallback configuration](/docs/sessions-via-mcp#approval-without-elicitation-support). `deny` blocks calls when the client can't request approval; `allow` runs them without approval. Choosing `allow`, an Always Allow policy, or disabling Enhanced Controls changes your approval policy. It isn't a connection repair.
