@@ -17,7 +17,8 @@ import {
   trackCliCodactFailureEffect,
   trackCliEventEffect,
 } from 'src/analytics/dispatch';
-import { CLI_ANALYTICS_EVENTS } from 'src/analytics/events';
+import { CLI_ANALYTICS_EVENTS, getPluginLifecycleSucceededEvent } from 'src/analytics/events';
+import type { TrackEvent } from 'src/analytics/types';
 import { CommandInvocation } from 'src/invocation/command-identity';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
@@ -86,6 +87,14 @@ const enableTelemetry = (apiKey = 'uak_test') => {
   // A configured project key is what gates delivery/worker spawning; enabled
   // telemetry implies a target. The no-key path is covered explicitly below.
   vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
+  // Open telemetry resolves the agent session from these, and the suite may itself run inside
+  // Claude Code or Codex. The session resolver reads a blank value as unset; a test that wants
+  // a session sets it afterwards.
+  vi.stubEnv('COMPOSIO_AGENT_HOST', '');
+  vi.stubEnv('COMPOSIO_AGENT_SESSION_ID', '');
+  vi.stubEnv('CLAUDE_CODE_SESSION_ID', '');
+  vi.stubEnv('CODEX_SESSION_ID', '');
+  vi.stubEnv('CODEX_THREAD_ID', '');
 };
 
 const decodeWorkerPayload = <A>(encodedPayload: string): A => {
@@ -365,6 +374,109 @@ describe('CLI analytics dispatch', () => {
         properties: { agent_host_env: 'claude' },
       });
     }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  describe('agent session', () => {
+    // Made-up host session IDs and the UUID v5 each one derives to.
+    const CLAUDE_SESSION = '00000000-0000-4000-8000-000000000001';
+    const CLAUDE_AGENT_SESSION_ID = 'df095fd9-410b-5ec9-b678-4ed04b5ab2dd';
+    const CODEX_SESSION = '00000000-0000-7000-8000-000000000002';
+    const CODEX_AGENT_SESSION_ID = '9d27e7e4-b2ed-522c-bed8-595444e853a7';
+
+    const enqueuedEnvelope = (event: TrackEvent) => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+        yield* trackCliEventEffect(event);
+
+        const [, args] = childProcessMocks.spawn.mock.calls[0] as unknown as [string, string[]];
+        return decodeWorkerPayload<{ properties: Record<string, unknown> }>(args[2]!);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    };
+
+    it.effect('names the agent session the command ran in', () => {
+      enableTelemetry();
+      vi.stubEnv('CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION);
+
+      return Effect.gen(function* () {
+        const envelope = yield* enqueuedEnvelope({ name: 'producer_event' });
+
+        // The ID is a lowercase UUID, which secret redaction leaves as it is.
+        expect(envelope.properties).toMatchObject({
+          agent_session_host: 'claude',
+          agent_session_id: CLAUDE_AGENT_SESSION_ID,
+        });
+      });
+    });
+
+    it.effect('names no agent session outside an agent host', () => {
+      enableTelemetry();
+      vi.stubEnv('CLAUDECODE', '');
+      vi.stubEnv('CODEX_SANDBOX', '');
+
+      return Effect.gen(function* () {
+        const envelope = yield* enqueuedEnvelope({ name: 'producer_event' });
+
+        expect(envelope.properties).toMatchObject({ agent_host_env: 'none' });
+        expect(envelope.properties).not.toHaveProperty('agent_session_host');
+        expect(envelope.properties).not.toHaveProperty('agent_session_id');
+      });
+    });
+
+    it.effect('keeps the setup target of a setup event next to the agent session', () => {
+      enableTelemetry();
+      vi.stubEnv('CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION);
+
+      return Effect.gen(function* () {
+        const envelope = yield* enqueuedEnvelope(
+          getPluginLifecycleSucceededEvent({
+            operation: 'setup',
+            target: 'codex',
+            action: 'installed',
+            invocationOrigin: 'cli',
+            cliVersion: APP_VERSION,
+          })
+        );
+
+        expect(envelope.properties).toMatchObject({
+          agent_host: 'codex',
+          agent_session_host: 'claude',
+        });
+      });
+    });
+
+    it.effect("keeps the hosts' own session IDs out of the envelope", () => {
+      const otherCodexSession = '00000000-0000-7000-8000-000000000003';
+      const codexThread = '00000000-0000-7000-8000-000000000004';
+      enableTelemetry();
+      // The hook's pair wins over every host variable, and none of the four IDs is sent.
+      vi.stubEnv('COMPOSIO_AGENT_HOST', 'codex');
+      vi.stubEnv('COMPOSIO_AGENT_SESSION_ID', CODEX_SESSION);
+      vi.stubEnv('CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION);
+      vi.stubEnv('CODEX_SESSION_ID', otherCodexSession);
+      vi.stubEnv('CODEX_THREAD_ID', codexThread);
+      vi.stubEnv('CLAUDECODE', '1');
+
+      return Effect.gen(function* () {
+        const envelope = yield* enqueuedEnvelope({ name: 'producer_event' });
+
+        // `agent_host_env` keeps reading the host markers, whatever session is resolved.
+        expect(envelope.properties).toMatchObject({
+          agent_host_env: 'claude',
+          agent_session_host: 'codex',
+          agent_session_id: CODEX_AGENT_SESSION_ID,
+        });
+        const serialized = JSON.stringify(envelope);
+        expect(serialized).not.toContain(CODEX_SESSION);
+        expect(serialized).not.toContain(CLAUDE_SESSION);
+        expect(serialized).not.toContain(otherCodexSession);
+        expect(serialized).not.toContain(codexThread);
+      });
+    });
   });
 
   it.effect('propagates telemetry debug to the detached worker without an env write', () => {

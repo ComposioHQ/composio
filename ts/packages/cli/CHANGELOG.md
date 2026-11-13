@@ -86,6 +86,15 @@
   on the implicit newest-account pick now fail. To migrate, pass
   `--account <id|alias>`, or alias one account `default`.
 
+- CLI telemetry events now carry `agent_session_host` (`claude` or `codex`)
+  and `agent_session_id` when the CLI can identify the Claude Code or Codex
+  chat it runs in, so the commands one chat ran can be grouped. The ID is a
+  UUID v5 the CLI derives from the host name and the host's session ID. The
+  host's own session ID is never sent. When the CLI cannot identify the chat,
+  neither property is sent, and `COMPOSIO_CLI_TELEMETRY_DISABLED`,
+  `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED` and `CI` turn both off
+  with the rest of telemetry.
+
 ### Patch Changes
 
 - Command telemetry now derives option types and effective defaults from each
