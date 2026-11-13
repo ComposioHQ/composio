@@ -10,12 +10,13 @@ Tests use `runCmd` to execute shell commands in the container and assert on exit
 
 ## Test Suites
 
-| Suite                           | Description                                                                          | Env Vars                |
-| ------------------------------- | ------------------------------------------------------------------------------------ | ----------------------- |
-| [upgrade](./upgrade/)           | `composio upgrade` replaces a running Linux executable                               | None                    |
-| [fake-backend](./fake-backend/) | Test support: the fake Composio deployment CLI tests talk to, and its contract check | None                    |
-| [version](./version/)           | `composio version` output and exit code                                              | None                    |
-| [whoami](./whoami/)             | `composio whoami` prints the API key                                                 | `COMPOSIO_USER_API_KEY` |
+| Suite                           | Description                                                                                              | Env Vars                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------- |
+| [upgrade](./upgrade/)           | `composio upgrade` replaces a running Linux executable                                                   | None                    |
+| [operations](./operations/)     | Login, session, search, execute, link, run, upgrade and their `dev` counterparts under a fault catalogue | None                    |
+| [fake-backend](./fake-backend/) | Test support: the fake Composio deployment the operation suites talk to, and its contract check          | None                    |
+| [version](./version/)           | `composio version` output and exit code                                                                  | None                    |
+| [whoami](./whoami/)             | `composio whoami` prints the API key                                                                     | `COMPOSIO_USER_API_KEY` |
 
 ## Journeys
 
@@ -30,9 +31,9 @@ const result = await journey.exec('composio whoami');
 await journey.stop();
 ```
 
-A journey container mounts nothing from the host and passes through no API key. Tests can use it through `startCliRig` from `@e2e-tests/cli-fake-backend/rig`, which also starts the fake backend and points every host the CLI knows at it. Other outbound traffic is not blocked.
+A journey container mounts nothing from the host and passes through no API key. The `operations` suites use it through `startCliRig` from `@e2e-tests/cli-fake-backend/rig`, which also starts the fake backend and points every host the CLI knows at it. Other outbound traffic is not blocked.
 
-`fake-backend` needs no secret. CI runs it in their own step with the API keys blanked, on every pull request, fork and Dependabot ones included; the suites that talk to staging run in a second step that is skipped when the keys are missing.
+The `operations` suites and `fake-backend` need no secret. CI runs them in their own step with the API keys blanked, on every pull request, fork and Dependabot ones included; the suites that talk to staging run in a second step that is skipped when the keys are missing.
 
 ## Isolation Tool
 
