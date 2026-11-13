@@ -177,6 +177,7 @@ describe('Docs product navigation', () => {
       '/docs/security/overview',
       '/docs/security/audit-logs',
       '/docs/security/token-custody',
+      '/docs/security/outbound-ips',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
     ];

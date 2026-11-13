@@ -16,6 +16,14 @@ Ask a Salesforce org admin to approve or install the connected app. In Salesforc
 
 ![Salesforce Setup search showing External Client App Settings for connected app approval.](/images/kb/toolkits/salesforce/salesforce-external-client-app-settings.png)
 
+## Why do I see `invalid_grant` with `ip restricted by app developer`?
+
+Your Salesforce connected app or external client app only accepts requests from trusted IP addresses, and Composio's request came from an address that isn't on the list. New connections fail during OAuth, and existing connections expire when their tokens refresh.
+
+Add all four [Composio outbound IP addresses](/docs/security/outbound-ips) to the app's IP allowlist, including its refresh token IP allowlist if it has one. Add each address as its own range, with the same start and end IP. Alternatively, set the app's IP relaxation policy to relax IP restrictions.
+
+After you update the allowlist, ask affected users to reconnect. Connections that expired don't recover on their own.
+
 ## Salesforce allows only five active refresh tokens per user per app
 
 Salesforce allows only five active refresh tokens per user per connected app. When the same Salesforce user connects a sixth time, Salesforce can revoke the oldest refresh token, which makes older Composio connected accounts fail with token errors. Also check whether the user changed their password, revoked the app, changed connected app refresh-token policy away from `valid until revoked`, or has org-level session policies that invalidate tokens.
