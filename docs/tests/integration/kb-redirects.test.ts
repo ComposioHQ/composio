@@ -7,7 +7,11 @@ describe('retired Knowledge Base redirects', () => {
   for (const [from, to] of [
     ['/kb', '/docs'],
     ['/kb.md', '/docs.md'],
-    ['/kb/search?q=oauth', '/docs'],
+    ['/kb/search', '/docs'],
+    ['/kb/search.md', '/docs.md'],
+    ['/kb/composio-for-you/an-old-alias.md', '/docs.md'],
+    ['/llms.mdx/kb', '/docs.md'],
+    ['/llms.mdx/kb/guide/toolkits-gmail', '/kb/guide/toolkits-gmail.md'],
     ['/kb/toolkits', '/toolkits'],
     ['/kb/toolkit/gmail', '/toolkits/gmail'],
     ['/kb/topic/sdk-api-and-mcp', '/reference'],
@@ -24,4 +28,12 @@ describe('retired Knowledge Base redirects', () => {
       expect(new URL(response.headers.get('location')!, response.url).pathname).toBe(to);
     });
   }
+
+  test('a saved /kb/search link drops its search text', async () => {
+    const response = await fetchNoRedirect('/kb/search?q=token%3Dsecret&filter=docs');
+    expect(response.status).toBe(308);
+    const location = new URL(response.headers.get('location')!, response.url);
+    expect(location.pathname).toBe('/docs');
+    expect(location.searchParams.get('q')).toBe('');
+  });
 });

@@ -91,6 +91,14 @@ export function kbRedirects() {
     ...withMarkdown('/kb/toolkit/:slug', '/toolkits/:slug'),
     ...withMarkdown('/kb/toolkits', '/toolkits'),
     ...withMarkdown('/kb', '/docs'),
+    // Next.js merges the incoming query into the destination; `q=` overwrites
+    // saved search text so it never reaches /docs or page analytics.
+    { source: '/kb/search', destination: '/docs?q=', permanent: true },
+    { source: '/kb/search.:format(md|mdx)', destination: '/docs.md?q=', permanent: true },
+    // The /llms.mdx/ form of a KB page forwards to its .md URL, handled above.
+    { source: '/llms.mdx/kb', destination: '/docs.md', permanent: true },
+    { source: '/llms.mdx/kb/:path*', destination: '/kb/:path*.md', permanent: true },
+    { source: '/kb/:path*.:format(md|mdx)', destination: '/docs.md', permanent: true },
     { source: '/kb/:path*', destination: '/docs', permanent: true },
   ];
 }
