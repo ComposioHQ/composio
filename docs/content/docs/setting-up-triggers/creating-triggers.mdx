@@ -8,6 +8,18 @@ A trigger watches for one event (like `GITHUB_COMMIT_EVENT`) on one user's conne
 
 The user needs a [connected account](/docs/authentication) for the toolkit you want to monitor. See [Authentication](/docs/authentication) if you haven't set that up.
 
+## Test your first trigger
+
+Use a test repository and a connected GitHub account that can access it. Set `COMPOSIO_API_KEY` to your project's API key, and use that same project for setup and event reception.
+
+1. [Inspect `GITHUB_COMMIT_EVENT`](#inspect-the-trigger-type) and [create the trigger](#create-the-trigger) with your repository's `owner` and `repo`. Replace the example user ID with the ID you used to connect GitHub. Save the returned `trigger_id` in Python or `triggerId` in TypeScript.
+2. Run the [local `subscribe()` example](/docs/setting-up-triggers/subscribing-to-events#quick-look-with-subscribe) in a separate process. Replace `your_trigger_id` with the ID from step 1, and keep the process running.
+3. Push a new commit to the repository you configured. Record its SHA and the time you pushed it so you can identify this event.
+4. Look for `Event received:` in the subscription process. Check that the payload's `id` matches your trigger instance ID and that `payload` describes the commit you just pushed. If nothing arrives, [trace the missing event](/docs/setting-up-triggers/troubleshooting) before changing your handler.
+5. [Disable the test trigger](/docs/setting-up-triggers/managing-triggers#enable--disable-triggers) when you're done, then stop the subscription process.
+
+This confirms that a provider event reaches your local subscription. To test your webhook handler too, [forward events to it](/docs/setting-up-triggers/subscribing-to-events#forward-to-your-local-handler-with-the-cli-recommended), repeat the test, and confirm that signature verification succeeds and your handler returns a successful response. Before shipping, repeat with your [production webhook URL](/docs/setting-up-triggers/subscribing-to-events#receive-events-in-production).
+
 ## Inspect the trigger type
 
 To connect trigger setup to a working agent, follow [Run an agent when an email arrives](/examples/email-triggered-agent).
