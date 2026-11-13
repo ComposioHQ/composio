@@ -48,6 +48,7 @@ type SharedSidebarItem = Extract<ProductSidebarItem, { type: 'page' | 'folder' }
 
 const SHARED_SIDEBAR_ITEMS: readonly SharedSidebarItem[] = [
   { type: 'page', url: '/docs/using-composio-skill' },
+  { type: 'page', url: '/docs/oauth-mcp-troubleshooting' },
 ];
 
 const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
