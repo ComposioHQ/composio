@@ -54,6 +54,8 @@ curl -s -X POST https://backend.composio.dev/api/v3.1/auth_configs \
 
 ## Your own OAuth2 credentials
 
+If you're switching from managed auth, every user must grant fresh consent to your OAuth client. Creating this auth config does not transfer existing connections. Plan the [reauthorization flow](/docs/authentication/custom-app-vs-managed-app#switch-from-managed-auth-to-your-own-oauth-app) before switching sessions to the new accounts.
+
 Bring your own OAuth app to show your branding on consent screens, request custom scopes, or use your app's provider quota. Provider account limits and [Composio API limits](/reference/rate-limits) still apply. Register the app in the provider's developer portal, set its authorized redirect URI to Composio's callback, then pass the client ID and secret.
 
 ```

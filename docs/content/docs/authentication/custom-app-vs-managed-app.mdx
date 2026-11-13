@@ -32,6 +32,12 @@ Bring your own credentials when any of these apply:
 - **You're connecting to a custom instance.** Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.
 - **Enterprise customers require your branding end-to-end.**
 
+## Switch from managed auth to your own OAuth app
+
+Existing managed-auth connections cannot be transferred to a customer-owned OAuth app. OAuth consent is bound to the user and OAuth client pair. Every user must reauthorize and grant fresh consent to the customer's OAuth client.
+
+Plan a reauthorization flow when moving to a custom app. [Create a custom auth config](#create-a-custom-auth-config), have each user connect through it to create a new connected account, then [select that account in their session](/docs/configuring-sessions#account-selection). Changing a session's auth config does not transfer an existing connection or its consent to the new OAuth client.
+
 ## Create a custom auth config
 
 To check whether Composio provides the OAuth app for a toolkit, see [Managed OAuth apps](/toolkits/managed-auth). You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.

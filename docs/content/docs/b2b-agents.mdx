@@ -151,7 +151,9 @@ For an individual connection, [disable access or revoke upstream credentials](/d
 
 Treat allowed audiences as provider-specific. Confirm your provider's requirements, credential rotation, and emergency app-wide revocation with Solutions/Platform.
 
-Before migrating existing managed-auth customers, confirm reconnection requirements with Solutions/Platform. Don't assume changing a session's auth config moves an existing connected account to a new OAuth app or avoids reauthorization. Confirm provisioning, billing, plan entitlements, and contractual isolation with your account team.
+Existing managed-auth connections cannot be transferred to a customer-owned OAuth app. Consent is bound to the user and OAuth client pair, so every user must reauthorize against the customer's client. Plan a [reauthorization flow](/docs/authentication/custom-app-vs-managed-app#switch-from-managed-auth-to-your-own-oauth-app) that creates new connected accounts under the custom auth config and selects them in each user's sessions.
+
+Confirm provisioning, billing, plan entitlements, and contractual isolation with your account team.
 
 ## Route events back to the right tenant
 
