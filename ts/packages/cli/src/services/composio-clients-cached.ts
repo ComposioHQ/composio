@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Cache, Effect, Option, Schema, Layer, Array as Arr } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -146,7 +147,7 @@ function createCachedEffect<T, E, R>(
   // This ensures the returned effect has the same error type as the original computation
   // by providing all the required cache services
   return cacheEffect.pipe(
-    Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer, NodeOs.Default))
+    Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default))
   ) as Effect.Effect<T, E, R>;
 }
 
