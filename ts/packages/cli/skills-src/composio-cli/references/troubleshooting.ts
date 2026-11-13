@@ -31,6 +31,19 @@ export const troubleshootingReference: ReferenceDocument = {
       ],
     },
     {
+      title: 'A Command Failed And Might Work If Run Again',
+      body: [
+        'Symptoms:',
+        '- a command exits 75 instead of 1',
+        '- a failed `execute` result on stdout has a `retry` field',
+        'Fix:',
+        '- Exit 75 means the failure was temporary (rate limited, a timeout or a server error on a request that changes nothing) and running the same command again cannot act twice. Wait a few seconds and run it again; stop after two or three attempts and report the error.',
+        '- `"retry": "safe"` on a failed `execute` result means the same, and the command exits 75.',
+        '- `"retry": "check-first"` means the request failed in flight and the tool may already have run. Running it again could act twice (send the email twice, create two issues). First check whether it took effect, for example by reading the sent folder or listing the issues with another `execute`, and run it again only if it did not.',
+        '- Any other failure exits 1: running the same command again fails the same way, so fix the cause the error names.',
+      ],
+    },
+    {
       title: 'Invalid JSON Input',
       body: [
         'Symptoms:',

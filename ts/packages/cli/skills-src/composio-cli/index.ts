@@ -247,11 +247,12 @@ const defaultWorkflow = (build: SkillBuildContext) => {
     '3. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.',
     '4. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.',
     '5. Reach for `composio search "<task>"` only when the slug is unknown. `search` accepts one or more queries, so batch related discovery work into a single command when useful.',
+    '6. If a command exits 75, the failure was temporary and running it again cannot act twice: wait a moment and run the same command again. If a failed `execute` result has `"retry": "check-first"`, the tool may already have run: check before running it again.',
   ];
 
   if (build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LISTEN]) {
     lines.push(
-      '6. If the CLI build enables the experimental `listen` feature, use it for temporary consumer-project trigger subscriptions.'
+      '7. If the CLI build enables the experimental `listen` feature, use it for temporary consumer-project trigger subscriptions.'
     );
   }
 
