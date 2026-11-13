@@ -1593,21 +1593,20 @@ Before configuring a session, explore the toolkits and tools available. Browse t
 # List toolkits
 toolkits = composio.toolkits.get()
 
-# List tools within a toolkit (top 20 by default)
-tools = composio.tools.get("user_123", toolkits=["GITHUB"])
+# List up to 20 raw tool schemas within a toolkit
+tools = composio.tools.get_raw_composio_tools(toolkits=["github"], limit=20)
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user_123';
 // ---cut---
 // List toolkits
 const toolkits = await composio.toolkits.get();
 
-// List tools within a toolkit (top 20 by default)
-const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
+// List up to 20 raw tool schemas within a toolkit
+const tools = await composio.tools.getRawComposioTools({ toolkits: ["github"], limit: 20 });
 ```
 </Tab>
 <Tab value="API">
@@ -1616,7 +1615,7 @@ const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
 curl -X GET https://backend.composio.dev/api/v3.1/toolkits \
   -H "x-api-key: $COMPOSIO_API_KEY"
 
-# List tools within a toolkit (top 20 by default)
+# List up to 20 raw tool schemas within a toolkit
 curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB&limit=20" \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```

@@ -14,7 +14,7 @@ For a [scoped project API key](/reference/authenticating-to-composio/project-api
 
 The example uses `org_42:user_7` as an illustrative connection owner. In your application, derive this value from the authenticated request after checking workspace membership. Never accept a model-supplied or browser-supplied owner ID as authorization. See [B2B connection ownership](/docs/b2b-agents#choose-the-connection-owner) for member-owned and workspace-owned connections.
 
-This example uses a session to create the Connect Link. Subsequent API calls pass the owner and connected-account ID directly.
+This example uses a session to create the Connect Link. Subsequent API calls use that session, pinned to the account returned by the connection attempt.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -29,21 +29,23 @@ session = composio.create(user_id=owner_id, toolkits=["github"])
 connection = session.authorize("github")
 print(f"Open this Connect Link: {connection.redirect_url}")
 account = connection.wait_for_connection(60)
+session.update(connected_accounts={"github": [account.id]})
 
 
-def read_github_profile(connected_account_id: str):
-    return composio.tools.proxy(
-        user_id=owner_id,
-        connected_account_id=connected_account_id,
+def read_github_profile():
+    return session.proxy_execute(
+        toolkit="github",
         endpoint="/user",
         method="GET",
     )
 
 
 # Use the account returned by this owner's connection attempt.
-response = read_github_profile(account.id)
-print(response.status)
-print(response.data)
+response = read_github_profile()
+if response["result_type"] != "completed":
+    raise RuntimeError(response["message"])
+print(response["status"])
+print(response["data"])
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -58,18 +60,21 @@ const session = await composio.create(ownerId, { toolkits: ['github'] });
 const connection = await session.authorize('github');
 console.log(`Open this Connect Link: ${connection.redirectUrl}`);
 const account = await connection.waitForConnection(60000);
+await session.update({ connectedAccounts: { github: [account.id] } });
 
-function readGitHubProfile(connectedAccountId: string) {
-  return composio.tools.proxyExecute({
-    userId: ownerId,
-    connectedAccountId,
+function readGitHubProfile() {
+  return session.proxyExecute({
+    toolkit: 'github',
     endpoint: '/user',
     method: 'GET',
   });
 }
 
 // Use the account returned by this owner's connection attempt.
-const response = await readGitHubProfile(account.id);
+const response = await readGitHubProfile();
+if (!('status' in response)) {
+  throw new Error('Session proxy request blocked');
+}
 console.log(response.status);
 console.log(response.data);
 ```
@@ -109,21 +114,26 @@ while true; do
   sleep 1
 done
 
-# Use the account returned by this owner's connection attempt.
-curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+# Pin the account returned by this owner's connection attempt.
+curl --fail-with-body -s -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"user_id\":\"$OWNER_ID\",\"connected_account_id\":\"$CONNECTED_ACCOUNT_ID\",\"endpoint\":\"/user\",\"method\":\"GET\"}" \
-  | jq '{status, data}'
+  -d "{\"connected_accounts\":{\"github\":[\"$CONNECTED_ACCOUNT_ID\"]}}"
+
+curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit_slug":"github","endpoint":"/user","method":"GET"}' \
+  | jq 'if .result_type == "completed" then {status, data} else error(.message) end'
 ```
 </Tab>
 </Tabs>
 
 Open the printed Connect Link and authorize GitHub within 60 seconds. The connection must become `ACTIVE` before the proxy request runs. During this wait, `INACTIVE` can still become `ACTIVE`, so keep polling until the deadline. Stop immediately on `FAILED`, `EXPIRED`, or `REVOKED`. The proxy returns the provider's response, not its OAuth token. No tool schemas are fetched and no model selects an action.
 
-The [proxy response](/reference/api-reference/tools/postToolsExecuteProxy) contains the provider's response body in `data`, HTTP status in `status`, and response headers in `headers`.
+The [session proxy response](/docs/extending-sessions/proxy-execute#response-shape) contains the provider's response body in `data`, HTTP status in `status`, and response headers in `headers`.
 
-The direct proxy call is independent of the session: pass both the owner (`user_id` in Python and REST, `userId` in TypeScript) and the exact returned connected-account ID. Projects with 2FA enabled check the owner against the connected account and may require it. Your own tool can call `read_github_profile()` or `readGitHubProfile()` from any framework, or you can make the equivalent REST request from your backend.
+The session carries the owner ID and pins the exact returned connected-account ID before the proxy call. Check `result_type` in Python and REST or `resultType` in TypeScript before reading the HTTP response, because a session hook can block it. Your own tool can call `read_github_profile()` or `readGitHubProfile()` from any framework, or you can make the equivalent REST request from your backend.
 
 ## Reuse connections in your application
 

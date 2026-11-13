@@ -61,11 +61,8 @@ First, verify the project key against a tool that needs no connected account. Th
 from composio import Composio
 
 composio = Composio()
-result = composio.client.post(
-    "/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
-    cast_to=object,
-    body={"arguments": {"username": "pg"}},
-)
+session = composio.create(user_id="agent-verification", toolkits=["hackernews"])
+result = session.execute("HACKERNEWS_GET_USER", arguments={"username": "pg"})
 print(result)
 ```
 </Tab>
@@ -74,24 +71,30 @@ print(result)
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
-const result = await composio.getClient().post<unknown>('/api/v3.1/tools/execute/HACKERNEWS_GET_USER', {
-  body: { arguments: { username: 'pg' } },
-});
+const session = await composio.create('agent-verification', { toolkits: ['hackernews'] });
+const result = await session.execute('HACKERNEWS_GET_USER', { username: 'pg' });
 console.log(result);
 ```
 </Tab>
 <Tab value="API">
 ```bash
-curl -X POST --fail-with-body --silent --show-error \
-  https://backend.composio.dev/api/v3.1/tools/execute/HACKERNEWS_GET_USER \
+set -euo pipefail
+SESSION_ID=$(curl -X POST --fail-with-body --silent --show-error \
+  https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"arguments":{"username":"pg"}}'
+  -d '{"user_id":"agent-verification","toolkits":{"enable":["hackernews"]}}' | jq -er '.session_id')
+
+curl -X POST --fail-with-body --silent --show-error \
+  https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool_slug":"HACKERNEWS_GET_USER","arguments":{"username":"pg"}}'
 ```
 </Tab>
 </Tabs>
 
-Check both the HTTP result and the response body. Require `successful: true`, no tool error, and profile data for the requested username. An HTTP 401, a tool schema lookup, or a successful build does not prove tool execution. A local mock verifies only the local code path.
+Check both the HTTP result and the response body. Require `result_type: "completed"` in Python and REST or `resultType: "completed"` in TypeScript, no tool error, and profile data for the requested username. An HTTP 401, a tool schema lookup, or a successful build does not prove tool execution. A local mock verifies only the local code path.
 
 Then run the integration's own script or API route with the same project key and the intended application user ID. If the requested action needs an app account, complete its [connection flow](/docs/authentication) first. A Composio agent credential does not authorize GitHub, Slack, or another service on someone's behalf. OAuth consent, app permissions, and provider credentials still apply.
 

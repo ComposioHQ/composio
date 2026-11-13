@@ -2,7 +2,6 @@
 title: Choose and run tools with TypeSafe
 description: Use Jev to select a Hacker News tool, complete a partial call with a known username, and execute it through Composio.
 keywords: [typesafe, jev, tool selection, partial calls, hacker news, shortlist]
-llmGuardrails: direct-execution
 full: true
 gallery:
   categories: [General agents]
@@ -13,7 +12,7 @@ gallery:
 
 Build a script that turns "Look up the Hacker News user 'pg'" into a tool call. TypeSafe's Jev selects the tool. Your code supplies the username, then Composio runs the call.
 
-This example uses public Hacker News data, so you need no connected account. It follows the runnable [TypeScript examples](https://github.com/ComposioHQ/composio/tree/next/ts/examples/typesafe) and [Python demo](https://github.com/ComposioHQ/composio/blob/next/python/providers/typesafe/typesafe_demo.py).
+This example uses public Hacker News data, so you need no connected account. It uses a [session with the direct tools preset](/docs/configuring-sessions#direct-tools-preset). For the provider's standalone demos, see the [TypeScript examples](https://github.com/ComposioHQ/composio/tree/next/ts/examples/typesafe) and [Python demo](https://github.com/ComposioHQ/composio/blob/next/python/providers/typesafe/typesafe_demo.py).
 
 ## Set up the script
 
@@ -30,7 +29,7 @@ Save the following script. `username` represents a value supplied by your applic
 ```python title="select-tool.py"
 import json
 
-from composio import Composio
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 from composio_typesafe import TypesafeProvider
 
 provider = TypesafeProvider()
@@ -42,14 +41,17 @@ known_arguments = {"HACKERNEWS_GET_USER": {"username": username}}
 
 
 def main():
-    tool_set = composio.tools.get(
+    session = composio.create(
         user_id=user_id,
-        tools=[
+        toolkits=["hackernews"],
+        tools={"hackernews": {"enable": [
             "HACKERNEWS_GET_USER",
             "HACKERNEWS_GET_TOP_STORIES",
             "HACKERNEWS_SEARCH_POSTS",
-        ],
+        ]}},
+        session_preset=SESSION_PRESET_DIRECT_TOOLS,
     )
+    tool_set = session.tools()
     decision = provider.decide(tool_set, request)
     print(json.dumps(decision, indent=2))
 
@@ -65,8 +67,8 @@ def main():
         print("Arguments to supply:", decision["missing"])
 
     result = provider.execute(
-        user_id,
-        decision,
+        session=session,
+        decision=decision,
         arguments=known_arguments.get(decision["tool"], {}),
     )
     print(result["data"])
@@ -86,7 +88,7 @@ python select-tool.py
 <Tab value="TypeScript">
 
 ```typescript title="select-tool.ts"
-import { Composio } from '@composio/core';
+import { Composio, SessionPreset } from '@composio/core';
 import { TypesafeProvider } from '@composio/typesafe';
 
 const provider = new TypesafeProvider();
@@ -99,13 +101,16 @@ const knownArguments: Record<string, Record<string, unknown>> = {
 };
 
 async function main() {
-  const toolSet = await composio.tools.get(userId, {
-    tools: [
+  const session = await composio.create(userId, {
+    toolkits: ['hackernews'],
+    tools: { hackernews: { enable: [
       'HACKERNEWS_GET_USER',
       'HACKERNEWS_GET_TOP_STORIES',
       'HACKERNEWS_SEARCH_POSTS',
-    ],
+    ] } },
+    sessionPreset: SessionPreset.DIRECT_TOOLS,
   });
+  const toolSet = await session.tools();
   const decision = await provider.decide(toolSet, request);
   console.log(JSON.stringify(decision, null, 2));
 
@@ -123,7 +128,7 @@ async function main() {
     console.log('Arguments to supply:', decision.missing);
   }
 
-  const result = await provider.execute(userId, decision, {
+  const result = await provider.execute(session, decision, {
     arguments: knownArguments[decision.tool] ?? {},
   });
   console.log(result.data);
@@ -169,7 +174,7 @@ Install the OpenAI provider alongside the packages above:
 <PackageInstall packages="composio-openai" ecosystem="python" />
 
 ```python title="shortlist-tools.py"
-from composio import Composio
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 from composio_openai import OpenAIProvider
 from composio_typesafe import TypesafeProvider
 
@@ -179,10 +184,13 @@ request = "What are the top stories on Hacker News right now?"
 
 raw = composio.tools.get_raw_composio_tools(toolkits=["hackernews"], limit=50)
 shortlist = typesafe.shortlist_tools(raw, request, k=3)
-tools = composio.tools.get(
+session = composio.create(
     user_id="example-user",
-    tools=[tool.slug for tool in shortlist["tools"]],
+    toolkits=["hackernews"],
+    tools={"hackernews": {"enable": [tool.slug for tool in shortlist["tools"]]}},
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
 )
+tools = session.tools()
 print(shortlist["scores"])
 print(f"Prepared {len(tools)} tools for OpenAI")
 ```
@@ -197,7 +205,7 @@ python shortlist-tools.py
 <PackageInstall packages="@composio/openai" />
 
 ```typescript title="shortlist-tools.ts"
-import { Composio } from '@composio/core';
+import { Composio, SessionPreset } from '@composio/core';
 import { OpenAIProvider } from '@composio/openai';
 import { TypesafeProvider } from '@composio/typesafe';
 
@@ -210,9 +218,12 @@ const raw = await composio.tools.getRawComposioTools({
   limit: 50,
 });
 const shortlist = await typesafe.shortlistTools(raw, request, { k: 3 });
-const tools = await composio.tools.get('example-user', {
-  tools: shortlist.tools.map(tool => tool.slug),
+const session = await composio.create('example-user', {
+  toolkits: ['hackernews'],
+  tools: { hackernews: { enable: shortlist.tools.map(tool => tool.slug) } },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
 });
+const tools = await session.tools();
 console.log(shortlist.scores);
 console.log(`Prepared ${tools.length} tools for OpenAI`);
 ```

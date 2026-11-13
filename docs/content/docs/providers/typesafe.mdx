@@ -2,7 +2,6 @@
 title: TypeSafe
 description: Choose Composio tools with TypeSafe's Jev model, complete missing arguments, and execute the resulting decision.
 keywords: [typesafe, jev, tool selection, confidence, partial calls]
-llmGuardrails: direct-execution
 ---
 
 The TypeSafe provider lets [Jev](https://docs.typesafe.ai/introduction) choose a Composio tool from a request. Jev answers typed questions. The provider turns those answers into a tool call, a partial call that needs more arguments, or a decision to abstain.
@@ -35,23 +34,26 @@ export TYPESAFE_API_KEY="your-typesafe-key"
 
 ## Ask for a decision
 
-Fetch the tools you want Jev to choose between, then pass a request to `decide`. These Hacker News tools need no connected account.
+Create a session with the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), fetch its app tools, then pass a request to `decide`. These Hacker News tools need no connected account.
 
 {/* code-example: no-api reason="TypeSafe provider decide() selects tools with the Jev model in the SDK; no Composio REST equivalent" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
 ```python
-from composio import Composio
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 from composio_typesafe import TypesafeProvider
 
 provider = TypesafeProvider()
 composio = Composio(provider=provider)
 
-tool_set = composio.tools.get(
+session = composio.create(
     user_id="example-user",
-    tools=["HACKERNEWS_GET_USER", "HACKERNEWS_GET_TOP_STORIES"],
+    toolkits=["hackernews"],
+    tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER", "HACKERNEWS_GET_TOP_STORIES"]}},
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
 )
+tool_set = session.tools()
 decision = provider.decide(tool_set, "Look up the Hacker News user 'pg'")
 print(decision)
 ```
@@ -60,15 +62,18 @@ print(decision)
 <Tab value="TypeScript">
 
 ```typescript
-import { Composio } from '@composio/core';
+import { Composio, SessionPreset } from '@composio/core';
 import { TypesafeProvider } from '@composio/typesafe';
 
 const provider = new TypesafeProvider();
 const composio = new Composio({ provider });
 
-const toolSet = await composio.tools.get('example-user', {
-  tools: ['HACKERNEWS_GET_USER', 'HACKERNEWS_GET_TOP_STORIES'],
+const session = await composio.create('example-user', {
+  toolkits: ['hackernews'],
+  tools: { hackernews: { enable: ['HACKERNEWS_GET_USER', 'HACKERNEWS_GET_TOP_STORIES'] } },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
 });
+const toolSet = await session.tools();
 const decision = await provider.decide(toolSet, "Look up the Hacker News user 'pg'");
 console.log(decision);
 ```
@@ -94,7 +99,7 @@ Jev can fill enums, booleans, and arrays of enum values. Your code supplies free
 
 **Request and context.** Pass a string, or an object with `request` and `context`. By default, tool selection sees `request` only. Argument questions can also see `context`, such as an email or a retrieved record.
 
-**Execution.** Use `composio.tools.get` for concrete tool selection. Session meta tools have mostly open-ended arguments, so they leave more work for your code. Destructive decisions require explicit confirmation at execution: `confirm: true` in TypeScript or `confirm=True` in Python. Request that confirmation in your application before setting the flag.
+**Execution.** Use the direct tools preset for concrete tool selection. Default session meta tools have mostly open-ended arguments, so they leave more work for your code. Pass that same session to `provider.execute(session, decision, ...)` in TypeScript or `provider.execute(session=session, decision=decision, ...)` in Python. Destructive decisions require explicit confirmation at execution: `confirm: true` in TypeScript or `confirm=True` in Python. Request that confirmation in your application before setting the flag.
 
 **Data sent to TypeSafe.** The provider sends your request, context, tool names, descriptions, and enum values to TypeSafe. It does not add your Composio API key or connected account IDs to those requests.
 

@@ -114,6 +114,22 @@ function hasDirectHelperBoundToSessionTools(source: string): boolean {
 }
 
 describe("session execution samples", () => {
+  test("main-flow examples use sessions instead of direct tool fetching or execution", async () => {
+    const offenders: string[] = [];
+    for (const dir of CONTENT_DIRS) {
+      for (const file of await findMdxFiles(dir)) {
+        const rel = relative(CONTENT_ROOT, file);
+        if (["docs/tools-direct/", "docs/auth-configuration/", "docs/migration-guide/"].some(prefix => rel.startsWith(prefix))) continue;
+        const source = await readFile(file, "utf8");
+        if (/^(?:legacy|deprecated): true$/m.test(source)) continue;
+        if (codeSampleGroups(source).some(sample => /\bcomposio\.tools\.(?:get|execute|proxy|proxyExecute)\s*\(/.test(sample))) {
+          offenders.push(rel);
+        }
+      }
+    }
+    expect(offenders, "Use session.tools(), session.execute(), or session proxy execution in main-flow examples").toEqual([]);
+  });
+
   test("detects a direct helper split from session setup within one sample", () => {
     const source = `
 <Tab value="Python">

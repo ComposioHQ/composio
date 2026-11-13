@@ -73,46 +73,72 @@ main();
 const proxy1 = `import { composio } from './composio';
 
 const BOT_USER = 'default';
+let botSession: ReturnType<typeof composio.create> | undefined;
+
+function getBotSession() {
+  return botSession ??= composio.create(BOT_USER, {
+    toolkits: ['slackbot'],
+    manageConnections: false,
+    sandbox: { enable: false },
+  }).catch(error => {
+    botSession = undefined;
+    throw error;
+  });
+}
 
 // Sending a message is a named tool, even when it carries interactive buttons:
 // SLACKBOT_SEND_MESSAGE takes markdown_text for prose, or Block Kit \`blocks\`.
 export async function postMessage(channel: string, text: string, blocks?: unknown[]) {
-  const res = await composio.tools.execute('SLACKBOT_SEND_MESSAGE', {
-    userId: BOT_USER,
-    arguments: blocks ? { channel, blocks } : { channel, markdown_text: text },
-  });
+  const session = await getBotSession();
+  const res = await session.execute(
+    'SLACKBOT_SEND_MESSAGE',
+    blocks ? { channel, blocks } : { channel, markdown_text: text },
+  );
+  if (res.resultType !== 'completed') throw new Error(res.error ?? 'Slack tool failed');
   return res.data as { ts?: string };
 }
 
 // Updating the draft after an edit is a tool too: SLACKBOT_UPDATES_A_MESSAGE.
 export async function updateMessage(channel: string, ts: string, blocks: unknown[]) {
-  await composio.tools.execute('SLACKBOT_UPDATES_A_MESSAGE', {
-    userId: BOT_USER,
-    arguments: { channel, ts, blocks },
-  });
+  const session = await getBotSession();
+  const res = await session.execute('SLACKBOT_UPDATES_A_MESSAGE', { channel, ts, blocks });
+  if (res.resultType !== 'completed') throw new Error(res.error ?? 'Slack tool failed');
 }
 `;
 
 const proxy2 = `import { composio } from './composio';
 
 const BOT_USER = 'default';
+let botSession: ReturnType<typeof composio.create> | undefined;
+
+function getBotSession() {
+  return botSession ??= composio.create(BOT_USER, {
+    toolkits: ['slackbot'],
+    manageConnections: false,
+    sandbox: { enable: false },
+  }).catch(error => {
+    botSession = undefined;
+    throw error;
+  });
+}
 
 // Sending a message is a named tool, even when it carries interactive buttons:
 // SLACKBOT_SEND_MESSAGE takes markdown_text for prose, or Block Kit \`blocks\`.
 export async function postMessage(channel: string, text: string, blocks?: unknown[]) {
-  const res = await composio.tools.execute('SLACKBOT_SEND_MESSAGE', {
-    userId: BOT_USER,
-    arguments: blocks ? { channel, blocks } : { channel, markdown_text: text },
-  });
+  const session = await getBotSession();
+  const res = await session.execute(
+    'SLACKBOT_SEND_MESSAGE',
+    blocks ? { channel, blocks } : { channel, markdown_text: text },
+  );
+  if (res.resultType !== 'completed') throw new Error(res.error ?? 'Slack tool failed');
   return res.data as { ts?: string };
 }
 
 // Updating the draft after an edit is a tool too: SLACKBOT_UPDATES_A_MESSAGE.
 export async function updateMessage(channel: string, ts: string, blocks: unknown[]) {
-  await composio.tools.execute('SLACKBOT_UPDATES_A_MESSAGE', {
-    userId: BOT_USER,
-    arguments: { channel, ts, blocks },
-  });
+  const session = await getBotSession();
+  const res = await session.execute('SLACKBOT_UPDATES_A_MESSAGE', { channel, ts, blocks });
+  if (res.resultType !== 'completed') throw new Error(res.error ?? 'Slack tool failed');
 }
 
 // Opening a modal (views.open) has no Composio tool, so it drops to the proxy.
@@ -124,12 +150,18 @@ export async function openModal(triggerId: string, view: unknown) {
     toolkitSlugs: ['slackbot'],
     statuses: ['ACTIVE'],
   });
-  await composio.tools.proxyExecute({
+  const account = items[0];
+  if (!account) throw new Error('Connect the bot Slack account first');
+  const session = await getBotSession();
+  await session.update({ connectedAccounts: { slackbot: [account.id] } });
+  const res = await session.proxyExecute({
+    toolkit: 'slackbot',
     endpoint: '/views.open',
     method: 'POST',
     body: { trigger_id: triggerId, view },
-    connectedAccountId: items[0]?.id,
   });
+  if (!('status' in res)) throw new Error('Session proxy request blocked');
+  if (res.status !== 200) throw new Error('Slack proxy request failed');
 }
 `;
 

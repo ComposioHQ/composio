@@ -153,7 +153,7 @@ These identifiers serve different purposes:
 | Alias | A label you assign, such as `work-gmail`. It doesn't prove which account connected. |
 | Provider identity | The email address, username, or ID returned by the provider for the authenticated account. |
 
-For a "Connected as…" label, read `state.val.displayName` when available. For additional profile fields, get the toolkit's current-user endpoint and call it through Composio's [authenticated proxy](/reference/api-reference/tools/postToolsExecuteProxy) with the same connected account ID:
+For a "Connected as…" label, read `state.val.displayName` when available. For additional profile fields, get the toolkit's current-user endpoint and call it through Composio's [session proxy](/docs/extending-sessions/proxy-execute) with the same connected account ID:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -173,20 +173,22 @@ if not endpoint or method not in ("GET", "POST", "PUT", "PATCH", "DELETE"):
     raise ValueError("This toolkit doesn't publish a supported current-user endpoint")
 # The membership check validates the value; cast records that narrowing for mypy.
 
-response = composio.tools.proxy(
+session.update(connected_accounts={connected_account.toolkit.slug: [account_id]})
+response = session.proxy_execute(
+    toolkit=connected_account.toolkit.slug,
     endpoint=endpoint,
     method=cast(Literal["GET", "POST", "PUT", "PATCH", "DELETE"], method),
-    connected_account_id=account_id,
 )
-if response.status != 200:
+if response["result_type"] != "completed" or response["status"] != 200:
     raise RuntimeError("Could not retrieve the connected account's profile")
-profile = response.data  # Parse the fields documented by this provider.
+profile = response["data"]  # Parse the fields documented by this provider.
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio();
+const session = await composio.create('user_123');
 declare const connectedAccount: Awaited<ReturnType<typeof composio.connectedAccounts.get>>;
 // ---cut---
 import { z } from 'zod';
@@ -204,12 +206,13 @@ if (!toolkit.getCurrentUserEndpoint) {
 }
 const method = z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
   .parse(toolkit.getCurrentUserEndpointMethod);
-const response = await composio.tools.proxyExecute({
+await session.update({ connectedAccounts: { [connectedAccount.toolkit.slug]: [accountId] } });
+const response = await session.proxyExecute({
+  toolkit: connectedAccount.toolkit.slug,
   endpoint: toolkit.getCurrentUserEndpoint,
   method,
-  connectedAccountId: accountId,
 });
-if (response.status !== 200) {
+if (!('status' in response) || response.status !== 200) {
   throw new Error("Could not retrieve the connected account's profile");
 }
 const profile = z.record(z.string(), z.unknown()).parse(response.data);
@@ -217,6 +220,7 @@ const profile = z.record(z.string(), z.unknown()).parse(response.data);
 ```
 </Tab>
 <Tab value="API">
+{/* code-example: unchecked-api reason="The toolkit slug returned by the connected account becomes a connected_accounts object key at runtime; the checker cannot expand JSON property names" rule="api-body-unchecked" operation="PATCH /api/v3.1/tool_router/session/{session_id}" */}
 ```bash
 # CONNECTED_ACCOUNT_ID is the connected_account_id returned by the link request
 ACCOUNT=$(curl -s -X GET https://backend.composio.dev/api/v3.1/connected_accounts/$CONNECTED_ACCOUNT_ID \
@@ -229,11 +233,18 @@ TOOLKIT=$(curl -s -X GET https://backend.composio.dev/api/v3.1/toolkits/$TOOLKIT
 ENDPOINT=$(echo "$TOOLKIT" | jq -r '.get_current_user_endpoint')
 METHOD=$(echo "$TOOLKIT" | jq -r '.get_current_user_endpoint_method')
 
-# Response has status and data; parse the fields documented by this provider
-curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+# SESSION_ID is the session used to create the Connect Link.
+# Pin the newly connected account before looking up its identity.
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"endpoint": "'"$ENDPOINT"'", "method": "'"$METHOD"'", "connected_account_id": "'"$CONNECTED_ACCOUNT_ID"'"}'
+  -d "{\"connected_accounts\":{\"$TOOLKIT_SLUG\":[\"$CONNECTED_ACCOUNT_ID\"]}}"
+
+# Require result_type=completed and status=200, then parse the provider fields in data.
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"endpoint": "'"$ENDPOINT"'", "method": "'"$METHOD"'", "toolkit_slug": "'"$TOOLKIT_SLUG"'"}'
 ```
 </Tab>
 </Tabs>

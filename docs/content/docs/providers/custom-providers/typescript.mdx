@@ -35,10 +35,10 @@ BaseProvider (Abstract)
 
 ## Non-agentic provider
 
-A non-agentic provider extends `BaseNonAgenticProvider`. You supply a `name`, `wrapTool`, and `wrapTools`, and call the built-in `executeTool` when you're ready to run a tool.
+A non-agentic provider extends `BaseNonAgenticProvider`. You supply a `name`, `wrapTool`, and `wrapTools`, and call `executeToolForTarget` with the session that supplied the tools when you're ready to run a tool.
 
 ```typescript
-import { BaseNonAgenticProvider, Tool } from '@composio/core';
+import { BaseNonAgenticProvider, Tool, ToolCallSession } from '@composio/core';
 
 // Define your tool format
 interface MyAITool {
@@ -79,17 +79,14 @@ export class MyAIProvider extends BaseNonAgenticProvider<MyAIToolCollection, MyA
 
   // Optional: Custom helper methods for your AI platform
   async executeMyAIToolCall(
-    userId: string,
+    session: ToolCallSession,
     toolCall: {
       name: string;
       arguments: Record<string, unknown>;
     }
   ): Promise<string> {
-    // Use the built-in executeTool method
-    const result = await this.executeTool(toolCall.name, {
-      userId,
-      arguments: toolCall.arguments,
-    });
+    // Preserve session routing and normalize its execution result.
+    const result = await this.executeToolForTarget(session, toolCall.name, toolCall.arguments);
 
     return JSON.stringify(result.data);
   }
@@ -219,9 +216,8 @@ const composio = new Composio({
 });
 
 // Get tools - they will be transformed by your provider
-const tools = await composio.tools.get('default', {
-  toolkits: ['github'],
-});
+const session = await composio.create('default', { toolkits: ['github'] });
+const tools = await session.tools();
 
 // Use the tools with your AI platform
 console.log(tools); // These will be in your custom format
@@ -284,7 +280,7 @@ Don't subclass a concrete provider to add analytics, retries, or other cross-cut
 
 ```typescript
 import { Composio } from '@composio/core';
-import type { ExecuteToolFnOptions, ExecuteToolModifiers } from '@composio/core';
+import type { ToolCallSession } from '@composio/core';
 import { OpenAIProvider } from '@composio/openai';
 import type OpenAI from 'openai';
 
@@ -297,15 +293,13 @@ class InstrumentedOpenAIToolExecutor {
   constructor(private readonly provider: OpenAIProvider) {}
 
   async executeToolCall(
-    userId: string,
-    tool: OpenAI.ChatCompletionMessageFunctionToolCall,
-    options?: ExecuteToolFnOptions,
-    modifiers?: ExecuteToolModifiers
+    session: ToolCallSession,
+    tool: OpenAI.ChatCompletionMessageFunctionToolCall
   ): Promise<string> {
     this.analytics.toolCalls++;
 
     try {
-      return await this.provider.executeToolCall(userId, tool, options, modifiers);
+      return await this.provider.executeToolCall(session, tool);
     } catch (error) {
       this.analytics.errors++;
       throw error;
@@ -322,7 +316,7 @@ const composio = new Composio({ provider });
 const toolExecutor = new InstrumentedOpenAIToolExecutor(provider);
 ```
 
-Pass the underlying provider to `Composio`, then call the wrapper from your manual tool-call loop.
+Pass the underlying provider to `Composio`, then pass the session to the wrapper from your manual tool-call loop.
 
 ## Best practices
 

@@ -79,14 +79,15 @@ print(f"Connect Gmail: {request.redirect_url}", flush=True)
 
 try:
     account = request.wait_for_connection(timeout=300)  # Python uses seconds.
-    response = composio.tools.proxy(
+    onboarding.update(connected_accounts={"gmail": [account.id]})
+    response = onboarding.proxy_execute(
+        toolkit="gmail",
         endpoint="https://gmail.googleapis.com/gmail/v1/users/me/profile",
         method="GET",
-        connected_account_id=account.id,
     )
-    if response.status != 200:
+    if response["result_type"] != "completed" or response["status"] != 200:
         raise RuntimeError("Gmail profile request failed")
-    email = approved_email(response.data)
+    email = approved_email(response["data"])
 except Exception:
     # Also reject missing identity, insufficient scopes, and timeouts.
     composio.connected_accounts.disable(request.id)
@@ -145,12 +146,13 @@ console.log(`Connect Gmail: ${request.redirectUrl}`);
 let email: string;
 try {
   const account = await request.waitForConnection(300_000); // TypeScript uses milliseconds.
-  const response = await composio.tools.proxyExecute({
+  await onboarding.update({ connectedAccounts: { gmail: [account.id] } });
+  const response = await onboarding.proxyExecute({
+    toolkit: 'gmail',
     endpoint: 'https://gmail.googleapis.com/gmail/v1/users/me/profile',
     method: 'GET',
-    connectedAccountId: account.id,
   });
-  if (response.status !== 200) {
+  if (!('status' in response) || response.status !== 200) {
     throw new Error('Gmail profile request failed');
   }
   email = approvedEmail(response.data);

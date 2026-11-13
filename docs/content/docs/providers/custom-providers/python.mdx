@@ -77,12 +77,12 @@ From there:
 
 ## Creating a non-agentic provider
 
-A non-agentic provider extends `NonAgenticProvider` and implements two methods: `wrap_tool` (transform one tool) and `wrap_tools` (transform a collection). Add helper methods to execute tool calls in your platform's format.
+A non-agentic provider extends `NonAgenticProvider` and implements two methods: `wrap_tool` (transform one tool) and `wrap_tools` (transform a collection). Add helper methods to execute tool calls in your platform's format. Pass the session that supplied the tools to `execute_tool_for_target` so execution keeps that session's authentication and account selection.
 
 ```python
-from typing import List, Optional, Sequence, TypeAlias
-from composio.core.provider import NonAgenticProvider
-from composio.types import Tool, Modifiers, ToolExecutionResponse
+from typing import List, Sequence, TypeAlias
+from composio.core.provider import NonAgenticProvider, ToolCallSession
+from composio.types import Tool, ToolExecutionResponse
 
 # Define your tool format
 class MyAITool:
@@ -117,24 +117,22 @@ class MyAIProvider(NonAgenticProvider[MyAITool, MyAIToolCollection], name="my-ai
     # Optional: Custom helper methods for your AI platform
     def execute_my_ai_tool_call(
         self,
-        user_id: str,
-        tool_call: dict,
-        modifiers: Optional[Modifiers] = None
+        session: ToolCallSession,
+        tool_call: dict
     ) -> ToolExecutionResponse:
         """Execute a tool call in your platform's format
 
         Example usage:
         result = my_provider.execute_my_ai_tool_call(
-            user_id="default",
+            session=session,
             tool_call={"name": "GITHUB_STAR_REPO", "arguments": {"owner": "composiohq", "repo": "composio"}}
         )
         """
-        # Use the built-in execute_tool method
-        return self.execute_tool(
+        # Preserve session routing and normalize its execution result.
+        return self.execute_tool_for_target(
             slug=tool_call["name"],
             arguments=tool_call["arguments"],
-            modifiers=modifiers,
-            user_id=user_id
+            target=session
         )
 ```
 
@@ -143,7 +141,7 @@ class MyAIProvider(NonAgenticProvider[MyAITool, MyAIToolCollection], name="my-ai
 An agentic provider extends `AgenticProvider`. Because the platform calls tools itself, `wrap_tool` receives an `execute_tool` function that you wrap into a callable the framework can invoke directly.
 
 ```python
-from typing import Callable, Dict, List, Sequence
+from typing import Callable, Dict, List, Sequence, TypeAlias
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 from my_provider import AgentTool
@@ -209,8 +207,9 @@ composio = Composio(provider=provider)
 # Define task
 task = "Star a repo composiohq/composio on GitHub"
 
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+# Get session tools in your custom format.
+session = composio.create(user_id="default", toolkits=["github"])
+tools = session.tools()
 
 # Get response from your AI platform (example)
 response = myai_client.chat.completions.create(
@@ -223,8 +222,12 @@ response = myai_client.chat.completions.create(
 )
 print(response)
 
-# Execute the function calls
-result = provider.handle_tool_calls(response=response, user_id="default")
+# Extract each call using your platform's response format.
+# tool_call contains "name" and "arguments", as in the helper above.
+result = [
+    provider.execute_my_ai_tool_call(session=session, tool_call=tool_call)
+    for tool_call in response.tool_calls
+]
 print(result)
 ```
 
@@ -241,11 +244,9 @@ from composio import Composio
 # Initialize Composio toolset
 composio = Composio(provider=MyAgentProvider())
 
-# Get all the tools
-tools = composio.tools.get(
-    user_id="default",
-    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
-)
+# Get session tools with session-bound execution callbacks.
+session = composio.create(user_id="default", toolkits=["github"])
+tools = session.tools()
 
 # Create an agent with the tools
 agent = Agent(

@@ -8,7 +8,7 @@ Composio stores provider credentials and uses them to execute requests on your b
 
 In the default Composio Cloud deployment, Composio has custody of those credentials. Keeping a token out of your application and keeping it outside Composio's infrastructure are different requirements. The [deployment options](#deployment-options) below describe that distinction.
 
-For example, after connecting a GitHub account, your backend can call GitHub through [Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute):
+For example, after connecting a GitHub account, your backend can call GitHub through [Proxy Execute](/docs/extending-sessions/proxy-execute):
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -17,8 +17,13 @@ from composio import Composio
 
 composio = Composio()
 
-response = composio.tools.proxy(
-    connected_account_id="ca_your_github_account",
+session = composio.create(
+    user_id="user_123",
+    toolkits=["github"],
+    connected_accounts={"github": ["ca_your_github_account"]},
+)
+response = session.proxy_execute(
+    toolkit="github",
     endpoint="/user",
     method="GET",
 )
@@ -32,8 +37,12 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-const response = await composio.tools.proxyExecute({
-  connectedAccountId: 'ca_your_github_account',
+const session = await composio.create('user_123', {
+  toolkits: ['github'],
+  connectedAccounts: { github: ['ca_your_github_account'] },
+});
+const response = await session.proxyExecute({
+  toolkit: 'github',
   endpoint: '/user',
   method: 'GET',
 });
@@ -43,15 +52,20 @@ console.log(response);
 </Tab>
 <Tab value="API">
 ```bash
-curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/proxy \
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"connected_account_id": "ca_your_github_account", "endpoint": "/user", "method": "GET"}'
+  -d '{"user_id":"user_123","toolkits":{"enable":["github"]},"connected_accounts":{"github":["ca_your_github_account"]}}' | jq -r '.session_id')
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/proxy_execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit_slug": "github", "endpoint": "/user", "method": "GET"}'
 ```
 </Tab>
 </Tabs>
 
-Replace the account ID with your connected account. Both SDKs read `COMPOSIO_API_KEY` from your environment. The key must belong to that project and have the **Proxy execute** permission. The request contains a Composio API key, which authorizes execution, but no GitHub token. Composio injects that token and returns the provider response.
+Replace the user ID and account ID with your application user and their connected account. Both SDKs read `COMPOSIO_API_KEY` from your environment. The key must belong to that project and allow session creation and **Proxy execute**. The request contains a Composio API key, which authorizes execution, but no GitHub token. Composio injects that token and returns the provider response.
 
 ## Token boundaries in Composio Cloud
 
