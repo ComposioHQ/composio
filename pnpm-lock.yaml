@@ -276,6 +276,24 @@ importers:
         specifier: 'catalog:'
         version: 1.4.3
 
+  ts/e2e-tests/cli/operations:
+    devDependencies:
+      '@e2e-tests/cli-fake-backend':
+        specifier: workspace:*
+        version: link:../fake-backend
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../_utils
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.4.3
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+
   ts/e2e-tests/cli/run:
     devDependencies:
       '@e2e-tests/utils':
