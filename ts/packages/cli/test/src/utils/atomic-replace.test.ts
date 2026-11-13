@@ -49,6 +49,61 @@ describe('atomic replace', () => {
       })
     );
 
+    it.effect('keeps the old executable beside the new one and replaces a previous backup', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const directory = yield* fs.makeTempDirectoryScoped();
+        const sourcePath = path.join(directory, 'source');
+        const targetPath = path.join(directory, 'composio.exe');
+        const backupPath = `${targetPath}.old`;
+        yield* fs.writeFileString(sourcePath, 'new binary');
+        yield* fs.writeFileString(targetPath, 'old binary');
+        yield* fs.writeFileString(backupPath, 'previous backup');
+
+        yield* Effect.scoped(atomicReplaceFile({ sourcePath, targetPath, backupPath }));
+
+        expect(yield* fs.readFileString(targetPath)).toBe('new binary');
+        expect(yield* fs.readFileString(backupPath)).toBe('old binary');
+        expect((yield* fs.readDirectory(directory)).sort()).toEqual([
+          'composio.exe',
+          'composio.exe.old',
+          'source',
+        ]);
+      })
+    );
+
+    it.effect('restores the old executable when placing its staged replacement fails', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const directory = yield* fs.makeTempDirectoryScoped();
+        const sourcePath = path.join(directory, 'source');
+        const targetPath = path.join(directory, 'composio.exe');
+        const backupPath = `${targetPath}.old`;
+        yield* fs.writeFileString(sourcePath, 'new binary');
+        yield* fs.writeFileString(targetPath, 'old binary');
+        const failingFs = FileSystem.make({
+          ...fs,
+          rename: (from, to) => {
+            return from.includes('.composio-atomic-replace-') && to === targetPath
+              ? fs.rename(path.join(directory, 'missing'), to)
+              : fs.rename(from, to);
+          },
+        });
+
+        const error = yield* Effect.flip(
+          Effect.scoped(atomicReplaceFile({ sourcePath, targetPath, backupPath })).pipe(
+            Effect.provideService(FileSystem.FileSystem, failingFs)
+          )
+        );
+
+        expect(error).toBeInstanceOf(AtomicReplaceError);
+        expect(yield* fs.readFileString(targetPath)).toBe('old binary');
+        expect(yield* fs.exists(backupPath)).toBe(false);
+      })
+    );
+
     it.effect('preserves the target and cleans staging when the source is missing', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
