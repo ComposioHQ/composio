@@ -61,7 +61,8 @@ describe("Navigation - meta.json validity", () => {
       "---Governance---",
       "---Guides---",
       "---Direct execution (legacy)---",
-      "---Migration and security---",
+      "---Security and Compliance---",
+      "---Migration---",
     ]);
 
     expect(pages.slice(1, pages.indexOf("---Core concepts---"))).toEqual([
@@ -89,7 +90,7 @@ describe("Navigation - meta.json validity", () => {
     expect(
       pages.slice(
         pages.indexOf("---Direct execution (legacy)---") + 1,
-        pages.indexOf("---Migration and security---")
+        pages.indexOf("---Security and Compliance---")
       )
     ).toEqual([
       "sessions-vs-direct-execution",

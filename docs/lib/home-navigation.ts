@@ -244,7 +244,22 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
-          { type: 'folder', path: 'security', label: 'Security and data' },
+        ],
+      },
+      {
+        label: 'Security and Compliance',
+        items: [
+          { type: 'page', url: '/docs/security/overview' },
+          {
+            type: 'link',
+            url: '/kb/guide/platform-compliance-data-handling',
+            label: 'Vendor security review',
+          },
+          { type: 'page', url: '/docs/security/token-custody' },
+          { type: 'page', url: '/docs/security/data-retention' },
+          { type: 'page', url: '/docs/security/zero-data-retention' },
+          { type: 'page', url: '/docs/security/audit-logs' },
+          { type: 'page', url: '/docs/security/outbound-ips' },
         ],
       },
       {

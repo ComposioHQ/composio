@@ -11,7 +11,7 @@ import {
   shouldAnimateDocsProductSwitch,
 } from '../../lib/home-navigation';
 import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree';
-import { referenceSource, source } from '../../lib/source';
+import { knowledgeBaseSource, referenceSource, source } from '../../lib/source';
 
 describe('Docs product navigation', () => {
   test('defines the product labels, descriptions, landings, and themes once', () => {
@@ -175,24 +175,38 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
-      '/docs/security/audit-logs',
+      '/kb/guide/platform-compliance-data-handling',
       '/docs/security/token-custody',
-      '/docs/security/outbound-ips',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
+      '/docs/security/audit-logs',
+      '/docs/security/outbound-ips',
     ];
-    const security = platformTree.children.flatMap(node =>
-      node.type === 'folder' ? [node, ...node.children] : [node],
-    ).find(node => node.type === 'folder' && node.name === 'Security and data');
-    expect(security?.type).toBe('folder');
-    if (security?.type !== 'folder') throw new Error('Security and data folder missing');
-    expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
+    const securityStart = platformTree.children.findIndex(
+      node => node.type === 'separator' && node.name === 'Security and Compliance',
+    );
+    expect(securityStart).toBeGreaterThan(-1);
+    const securityPages = platformTree.children.slice(
+      securityStart + 1,
+      platformTree.children.findIndex(
+        (node, index) => index > securityStart && node.type === 'separator',
+      ),
+    );
+    expect(securityPages.map(node => node.type === 'page' ? node.url : null)).toEqual(
       securityUrls,
     );
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       expect(forYouUrls).not.toContain(url);
     }
+    expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])?.url).toBe(
+      '/kb/guide/platform-compliance-data-handling',
+    );
+    const governance = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Governance',
+    );
+    expect(governance?.type).toBe('folder');
+    expect(securityPages).not.toContain(governance);
 
     const readiness = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],
