@@ -73,8 +73,11 @@ Everything here lives in **Project Settings** → [**White Labeling**](https://d
 
 ### Logo and name
 
-1. Go to **Project Settings** → **White Labeling**, and open the **Branding** tab.
+1. Select the project that owns the API key your backend uses. Go to **Project Settings** → **White Labeling**, and open the **Branding** tab.
 2. Set your **App Title** and upload your **Logo** (a square JPEG or PNG, 256×256 to 1024×1024 pixels).
+3. Check the **Welcome** preview for your title and logo. Use the **Styling** tab for the [theme controls](#colors-fonts-and-per-element-styling) below.
+4. Click **Save Changes**. If the button is disabled because of contrast errors, adjust the flagged text and background colors until every element passes.
+5. Generate a Connect Link using the [hosted-flow example](#choose-your-connection-ui) with the same project's API key and auth config. Use a test user without an existing active connection to that config. Open the returned link and check the saved branding before continuing to the provider.
 
 The logo replaces the Composio mark at the top of the page, and the app title replaces "Composio" in the "...wants to connect to your account" heading.
 
@@ -82,11 +85,27 @@ The logo replaces the Composio mark at the top of the page, and the app title re
 This only changes the Composio-hosted page. The provider's consent screen gets its app identity from the OAuth credentials, not this theme. To change that identity, set up [your own OAuth app](#using-your-own-oauth-apps).
 </Callout>
 
+### Before and after
+
+<Figure src="/images/auth-screen-example.png" alt="Default Connect Link for Gmail showing the Composio logo, connection heading, and Continue button" caption="Before customization: the default hosted Connect Link" size="md" width={764} height={1204} />
+
+For example, if your product is called Acme, set **App Title** to `Acme` and upload your product logo. Check these changes on the hosted page:
+
+| Part of the flow | Before customization | After customization |
+|------------------|----------------------|---------------------|
+| Heading | "Composio wants to connect to your Gmail" | "Acme wants to connect to your Gmail" |
+| App logo | Composio mark | Your uploaded logo |
+| Page styling | Default theme | Your saved colors, fonts, geometry, and element styles |
+| Hosted page language | English | The supported language selected with [`locale`](#language) on the link |
+| Provider sign-in and consent | Identity from the OAuth app used by the auth config | Still uses that OAuth app's identity; changing the hosted title or logo doesn't change it |
+| Hosted page domain | `connect.composio.dev` | `connect.composio.dev` |
+| Destination after authentication | Default hosted result page when no application callback is set | Your page when you pass an application [`callbackUrl`](#redirecting-users-after-authentication) |
+
 ### Colors, fonts, and per-element styling
 
 Open the **Styling** tab to restyle the entire Connect Link page. A live preview sits beside the controls and updates as you edit, and you can preview each state of the flow with the **Welcome**, **Form**, **Success**, and **Error** tabs.
 
-<Figure src="/images/auth-screen-theme-editor.png" alt="The White Labeling editor with a live preview on the left and styling controls on the right" caption="Editing colors, fonts, and per-element styling with a live preview of the Connect Link" />
+<Figure src="/images/auth-screen-theme-editor.png" alt="The White Labeling editor with the Welcome preview, App Title and Logo controls, Branding and Styling tabs, and Save Changes button" caption="Use the preview to check your edits, then click Save Changes to apply them" />
 
 Set the page-wide defaults first:
 
@@ -160,12 +179,17 @@ echo "$REDIRECT_URL?locale=es"
 
 The `locale` parameter changes only the Connect Link's own text. Field names and help text on API key forms, error details from the provider, and the provider's own sign-in and consent screens keep their original language.
 
-<Callout type="warn" title="Troubleshooting">
-- **The provider consent screen still shows Composio:** configure [your own OAuth app](#using-your-own-oauth-apps), and confirm the connection uses that auth config.
-- **Logo doesn't appear after uploading:** clear your browser cache or try incognito.
-- **Upload fails with "failed to fetch":** retry or use a smaller image.
-- **You see the Branding tab but no Styling tab:** theming is still rolling out. If it isn't enabled for your project yet, reach out. The logo and app title keep working in the meantime.
-</Callout>
+### Troubleshooting
+
+| Symptom | What to check |
+|---------|---------------|
+| The preview changed, but the Connect Link still shows the old branding | Click **Save Changes**, then test a newly generated link. Confirm that the API key and auth config belong to the project whose branding you edited. |
+| Save Changes is disabled and the editor reports contrast errors | Adjust the flagged text and background colors until every element passes. Check the Welcome, Form, Success, and Error previews before saving. |
+| The logo doesn't appear after saving | Try a private browser window or clear your browser cache. |
+| Upload fails with "failed to fetch" | Check that the image is a square JPEG or PNG, 256×256 to 1024×1024 pixels. Retry with a smaller image within that range. |
+| The provider consent screen still shows Composio | Configure [your own OAuth app](#using-your-own-oauth-apps), and confirm the connection uses that auth config. The hosted theme controls a different page. |
+| You see the Branding tab but no Styling tab | Theming is still rolling out. If it isn't enabled for your project yet, contact support. The logo and app title keep working in the meantime. |
+| The hosted page still uses a Composio domain | Branding doesn't replace `connect.composio.dev`. See [callback-domain limits](#routing-the-callback-through-your-domain) before configuring a custom provider callback. |
 
 ## Using your own OAuth apps
 
