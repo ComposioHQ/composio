@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-11T18-25-02-claude-code-claude-opus-5-5-opus-baseline",
+  "startedAt": "2026-11-11T18:25:02.558Z",
+  "agent": "claude-code",
+  "agentVersion": "2.1.310",
+  "model": "claude-opus-5-5",
+  "runs": 3,
+  "arms": ["skill"],
+  "journeys": ["developer-auth-configs-and-execute", "developer-execute-unconnected"],
+  "revision": "e4e5d922e",
+  "dirty": true,
+  "skillSha256": "72d9d691700d76a4b417df3888b29a74c7cf8b01d42de55e3e6fcc92f8006e97",
+  "harnessSha256": "9ff7364caa9306b731eedc9d28dc0c4bf57fb750ed940dba1a03816079665d3e",
+  "cliSha256": "4f7a74fca44dcb6e2739ed50d033a52dfeec0fc661c800bf66f38d33bddb3ccc",
+  "maxCostUsd": 2
+}
