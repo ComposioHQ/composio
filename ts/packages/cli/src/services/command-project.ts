@@ -10,6 +10,7 @@ import {
   DeveloperProjectNotFoundError,
   AmbiguousDeveloperProjectNameError,
   getSessionInfoByUserApiKey,
+  userKeyBelongsToOrg,
 } from './composio-account';
 
 export type ProjectMode = 'consumer' | 'developer';
@@ -42,6 +43,7 @@ export class ProjectResolutionError extends Data.TaggedError('services/ProjectRe
     | 'missing_developer_project'
     | 'project_not_found'
     | 'ambiguous_project_name'
+    | 'org_mismatch'
     | 'request_failed';
   readonly message: string;
   readonly cause?: unknown;
@@ -81,15 +83,37 @@ const normalizeLookupError = <E>(error: E): ProjectResolutionError | E => {
 };
 
 /** Why the working directory's developer project cannot serve a command. */
-type DirectoryProjectRefusal = { readonly reason: 'missing_developer_project' };
+type DirectoryProjectRefusal =
+  | { readonly reason: 'missing_developer_project' }
+  | {
+      readonly reason: 'org_mismatch';
+      readonly directoryOrgId: string;
+      readonly storedOrgId: Option.Option<string>;
+    };
 
-const refusalError = (_refusal: DirectoryProjectRefusal): ProjectResolutionError =>
-  new ProjectResolutionError({
-    reason: 'missing_developer_project',
-    message: 'No developer project configured for this directory. Run `composio dev init`.',
-  });
+const refusalError = (refusal: DirectoryProjectRefusal): ProjectResolutionError =>
+  refusal.reason === 'missing_developer_project'
+    ? new ProjectResolutionError({
+        reason: 'missing_developer_project',
+        message: 'No developer project configured for this directory. Run `composio dev init`.',
+      })
+    : new ProjectResolutionError({
+        reason: 'org_mismatch',
+        message: Option.match(refusal.storedOrgId, {
+          onSome: storedOrgId =>
+            `This directory is set up for a developer project in org "${refusal.directoryOrgId}", not in the org you are logged in to ("${storedOrgId}"). Run \`composio orgs switch\` to use that org, \`composio dev init\` to set this directory up in yours, or pass --project-name.`,
+          onNone: () =>
+            `This directory is set up for a developer project in org "${refusal.directoryOrgId}", which your API key cannot access. Run \`composio dev init\` to set it up in one of your orgs, or pass --project-name.`,
+        }),
+      });
 
-/** The developer project configured for the working directory. */
+/**
+ * The developer project the working directory is set up for, or why it cannot be used. A cloned
+ * repository's `.composio/` must not send the user's requests, and the credentials some of them
+ * carry, to a project its author chose, so the project must be in the org the user is logged in
+ * to. Without a stored org, as with a key from `COMPOSIO_USER_API_KEY`, it must be in an org the
+ * key belongs to.
+ */
 const localDeveloperProject = (params: {
   projectContext: ProjectContext['Service'];
   apiKey: string;
@@ -101,6 +125,17 @@ const localDeveloperProject = (params: {
       return Result.fail<DirectoryProjectRefusal>({ reason: 'missing_developer_project' });
     }
     const { orgId, projectId, projectName } = localProject.value;
+    const allowed = yield* Option.match(params.storedOrgId, {
+      onSome: storedOrgId => Effect.succeed(storedOrgId === orgId),
+      onNone: () => userKeyBelongsToOrg({ apiKey: params.apiKey, orgId }),
+    });
+    if (!allowed) {
+      return Result.fail<DirectoryProjectRefusal>({
+        reason: 'org_mismatch',
+        directoryOrgId: orgId,
+        storedOrgId: params.storedOrgId,
+      });
+    }
     return Result.succeed({
       orgId,
       projectId,
@@ -117,12 +152,25 @@ const resolveLocalDeveloperProject = (params: Parameters<typeof localDeveloperPr
   );
 
 /** What is wrong with the directory's developer project, as the start of a sentence. */
-const refusalSummary = (_refusal: DirectoryProjectRefusal): string =>
-  'No developer project is set up for this directory';
+const refusalSummary = (refusal: DirectoryProjectRefusal): string =>
+  refusal.reason === 'missing_developer_project'
+    ? 'No developer project is set up for this directory'
+    : Option.match(refusal.storedOrgId, {
+        onSome: storedOrgId =>
+          `This directory's developer project is in org "${refusal.directoryOrgId}", not the org you are logged in to ("${storedOrgId}")`,
+        onNone: () =>
+          `This directory's developer project is in org "${refusal.directoryOrgId}", which your API key cannot access`,
+      });
 
-/** The command that lets the directory's developer project serve the next run. */
-const refusalRemedy = (_refusal: DirectoryProjectRefusal): string =>
-  'Run `composio dev init` to choose one, or pass --project-name.';
+/** The command that lets the directory's own developer project serve the next run. */
+const refusalRemedy = (refusal: DirectoryProjectRefusal): string =>
+  refusal.reason === 'missing_developer_project'
+    ? 'Run `composio dev init` to choose one, or pass --project-name.'
+    : Option.match(refusal.storedOrgId, {
+        onSome: () =>
+          "Run `composio orgs switch` to use the directory's org, or `composio dev init` to set this directory up in yours.",
+        onNone: () => 'Run `composio dev init` to set this directory up in one of your orgs.',
+      });
 
 /** The stderr notice naming the default developer project a command uses instead. */
 const defaultProjectNotice = (
@@ -236,7 +284,8 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
  * (whose failures stay failures), else the directory's, else the backend's default developer
  * project (`defaultDeveloperProject`). `notice` says, for stderr, why the default stands in and
  * which project it is; it is none when the command uses the project it was given. The default
- * never stands in for a `--project-name` that cannot be resolved.
+ * never stands in for a `--project-name` that cannot be resolved, and no request ever names a
+ * directory project that fails the org check.
  */
 export const resolveDeveloperProjectOrDefault = (params: { projectName?: string }) =>
   Effect.gen(function* () {
