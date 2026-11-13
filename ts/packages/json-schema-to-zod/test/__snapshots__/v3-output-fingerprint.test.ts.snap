@@ -162,8 +162,9 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the local cases
             "innerType": {
               "checks": [
                 {
-                  "kind": "time",
-                  "precision": null,
+                  "kind": "regex",
+                  "message": "Invalid time",
+                  "regex": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d+)?([Zz]|[+-]([01]\\d|2[0-3]):[0-5]\\d)?)?$",
                 },
               ],
               "typeName": "ZodString",
@@ -256,7 +257,7 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the local cases
             "type": "string",
           },
           "time": {
-            "format": "time",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d+)?([Zz]|[+-]([01]\\d|2[0-3]):[0-5]\\d)?)?$",
             "type": "string",
           },
           "uri": {
@@ -4916,8 +4917,9 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
           "time": {
             "checks": [
               {
-                "kind": "time",
-                "precision": null,
+                "kind": "regex",
+                "message": "Invalid time",
+                "regex": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d+)?([Zz]|[+-]([01]\\d|2[0-3]):[0-5]\\d)?)?$",
               },
             ],
             "typeName": "ZodString",
@@ -4966,7 +4968,7 @@ exports[`v3 output fingerprint > matches the pinned snapshot for the shared stri
             "type": "string",
           },
           "time": {
-            "format": "time",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d+)?([Zz]|[+-]([01]\\d|2[0-3]):[0-5]\\d)?)?$",
             "type": "string",
           },
           "uuid": {

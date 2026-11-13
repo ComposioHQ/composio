@@ -1,7 +1,14 @@
 import * as z from 'zod/v4';
 
 import type { Decorations, IssueSink, StringFormat, WholeSchemaGuard, ZodBackend } from './types';
-import { applyObjectPolicy, buildTuple, composeGuards, run, withPath } from './shared';
+import {
+  applyObjectPolicy,
+  buildTuple,
+  composeGuards,
+  run,
+  withPath,
+  RFC3339_TIME,
+} from './shared';
 
 type S = z.ZodType;
 
@@ -226,7 +233,7 @@ const stringFormat = (schema: S, format: StringFormat, message?: string): S => {
     case 'date-time':
       return string.datetime({ offset: true, error: message });
     case 'time':
-      return string.time(message);
+      return string.regex(RFC3339_TIME, message ?? 'Invalid time');
     case 'date':
       return string.date(message);
     case 'duration':
