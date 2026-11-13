@@ -18,6 +18,8 @@ The Gmail metadata scope cannot be used when requesting full email content. Remo
 
 ## Address and send Gmail messages
 
+Check tool slugs and input parameter tables in the [Gmail toolkit catalog](/toolkits/gmail.md) before writing a tool call.
+
 **Use `me` for the authenticated user.** For Gmail tool calls, `me` can be used as the `user_id` to refer to the authenticated connected account.
 
 **Provide at least one recipient channel.** `GMAIL_SEND_EMAIL` no longer needs a single required recipient field. At least one recipient channel such as `to` / `recipient_email`, `cc`, or `bcc` can be supplied, which keeps the tool flexible for different email composition flows.
