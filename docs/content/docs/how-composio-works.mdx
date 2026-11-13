@@ -41,6 +41,12 @@ curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_I
 </Tab>
 </Tabs>
 
+Pass `tools` to your agent framework. See [Providers](/docs/providers) for complete examples with OpenAI, Anthropic, LangChain, Vercel AI SDK, and others.
+
+<Callout type="warn">
+Sessions aren't cached. Each `create()` call makes a new session, so calling it on every request or agent run piles up sessions. Store the session ID and reopen it with `composio.use()`. See [How sessions behave](#how-sessions-behave).
+</Callout>
+
 A session scopes four things:
 
 - **userID**: whose connected accounts and tool executions are in scope.
@@ -50,7 +56,7 @@ A session scopes four things:
 
 
 ## What comes in a session
-By default, a session gives your agent meta tools to discover and execute app tools and manage connections for your user. All toolkits are discoverable, and search includes skill guidance when a matching skill exists. Standard sessions also include a [sandbox](#sandbox) for processing files and large responses outside the model's context window. You can restrict tool access or disable the sandbox through [session configuration](/docs/configuring-sessions).
+By default, a session gives your agent meta tools to discover and execute app tools and manage connections for your user. All toolkits are discoverable, and search includes skill guidance when a matching skill exists. Standard sessions also include a [sandbox](#sandbox) for processing files and large responses outside the model's context window. You can restrict tool access or disable the sandbox through [session configuration](/docs/configuring-sessions). For example, to give the agent only Gmail tools with no search or sandbox, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset).
 
 Later we'll discuss [configuring sessions](/docs/configuring-sessions) for specialized use cases. But for now you can think of the Composio session as the basic building block for your agent.
 
