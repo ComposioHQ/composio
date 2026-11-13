@@ -85,7 +85,8 @@ type UpgradeOptions = {
 const makeUpgradeEffect = (
   configEntries: ReadonlyArray<[string, string]>,
   options?: UpgradeOptions,
-  fileSystemLayer: Layer.Layer<FileSystem.FileSystem> = BunFileSystem.layer
+  fileSystemLayer: Layer.Layer<FileSystem.FileSystem> = BunFileSystem.layer,
+  nodeOsLayer: Layer.Layer<NodeOs> = NodeOsTest
 ) =>
   Effect.gen(function* () {
     const service = yield* UpgradeBinary;
@@ -95,7 +96,7 @@ const makeUpgradeEffect = (
     Effect.provide(FetchHttpClient.layer),
     Effect.provide(fileSystemLayer),
     Effect.provide(TerminalUINoop),
-    Effect.provide(NodeOsTest),
+    Effect.provide(nodeOsLayer),
     Effect.provideService(
       ConfigProvider.ConfigProvider,
       ConfigProvider.fromEnv({ env: Object.fromEntries(configEntries) })
@@ -505,6 +506,68 @@ describe('UpgradeBinary', () => {
       );
       expect(replacedBinaryInfo.mode & 0o777).toBe(0o755);
       expect(yield* fs.exists(legacyLocalToolsPath)).toBe(false);
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  // Live clock: the upgrade waits out a briefly locked backup before giving up.
+  it.live('preserves the Windows bundle when a previous executable backup is locked', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped();
+      const sourceDir = yield* fs.makeTempDirectoryScoped();
+      const fakeExecPath = path.join(installDir, 'composio.exe');
+      const sourceBinaryPath = path.join(sourceDir, 'composio.exe');
+      const backupPath = `${fakeExecPath}.old`;
+      const releaseTagPath = path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME);
+      yield* fs.writeFileString(fakeExecPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.writeFileString(backupPath, 'locked-previous-binary');
+      yield* fs.writeFileString(releaseTagPath, '@composio/cli@0.2.31\n');
+      const companions = yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
+      yield* writeCompanionFiles(sourceDir, companions, 'new-support');
+      yield* writeCompanionFiles(installDir, companions, 'old-support');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+      const lockedFileSystem = Layer.succeed(
+        FileSystem.FileSystem,
+        FileSystem.make({
+          ...fs,
+          remove: (target, options) =>
+            target === backupPath
+              ? Effect.fail(
+                  PlatformError.systemError({
+                    _tag: 'Busy',
+                    module: 'FileSystem',
+                    method: 'remove',
+                    pathOrDescriptor: target,
+                  })
+                )
+              : fs.remove(target, options),
+        })
+      );
+      const windowsOs = Layer.succeed(
+        NodeOs,
+        NodeOs.of({
+          homedir: testHomedir,
+          tmpdir: '/tmp',
+          platform: 'win32',
+          arch: 'x64',
+        })
+      );
+      const error = yield* makeUpgradeEffect(
+        [['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]],
+        { tag: '@composio/cli@0.3.0' },
+        lockedFileSystem,
+        windowsOs
+      ).pipe(Effect.flip);
+
+      expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
+      expect(yield* fs.readFileString(releaseTagPath)).toBe('@composio/cli@0.2.31\n');
+      expect(yield* fs.readFileString(path.join(installDir, companions[0]!))).toBe('old-support');
+      expect(error).toBeInstanceOf(UpgradeBinaryError);
+      expect(error.message).toContain('Close other Composio processes');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 

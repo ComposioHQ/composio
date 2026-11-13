@@ -48,6 +48,17 @@ export const HOST_CONFIG = {
     codexHome: optionalString('CODEX_HOME'),
   }),
 
+  // The agent chat this process runs in. The Composio plugin hook exports the first two as a
+  // pair; the other three are the hosts' own session variables, read when the hook exported
+  // nothing. `CODEX_THREAD_ID` is the same variable `AGENT_HOST` reads as a host marker.
+  AGENT_SESSION: Config.all({
+    hookHost: optionalString('COMPOSIO_AGENT_HOST'),
+    hookSessionId: optionalString('COMPOSIO_AGENT_SESSION_ID'),
+    claudeCodeSessionId: optionalString('CLAUDE_CODE_SESSION_ID'),
+    codexSessionId: optionalString('CODEX_SESSION_ID'),
+    codexThreadId: optionalString('CODEX_THREAD_ID'),
+  }),
+
   // Which agent, if any, drives this process: any `CODEX*` / `CLAUDE*` variable counts
   MASTER_SIGNALS: agentPrefixSignals.pipe(Config.map(({ codex, claude }) => ({ codex, claude }))),
 
@@ -62,4 +73,5 @@ export const HOST_CONFIG = {
 };
 
 export type AgentHostEnvironment = Config.Success<typeof HOST_CONFIG.AGENT_HOST>;
+export type AgentSessionEnvironment = Config.Success<typeof HOST_CONFIG.AGENT_SESSION>;
 export type CallerAgentSignals = Config.Success<typeof HOST_CONFIG.CALLER_AGENT_SIGNALS>;

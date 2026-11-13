@@ -20,6 +20,10 @@ describe('HOST_CONFIG', () => {
         CLAUDE_CONFIG_DIR: '  ',
         COMPOSIO_CALLER_AGENT: 'Open-Claw',
         VITEST: 'off',
+        COMPOSIO_AGENT_HOST: 'claude',
+        COMPOSIO_AGENT_SESSION_ID: 'hook_session_test',
+        CLAUDE_CODE_SESSION_ID: 'claude_session_test',
+        CODEX_SESSION_ID: 'codex_session_test',
       });
       deepStrictEqual(actual, {
         SHELL: '/bin/zsh',
@@ -35,9 +39,37 @@ describe('HOST_CONFIG', () => {
           claudeConfigDir: undefined,
           codexHome: undefined,
         },
+        AGENT_SESSION: {
+          hookHost: 'claude',
+          hookSessionId: 'hook_session_test',
+          claudeCodeSessionId: 'claude_session_test',
+          codexSessionId: 'codex_session_test',
+          codexThreadId: 'thread_test',
+        },
         MASTER_SIGNALS: { codex: true, claude: true },
         CALLER_AGENT_SIGNALS: { explicit: 'Open-Claw', codex: true, claude: true, openclaw: false },
       });
+    })
+  );
+
+  it.effect('[Given] blank agent session variables [Then] each one reads as unset', () =>
+    Effect.gen(function* () {
+      deepStrictEqual(
+        yield* read(HOST_CONFIG.AGENT_SESSION, {
+          COMPOSIO_AGENT_HOST: '',
+          COMPOSIO_AGENT_SESSION_ID: '  ',
+          CLAUDE_CODE_SESSION_ID: '',
+          CODEX_SESSION_ID: ' ',
+          CODEX_THREAD_ID: '',
+        }),
+        {
+          hookHost: undefined,
+          hookSessionId: undefined,
+          claudeCodeSessionId: undefined,
+          codexSessionId: undefined,
+          codexThreadId: undefined,
+        }
+      );
     })
   );
 
