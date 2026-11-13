@@ -26,7 +26,7 @@ So we built a Slack bot that does exactly that. Once a day, at a set time in eac
 This is a deliberately advanced, opinionated build. It's a strong reference for five things:
 
 - **Background-agent sessions**: the draft agent runs on a schedule, not in a conversation. It works from the tools a member already connected and never pauses to ask for auth.
-- **Manual execution for deterministic workflows**: outside the draft, the bot doesn't let an agent decide. It runs a fixed flow, calling tools directly with [manual execution](/docs/tools-direct/executing-tools), so a button always triggers the same exact steps.
+- **Deterministic tool calls**: outside the draft, the bot doesn't let an agent decide. It runs a fixed flow, calling tools from code with [`session.execute()`](/docs/how-composio-works#executing-session-tools), so a button always triggers the same exact steps.
 - **Manual, pre-connected auth**: members connect their tools ahead of time using [manual connections](/docs/authentication/manually-authenticating), and the agent just uses whatever is there.
 - **White-labelling** (advanced): your own Slack app and bot identity, via [white-labelling](/docs/authentication/white-labeling-authentication). This is *not* the easy path. We'd recommend Composio's managed apps, which require no additional configuration. Only do this if you specifically want your own branding.
 - **The proxy** (advanced): using [`proxyExecute`](/docs/extending-sessions/proxy-execute) to call Slack API endpoints Composio doesn't wrap as tools.
@@ -158,7 +158,7 @@ The script is idempotent and repeatable. Forgot a scope, or hit an issue? No str
 
 ## Talk to Slack
 
-To send and update messages in our deterministic bot workflow, we use Composio's `SLACKBOT_SEND_MESSAGE` and `SLACKBOT_UPDATES_A_MESSAGE` tools via [manual tool execution](/docs/tools-direct/executing-tools). `SLACKBOT_SEND_MESSAGE` takes Block Kit `blocks`, so a message with interactive buttons can go through a tool too.
+To send and update messages in our deterministic bot workflow, we use Composio's `SLACKBOT_SEND_MESSAGE` and `SLACKBOT_UPDATES_A_MESSAGE` tools from code with [`session.execute()`](/docs/how-composio-works#executing-session-tools) on a session for the bot's user, so they run as the bot. `SLACKBOT_SEND_MESSAGE` takes Block Kit `blocks`, so a message with interactive buttons can go through a tool too.
 
 <FileBuildup name="proxy" step={1} />
 

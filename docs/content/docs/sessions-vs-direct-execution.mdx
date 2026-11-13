@@ -95,7 +95,7 @@ Agent: "Created issue #42 on your-org/your-repo"
 ```
 
 <Callout>
-`session.tools()` returns **meta tools** (`COMPOSIO_SEARCH_TOOLS`, etc.), not app tools (`GMAIL_SEND_EMAIL`, etc.). The agent discovers app tools at runtime through search. To work with app tools directly, use direct execution.
+`session.tools()` returns **meta tools** (`COMPOSIO_SEARCH_TOOLS`, etc.), not app tools (`GMAIL_SEND_EMAIL`, etc.). The agent discovers app tools at runtime through search. To give the agent a fixed set of app tools, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset). To run a known tool from your own code, call `session.execute()`.
 </Callout>
 
 ### Configuration

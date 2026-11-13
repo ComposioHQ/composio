@@ -74,22 +74,22 @@ const proxy1 = `import { composio } from './composio';
 
 const BOT_USER = 'default';
 
+// A session for the bot's user runs tools as the bot, with no agent involved.
 // Sending a message is a named tool, even when it carries interactive buttons:
 // SLACKBOT_SEND_MESSAGE takes markdown_text for prose, or Block Kit \`blocks\`.
 export async function postMessage(channel: string, text: string, blocks?: unknown[]) {
-  const res = await composio.tools.execute('SLACKBOT_SEND_MESSAGE', {
-    userId: BOT_USER,
-    arguments: blocks ? { channel, blocks } : { channel, markdown_text: text },
-  });
+  const session = await composio.create(BOT_USER);
+  const res = await session.execute(
+    'SLACKBOT_SEND_MESSAGE',
+    blocks ? { channel, blocks } : { channel, markdown_text: text },
+  );
   return res.data as { ts?: string };
 }
 
 // Updating the draft after an edit is a tool too: SLACKBOT_UPDATES_A_MESSAGE.
 export async function updateMessage(channel: string, ts: string, blocks: unknown[]) {
-  await composio.tools.execute('SLACKBOT_UPDATES_A_MESSAGE', {
-    userId: BOT_USER,
-    arguments: { channel, ts, blocks },
-  });
+  const session = await composio.create(BOT_USER);
+  await session.execute('SLACKBOT_UPDATES_A_MESSAGE', { channel, ts, blocks });
 }
 `;
 
@@ -97,22 +97,22 @@ const proxy2 = `import { composio } from './composio';
 
 const BOT_USER = 'default';
 
+// A session for the bot's user runs tools as the bot, with no agent involved.
 // Sending a message is a named tool, even when it carries interactive buttons:
 // SLACKBOT_SEND_MESSAGE takes markdown_text for prose, or Block Kit \`blocks\`.
 export async function postMessage(channel: string, text: string, blocks?: unknown[]) {
-  const res = await composio.tools.execute('SLACKBOT_SEND_MESSAGE', {
-    userId: BOT_USER,
-    arguments: blocks ? { channel, blocks } : { channel, markdown_text: text },
-  });
+  const session = await composio.create(BOT_USER);
+  const res = await session.execute(
+    'SLACKBOT_SEND_MESSAGE',
+    blocks ? { channel, blocks } : { channel, markdown_text: text },
+  );
   return res.data as { ts?: string };
 }
 
 // Updating the draft after an edit is a tool too: SLACKBOT_UPDATES_A_MESSAGE.
 export async function updateMessage(channel: string, ts: string, blocks: unknown[]) {
-  await composio.tools.execute('SLACKBOT_UPDATES_A_MESSAGE', {
-    userId: BOT_USER,
-    arguments: { channel, ts, blocks },
-  });
+  const session = await composio.create(BOT_USER);
+  await session.execute('SLACKBOT_UPDATES_A_MESSAGE', { channel, ts, blocks });
 }
 
 // Opening a modal (views.open) has no Composio tool, so it drops to the proxy.
