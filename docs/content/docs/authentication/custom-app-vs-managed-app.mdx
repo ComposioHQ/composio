@@ -27,7 +27,7 @@ Bring your own credentials when any of these apply:
 
 - **You need your app name on OAuth consent screens.** Use your own OAuth app when your product's branding requirements call for it.
 - **You need custom scopes.** Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).
-- **You're hitting rate limits.** Managed apps share quota across all Composio users. Your own app gets a dedicated quota.
+- **You're hitting provider rate limits.** Your own app uses its provider quota instead of Composio's managed app quota. Provider account and workspace limits can still apply, and your organization's Composio API limit stays the same. See [Rate limits](/reference/rate-limits#provider-quota-errors).
 - **You need faster polling triggers.** Managed auth enforces a 2-minute minimum polling interval; your own app can use shorter polling intervals where supported.
 - **You're connecting to a custom instance.** Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.
 - **Enterprise customers require your branding end-to-end.**

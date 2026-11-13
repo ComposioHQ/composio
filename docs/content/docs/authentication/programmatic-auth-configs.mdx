@@ -54,7 +54,7 @@ curl -s -X POST https://backend.composio.dev/api/v3.1/auth_configs \
 
 ## Your own OAuth2 credentials
 
-Bring your own OAuth app to show your branding on consent screens, request custom scopes, or get a dedicated rate-limit quota. Register the app in the provider's developer portal, set its authorized redirect URI to Composio's callback, then pass the client ID and secret.
+Bring your own OAuth app to show your branding on consent screens, request custom scopes, or use your app's provider quota. Provider account limits and [Composio API limits](/reference/rate-limits) still apply. Register the app in the provider's developer portal, set its authorized redirect URI to Composio's callback, then pass the client ID and secret.
 
 ```
 https://backend.composio.dev/api/v3/toolkits/auth/callback
