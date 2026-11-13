@@ -18,7 +18,7 @@ The Gmail metadata scope cannot be used when requesting full email content. Remo
 
 ## Address and send Gmail messages
 
-Check tool slugs and input parameter tables in the [Gmail toolkit catalog](/toolkits/gmail.md) before writing a tool call.
+Check tool slugs and input parameter tables in the [Gmail toolkit catalog](/toolkits/gmail) before writing a tool call.
 
 **Use `me` for the authenticated user.** For Gmail tool calls, `me` can be used as the `user_id` to refer to the authenticated connected account.
 
