@@ -8,14 +8,27 @@
 import { RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS } from '../src/services/run-companion-modules';
 
 /**
- * Known binary artifact names (without extension).
+ * Every published platform: the Bun cross-compilation target and the artifact it produces.
  */
-export const ARTIFACT_NAMES: ReadonlyArray<string> = [
-  'composio-darwin-aarch64',
-  'composio-darwin-x64',
-  'composio-linux-x64',
-  'composio-linux-aarch64',
-];
+export const RELEASE_TARGETS = [
+  { bunTarget: 'bun-darwin-arm64', artifact: 'composio-darwin-aarch64' },
+  { bunTarget: 'bun-darwin-x64', artifact: 'composio-darwin-x64' },
+  { bunTarget: 'bun-linux-x64', artifact: 'composio-linux-x64' },
+  { bunTarget: 'bun-linux-arm64', artifact: 'composio-linux-aarch64' },
+  { bunTarget: 'bun-windows-x64', artifact: 'composio-windows-x64' },
+] as const;
+
+export type ReleaseTarget = (typeof RELEASE_TARGETS)[number];
+
+const isWindowsArtifact = (artifact: string): boolean => artifact.startsWith('composio-windows-');
+
+/** File name of the compiled binary in `dist/binaries/`. */
+export const compiledBinaryFileName = (artifact: string): string =>
+  isWindowsArtifact(artifact) ? `${artifact}.exe` : artifact;
+
+/** Name of the executable inside the published archive. */
+export const archiveExecutableName = (artifact: string): string =>
+  isWindowsArtifact(artifact) ? 'composio.exe' : 'composio';
 
 export type ArchiveCompanionEntryKind = 'copy' | 'placeholder';
 

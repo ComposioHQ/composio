@@ -503,7 +503,7 @@
     "name": "Mailchimp",
     "logo": "https://logos.composio.dev/api/mailchimp",
     "category": "email newsletters",
-    "toolCount": 277,
+    "toolCount": 278,
     "triggerCount": 4
   },
   {
@@ -1939,7 +1939,7 @@
     "name": "7shifts",
     "logo": "https://logos.composio.dev/api/7shifts",
     "category": "human resources",
-    "toolCount": 10,
+    "toolCount": 12,
     "triggerCount": 0
   },
   {
@@ -8865,6 +8865,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "metricool_mcp",
+    "name": "Metricool MCP",
+    "logo": "https://logos.composio.dev/api/metricool_mcp",
+    "category": "social media marketing",
+    "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
     "slug": "mezmo",
     "name": "Mezmo",
     "logo": "https://logos.composio.dev/api/mezmo",
@@ -11257,7 +11265,7 @@
     "name": "Reply.io",
     "logo": "https://logos.composio.dev/api/reply_io",
     "category": "marketing automation",
-    "toolCount": 35,
+    "toolCount": 36,
     "triggerCount": 0
   },
   {
@@ -11780,7 +11788,7 @@
     "name": "Sender",
     "logo": "https://logos.composio.dev/api/sender",
     "category": "email newsletters",
-    "toolCount": 11,
+    "toolCount": 13,
     "triggerCount": 0
   },
   {
@@ -13410,7 +13418,7 @@
     "name": "V0",
     "logo": "https://logos.composio.dev/api/v0",
     "category": "artificial intelligence",
-    "toolCount": 44,
+    "toolCount": 45,
     "triggerCount": 0
   },
   {

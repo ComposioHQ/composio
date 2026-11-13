@@ -465,6 +465,13 @@ export const installShellIntegration = (params: {
 
     yield* ui.intro(INSTALL_INTRO);
 
+    if (os.platform === 'win32') {
+      return yield* abortShellSetup(
+        report,
+        'Shell setup is not available on Windows. The PowerShell installer already adds the CLI to your PATH.'
+      );
+    }
+
     // Resolve the entry-point bin dir: explicit env, then a ~/.local/bin/composio
     // that is this executable, then the runtime executable's own directory.
     const envBinDir = yield* APP_CONFIG.BIN_DIR.pipe(Effect.orDie);
