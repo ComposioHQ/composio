@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { Cause, Deferred, Effect, Exit, Option } from 'effect';
 import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
 import { ReportedFailure } from 'src/effects/report-failure';
-import { ExitAction, exitActionFor, makeCliRunMain, type RunnerPlatform } from 'src/run-main';
+import { ExitAction, exitActionFor, makeCliRunMain } from 'src/run-main';
 import {
   makeShutdownController,
   type ShutdownController,
   type StopSignal,
 } from 'src/services/shutdown-signal';
+import { fakeRunnerPlatform } from 'test/__utils__/fake-runner-platform';
 
 const exitWith = (code: number): ExitAction => ExitAction.ExitWith({ code });
 const reraiseKill: ExitAction = ExitAction.Reraise({ signal: 'SIGKILL' });
@@ -72,50 +73,11 @@ describe('exitActionFor', () => {
   );
 });
 
-/** A process stand-in: signals are delivered by hand, timers fire by hand. */
-const fakePlatform = () => {
-  const listeners = new Map<StopSignal, Set<() => void>>();
-  const timers: Array<() => void> = [];
-  const ended: Array<ExitAction> = [];
-  let onEnd = () => {};
-  const platform: RunnerPlatform = {
-    on: (signal, listener) => {
-      listeners.set(signal, (listeners.get(signal) ?? new Set()).add(listener));
-    },
-    off: (signal, listener) => {
-      listeners.get(signal)?.delete(listener);
-    },
-    exit: code => {
-      ended.push(ExitAction.ExitWith({ code }));
-      onEnd();
-    },
-    raise: signal => {
-      ended.push(ExitAction.Reraise({ signal }));
-      onEnd();
-    },
-    schedule: (_millis, f) => {
-      timers.push(f);
-      return () => timers.splice(timers.indexOf(f), 1);
-    },
-  };
-  return {
-    platform,
-    ended,
-    timers,
-    send: (signal: StopSignal) => [...(listeners.get(signal) ?? [])].forEach(f => f()),
-    listenerCount: () => [...listeners.values()].reduce((sum, set) => sum + set.size, 0),
-    /** Resolves on the first exit or re-raise. */
-    end: new Promise<void>(resolve => {
-      onEnd = resolve;
-    }),
-  };
-};
-
 /** Lets the runtime settle a fiber the test cannot await. */
 const settle = () => new Promise(resolve => setTimeout(resolve, 20));
 
 const start = (controller: ShutdownController, program: Effect.Effect<unknown, unknown>) => {
-  const fake = fakePlatform();
+  const fake = fakeRunnerPlatform();
   makeCliRunMain(controller, fake.platform)(program, { disableErrorReporting: true });
   return fake;
 };
