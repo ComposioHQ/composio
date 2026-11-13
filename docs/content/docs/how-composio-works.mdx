@@ -6,6 +6,8 @@ keywords: [session, userID, tools, toolkits, meta tools, mcp, workbench]
 
 A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
 
+For diagrams of the components, request flow, authentication, and session lifecycle, see [Architecture](/docs/architecture).
+
 ## The basics
 
 Create a session for a user, then read its tools formatted for your framework. To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
