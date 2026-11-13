@@ -336,6 +336,16 @@ Pick a newer version from the [dashboard](https://dashboard.composio.dev?utm_sou
 
 After the sunset date, requests for the retired version fail with HTTP `410 Gone` until you pin a supported version.
 
+## Renamed and removed tools
+
+Tool slugs can change between releases. A tool may be renamed, merged into another tool, or deprecated in favor of a replacement. If a slug you hardcode stops working:
+
+1. Search the [changelog](/docs/changelog) for the slug. The [March 2026 tool consolidation](/docs/changelog/2026/03/28) lists every renamed, removed, and deprecated slug from that release with its replacement.
+2. Replace the old slug in your code with the new one.
+3. Before you move a pinned version forward, review the toolkit's entries from [`toolkits.changelog()`](#retrieve-toolkit-changelogs).
+
+Deprecated tools keep working and return a notice that names the replacement. Removed tools stop working, so switch to the replacement listed in the changelog.
+
 ## Next
 
 <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
