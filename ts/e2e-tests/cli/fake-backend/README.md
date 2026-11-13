@@ -1,6 +1,6 @@
 # Fake Composio backend
 
-Test support for CLI end-to-end suites. One process answers for every host the `composio` binary talks to, so a test never reaches a real Composio, GitHub, or PostHog endpoint.
+Test support for the CLI suites in `../operations`. One process answers for every host the `composio` binary talks to, so a test never reaches a real Composio, GitHub, or PostHog endpoint.
 
 | Host the CLI calls | Pointed here by                                          | Listener |
 | ------------------ | -------------------------------------------------------- | -------- |

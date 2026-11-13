@@ -13,6 +13,8 @@ Key properties:
 - `HOME=/tmp`; auth and API state must come from env vars or command setup.
 - stdout is not a TTY, so piped-mode output rules apply.
 
+A test that needs several commands to share state (log in, then link, then execute) uses a journey container instead: `startJourneyContainer` from `@e2e-tests/utils`, or `startCliRig` from `@e2e-tests/cli-fake-backend/rig` when the commands need a backend. See `ts/e2e-tests/cli/operations/README.md` for the fault catalogue those suites implement and `ts/e2e-tests/cli/fake-backend/README.md` for what the fake backend does and does not verify.
+
 ## Package Template
 
 ```json
