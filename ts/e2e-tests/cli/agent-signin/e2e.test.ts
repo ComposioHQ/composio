@@ -83,6 +83,8 @@ e2e(import.meta.url, {
       it('leaves the CLI authenticated as the agent (whoami)', () => {
         const whoami = lastJsonLine(unattendedSignup.stdout);
         expect(whoami.account_type).toBe('agent');
+        // whoami's own line, not the login summary before it.
+        expect(whoami.email).toBe('e2e-agent@agent.composio.ai');
       });
     });
 
@@ -120,6 +122,7 @@ e2e(import.meta.url, {
       it('leaves the CLI authenticated as the agent (whoami)', () => {
         const whoami = lastJsonLine(storedIdentityLogin.stdout);
         expect(whoami.account_type).toBe('agent');
+        expect(whoami.email).toBe('e2e-agent@agent.composio.ai');
       });
     });
   },

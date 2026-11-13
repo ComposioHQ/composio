@@ -8,10 +8,14 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { readStoredAgentIdentity } from 'src/services/agents';
 import { getOrgEnhancedControlsStatus } from 'src/services/tool-permissions';
+import { handleClientApiError } from 'src/effects/handle-http-error';
+import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 
 /**
  * CLI command to display your account information.
- * Never prints or exposes API keys. Without a login it fails with `NotLoggedInError`.
+ * Never prints or exposes API keys. Without a login it fails with `NotLoggedInError`. When the
+ * account cannot be read (a rejected key, no connection, a server error) it reports why and
+ * fails, so its exit code tells whether the login works.
  *
  * @example
  * ```bash
@@ -30,11 +34,24 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onNone: () => Effect.fail(notLoggedIn()),
           onSome: apiKey =>
             Effect.gen(function* () {
+              // A session the CLI cannot fully read still proves the key works, so its fields
+              // print as unknown. Any other failure (a rejected key, no connection, a 5xx)
+              // means this command cannot vouch for the login, so it fails.
               const sessionInfo = yield* getSessionInfoByUserApiKey({
                 userApiKey: apiKey,
                 // Reflect the org selected via `composio orgs switch`, not the key's home org.
                 orgId: Option.getOrUndefined(ctx.data.orgId),
-              }).pipe(Effect.option);
+              }).pipe(
+                Effect.map(Option.some),
+                Effect.catchTag('services/HttpDecodingError', () => Effect.succeedNone),
+                Effect.catchTag(
+                  CLIENT_API_ERROR_TAGS,
+                  handleClientApiError(ui, {
+                    fallbackMessage: 'Could not read your account from Composio.',
+                    hint: 'Check your network connection, then retry:\n> composio whoami',
+                  })
+                )
+              );
               yield* Option.match(sessionInfo, {
                 onNone: () => Effect.void,
                 onSome: info => linkApolloIdentityForAnalytics(info.org_member.id, apiKey),
