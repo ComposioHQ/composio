@@ -67,6 +67,83 @@ The agent posts the Connect Link straight into the conversation. The user clicks
 
 You can also call `COMPOSIO_MANAGE_CONNECTIONS` yourself, intercept the Connect Link, and surface it wherever you need: DM it to the user, render it in your own UI, or email it. See [redirect auth links](/examples/general-agent-with-pi#redirect-auth-links) for a worked example.
 
+### Render connection links as cards
+
+Your chat UI can render the result of `COMPOSIO_MANAGE_CONNECTIONS` as a card with a connect button. Keep the returned URL unchanged. The button opens the hosted authentication flow; you control the card's layout and copy.
+
+In your chat's tool-result renderer, pass the decoded JSON result for `COMPOSIO_MANAGE_CONNECTIONS` to this React component. It reads `data.results`, a map of toolkit connection results, and handles `initiated`, `active`, and `failed` states. Install `zod` alongside React to validate the tool result at the UI boundary.
+
+{/* code-example: single-language reason="React TSX component renders an existing tool result locally; it makes no SDK or API calls" */}
+```tsx title="ConnectionCards.tsx"
+import { z } from 'zod';
+
+const connectionResultSchema = z.object({
+  successful: z.literal(true),
+  data: z.object({
+    results: z.record(z.string(), z.object({
+      toolkit: z.string(),
+      status: z.enum(['initiated', 'active', 'failed']),
+      redirect_url: z.url({ protocol: /^https$/ }).nullish(),
+      error_message: z.string().nullish(),
+    })),
+  }),
+});
+
+export function ConnectionCards({ result }: { result: unknown }) {
+  const parsed = connectionResultSchema.safeParse(result);
+  if (!parsed.success) {
+    return <p role="alert">Could not load connections. Please try again.</p>;
+  }
+
+  return (
+    <div>
+      {Object.entries(parsed.data.data.results).map(([slug, connection]) => (
+        <article key={slug} aria-label={`${connection.toolkit} connection`}
+          style={{ border: '1px solid #888', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <h3>{connection.toolkit}</h3>
+          {connection.status === 'active' ? (
+            <p>Connected</p>
+          ) : connection.status === 'initiated' && connection.redirect_url ? (
+            <>
+              <p>Connect your account to continue.</p>
+              <a href={connection.redirect_url} target="_blank" rel="noopener noreferrer">
+                Connect {connection.toolkit} (opens in a new tab)
+              </a>
+            </>
+          ) : (
+            <p role="alert">{connection.error_message ?? 'Could not start the connection. Please try again.'}</p>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+```
+
+For example, this tool result produces a GitHub card with a connect button. The URL is a placeholder; use the URL from the actual tool result.
+
+```json
+{
+  "successful": true,
+  "data": {
+    "message": "Complete authentication to continue.",
+    "results": {
+      "github": {
+        "toolkit": "github",
+        "status": "initiated",
+        "redirect_url": "https://connect.composio.dev/link/ln_example"
+      }
+    }
+  }
+}
+```
+
+Route the structured tool result to the card before converting tool output to chat text. With SDK-executed session tools, `session.tools({ afterExecute })` lets your server inspect the result before the model sees it. Send it only to the authenticated user's chat through your app's existing transport. MCP clients need to handle rendering in the client because SDK modifiers don't run [over MCP](/docs/sessions-via-mcp#trade-offs).
+
+Opening the link does not mean the account is connected. After the user finishes authentication, call `COMPOSIO_MANAGE_CONNECTIONS` again for the same toolkit and session. Update the card from the new result and resume app tool calls only when the toolkit's status is `active`. You can use the [callback URL](#custom-callback-url) below to return the user to your app.
+
+For your own credential forms or OAuth flow, see [White-labeling authentication](/docs/authentication/white-labeling-authentication).
+
 ### Custom callback URL
 
 To send users back to your app after they connect, pass a `callback_url`:
