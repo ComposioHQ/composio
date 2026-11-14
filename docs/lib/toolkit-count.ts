@@ -5,4 +5,4 @@ export function resolveToolkitCount(text: string): string {
   return text.replaceAll('%TOOLKIT_COUNT%', TOOLKIT_COUNT_LABEL);
 }
 
-export const HOME_OG_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} toolkits. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
+export const HOME_OG_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} apps. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;

@@ -12,13 +12,16 @@ test('one catalog count reaches frontmatter, agent content, and meta-tool displa
   expect(resolveToolkitCount('%TOOLKIT_COUNT% toolkits, %TOOLKIT_COUNT% apps'))
     .toBe(`${TOOLKIT_COUNT_LABEL} toolkits, ${TOOLKIT_COUNT_LABEL} apps`);
   for (const [path, noun] of [
-    ['content/docs/providers/openai.mdx', 'toolkits'],
+    ['content/docs/providers/openai.mdx', 'apps'],
     ['content/docs/claude-code-plugin.mdx', 'apps'],
   ]) {
     const parsed = docs.docs.schema.parse(frontmatter(readFileSync(path, 'utf8')).data);
     expect(parsed.description).toContain(`${TOOLKIT_COUNT_LABEL} ${noun}`);
   }
-  expect(readPageByUrl('/docs/quickstart')?.raw).toContain(`${TOOLKIT_COUNT_LABEL} toolkits`);
+  expect(readPageByUrl('/docs/quickstart')?.raw).toContain(`${TOOLKIT_COUNT_LABEL} apps`);
+  expect(readPageByUrl('/reference')?.raw).toContain(`${TOOLKIT_COUNT_LABEL} toolkits`);
+  expect(readPageByUrl('/docs/providers/custom-providers/typescript')?.raw)
+    .toContain(`call tools across ${TOOLKIT_COUNT_LABEL} toolkits`);
   expect(context.markdown).toContain(`${TOOLKIT_COUNT_LABEL} toolkits`);
   expect((await getMetaToolBySlug('COMPOSIO_SEARCH_TOOLS'))?.summary)
     .toContain(`${TOOLKIT_COUNT_LABEL} toolkits`);
