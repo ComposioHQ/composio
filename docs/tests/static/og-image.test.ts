@@ -97,7 +97,7 @@ test('the URL builder names the section and forwards extras', () => {
   const home = new URL(getOgImageUrl('docs', [], 'Welcome', 'page description'));
   expect(home.searchParams.get('section')).toBe('home');
   expect(home.searchParams.get('description')).toBe(HOME_OG_DESCRIPTION);
-  expect(HOME_OG_DESCRIPTION).toMatch(/^Build AI agents with [\d,]+\+ apps\./);
+  expect(HOME_OG_DESCRIPTION).toMatch(/^Build AI agents with [\d,]+\+ toolkits\./);
 
   const changelog = new URL(getOgImageUrl('docs', ['changelog', '2026', '09', '04'], 'Title', 'Updates', { date: 'Sep 4, 2026' }));
   expect(changelog.searchParams.get('section')).toBe('changelog');

@@ -11,7 +11,7 @@ export function DocsHeroV2() {
 
         <p className="max-w-[620px] text-base leading-[1.6] text-fd-foreground/70 sm:text-lg">
           Give your agents tools, managed authentication, and secure execution
-          across {TOOLKIT_COUNT_LABEL} apps.
+          across {TOOLKIT_COUNT_LABEL} toolkits.
         </p>
 
         <AgentSetupActions />

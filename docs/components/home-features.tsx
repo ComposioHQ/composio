@@ -41,7 +41,7 @@ export function HomeFeatures() {
       <div className="grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2">
         <FeatureCard
           title="Tools that resolve by intent."
-          description={`Smart tool search over ${TOOLKIT_COUNT_LABEL} apps, surfaced just in time with the right scope.`}
+          description={`Smart tool search over ${TOOLKIT_COUNT_LABEL} toolkits, surfaced just in time with the right scope.`}
           href="/docs/how-composio-works"
           visual={<ToolkitsVisual />}
         />
@@ -59,7 +59,7 @@ export function HomeFeatures() {
         />
         <FeatureCard
           title="Run arbitrary code, safely."
-          description={`A sandbox pre-wired with your user's connected accounts and ${TOOLKIT_COUNT_LABEL} tools.`}
+          description={`A sandbox pre-wired with your user's connected accounts and ${TOOLKIT_COUNT_LABEL} toolkits.`}
           href="/docs/sandbox"
           visual={<SandboxVisual />}
         />
