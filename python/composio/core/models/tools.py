@@ -429,7 +429,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
         except APIStatusError as error:
             if error.status_code in (400, 404):
-                raise ToolNotFoundError(f"Tool with slug {slug} not found") from error
+                message = f"Tool with slug {slug} not found"
+                if error.details is not None:
+                    message = f"{message}: {error.details['message']}"
+                raise ToolNotFoundError(message) from error
             raise
         return _normalize_tool(response)
 

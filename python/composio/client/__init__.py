@@ -71,6 +71,61 @@ APIEnvironment = te.Literal["production", "staging", "local"]
 
 _SDK_ERROR_CLASSES: t.Dict[t.Type[APIStatusError], t.Type[APIStatusError]] = {}
 
+_STATUS_FALLBACK_FIXES: t.Dict[int, t.List[str]] = {
+    401: ["Ensure you are using a valid Composio API key for this project"],
+    402: ["Check the plan and billing limits of your Composio organization"],
+    403: ["Ensure your API key and the connected account are allowed to run this tool"],
+    410: [
+        "The tool or the resource it acts on is no longer available; see the error message"
+    ],
+    429: [
+        "Wait before retrying",
+        "Reduce how many requests your organization sends per minute",
+    ],
+}
+_CODE_FALLBACK_FIXES: t.Dict[int, t.List[str]] = {
+    1803: [
+        "Ensure the connected account exists and is active in your Composio dashboard"
+    ],
+}
+_SERVER_ERROR_FIXES = [
+    "The Composio API failed to process the request; retry later",
+    "If it keeps failing, contact Composio support with the request id",
+]
+_DEFAULT_FIXES = [
+    "Ensure the tool slug is correct and the input arguments for the tool is valid",
+]
+
+
+def _fallback_fixes(status_code: int) -> t.List[str]:
+    """What to try when the API rejected the request without a ``suggested_fix``."""
+    if status_code in _STATUS_FALLBACK_FIXES:
+        return list(_STATUS_FALLBACK_FIXES[status_code])
+    if status_code >= 500:
+        return list(_SERVER_ERROR_FIXES)
+    return list(_DEFAULT_FIXES)
+
+
+def _api_error_code(error: APIStatusError) -> t.Optional[int]:
+    details = error.details
+    return details.get("code") if details is not None else None
+
+
+def _suggested_fix(error: APIStatusError) -> t.Optional[str]:
+    details = error.details
+    return details.get("suggested_fix") if details is not None else None
+
+
+def _possible_fixes(error: APIStatusError) -> t.List[str]:
+    fix = _suggested_fix(error)
+    if fix:
+        return [fix]
+    details = error.details
+    code = details.get("code") if details is not None else None
+    if code in _CODE_FALLBACK_FIXES:
+        return list(_CODE_FALLBACK_FIXES[code])
+    return _fallback_fixes(error.status_code)
+
 
 def _with_sdk_error_base(
     error_class: t.Type[APIStatusError],
@@ -97,6 +152,9 @@ def _with_sdk_error_base(
             {
                 "__module__": error_class.__module__,
                 "__reduce__": _reduce_sdk_error,
+                "api_error_code": property(_api_error_code),
+                "suggested_fix": property(_suggested_fix),
+                "possible_fixes": property(_possible_fixes),
             },
         ),
     )
