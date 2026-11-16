@@ -33,6 +33,14 @@ def disable_telemetry():
     allow_tracking.reset(token)
 
 
+class _APIErrorDetails(t.Protocol):
+    """The detail fields the SDK adds to generated status errors."""
+
+    api_error_code: t.Optional[int]
+    suggested_fix: t.Optional[str]
+    possible_fixes: t.List[str]
+
+
 def _client_returning(
     status: int,
     *,
@@ -105,10 +113,11 @@ def test_status_error_exposes_the_server_error_details() -> None:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
     error = exc_info.value
+    details = t.cast(_APIErrorDetails, error)
     assert error.status_code == 410
-    assert error.api_error_code == 1410
-    assert error.suggested_fix == "Pin 20261101_00"
-    assert error.possible_fixes == ["Pin 20261101_00"]
+    assert details.api_error_code == 1410
+    assert details.suggested_fix == "Pin 20261101_00"
+    assert details.possible_fixes == ["Pin 20261101_00"]
     assert error.request_id == "req_body"
     assert "toolkit GMAIL version 20250114_00 is retired" in str(error)
     assert "{" not in str(error)
@@ -128,10 +137,10 @@ def test_possible_fixes_fall_back_to_the_status() -> None:
     with pytest.raises(composio_client.PermissionDeniedError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    error = exc_info.value
-    assert error.api_error_code == 1403
-    assert error.suggested_fix is None
-    assert error.possible_fixes == [
+    details = t.cast(_APIErrorDetails, exc_info.value)
+    assert details.api_error_code == 1403
+    assert details.suggested_fix is None
+    assert details.possible_fixes == [
         "Ensure your API key and the connected account are allowed to run this tool"
     ]
 
@@ -150,7 +159,8 @@ def test_possible_fixes_use_the_api_error_code_for_a_missing_account() -> None:
     with pytest.raises(composio_client.BadRequestError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    assert exc_info.value.possible_fixes == [
+    details = t.cast(_APIErrorDetails, exc_info.value)
+    assert details.possible_fixes == [
         "Ensure the connected account exists and is active in your Composio dashboard"
     ]
 
@@ -169,7 +179,8 @@ def test_possible_fixes_do_not_blame_the_slug_for_a_rate_limit() -> None:
     with pytest.raises(composio_client.RateLimitError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    assert exc_info.value.possible_fixes == [
+    details = t.cast(_APIErrorDetails, exc_info.value)
+    assert details.possible_fixes == [
         "Wait before retrying",
         "Reduce how many requests your organization sends per minute",
     ]
@@ -181,10 +192,10 @@ def test_status_error_without_the_envelope_has_no_api_details() -> None:
     with pytest.raises(composio_client.APIStatusError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    error = exc_info.value
-    assert error.api_error_code is None
-    assert error.suggested_fix is None
-    assert error.possible_fixes == [
+    details = t.cast(_APIErrorDetails, exc_info.value)
+    assert details.api_error_code is None
+    assert details.suggested_fix is None
+    assert details.possible_fixes == [
         "Ensure the tool slug is correct and the input arguments for the tool is valid"
     ]
 
