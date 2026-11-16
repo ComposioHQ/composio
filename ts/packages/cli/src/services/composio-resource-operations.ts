@@ -14,25 +14,34 @@ import { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { Toolkits, type ToolkitSearchResult } from 'src/models/toolkits';
 import { TriggerInstanceItems } from 'src/models/triggers';
 import { TriggerType } from 'src/models/trigger-types';
+import type { ToolkitProjectScope } from './composio-clients';
 import type { ClientError } from './composio-errors';
 import { decode, idempotent } from './composio-request';
 
 /**
  * Auth config, connected account, and trigger instance operations: single-page
- * CRUD with no catalog caching.
+ * CRUD with no catalog caching. These resources belong to a project, so every
+ * call takes the org and project the command resolved and goes through the
+ * client `clientFor` builds for them; none falls back to the project the
+ * backend would pick for the key.
  */
-export const resourceOperations = (client: Effect.Effect<ComposioClientShape, ClientError>) => ({
+export const resourceOperations = (
+  clientFor: (scope: ToolkitProjectScope) => Effect.Effect<ComposioClientShape, ClientError>
+) => ({
   /**
    * Lists auth configs with optional filters. Returns a single page of results.
    * @param params - Search/filter parameters
    */
-  listAuthConfigs: (params: {
-    search?: string;
-    toolkit_slug?: string;
-    limit?: number;
-    show_disabled?: boolean;
-  }) =>
-    client.pipe(
+  listAuthConfigs: (
+    scope: ToolkitProjectScope,
+    params: {
+      search?: string;
+      toolkit_slug?: string;
+      limit?: number;
+      show_disabled?: boolean;
+    }
+  ) =>
+    clientFor(scope).pipe(
       Effect.flatMap(c =>
         c.authConfigs.list(
           {
@@ -50,8 +59,8 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    * Retrieves detailed info about a single auth config by its nanoid.
    * @param nanoid - Auth config ID
    */
-  getAuthConfig: (nanoid: string) =>
-    client.pipe(
+  getAuthConfig: (scope: ToolkitProjectScope, nanoid: string) =>
+    clientFor(scope).pipe(
       Effect.flatMap(c => c.authConfigs.retrieve(nanoid, idempotent)),
       Effect.flatMap(decode(AuthConfigItem))
     ),
@@ -59,8 +68,8 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    * Creates a new auth config for a toolkit.
    * @param params - Create parameters (discriminated union: use_composio_managed_auth | use_custom_auth)
    */
-  createAuthConfig: (params: AuthConfigCreateParams) =>
-    client.pipe(
+  createAuthConfig: (scope: ToolkitProjectScope, params: AuthConfigCreateParams) =>
+    clientFor(scope).pipe(
       Effect.flatMap(c => c.authConfigs.create(params)),
       Effect.flatMap(decode(AuthConfigCreateResponse))
     ),
@@ -68,8 +77,8 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    * Retrieves detailed info about a single connected account by its nanoid.
    * @param nanoid - Connected account ID (e.g. "con_1a2b3c4d5e6f")
    */
-  getConnectedAccount: (nanoid: string) =>
-    client.pipe(
+  getConnectedAccount: (scope: ToolkitProjectScope, nanoid: string) =>
+    clientFor(scope).pipe(
       Effect.flatMap(c => c.connectedAccounts.retrieve(nanoid, idempotent)),
       Effect.flatMap(decode(ConnectedAccountItem))
     ),
@@ -77,8 +86,8 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
    * Lists active trigger instances with optional filters.
    * Returns a single page of results.
    */
-  listActiveTriggers: (params: TriggerInstanceListActiveParams) =>
-    client.pipe(
+  listActiveTriggers: (scope: ToolkitProjectScope, params: TriggerInstanceListActiveParams) =>
+    clientFor(scope).pipe(
       Effect.flatMap(c =>
         c.triggerInstances.listActive(
           {
@@ -108,12 +117,19 @@ export const resourceOperations = (client: Effect.Effect<ComposioClientShape, Cl
         )
       )
     ),
-  createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
-    Effect.flatMap(client, c => c.triggerInstances.upsert(triggerSlug, params)),
-  enableTrigger: (triggerId: string) =>
-    Effect.flatMap(client, c => c.triggerInstances.manage.update(triggerId, { status: 'enable' })),
-  disableTrigger: (triggerId: string) =>
-    Effect.flatMap(client, c => c.triggerInstances.manage.update(triggerId, { status: 'disable' })),
+  createTrigger: (
+    scope: ToolkitProjectScope,
+    triggerSlug: string,
+    params?: TriggerInstanceUpsertParams
+  ) => Effect.flatMap(clientFor(scope), c => c.triggerInstances.upsert(triggerSlug, params)),
+  enableTrigger: (scope: ToolkitProjectScope, triggerId: string) =>
+    Effect.flatMap(clientFor(scope), c =>
+      c.triggerInstances.manage.update(triggerId, { status: 'enable' })
+    ),
+  disableTrigger: (scope: ToolkitProjectScope, triggerId: string) =>
+    Effect.flatMap(clientFor(scope), c =>
+      c.triggerInstances.manage.update(triggerId, { status: 'disable' })
+    ),
 });
 
 /**

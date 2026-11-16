@@ -8,7 +8,8 @@ import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { idempotent } from 'src/services/composio-request';
+import { decode, idempotent } from 'src/services/composio-request';
+import { SearchToolSchemas, ToolSearchResponse } from 'src/models/tool-search';
 import { isRemoteCustomToolSlug } from 'src/utils/remote-custom-toolkit';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import {
@@ -28,8 +29,6 @@ import {
   stripSearchResultMetadata,
   toHomeRelativePath,
   TOOL_SCHEMA_PATH_FORMAT,
-  type SearchResponseRecord,
-  type SearchToolSchema,
 } from './tools.search.format';
 
 export type ToolsSearchParams = {
@@ -43,7 +42,7 @@ export type ToolsSearchParams = {
 const invalidSearchInput = commandInputError('search');
 
 const buildSearchJsonPayload = (params: {
-  searchResponse: SearchResponseRecord;
+  searchResponse: ToolSearchResponse;
   cacheScope: { orgId?: string; consumerUserId?: string };
   projectScope: { orgId: string; projectId: string };
   nextSteps: Array<{ action: string; command: string }>;
@@ -151,11 +150,14 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
       const searchPayload = {
         queries: queries.map(query => ({ use_case: query })),
       };
-      // The command reads a few of the search response's fields; the rest, enums
+      // Decoded with the CLI's schema for the fields it reads; the rest, enums
       // among them, may change without this version of the CLI noticing.
       const searchResponse = yield* client.toolRouter.session
         .search(sessionId, searchPayload, idempotent)
-        .pipe(failedWith(ToolsSearchRequestError, 'Failed to search tools.'));
+        .pipe(
+          Effect.flatMap(decode(ToolSearchResponse, { operation: 'toolRouter.session.search' })),
+          failedWith(ToolsSearchRequestError, 'Failed to search tools.')
+        );
       const customToolSlugsMissingSchemas = Object.entries(searchResponse.tool_schemas)
         .filter(([slug, schema]) => isRemoteCustomToolSlug(slug) && !schema.input_schema)
         .map(([slug]) => slug);
@@ -191,17 +193,13 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
                 return yield* schemasFailed(new Error(schemaResponse.error));
               }
 
-              const resolvedSchemas = schemaResponse.data.tool_schemas;
-              if (!resolvedSchemas || typeof resolvedSchemas !== 'object') {
-                return yield* schemasFailed(new Error('Tool Router returned no tool schemas.'));
-              }
+              const resolvedSchemas = yield* decode(SearchToolSchemas, {
+                operation: 'toolRouter.session.executeMeta',
+              })(schemaResponse.data.tool_schemas).pipe(Effect.mapError(schemasFailed));
 
               return {
                 ...searchResponse,
-                tool_schemas: {
-                  ...searchResponse.tool_schemas,
-                  ...(resolvedSchemas as Record<string, SearchToolSchema>),
-                },
+                tool_schemas: { ...searchResponse.tool_schemas, ...resolvedSchemas },
               };
             });
       return {
@@ -296,7 +294,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         limit: clampedLimit,
         resultCount: totalToolCount,
         toolRouterSessionId: searchResult.historyScope?.toolRouterSessionId,
-        nextSteps: searchResponse.next_steps_guidance,
+        nextSteps: searchResponse.next_steps_guidance ?? [],
       },
     }).pipe(Effect.catch(() => Effect.void));
 
@@ -305,11 +303,11 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         ui,
         queries,
         resultsWithTools,
-        nextStepsGuidance: searchResponse.next_steps_guidance,
+        nextStepsGuidance: searchResponse.next_steps_guidance ?? [],
         firstSlug,
         firstDataArg,
         tree,
-        error: searchResponse.error,
+        error: searchResponse.error ?? null,
       });
     } else if (emitJson) {
       const outputJson = JSON.stringify(outputForJq, null, 2);

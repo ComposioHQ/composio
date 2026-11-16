@@ -327,6 +327,47 @@ test ! -e "$HOME/.local/bin/composio"
     );
 
     it(
+      'fails when the release has no archive for this platform, before creating the entry point',
+      async () => {
+        const result = await run(`
+set -eu
+if output=$(curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/missing-asset" sh -s -- "$E2E_RELEASE_TAG" 2>&1); then
+  echo 'install unexpectedly succeeded without an archive' >&2
+  exit 1
+fi
+printf '%s\n' "$output" | grep -Fi 'download'
+test ! -e "$HOME/.local/bin/composio"
+test ! -e "$HOME/.composio/composio"
+`);
+        assertSuccess(result);
+      },
+      timeout
+    );
+
+    it(
+      'fails on a download cut off partway, before creating the entry point',
+      async () => {
+        const result = await run(`
+set -eu
+if output=$(curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_GITHUB_URL="$INSTALL_BASE_URL/truncated" sh -s -- "$E2E_RELEASE_TAG" 2>&1); then
+  echo 'install unexpectedly succeeded from a truncated archive' >&2
+  exit 1
+fi
+# The download itself must fail; reaching checksum verification would mean the partial file was accepted as complete.
+if printf '%s\n' "$output" | grep -Fq 'Checksum'; then
+  printf '%s\n' "$output" >&2
+  exit 1
+fi
+printf '%s\n' "$output" | grep -Fi 'download'
+test ! -e "$HOME/.local/bin/composio"
+test ! -e "$HOME/.composio/composio"
+`);
+        assertSuccess(result);
+      },
+      timeout
+    );
+
+    it(
       'rejects a corrupted archive at extraction before creating the entry point',
       async () => {
         const result = await run(`

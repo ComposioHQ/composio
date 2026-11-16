@@ -8,7 +8,11 @@ export async function withCancellation<T>(
   try {
     return await call();
   } catch (error) {
-    if (signal?.aborted && isRequestAbortError(error)) {
+    // A raw `fetch` rejects with the signal's reason, so an `AbortSignal.timeout()`
+    // surfaces as a `TimeoutError` (or a custom reason passed to `abort()`) that is
+    // not abort-shaped. Matching the reason itself still excludes an unrelated
+    // failure that merely coincides with a late abort.
+    if (signal?.aborted && (isRequestAbortError(error) || error === signal.reason)) {
       const underlyingMessage = error instanceof Error ? error.message : '';
       const message = underlyingMessage
         ? `Request was cancelled by the caller: ${underlyingMessage}`

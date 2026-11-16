@@ -77,17 +77,6 @@ jobs:
             directory: '.'
             export-flags: '--all-packages'
             standalone: false
-            # CVE-2026-114603 / GHSA-xcq7-p3pf-p88h: opentelemetry-api's
-            # inbound tracestate parser can exhaust CPU. google-adk 2.9.1
-            # caps opentelemetry-api/sdk at 1.42.1, excluding the 1.45.1 fix;
-            # the latest published google-adk 2.12.0 keeps that cap. Our ADK
-            # provider wraps FunctionTool objects and does not run inbound
-            # HTTP instrumentation. Remove this exception once ADK permits
-            # the fix, or reassess before adding an instrumented HTTP server.
-            # The standalone Claude and CrewAI provider locks use the patched
-            # version.
-            # https://github.com/open-telemetry/opentelemetry-python/security/advisories/GHSA-xcq7-p3pf-p88h
-            ignored-vulns: 'CVE-2026-114603'
           # Provider projects with their own lockfiles, which pin the published
           # `composio` from PyPI rather than the workspace checkout. uv resolves
           # them on their own even though python/providers/openai is listed as
@@ -104,9 +93,7 @@ jobs:
             directory: 'python/providers/claude_agent_sdk'
             export-flags: ''
             standalone: true
-          # Outside the workspace because crewai >=1.15.33 (the first to allow
-          # the patched mcp and uv) requires opentelemetry >=1.45.1, which
-          # google-adk still caps at 1.44.
+          # CrewAI is resolved independently in its standalone provider lockfile.
           - name: composio-crewai
             directory: 'python/providers/crewai'
             export-flags: ''

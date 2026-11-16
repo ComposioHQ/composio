@@ -7,6 +7,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { assertDefined } from '@effect/vitest/utils';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as Path from 'effect/Path';
+import * as FileSystem from 'effect/FileSystem';
 import {
   Cause,
   ConfigProvider,
@@ -843,13 +844,20 @@ describe('buildRunHelpersSource', () => {
 
 describe('inferCliInvocationPrefix', () => {
   layer(BunServices.layer)(it => {
-    it.effect(
-      '[Given] a compiled bunfs entrypoint [Then] it falls back to the binary path only',
-      () =>
+    it.effect.each([
+      '/$bunfs/root/composio',
+      'B:\\$bunfs\\root\\composio.exe',
+      'B:/~BUN/root/composio.exe',
+      'B:\\~BUN\\root\\composio.exe',
+    ])(
+      '[Given] a compiled entrypoint %s [Then] it falls back to the binary path only',
+      entrypoint =>
         Effect.gen(function* () {
           const pathService = yield* Path.Path;
           expect(
-            yield* inferCliInvocationPrefix(pathService, ['node', '/$bunfs/root/composio'])
+            yield* inferCliInvocationPrefix(pathService, ['node', entrypoint]).pipe(
+              Effect.provide(FileSystem.layerNoop({ exists: () => Effect.succeed(true) }))
+            )
           ).toEqual([process.execPath]);
         })
     );

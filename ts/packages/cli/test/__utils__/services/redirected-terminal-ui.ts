@@ -2,11 +2,16 @@ import { Writable } from 'node:stream';
 import { Effect, Layer } from 'effect';
 import { makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
 
-const capture = () => {
+/** A redirected stream; with `readerClosed`, every write fails with EPIPE, as after `| head`. */
+const capture = (readerClosed = false) => {
   const chunks: Array<string> = [];
   const stream = Object.assign(
     new Writable({
       write(chunk, _encoding, callback) {
+        if (readerClosed) {
+          callback(Object.assign(new Error('EPIPE: broken pipe, write'), { code: 'EPIPE' }));
+          return;
+        }
         chunks.push(String(chunk));
         callback();
       },
@@ -25,8 +30,10 @@ const capture = () => {
 export const redirectedTerminalUI = (options?: {
   /** Runs after a `log.warn` is logged — a signal that code behind the warn has run. */
   readonly onWarn?: (message: string) => void;
+  /** The reader of stdout went away before the first write (`… | head -0`). */
+  readonly stdoutReaderClosed?: boolean;
 }) => {
-  const stdout = capture();
+  const stdout = capture(options?.stdoutReaderClosed);
   const stderr = capture();
   const ui = makeTerminalUI({
     stdin: { isTTY: false },

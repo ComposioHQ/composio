@@ -27,7 +27,7 @@ The pattern is the takeaway, not iMessage specifically. It comes together from a
 
 1. **A local toolkit** wraps local iMessage (send, contacts, history, memory) as Composio tools.
 2. **In-process execution** runs each tool right on your Mac through `session.execute`, with no remote API.
-3. **One session** puts those local tools on the same surface as the 1000+ app catalog.
+3. **One session** puts those local tools on the same surface as the %TOOLKIT_COUNT% toolkit catalog.
 4. **The eve provider** turns `session.tools()` into [eve](https://github.com/vercel/eve)-native tools, so `eve dev` can call them.
 5. **Triggers** let an outside event wake the agent and reach your phone, with in-chat auth through `COMPOSIO_MANAGE_CONNECTIONS` for any app you haven't connected.
 

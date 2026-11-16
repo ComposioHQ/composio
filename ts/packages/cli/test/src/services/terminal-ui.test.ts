@@ -4,7 +4,8 @@ import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
 import { CANCEL_SYMBOL } from '@clack/core';
 import stringWidth from 'fast-string-width';
-import { Data, Effect } from 'effect';
+import { assert } from '@effect/vitest';
+import { Cause, Data, Effect, Exit, Fiber } from 'effect';
 import {
   clampSpinnerMessage,
   getTerminalCapabilities,
@@ -181,6 +182,98 @@ describe('TerminalUI', () => {
 
         yield* ui.log.info('invisible decoration');
         expect(stderr.chunks).toEqual([]);
+      })
+    );
+  });
+
+  describe('a stdout write that fails', () => {
+    /**
+     * A redirected stdout whose every write fails with `code`, as the OS reports it. An `error`
+     * event nothing listens to, which would crash the process, is recorded in `unhandled`.
+     */
+    const failingStdout = (code: string) => {
+      const attempts: string[] = [];
+      const unhandled: unknown[] = [];
+      const sink = new Writable({
+        write(chunk, _encoding, callback) {
+          attempts.push(String(chunk));
+          callback(Object.assign(new Error(`${code}: write failed`), { code }));
+        },
+      });
+      const emit = sink.emit.bind(sink);
+      sink.emit = ((event: string | symbol, ...args: unknown[]) => {
+        if (event === 'error' && sink.listenerCount('error') === 0) {
+          unhandled.push(args[0]);
+          return false;
+        }
+        return emit(event, ...args);
+      }) as typeof sink.emit;
+      return Object.assign(sink, { isTTY: false, attempts, unhandled });
+    };
+
+    /** Lets the stream emit what it deferred to the next turn of the event loop. */
+    const settle = Effect.promise(() => new Promise<void>(resolve => setImmediate(resolve)));
+
+    it.effect('drops the data once the reader closed stdout (EPIPE), and the command goes on', () =>
+      Effect.gen(function* () {
+        const stdout = failingStdout('EPIPE');
+        const ui = makeTerminalUI({ stdin: { isTTY: false }, stdout, stderr: makeSink(false) });
+
+        yield* ui.output('{"first":true}');
+        yield* ui.output('{"second":true}');
+
+        yield* settle;
+
+        // Nothing more can reach a reader that went away, and its error does not crash the CLI.
+        expect(stdout.attempts).toEqual(['{"first":true}\n']);
+        expect(stdout.unhandled).toEqual([]);
+      })
+    );
+
+    it.effect('completes stdoutClosed once the reader closed stdout (EPIPE)', () =>
+      Effect.gen(function* () {
+        const ui = makeTerminalUI({
+          stdin: { isTTY: false },
+          stdout: failingStdout('EPIPE'),
+          stderr: makeSink(false),
+        });
+        const closed = yield* Effect.forkChild(ui.stdoutClosed);
+        yield* Effect.yieldNow;
+        expect(closed.pollUnsafe()).toBeUndefined();
+
+        yield* ui.output('{"first":true}');
+
+        expect(Exit.isSuccess(yield* Fiber.await(closed))).toBe(true);
+      })
+    );
+
+    it.effect('leaves stdoutClosed pending while the reader takes the data', () =>
+      Effect.gen(function* () {
+        const ui = makeTerminalUI({
+          stdin: { isTTY: false },
+          stdout: makeSink(false),
+          stderr: makeSink(false),
+        });
+        const closed = yield* Effect.forkChild(ui.stdoutClosed);
+
+        yield* ui.output('{"first":true}');
+        yield* settle;
+
+        expect(closed.pollUnsafe()).toBeUndefined();
+        yield* Fiber.interrupt(closed);
+      })
+    );
+
+    it.effect('is a defect for any other failure', () =>
+      Effect.gen(function* () {
+        const stdout = failingStdout('EIO');
+        const ui = makeTerminalUI({ stdin: { isTTY: false }, stdout, stderr: makeSink(false) });
+
+        const exit = yield* Effect.exit(ui.output('{"machine":"data"}'));
+
+        assert(Exit.isFailure(exit));
+        expect(Cause.hasDies(exit.cause)).toBe(true);
+        expect(Cause.squash(exit.cause)).toMatchObject({ code: 'EIO' });
       })
     );
   });

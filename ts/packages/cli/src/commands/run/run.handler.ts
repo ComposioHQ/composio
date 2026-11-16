@@ -31,6 +31,7 @@ import { invocationRunId } from 'src/invocation/command-identity';
 import {
   repairMissingInstalledRunCompanionModules,
   resolveRunCompanionModulePath,
+  isBunVirtualPath,
 } from 'src/services/run-companion-modules';
 import {
   appendCliSessionHistory,
@@ -66,7 +67,7 @@ export const inferCliInvocationPrefix = (
     // Compiled Bun binaries report an internal $bunfs entrypoint which cannot be
     // re-executed as a real filesystem path. In that case the binary itself is
     // the CLI entrypoint.
-    if (entrypoint.startsWith('/$bunfs/')) {
+    if (isBunVirtualPath(entrypoint)) {
       return [process.execPath];
     }
 

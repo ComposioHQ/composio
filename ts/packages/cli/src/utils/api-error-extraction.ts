@@ -19,7 +19,11 @@ import {
   type DecodeError,
 } from '@composio/client/effect';
 import { Predicate } from 'effect';
-import { CLIENT_API_ERROR_TAGS, type ClientApiError } from 'src/services/composio-errors';
+import {
+  CLIENT_API_ERROR_TAGS,
+  HttpDecodingError,
+  type ClientApiError,
+} from 'src/services/composio-errors';
 
 export type { ClientApiError };
 
@@ -37,16 +41,30 @@ export const isClientConnectionError = (value: unknown): value is APIConnectionE
 export const isClientDecodeError = (value: unknown): value is DecodeError =>
   isComposioError(value) && Predicate.isTagged(value, '@composio/client/DecodeError');
 
+/** A response that failed the CLI's own schema, for a request named by its client operation. */
+export type OperationDecodingError = HttpDecodingError & { readonly operation: string };
+
+export const isOperationDecodingError = (value: unknown): value is OperationDecodingError =>
+  value instanceof HttpDecodingError && value.operation !== undefined;
+
 /**
- * What the CLI prints when a response failed client decoding. It names the
- * request and never quotes the response.
+ * What the CLI prints when a response failed client decoding, or the CLI's
+ * own schema for a named operation. It names the request and never quotes the
+ * response.
  */
 export const describeDecodeError = (
-  error: DecodeError
+  error: DecodeError | OperationDecodingError
 ): { readonly message: string; readonly hint: string } => {
   const subject =
-    error.operation !== undefined ? `'${error.operation}'` : `${error.method} ${error.url}`;
-  const requestId = error.requestId !== undefined ? ` (request id: ${error.requestId})` : '';
+    error.operation !== undefined
+      ? `'${error.operation}'`
+      : isClientDecodeError(error)
+        ? `${error.method} ${error.url}`
+        : 'a request';
+  const requestId =
+    isClientDecodeError(error) && error.requestId !== undefined
+      ? ` (request id: ${error.requestId})`
+      : '';
   return {
     message: `The API response for ${subject} is not in the shape this version of the CLI expects${requestId}.`,
     hint: 'Upgrade the CLI, then retry:\n> composio upgrade',
@@ -121,9 +139,10 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
       return value.details?.message ?? extractMessage(value.body, visited) ?? value.message;
     }
 
-    // A response that failed client decoding is reported by operation and
-    // request id, with the remedy, never by the client's raw message.
-    if (isClientDecodeError(value)) {
+    // A response that failed client decoding (or the CLI's schema for a named
+    // operation) is reported by operation and request id, with the remedy,
+    // never by the raw message.
+    if (isClientDecodeError(value) || isOperationDecodingError(value)) {
       const { message, hint } = describeDecodeError(value);
       return `${message}\n${hint}`;
     }

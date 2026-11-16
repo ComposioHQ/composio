@@ -6,6 +6,7 @@
  * search tool can heavily downrank them.
  */
 
+import { resolveToolkitCount } from '../../lib/toolkit-count';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -434,7 +435,7 @@ export function buildIndex(): DocPage[] {
         if (!url) continue;
         let raw: string;
         try {
-          raw = readFileSync(absPath, 'utf8');
+          raw = resolveToolkitCount(readFileSync(absPath, 'utf8'));
         } catch {
           continue;
         }
@@ -507,7 +508,7 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
     ];
     for (const candidate of candidates) {
       try {
-        const raw = readFileSync(candidate, 'utf8');
+        const raw = resolveToolkitCount(readFileSync(candidate, 'utf8'));
         const { title } = parseFrontmatter(raw);
         return { title: title || url, raw };
       } catch {

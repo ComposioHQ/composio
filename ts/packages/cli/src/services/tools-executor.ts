@@ -355,9 +355,8 @@ export const ToolsExecutorLive = Layer.effect(
     return ToolsExecutor.of({
       execute: (slug, params) =>
         Effect.gen(function* () {
-          // Resolved lazily: `get()` walks the project context off disk, and every
-          // caller on the execute path already hands in a client built for the
-          // resolved org/project.
+          // Every caller on the execute path hands in a client built for the resolved
+          // org/project; `get()` is unscoped and acts on the key's default project.
           const resolvedClient = params.client ?? (yield* clientSingleton.get());
           const sessionContext = yield* resolveToolRouterSessionContext(
             resolvedClient,

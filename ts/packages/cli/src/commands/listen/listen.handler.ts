@@ -498,12 +498,20 @@ export const runListen = (input: ListenParams) =>
           }
 
           // Ctrl-C or SIGTERM after the subscription is a clean stop: exit 0 after the release.
+          // So is a reader that closed stdout (`| head -1`): nothing written after can reach it.
           const stopReason = yield* Effect.raceAllFirst([
             listenEffect,
             Deferred.await(stopWhenDone),
             Effect.as(shutdown.requested, 'signal' as const),
+            Effect.as(ui.stdoutClosed, 'stdout-closed' as const),
           ]);
-          if (stopReason === 'max-events' || stopReason === 'timeout') {
+          // Events already accepted still finish their --out and --forward steps; once stdout
+          // is closed their own writes there are dropped.
+          if (
+            stopReason === 'max-events' ||
+            stopReason === 'timeout' ||
+            stopReason === 'stdout-closed'
+          ) {
             yield* finishAcceptedEvents(events, failed);
           }
           if (stopReason === 'max-events') {
