@@ -44,7 +44,7 @@ Some error classes have specific requirements:
    new ValidationError('Message', { cause: someZodError });
    ```
 
-2. **ComposioToolExecutionError**: Keeps the failure it wraps as `cause`, and accepts an `apiErrorCode` for the numeric code of a Composio API error response.
+2. **ComposioToolExecutionError**: Keeps the failure it wraps as `cause`. The base `ComposioError` reads `statusCode`, `requestId`, and `apiErrorCode` from an `APIError` cause.
    ```typescript
    new ComposioToolExecutionError('Message', { cause: someError });
    ```

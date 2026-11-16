@@ -55,6 +55,7 @@ import { telemetry } from '../telemetry/Telemetry';
 import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
+import { apiErrorSuggestedFixes, withApiErrorMessage } from '../errors/apiErrorDetails';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
@@ -876,7 +877,10 @@ export class Tools<
       }
       if (isRateLimitResponse(error)) {
         throw new ComposioToolFetchRateLimitError(
-          `Rate limited while retrieving tool with slug ${slug}`,
+          withApiErrorMessage(
+            `Rate limited while retrieving tool with slug ${slug}`,
+            error.details
+          ),
           error,
           { slug }
         );
@@ -885,15 +889,24 @@ export class Tools<
       // malformed one). Anything else (401, 5xx, network) is not "not found",
       // so keep the client error reachable as `cause` under a generic error.
       if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
-        throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`, {
+        throw new ComposioToolNotFoundError(
+          withApiErrorMessage(`Tool with slug ${slug} not found`, error.details),
+          {
+            meta: { slug },
+            cause: error,
+            possibleFixes: apiErrorSuggestedFixes(error.details),
+          }
+        );
+      }
+      const details = error instanceof APIError ? error.details : undefined;
+      throw new ComposioToolFetchError(
+        withApiErrorMessage(`Unable to retrieve tool with slug ${slug}`, details),
+        {
           meta: { slug },
           cause: error,
-        });
-      }
-      throw new ComposioToolFetchError(`Unable to retrieve tool with slug ${slug}`, {
-        meta: { slug },
-        cause: error,
-      });
+          possibleFixes: apiErrorSuggestedFixes(details),
+        }
+      );
     }
 
     // change the case of the tool to camel case and apply default modifiers
@@ -1459,7 +1472,9 @@ export class Tools<
           withoutRetries(requestOptions)
         ),
       requestOptions?.signal
-    );
+    ).catch((error: unknown) => {
+      throw handleToolExecutionError(toolSlug, error as Error);
+    });
 
     const { data, error, logId, resultType, instantCharge } = transformExecuteResponse(
       response,

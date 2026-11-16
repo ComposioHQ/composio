@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
 import ComposioClient, {
+  APIError,
   BadRequestError,
   ConflictError,
   NotFoundError,
@@ -22,6 +23,7 @@ import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import { ComposioSessionConfigConflictError } from '../../src/errors/ToolRouterErrors';
+import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -3053,13 +3055,49 @@ describe('ToolRouter', () => {
       expect(result.instantCharge).toEqual({ amount: '0.01', currency: 'USD' });
     });
 
-    it('should propagate execute API errors', async () => {
+    it('wraps execute API errors with the tool context', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      mockClient.toolRouter.session.execute.mockRejectedValueOnce(new Error('Execute failed'));
+      const cause = new Error('Execute failed');
+      mockClient.toolRouter.session.execute.mockRejectedValueOnce(cause);
 
       const session = await toolRouter.create(userId);
+      const error = await session.execute('GMAIL_SEND_EMAIL').catch(e => e);
 
-      await expect(session.execute('GMAIL_SEND_EMAIL')).rejects.toThrow('Execute failed');
+      expect(error).toBeInstanceOf(ComposioToolExecutionError);
+      expect(error.message).toBe('Error executing the tool GMAIL_SEND_EMAIL');
+      expect(error.cause).toBe(cause);
+    });
+
+    it('surfaces the server details of a rejected execute', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockRejectedValueOnce(
+        new APIError(
+          410,
+          {
+            error: {
+              message: 'Toolkit version 20250101_00 is retired',
+              code: 1410,
+              slug: 'TOOLKIT_VERSION_RETIRED',
+              status: 410,
+              suggested_fix: 'Pin 20250909_00',
+            },
+          },
+          undefined,
+          new Headers({ 'x-request-id': 'req_router_410' })
+        )
+      );
+
+      const session = await toolRouter.create(userId);
+      const error = await session.execute('GMAIL_SEND_EMAIL').catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolExecutionError);
+      expect(error.message).toBe(
+        'Error executing the tool GMAIL_SEND_EMAIL: Toolkit version 20250101_00 is retired'
+      );
+      expect(error.statusCode).toBe(410);
+      expect(error.apiErrorCode).toBe(1410);
+      expect(error.requestId).toBe('req_router_410');
+      expect(error.possibleFixes).toEqual(['Pin 20250909_00']);
     });
 
     it('should default arguments to empty object when omitted', async () => {
@@ -3188,13 +3226,17 @@ describe('ToolRouter', () => {
       );
     });
 
-    it('should propagate executeMeta API errors', async () => {
+    it('wraps executeMeta API errors with the tool context', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(new Error('Execute failed'));
+      const cause = new Error('Execute failed');
+      mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(cause);
 
       const session = await toolRouter.create(userId);
+      const error = await session.executeMeta('COMPOSIO_SEARCH_TOOLS').catch(e => e);
 
-      await expect(session.executeMeta('COMPOSIO_SEARCH_TOOLS')).rejects.toThrow('Execute failed');
+      expect(error).toBeInstanceOf(ComposioToolExecutionError);
+      expect(error.message).toBe('Error executing the tool COMPOSIO_SEARCH_TOOLS');
+      expect(error.cause).toBe(cause);
     });
 
     it('should pass inline custom tools to executeMeta when custom tools are bound', async () => {

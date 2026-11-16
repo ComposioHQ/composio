@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ComposioClient, { Auth } from '@composio/client';
+import ComposioClient, { APIError, Auth } from '@composio/client';
 import { z as z4 } from 'zod';
 import { z } from 'zod/v3';
 import {
@@ -12,6 +12,7 @@ import {
   LOCAL_TOOL_PREFIX,
 } from '../../src/models/CustomTool';
 import { SessionContextImpl } from '../../src/models/SessionContext';
+import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 import type { CustomTool, CustomToolkit, SessionContext } from '../../src/types/customTool.types';
 
 // ────────────────────────────────────────────────────────────────
@@ -821,6 +822,37 @@ describe('SessionContextImpl', () => {
       logId: 'log_1',
       resultType: 'completed',
     });
+  });
+
+  it('surfaces the server details when the backend rejects the execution', async () => {
+    mockClient.toolRouter.session.execute.mockRejectedValue(
+      new APIError(
+        410,
+        {
+          error: {
+            message: 'Toolkit version 20250101_00 is retired',
+            code: 1410,
+            slug: 'TOOLKIT_VERSION_RETIRED',
+            status: 410,
+            suggested_fix: 'Pin 20250909_00',
+          },
+        },
+        undefined,
+        new Headers({ 'x-request-id': 'req_context_410' })
+      )
+    );
+
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
+    const error = await ctx.execute('GMAIL_SEND_EMAIL', {}).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolExecutionError);
+    expect(error.message).toBe(
+      'Error executing the tool GMAIL_SEND_EMAIL: Toolkit version 20250101_00 is retired'
+    );
+    expect(error.statusCode).toBe(410);
+    expect(error.apiErrorCode).toBe(1410);
+    expect(error.requestId).toBe('req_context_410');
+    expect(error.possibleFixes).toEqual(['Pin 20250909_00']);
   });
 
   it('should pass inline custom tools when delegating execute() to backend', async () => {
