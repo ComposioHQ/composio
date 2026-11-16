@@ -1,10 +1,10 @@
 {
-  "id": "2026-11-16T17-52-05-claude-code-claude-haiku-5-5-baseline",
-  "startedAt": "2026-11-16T17:52:05.743Z",
+  "id": "2026-11-16T18-57-32-claude-code-claude-haiku-5-5-baseline",
+  "startedAt": "2026-11-16T18:57:32.172Z",
   "agent": "claude-code",
   "agentVersion": "2.1.310",
   "model": "claude-haiku-5-5",
-  "runs": 3,
+  "runs": 5,
   "arms": ["skill", "no-skill"],
   "journeys": [
     "consumer-slack-message",
@@ -13,7 +13,7 @@
     "first-run-login",
     "run-inline-script"
   ],
-  "revision": "39f30ca19",
+  "revision": "32288abff",
   "dirty": false,
   "skillSha256": "25e724edfae2116c4b1837c3668dee215b7b6dc3a2e2a1b9780e812954174837",
   "harnessSha256": "edbcd56c30849aa2283b6f65457b792a0d5d5a0c6d94379bc25260576a31644c",
