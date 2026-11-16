@@ -2,6 +2,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const sendEmailInput = {
@@ -137,6 +139,15 @@ describe('CLI: composio search over the API client', () => {
         };
         // Once as the log line and once as the piped output.
         expect(lines).toEqual([JSON.stringify(payload, null, 2), JSON.stringify(payload, null, 2)]);
+        // A result keeps the API's key order on stdout.
+        expect(Object.keys(JSON.parse(String(lines.at(-1))).results[0])).toEqual([
+          'index',
+          'use_case',
+          'difficulty',
+          'primary_tool_slugs',
+          'related_tool_slugs',
+          'toolkits',
+        ]);
         expect(stub.requests.filter(request => request.path === SEARCH_PATH)).toEqual([
           {
             method: 'POST',
@@ -177,6 +188,43 @@ describe('CLI: composio search over the API client', () => {
     );
   });
 
+  layer(testLayer)('[Given] a 200 search response the command cannot read', it => {
+    it.effect.each([
+      { name: 'JSON of another shape', respond: () => Response.json({ unexpected: true }) },
+      {
+        name: 'a result without its tool slugs',
+        respond: () =>
+          Response.json({
+            ...searchResponse,
+            results: [{ index: 1, use_case: 'send an email', toolkits: ['gmail'] }],
+          }),
+      },
+      {
+        name: 'an empty body',
+        respond: () =>
+          new Response(null, {
+            status: 200,
+            headers: { 'content-type': 'application/json', 'content-length': '0' },
+          }),
+      },
+    ])('[Then] $name fails as a response this CLI does not understand', ({ respond }) =>
+      Effect.gen(function* () {
+        const stub = searchingOver(respond);
+        const terminal = redirectedTerminalUI();
+        const exit = yield* Effect.exit(
+          cli(['search', 'send an email']).pipe(Effect.provide([stub.layer, terminal.layer]))
+        );
+
+        expect(exitCodeOf(exit)).toBe(1);
+        expect(terminal.stdout()).toBe('');
+        expect(terminal.stderr()).toContain(
+          "Failed to search tools.\nCaused by: The API response for 'toolRouter.session.search' is not in the shape this version of the CLI expects.\nUpgrade the CLI, then retry:\n> composio upgrade"
+        );
+        expect(terminal.stderr()).not.toContain('TypeError');
+      })
+    );
+  });
+
   layer(testLayer)('[Given] the API rejects the search', it => {
     it.effect('[Then] the command fails with the status and response body as the cause', () =>
       Effect.gen(function* () {
@@ -200,4 +248,39 @@ describe('CLI: composio search over the API client', () => {
       })
     );
   });
+
+  // A stored login, not COMPOSIO_USER_API_KEY, whose key the backend no longer accepts.
+  layer(TestLive({ fixture: 'global-test-user-id' }))(
+    '[Given] the API rejects the stored key',
+    it => {
+      it.effect('[Then] the rejection is on stderr with `composio login` as the way out', () =>
+        Effect.gen(function* () {
+          // Every request is rejected, the project lookup before the search first.
+          const stub = stubClientResources(['_internal', 'toolRouter', 'connectedAccounts'], () =>
+            Response.json(
+              {
+                error: {
+                  message: 'Invalid API key',
+                  code: 401,
+                  slug: 'Auth_InvalidApiKey',
+                  status: 401,
+                },
+              },
+              { status: 401 }
+            )
+          );
+          const terminal = redirectedTerminalUI();
+          const exit = yield* Effect.exit(
+            cli(['search', 'send an email']).pipe(Effect.provide([stub.layer, terminal.layer]))
+          );
+
+          expect(exitCodeOf(exit)).toBe(1);
+          expect(terminal.stdout()).toBe('');
+          expect(terminal.stderr()).toBe(
+            'Invalid API key\nIf your login expired, log in again, then retry:\n> composio logout && COMPOSIO_WEB_URL=https://platform.composio.dev composio login\n'
+          );
+        })
+      );
+    }
+  );
 });

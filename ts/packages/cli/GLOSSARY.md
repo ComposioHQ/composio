@@ -30,7 +30,7 @@ _Avoid_: alias (reserved for a flag's or command's short name)
 The project that holds a Composio user's own connections and executions, resolved from their login.
 
 **Developer project**:
-A project a developer builds against, chosen by the working directory or `--project-name`.
+A project a developer builds against, chosen by the working directory or `--project-name`. A dev command that reads or writes a project's resources falls back, with a notice on stderr, to the backend's default developer project (the newest one in the logged-in org) when neither names a usable one.
 
 **Consumer user**:
 The user id of the logged-in person within their consumer project; no flag overrides it.

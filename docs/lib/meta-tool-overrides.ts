@@ -1,3 +1,5 @@
+import { resolveToolkitCount } from './toolkit-count';
+
 /**
  * Hand-written copy overrides for meta tool reference pages.
  *
@@ -30,7 +32,7 @@ export const META_TOOL_OVERRIDES: Record<string, MetaToolOverride> = {
   },
   COMPOSIO_SEARCH_TOOLS: {
     summary:
-      'Discovers the right tools across 500+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together.',
+      'Discovers the right tools across %TOOLKIT_COUNT% toolkits for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together.',
     whenToUse:
       'Call `COMPOSIO_SEARCH_TOOLS` first, at the start of any task that touches an external app or service. Run it again whenever the user pivots to a new use case so you get a fresh `session_id` and a plan scoped to the new work.',
     usageNote:
@@ -79,5 +81,6 @@ export const META_TOOL_OVERRIDES: Record<string, MetaToolOverride> = {
 };
 
 export function getMetaToolOverride(slug: string): MetaToolOverride | undefined {
-  return META_TOOL_OVERRIDES[slug];
+  const override = META_TOOL_OVERRIDES[slug];
+  return override ? { ...override, summary: resolveToolkitCount(override.summary) } : undefined;
 }

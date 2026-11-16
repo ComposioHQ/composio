@@ -1,0 +1,33 @@
+{
+  "name": "@e2e-tests/cli-fake-backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./src/index.ts",
+        "default": "./src/index.ts"
+      }
+    },
+    "./rig": {
+      "import": {
+        "types": "./src/rig.ts",
+        "default": "./src/rig.ts"
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "bun test contract.test.ts",
+    "test:e2e:cli": "bun test contract.test.ts"
+  },
+  "devDependencies": {
+    "@composio/client": "catalog:",
+    "@e2e-tests/utils": "workspace:*",
+    "@types/bun": "catalog:",
+    "effect": "catalog:",
+    "typescript": "catalog:",
+    "zod": "catalog:"
+  }
+}

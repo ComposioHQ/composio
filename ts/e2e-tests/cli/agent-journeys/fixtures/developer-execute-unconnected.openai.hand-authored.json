@@ -1,0 +1,83 @@
+{
+  "$comment": "Hand-authored: no model produced this file. It scripts the path the composio-cli skill teaches, one fixture per model turn. After the first turn each fixture is gated on the id of the previous shell call and on a substring of what that command printed, so a CLI that answers differently leaves the next turn without a match and the strict replay fails.",
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "In my Composio developer project, execute SLACK_SEND_MESSAGE",
+        "hasToolResult": false,
+        "turnIndex": 0
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_wrong_tree",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev execute SLACK_SEND_MESSAGE -d '{\"channel\":\"general\",\"text\":\"hello from dev\"}'"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_wrong_tree",
+        "toolResultContains": "Unknown subcommand"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_playground_1",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev playground-execute SLACK_SEND_MESSAGE -d '{\"channel\":\"general\",\"text\":\"hello from dev\"}'"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_playground_1",
+        "toolResultContains": "Run `composio dev connected-accounts link slack`"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_dev_link",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev connected-accounts link slack"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_dev_link",
+        "toolResultContains": "is now ACTIVE (toolkit: slack)"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_playground_2",
+            "name": "shell",
+            "arguments": {
+              "command": "composio dev playground-execute SLACK_SEND_MESSAGE -d '{\"channel\":\"general\",\"text\":\"hello from dev\"}'"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_playground_2",
+        "toolResultContains": "log_e2e0001"
+      },
+      "response": {
+        "content": "Posted \"hello from dev\" to #general as the test user."
+      }
+    }
+  ]
+}

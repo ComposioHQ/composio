@@ -44,9 +44,9 @@ Some error classes have specific requirements:
    new ValidationError('Message', { cause: someZodError });
    ```
 
-2. **ComposioToolExecutionError**: Accepts an `originalError` in the options.
+2. **ComposioToolExecutionError**: Keeps the failure it wraps as `cause`, and accepts an `apiErrorCode` for the numeric code of a Composio API error response.
    ```typescript
-   new ComposioToolExecutionError('Message', { originalError: someError });
+   new ComposioToolExecutionError('Message', { cause: someError });
    ```
 
 ## Using Error Classes
@@ -72,7 +72,7 @@ try {
 } catch (error) {
   // Handle tool execution errors
   throw new ComposioToolExecutionError('Tool failed', {
-    originalError: error,
+    cause: error,
     meta: { toolId: 'some-tool' },
   });
 
