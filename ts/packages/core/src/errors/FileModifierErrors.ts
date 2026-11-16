@@ -24,6 +24,9 @@ export interface ComposioFileDownloadErrorOptions extends Omit<ComposioErrorOpti
  * preserved in `cause`.
  */
 export class ComposioFileDownloadError extends ComposioError {
+  declare readonly statusCode?: number;
+  declare readonly meta?: Record<string, unknown>;
+
   constructor(
     message: string = 'Failed to download file',
     options: ComposioFileDownloadErrorOptions = {}

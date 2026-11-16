@@ -2,4 +2,8 @@
 '@composio/core': patch
 ---
 
-Fix: automatic file downloads now reject with a typed `ComposioFileDownloadError` (code `FILE_DOWNLOAD_FAILED`) when the server returns an unsuccessful HTTP response or the downloaded bytes cannot be written to disk, instead of returning a successful result with a null file path. The underlying filesystem error is preserved in `cause`.
+Fix file downloads reporting success when the downloaded bytes cannot be saved. Direct calls to `composio.files.download()` now reject with `ComposioFileDownloadError` (code `TS-SDK::FILE_DOWNLOAD_FAILED`) for unsuccessful HTTP responses or persistence failures. Directory-creation and write errors are preserved in `cause`, and HTTP status and download metadata are available to TypeScript callers.
+
+Automatic downloads during tool execution keep their existing graceful-failure behavior: unsuccessful downloads produce `uri: ''` and `file_downloaded: false` instead of a null file path. Tool execution does not reject solely because the file download failed.
+
+`saveFile()` keeps its nullable contract. Transport, response-body/size-limit, abort, and SSRF errors retain their existing types.

@@ -400,6 +400,21 @@ export const downloadFileFromS3 = async ({
   };
 };
 
+/** Resolves the default directory without swallowing filesystem failures. */
+const resolveComposioDir = (createDirIfNotExists: boolean, isTempFile: boolean = false) => {
+  const homeDir = platform.homedir();
+  if (!homeDir) {
+    return null;
+  }
+  const composioDir = isTempFile
+    ? platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME)
+    : platform.joinPath(homeDir, COMPOSIO_DIR);
+  if (createDirIfNotExists && platform.supportsFileSystem && !platform.existsSync(composioDir)) {
+    platform.mkdirSync(composioDir);
+  }
+  return composioDir;
+};
+
 /**
  * Gets the Composio directory.
  * @param createDirIfNotExists - Whether to create the directory if it doesn't exist.
@@ -407,15 +422,7 @@ export const downloadFileFromS3 = async ({
  */
 export const getComposioDir = (createDirIfNotExists: boolean = false) => {
   try {
-    const homeDir = platform.homedir();
-    if (!homeDir) {
-      return null;
-    }
-    const composioDir = platform.joinPath(homeDir, COMPOSIO_DIR);
-    if (createDirIfNotExists && platform.supportsFileSystem && !platform.existsSync(composioDir)) {
-      platform.mkdirSync(composioDir);
-    }
-    return composioDir;
+    return resolveComposioDir(createDirIfNotExists);
   } catch (_error) {
     return null;
   }
@@ -428,19 +435,7 @@ export const getComposioDir = (createDirIfNotExists: boolean = false) => {
  */
 export const getComposioTempFilesDir = (createDirIfNotExists: boolean = false) => {
   try {
-    const homeDir = platform.homedir();
-    if (!homeDir) {
-      return null;
-    }
-    const composioFilesDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
-    if (
-      createDirIfNotExists &&
-      platform.supportsFileSystem &&
-      !platform.existsSync(composioFilesDir)
-    ) {
-      platform.mkdirSync(composioFilesDir);
-    }
-    return composioFilesDir;
+    return resolveComposioDir(createDirIfNotExists, true);
   } catch (_error) {
     return null;
   }
@@ -501,10 +496,10 @@ const writeFileToDisk = (
         `fileDownloadDir "${absDir}" is not writable, falling back to the default ` +
           `(~/.composio/files). Error: ${err}`
       );
-      composioFilesDir = getComposioTempFilesDir(true);
+      composioFilesDir = resolveComposioDir(true, true);
     }
   } else {
-    composioFilesDir = opts.isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
+    composioFilesDir = resolveComposioDir(true, opts.isTempFile);
   }
 
   if (!composioFilesDir) {
