@@ -2,7 +2,11 @@ import { APIError, type APIErrorBody } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 import { ComposioConnectedAccountNotFoundError } from './ConnectedAccountsErrors';
 import { getRetryAfterSeconds, isRateLimitResponse } from '../utils/rateLimit';
-import { apiErrorSuggestedFixes, withApiErrorMessage } from './apiErrorDetails';
+import {
+  apiErrorSuggestedFixes,
+  sanitizeApiErrorText,
+  withApiErrorMessage,
+} from './apiErrorDetails';
 
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
@@ -334,11 +338,14 @@ const ERROR_CODE_HANDLERS = new Map<
   [
     1803,
     (details, cause) =>
-      new ComposioConnectedAccountNotFoundError(details.message || 'An error occurred', {
-        cause,
-        statusCode: cause.status,
-        possibleFixes: apiErrorSuggestedFixes(details),
-      }),
+      new ComposioConnectedAccountNotFoundError(
+        sanitizeApiErrorText(details.message || 'An error occurred'),
+        {
+          cause,
+          statusCode: cause.status,
+          possibleFixes: apiErrorSuggestedFixes(details),
+        }
+      ),
   ],
   // Add more error code handlers here as needed
 ]);
@@ -382,11 +389,7 @@ export const handleToolExecutionError = (tool: string, actualError: Error): Comp
 
   if (isRateLimitResponse(actualError)) {
     return new ComposioToolExecutionRateLimitError(
-      withApiErrorMessage(
-        `Rate limited while executing the tool ${tool}`,
-        actualError.details,
-        actualError.message
-      ),
+      withApiErrorMessage(`Rate limited while executing the tool ${tool}`, actualError.details),
       actualError,
       { slug: tool }
     );

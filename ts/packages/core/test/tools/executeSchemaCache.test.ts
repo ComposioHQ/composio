@@ -196,6 +196,7 @@ describe('rate limit errors', () => {
     expect(isComposioRateLimitError(error)).toBe(true);
     expect(error.retryAfterSeconds).toBe(7);
     expect(error.statusCode).toBe(429);
+    expect(error.message).toBe(`Rate limited while retrieving tool with slug ${SLUG}`);
     expect(error.possibleFixes).toEqual([
       'Wait 7 seconds, then retry',
       'Reduce how many requests your organization sends per minute',
@@ -213,6 +214,7 @@ describe('rate limit errors', () => {
     expect(isComposioRateLimitError(error)).toBe(true);
     expect(error.retryAfterSeconds).toBe(7);
     expect(error.statusCode).toBe(429);
+    expect(error.message).toBe(`Rate limited while executing the tool ${toolMocks.rawTool.slug}`);
     expect(execute).toHaveBeenCalledTimes(1);
   });
 
@@ -383,6 +385,22 @@ describe('tool execution errors', () => {
     expect(error.apiErrorCode).toBe(1429);
     expect(error.possibleFixes).toEqual(['Wait an hour']);
     expect(error.retryAfterSeconds).toBe(7);
+  });
+
+  it('strips terminal escapes from the missing-account message', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(400, {
+          message: 'No connected account\u001b[31m\n[!] connect',
+          code: 1803,
+        }),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioConnectedAccountNotFoundError);
+    expect(error.message).toBe('No connected account [!] connect');
+    expect(error.message).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
   });
 
   it('keeps the server status, fix and code of a missing connected account', async () => {

@@ -879,8 +879,7 @@ export class Tools<
         throw new ComposioToolFetchRateLimitError(
           withApiErrorMessage(
             `Rate limited while retrieving tool with slug ${slug}`,
-            error.details,
-            error.message
+            error.details
           ),
           error,
           { slug }
