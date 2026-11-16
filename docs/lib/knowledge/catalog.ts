@@ -39,7 +39,7 @@ const FEATURED_CANONICAL_URLS = [
   '/kb/guide/platform-pagination',
   '/kb/guide/platform-triggers',
   '/kb/guide/platform-custom-connection-data-fields',
-  'https://docs.composio.dev/toolkits/github',
+  '/toolkits/github',
 ] as const;
 
 let catalogPromise: Promise<KnowledgeLink[]> | null = null;

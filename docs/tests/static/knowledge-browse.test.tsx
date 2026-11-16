@@ -57,6 +57,16 @@ describe('knowledge browse pages', () => {
     expect(PRODUCT_AREAS.map((area) => area.slug)).not.toContain('authentication');
   });
 
+  test('migrated auth guides stay on the current docs origin without duplicate toolkit cards', async () => {
+    const links = await getKnowledgeByToolkit('github');
+    const toolkitLinks = links.filter(link => link.href.endsWith('/toolkits/github'));
+    expect(toolkitLinks).toHaveLength(1);
+    expect(toolkitLinks[0].href).toBe('/toolkits/github');
+    const html = renderToStaticMarkup(<BrowseResults links={toolkitLinks} variant="topic" />);
+    expect(html).toContain('href="/toolkits/github"');
+    expect(html).not.toContain('target="_blank"');
+  });
+
   test('combines OAuth and verified support answers on toolkit pages', async () => {
     const toolkitGuides = getPublishedKbGuides().flatMap(guide =>
       guide.sources.flatMap(source => {
@@ -109,7 +119,7 @@ describe('knowledge browse pages', () => {
     const links = await getFeaturedKnowledgeLinks();
     expect(links.length).toBeGreaterThan(0);
     expect(new Set(links.map(item => item.href)).size).toBe(links.length);
-    expect(links.every(item => item.href.startsWith('/kb/guide/') || item.href.startsWith('https://')))
+    expect(links.every(item => item.href.startsWith('/kb/guide/') || item.href.startsWith('/toolkits/')))
       .toBe(true);
   });
 

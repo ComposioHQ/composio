@@ -122,7 +122,10 @@ describe('unified public knowledge corpus', () => {
       records.filter(record => record.source_type === 'oauth-guide').map(record => record.canonical_url),
     );
     expect(oauthUrls.size).toBeGreaterThan(0);
-    expect(indexes.some(index => oauthUrls.has(index.url))).toBe(true);
+    for (const url of oauthUrls) {
+      expect(url.startsWith('/toolkits/')).toBe(true);
+      expect(indexes.filter(index => index.url === url)).toHaveLength(1);
+    }
   });
 
   test('discovers local hub and browse routes without duplicating external OAuth pages', async () => {

@@ -9,7 +9,7 @@ import {
 export interface AuthGuideRegistryEntry {
   slug: string;
   toolkitSlug: string;
-  canonicalUrl: `https://docs.composio.dev/toolkits/${string}`;
+  canonicalUrl: `/toolkits/${string}`;
   title: string;
   description: string;
 }
@@ -27,7 +27,7 @@ function parseRegistry(value: unknown): AuthGuideRegistryEntry[] {
     return {
       ...entry,
       toolkitSlug,
-      canonicalUrl: `https://docs.composio.dev/toolkits/${toolkitSlug}`,
+      canonicalUrl: `/toolkits/${toolkitSlug}`,
     };
   });
 
@@ -89,19 +89,20 @@ export async function validateAuthGuideUrls(
   fetchImpl: typeof fetch = fetch,
 ): Promise<void> {
   await Promise.all(entries.map(async (entry) => {
+    const expected = new URL(entry.canonicalUrl, 'https://docs.composio.dev');
     let response: Response;
     try {
-      response = await fetchImpl(entry.canonicalUrl, {
+      response = await fetchImpl(expected.href, {
         method: 'GET',
         redirect: 'follow',
         headers: { accept: 'text/html' },
       });
     } catch (error) {
-      throw new Error(`Failed to validate OAuth guide ${entry.canonicalUrl}`, { cause: error });
+      throw new Error(`Failed to validate OAuth guide ${expected.href}`, { cause: error });
     }
     if (!response.ok) {
       throw new Error(
-        `Failed to validate OAuth guide ${entry.canonicalUrl}: HTTP ${response.status}`,
+        `Failed to validate OAuth guide ${expected.href}: HTTP ${response.status}`,
       );
     }
 
@@ -111,14 +112,13 @@ export async function validateAuthGuideUrls(
       finalUrl = `${resolved.origin}${resolved.pathname.replace(/\/+$/, '')}`;
     } catch {
       throw new Error(
-        `Failed to validate OAuth guide ${entry.canonicalUrl}: missing final response URL`,
+        `Failed to validate OAuth guide ${expected.href}: missing final response URL`,
       );
     }
-    const expected = new URL(entry.canonicalUrl);
     const expectedUrl = `${expected.origin}${expected.pathname.replace(/\/+$/, '')}`;
     if (finalUrl !== expectedUrl) {
       throw new Error(
-        `Failed to validate OAuth guide ${entry.canonicalUrl}: redirected to ${response.url}`,
+        `Failed to validate OAuth guide ${expected.href}: redirected to ${response.url}`,
       );
     }
   }));

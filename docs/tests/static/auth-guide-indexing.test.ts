@@ -25,7 +25,7 @@ describe('OAuth guide indexing', () => {
     expect(entries.every(entry => toolkitSlugs.has(entry.toolkitSlug))).toBe(true);
     expect(new Set(entries.map((entry) => entry.slug)).size).toBe(entries.length);
     expect(new Set(entries.map((entry) => entry.canonicalUrl)).size).toBe(entries.length);
-    expect(entries.every((entry) => entry.canonicalUrl === `https://docs.composio.dev/toolkits/${entry.toolkitSlug}`))
+    expect(entries.every((entry) => entry.canonicalUrl === `/toolkits/${entry.toolkitSlug}`))
       .toBe(true);
     expect(entries.every((entry) => entry.title.trim() && entry.description.trim()))
       .toBe(true);
@@ -33,7 +33,7 @@ describe('OAuth guide indexing', () => {
 
   test('resolves the legacy Google Apps alias to a real toolkit', () => {
     expect(getAuthGuideRegistry().find(entry => entry.slug === 'googleapps'))
-      .toMatchObject({ toolkitSlug: 'googlesuper', canonicalUrl: 'https://docs.composio.dev/toolkits/googlesuper' });
+      .toMatchObject({ toolkitSlug: 'googlesuper', canonicalUrl: '/toolkits/googlesuper' });
   });
 
   test('creates one normalized OAuth search record per guide', () => {
@@ -74,7 +74,7 @@ describe('OAuth guide indexing', () => {
 
     const records = await buildCompleteSearchReplacement({ fetchImpl: fetchImpl as typeof fetch });
 
-    expect(visited).toEqual(entries.map(entry => entry.canonicalUrl));
+    expect(visited).toEqual(entries.map(entry => `https://docs.composio.dev${entry.canonicalUrl}`));
     expect(records.filter((record) => record.source_type === 'oauth-guide'))
       .toHaveLength(entries.length);
   });
@@ -89,7 +89,7 @@ describe('OAuth guide indexing', () => {
     };
     const fetchImpl = async (input: string | URL | Request) => {
       const url = String(input);
-      return responseAt(url, url === entry?.canonicalUrl ? 503 : 200);
+      return responseAt(url, url === `https://docs.composio.dev${entry?.canonicalUrl}` ? 503 : 200);
     };
 
     await expect(replaceSearchDocuments(client, 'docs_composio', {
