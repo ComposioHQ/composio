@@ -1,0 +1,73 @@
+name: Docs - SDK reference drift
+
+# Regenerates both SDK references from the PR's sources and fails when the committed
+# output differs, so generator changes and stale references surface here rather than in
+# a release PR. It runs the generators against PR code, so it gets read-only contents
+# access and no secrets.
+on:
+  pull_request:
+    branches: [next]
+    paths:
+      - 'ts/packages/core/src/**'
+      - 'ts/packages/core/scripts/generate-docs.ts'
+      - 'ts/packages/core/package.json'
+      - 'pnpm-lock.yaml'
+      - 'python/composio/**'
+      - 'python/scripts/generate-docs.py'
+      - 'python/pyproject.toml'
+      - 'uv.lock'
+      - 'docs/content/reference/sdk-reference/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/docs-sdk-reference-drift.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: SDK reference drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: 'false'
+
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Regenerate the TypeScript reference
+        run: pnpm --filter @composio/core generate:docs
+
+      - name: Regenerate the Python reference
+        working-directory: python
+        run: uv run --frozen --only-group docs-reference python scripts/generate-docs.py
+
+      - name: Check for drift
+        run: |
+          changed=$(git status --porcelain --untracked-files=all -- docs/content/reference/sdk-reference)
+          if [[ -n "$changed" ]]; then
+            echo "::error::The committed SDK reference is out of date with its sources."
+            echo "$changed"
+            git diff --stat -- docs/content/reference/sdk-reference
+            echo "Regenerate with: pnpm --filter @composio/core generate:docs && (cd python && uv run --frozen --only-group docs-reference python scripts/generate-docs.py)"
+            exit 1
+          fi

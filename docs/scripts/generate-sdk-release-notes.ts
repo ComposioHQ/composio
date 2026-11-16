@@ -57,7 +57,14 @@ const LANGUAGE_DOCS: Record<
     label: () => 'Python `composio`',
     reference: {
       command: 'uv',
-      args: ['run', '--with', 'griffe', 'python', 'scripts/generate-docs.py'],
+      args: [
+        'run',
+        '--frozen',
+        '--only-group',
+        'docs-reference',
+        'python',
+        'scripts/generate-docs.py',
+      ],
       directory: 'python',
     },
   },

@@ -37,17 +37,20 @@ const list = Flag.Boolean('list').pipe(
   )
 );
 
-const linkExamples = [
-  {
-    command: 'composio link github',
-  },
-  {
-    command: 'composio link gmail --alias work',
-  },
-  {
-    command: 'composio link github --list',
-  },
-];
+/**
+ * Built from the path the help page shows, because this one definition is registered on both
+ * trees: as `composio link` (the consumer user) and as `composio dev connected-accounts link`
+ * (a developer project's user). A fixed `composio link …` would teach the root command on the
+ * dev page.
+ */
+const linkExamples = ({ commandPath }: { readonly commandPath: ReadonlyArray<string> }) => {
+  const command = commandPath.join(' ');
+  return [
+    { command: `${command} github` },
+    { command: `${command} gmail --alias work` },
+    { command: `${command} github --list` },
+  ];
+};
 
 const connectedAccountsCmd$LinkBase = Command.make(
   'link',
@@ -55,10 +58,10 @@ const connectedAccountsCmd$LinkBase = Command.make(
   runConnectedAccountsLink
 ).pipe(
   Command.withDescription(
-    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.\nOpens a browser for OAuth authorization and waits for confirmation.'
+    'Connect an external account (GitHub, Gmail, Slack, etc.) for the user this command acts as.\nOpens a browser for OAuth authorization and waits for confirmation.\n`composio link` acts as you; `composio dev connected-accounts link` acts as a user of a developer project, its test user unless another is named.'
   ),
   Command.withShortDescription(
-    'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.'
+    'Connect an external account (GitHub, Gmail, Slack, etc.) for the user this command acts as.'
   ),
   Command.withExamples(linkExamples),
   withCommandMeta({ requiresLogin: true })

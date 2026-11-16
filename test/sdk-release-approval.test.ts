@@ -68,6 +68,7 @@ describe('source tag', () => {
   test('required checks on a later page of more than 100 check runs still tag the head', async () => {
     const { fetcher, writes } = fakeController();
     const unrelated = Array.from({ length: 100 }, (_, index) => ({
+      id: 100 + index,
       name: `matrix job ${index}`,
       head_sha: head,
       app: { slug: 'github-actions' },
@@ -102,11 +103,21 @@ describe('source tag', () => {
     };
     expect(await issueOf({})).toEqual(Option.some(8));
     expect(await issueOf({ closedUnmerged: true, headAuthor: 'writer' })).toEqual(Option.none());
-    expect(await issueOf({ headCommitter: 'writer' })).toEqual(Option.none());
+    expect(await issueOf({ branchSetter: 'writer' })).toEqual(Option.none());
   });
 
-  test('a beta is tagged without the docs check, which never runs on a plan-only PR', async () => {
-    const { fetcher, writes } = fakeController({ beta: true, docs: 'missing' });
+  test('a beta is tagged without either docs check, which never run on a plan-only PR', async () => {
+    const { fetcher, writes } = fakeController({
+      beta: true,
+      docs: 'missing',
+      rerunFailed: 'typescript-check',
+    });
+    expect(await tag(fetcher)).toEqual(tagged);
+    expect(writes).toEqual([tagWrite]);
+  });
+
+  test('a stable release no longer needs the pull-request docs check, which skips release heads', async () => {
+    const { fetcher, writes } = fakeController({ rerunFailed: 'typescript-check' });
     expect(await tag(fetcher)).toEqual(tagged);
     expect(writes).toEqual([tagWrite]);
   });
@@ -122,17 +133,22 @@ describe('source tag', () => {
     ['the approval is for an older head', { oldReview: true }, 'lacks an approval'],
     ['a human pushed the head', { headAuthor: 'writer' }, 'release App commit'],
     [
-      'a human committed a head that names the App as author',
-      { headCommitter: 'writer' },
+      'a human set the branch to a head that names the App as author',
+      { branchSetter: 'writer' },
       'release App commit',
     ],
     ['the head commit is unverified', { unverifiedHead: true }, 'release App commit'],
     ['the head is not on the planned source', { headParent: merge }, 'release App commit'],
     ['the candidate build failed', { failedCandidate: true }, 'SDK candidate (typescript)'],
     ['the smoke test failed', { failedSmoke: true }, 'SDK candidate smoke (typescript)'],
-    ['the docs check failed', { docs: 'failure' }, 'typescript-check'],
-    ['the docs check is pending', { docs: 'pending' }, 'typescript-check'],
-    ['the docs check is missing', { docs: 'missing' }, 'typescript-check'],
+    ['the docs check failed', { docs: 'failure' }, 'SDK candidate docs'],
+    ['the docs check is pending', { docs: 'pending' }, 'SDK candidate docs'],
+    ['the docs check is missing', { docs: 'missing' }, 'SDK candidate docs'],
+    [
+      'a re-run of a passed check failed',
+      { rerunFailed: 'SDK candidate (typescript)' },
+      'SDK candidate (typescript)',
+    ],
   ])(
     'when %s, the release is refused, no tag is created and the PR is told to revert',
     async (_name, options, reason) => {
@@ -157,6 +173,20 @@ describe('source tag', () => {
         ? Promise.resolve(new Response('Bad Gateway', { status: 502 }))
         : fetcher(input, init);
     await expect(tag(unavailable)).rejects.toThrow('(502)');
+    expect(writes).toEqual([]);
+  });
+
+  test('a pull without `merged` is a contract failure, not an abandoned release', async () => {
+    const { fetcher, writes } = fakeController();
+    const withoutMerged: typeof fetcher = async (input, init) => {
+      const response = await fetcher(input, init);
+      if (new URL(String(input)).pathname !== '/repos/ComposioHQ/composio/pulls/9') return response;
+      const { merged: _merged, ...rest } = (await response.json()) as Record<string, unknown>;
+      return Response.json(rest);
+    };
+    await expect(tag(withoutMerged)).rejects.toThrow(
+      /GET \/repos\/ComposioHQ\/composio\/pulls\/9[\s\S]*merged/
+    );
     expect(writes).toEqual([]);
   });
 

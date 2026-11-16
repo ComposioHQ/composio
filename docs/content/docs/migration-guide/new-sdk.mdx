@@ -620,11 +620,11 @@ const result_2 = await composio.tools.execute(
   </Tab>
 </Tabs>
 
-### Custom Tools
+### Local tools
 
-Custom tools are now session-scoped. Define local tools with the experimental custom-tools API and attach them when creating or reusing a session.
+Custom tools are now called local tools, and they are session-scoped. Define them with the experimental local tools API and attach them when creating or reusing a session.
 
-{/* code-example: no-api reason="custom tool handlers are defined and run in-process in the SDK" */}
+{/* code-example: no-api reason="local tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -688,7 +688,7 @@ const session = await composio.create("default", {
   </Tab>
 </Tabs>
 
-For more information, see [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
+For more information, see [Local Tools and Toolkits](/docs/extending-sessions/local-tools-and-toolkits).
 
 ### Auth configs (formerly integrations)
 

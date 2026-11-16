@@ -1,4 +1,4 @@
-import { Config } from 'effect';
+import { Config, Effect } from 'effect';
 import * as constants from 'src/constants';
 import { flag, optionalString, stringWithDefault } from './env';
 
@@ -28,3 +28,6 @@ export const TELEMETRY_CONFIG = {
     constants.COMPOSIO_POSTHOG_PROJECT_API_KEY
   ),
 };
+
+/** Whether any opt-out spelling, a test run, or CI turns telemetry off. */
+export const telemetryDisabled: Effect.Effect<boolean> = Effect.orDie(TELEMETRY_CONFIG.DISABLED);

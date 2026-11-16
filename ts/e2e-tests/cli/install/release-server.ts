@@ -14,8 +14,30 @@ const ARCHIVE_BY_ARCH = {
  *   installer passes checksum verification and fails at extraction.
  * - `/checksum-mismatch/...` keeps the genuine checksums.txt, so the installer
  *   fails at checksum verification before extraction.
+ * - `/missing-asset/...` answers 404 for the archive, as GitHub does for a
+ *   release that has no build for the platform.
+ * - `/truncated/...` starts sending the genuine archive and drops the
+ *   connection partway, as an interrupted download does.
  */
 const CORRUPT_ARCHIVE_BODY = 'not a zip archive\n';
+
+/** The first bytes of the archive at `path`, then a dropped connection. */
+const truncatedResponse = (path: string): Response => {
+  const head = readFileSync(path).subarray(0, 64 * 1024);
+  return new Response(
+    new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        controller.enqueue(head);
+        // Let the chunk reach curl before the stream fails.
+        await Bun.sleep(100);
+        // Failing the stream is how Bun.serve drops a connection mid-body. Closing
+        // it early instead ends the response cleanly and curl accepts the short file.
+        controller.error('install e2e: download dropped on purpose');
+      },
+    }),
+    { headers: { 'content-type': 'application/zip' } }
+  );
+};
 
 export interface InstallReleaseServer {
   baseUrl: string;
@@ -74,6 +96,12 @@ export function startInstallReleaseServer(options: {
       }
 
       if (url.pathname.includes('/releases/download/') && url.pathname.endsWith(archiveName)) {
+        if (url.pathname.startsWith('/missing-asset/')) {
+          return new Response('Not Found\n', { status: 404 });
+        }
+        if (url.pathname.startsWith('/truncated/')) {
+          return truncatedResponse(archivePath);
+        }
         if (
           url.pathname.startsWith('/corrupt/') ||
           url.pathname.startsWith('/checksum-mismatch/')

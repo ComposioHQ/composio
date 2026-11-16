@@ -8,12 +8,11 @@ const RELEASE_BRANCH = /^sdk-release\/batch-\d+$/;
 
 export const releaseBranch = (id: string) => `sdk-release/batch-${id}`;
 
-export const Pull = Schema.Struct({
+/** A pull request as list endpoints return it. They never say whether it merged. */
+export const PullListItem = Schema.Struct({
   number: PositiveInt,
   html_url: Schema.String,
   state: Schema.String,
-  merged: Schema.optionalKey(Schema.Boolean),
-  merge_commit_sha: Schema.optionalKey(Schema.NullOr(Sha)),
   /** `null` when the author's account was deleted. */
   user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
   head: Schema.Struct({
@@ -23,9 +22,16 @@ export const Pull = Schema.Struct({
   }),
   base: Schema.Struct({ ref: Schema.String }),
 });
-export type Pull = typeof Pull.Type;
+export type PullListItem = typeof PullListItem.Type;
 
-export const isReleasePull = (pull: Pull) =>
+/**
+ * A single pull request. The gate decides on `merged`, so a response without it is a contract
+ * failure rather than an unmerged PR.
+ */
+export const PullDetail = Schema.Struct({ ...PullListItem.fields, merged: Schema.Boolean });
+export type PullDetail = typeof PullDetail.Type;
+
+export const isReleasePull = (pull: PullListItem) =>
   pull.head.repo?.full_name === SDK_RELEASE_REPOSITORY && RELEASE_BRANCH.test(pull.head.ref);
 
 const NOTE_EXEMPT =

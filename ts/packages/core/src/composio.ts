@@ -8,6 +8,7 @@ import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { Experimental } from './models/Experimental';
+import { CustomToolkits } from './models/CustomToolkits';
 import { MCP } from './models/MCP';
 import { Webhooks } from './models/Webhooks';
 import { Logs } from './models/Logs';
@@ -354,6 +355,16 @@ export class Composio<
   /** Public transfer keys of the organization's customer-managed keyring */
   keyring: Keyring;
   /**
+   * Register and manage project-owned custom toolkits, such as a remote MCP
+   * server (`create()` / `update()` / `sync()` / `delete()`).
+   *
+   * @example
+   * ```typescript
+   * await composio.customToolkits.sync('CUSTOM_MY_TOOLKIT');
+   * ```
+   */
+  customToolkits: CustomToolkits;
+  /**
    * Experimental SDK methods whose shape may change in future releases.
    * Prefer domain-specific mounts (for example
    * `composio.connectedAccounts.updateAcl(...)`) when available; this
@@ -576,6 +587,7 @@ export class Composio<
     this.logs = new Logs(this.client);
     this.keyring = new Keyring(this.client);
     this.experimental = new Experimental(this.client);
+    this.customToolkits = this.experimental.customToolkits;
     this.sessions = new Sessions(this.client, this.config);
     this.toolRouter = this.sessions;
     this.sessionConfigs = new SessionConfigs(this.client);

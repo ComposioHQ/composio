@@ -69,22 +69,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: ./.github/actions/setup-python-uv
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Cache uv dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/uv
-          key: uv-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml', 'mise.toml') }}
-          restore-keys: |
-            uv-${{ matrix.python-version }}-
-
-      - name: Install UV
-        run: |
-          UV_VERSION="$(sed -n 's/^uv[[:space:]]*=[[:space:]]*"\([^"]*\)"/\1/p' mise.toml)"
-          pip install "uv==${UV_VERSION}"
 
       - name: Install Dependencies
         env:
@@ -273,14 +260,6 @@ jobs:
       - name: Install UV
         id: setup-python
         uses: ./.github/actions/setup-python-uv
-
-      - name: Cache UV dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/uv
-          key: uv-${{ hashFiles('mise.lock') }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('python/pyproject.toml') }}
-          restore-keys: |
-            uv-${{ hashFiles('mise.lock') }}-py${{ steps.setup-python.outputs.python-version }}-
 
       - name: Install Python Dependencies
         working-directory: ./python

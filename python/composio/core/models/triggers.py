@@ -749,6 +749,20 @@ class TriggerSubscription(Resource):
             if check_str and str(value).lower() == check_str.lower():
                 continue
 
+            # Payloads don't carry the toolkit slug, so ``toolkit_slug`` is the
+            # trigger slug's first ``_`` segment, which is wrong for toolkits
+            # whose slug contains an underscore (``ONE_DRIVE_FILE_CREATED_TRIGGER``
+            # gives ``ONE``). Trigger slugs start with ``<TOOLKIT>_``, so the
+            # toolkit filter also matches on that prefix.
+            if (
+                name == "toolkit"
+                and str(value)
+                and str(data["trigger_slug"])
+                .lower()
+                .startswith(f"{str(value).lower()}_")
+            ):
+                continue
+
             self.logger.debug(
                 f"Skipping `{callback}` since "
                 f"`{name}` filter does not match the event metadata",

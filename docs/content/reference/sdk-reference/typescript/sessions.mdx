@@ -74,8 +74,8 @@ const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   manageConnections: true,
   experimental: {
-    customTools: [myCustomTool],
-    customToolkits: [myToolkit],
+    localTools: [myLocalTool],
+    localToolkits: [myLocalToolkit],
   },
 });
 
@@ -126,7 +126,7 @@ origins is logged, so native tools keep working.
 **Overload 1**
 
 ```typescript
-async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
+async use(id: string, options: LocalToolsOptions & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -134,7 +134,7 @@ async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: Cu
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true \}` |  |
+| `options` | `LocalToolsOptions & \{ mcp: true \}` | \{object\} Optional session reuse options |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
@@ -144,7 +144,7 @@ async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: Cu
 **Overload 2**
 
 ```typescript
-async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async use(id: string, options?: LocalToolsOptions & { mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -152,7 +152,7 @@ async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: C
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options?` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean \}` |  |
+| `options?` | `LocalToolsOptions & \{ mcp?: boolean \}` | \{object\} Optional session reuse options |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**

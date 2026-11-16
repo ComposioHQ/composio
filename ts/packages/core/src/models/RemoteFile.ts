@@ -175,7 +175,8 @@ export class RemoteFile {
    * Downloads and saves the file to the local filesystem.
    * Requires a Node.js runtime with file system support (not available in Cloudflare Workers/Edge).
    *
-   * @param path - Local path to save the file. If omitted, saves to the Composio temp directory using the filename from the mount path.
+   * @param path - Local path to save the file. An explicit path does not require a home directory.
+   * If omitted, saves to the Composio temp directory using the filename from the mount path.
    * An existing default destination gets a copy number before its extension.
    * @returns The absolute path where the file was saved
    * @throws Error if file system is not supported or the save fails
@@ -189,30 +190,35 @@ export class RemoteFile {
       );
     }
 
+    // An explicit `path` is the caller's own, so it needs no home directory.
+    if (path != null) {
+      const content = await this.buffer();
+      const dir = getParentDir(path);
+      if (dir && !platform.existsSync(dir)) {
+        platform.mkdirSync(dir);
+      }
+      platform.writeFileSync(path, content);
+      return path;
+    }
+
     const homeDir = platform.homedir();
     if (!homeDir) {
       throw new Error('Cannot determine save location: home directory is not available');
     }
 
-    // An explicit `path` is the caller's own. The default branch builds a path
-    // out of `mountRelativePath`, a server-controlled response field, so it is
-    // validated first (SEC-316, mirroring the Python SDK): a value such as `""`,
-    // `"."` or `"foo/.."` would otherwise make `savePath` its own directory or
-    // the parent, and fail with a raw `EISDIR` only after `mkdirSync` had run.
+    // The default path is built from `mountRelativePath`, a server-controlled
+    // response field, so it is validated first (SEC-316, mirroring the Python
+    // SDK): a value such as `""`, `"."` or `"foo/.."` would otherwise make
+    // `savePath` its own directory or the parent, and fail with a raw `EISDIR`
+    // only after `mkdirSync` had run.
     const defaultDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
-    const defaultName = path == null ? safeBasename(this.mountRelativePath, 'mount path') : '';
-    const savePath = path ?? platform.joinPath(defaultDir, defaultName);
+    const defaultName = safeBasename(this.mountRelativePath, 'mount path');
+    const savePath = platform.joinPath(defaultDir, defaultName);
 
     const content = await this.buffer();
 
-    const dir = path != null ? getParentDir(savePath) : defaultDir;
-    if (dir && !platform.existsSync(dir)) {
-      platform.mkdirSync(dir);
-    }
-
-    if (path != null) {
-      platform.writeFileSync(savePath, content);
-      return savePath;
+    if (!platform.existsSync(defaultDir)) {
+      platform.mkdirSync(defaultDir);
     }
 
     // Server names can equal a digest-tagged name literally. Reserve a new

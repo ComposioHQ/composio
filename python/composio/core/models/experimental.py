@@ -135,7 +135,7 @@ class ExperimentalUsage:
 
 
 _UPSERT_DEPRECATION = (
-    "experimental.custom_toolkits.upsert() is deprecated. Use create() for a "
+    "custom_toolkits.upsert() is deprecated. Use create() for a "
     "new toolkit and update(slug, ...) to change its name, logo or API key field."
 )
 
@@ -143,11 +143,9 @@ _UPSERT_DEPRECATION = (
 _upsert_warning_emitted = False
 
 
-class ExperimentalCustomToolkits:
-    """Project-owned custom toolkits, accessed via
-    ``composio.experimental.custom_toolkits``.
+class CustomToolkits:
+    """Project-owned custom toolkits, accessed via ``composio.custom_toolkits``.
 
-    Experimental — custom toolkits are in pilot and the shape may change.
     These toolkits are registered in your Composio project from your own app
     or MCP server, with their own auth configs and connected accounts. They
     are unrelated to the in-process toolkits built with
@@ -162,8 +160,8 @@ class ExperimentalCustomToolkits:
 
         if self._client is None:
             raise exceptions.ValidationError(
-                "experimental.custom_toolkits requires a Composio client. Access "
-                "it via composio.experimental.custom_toolkits.create(...)."
+                "custom_toolkits requires a Composio client. Access it via "
+                "composio.custom_toolkits.create(...)."
             )
         return self._client
 
@@ -173,7 +171,6 @@ class ExperimentalCustomToolkits:
     ) -> custom_create_toolkit_response.CustomCreateToolkitResponse:
         """
         Create a custom MCP toolkit and return its generated slug.
-        Experimental — shape may change.
 
         Set ``user_id`` to ``"all"`` to share the toolkit with every user in
         the project, or to a user ID to make it private to that user.
@@ -191,7 +188,7 @@ class ExperimentalCustomToolkits:
             ``connect_link`` to send that user to (else ``None``).
 
         Example:
-            toolkit = composio.experimental.custom_toolkits.create(
+            toolkit = composio.custom_toolkits.create(
                 name="Internal API",
                 mcp_url="https://mcp.internal.example.com/mcp",
                 auth_schemes=[
@@ -212,7 +209,7 @@ class ExperimentalCustomToolkits:
     ) -> custom_update_toolkits_response.CustomUpdateToolkitsResponse:
         """
         Update a custom toolkit's name, logo or API key field copy. Omitted
-        fields keep their current value. Experimental — shape may change.
+        fields keep their current value.
 
         On a project with 2FA enabled, updating a private toolkit requires the
         ``user_id`` it is private to.
@@ -226,7 +223,7 @@ class ExperimentalCustomToolkits:
         :return: ``success``.
 
         Example:
-            composio.experimental.custom_toolkits.update(
+            composio.custom_toolkits.update(
                 "CUSTOM_INTERNAL_API_K7F2Q",
                 name="Internal API (prod)",
                 user_id="user_123",
@@ -242,7 +239,6 @@ class ExperimentalCustomToolkits:
         """
         Create a custom toolkit, or update its display metadata (name, API key
         field copy) when the project already owns one with this slug.
-        Experimental — shape may change.
 
         .. deprecated::
             Use :meth:`create` for a new toolkit and :meth:`update` to change
@@ -261,7 +257,7 @@ class ExperimentalCustomToolkits:
         :return: The toolkit's ``slug``.
 
         Example:
-            composio.experimental.custom_toolkits.upsert(
+            composio.custom_toolkits.upsert(
                 slug="INTERNAL_API",
                 toolkit_config={
                     "name": "Internal API",
@@ -293,7 +289,6 @@ class ExperimentalCustomToolkits:
         """
         Re-fetch a custom toolkit's tool definitions from its remote MCP
         server. Call it when automatic sync fails or the remote tools change.
-        Experimental — shape may change.
 
         :param slug: The custom toolkit slug (``CUSTOM_...``).
         :param connected_account_id: Connected account to use when fetching
@@ -301,7 +296,7 @@ class ExperimentalCustomToolkits:
         :return: The toolkit ``version`` and ``synced_count``.
 
         Example:
-            result = composio.experimental.custom_toolkits.sync("CUSTOM_MY_TOOLKIT")
+            result = composio.custom_toolkits.sync("CUSTOM_MY_TOOLKIT")
             print(result.synced_count)
         """
         return self._require_client().custom.sync(
@@ -316,15 +311,19 @@ class ExperimentalCustomToolkits:
         configs and connected accounts. The credentials behind those
         connected accounts are revoked in background jobs
         (``revoke_job_ids``). Composio-managed toolkits cannot be deleted
-        (API 403). Experimental — shape may change.
+        (API 403).
 
         :param slug: The custom toolkit slug (``CUSTOM_...``).
         :return: What was deleted.
 
         Example:
-            composio.experimental.custom_toolkits.delete("CUSTOM_MY_TOOLKIT")
+            composio.custom_toolkits.delete("CUSTOM_MY_TOOLKIT")
         """
         return self._require_client().custom.delete_toolkit(slug)
+
+
+ExperimentalCustomToolkits = CustomToolkits
+"""Deprecated alias of :class:`CustomToolkits`."""
 
 
 class ExperimentalAPI:
@@ -340,13 +339,13 @@ class ExperimentalAPI:
     usage: ExperimentalUsage
     """Project usage metering. Experimental — shape may change."""
 
-    custom_toolkits: ExperimentalCustomToolkits
-    """Project-owned custom toolkits. Experimental — shape may change."""
+    custom_toolkits: CustomToolkits
+    """Deprecated: use ``composio.custom_toolkits``, the same object."""
 
     def __init__(self, client: t.Optional[HttpClient] = None) -> None:
         self._client = client
         self.usage = ExperimentalUsage(client=client)
-        self.custom_toolkits = ExperimentalCustomToolkits(client=client)
+        self.custom_toolkits = CustomToolkits(client=client)
 
     def update_acl(
         self,

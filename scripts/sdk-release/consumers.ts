@@ -313,13 +313,20 @@ const CONSUMERS: Record<Language, typeof verifyNpmConsumer | typeof verifyPython
   python: verifyPythonConsumer,
 };
 
+export const readVerifiedCandidate = (candidates: string) =>
+  Effect.gen(function* () {
+    const manifest = yield* readJson(CandidateManifest, `${candidates}/${CANDIDATE_MANIFEST}`);
+    const files = yield* readCandidateFiles(candidates);
+    yield* verifyCandidateFiles(files, manifest.files);
+    return { manifest, files };
+  });
+
 /** Checks a downloaded candidate against its manifest, then installs and imports it like a user. */
 export const verifyCandidateConsumers = (cwd: string, batch: ReleaseBatch, candidates: string) =>
   Effect.scoped(
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
-      const manifest = yield* readJson(CandidateManifest, `${candidates}/${CANDIDATE_MANIFEST}`);
-      yield* verifyCandidateFiles(yield* readCandidateFiles(candidates), manifest.files);
+      const { manifest } = yield* readVerifiedCandidate(candidates);
       const directory = yield* fs.makeTempDirectoryScoped({ prefix: 'sdk-candidate-consumer-' });
       yield* CONSUMERS[manifest.language](cwd, batch, directory, candidates);
       const python = batch.plan.releases.find(release => release.language === 'python');

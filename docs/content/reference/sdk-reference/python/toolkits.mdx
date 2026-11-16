@@ -10,7 +10,7 @@ description: "Toolkits are a collectiono of tools that can be used to perform va
 List all toolkits.
 
 ```python
-def list(category: str | None = ..., cursor: str | None = ..., limit: float | None = ..., sort_by: Literal['usage', 'alphabetically' | None] = ..., managed_by: Literal['composio', 'all', 'project' | None] = ...) -> toolkit_list_response.ToolkitListResponse
+def list(*, category: str | None = ..., cursor: str | None = ..., limit: float | None = ..., sort_by: Literal['usage', 'alphabetically'] | None = ..., managed_by: Literal['composio', 'all', 'project'] | None = ...) -> toolkit_list_response.ToolkitListResponse
 ```
 
 **Parameters**
@@ -20,8 +20,8 @@ def list(category: str | None = ..., cursor: str | None = ..., limit: float | No
 | `category?` | `str \| None` |
 | `cursor?` | `str \| None` |
 | `limit?` | `float \| None` |
-| `sort_by?` | `Literal['usage', 'alphabetically' \| None]` |
-| `managed_by?` | `Literal['composio', 'all', 'project' \| None]` |
+| `sort_by?` | `Literal['usage', 'alphabetically'] \| None` |
+| `managed_by?` | `Literal['composio', 'all', 'project'] \| None` |
 
 **Returns**
 
@@ -32,7 +32,7 @@ def list(category: str | None = ..., cursor: str | None = ..., limit: float | No
 ### get()
 
 ```python
-def get(slug: str | None = ..., query: toolkit_list_params.ToolkitListParams | None = ...) -> Union[toolkit_retrieve_response.ToolkitRetrieveResponse, ...
+def get(slug: str | None = ..., *, query: toolkit_list_params.ToolkitListParams | None = ...) -> Union[toolkit_retrieve_response.ToolkitRetrieveResponse, ...
 ```
 
 **Parameters**
@@ -53,19 +53,19 @@ def get(slug: str | None = ..., query: toolkit_list_params.ToolkitListParams | N
 Fetch several toolkits by slug in one request.
 
 ```python
-def get_many(slugs: Sequence[str], category: str | None = ..., managed_by: Literal['composio', 'all', 'project' | None] = ..., sort_by: Literal['usage', 'alphabetically' | None] = ..., limit: float | None = ..., cursor: str | None = ...) -> List[Any]
+def get_many(slugs: Sequence[str], *, category: str | None = ..., managed_by: Literal['composio', 'all', 'project'] | None = ..., sort_by: Literal['usage', 'alphabetically'] | None = ..., limit: float | None = ..., cursor: str | None = ...) -> List[Any]
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slugs` | `Sequence[str]` |
-| `category?` | `str \| None` |
-| `managed_by?` | `Literal['composio', 'all', 'project' \| None]` |
-| `sort_by?` | `Literal['usage', 'alphabetically' \| None]` |
-| `limit?` | `float \| None` |
-| `cursor?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slugs` | `Sequence[str]` | The toolkit slugs to fetch. |
+| `category?` | `str \| None` | Only return toolkits in this category. |
+| `managed_by?` | `Literal['composio', 'all', 'project'] \| None` | Filter by who manages the toolkit. |
+| `sort_by?` | `Literal['usage', 'alphabetically'] \| None` | Sort order of the returned toolkits. |
+| `limit?` | `float \| None` | Maximum number of toolkits to return. |
+| `cursor?` | `str \| None` | Pagination cursor from a previous response. |
 
 **Returns**
 
@@ -108,15 +108,15 @@ for entry in changelog.items:
 Recommend the OAuth scopes to request so a connection can run the given tools. Experimental — the API marks this endpoint beta.
 
 ```python
-def recommend_scopes(toolkit_slug: str, params: toolkit_recommend_scopes_params.ToolkitRecommendScopesParams = ...) -> toolkit_recommend_scopes_response.ToolkitRecommendScopesR...
+def recommend_scopes(toolkit_slug: str, **params: Unpack[toolkit_recommend_scopes_params.ToolkitRecommendScopesParams]) -> toolkit_recommend_scopes_response.ToolkitRecommendScopesR...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit_slug` | `str` |
-| `params?` | `toolkit_recommend_scopes_params.ToolkitRecommendScopesParams` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit_slug` | `str` | The toolkit to recommend scopes for. |
+| `params?` | `Unpack[toolkit_recommend_scopes_params.ToolkitRecommendScopesParams]` |  |
 
 **Returns**
 
@@ -139,15 +139,15 @@ print(recommendation.scopes.least_privilege)
 List the grant-context dimensions a toolkit's scope recommendation depends on, with their allowed values and the default the API assumes. Experimental — the API marks this endpoint beta.
 
 ```python
-def list_grant_contexts(toolkit_slug: str, params: toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams = ...) -> toolkit_retrieve_scopes_grant_context_response.ToolkitRet...
+def list_grant_contexts(toolkit_slug: str, **params: Unpack[toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams]) -> toolkit_retrieve_scopes_grant_context_response.ToolkitRet...
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit_slug` | `str` |
-| `params?` | `toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit_slug` | `str` | The toolkit to list grant contexts for. |
+| `params?` | `Unpack[toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams]` |  |
 
 **Returns**
 
@@ -178,15 +178,15 @@ def list_categories()
 Authorize a user to a toolkit  If auth config is not found, it will be created using composio managed auth.
 
 ```python
-def authorize(user_id: str, toolkit: str)
+def authorize(*, user_id: str, toolkit: str)
 ```
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `toolkit` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The ID of the user to authorize. |
+| `toolkit` | `str` | The slug of the toolkit to authorize. |
 
 ---
 

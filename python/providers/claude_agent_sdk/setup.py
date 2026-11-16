@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="composio_claude_agent_sdk",
-    version="0.31.0",
+    version="0.32.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of tools for Claude Agent SDK",
@@ -21,7 +21,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.11,<3.16",
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=["claude-agent-sdk>=0.2.128,<1", "composio"],
     include_package_data=True,
 )

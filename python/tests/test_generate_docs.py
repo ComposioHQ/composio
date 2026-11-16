@@ -191,3 +191,82 @@ def test_generated_examples_do_not_keep_nested_markdown_fences():
         'result = composio.tools.get_raw_tool_router_meta_tools("session_123")\n'
         "print(result)"
     ]
+
+
+@pytest.mark.parametrize(
+    ("annotation", "expected"),
+    [
+        ('t.Optional[t.Literal["a", "b"]]', 'Literal["a", "b"] | None'),
+        ('Literal["a", "b"] | None', 'Literal["a", "b"] | None'),
+        ("Optional[dict[str, list[int]]]", "dict[str, list[int]] | None"),
+        ("dict[str, list[int]] | None", "dict[str, list[int]] | None"),
+        ("t.Optional[t.List[str]]", "List[str] | None"),
+        ("t.Optional[t.Dict[str, t.Any]]", "Dict[str, Any] | None"),
+        (
+            "t.Optional[t.List[t.Union[ConfigToolkit, str]]]",
+            "List[Union[ConfigToolkit, str]] | None",
+        ),
+        ("t.List[t.Optional[t.Literal['x']]]", "List[Literal['x'] | None]"),
+        ("Optional[Literal[']', '[']]", "Literal[']', '['] | None"),
+        ("te.Unpack[SDKConfig]", "SDKConfig"),
+    ],
+)
+def test_format_type_keeps_nested_generics_intact(annotation, expected):
+    generate_docs = load_generate_docs_module()
+
+    assert generate_docs.format_type(annotation, max_length=None) == expected
+
+
+def test_generated_mdx_renders_keyword_only_parameters_with_descriptions():
+    generate_docs = load_generate_docs_module()
+
+    rendered_type = generate_docs.format_type(
+        "t.Optional[t.Literal['webhook', 'poll']]", max_length=None
+    )
+    info = {
+        "name": "Triggers",
+        "access": "composio.triggers",
+        "source_link": None,
+        "description": "Trigger management.",
+        "deprecated": None,
+        "properties": [],
+        "methods": [
+            {
+                "name": "create",
+                "source_link": None,
+                "description": "Create a trigger instance.",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "kind": "keyword-only",
+                        "type": rendered_type,
+                        "optional": True,
+                        "description": "",
+                    },
+                    {
+                        "name": "polling_interval",
+                        "kind": "keyword-only",
+                        "type": "int | None",
+                        "optional": True,
+                        "description": 'Minutes between polls. Overrides `trigger_config["interval"]`.',
+                    },
+                ],
+                "return_type": "Any",
+                "return_description": "",
+                "raises": [],
+                "examples": [],
+            }
+        ],
+    }
+
+    mdx = generate_docs.generate_class_mdx(info)
+
+    assert (
+        "def create(*, type: Literal['webhook', 'poll'] | None = ..., "
+        "polling_interval: int | None = ...)" in mdx
+    )
+    assert "| `type?` | `Literal['webhook', 'poll'] \\| None` |" in mdx
+    assert (
+        "| `polling_interval?` | `int \\| None` | Minutes between polls. "
+        'Overrides `trigger_config["interval"]`. |' in mdx
+    )

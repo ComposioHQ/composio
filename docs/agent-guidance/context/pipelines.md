@@ -18,20 +18,20 @@ Reference for all GitHub Actions workflows related to docs.
 
 ## SDK/Build Workflows
 
-| Workflow                  | File                        | Trigger                 | What it does                                                      |
-| ------------------------- | --------------------------- | ----------------------- | ----------------------------------------------------------------- |
-| **Generate SDK Docs**     | `generate-sdk-docs.yml`     | Manual, schedule        | Generates SDK reference documentation.                            |
-| **TS Build**              | `ts.build.yml`              | PR changes to `ts/`     | Builds TypeScript packages.                                       |
-| **TS Test**               | `ts.test.yml`               | PR changes to `ts/`     | Runs TypeScript tests.                                            |
-| **TS E2E**                | `ts.test-e2e.yml`           | PR changes to `ts/`     | Runs E2E tests (Node, Cloudflare, CLI).                           |
-| **TS Typecheck**          | `ts.typecheck.yml`          | PR changes to `ts/`     | TypeScript type checking for SDK.                                 |
-| **TS Release**            | `ts.release.yml`            | Push to `next`, manual  | Creates Changesets release PRs and publishes TypeScript packages. |
-| **TS Audit**              | `ts.audit.yml`              | Cron                    | Security audit of npm dependencies.                               |
-| **Build CLI Binaries**    | `build-cli-binaries.yml`    | Release                 | Builds CLI binaries for distribution.                             |
-| **CLI Test Installation** | `cli.test-installation.yml` | PR changes to CLI       | Tests CLI installation flow.                                      |
-| **Python Check**          | `py.check.yaml`             | PR changes to `python/` | Linting and type checking for Python SDK.                         |
-| **Python Test**           | `py.test.yml`               | PR changes to `python/` | Runs Python tests.                                                |
-| **Python Release**        | `py.release.yml`            | `py@*` tags, manual     | Builds and publishes Python packages.                             |
+| Workflow                  | File                           | Trigger                                        | What it does                                                               |
+| ------------------------- | ------------------------------ | ---------------------------------------------- | -------------------------------------------------------------------------- |
+| **SDK Reference Drift**   | `docs-sdk-reference-drift.yml` | PR to `next` changing SDK source or generators | Regenerates both SDK references and fails if the committed output differs. |
+| **TS Build**              | `ts.build.yml`                 | PR changes to `ts/`                            | Builds TypeScript packages.                                                |
+| **TS Test**               | `ts.test.yml`                  | PR changes to `ts/`                            | Runs TypeScript tests.                                                     |
+| **TS E2E**                | `ts.test-e2e.yml`              | PR changes to `ts/`                            | Runs E2E tests (Node, Cloudflare, CLI).                                    |
+| **TS Typecheck**          | `ts.typecheck.yml`             | PR changes to `ts/`                            | TypeScript type checking for SDK.                                          |
+| **TS Release**            | `ts.release.yml`               | Push to `next`, manual                         | Creates Changesets release PRs and publishes TypeScript packages.          |
+| **TS Audit**              | `ts.audit.yml`                 | Cron                                           | Security audit of npm dependencies.                                        |
+| **Build CLI Binaries**    | `build-cli-binaries.yml`       | Release                                        | Builds CLI binaries for distribution.                                      |
+| **CLI Test Installation** | `cli.test-installation.yml`    | PR changes to CLI                              | Tests CLI installation flow.                                               |
+| **Python Check**          | `py.check.yaml`                | PR changes to `python/`                        | Linting and type checking for Python SDK.                                  |
+| **Python Test**           | `py.test.yml`                  | PR changes to `python/`                        | Runs Python tests.                                                         |
+| **Python Release**        | `py.release.yml`               | `py@*` tags, manual                            | Builds and publishes Python packages.                                      |
 
 ## Other Workflows
 

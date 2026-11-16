@@ -20,7 +20,6 @@ from composio.utils.shared import (
     substitute_reserved_python_keywords,
 )
 
-
 PYTHON_ROOT = Path(__file__).resolve().parents[1]
 ANTHROPIC_PROPERTY_RE = re.compile(r"^[a-zA-Z0-9_.-]{1,64}$")
 
@@ -340,6 +339,7 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
     assert all(ANTHROPIC_PROPERTY_RE.fullmatch(name) for name in aliased_names)
 
     tool_call = SimpleNamespace(
+        id="use-odata",
         name="TOOL_WITH_ODATA",
         input={
             "param_top": 10,
@@ -376,7 +376,14 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
         },
     )
     provider.execute_tool.assert_not_called()
-    assert result == {"data": {"ok": True}, "error": None, "successful": True}
+    assert result == {
+        "data": {"ok": True},
+        "error": None,
+        "successful": True,
+        "tool_use_id": "use-odata",
+        "log_id": "log-session",
+        "result_type": "completed",
+    }
 
 
 def test_claude_agent_sdk_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):

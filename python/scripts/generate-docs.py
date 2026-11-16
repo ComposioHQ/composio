@@ -5,7 +5,7 @@ Python SDK Documentation Generator
 Generates MDX documentation from Python source code using griffe.
 Output is written to the docs content directory.
 
-Run: cd python && uv run --with griffe python scripts/generate-docs.py
+Run: cd python && uv run --frozen --only-group docs-reference python scripts/generate-docs.py
 """
 
 from __future__ import annotations
@@ -32,7 +32,10 @@ def load_griffe() -> Any:
         try:
             import griffe as griffe_module
         except ImportError:
-            print("Error: griffe not installed. Run: pip install griffe")
+            print(
+                "Error: griffe not installed. Run: "
+                "uv run --frozen --only-group docs-reference python scripts/generate-docs.py"
+            )
             raise SystemExit(1)
         _griffe = griffe_module
     return _griffe
@@ -143,7 +146,56 @@ def get_source_link(obj: griffe_t.Object) -> str | None:
     return f"{GITHUB_BASE}/{rel_path}#L{line}"
 
 
-def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
+def _matching_bracket(text: str, open_index: int) -> int | None:
+    """Return the index of the ``]`` closing the ``[`` at ``open_index``.
+
+    Brackets inside quoted strings, such as ``Literal['[']``, are ignored.
+    """
+    depth = 0
+    quote: str | None = None
+    escaped = False
+    for index in range(open_index, len(text)):
+        char = text[index]
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+        elif char in ("'", '"'):
+            quote = char
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                return index
+    return None
+
+
+def _rewrite_subscript(type_str: str, name: str, render: t.Callable[[str], str]) -> str:
+    """Replace every ``name[...]`` with ``render(...)``, honoring nested brackets.
+
+    The outermost occurrence is rewritten first, and the search restarts from
+    the beginning so occurrences nested in its arguments are rewritten too.
+    """
+    pattern = re.compile(rf"(?<!\w){re.escape(name)}\[")
+    while match := pattern.search(type_str):
+        open_index = match.end() - 1
+        close_index = _matching_bracket(type_str, open_index)
+        if close_index is None:
+            break
+        inner = type_str[open_index + 1 : close_index]
+        type_str = (
+            type_str[: match.start()] + render(inner) + type_str[close_index + 1 :]
+        )
+    return type_str
+
+
+def format_type(
+    annotation: Any, *, max_length: int | None = 60, unwrap_unpack: bool = True
+) -> str:
     """Format a type annotation to readable string.
 
     Types longer than ``max_length`` are elided; pass ``None`` to keep the
@@ -159,9 +211,9 @@ def format_type(annotation: Any, *, max_length: int | None = 60) -> str:
     type_str = type_str.replace("composio.client.types.", "")
     type_str = re.sub(r"\bt\.", "", type_str)
     type_str = re.sub(r"\bte\.", "", type_str)  # typing_extensions alias
-    type_str = re.sub(r"Optional\[([^\]]+)\]", r"\1 | None", type_str)
-    # Clean up Unpack to just show the type
-    type_str = re.sub(r"Unpack\[([^\]]+)\]", r"\1", type_str)
+    type_str = _rewrite_subscript(type_str, "Optional", lambda inner: f"{inner} | None")
+    if unwrap_unpack:
+        type_str = _rewrite_subscript(type_str, "Unpack", lambda inner: inner)
 
     # Truncate very long types
     if max_length is not None and len(type_str) > max_length:
@@ -364,7 +416,13 @@ def extract_class_info(
                 params.append(
                     {
                         "name": p.name,
-                        "type": format_type(p.annotation, max_length=None),
+                        "kind": p.kind.value if p.kind else None,
+                        "type": format_type(
+                            p.annotation,
+                            max_length=None,
+                            unwrap_unpack=p.kind
+                            != griffe_module.ParameterKind.var_keyword,
+                        ),
                         "optional": p.default is not None,
                         "description": method_doc["params"].get(p.name, ""),
                     }
@@ -384,6 +442,39 @@ def extract_class_info(
             )
 
     return info
+
+
+def format_method_parameters(parameters: list[dict[str, Any]]) -> str:
+    """Preserve the parameter kinds that constrain how a method is called."""
+    parts = []
+    previous_kind = None
+    has_star = False
+    for param in parameters:
+        kind = param["kind"]
+        if previous_kind == "positional-only" and kind != previous_kind:
+            parts.append("/")
+        if kind == "keyword-only" and not has_star:
+            parts.append("*")
+            has_star = True
+
+        name = param["name"]
+        if kind == "variadic positional":
+            name = f"*{name}"
+            has_star = True
+        elif kind == "variadic keyword":
+            name = f"**{name}"
+        part = f"{name}: {param['type']}"
+        if param["optional"] and kind not in (
+            "variadic positional",
+            "variadic keyword",
+        ):
+            part += " = ..."
+        parts.append(part)
+        previous_kind = kind
+
+    if previous_kind == "positional-only":
+        parts.append("/")
+    return ", ".join(parts)
 
 
 def generate_class_mdx(
@@ -477,10 +568,7 @@ def generate_class_mdx(
                 lines.append("")
 
             # Signature
-            params_str = ", ".join(
-                f"{p['name']}: {p['type']}" + (" = ..." if p["optional"] else "")
-                for p in method["parameters"]
-            )
+            params_str = format_method_parameters(method["parameters"])
             ret_type = method["return_type"] if method["return_type"] != "Any" else ""
             sig = f"def {method['name']}({params_str})"
             if ret_type:
@@ -495,12 +583,23 @@ def generate_class_mdx(
             if method["parameters"]:
                 lines.append("**Parameters**")
                 lines.append("")
-                lines.append("| Name | Type |")
-                lines.append("|------|------|")
+                include_descriptions = any(
+                    p["description"] for p in method["parameters"]
+                )
+                if include_descriptions:
+                    lines.append("| Name | Type | Description |")
+                    lines.append("|------|------|-------------|")
+                else:
+                    lines.append("| Name | Type |")
+                    lines.append("|------|------|")
                 for p in method["parameters"]:
                     opt = "?" if p["optional"] else ""
                     safe_type = p["type"].replace("|", "\\|")
-                    lines.append(f"| `{p['name']}{opt}` | `{safe_type}` |")
+                    parameter_row = f"| `{p['name']}{opt}` | `{safe_type}` |"
+                    if include_descriptions:
+                        description = p["description"].replace("|", "\\|")
+                        parameter_row += f" {description} |"
+                    lines.append(parameter_row)
                 lines.append("")
 
             # Returns

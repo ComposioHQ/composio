@@ -66,6 +66,8 @@ export const releaseFiles = [
 export interface ControllerOptions {
   /** `next` carries batch 8's plan without its tag: a release merged and failed its gate. */
   readonly untaggedNext?: boolean;
+  /** `next` at the merge commit carries no release plan. */
+  readonly noPlanOnNext?: boolean;
   /** Serve batch 8 as a beta release PR. */
   readonly beta?: boolean;
   readonly deletedReviewer?: boolean;
@@ -75,15 +77,18 @@ export interface ControllerOptions {
   readonly existingTag?: string;
   readonly failedCandidate?: boolean;
   readonly failedSmoke?: boolean;
+  /** A re-run of this check failed after its first run succeeded. */
+  readonly rerunFailed?: string;
   readonly closedUnmerged?: boolean;
   readonly existingBranch?: boolean;
   /** Head branch of a release PR that is already open into next. */
   readonly openRelease?: string;
+  /** The `SDK candidate docs` check on the head. */
   readonly docs?: 'success' | 'failure' | 'pending' | 'missing';
   /** Who authored the release PR head; the release App by default. */
   readonly headAuthor?: string;
-  /** Who committed the release PR head; the release App by default. */
-  readonly headCommitter?: string;
+  /** Who last moved the release branch; the release App by default. */
+  readonly branchSetter?: string;
   readonly unverifiedHead?: boolean;
   /** Parent of the release PR head; the planned source by default. */
   readonly headParent?: string;
@@ -93,17 +98,19 @@ export interface ControllerOptions {
 export function fakeController(options: ControllerOptions = {}) {
   const writes: { method: string; path: string; body: unknown }[] = [];
   const merged = !options.closedUnmerged;
-  const pull = () => ({
+  /** A pull as list endpoints return it: GitHub sends `merged` only on the detail endpoint. */
+  const listedPull = () => ({
     number: 9,
     html_url: 'https://github.com/ComposioHQ/composio/pull/9',
     state: 'closed',
-    merged,
-    merge_commit_sha: merged ? merge : null,
     user: { login: `${APP_SLUG}[bot]` },
     head: { sha: head, ref: 'sdk-release/batch-8', repo: { full_name: 'ComposioHQ/composio' } },
     base: { ref: 'next' },
   });
-  const check = (name: string, conclusion: string | null) => ({
+  const pull = () => ({ ...listedPull(), merged });
+  /** GitHub numbers check runs in creation order, so a re-run has a higher `id`. */
+  const check = (name: string, conclusion: string | null, id = 1) => ({
+    id,
     name,
     head_sha: head,
     app: { slug: 'github-actions' },
@@ -124,18 +131,18 @@ export function fakeController(options: ControllerOptions = {}) {
       throw new Error(`Unexpected write ${method} ${path}`);
     }
     if (path === '/orgs/ComposioHQ/memberships/requester') return response({ state: 'active' });
+    // The closed release PRs from batch 8's branch, as a regate looks them up.
+    if (path.startsWith('/pulls?state=closed&')) return response([listedPull()]);
     if (path.startsWith('/pulls?'))
       return response(
         options.openRelease
           ? [
               {
-                ...pull(),
+                ...listedPull(),
                 number: 5,
                 html_url: 'https://github.com/ComposioHQ/composio/pull/5',
                 state: 'open',
-                merged: false,
-                merge_commit_sha: null,
-                head: { ...pull().head, ref: options.openRelease },
+                head: { ...listedPull().head, ref: options.openRelease },
               },
             ]
           : []
@@ -161,19 +168,35 @@ export function fakeController(options: ControllerOptions = {}) {
             ? []
             : [
                 check(
-                  'typescript-check',
+                  'SDK candidate docs',
                   options.docs === 'pending' ? null : (options.docs ?? 'success')
                 ),
               ]),
+          ...(options.rerunFailed ? [check(options.rerunFailed, 'failure', 2)] : []),
         ],
       });
     if (path === `/commits/${head}`)
       return response({
         author: { login: options.headAuthor ?? `${APP_SLUG}[bot]` },
-        committer: { login: options.headCommitter ?? `${APP_SLUG}[bot]` },
+        // GitHub commits and signs every commit made through its API.
+        committer: { login: 'web-flow' },
         commit: { verification: { verified: !options.unverifiedHead } },
         parents: [{ sha: options.headParent ?? base }],
       });
+    if (path.startsWith('/activity?ref=refs%2Fheads%2Fsdk-release%2Fbatch-8&'))
+      return response([
+        { after: '0'.repeat(40), actor: { login: 'merger' } },
+        { after: head, actor: { login: options.branchSetter ?? `${APP_SLUG}[bot]` } },
+      ]);
+    if (path.startsWith('/issues/9/events?'))
+      return response(
+        merged
+          ? [
+              { event: 'merged', commit_id: merge },
+              { event: 'closed', commit_id: null },
+            ]
+          : [{ event: 'closed', commit_id: null }]
+      );
     if (path === `/git/commits/${base}`)
       return response({ sha: base, tree: { sha: base }, parents: [] });
     if (path === `/git/commits/${merge}`)
@@ -186,6 +209,7 @@ export function fakeController(options: ControllerOptions = {}) {
             : [{ sha: 'd'.repeat(40) }],
       });
     if (path.startsWith('/contents/')) {
+      if (options.noPlanOnNext && url.searchParams.get('ref') === merge) return response({}, 404);
       const filename = url.pathname.split('/contents/')[1];
       const file = (options.beta ? betaFiles : releaseFiles).find(file => file.path === filename);
       const data = url.searchParams.get('ref') === base ? file?.before : file?.after;
@@ -206,3 +230,72 @@ export function fakeController(options: ControllerOptions = {}) {
   };
   return { fetcher, writes };
 }
+
+/**
+ * The reads a tag run makes to pin release-PR run 41's candidate for batch 8, keyed by path
+ * suffix. `digest` is the uploaded archive's digest.
+ */
+export const candidateRoutes = (
+  digest: string,
+  options: { expired?: boolean; headAuthor?: string } = {}
+) => {
+  const app = 'sdk-release-app[bot]';
+  return {
+    [`/commits/${head}`]: {
+      author: { login: options.headAuthor ?? app },
+      committer: { login: 'web-flow' },
+      commit: { verification: { verified: true } },
+      parents: [{ sha: batch.inputBase }],
+    },
+    '/activity': [{ after: head, actor: { login: app } }],
+    '/actions/workflows/sdk.release.candidates.yml/runs': {
+      workflow_runs: [
+        {
+          id: 41,
+          path: '.github/workflows/sdk.release.candidates.yml',
+          head_branch: 'sdk-release/batch-8',
+          head_sha: head,
+          event: 'pull_request',
+          repository: { full_name: 'ComposioHQ/composio' },
+          status: 'completed',
+          conclusion: 'success',
+          created_at: '2026-11-03T00:00:00Z',
+          run_attempt: 1,
+          html_url: 'https://github.com/ComposioHQ/composio/actions/runs/41',
+        },
+      ],
+    },
+    '/actions/runs/41/jobs': {
+      jobs: [
+        {
+          name: 'SDK candidate (typescript)',
+          status: 'completed',
+          conclusion: 'success',
+          started_at: '2026-11-03T00:01:00Z',
+          completed_at: '2026-11-03T00:10:00Z',
+          steps: [
+            {
+              name: 'Retain candidate bytes for publication',
+              conclusion: 'success',
+              started_at: '2026-11-03T00:04:00Z',
+              completed_at: '2026-11-03T00:06:00Z',
+            },
+          ],
+        },
+      ],
+    },
+    '/actions/runs/41/artifacts': {
+      artifacts: [
+        {
+          id: 77,
+          name: 'sdk-candidate-typescript',
+          digest: digest,
+          expired: options.expired ?? false,
+          created_at: '2026-11-03T00:05:00Z',
+          expires_at: '2099-12-01T00:00:00Z',
+          workflow_run: { id: 41, head_sha: head },
+        },
+      ],
+    },
+  };
+};

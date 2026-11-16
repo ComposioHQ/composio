@@ -138,13 +138,13 @@ export function planUpdates(
     throw new Error(`Refusing to downgrade a current or pending client pin to ${target}`);
   }
   const changed: Record<string, string> = {};
+  const releases: string[] = [];
   if (current[0] !== target) {
     changed['pnpm-workspace.yaml'] = required(files, 'pnpm-workspace.yaml').replace(
       catalogPattern,
       `$1${target}$3`
     );
-    changed['.changeset/composio-client-update.md'] =
-      `---\n'@composio/core': patch\n---\n\nUpdate @composio/client to ${target} to include the latest API changes.\n`;
+    releases.push("'@composio/core': patch");
     const changelog = required(files, 'ts/packages/cli/CHANGELOG.md');
     const header = '# @composio/cli\n\n## Unreleased\n';
     const marker = '### Patch Changes\n';
@@ -161,9 +161,14 @@ export function planUpdates(
     changed['ts/packages/cli/CHANGELOG.md'] = `${header}${updated}${changelog.slice(end)}`;
   }
   if (current[1] !== target) {
+    releases.push("'@composio/python-sdk': patch");
     for (const path of ['python/pyproject.toml', 'python/setup.py']) {
       changed[path] = required(files, path).replace(pythonPattern, `$1${target}$3`);
     }
+  }
+  if (releases.length > 0) {
+    changed['.changeset/composio-client-update.md'] =
+      `---\n${releases.join('\n')}\n---\n\nUpdate the API client dependencies to ${target} to include the latest API changes.\n`;
   }
   return { changed, typescript: current[0] !== target, python: current[1] !== target };
 }

@@ -22,6 +22,17 @@ Never guess a slug. In a Platform session, discover tools through the session me
 
 For legacy manual execution, a missing tool may be a toolkit-version problem. Fetch current migration and execution docs rather than assuming the provider lacks the operation. New session integrations should use runtime discovery.
 
+## Tool call paused or blocked by session policy
+
+Some results are the session working as configured, not failures. Check the result type before diagnosing auth or the provider:
+
+- **`input_required`** (`ToolInputRequiredError` in Python, `ComposioToolInputRequiredError` in TypeScript): an [Approvals](https://docs.composio.dev/docs/approvals.md) rule gated the tool. It didn't run. Ask the user, then retry with `input_responses` and `request_state`. Over MCP, a client without elicitation support gets these calls denied.
+- **`blocked`** with `Blocked by session policy`: a [Firewall](https://docs.composio.dev/docs/firewall.md) hook matched. `block_reason` and `hook_results` name the hook. Don't reconnect the account or retry the same call. Change the request, or change the hook if it blocked something it shouldn't.
+
+## Custom MCP tools missing
+
+If a `CUSTOM_*` toolkit synced but its tools don't appear in search, list the toolkit's tools directly or fetch them with `COMPOSIO_GET_TOOL_SCHEMAS`, then call the tool by slug. Resyncing doesn't fix search. If the v3 tools API returns an empty list, use v3.1 or request the latest toolkit version. See [Custom MCP troubleshooting](https://docs.composio.dev/docs/extending-sessions/custom-mcp.md).
+
 ## Identify the authentication boundary
 
 ### Composio project or session 401

@@ -201,6 +201,30 @@ Using an agent doesn't change your responsibility: [read the code you submit](#r
 - Include enough context in error messages to identify the failing operation.
 - Don't swallow errors unless the caller has an explicit fallback path.
 
+### Anti-slop checks
+
+Run the AST checks from the repository root:
+
+```bash
+pnpm lint:antislop          # reject new findings and stale baseline entries
+pnpm test:antislop          # rule fixtures and enforcement tests
+pnpm lint:antislop:scan     # inspect all findings, including existing ones
+```
+
+These checks also run through `pnpm lint` and the **Anti-slop (TypeScript, Python, YAML)** CI job on every push and pull request to `next` or `master`. They supplement Oxlint and Ruff. They flag specific patterns; they cannot determine whether code was written by AI.
+
+The rules in [`.ast-grep/rules`](.ast-grep/rules) cover handwritten TypeScript SDK and CLI packages, Python SDK and providers, maintenance scripts, GitHub workflows, and composite actions. TypeScript uses the TSX parser to cover `.ts`, `.tsx`, `.mts`, and `.cts` with the same rules. Generated code, dependencies, build output, and test files are excluded. Python examples are covered; TypeScript examples and the docs site are outside this check's scope.
+
+| Language   | Patterns                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript | Double assertions through `unknown` or `any`, empty catch blocks (including comment-only blocks), `@ts-ignore` and `@ts-nocheck` |
+| Python     | Bare or broad `except` blocks containing only `pass`, `type: ignore` without error codes                                         |
+| CI YAML    | Unconditional `continue-on-error: true`, empty `run` steps                                                                       |
+
+Fix a finding by parsing or narrowing input, handling the failure, or keeping the original check effective. Some soft failures are intentional, such as collecting an audit result before a later step enforces its outcome. For a justified exception, explain the invariant or later failure gate in a comment, then put a [rule-specific ast-grep suppression](https://ast-grep.github.io/guide/project/severity.html#ignore-linting-error) immediately before the matched node. For `yaml-continue-on-error`, the matched node is the containing step or job mapping, so place its suppression before the step or job. Blanket and unused suppressions fail the check. Avoid file-wide suppressions.
+
+Existing findings are recorded in [`.ast-grep/baseline.json`](.ast-grep/baseline.json) by rule, path, full matched source lines, and occurrence count. The baseline records adoption debt, not approved patterns. A new source, a changed source, a moved file, or another identical occurrence fails the check. Line-number changes alone do not. After fixing an existing finding, run `pnpm lint:antislop:prune` and include the reduced baseline in your change. Pruning refuses to add allowances. Do not regenerate or expand the baseline to pass CI.
+
 ## Documentation Changes
 
 Update docs when a change affects public behavior, install flows, examples, environment variables, release steps, or provider usage.

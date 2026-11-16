@@ -109,16 +109,21 @@ class TestComposioSDK:
         assert composio.logs._client is composio._client
 
     def test_sdk_mounts_keyring_and_custom_toolkits(self):
-        from composio.core.models import ExperimentalCustomToolkits, Keyring
+        from composio.core.models import (
+            CustomToolkits,
+            ExperimentalCustomToolkits,
+            Keyring,
+        )
 
         composio = Composio(api_key="test-key")
 
         assert isinstance(composio.keyring, Keyring)
         assert composio.keyring._client is composio._client
-        assert isinstance(
-            composio.experimental.custom_toolkits, ExperimentalCustomToolkits
-        )
-        assert composio.experimental.custom_toolkits._client is composio._client
+        assert isinstance(composio.custom_toolkits, CustomToolkits)
+        assert composio.custom_toolkits._client is composio._client
+        # Deprecated paths keep working and resolve to the same object.
+        assert composio.experimental.custom_toolkits is composio.custom_toolkits
+        assert ExperimentalCustomToolkits is CustomToolkits
 
     def test_sdk_has_required_attributes(self):
         """Test that SDK has required attributes after initialization."""

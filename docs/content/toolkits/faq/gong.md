@@ -9,6 +9,6 @@ If you use your own Gong OAuth integration with Composio, add all four Composio 
 - `54.224.131.195/32`
 - `34.233.50.61/32`
 
-Composio's traffic to Gong can come from any of these addresses. If you add only some of them, or add them to only one list, API calls or token refreshes can fail intermittently.
+Composio's traffic to Gong can come from any of these addresses. If you add only some of them, or add them to only one list, API calls or token refreshes can fail intermittently. The same list applies to every service; see [Composio outbound IP addresses](/docs/security/outbound-ips).
 
 For setup steps, see Gong's guide to [adding trusted IPs to your integration](https://help.gong.io/docs/configure-trusted-ips-for-your-integration).

@@ -20,8 +20,11 @@ export const CHANNELS = {
      * commits only its plan, so `next` stays stable and every changeset stays pending.
      */
     commitsVersions: true,
-    /** Checks the release PR head needs besides the candidate checks. */
-    extraChecks: ['typescript-check'],
+    /**
+     * Checks the release PR head needs besides the candidate checks. The docs are checked against
+     * the candidate packages, not the published ones the pull-request docs workflows install.
+     */
+    extraChecks: ['SDK candidate docs'],
     /** Whether publishing opens a docs PR that pins the released npm versions. */
     pinsDocs: true,
   },
@@ -29,7 +32,7 @@ export const CHANNELS = {
     // `beta` belongs to the 1.0 prerelease train on `main`; previews of `next` use `next`.
     npmTag: 'next',
     commitsVersions: false,
-    // A beta PR does not touch the docs, so the docs check never runs on it.
+    // A beta PR does not touch the docs, so no docs check runs on it.
     extraChecks: [],
     pinsDocs: false,
   },

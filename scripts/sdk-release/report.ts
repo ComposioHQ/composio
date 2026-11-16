@@ -28,6 +28,7 @@ const IssueComment = Schema.Struct({
   user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
 });
 const IssueLabel = Schema.Struct({ name: Schema.String });
+const IssueState = Schema.Struct({ state: Schema.Literals(['open', 'closed']) });
 const Written = Schema.Unknown;
 
 /**
@@ -70,6 +71,9 @@ export const showStatus = (issue: number, state: ReleaseState, run: string, stag
     yield* request('POST', `${issuePath}/labels`, Written, { labels: [display.label] });
     if (display.close)
       yield* request('PATCH', issuePath, Written, { state: 'closed', state_reason: display.close });
+    // A release that can advance again, such as one re-gated after a refusal, reopens its issue.
+    else if ((yield* request('GET', issuePath, IssueState)).state === 'closed')
+      yield* request('PATCH', issuePath, Written, { state: 'open' });
   });
 
 /** A job's result as GitHub reports it to the jobs that need it. */

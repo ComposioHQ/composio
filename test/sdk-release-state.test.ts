@@ -160,6 +160,7 @@ function requestIssue(comments: { id: number; login: string; body: string }[] = 
       for (const label of body.labels) labels.add(label);
       return respond([]);
     }
+    if (method === 'GET' && path === '/issues/8') return respond({ state });
     if (method === 'PATCH' && path === '/issues/8') {
       state = body.state;
       return respond({});
@@ -192,6 +193,18 @@ describe('status on the request issue', () => {
     expect(issue.comments[0].body).toContain('fake status');
     expect(issue.comments).toHaveLength(2);
     expect(issue.writes).toContain('POST /issues/8/comments');
+  });
+
+  test('a release tagged after it was refused reopens its request issue', async () => {
+    const issue = requestIssue();
+    await runRelease(showStatus(8, EXAMPLES.Refused, run, 'review'), issue.fetcher);
+    expect(issue.state()).toBe('closed');
+    await runRelease(showStatus(8, EXAMPLES.Tagged, run, 'review'), issue.fetcher);
+    expect(issue.state()).toBe('open');
+    expect(issue.comments).toEqual([
+      expect.objectContaining({ body: expect.stringContaining('Tagged `sdk-release/8`') }),
+    ]);
+    expect([...issue.labels]).toEqual(['SDK release', 'sdk-release:publishing']);
   });
 
   test('a late or re-run earlier stage never replaces a later stage result', async () => {

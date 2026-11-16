@@ -142,7 +142,7 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    */
   wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): OpenAIAgentTool {
     const inputParameters = deduplicateJsonSchemaRequiredArrays(
-      dereferenceJsonSchema(composioTool.inputParameters ?? {}, { onUnresolved: 'sentinel' })
+      dereferenceJsonSchema(composioTool.inputParameters, { onUnresolved: 'sentinel' })
     );
 
     // Strict mode applies OpenAI's structured-output contract at every

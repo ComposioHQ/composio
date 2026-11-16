@@ -540,8 +540,8 @@ const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc1
 
 Waits for a connection request to complete and become active.
 
-This method continuously polls the Composio API to check the status of a connection
-until it either becomes active, enters a terminal error state, or times out.
+This method polls the Composio API, backing off from 1 second to 5 seconds between polls,
+to check the status of a connection until it either becomes active, enters a terminal error state, or times out.
 
 ```typescript
 async waitForConnection(connectedAccountId: string, timeout?: number): Promise<ConnectedAccountRetrieveResponse>

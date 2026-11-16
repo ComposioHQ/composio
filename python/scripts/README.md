@@ -6,7 +6,7 @@ Generates MDX reference docs from Python source using griffe.
 
 ```bash
 cd python
-uv run --with griffe python scripts/generate-docs.py
+uv run --frozen --only-group docs-reference python scripts/generate-docs.py
 ```
 
 ## How it works
@@ -23,4 +23,4 @@ uv run --with griffe python scripts/generate-docs.py
 
 ## CI
 
-`.github/workflows/generate-sdk-docs.yml` triggers on changes to `python/composio/**` and opens a PR with updated docs.
+`.github/workflows/docs-sdk-reference-drift.yml` regenerates the reference on PRs to `next` that change `python/composio/**` or this generator, and fails if the committed output differs. `griffe` is pinned in the `docs-reference` dependency group in `python/pyproject.toml`.

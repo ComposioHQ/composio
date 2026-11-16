@@ -17,6 +17,8 @@ packages:
   - ts/packages/ts-builders
 
 allowBuilds:
+  # The package's Node shim resolves its platform binary without postinstall.
+  '@ast-grep/cli': false
   '@google/genai': false
   '@parcel/watcher': true
   esbuild: true
@@ -27,38 +29,40 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.80
+  '@ai-sdk/mcp': ^2.0.93
   '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
-  '@clack/core': '^1.5.1'
-  '@clack/prompts': '^1.8.1'
+  '@clack/core': '^1.6.0'
+  '@clack/prompts': '^1.9.0'
   '@cloudflare/vitest-pool-workers': 0.23.0
-  '@cloudflare/workers-types': ^5.20261019.1
-  '@composio/client': 2.1.0
+  '@cloudflare/workers-types': ^5.20261110.1
+  '@composio/client': 2.1.32
+  # Same version as harness/run.mjs (AIMOCK_VERSION); move both together.
+  '@copilotkit/aimock': 1.47.0
   '@effect/language-service': ^0.87.5
-  '@effect/platform-bun': ^4.1.0
-  '@effect/vitest': ^4.1.0
+  '@effect/platform-bun': ^4.1.3
+  '@effect/vitest': ^4.1.3
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.32.1
-  '@types/bun': ^1.4.3
-  ai: ^7.0.146
-  dotenv: ^18.0.8
-  effect: ^4.1.0
-  hono: ^4.13.13
-  openai: ^7.39.0
+  '@modelcontextprotocol/sdk': ^1.32.2
+  '@types/bun': ^1.4.4
+  ai: ^7.0.166
+  dotenv: ^18.0.10
+  effect: ^4.1.3
+  hono: ^4.13.17
+  openai: ^7.55.0
   picocolors: ^1.1.1
   publint: ^0.3.25
-  tsdown: ^0.23.1
+  tsdown: ^0.23.7
   tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^5.0.5
-  vitest: ^5.0.5
-  wrangler: ^4.151.2
-  zod: ^4.5.4
+  '@vitest/ui': ^5.1.0
+  vitest: ^5.1.0
+  wrangler: ^4.159.0
+  zod: ^4.6.7
   zod-to-json-schema: ^3.25.2
 
 catalogs:
@@ -98,6 +102,12 @@ minimumReleaseAgeExclude:
   # scripts were checked by hand for this exact version only, so later releases
   # still wait out the cooldown. Remove once 0.6.0 is older than the cutoff.
   - '@typesafe-ai/sdk@0.6.0'
+  # temporary: 0.7.0 (2026-11-11) is the first release with `uniku/uuid/v5`,
+  # which the CLI uses to derive agent session IDs. Publisher (GitHub Actions),
+  # npm provenance, and the absence of install scripts were checked by hand for
+  # this exact version only, so later releases still wait out the cooldown.
+  # Remove once 0.7.0 is older than the cutoff (after 2026-11-14).
+  - uniku@0.7.0
 
 peerDependencyRules:
   allowedVersions:

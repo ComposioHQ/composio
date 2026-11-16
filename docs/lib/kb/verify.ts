@@ -323,17 +323,17 @@ export function verifyKb(input: KbVerifyInput): KbVerifyReport {
     }
 
     const reviewAfter = guide.reviewAfter ? new Date(guide.reviewAfter) : null;
-    if (reviewAfter && !Number.isNaN(reviewAfter.valueOf())) {
-      const remaining = daysBetween(input.now, reviewAfter);
-      if (remaining <= 0) {
-        findings.push({
-          severity: 'error',
-          kind: 'review-window-expired',
-          guideSlug: guide.slug,
-          detail: `review window expired ${Math.abs(remaining)} day(s) ago`,
-          evidence: `reviewAfter=${guide.reviewAfter}`,
-        });
-      }
+    // Compare instants, as the catalog build does: rounding to whole days would
+    // expire a guide from noon UTC on the eve of its deadline.
+    if (reviewAfter && reviewAfter.valueOf() <= input.now.valueOf()) {
+      const elapsedDays = Math.floor((input.now.valueOf() - reviewAfter.valueOf()) / 86_400_000);
+      findings.push({
+        severity: 'error',
+        kind: 'review-window-expired',
+        guideSlug: guide.slug,
+        detail: `review window expired ${elapsedDays} day(s) ago`,
+        evidence: `reviewAfter=${guide.reviewAfter}`,
+      });
     }
 
     const lastVerified = guide.lastVerifiedAt ? new Date(guide.lastVerifiedAt) : null;

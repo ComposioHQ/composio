@@ -7,12 +7,11 @@ import {
   temporaryDirectories,
   writeText,
 } from './sdk-release-harness';
-import { batch } from './sdk-release-controller-fixture';
+import { batch, candidateRoutes, head } from './sdk-release-controller-fixture';
 
 const directories = temporaryDirectories('sdk-candidate-pin-');
 afterEach(() => directories.cleanup());
 
-const head = 'b'.repeat(40);
 const tarball = 'composio-core-1.0.1.tgz';
 
 /** The archive release-PR run 41 uploaded for `@composio/core@1.0.1`. */
@@ -50,64 +49,7 @@ const pinAttempt = async (
     JSON.stringify({ name: '@composio/core', version: '1.0.1' })
   );
   await writeText(`${directory}/.github/sdk-release-plan.json`, JSON.stringify(batch));
-  const app = 'sdk-release-app[bot]';
-  const routes = {
-    [`/commits/${head}`]: {
-      author: { login: options.headAuthor ?? app },
-      committer: { login: options.headAuthor ?? app },
-      commit: { verification: { verified: true } },
-      parents: [{ sha: batch.inputBase }],
-    },
-    '/actions/workflows/sdk.release.candidates.yml/runs': {
-      workflow_runs: [
-        {
-          id: 41,
-          path: '.github/workflows/sdk.release.candidates.yml',
-          head_branch: 'sdk-release/batch-8',
-          head_sha: head,
-          event: 'pull_request',
-          repository: { full_name: 'ComposioHQ/composio' },
-          status: 'completed',
-          conclusion: 'success',
-          created_at: '2026-11-03T00:00:00Z',
-          run_attempt: 1,
-          html_url: 'https://github.com/ComposioHQ/composio/actions/runs/41',
-        },
-      ],
-    },
-    '/actions/runs/41/jobs': {
-      jobs: [
-        {
-          name: 'SDK candidate (typescript)',
-          status: 'completed',
-          conclusion: 'success',
-          started_at: '2026-11-03T00:01:00Z',
-          completed_at: '2026-11-03T00:10:00Z',
-          steps: [
-            {
-              name: 'Retain candidate bytes for publication',
-              conclusion: 'success',
-              started_at: '2026-11-03T00:04:00Z',
-              completed_at: '2026-11-03T00:06:00Z',
-            },
-          ],
-        },
-      ],
-    },
-    '/actions/runs/41/artifacts': {
-      artifacts: [
-        {
-          id: 77,
-          name: 'sdk-candidate-typescript',
-          digest: archive.digest,
-          expired: options.expired ?? false,
-          created_at: '2026-11-03T00:05:00Z',
-          expires_at: '2099-12-01T00:00:00Z',
-          workflow_run: { id: 41, head_sha: head },
-        },
-      ],
-    },
-  };
+  const routes = candidateRoutes(archive.digest, options);
   const preload = `${directory}/fetch.ts`;
   await writeText(
     preload,

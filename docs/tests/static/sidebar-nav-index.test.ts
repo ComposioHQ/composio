@@ -48,7 +48,7 @@ describe('buildSidebarNavIndex', () => {
       group: 'Guides',
       folder: 'Extend sessions',
       depth: 2,
-      position: index['/docs/extending-sessions/custom-tools-and-toolkits'].position + 1,
+      position: index['/docs/extending-sessions/local-tools-and-toolkits'].position + 1,
     });
   });
 

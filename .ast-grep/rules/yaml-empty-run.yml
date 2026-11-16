@@ -1,0 +1,21 @@
+id: yaml-empty-run
+language: Yaml
+severity: error
+message: Replace the empty CI run step with an executable check, or remove it.
+files: ['.github/workflows/**', '.github/actions/**']
+rule:
+  all:
+    - any:
+        - kind: block_mapping_pair
+        - kind: flow_pair
+  has:
+    field: key
+    regex: '^(run|"run"|''run'')$'
+  any:
+    - not:
+        has:
+          field: value
+          regex: '.'
+    - has:
+        field: value
+        regex: '^("\s*"|''\s*''|[|>][-+]?\s*)$'

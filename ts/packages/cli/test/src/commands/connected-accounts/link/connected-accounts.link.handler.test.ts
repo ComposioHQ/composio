@@ -22,6 +22,7 @@ import {
   LIST_WITH_AUTH_CONFIG_MESSAGE,
   ROOT_AUTH_CONFIG_MESSAGE,
   TOOLKIT_AND_AUTH_CONFIG_MESSAGE,
+  formatNonInteractiveAuthorizationInstructions,
   missingArgumentMessage,
 } from 'src/commands/connected-accounts/link/connected-accounts.link.format';
 import { CommandSurface, MissingActingUserError } from 'src/commands/surface';
@@ -32,7 +33,7 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import type { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ConnectedAccountsTest, MockConsole } from 'test/__utils__';
@@ -45,7 +46,7 @@ import { hostOnlyEnvConfigProvider } from 'test/__utils__/live-env-config-provid
 import { makeOrgProject } from 'test/__utils__/models/account';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
-import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
+import { TerminalUITest, terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import open from 'open';
 import { afterEach, vi } from 'vitest';
 
@@ -121,6 +122,8 @@ interface LinkFixture {
   readonly connectedAccountsListFails?: boolean;
   /** Makes the first N `connectedAccounts.retrieve` calls fail, for the polling retries. */
   readonly retrieveFailsFirst?: number;
+  /** Runs before every `connectedAccounts.retrieve`, i.e. at every poll while the link waits. */
+  readonly onRetrieve?: () => void;
   /** Replaces the headless test terminal, e.g. with `redirectedTerminalUI`. */
   readonly terminal?: Layer.Layer<TerminalUI>;
 }
@@ -188,6 +191,7 @@ const linkHandlerTest = (fixture: LinkFixture = {}) => {
         ? () => Stream.fail(new Error('connectedAccounts.list is down'))
         : connectedAccounts.connectedAccounts.listStream,
       retrieve: (nanoid: string) => {
+        fixture.onRetrieve?.();
         retrieveAttempts += 1;
         return retrieveAttempts <= (fixture.retrieveFailsFirst ?? 0)
           ? Effect.fail(new Error(`transient retrieve failure ${retrieveAttempts}`))
@@ -366,6 +370,21 @@ const runWithAdvancingClock = <A, E>(effect: Effect.Effect<A, E>) =>
     yield* Fiber.interrupt(pump);
     return result;
   });
+
+/** The headless test terminal with stderr a TTY, so the link's decoration renders. */
+const decoratingTerminal = Layer.succeed(
+  TerminalUI,
+  TerminalUI.of({
+    ...terminalUITestImpl,
+    capabilities: Effect.succeed(
+      getTerminalCapabilities({
+        stdin: { isTTY: false },
+        stdout: { isTTY: false },
+        stderr: { isTTY: true },
+      })
+    ),
+  })
+);
 
 const devSurface = (flags: { userId?: string; projectName?: string } = {}) =>
   CommandSurface.dev({
@@ -1013,6 +1032,7 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
         accounts: [account({ id: 'con_new', user_id: 'poll-source', alias: null, word_id: null })],
         toolRouterLink: () =>
           Effect.succeed({ connected_account_id: 'con_new', redirect_url: 'notaurl' }),
+        terminal: decoratingTerminal,
       });
       const output = yield* handleToolRouterLink(
         params({ toolkit: Option.some('gmail'), noWait: false })
@@ -1043,6 +1063,7 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
       vi.mocked(open).mockRejectedValueOnce(new Error('no browser'));
       const { layer } = linkHandlerTest({
         accounts: [account({ id: 'con_new', user_id: 'poll-source', alias: null, word_id: null })],
+        terminal: decoratingTerminal,
       });
       const output = yield* handleToolRouterLink(
         params({ toolkit: Option.some('gmail'), noWait: false, noBrowser: false })
@@ -1124,5 +1145,74 @@ describe('connected-accounts link handler: handleToolRouterLink', () => {
         ]);
         expect(exitCodeOf(exit)).toBe(1);
       })
+  );
+});
+
+describe('connected-accounts link handler: waiting off a terminal', () => {
+  // Every stream redirected, as an agent's shell runs the command. The first two polls find
+  // nothing, so the link is still waiting when `stderrWhileWaiting` is read, at the first one.
+  it.effect.each([
+    {
+      flow: 'a toolkit',
+      account: 'con_new',
+      redirectUrl: TOOL_ROUTER_LINK_TARGET.redirect_url,
+      surface: undefined,
+      directoryProject: undefined,
+      link: () => handleToolRouterLink(params({ toolkit: Option.some('gmail'), noWait: false })),
+    },
+    {
+      flow: 'an auth config',
+      account: LEGACY_LINK_TARGET.connected_account_id,
+      redirectUrl: LEGACY_LINK_TARGET.redirect_url,
+      surface: devSurface(),
+      directoryProject: directory(Option.some('user_directory')),
+      link: () =>
+        handleLegacyAuthConfigLink(params({ authConfig: Option.some('ac_gmail'), noWait: false })),
+    },
+  ])(
+    '[Given] --no-browser and $flow [Then] stderr has the URL before the wait, stdout the JSON after',
+    ({ account: accountId, redirectUrl, surface, directoryProject, link }) =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI();
+        let stderrWhileWaiting: string | undefined;
+        const { layer } = linkHandlerTest({
+          ...(surface ? { surface } : {}),
+          ...(directoryProject ? { directoryProject } : {}),
+          accounts: [
+            account({ id: accountId, user_id: 'poll-source', alias: null, word_id: null }),
+          ],
+          retrieveFailsFirst: 2,
+          onRetrieve: () => {
+            stderrWhileWaiting ??= terminal.stderr();
+          },
+          terminal: terminal.layer,
+        });
+
+        yield* runWithAdvancingClock(link().pipe(Effect.provide(layer)));
+
+        expect(stderrWhileWaiting).toBe(
+          `${formatNonInteractiveAuthorizationInstructions(redirectUrl)}\n`
+        );
+        const stdout = terminal.stdout();
+        expect(JSON.parse(stdout)).toMatchObject({ status: 'success', redirect_url: redirectUrl });
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+  );
+
+  it.effect('[Given] --no-wait [Then] stderr stays empty: the URL is in the stdout JSON', () =>
+    Effect.gen(function* () {
+      const terminal = redirectedTerminalUI();
+      const { layer } = linkHandlerTest({ terminal: terminal.layer });
+
+      yield* handleToolRouterLink(params({ toolkit: Option.some('gmail') })).pipe(
+        Effect.provide(layer)
+      );
+
+      expect(terminal.stderr()).toBe('');
+      expect(JSON.parse(terminal.stdout())).toMatchObject({
+        status: 'pending',
+        redirect_url: TOOL_ROUTER_LINK_TARGET.redirect_url,
+      });
+    })
   );
 });
