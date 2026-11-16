@@ -286,7 +286,7 @@ importers:
         version: link:../../_utils
       '@types/bun':
         specifier: 'catalog:'
-        version: 1.4.3
+        version: 1.4.4
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
