@@ -336,4 +336,41 @@ describe('CLI: composio dev listen', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: {
+        events: [
+          {
+            id: 'evt_conn_expired_1',
+            type: 'composio.connected_account.expired',
+            timestamp: '2026-04-06T18:00:00.000Z',
+            metadata: {
+              project_id: 'consumer_project_id_test',
+              org_id: 'org_test',
+            },
+            data: {
+              id: 'con_expired_1',
+            },
+          },
+        ],
+      },
+    })
+  )('[Given] a reader that closed stdout', it => {
+    // No --max-events: only the closed stdout can stop this run, at the first event it writes.
+    it.effect('[Then] it stops listening at the next write and exits 0', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI({ stdoutReaderClosed: true });
+        const exit = yield* Effect.exit(
+          cli(['dev', 'listen', '--json']).pipe(Effect.provide(terminal.layer))
+        );
+
+        expect(exitCodeOf(exit)).toBe(0);
+        expect(terminal.stdout()).toBe('');
+      })
+    );
+  });
 });
