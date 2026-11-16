@@ -2127,6 +2127,22 @@ class TestAsyncCallbackRejection:
         logger.error.assert_called_once()
         assert "returned a coroutine" in logger.error.call_args.args[0]
 
+    def test_async_generator_returned_by_sync_handler_is_logged(self, subscription):
+        ran = []
+
+        async def on_event(event):
+            ran.append(event["id"])
+            yield event
+
+        subscription.handle()(lambda event: on_event(event))
+
+        with patch.object(subscription, "_logger") as logger:
+            subscription._handle_event(self._FRAME)
+
+        assert ran == []
+        logger.error.assert_called_once()
+        assert "returned an async generator" in logger.error.call_args.args[0]
+
     def test_coroutine_returned_by_subscription_error_callback_is_logged(
         self, subscription
     ):

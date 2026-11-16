@@ -799,15 +799,20 @@ class TriggerSubscription(Resource):
         """Close and log a coroutine that a regular callback returned.
 
         Registration rejects ``async def`` callbacks, but a regular function can
-        still return a coroutine, such as ``lambda event: handler(event)``.
-        Nothing here runs an event loop, so the coroutine's body would never
-        run; closing it replaces Python's ``RuntimeWarning`` with a clear error.
+        still return a coroutine or an async generator, such as
+        ``lambda event: handler(event)``. Nothing here runs an event loop, so
+        the body would never run; closing a coroutine replaces Python's
+        ``RuntimeWarning``, and both cases are logged as a clear error.
         """
-        if not inspect.iscoroutine(result):
+        if inspect.iscoroutine(result):
+            result.close()
+            kind = "a coroutine"
+        elif inspect.isasyncgen(result):
+            kind = "an async generator"
+        else:
             return
-        result.close()
         self.logger.error(
-            f"`{name}` returned a coroutine, which trigger callbacks never run. "
+            f"`{name}` returned {kind}, which trigger callbacks never run. "
             "Use a regular 'def' function that does its work synchronously."
         )
 
