@@ -139,6 +139,15 @@ describe('CLI: composio search over the API client', () => {
         };
         // Once as the log line and once as the piped output.
         expect(lines).toEqual([JSON.stringify(payload, null, 2), JSON.stringify(payload, null, 2)]);
+        // A result keeps the API's key order on stdout.
+        expect(Object.keys(JSON.parse(String(lines.at(-1))).results[0])).toEqual([
+          'index',
+          'use_case',
+          'difficulty',
+          'primary_tool_slugs',
+          'related_tool_slugs',
+          'toolkits',
+        ]);
         expect(stub.requests.filter(request => request.path === SEARCH_PATH)).toEqual([
           {
             method: 'POST',
@@ -175,6 +184,43 @@ describe('CLI: composio search over the API client', () => {
           GMAIL_SEND_EMAIL: '~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json',
         });
         expect(payload.connected_toolkits).toEqual(['gmail']);
+      })
+    );
+  });
+
+  layer(testLayer)('[Given] a 200 search response the command cannot read', it => {
+    it.effect.each([
+      { name: 'JSON of another shape', respond: () => Response.json({ unexpected: true }) },
+      {
+        name: 'a result without its tool slugs',
+        respond: () =>
+          Response.json({
+            ...searchResponse,
+            results: [{ index: 1, use_case: 'send an email', toolkits: ['gmail'] }],
+          }),
+      },
+      {
+        name: 'an empty body',
+        respond: () =>
+          new Response(null, {
+            status: 200,
+            headers: { 'content-type': 'application/json', 'content-length': '0' },
+          }),
+      },
+    ])('[Then] $name fails as a response this CLI does not understand', ({ respond }) =>
+      Effect.gen(function* () {
+        const stub = searchingOver(respond);
+        const terminal = redirectedTerminalUI();
+        const exit = yield* Effect.exit(
+          cli(['search', 'send an email']).pipe(Effect.provide([stub.layer, terminal.layer]))
+        );
+
+        expect(exitCodeOf(exit)).toBe(1);
+        expect(terminal.stdout()).toBe('');
+        expect(terminal.stderr()).toContain(
+          "Failed to search tools.\nCaused by: The API response for 'toolRouter.session.search' is not in the shape this version of the CLI expects.\nUpgrade the CLI, then retry:\n> composio upgrade"
+        );
+        expect(terminal.stderr()).not.toContain('TypeError');
       })
     );
   });

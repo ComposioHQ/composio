@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- `composio search` now fails with "The API response for
+  'toolRouter.session.search' is not in the shape this version of the CLI
+  expects" and `composio upgrade` as the way out when the API answers 200 with
+  JSON it cannot read or with an empty body. It crashed with a raw `TypeError`
+  naming a minified variable, which told an agent nothing it could act on.
+
 - `composio whoami` now exits 1 when it cannot read the account (the backend
   rejects the stored key, cannot be reached, or fails), with nothing on stdout
   and the reason on stderr; a rejected key also names `composio login`. It
