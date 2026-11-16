@@ -53,6 +53,7 @@ from composio.exceptions import (
     ToolNotFoundError,
     ToolVersionRequiredError,
     ValidationError,
+    sanitize_error_text,
 )
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
@@ -431,7 +432,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             if error.status_code in (400, 404):
                 message = f"Tool with slug {slug} not found"
                 if error.details is not None:
-                    message = f"{message}: {error.details['message']}"
+                    message = (
+                        f"{message}: {sanitize_error_text(error.details['message'])}"
+                    )
                 raise ToolNotFoundError(message) from error
             raise
         return _normalize_tool(response)

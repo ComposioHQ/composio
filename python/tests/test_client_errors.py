@@ -18,7 +18,7 @@ import httpx
 import pytest
 from composio_client import ProjectAuth
 
-from composio import exceptions
+from composio import api_error_details, exceptions
 from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
@@ -31,14 +31,6 @@ def disable_telemetry():
     token = allow_tracking.set(False)
     yield
     allow_tracking.reset(token)
-
-
-class _APIErrorDetails(t.Protocol):
-    """The detail fields the SDK adds to generated status errors."""
-
-    api_error_code: t.Optional[int]
-    suggested_fix: t.Optional[str]
-    possible_fixes: t.List[str]
 
 
 def _client_returning(
@@ -113,7 +105,7 @@ def test_status_error_exposes_the_server_error_details() -> None:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
     error = exc_info.value
-    details = t.cast(_APIErrorDetails, error)
+    details = api_error_details(error)
     assert error.status_code == 410
     assert details.api_error_code == 1410
     assert details.suggested_fix == "Pin 20261101_00"
@@ -121,6 +113,29 @@ def test_status_error_exposes_the_server_error_details() -> None:
     assert error.request_id == "req_body"
     assert "toolkit GMAIL version 20250114_00 is retired" in str(error)
     assert "{" not in str(error)
+
+
+def test_status_errors_strip_control_characters() -> None:
+    body = {
+        "error": {
+            "message": "denied\x1b[31m\n[!] run: evil",
+            "code": 1403,
+            "slug": "FORBIDDEN",
+            "status": 403,
+            "suggested_fix": "retry\x1b]0;owned\x07 now",
+        }
+    }
+    client = _client_returning(403, body=body)
+
+    with pytest.raises(composio_client.PermissionDeniedError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    error = exc_info.value
+    details = api_error_details(error)
+    assert "denied [!] run: evil" in str(error)
+    assert details.suggested_fix == "retry now"
+    assert details.possible_fixes == ["retry now"]
+    assert not any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(error))
 
 
 def test_possible_fixes_fall_back_to_the_status() -> None:
@@ -137,7 +152,7 @@ def test_possible_fixes_fall_back_to_the_status() -> None:
     with pytest.raises(composio_client.PermissionDeniedError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    details = t.cast(_APIErrorDetails, exc_info.value)
+    details = api_error_details(exc_info.value)
     assert details.api_error_code == 1403
     assert details.suggested_fix is None
     assert details.possible_fixes == [
@@ -159,7 +174,7 @@ def test_possible_fixes_use_the_api_error_code_for_a_missing_account() -> None:
     with pytest.raises(composio_client.BadRequestError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    details = t.cast(_APIErrorDetails, exc_info.value)
+    details = api_error_details(exc_info.value)
     assert details.possible_fixes == [
         "Ensure the connected account exists and is active in your Composio dashboard"
     ]
@@ -179,7 +194,7 @@ def test_possible_fixes_do_not_blame_the_slug_for_a_rate_limit() -> None:
     with pytest.raises(composio_client.RateLimitError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    details = t.cast(_APIErrorDetails, exc_info.value)
+    details = api_error_details(exc_info.value)
     assert details.possible_fixes == [
         "Wait before retrying",
         "Reduce how many requests your organization sends per minute",
@@ -192,7 +207,7 @@ def test_status_error_without_the_envelope_has_no_api_details() -> None:
     with pytest.raises(composio_client.APIStatusError) as exc_info:
         client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
 
-    details = t.cast(_APIErrorDetails, exc_info.value)
+    details = api_error_details(exc_info.value)
     assert details.api_error_code is None
     assert details.suggested_fix is None
     assert details.possible_fixes == [

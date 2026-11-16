@@ -89,6 +89,7 @@ Transport/authentication errors and requests for user input can raise instead of
 API rejections raise a `composio_client` status error, which is also a `ComposioError`. The message carries the server's explanation, and the error exposes the HTTP status, request id, numeric API error code, and a suggested fix:
 
 ```python
+from composio import api_error_details
 from composio_client import APIStatusError
 
 try:
@@ -98,14 +99,15 @@ try:
         user_id="user_123",
     )
 except APIStatusError as error:
-    print(error.message)          # 410 toolkit GMAIL version 20250114_00 is retired ...
-    print(error.status_code)      # 410
-    print(error.api_error_code)   # 1410
-    print(error.request_id)       # req_...
-    print(error.possible_fixes)   # ["Pin 20261101_00"] or status-specific guidance
+    details = api_error_details(error)
+    print(details.message)          # 410 toolkit GMAIL version 20250114_00 is retired ...
+    print(details.status_code)      # 410
+    print(details.api_error_code)   # 1410
+    print(details.request_id)       # req_...
+    print(details.possible_fixes)   # ["Pin 20261101_00"] or status-specific guidance
 ```
 
-`error.possible_fixes` uses the server's `suggested_fix` when present. Without one, it returns a fix chosen for the HTTP status, so a 401, 402, 403, 410, or 5xx doesn't tell you to check the tool slug and arguments. `error.details` still exposes the validated error envelope.
+`api_error_details()` returns the typed view of the same exception, so type checkers see these fields. `details.possible_fixes` uses the server's `suggested_fix` when present. Without one, it returns a fix chosen for the HTTP status, so a 401, 402, 403, 410, or 5xx doesn't tell you to check the tool slug and arguments. `details.details` still exposes the validated error envelope.
 
 ## Use with an agent framework
 

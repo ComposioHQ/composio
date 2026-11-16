@@ -26,7 +26,7 @@ from composio_client import (
 from composio_client import Composio as BaseComposio
 from httpx import URL, Client, Response, Timeout
 
-from composio.exceptions import ComposioError
+from composio.exceptions import ComposioError, sanitize_error_text
 from composio.utils.logging import LogLevel, WithLogger, _VerbosityWrapper
 from composio.utils.toolkit_deprecation import (
     install_hook as _install_toolkit_deprecation_hook,
@@ -113,7 +113,8 @@ def _api_error_code(error: APIStatusError) -> t.Optional[int]:
 
 def _suggested_fix(error: APIStatusError) -> t.Optional[str]:
     details = error.details
-    return details.get("suggested_fix") if details is not None else None
+    raw = details.get("suggested_fix") if details is not None else None
+    return sanitize_error_text(raw) or None if raw else None
 
 
 def _possible_fixes(error: APIStatusError) -> t.List[str]:
@@ -190,7 +191,7 @@ def _as_sdk_error(error: APIStatusError) -> APIStatusError:
     if isinstance(error, ComposioError):
         return error
     sdk_error = _with_sdk_error_base(type(error))(
-        error.message, response=error.response, body=error.body
+        sanitize_error_text(error.message), response=error.response, body=error.body
     )
     return sdk_error.with_traceback(error.__traceback__)
 
