@@ -8,6 +8,6 @@
   "dependencies": {
     "ai": "6.0.211",
     "typescript": "5.8.3",
-    "zod": "4.5.4"
+    "zod": "4.6.7"
   }
 }

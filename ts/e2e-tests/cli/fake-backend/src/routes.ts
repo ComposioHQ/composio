@@ -108,7 +108,16 @@ const toolkitDetails = (toolkit: SeededToolkit, world: World) => ({
   enabled: true,
   no_auth: toolkit.noAuth,
   composio_managed_auth_schemes: toolkit.noAuth ? [] : ['OAUTH2'],
-  composio_managed_auth: toolkit.noAuth ? [] : [{ mode: 'OAUTH2', scopes: { available: [] } }],
+  composio_managed_auth: toolkit.noAuth
+    ? []
+    : [
+        {
+          managed_app_id: `ma_${toolkit.slug}`,
+          is_default: true,
+          mode: 'OAUTH2',
+          scopes: { available: [] },
+        },
+      ],
   is_local_toolkit: false,
   auth_config_details: toolkit.noAuth
     ? []
