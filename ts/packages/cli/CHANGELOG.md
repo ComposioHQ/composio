@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- `composio dev toolkits list` and `info` now read a user's connection status in the resolved developer project. When no directory project applies, `--user-id` or the global test user can use the default developer project. A failed project lookup leaves the catalog available and warns when `--connected` cannot be applied.
+
 - A directory developer project must belong to the stored login's org, checked before any request. With no stored org, the CLI checks every page of the active key's org list. Resource commands refuse a project outside that boundary and name why they use the default developer project instead.
 
 - `composio dev` resource commands now act on the directory's developer project or `--project-name`, rather than leaving the backend to choose. Without a directory project they keep working by resolving the default developer project once from session info and naming it on stderr, including in scripts. Project lookup failures preserve their cause and recovery advice.
