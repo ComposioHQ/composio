@@ -57,6 +57,12 @@ export interface Journey {
   readonly id: string;
   readonly title: string;
   readonly prompt: string;
+  /**
+   * `train` journeys are the ones a skill change is tuned against; `holdout`
+   * journeys only measure, so a change that fits the train set and nothing
+   * else shows up there. See HILLCLIMB.md.
+   */
+  readonly split: 'train' | 'holdout';
   /** Directory the agent's shell starts in; defaults to the home directory. */
   readonly cwd?: string;
   readonly setup: (rig: CliRig) => Promise<void>;
@@ -293,6 +299,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     id: 'consumer-slack-message',
     title: 'consumer task: send a Slack message from an unconnected account',
     prompt: 'Send a Slack message to the #general channel that says: deploy finished',
+    split: 'train',
     setup: loginRig,
     checks: run => [
       stoppedByItself(run),
@@ -320,6 +327,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     title: 'developer task: list auth configs and run a tool as the test user',
     prompt:
       'I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post "hello from dev" in #general.',
+    split: 'holdout',
     cwd: DEV_DIRECTORY,
     setup: async rig => {
       await developerRig(rig);
@@ -360,6 +368,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     title: 'tree confusion: a developer task that needs a connection first',
     prompt:
       'In my Composio developer project, execute SLACK_SEND_MESSAGE as my test user to post "hello from dev" in #general.',
+    split: 'train',
     cwd: DEV_DIRECTORY,
     setup: developerRig,
     checks: run => [
@@ -421,6 +430,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     id: 'first-run-login',
     title: 'first run: find out the CLI is not logged in, and log in',
     prompt: 'Check whether the Composio CLI on this machine is logged in. If it is not, log in.',
+    split: 'train',
     setup: async () => {},
     checks: run => {
       const whoami = run.transcript.commands.filter(command =>
@@ -473,6 +483,7 @@ export const JOURNEYS: ReadonlyArray<Journey> = [
     title: '`composio run`: one inline script that executes a tool',
     prompt:
       'Use a single `composio run` inline script to send "build passed" to #general on Slack and print the timestamp of the sent message.',
+    split: 'holdout',
     setup: async rig => {
       await rig.login();
       rig.fake.world.connect(CONSUMER_PROJECT.label, CONSUMER_USER_ID, 'slack');

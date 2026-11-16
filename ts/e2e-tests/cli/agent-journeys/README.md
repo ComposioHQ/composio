@@ -159,6 +159,28 @@ How to read it:
 - Set 01's `no` for `claude-opus-5-5` on `developer-execute-unconnected` was a handoff nobody answered: it gave the person the URL and stopped. With a person who answers, it finishes (02, 03).
 - In sets 02 and 03, a run that reached the dev tree and then failed did so at the not-connected error; a run that failed on the root tree did so at `composio link slack --no-browser`.
 
+## Measuring a change
+
+The replay suite answers "does the CLI still behave on paths models have taken". It cannot answer "does this change make models do better", because a replay does not consult the model. Recording does, and the pieces here are meant to be the base of that measurement:
+
+- **Environment**: `startCliRig()` gives a fresh container with the real binary, a seeded backend that every host the CLI knows is pointed at, and a journal of which project and user every request acted on. It needs no account and changes nothing outside the fake as long as the agent stays on `composio`; the container's other outbound traffic is not blocked. Each run has its own container and backend, so runs are repeatable and can run in parallel.
+- **Task**: a journey's `prompt`, `setup`, and starting directory.
+- **Grader**: a journey's `checks` for success and its `detours` for how the run got there; see [How a run is graded](#how-a-run-is-graded). They read exit codes, command output, and the journal, never the model's prose, so a grade is a fact and not a judgement. Each is reported by name, which says where a failed run went wrong (wrong project, never linked, wrong text) and not only that it failed. Compute the wrong-tree rate from the detours of every run, the failed ones included.
+- **Subject**: the skill text, rendered from source on every run and identified by `skillSha256`; and the CLI, identified by `revision`.
+- **Person**: fixed, so two runs differ only in the subject and the model.
+
+To compare two versions of the skill or the CLI, use `eval.ts`, not `record.ts`. It runs every journey k times per arm with Claude Code (or the minimal loop) against the real API, grades each run with the same checks, and reports pass@1, pass@k, pass^k and the wrong-tree rate per journey and split. [HILLCLIMB.md](./HILLCLIMB.md) is the procedure. A batch records what it measured: the skill's hash, a hash of the harness (journeys, graders, person, fake backend), the CLI image id, the agent and its version, and the model. Runs with the same fingerprint are reused instead of paid for again, and `compare` refuses batches graded by different harnesses.
+
+What the live runner bounds: each run's agent has six minutes, forty shell commands, and a dollar cap Claude Code enforces itself; a batch stops starting runs at `--max-cost-usd`. A run that fails for reasons outside the agent (the harness threw, the proxy refused a request) is recorded as `infra` and left out of every rate.
+
+What it still does not have:
+
+- **Enforced isolation.** The container reaches the fake because every host the CLI knows is redirected to it, not because other traffic is blocked. An agent without the skill has tried to call the production backend directly with the fake project's keys. It failed only because the image has no `curl`; those keys work nowhere else, but nothing would stop the request.
+- **Exact attribution in Claude Code runs.** Requests are attributed to a command by the time between its call and its result. Commands that overlap, or that the agent leaves running in the background, share requests.
+- **Breadth.** Every journey starts with the binary installed and uses the org's default developer project, where a request with no project scope lands on the right project by the fake's fallback. There is no journey for installing or upgrading, for a non-default project, for a script read from a file or stdin, and the person never declines, is never slow, and always has a browser. Five journeys split three and two are a thin train and held-out set.
+
+Add a journey when a real agent failure is found that no journey would have caught: write the prompt a user would type, the state it starts from, and checks on the journal. The cases that separate versions best are the ones where the two trees are easy to confuse, a connection is missing, or the person has to act.
+
 ## The skill's commands
 
 `skill-commands.test.ts` needs no model: it takes every `composio …` line from the code blocks of the built skill and its references and looks its command path up in the binary.
