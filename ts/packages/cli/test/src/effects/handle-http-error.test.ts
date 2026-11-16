@@ -1,4 +1,5 @@
 import {
+  AuthenticationError as ClientAuthenticationError,
   APIConnectionError as ClientAPIConnectionError,
   APIConnectionTimeoutError as ClientAPIConnectionTimeoutError,
   BadRequestError as ClientBadRequestError,
@@ -7,7 +8,7 @@ import {
   type ComposioError,
 } from '@composio/client/effect';
 import { describe, expect, it } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ReportedFailure } from 'src/effects/report-failure';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
@@ -122,6 +123,34 @@ describe('handleClientApiError', () => {
       expect(lines).toStrictEqual([
         "stderr: The API response for 'authConfigs.retrieve' is not in the shape this version of the CLI expects (request id: req_decode).",
         'stderr: Upgrade the CLI, then retry:\n> composio upgrade',
+      ]);
+      expect(exitCodeOf(exit)).toBe(1);
+    })
+  );
+
+  it.effect('names the key to replace for a 401 when it comes from COMPOSIO_USER_API_KEY', () =>
+    Effect.gen(function* () {
+      const { ui, lines } = recordingUI();
+      const unauthorized = new ClientAuthenticationError({
+        message: '401 Invalid API key',
+        method: 'GET',
+        url,
+        status: 401,
+        requestId: undefined,
+        details: { message: 'Invalid API key', code: 401, slug: 'Auth_InvalidApiKey', status: 401 },
+        body: undefined,
+      });
+
+      const exit = yield* Effect.exit(handleClientApiError(ui, options)(unauthorized)).pipe(
+        Effect.provideService(
+          ConfigProvider.ConfigProvider,
+          ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'uak_env' } })
+        )
+      );
+
+      expect(lines).toStrictEqual([
+        'stderr: Invalid API key',
+        'stderr: If the key in COMPOSIO_USER_API_KEY is no longer valid, replace it, then retry.',
       ]);
       expect(exitCodeOf(exit)).toBe(1);
     })

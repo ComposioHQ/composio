@@ -1,10 +1,10 @@
 import { isAPIError } from '@composio/client/effect';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import type { ClientApiError } from 'src/services/composio-errors';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { reportFailure, type ReportedFailure } from 'src/effects/report-failure';
 import { describeDecodeError, isClientDecodeError } from 'src/utils/api-error-extraction';
-import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
+import { isUnauthorized, unauthorizedHint } from 'src/effects/rejected-user-api-key';
 
 export interface Suggestion {
   readonly label: string;
@@ -29,9 +29,16 @@ interface ErrorReport {
 const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
   if (isClientDecodeError(e)) return Effect.succeed(describeDecodeError(e));
   if (isAPIError(e)) {
-    return isRejectedUserApiKey(e)
-      ? Effect.map(rejectedUserApiKeyHint, hint => ({ message: e.details?.message, hint }))
-      : Effect.succeed({ message: e.details?.message, suggestedFix: e.details?.suggested_fix });
+    const statusReport = { message: e.details?.message, suggestedFix: e.details?.suggested_fix };
+    return isUnauthorized(e)
+      ? Effect.map(
+          unauthorizedHint(e),
+          Option.match({
+            onNone: () => statusReport,
+            onSome: hint => ({ message: e.details?.message, hint }),
+          })
+        )
+      : Effect.succeed(statusReport);
   }
   return Effect.succeed({});
 };

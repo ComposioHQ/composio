@@ -6,9 +6,9 @@
  *
  * Every failure leaves `runInvocation` on screen exactly once: printed by `Command.runWith` (help
  * and parse errors, `CliError.ShowHelp`), by the command itself (`[Runtime.errorReported] = false`),
- * or here (an expected failure's message, a rejected key, or the defect report). It leaves with
- * its own cause, so a caller can still match its typed error; `forRunner` turns it into what the
- * runner needs to print nothing more and exit with the right code.
+ * or here (an expected failure's message, a 401 and how to recover, or the defect report). It
+ * leaves with its own cause, so a caller can still match its typed error; `forRunner` turns it
+ * into what the runner needs to print nothing more and exit with the right code.
  */
 import { Cause, Effect, Exit, Option, Ref, Runtime, type Layer } from 'effect';
 import { CliError } from 'effect/cli';
@@ -21,7 +21,7 @@ import type { CliCommandTelemetryContext } from 'src/analytics/types';
 import { runWithConfig } from 'src/commands';
 import * as constants from 'src/constants';
 import { isExpectedFailure } from 'src/effects/expected-failure';
-import { isRejectedUserApiKey, rejectedUserApiKeyHint } from 'src/effects/rejected-user-api-key';
+import { isUnauthorized, unauthorizedHint } from 'src/effects/rejected-user-api-key';
 import { ReportedFailure } from 'src/effects/report-failure';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { getVersion } from 'src/effects/version';
@@ -192,17 +192,26 @@ const report = (cause: Cause.Cause<unknown>) =>
     const error = Cause.findErrorOption(cause);
     // A usage mistake, a missing setup or login, or a failure a remote service reported clearly
     // (see `ExpectedFailure`) is not a broken invariant: its message alone, no defect report.
+    // A 401 behind the failure, from whichever command it escaped, adds the way to log in
+    // again when a login can fix it.
+    const printUnauthorizedHint = (failure: unknown) =>
+      isUnauthorized(failure)
+        ? Effect.flatMap(
+            unauthorizedHint(failure),
+            Option.match({ onNone: () => Effect.void, onSome: ui.error })
+          )
+        : Effect.void;
     const expected = Option.filter(error, isExpectedFailure);
     if (Option.isSome(expected)) {
       yield* ui.error(expected.value.message);
+      yield* printUnauthorizedHint(expected.value);
       return;
     }
-    // A rejected user API key gets the backend's message and the way to log in again, from
-    // whichever command it escaped.
-    const rejectedKey = Option.filter(error, isRejectedUserApiKey);
-    if (Option.isSome(rejectedKey)) {
-      yield* ui.error(extractMessage(rejectedKey.value) ?? 'The user API key was rejected.');
-      yield* ui.error(yield* rejectedUserApiKeyHint);
+    // Any other 401 gets the backend's message in place of a defect report.
+    const rejected = Option.filter(error, isUnauthorized);
+    if (Option.isSome(rejected)) {
+      yield* ui.error(extractMessage(rejected.value) ?? 'The Composio API rejected the request.');
+      yield* printUnauthorizedHint(rejected.value);
       return;
     }
     // A failure already on screen — `ShowHelp` (`Command.runWith` printed help and any

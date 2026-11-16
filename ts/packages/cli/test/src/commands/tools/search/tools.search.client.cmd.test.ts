@@ -2,6 +2,8 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extractErrorDetails } from 'src/effect-errors/logic/errors/extract-error-details';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { exitCodeOf } from 'test/__utils__/exit-code';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 
 const sendEmailInput = {
@@ -200,4 +202,39 @@ describe('CLI: composio search over the API client', () => {
       })
     );
   });
+
+  // A stored login, not COMPOSIO_USER_API_KEY, whose key the backend no longer accepts.
+  layer(TestLive({ fixture: 'global-test-user-id' }))(
+    '[Given] the API rejects the stored key',
+    it => {
+      it.effect('[Then] the rejection is on stderr with `composio login` as the way out', () =>
+        Effect.gen(function* () {
+          // Every request is rejected, the project lookup before the search first.
+          const stub = stubClientResources(['_internal', 'toolRouter', 'connectedAccounts'], () =>
+            Response.json(
+              {
+                error: {
+                  message: 'Invalid API key',
+                  code: 401,
+                  slug: 'Auth_InvalidApiKey',
+                  status: 401,
+                },
+              },
+              { status: 401 }
+            )
+          );
+          const terminal = redirectedTerminalUI();
+          const exit = yield* Effect.exit(
+            cli(['search', 'send an email']).pipe(Effect.provide([stub.layer, terminal.layer]))
+          );
+
+          expect(exitCodeOf(exit)).toBe(1);
+          expect(terminal.stdout()).toBe('');
+          expect(terminal.stderr()).toBe(
+            'Invalid API key\nIf your login expired, log in again, then retry:\n> composio logout && COMPOSIO_WEB_URL=https://platform.composio.dev composio login\n'
+          );
+        })
+      );
+    }
+  );
 });

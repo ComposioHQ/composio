@@ -261,8 +261,7 @@ describe('login session: a user API key given directly', () => {
     TEST_TIMEOUT_MS
   );
 
-  // CLI defect: a rejected key at login is printed as a defect report with an empty title, not as an expected failure.
-  it.failing(
+  it(
     'a key the backend rejects is reported as an expected failure, without a defect report',
     async () => {
       const result = await rig.run(
