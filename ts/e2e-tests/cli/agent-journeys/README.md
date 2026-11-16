@@ -8,6 +8,13 @@ pnpm --filter @e2e-tests/cli-agent-journeys test:e2e:cli
 
 No API key is read and no model is called when the tests run.
 
+To see which commands of each hand-authored path the journey's checks depend on, play the path once per command with that command left out (Docker, no key, one container per run):
+
+```bash
+cd ts/e2e-tests/cli/agent-journeys
+bun run mutate.ts [--journeys first-run-login] [--json] [--strict]
+```
+
 ## What a passing journey proves
 
 Read this before drawing a conclusion from a green run.
@@ -18,6 +25,30 @@ Read this before drawing a conclusion from a green run.
 - **A replay does not notice a changed skill or a changed tool schema.** A fixture is matched on the turn's position, the previous call, and that command's exit code (hand-authored: a substring of its output). The system prompt and the schema text a command printed are not part of the match, so after a skill edit the replays stay green and say nothing about the new skill. Only a new recording does.
 
 A replay on its own proves nothing: aimock answers the same whether a command succeeded or failed. So every journey is judged by its checks (`src/journeys.ts`), which read the commands that ran, their exit codes and output, and the fake backend's journal: which tool ran, on which project, as which user. None of them reads the model's prose. See [How a run is graded](#how-a-run-is-graded).
+
+### What a mutation run proves
+
+`mutate.ts` plays a journey's hand-authored path with no model (`src/scripted.ts`), first whole and then once per command with that command left out, and grades each run with the journey's checks. Each dropped command gets a verdict (`src/mutation.ts`):
+
+- `needed`: some check failed without it.
+- `unused`: every check passed, and the run left the same outcome as the whole path: the same tools ran with the same arguments, as the same user on the same project; the same connections and logins were made; the next `composio whoami` found the same login. A read the checks do not depend on lands here.
+- `check-too-weak`: every check passed, but the outcome differs. The run ended somewhere else and no check noticed.
+
+When the whole path fails a check, the tool says so, drops nothing, and exits 1; `--strict` also exits 1 on any `unused` or `check-too-weak` step, so with the `unused` steps listed below it fails on four of the five journeys today. Results go to `results/<batch>/`.
+
+What it proves: whether the checks notice that one step of the taught path is missing. What it does not prove: that they catch a wrong path the hand-authored file never takes (another command in place of a dropped one, two steps missing, the right step on the wrong project), or anything about a real model. The outcome compares only what is listed above; a difference elsewhere in the fake's state is not seen.
+
+Last run, on every journey (2026-11-16, at the commit that added the tool): 17 steps, 10 `needed`, 7 `unused`, none `check-too-weak`, every unmutated path passing.
+
+| Journey                              | `unused` steps                                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `consumer-slack-message`             | `composio search`; the first `composio execute`, which fails because Slack is not connected         |
+| `developer-auth-configs-and-execute` | `cat` of the `composio-dev.md` reference; `composio dev --help`                                     |
+| `developer-execute-unconnected`      | the wrong-tree `composio dev execute`; the first `playground-execute`, which fails as not connected |
+| `first-run-login`                    | the last `composio whoami`                                                                          |
+| `run-inline-script`                  | none                                                                                                |
+
+Each is a read or a command that fails on purpose. The checks grade what a run changed, so `unused` is the expected verdict for both kinds. The failing commands are on the path for the error text an agent recovers from: in `developer-execute-unconnected` the journey's `scriptedChecks` pin that text when the hand-authored file is replayed; in `consumer-slack-message` nothing does. A mutation run does not grade `scriptedChecks`.
 
 ## How a run works
 
