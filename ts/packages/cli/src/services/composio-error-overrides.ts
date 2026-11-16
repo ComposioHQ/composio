@@ -44,12 +44,26 @@ export const isNoActiveConnectionApiError = (
   details: { code?: number; slug?: string } | undefined
 ): boolean => details?.code === 4302 || isNoConnectionSlug(details?.slug);
 
+/** The command tree the failing command ran in; connections do not carry over between the two. */
+type ConnectionTree = 'root' | 'dev';
+
+/**
+ * The link command of the tree the failure happened in. A root-tree link
+ * connects the consumer user, which leaves a `dev` command failing as before.
+ */
+const linkStep = (toolkit: string, tree: ConnectionTree): string =>
+  tree === 'dev'
+    ? `Run \`composio dev connected-accounts link ${toolkit}\` (with the same \`--user-id\`, if you passed one), then retry.`
+    : `Run \`composio link ${toolkit}\`, then retry.`;
+
 export const buildNoActiveConnectionMessage = (params: {
   readonly toolkit?: string;
   readonly toolSlug?: string;
+  readonly tree?: ConnectionTree;
 }) => {
+  const tree = params.tree ?? 'root';
   if (params.toolkit) {
-    return `No active connection found for toolkit "${params.toolkit}". Run \`composio link ${params.toolkit}\`, then retry.`;
+    return `No active connection found for toolkit "${params.toolkit}". ${linkStep(params.toolkit, tree)}`;
   }
   if (params.toolSlug) {
     // Best-effort fallback for callers that could not resolve the toolkit.
@@ -58,7 +72,7 @@ export const buildNoActiveConnectionMessage = (params: {
     // bare-slug case.
     const toolkit = guessToolkitFromToolSlug(params.toolSlug);
     if (toolkit && toolkit !== 'composio') {
-      return `No active connection found for toolkit "${toolkit}". Run \`composio link ${toolkit}\`, then retry.`;
+      return `No active connection found for toolkit "${toolkit}". ${linkStep(toolkit, tree)}`;
     }
   }
   return 'No active connection found for this tool call. Link the required toolkit/app, then retry.';
@@ -69,17 +83,20 @@ export class ComposioNoActiveConnectionError extends Error {
   readonly apiDetails?: ApiErrorDetails;
   readonly toolkit?: string;
   readonly toolSlug?: string;
+  readonly tree: ConnectionTree;
 
   constructor(params: {
     readonly details: unknown;
     readonly apiDetails?: ApiErrorDetails;
     readonly toolkit?: string;
     readonly toolSlug?: string;
+    readonly tree?: ConnectionTree;
   }) {
     super(
       buildNoActiveConnectionMessage({
         toolkit: params.toolkit,
         toolSlug: params.toolSlug,
+        tree: params.tree,
       })
     );
     this.name = 'ComposioNoActiveConnectionError';
@@ -87,6 +104,7 @@ export class ComposioNoActiveConnectionError extends Error {
     this.apiDetails = params.apiDetails;
     this.toolkit = params.toolkit;
     this.toolSlug = params.toolSlug;
+    this.tree = params.tree ?? 'root';
   }
 }
 
@@ -94,6 +112,8 @@ export const mapComposioError = (params: {
   readonly error: unknown;
   readonly toolkit?: string;
   readonly toolSlug?: string;
+  /** The tree of the command reporting the failure; the root tree when omitted. */
+  readonly tree?: ConnectionTree;
 }) => {
   const normalized = normalizeCliError(params.error);
   const apiDetails =
@@ -105,14 +125,26 @@ export const mapComposioError = (params: {
     normalized instanceof ComposioNoActiveConnectionError ||
     isNoActiveConnectionApiError(apiDetails)
   ) {
+    const tree = params.tree ?? 'root';
+    // The executor raises this error without knowing the tree; the command
+    // that reports it does, and its message has to name that tree's link.
     const mapped =
       normalized instanceof ComposioNoActiveConnectionError
-        ? normalized
+        ? normalized.tree === tree
+          ? normalized
+          : new ComposioNoActiveConnectionError({
+              details: normalized.details,
+              apiDetails: normalized.apiDetails,
+              toolkit: normalized.toolkit ?? params.toolkit,
+              toolSlug: normalized.toolSlug ?? params.toolSlug,
+              tree,
+            })
         : new ComposioNoActiveConnectionError({
             details: apiDetails ?? params.error,
             apiDetails,
             toolkit: params.toolkit,
             toolSlug: params.toolSlug,
+            tree,
           });
 
     return {

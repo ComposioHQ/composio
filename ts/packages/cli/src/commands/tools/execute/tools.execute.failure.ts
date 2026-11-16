@@ -83,6 +83,7 @@ export const emitExecuteFailureTelemetry = (params: {
         error: params.error,
         toolkit: toolkitSlug,
         toolSlug: params.toolSlug,
+        tree: params.surface,
       });
     const apiDetails = mapped.apiDetails;
     const message = mapped.message;
@@ -229,7 +230,12 @@ export const handleExecutionError = (
 ) =>
   Effect.gen(function* () {
     const toolkit = yield* toolkitFromToolSlug(context.toolSlug, context.projectScope);
-    const mapped = mapComposioError({ error, toolkit, toolSlug: context.toolSlug });
+    const mapped = mapComposioError({
+      error,
+      toolkit,
+      toolSlug: context.toolSlug,
+      tree: context.surface,
+    });
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
       yield* emitExecuteFailureTelemetry({

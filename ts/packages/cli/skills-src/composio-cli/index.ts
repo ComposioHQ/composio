@@ -344,7 +344,7 @@ export const renderComposioCliSkill = (
     '',
     'If the user is stuck on top-level commands or needs fallback inspection commands, load [references/troubleshooting.md](references/troubleshooting.md).',
     '',
-    'If the user explicitly asks about developer projects, auth configs, connected accounts, triggers, logs, orgs, or projects, load [references/composio-dev.md](references/composio-dev.md). `composio dev` is not the default end-user path.'
+    'If the user explicitly asks about developer projects, auth configs, connected accounts, triggers, logs, orgs, or projects, load [references/composio-dev.md](references/composio-dev.md). `composio dev` is not the default end-user path. In a developer project, run tools with `composio dev playground-execute`, not `composio execute`.'
   );
 
   return lines.join('\n') + '\n';
