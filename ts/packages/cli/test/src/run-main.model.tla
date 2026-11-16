@@ -107,8 +107,9 @@ ForcesOnlyOnEscalation ==
 \* Only the fiber's exit, which carries the exit action, ends the process with it.
 EndsWithActionOnlyOnExit == last \in {"End", "Drain"} => event \in Exits
 
-\* Only a clean run that nobody signalled ends by draining the event loop.
-DrainsOnlyUnsignalled == last = "Drain" => received = "none"
+\* Only a clean run that nobody signalled drains the event loop; an unsignalled
+\* failure still ends with its code.
+DrainsOnlyCleanSuccess == last = "Drain" => received = "none" /\ event = "Clean"
 
 \* Until the process ends, something can still end it: the fiber or the deadline.
 NeverStuck == ends = 0 => (fiber # "exited" \/ deadline)

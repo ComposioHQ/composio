@@ -39,7 +39,7 @@ const INVARIANTS = [
   'CommandsCarryTheirSignal',
   'ForcesOnlyOnEscalation',
   'EndsWithActionOnlyOnExit',
-  'DrainsOnlyUnsignalled',
+  'DrainsOnlyCleanSuccess',
   'NeverStuck',
 ] as const;
 
@@ -156,9 +156,20 @@ const mutants: ReadonlyArray<{
   },
   {
     name: 'drains a clean exit after a signal',
-    violates: 'DrainsOnlyUnsignalled',
+    violates: 'DrainsOnlyCleanSuccess',
     transition: (state, event) =>
       event.kind === 'Exited' && event.cleanSuccess && !state.finished
+        ? { state: { ...state, finished: true }, command: { kind: 'Drain' } }
+        : runnerTransition(state, event),
+  },
+  {
+    name: 'drains a failure nobody signalled',
+    violates: 'DrainsOnlyCleanSuccess',
+    transition: (state, event) =>
+      event.kind === 'Exited' &&
+      !event.cleanSuccess &&
+      state.received === undefined &&
+      !state.finished
         ? { state: { ...state, finished: true }, command: { kind: 'Drain' } }
         : runnerTransition(state, event),
   },
