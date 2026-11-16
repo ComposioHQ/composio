@@ -151,8 +151,14 @@ export class ComposioInvalidModifierError extends ComposioError {
   }
 }
 
+/** Options for a `ComposioToolExecutionError`. */
+export type ComposioToolExecutionErrorOptions = ComposioErrorOptions;
+
 export class ComposioToolExecutionError extends ComposioError {
-  constructor(message: string = 'Tool execution error', options: ComposioErrorOptions = {}) {
+  constructor(
+    message: string = 'Tool execution error',
+    options: ComposioToolExecutionErrorOptions = {}
+  ) {
     super(message, {
       ...options,
       code: options.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,

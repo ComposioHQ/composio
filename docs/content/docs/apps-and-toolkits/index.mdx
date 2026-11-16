@@ -1,0 +1,76 @@
+---
+title: Apps vs toolkits
+description: What a toolkit is, how an App groups the toolkits that exist for one product, and why sibling toolkits never share a connection
+keywords: [app, toolkit, apps vs toolkits, toolkit slug, sibling toolkits, notion_mcp, catalog]
+isNew: true
+---
+
+A **toolkit** is the unit you name everywhere in Composio: one slug and a set of tools with its supported authentication methods. An **App** groups the toolkits that exist for the same product, so you can compare them.
+
+An App can contain one toolkit or several. The difference matters when a product has more than one. The Notion app holds `notion`, which Composio builds on Notion's public API, and `notion_mcp`, which connects to [Notion's own hosted MCP server](/docs/apps-and-toolkits/provider-mcps).
+
+## An App is a grouping, not an address
+
+Use an App to compare related toolkits. When an SDK or API parameter asks for a toolkit, pass its exact toolkit slug, not the App display name:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["notion"]  # a toolkit slug, never an App name
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["notion"], // a toolkit slug, never an App name
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["notion"]}}'
+```
+</Tab>
+</Tabs>
+
+## Grouping keeps toolkit choices separate
+
+An App groups related toolkits for comparison. Grouping does not combine their tools or credentials, and the first toolkit in a group is not a recommendation.
+
+Use the group shown in the catalog. A shared provider name or a suffix such as `_mcp` does not establish that two toolkits belong together. Products for different jobs or acting identities can remain separate, such as Slack and Slackbot or a core product and its advertising API.
+
+## Sibling toolkits never share a connection
+
+Connecting `notion` does _not_ connect `notion_mcp`, even for the same user. Each toolkit has its own auth configs and connected accounts. Composio managed auth availability also belongs to the individual toolkit.
+
+The same separation applies to session filters. `toolkits: ["notion"]` makes `notion` available without making `notion_mcp` available.
+
+<Callout type="info" title="Check authentication for each toolkit">
+If both toolkits require authentication, each needs its own connection. A toolkit that declares no authentication does not require a sign-in. Enable the toolkits your task needs. See [Configuring sessions](/docs/configuring-sessions) for the enable and disable examples.
+</Callout>
+
+## Find apps and toolkits in the dashboard
+
+Open [Toolkits in the dashboard](https://dashboard.composio.dev/~/project/toolkits?utm_source=docs&utm_medium=content&utm_campaign=apps-and-toolkits). For an App with multiple toolkits, compare each toolkit's slug, type, authentication methods, tools, and triggers before connecting it.
+
+**Composio Built** and **Provider MCP** describe where tools come from. **Composio managed auth** describes who supplies the OAuth app. These are separate properties.
+
+## Related guides
+
+<Cards>
+  <Card icon={<Plug />} title="What are Provider MCPs" href="/docs/apps-and-toolkits/provider-mcps" description="Toolkits backed by a product's hosted MCP server" />
+  <Card icon={<RouteIcon />} title="Composio Built vs Provider MCPs" href="/docs/apps-and-toolkits/composio-built-vs-provider-mcp" description="Choose a toolkit for your task" />
+  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Choose which toolkits a session can use" />
+</Cards>
