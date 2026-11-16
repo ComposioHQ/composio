@@ -12,7 +12,8 @@ Local changes adapt the diagnostics to Composio's tagged-error conventions,
 remove unused helpers, and register only these two rules as `composio-effect`.
 Import recognition also resolves lexical bindings, so a local parameter that
 shadows an Effect import is not treated as the Effect module.
-Local traversal handles conditional error replacements and property values
-yielded during construction while preserving deferred service operations.
+Local traversal handles conditional error replacements, property values yielded
+during construction, and transparent wrappers around service options while
+preserving deferred service operations.
 These are syntax and same-file scope checks, not type checking or a proof that
 every failure retains its cause.

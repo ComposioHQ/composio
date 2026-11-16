@@ -10,6 +10,7 @@ import {
   moduleCallName,
   moduleMemberName,
   serviceClass,
+  unwrapNode,
   type EffectModuleNames,
 } from '../shared/effect-modules.ts';
 
@@ -28,6 +29,15 @@ function isServiceClassNode(node: ESTree.Node | null, names: EffectModuleNames):
     (node?.type === 'ClassDeclaration' || node?.type === 'ClassExpression') &&
     serviceClass(node, names) !== null
   );
+}
+
+/** The parent outside parentheses and erased TypeScript expression wrappers. */
+function expressionParent(node: ESTree.Node): ESTree.Node | null {
+  let current = node;
+  while (current.parent !== null && unwrapNode(current.parent) === node) {
+    current = current.parent;
+  }
+  return current.parent;
 }
 
 /** Whether `node`, entered from `child`, is where a service is constructed. */
@@ -56,11 +66,13 @@ function isConstructionRoot(
     keyName(node.key) === 'make'
   ) {
     const options = node.parent;
-    const superCall = options.parent;
+    if (options.type !== 'ObjectExpression') return false;
+    const superCall = expressionParent(options);
+    if (superCall?.type !== 'CallExpression') return false;
+    const owner = expressionParent(superCall);
     return (
-      options.type === 'ObjectExpression' &&
-      superCall?.type === 'CallExpression' &&
-      isServiceClassNode(superCall.parent, names)
+      (owner?.type === 'ClassDeclaration' || owner?.type === 'ClassExpression') &&
+      serviceClass(owner, names)?.options === options
     );
   }
   if (node.type === 'CallExpression' && node.arguments.some(argument => argument === child)) {

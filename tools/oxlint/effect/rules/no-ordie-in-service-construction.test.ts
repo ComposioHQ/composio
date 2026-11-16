@@ -9,11 +9,39 @@ const imports = `
 	import * as Layer from "effect/Layer";
 `;
 const constructionOrDie = { messageId: 'constructionOrDie', data: { member: 'orDie' } };
+const constructionOptions = `{
+  make: Effect.gen(function* () {
+    const token = yield* load.pipe(Effect.orDie);
+    return { token };
+  }),
+}`;
+const serviceCall = (options: string) =>
+  `Context.Service<Client, ClientShape>()("Client", ${options})`;
 
 tester.run('anti-slop-effect/no-ordie-in-service-construction', noOrDieInServiceConstructionRule, {
   valid: [
     `import { Layer } from "effect";
      function build(Layer: OtherLibrary) { return live.pipe(Layer.orDie); }`,
+    `${imports}
+    const ordinary = define(({ make: Effect.gen(function* () {
+      return yield* load.pipe(Effect.orDie);
+    }) } satisfies Options));
+    class NotService extends (define(({ make: Effect.gen(function* () {
+      return yield* load.pipe(Effect.orDie);
+    }) } as Options)) as Constructor) {}`,
+    `${imports}
+    class Store extends (Context.Service<Store, StoreShape>()("Store", ({
+      make: Effect.gen(function* () {
+        return { find: () => Effect.gen(function* () {
+          return yield* load.pipe(Effect.orDie);
+        }) };
+      }),
+    } satisfies Options)) as Constructor) {}`,
+    `import { Context } from "other-library";
+    import { Effect } from "effect";
+    class OtherService extends (Context.Service<OtherService, OtherShape>()("Other", ({
+      make: Effect.gen(function* () { return yield* load.pipe(Effect.orDie); }),
+    } satisfies Options)) as Constructor) {}`,
     // orDie inside an operation of the returned service.
     `${imports}
 		export class Store extends Context.Service<Store, StoreShape>()("@app/Store", {
@@ -68,6 +96,20 @@ tester.run('anti-slop-effect/no-ordie-in-service-construction', noOrDieInService
 		const layer = live.pipe(Layer.orDie);`,
   ],
   invalid: [
+    ...[
+      serviceCall(`(${constructionOptions})`),
+      serviceCall(`${constructionOptions} as Options`),
+      serviceCall(`<Options>${constructionOptions}`),
+      serviceCall(`${constructionOptions} satisfies Options`),
+      `(${serviceCall(constructionOptions)})`,
+      `(${serviceCall(constructionOptions)} as Constructor)`,
+      `(<Constructor>${serviceCall(constructionOptions)})`,
+      `(${serviceCall(constructionOptions)} satisfies Constructor)`,
+      `(((${serviceCall(`((${constructionOptions} as Options) satisfies Options)`)} as Constructor) satisfies Constructor))`,
+    ].map(extendsExpression => ({
+      code: `${imports} class Client extends ${extendsExpression} {}`,
+      errors: [constructionOrDie],
+    })),
     {
       code: `${imports}
       class Client extends Context.Service<Client, ClientShape>()("Client", {
