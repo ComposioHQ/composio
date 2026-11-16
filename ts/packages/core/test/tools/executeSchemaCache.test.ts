@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
+import ComposioClient, { APIError, Auth, createFetchTransport } from '@composio/client';
 import { Tools } from '../../src/models/Tools';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import { MockProvider } from '../utils/mocks/provider.mock';
@@ -234,5 +234,25 @@ describe('rate limit errors', () => {
 
     expect(error).toBeInstanceOf(ComposioToolFetchError);
     expect(isComposioRateLimitError(error)).toBe(false);
+  });
+});
+
+describe('transport metadata on errors', () => {
+  it('reads the status and request id of a rejected schema fetch from its cause', async () => {
+    const { tools } = createTools({
+      retrieve: () =>
+        json(
+          { error: { message: 'bad key', code: 1001, slug: 'UNAUTHORIZED', status: 401 } },
+          401,
+          { 'x-request-id': 'req_fetch_401' }
+        ),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolFetchError);
+    expect(error.statusCode).toBe(401);
+    expect(error.requestId).toBe('req_fetch_401');
+    expect(error.cause).toBeInstanceOf(APIError);
   });
 });
