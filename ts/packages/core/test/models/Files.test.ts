@@ -45,6 +45,35 @@ const transferUntilAborted = (_url: string, init?: RequestInit): Promise<Respons
     signal.addEventListener('abort', () => reject(signal.reason), { once: true });
   });
 
+/**
+ * A download whose headers arrive at once but whose body stalls after the
+ * first chunk. Like `fetch`, the body stream fails with the signal's reason
+ * when the signal aborts. `bodyRead` reports when the SDK has started reading.
+ */
+const responseWithStalledBody = () => {
+  const state = { bodyRead: false };
+  const fetchImpl = (_url: string, init?: RequestInit): Promise<Response> => {
+    const signal = init?.signal;
+    if (!signal) {
+      return Promise.reject(new Error('fetch was called without the caller signal'));
+    }
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        signal.addEventListener('abort', () => controller.error(signal.reason), { once: true });
+      },
+      pull(controller) {
+        if (state.bodyRead) {
+          return new Promise<void>(() => {});
+        }
+        state.bodyRead = true;
+        controller.enqueue(new Uint8Array(4));
+      },
+    });
+    return Promise.resolve(new Response(body, { status: 200 }));
+  };
+  return { state, fetchImpl };
+};
+
 const uploadParams = {
   file: new File(['report contents'], 'report.txt', { type: 'text/plain' }),
   toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
@@ -172,6 +201,19 @@ describe('Files request cancellation', () => {
       await expect(
         files.download(downloadParams, { signal: AbortSignal.timeout(10) })
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('rejects with ComposioRequestCancelledError and writes nothing when aborted while reading the body', async () => {
+      const controller = new AbortController();
+      const { state, fetchImpl } = responseWithStalledBody();
+      mockFetch.mockImplementationOnce(fetchImpl);
+
+      const download = files.download(downloadParams, { signal: controller.signal });
+      await vi.waitFor(() => expect(state.bodyRead).toBe(true));
+      controller.abort();
+
+      await expect(download).rejects.toBeInstanceOf(ComposioRequestCancelledError);
       expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
 
