@@ -239,7 +239,13 @@ const modelBehaviors = async (): Promise<ReadonlyArray<Behavior>> => {
       ),
   });
   if (result.status !== 'success') {
-    throw new Error(`The runner model failed: ${result.status}`);
+    // The replays below cannot run: name the invariant that broke, at collection time.
+    const { name, message } = result.violation ?? {};
+    throw new Error(
+      `The runner model failed: ${result.status}${name === undefined ? '' : ` (${name})`}${
+        message === undefined ? '' : `: ${message}`
+      }`
+    );
   }
   const dot = [...written.values()].join('\n');
   const quoted = '"((?:[^"\\\\]|\\\\.)*)"';
@@ -273,8 +279,17 @@ const modelBehaviors = async (): Promise<ReadonlyArray<Behavior>> => {
     );
 };
 
-/** Lets the runtime settle the fiber after a step. */
-const settle = () => new Promise(resolve => setTimeout(resolve, 0));
+/**
+ * Lets the runtime settle the fiber after a step. Effect schedules fiber work with
+ * `setImmediate`, so a step's finalizer and the fiber observer can be a few scheduler turns away;
+ * three turns cover them, whatever the machine's speed.
+ */
+const settle = async () => {
+  const turn = () => new Promise(resolve => setImmediate(resolve));
+  await turn();
+  await turn();
+  await turn();
+};
 
 /**
  * Runs `behavior` through the real runner: a command that cooperates on the model's signals,
