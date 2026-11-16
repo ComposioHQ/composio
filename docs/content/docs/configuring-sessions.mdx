@@ -211,9 +211,12 @@ The session API rejects unknown root keys with a `400` before it creates anythin
 
 When a product has more than one toolkit, each has its own slug, and enabling one never enables the other. Enable `["notion_mcp"]` to use only Notion's Provider MCP toolkit, or disable one sibling to exclude it while keeping other toolkits discoverable. You can't pass an App: the `toolkits` lists take exact toolkit slugs only. See [Apps vs toolkits](/docs/apps-and-toolkits) for what the siblings are, and [Composio Built vs Provider MCPs](/docs/apps-and-toolkits/composio-built-vs-provider-mcp) for picking one.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
+from composio import Composio
+
+composio = Composio()
 # Only the Provider MCP toolkit
 session = composio.sessions.create(
     user_id="user_123",
@@ -241,6 +244,21 @@ const session = await composio.create("user_123", {
 const session2 = await composio.create("user_123", {
   toolkits: { disable: ["notion_mcp"] },
 });
+```
+</Tab>
+<Tab value="API">
+```bash
+# Only the Provider MCP toolkit
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["notion_mcp"]}}'
+
+# Keep other toolkits discoverable, but exclude notion_mcp
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"disable": ["notion_mcp"]}}'
 ```
 </Tab>
 </Tabs>

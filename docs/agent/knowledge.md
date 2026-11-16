@@ -22,11 +22,11 @@ By default a session gives your agent direct tools, called through a provider pa
 
 ## Apps: Composio Built vs Provider MCP toolkits (/docs/apps-and-toolkits)
 
-An App groups the sibling toolkits for one product in the catalog; for example, the Notion app contains the `notion` and `notion_mcp` toolkits. A Composio Built toolkit is built and maintained by Composio on the product's public API and can have triggers. A Provider MCP toolkit (slug ending `_mcp`) connects to the product's own hosted MCP server, commonly uses DCR OAuth, and has no triggers today. Siblings are separate toolkits with separate auth configs and connected accounts; sessions, search, and execution take exact toolkit slugs, and an App has no slug. To choose, compare auth schemes, tool lists, and triggers, and prefer the toolkit your users can authenticate.
+An App groups the sibling toolkits for one product in the catalog; for example, the Notion app contains the `notion` and `notion_mcp` toolkits. A Composio Built toolkit is built and maintained by Composio on the product's public API and can have triggers. A Provider MCP toolkit (for example, `notion_mcp`) connects to the product's own hosted MCP server, commonly uses DCR OAuth, and has no triggers today. Siblings are separate toolkits with separate auth configs and connected accounts; sessions, search, and execution take exact toolkit slugs, and an App display name is not a toolkit identifier. To choose, compare auth schemes, tool lists, and triggers, and prefer the toolkit your users can authenticate.
 
 ## Custom MCP vs Provider MCP toolkits (/docs/extending-sessions/custom-mcp)
 
-A Custom MCP toolkit is your own remote MCP server registered into your project (slug `CUSTOM_*`); it is project-private and never grouped into an App. A Provider MCP toolkit is a catalog toolkit that connects to a product's own hosted MCP server (slug ending `_mcp`) and is available to every project. Use Custom MCP for an MCP server that isn't in the catalog; when the product already ships a Provider MCP toolkit, use that instead.
+A Custom MCP toolkit is your own remote MCP server registered into your project (slug `CUSTOM_*`); it can be shared within the project or private to one user and never grouped into an App. A Provider MCP toolkit is a catalog toolkit that connects to a product's own hosted MCP server (for example, `notion_mcp`) and is available to every project. Use Custom MCP for an MCP server that isn't in the catalog; when the product already ships a Provider MCP toolkit, use that instead.
 
 ## Sandbox files and the /mnt/files mount (/docs/sandbox)
 

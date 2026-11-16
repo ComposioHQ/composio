@@ -49,7 +49,7 @@ Keep the same project key and application user ID. Generate a fresh Connect Link
 
 ### No active connection on a sibling toolkit
 
-A `NoActiveConnection` error can appear when the user connected one toolkit of a product's App but the execution targets its sibling: the connection is on `notion` while the tool belongs to `notion_mcp`, or the reverse. Sibling toolkits never share a connection. Link the exact slug the execution uses, or switch the execution to the slug that is already connected.
+A `NoActiveConnection` error can appear when the user connected one toolkit of a product's App but the execution targets its sibling: the connection is on `notion` while the tool belongs to `notion_mcp`, or the reverse. Sibling toolkits never share a connection. Link the exact toolkit the tool belongs to. If you choose an already-connected sibling instead, rediscover its tools and inspect their schemas before calling them; sibling tool slugs and inputs are not interchangeable.
 
 ### For You client authentication
 

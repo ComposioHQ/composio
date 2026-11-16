@@ -5,17 +5,20 @@ keywords: [app, toolkit, apps vs toolkits, toolkit slug, sibling toolkits, notio
 isNew: true
 ---
 
-A **toolkit** is the unit you name everywhere in Composio: one slug, one auth setup, one set of tools. An **App** groups the toolkits that exist for the same product, so you can compare them.
+A **toolkit** is the unit you name everywhere in Composio: one slug and a set of tools with its supported authentication methods. An **App** groups the toolkits that exist for the same product, so you can compare them.
 
-Most products have exactly one toolkit, so the two words describe the same thing and you never notice the App layer. The difference matters when a product has more than one. The Notion app holds `notion`, which Composio builds on Notion's public API, and `notion_mcp`, which connects to [Notion's own hosted MCP server](/docs/apps-and-toolkits/provider-mcps).
+An App can contain one toolkit or several. The difference matters when a product has more than one. The Notion app holds `notion`, which Composio builds on Notion's public API, and `notion_mcp`, which connects to [Notion's own hosted MCP server](/docs/apps-and-toolkits/provider-mcps).
 
 ## An App is a grouping, not an address
 
-An App is a way of browsing. It has no slug, and nothing operational accepts an App name. Sessions, tool search, auth configs, connected accounts, and execution all take exact toolkit slugs:
+Use an App to compare related toolkits. When an SDK or API parameter asks for a toolkit, pass its exact toolkit slug, not the App display name:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
+from composio import Composio
+
+composio = Composio()
 session = composio.sessions.create(
     user_id="user_123",
     toolkits=["notion"]  # a toolkit slug, never an App name
@@ -32,38 +35,42 @@ const session = await composio.create("user_123", {
 });
 ```
 </Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["notion"]}}'
+```
+</Tab>
 </Tabs>
 
-## An App holds any number of toolkits
+## Grouping keeps toolkit choices separate
 
-They aren't always one of each kind:
+An App groups related toolkits for comparison. Grouping does not combine their tools or credentials, and the first toolkit in a group is not a recommendation.
 
-- **Canva** pairs `canva` with `canva_mcp`, the plainest shape.
-- **Supabase** holds `supabase`, `supabase_mcp`, and `supabase_read_mcp`, two of them Provider MCP.
-- **Slack** holds `slack` and `slackbot`, both built by Composio, differing by the identity the tools act as.
+Use the group shown in the catalog. A shared provider name or a suffix such as `_mcp` does not establish that two toolkits belong together. Products for different jobs or acting identities can remain separate, such as Slack and Slackbot or a core product and its advertising API.
 
 ## Sibling toolkits never share a connection
 
-Each toolkit has its own auth configs and its own connected accounts. Connecting `notion` does _not_ connect `notion_mcp`, even for the same user, and the managed-auth badge is per toolkit. The same separation applies to session scoping: `toolkits: ["notion"]` exposes only `notion` tools, so the agent can't discover or call `notion_mcp` tools.
+Connecting `notion` does _not_ connect `notion_mcp`, even for the same user. Each toolkit has its own auth configs and connected accounts. Composio managed auth availability also belongs to the individual toolkit.
 
-<Callout type="warn" title="Enabling both siblings means authenticating twice">
-Each toolkit your session uses needs its own connection. Enable both only when you're comparing them or migrating from one to the other. See [Configuring sessions](/docs/configuring-sessions#sibling-toolkits) for the enable and disable recipes.
+The same separation applies to session filters. `toolkits: ["notion"]` makes `notion` available without making `notion_mcp` available.
+
+<Callout type="info" title="Check authentication for each toolkit">
+If both toolkits require authentication, each needs its own connection. A toolkit that declares no authentication does not require a sign-in. Enable the toolkits your task needs. See [Configuring sessions](/docs/configuring-sessions#sibling-toolkits) for the enable and disable examples.
 </Callout>
 
-## Finding apps and toolkits in the dashboard
+## Find apps and toolkits in the dashboard
 
-The Toolkits page in the [dashboard](https://dashboard.composio.dev/~/project/toolkits?utm_source=docs&utm_medium=content&utm_campaign=docs-apps-and-toolkits) opens on two sections: **Custom Toolkits**, holding the servers your project registered, and the **Composio Catalog** below it. An app with more than one toolkit shows a stacked icon with a count and lists every member slug.
+Open [Toolkits in the dashboard](https://dashboard.composio.dev/~/project/toolkits?utm_source=docs&utm_medium=content&utm_campaign=apps-and-toolkits). For an App with multiple toolkits, compare each toolkit's slug, type, authentication methods, tools, and triggers before connecting it.
 
-<Figure width={1456} height={839} src="/images/docs/toolkit-apps/catalog-list.jpg" alt="The Toolkits catalog in list layout, with the Notion row showing a two-toolkit count and both slugs" caption="One row per app. Notion shows a stacked icon with a count and both member slugs, while apps with a single toolkit show one slug." />
-
-Clicking an app with more than one toolkit opens a drawer listing each sibling with its own badge, slug, auth methods, and tool and trigger counts:
-
-<Figure width={1456} height={839} src="/images/docs/toolkit-apps/app-drawer-notion.jpg" alt="The Notion app drawer listing two toolkits with their badges, slugs, auth methods, and tool and trigger counts" caption="The Notion app drawer. Each sibling carries its own badge, auth, and counts, which is what you compare when picking one." />
+**Composio Built** and **Provider MCP** describe where tools come from. **Composio managed auth** describes who supplies the OAuth app. These are separate properties.
 
 ## Related guides
 
 <Cards>
-  <Card icon={<Plug />} title="What are Provider MCPs" href="/docs/apps-and-toolkits/provider-mcps" description="Toolkits backed by a product's own hosted MCP server" />
-  <Card icon={<RouteIcon />} title="Composio Built vs Provider MCPs" href="/docs/apps-and-toolkits/composio-built-vs-provider-mcp" description="Which sibling to use when a product ships more than one" />
-  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Enable, disable, and pin toolkits for a session" />
+  <Card icon={<Plug />} title="What are Provider MCPs" href="/docs/apps-and-toolkits/provider-mcps" description="Toolkits backed by a product's hosted MCP server" />
+  <Card icon={<RouteIcon />} title="Composio Built vs Provider MCPs" href="/docs/apps-and-toolkits/composio-built-vs-provider-mcp" description="Choose a toolkit for your task" />
+  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Choose which toolkits a session can use" />
 </Cards>
