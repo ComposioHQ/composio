@@ -30,7 +30,7 @@ import { PACKAGE_MANAGERS } from './package-install';
 import { z } from 'zod';
 import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
-import { HOME_OG_DESCRIPTION } from './toolkit-count';
+import { HOME_OG_DESCRIPTION, resolveToolkitCount } from './toolkit-count';
 import { componentsToMarkdown } from './example-document';
 import { providerListMarkdown } from './providers';
 
@@ -355,7 +355,7 @@ function endpointsTableToMarkdown(payload: string, version: ApiVersion, url?: st
  * there since the changelog tree is not versioned.
  */
 export function mdxToCleanMarkdown(content: string, url?: string): string {
-  let result = content;
+  let result = resolveToolkitCount(content);
   const version = url ? detectApiVersion(url) : '3.1';
 
   // Remove frontmatter

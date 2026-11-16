@@ -41,6 +41,8 @@ bun run inventory:code-examples
 
 ## Rules
 
+- Catalog-size copy uses "apps" in marketing text, including site descriptions, "toolkits" in technical documentation about toolkits, and "tools" only for an individual toolkit's actions. Use `TOOLKIT_COUNT_LABEL` from `lib/toolkit-count.ts` or `%TOOLKIT_COUNT%` in Markdown/MDX for the shared count.
+
 - Production Twoslash and `check:typescript-snippets` cover different maintained TypeScript surfaces. Read `docs/agent-guidance/context/twoslash.md` for coverage, installed-version boundaries, and annotation rules.
 - Maintained operation examples offer Python, TypeScript, and API options, or a specific justified exception. Read `docs/agent-guidance/context/code-examples.md` for the full inventory, generated/historical limits, check commands, and scoped markers. Passing checks do not establish semantic equivalence or justify an exemption.
 - Parse untyped or external data (JSON files, fetched payloads, framework page data) once at the boundary with zod schemas and let `z.infer` types flow downstream. Never hand-roll structural guards (`'x' in obj` / `typeof` chains), cast parsed JSON with `as`, or fake validation with `z.custom(() => true)`.

@@ -42,6 +42,8 @@
   The `composio-cli` skill's developer reference now lists `composio orgs list`
   in place of `composio dev orgs list`, which does not exist.
 
+- Update @composio/client to 2.1.32 to include the latest API changes.
+
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root
   `composio link …` examples, which link the consumer user, not a user of the
@@ -96,6 +98,14 @@
   signal, or a stop that takes longer than 10 seconds, ends the CLI at once:
   128 plus the signal's number, or, for `composio run`, the script's process
   group is killed and the CLI is killed by that signal.
+
+- `composio dev logs tools` now searches and retrieves logs through the public
+  tool execution logs API. Pages are capped at 100. Piped JSON uses the public
+  `logs` / `next_cursor` envelope and unified log detail fields. The public API
+  does not support `--case-sensitive` or the legacy `--session-id` filter;
+  these now fail with an explanation. `--tool-router-session-id` remains supported.
+  Each filter flag takes one value; a comma-separated list now fails instead of
+  matching nothing.
 
 - `composio dev connected-accounts link <toolkit>` (with or without `--list`)
   now acts on your developer project, like the other `composio dev` commands:

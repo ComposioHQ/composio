@@ -1,4 +1,6 @@
-import { Array as Arr, Effect, Option, String as Str } from 'effect';
+import type { LogCreateToolExecutionParams } from '@composio/client/resources/logs';
+import { Array as Arr, Clock, Effect, Option, String as Str } from 'effect';
+import { commandInputError } from 'src/commands/errors';
 import { CommandSurface } from 'src/commands/surface';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { failedWith } from 'src/effects/request-error';
@@ -6,15 +8,13 @@ import { commandHintStep } from 'src/services/command-hints';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { clampLimit } from 'src/ui/clamp-limit';
 import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
-import { toSearchParam, type SearchParam } from '../utils';
 import { ToolLogsRequestError } from './logs.tools.errors';
 
 export type LogsToolsParams = {
   readonly logId: Option.Option<string>;
-  readonly cursor: Option.Option<number>;
+  readonly cursor: Option.Option<string>;
   readonly from: Option.Option<number>;
   readonly to: Option.Option<number>;
   readonly limit: number;
@@ -40,34 +40,39 @@ type ToolLogFilterInput = {
   readonly userId?: string;
   readonly logId?: string;
   readonly toolRouterSessionId?: string;
-  readonly sessionId?: string;
 };
 
-/** The search field each filter is sent as, in the order the filters are sent. */
+/**
+ * The search field each filter is sent as and the flag that sets it, in the
+ * order the filters are sent.
+ */
 const TOOL_LOG_FILTER_FIELDS = [
-  ['tool', 'action_key'],
-  ['toolkit', 'toolkit_key'],
-  ['connectedAccountId', 'connected_account_id'],
-  ['authConfigId', 'auth_config_id'],
-  ['status', 'execution_status'],
-  ['userId', 'user_id'],
-  ['logId', 'log_id'],
-  ['toolRouterSessionId', 'tool_router_session_id'],
-  ['sessionId', 'session_id'],
-] as const satisfies ReadonlyArray<readonly [keyof ToolLogFilterInput, string]>;
+  ['tool', 'tool_slug', '--tool'],
+  ['toolkit', 'toolkit_slug', '--toolkit'],
+  ['connectedAccountId', 'connected_account_id', '--connected-account-id'],
+  ['authConfigId', 'auth_config_id', '--auth-config-id'],
+  ['status', 'status', '--status'],
+  ['userId', 'user_id', '--user-id'],
+  ['logId', 'log_id', '--log-id'],
+  ['toolRouterSessionId', 'session_id', '--tool-router-session-id'],
+] as const satisfies ReadonlyArray<readonly [keyof ToolLogFilterInput, string, string]>;
 
 /**
- * One `==` search param per comma-separated value of each present filter, in
- * the order of `TOOL_LOG_FILTER_FIELDS`.
+ * The flag of the first filter given more than one comma-separated value. The
+ * public API combines filters with AND, so several values for one field would
+ * match nothing.
  */
-export const buildToolLogShorthandSearchParams = (
+const findMultiValuedFilter = (filters: ToolLogFilterInput): Option.Option<string> =>
+  Arr.findFirst(TOOL_LOG_FILTER_FIELDS, ([key]) => parseCsv(filters[key] ?? '').length > 1).pipe(
+    Option.map(([, , flag]) => flag)
+  );
+
+/** One equality filter for each present flag, in the order of `TOOL_LOG_FILTER_FIELDS`. */
+const buildToolLogFilters = (
   filters: ToolLogFilterInput
-): Array<SearchParam> =>
+): NonNullable<LogCreateToolExecutionParams['filters']> =>
   Arr.flatMap(TOOL_LOG_FILTER_FIELDS, ([key, field]) =>
-    Option.match(Option.fromUndefinedOr(filters[key]), {
-      onNone: () => [],
-      onSome: csv => parseCsv(csv).map(value => toSearchParam(field, value)),
-    })
+    parseCsv(filters[key] ?? '').map(value => ({ field, operator: '==' as const, value }))
   );
 
 const showToolLog = (toolLogId: string) =>
@@ -76,14 +81,12 @@ const showToolLog = (toolLogId: string) =>
     const client = yield* (yield* ComposioClientSingleton).get();
     const toolLog = yield* ui.withSpinner(
       `Fetching tool log "${toolLogId}"...`,
-      client._internal.logs.tools
-        .retrieve(toolLogId, idempotent)
+      client.logs
+        .retrieveToolExecution(toolLogId, idempotent)
         .pipe(failedWith(ToolLogsRequestError, `Failed to fetch tool log "${toolLogId}".`))
     );
 
-    yield* ui.log.info(
-      `${formatToolLogInfo(toolLog)}\n\nPayload:\n${JSON.stringify(toolLog.payloadReceived, null, 2)}\n\nResponse:\n${JSON.stringify(toolLog.response, null, 2)}`
-    );
+    yield* ui.log.info(formatToolLogInfo(toolLog));
     yield* ui.output(JSON.stringify(toolLog, null, 2));
   });
 
@@ -106,38 +109,67 @@ const listToolLogs = ({
   Effect.gen(function* () {
     const userIdFilter = Option.orElse((yield* CommandSurface).userId, () => userId);
     const ui = yield* TerminalUI;
-    const client = yield* (yield* ComposioClientSingleton).get();
-    const searchParams = buildToolLogShorthandSearchParams(
-      optionalParams({
-        tool,
-        toolkit,
-        connectedAccountId,
-        authConfigId,
-        status,
-        userId: userIdFilter,
-        logId: logIdFilter,
-        toolRouterSessionId,
-        sessionId,
-      })
-    );
+    const now = yield* Clock.currentTimeMillis;
+    const invalidInput = commandInputError('dev logs tools');
+    if (caseSensitive) {
+      return yield* invalidInput(
+        'The public tool logs API does not support --case-sensitive. Remove this flag.',
+        '--case-sensitive'
+      );
+    }
+    if (Option.isSome(sessionId)) {
+      return yield* invalidInput(
+        'The public tool logs API does not support the legacy --session-id filter. Use --tool-router-session-id for a Tool Router session.',
+        '--session-id'
+      );
+    }
+    const filterInput = optionalParams({
+      tool,
+      toolkit,
+      connectedAccountId,
+      authConfigId,
+      status,
+      userId: userIdFilter,
+      logId: logIdFilter,
+      toolRouterSessionId,
+    });
+    const multiValuedFlag = findMultiValuedFilter(filterInput);
+    if (Option.isSome(multiValuedFlag)) {
+      return yield* invalidInput(
+        `The public tool logs API matches one value per filter. Pass a single value to ${multiValuedFlag.value}.`,
+        multiValuedFlag.value
+      );
+    }
+    if (
+      Option.isSome(status) &&
+      parseCsv(status.value).some(value => value !== 'success' && value !== 'failed')
+    ) {
+      return yield* invalidInput('Use success or failed for --status.', '--status');
+    }
+    const timeRange =
+      Option.isSome(from) || Option.isSome(to)
+        ? { from: Option.getOrElse(from, () => 0), to: Option.getOrElse(to, () => now) }
+        : undefined;
+    const filters = buildToolLogFilters(filterInput);
 
+    const client = yield* (yield* ComposioClientSingleton).get();
+    // The client names this read-only search POST createToolExecution.
     const response = yield* ui.withSpinner(
       'Fetching tool logs...',
-      client._internal.logs.tools
-        .list(
+      client.logs
+        .createToolExecution(
           {
-            ...optionalParams({ from, to }),
+            time_range: timeRange,
             cursor: Option.getOrNull(cursor),
-            limit: clampLimit(limit),
-            case_sensitive: caseSensitive,
-            search_params: nonEmptyOrUndefined(searchParams),
+            limit: Math.max(1, Math.min(100, limit)),
+            filters: nonEmptyOrUndefined(filters),
           },
           idempotent
         )
         .pipe(failedWith(ToolLogsRequestError, 'Failed to fetch tool logs.'))
     );
 
-    yield* Arr.match(response.data ?? [], {
+    yield* Arr.match(response.logs ?? [], {
       onEmpty: () => ui.log.warn('No tool logs found for the given filters.'),
       onNonEmpty: logs =>
         Effect.gen(function* () {
@@ -154,8 +186,8 @@ const listToolLogs = ({
             );
           }
 
-          if (response.nextCursor !== null && response.nextCursor !== undefined) {
-            yield* ui.log.step(`Next cursor: ${response.nextCursor}`);
+          if (response.next_cursor !== null && response.next_cursor !== undefined) {
+            yield* ui.log.step(`Next cursor: ${response.next_cursor}`);
           }
         }),
     });
