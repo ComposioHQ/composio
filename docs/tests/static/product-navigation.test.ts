@@ -131,6 +131,7 @@ describe('Docs product navigation', () => {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/authentication',
+      '/docs/authentication/session-cant-find-account',
       '/docs/skills',
       '/docs/triggers',
       '/docs/consumer-agents',
