@@ -47,6 +47,27 @@ Or by setting an environment variable:
 COMPOSIO_DISABLE_TELEMETRY=true
 ```
 
+`COMPOSIO_DISABLE_TELEMETRY` is read the same way by the TypeScript SDK, the Python SDK, and the CLI:
+
+- Unset, blank, `0`, `false`, `no`, and `off` (any casing) leave telemetry on.
+- Any other value, such as `true` or `1`, turns telemetry off.
+
+The variable wins over the initialization option. If it is set, the SDK sends no telemetry even when you pass `allowTracking: true`.
+
+The TypeScript SDK also sends no telemetry when `TELEMETRY_DISABLED` is exactly `true`, or when `NODE_ENV` is `test` or `ci`.
+
+### Python SDK
+
+The Python SDK honors the same variable, and has an equivalent initialization option:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key", allow_tracking=False)
+```
+
+`COMPOSIO_DISABLE_TELEMETRY` wins over `allow_tracking=True`. The Python SDK doesn't read `TELEMETRY_DISABLED` or `NODE_ENV`.
+
 ## Custom Telemetry Transport
 
 For advanced use cases, you can provide a custom telemetry transport to process the telemetry data according to your needs:

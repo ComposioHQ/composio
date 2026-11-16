@@ -54,9 +54,13 @@ The SDK supports several environment variables for configuration:
 ### Telemetry
 
 - `COMPOSIO_DISABLE_TELEMETRY`: Disable telemetry collection
+  - Set to `"true"` to disable. Any value other than blank, `0`, `false`, `no`, or `off` (any casing) disables telemetry
+  - Default: unset (telemetry enabled)
+  - Honored by the TypeScript SDK, the Python SDK, and the CLI
+  - Takes precedence over the `allowTracking` (TypeScript) and `allow_tracking` (Python) initialization options
+- `TELEMETRY_DISABLED`: Disable telemetry collection in the TypeScript SDK and the CLI
   - Set to `"true"` to disable
-  - Default: `"false"`
-  - Alternative to `allowTracking` initialization option
+  - Not read by the Python SDK
 
 ## SDK Initialization Options
 

@@ -57,7 +57,7 @@ The telemetry system collects, batches, and sends usage and error data from the 
 
 **Environment Awareness:**
 
-- Telemetry is disabled in certain environments (e.g., `test`, `ci`, or if `TELEMETRY_DISABLED` is set).
+- Telemetry is disabled when `NODE_ENV` is `test` or `ci`, when `COMPOSIO_DISABLE_TELEMETRY` is set to anything other than `0`, `false`, `no`, or `off`, or when `TELEMETRY_DISABLED` is `true`. The environment switches win over `allowTracking: true`.
 
 ---
 
