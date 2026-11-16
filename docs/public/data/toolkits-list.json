@@ -443,14 +443,6 @@
     "triggerCount": 0
   },
   {
-    "slug": "weathermap",
-    "name": "OpenWeatherMap",
-    "logo": "https://logos.composio.dev/api/weathermap",
-    "category": "places & weather",
-    "toolCount": 2,
-    "triggerCount": 0
-  },
-  {
     "slug": "posthog",
     "name": "PostHog",
     "logo": "https://logos.composio.dev/api/posthog",
@@ -788,14 +780,6 @@
     "category": "file management & storage",
     "toolCount": 578,
     "triggerCount": 47
-  },
-  {
-    "slug": "browser_tool",
-    "name": "Browser Tool",
-    "logo": "https://logos.composio.dev/api/browser_tool",
-    "category": "ai agents",
-    "toolCount": 5,
-    "triggerCount": 0
   },
   {
     "slug": "yousearch",
@@ -1443,7 +1427,7 @@
     "name": "Zoho Desk",
     "logo": "https://logos.composio.dev/api/zoho_desk",
     "category": "crm",
-    "toolCount": 36,
+    "toolCount": 43,
     "triggerCount": 0
   },
   {
@@ -1763,7 +1747,7 @@
     "name": "ActiveCampaign",
     "logo": "https://logos.composio.dev/api/active_campaign",
     "category": "marketing automation",
-    "toolCount": 496,
+    "toolCount": 499,
     "triggerCount": 0
   },
   {
@@ -6373,7 +6357,10 @@
     "logo": "https://logos.composio.dev/api/getanyapi",
     "category": "developer tools",
     "toolCount": 477,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "getform",
@@ -10117,7 +10104,7 @@
     "name": "Paypal",
     "logo": "https://logos.composio.dev/api/paypal",
     "category": "payment processing",
-    "toolCount": 78,
+    "toolCount": 81,
     "triggerCount": 0
   },
   {
@@ -10523,7 +10510,7 @@
     "name": "Ploid",
     "logo": "https://logos.composio.dev/api/ploid",
     "category": "ai agents",
-    "toolCount": 42,
+    "toolCount": 45,
     "triggerCount": 0
   },
   {
