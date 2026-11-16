@@ -61,7 +61,7 @@ For everything else, see [Triggers](/docs/triggers).
 
 ## Which Composio managed Slack app should I use?
 
-Slack has two managed apps. Standard is the default. Slack has approved it and gives it higher rate limits, but it does not receive the four message triggers. Legacy is not approved by Slack and gets lower rate limits, but it receives every Slack trigger. Keep Standard unless you need message triggers. See [Slack managed apps](/toolkits/managed-auth#slack-managed-apps).
+Slack has two managed apps. Slack has approved Standard and gives it higher rate limits, but it does not receive the four message triggers. Legacy is not approved by Slack and gets lower rate limits, but it receives every Slack trigger. Use Standard unless you need message triggers. See [Slack managed apps](/toolkits/managed-auth#slack-managed-apps).
 
 ## Slack Marketplace warnings during OAuth
 
