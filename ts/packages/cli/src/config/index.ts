@@ -13,6 +13,11 @@
  */
 export { APP_CONFIG } from './app';
 export { DEBUG_CONFIG } from './debug';
-export { TELEMETRY_CONFIG } from './telemetry';
-export { HOST_CONFIG, type AgentHostEnvironment, type CallerAgentSignals } from './host';
+export { TELEMETRY_CONFIG, telemetryDisabled } from './telemetry';
+export {
+  HOST_CONFIG,
+  type AgentHostEnvironment,
+  type AgentSessionEnvironment,
+  type CallerAgentSignals,
+} from './host';
 export { GITHUB_CONFIG, GITHUB_REPAIR_CONFIG, type GitHubConfig } from './github';

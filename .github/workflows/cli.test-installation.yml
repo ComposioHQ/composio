@@ -14,6 +14,7 @@ on:
   pull_request:
     paths:
       - 'install.sh'
+      - 'install.ps1'
       - 'install/**'
       - 'test/install-sh-*.test.sh'
       - '.github/workflows/cli.test-installation.yml'
@@ -28,6 +29,11 @@ on:
         description: 'Release tag or semver version to test'
         required: false
         default: 'latest'
+        type: string
+      windows:
+        description: "Set to 'false' when the release ships without the experimental Windows archive"
+        required: false
+        default: 'true'
         type: string
 
 permissions:
@@ -582,6 +588,34 @@ jobs:
 
           rm test-install.sh
 
+  test-windows-installation:
+    name: Test Windows Installation
+    if: github.event_name != 'pull_request' && inputs.windows != 'false'
+    runs-on: windows-2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install and verify published Windows release
+        shell: pwsh
+        env:
+          VERSION_INPUT: ${{ inputs.version || github.ref_name }}
+          COMPOSIO_CLI_TELEMETRY_DISABLED: '1'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:VERSION_INPUT -and $env:VERSION_INPUT -ne 'latest') {
+            $env:COMPOSIO_INSTALL_VERSION = $env:VERSION_INPUT
+          }
+          # The documented flow: pipe the script into Invoke-Expression.
+          Get-Content -Raw ./install.ps1 | Invoke-Expression
+          $expectedVersion = (Get-Content -LiteralPath "$HOME/.composio/release-tag.txt" -Raw).Trim() -replace '^@composio/cli@', ''
+          $actualVersion = (& composio --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $expectedVersion) {
+            throw "Expected Windows CLI $expectedVersion, got $actualVersion"
+          }
+          & composio --help
+          if ($LASTEXITCODE -ne 0) { throw 'Installed Windows CLI help failed.' }
+
   summary:
     name: Installation Test Summary
     needs:
@@ -590,6 +624,7 @@ jobs:
         test-install-script,
         test-architecture-detection,
         test-prerequisites,
+        test-windows-installation,
       ]
     runs-on: ubuntu-latest
     if: always() && github.event_name != 'pull_request'
@@ -630,5 +665,14 @@ jobs:
           echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS ARM64**: macOS 15, macOS 26 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY
+          echo "- **Windows x64**: Windows Server 2025" >> $GITHUB_STEP_SUMMARY
+          echo "- **Shells**: Bash, Zsh, and PowerShell" >> $GITHUB_STEP_SUMMARY
+
+          case "${{ needs.test-windows-installation.result }}" in
+            success) echo "✅ **Windows Installation**: PASSED" >> $GITHUB_STEP_SUMMARY ;;
+            skipped) echo "⏭️ **Windows Installation**: SKIPPED (release has no Windows archive)" >> $GITHUB_STEP_SUMMARY ;;
+            *)
+              echo "❌ **Windows Installation**: FAILED" >> $GITHUB_STEP_SUMMARY
+              exit 1
+              ;;
+          esac

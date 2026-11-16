@@ -131,6 +131,7 @@ describe('Docs product navigation', () => {
       '/docs/providers',
       '/docs/how-composio-works',
       '/docs/authentication',
+      '/docs/authentication/session-cant-find-account',
       '/docs/skills',
       '/docs/triggers',
       '/docs/consumer-agents',
@@ -177,6 +178,7 @@ describe('Docs product navigation', () => {
       '/docs/security/overview',
       '/docs/security/audit-logs',
       '/docs/security/token-custody',
+      '/docs/security/outbound-ips',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
     ];
@@ -202,6 +204,7 @@ describe('Docs product navigation', () => {
     expect(readinessUrls).toEqual([
       '/docs/authentication/custom-app-vs-managed-app',
       '/reference/rate-limits',
+      '/docs/poc-to-prod/avoid-rate-limits',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
     ]);
     for (const url of readinessUrls) {

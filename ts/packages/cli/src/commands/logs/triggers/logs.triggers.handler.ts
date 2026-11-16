@@ -1,10 +1,9 @@
 import type { TriggerListParams } from '@composio/client/resources/_internal/logs';
 import { Array as Arr, Effect, Option, String as Str } from 'effect';
-import { CommandSurface } from 'src/commands/surface';
+import { CommandSurface, developerProjectClient } from 'src/commands/surface';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { failedWith } from 'src/effects/request-error';
 import { commandHintStep } from 'src/services/command-hints';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -48,7 +47,7 @@ export const triggerLogSearchParams = (
 const showTriggerLog = (triggerLogId: string) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const client = yield* (yield* ComposioClientSingleton).get();
+    const client = yield* developerProjectClient;
     const triggerLog = yield* ui.withSpinner(
       `Fetching trigger log "${triggerLogId}"...`,
       client._internal.logs.triggers
@@ -81,7 +80,7 @@ const listTriggerLogs = ({
   Effect.gen(function* () {
     const userIdFilter = Option.orElse((yield* CommandSurface).userId, () => userId);
     const ui = yield* TerminalUI;
-    const client = yield* (yield* ComposioClientSingleton).get();
+    const client = yield* developerProjectClient;
     const searchParams = triggerLogSearchParams([
       ['trigger_name', trigger],
       ['trigger_id', triggerId],

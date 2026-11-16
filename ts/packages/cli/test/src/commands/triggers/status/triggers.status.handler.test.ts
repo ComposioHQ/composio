@@ -11,6 +11,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { MockConsole } from 'test/__utils__';
 import { notFoundError } from 'test/__utils__/layers/not-found';
 import { exitCodeOf } from 'test/__utils__/exit-code';
+import { DirectoryProjectTest } from 'test/__utils__/layers/developer-project';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -59,6 +60,7 @@ const triggersStatusTest = (fixture: TriggersStatusFixture = {}) => {
 
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
+    DirectoryProjectTest,
     Layer.succeed(
       TerminalUI,
       TerminalUI.of({
@@ -72,7 +74,7 @@ const triggersStatusTest = (fixture: TriggersStatusFixture = {}) => {
     Layer.succeed(
       ComposioToolkitsRepository,
       makeToolkitsRepositoryStub({
-        listActiveTriggers: params =>
+        listActiveTriggers: (_scope, params) =>
           Effect.suspend(() => {
             requests.push(params);
             return fixture.fails

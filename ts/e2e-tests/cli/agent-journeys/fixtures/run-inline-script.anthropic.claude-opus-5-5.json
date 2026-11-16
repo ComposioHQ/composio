@@ -1,0 +1,97 @@
+{
+  "$comment": "Recorded from anthropic claude-opus-5-5 by record.ts. Do not edit by hand; record again.",
+  "fixtures": [
+    {
+      "match": {
+        "turnIndex": 0,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01XyE4ywTvLamSYfRXUJdJuq",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio execute SLACK_SEND_MESSAGE --get-schema 2>&1 | head -50\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2670,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 195
+        },
+        "content": "I'll check the Slack tool's schema first so the script uses the right arguments."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 1,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01XyE4ywTvLamSYfRXUJdJuq",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01Aif6hvKXTrN3oVJXyXcvKJ",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio run '\\n  const res = await execute(\\\"SLACK_SEND_MESSAGE\\\", { channel: \\\"#general\\\", text: \\\"build passed\\\" });\\n  const d = res.data ?? {};\\n  const ts = d.ts ?? d.message?.ts ?? d.response_data?.ts;\\n  if (!ts) { console.log(\\\"No ts found; full response:\\\", JSON.stringify(res, null, 2)); }\\n  else console.log(\\\"Message timestamp:\\\", ts);\\n' 2>&1\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3159,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 200
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 2,
+        "userMessage": "Use a single `composio run` inline script to send \"build passed\" to #general on Slack and print the timestamp of the sent message.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01Aif6hvKXTrN3oVJXyXcvKJ",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "usage": {
+          "input_tokens": 3444,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 322
+        },
+        "content": "I sent \"build passed\" to #general on Slack with one `composio run` script.\n\n**Timestamp of the sent message:** `1767225600.000100`\n\nThe command I ran:\n```bash\ncomposio run '\n  const res = await execute(\"SLACK_SEND_MESSAGE\", { channel: \"#general\", text: \"build passed\" });\n  const d = res.data ?? {};\n  const ts = d.ts ?? d.message?.ts ?? d.response_data?.ts;\n  if (!ts) { console.log(\"No ts found; full response:\", JSON.stringify(res, null, 2)); }\n  else console.log(\"Message timestamp:\", ts);\n'\n```\n\nBefore running it, I checked the tool's inputs with `composio execute SLACK_SEND_MESSAGE --get-schema`. The only required fields are `channel` and `text`.\n\nThe script looks for the timestamp in a few places in the response, because the schema doesn't say where it is. If it doesn't find one, it prints the full response instead."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    }
+  ]
+}

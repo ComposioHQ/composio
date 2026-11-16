@@ -3,7 +3,11 @@
  * `composio dev init` (project scope): create the session, show or open its URL, wait for it
  * to be linked, then store the user API key it carries.
  */
-import { Data, DateTime, Effect, Option, Schedule, pipe } from 'effect';
+import { Data, DateTime, Effect, Option, pipe } from 'effect';
+import {
+  AUTHORIZATION_TIMEOUT_MINUTES,
+  authorizationPollSchedule,
+} from 'src/effects/authorization-poll';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import open from 'open';
 import type { RetrievedSession } from 'src/models/session';
@@ -40,12 +44,6 @@ class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenE
 
 export type LinkedSession = Extract<RetrievedSession, { readonly status: 'linked' }>;
 
-/** Seconds between two checks of a session that is not linked yet. */
-export const LOGIN_POLL_INTERVAL_SECONDS = 5;
-
-/** How many times a session is checked again before the wait gives up, by default. */
-const DEFAULT_LOGIN_POLL_RETRIES = 15;
-
 const POLL_COMMAND = 'composio login --poll';
 
 // --- presentation -----------------------------------------------------------------------------
@@ -61,7 +59,7 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to ${AUTHORIZATION_TIMEOUT_MINUTES} minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
 
 hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
@@ -130,27 +128,17 @@ const requireLinkedSession = (session: RetrievedSession) =>
       );
 
 /**
- * Checks the session behind a spinner until it is linked, `times` more times at most, waiting
- * at least `LOGIN_POLL_INTERVAL_SECONDS` between checks.
+ * Checks the session behind a spinner until it is linked, on `authorizationPollSchedule`: for
+ * up to `AUTHORIZATION_TIMEOUT_MINUTES`, which is also how long a pending login lives.
  */
-export const waitForLinkedSession = <E, R>(
-  getSession: Effect.Effect<RetrievedSession, E, R>,
-  times: number = DEFAULT_LOGIN_POLL_RETRIES
-) =>
+export const waitForLinkedSession = <E, R>(getSession: Effect.Effect<RetrievedSession, E, R>) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
-      Effect.retry(Effect.flatMap(getSession, requireLinkedSession), {
-        // v4 dropped `Schedule.intersect`/`Schedule.recurs`; `Schedule.max` recurs while every
-        // schedule in the list still wants to and waits for the slowest one between attempts
-        // (the v4 equivalent of intersecting delay-producing schedules), and the retry count
-        // cap moves onto `Effect.retry`'s own `times` option.
-        schedule: Schedule.max([
-          Schedule.exponential('0.3 seconds'),
-          Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`),
-        ]),
-        times,
-      }).pipe(
+      Effect.retry(
+        Effect.flatMap(getSession, requireLinkedSession),
+        authorizationPollSchedule
+      ).pipe(
         Effect.tap(() => spinner.stop('Login successful')),
         Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
       )

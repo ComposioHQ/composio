@@ -5,7 +5,7 @@ import { NodeOs } from '../services/node-os';
  * Platform and architecture detection types
  */
 export type PlatformArch = {
-  platform: 'darwin' | 'linux';
+  platform: 'darwin' | 'linux' | 'windows';
   arch: 'x64' | 'aarch64';
 };
 
@@ -23,9 +23,14 @@ export const detectPlatform: Effect.Effect<PlatformArch, UnsupportedPlatformErro
     const rawPlatform = nodeOs.platform;
     const rawArch: string = nodeOs.arch;
 
-    const platform: NodeJS.Platform = yield* Match.value(rawPlatform).pipe(
+    const platform: PlatformArch['platform'] = yield* Match.value(rawPlatform).pipe(
       Match.when('darwin', () => Effect.succeed('darwin' as const)),
       Match.when('linux', () => Effect.succeed('linux' as const)),
+      Match.when('win32', () =>
+        rawArch === 'x64'
+          ? Effect.succeed('windows' as const)
+          : Effect.fail(new UnsupportedPlatformError({ platform: rawPlatform, arch: rawArch }))
+      ),
       Match.orElse(() =>
         Effect.fail(new UnsupportedPlatformError({ platform: rawPlatform, arch: rawArch }))
       )

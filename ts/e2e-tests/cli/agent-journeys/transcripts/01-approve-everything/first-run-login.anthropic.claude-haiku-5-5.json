@@ -1,0 +1,67 @@
+{
+  "journey": "first-run-login",
+  "provider": "anthropic",
+  "model": "claude-haiku-5-5",
+  "recordedOn": "2026-11-11",
+  "revision": "82e851aad",
+  "cliPackageModified": false,
+  "skillSha256": "5193c95d25a111b643b6632335fdc82cde79e79608f8c9329c09d66055d8794b",
+  "prompt": "Check whether the Composio CLI on this machine is logged in. If it is not, log in.",
+  "reachedGoal": true,
+  "stop": "finished",
+  "modelTurns": 5,
+  "checks": [
+    {
+      "name": "the model finished by itself, within the turn limit",
+      "ok": true
+    },
+    {
+      "name": "the first `composio whoami` reported no login (exit 1)",
+      "ok": true
+    },
+    {
+      "name": "exactly one CLI login session was created, and it was linked",
+      "ok": true
+    },
+    {
+      "name": "the login completed: the user API key was fetched for the linked session",
+      "ok": true
+    },
+    {
+      "name": "no agent account was signed up in place of the person",
+      "ok": true
+    }
+  ],
+  "commands": [
+    {
+      "command": "composio whoami",
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "You are not logged in yet. Please run `composio login`.\n"
+    },
+    {
+      "command": "composio login",
+      "exitCode": 0,
+      "stdout": "Open this URL in your browser to log in:\n\n  https://dashboard.composio.test?cliKey=00000000-0000-4000-8000-000000050001\n\nThen run this command to complete login:\n\n  composio login --poll\n\nhint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.\n\nhint: For unattended agents: If no human is available to open the URL, run `composio login --agent` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.\n",
+      "stderr": ""
+    },
+    {
+      "command": "composio login --poll",
+      "exitCode": 0,
+      "stdout": "{\n  \"email\": \"dev@acme-e2e.test\",\n  \"current_org\": {\n    \"id\": \"ok_e2eacme00001\",\n    \"name\": \"Acme E2E\"\n  },\n  \"organizations\": [\n    {\n      \"id\": \"ok_e2eacme00001\",\n      \"name\": \"Acme E2E\",\n      \"selected\": true\n    },\n    {\n      \"id\": \"ok_e2eglobex001\",\n      \"name\": \"Globex E2E\",\n      \"selected\": false\n    }\n  ],\n  \"switch_command\": \"composio orgs switch --org-id <org_id>\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": "composio whoami",
+      "exitCode": 0,
+      "stdout": "{\"account_type\":\"human\",\"email\":\"dev@acme-e2e.test\",\"current_org_name\":\"Acme E2E\",\"enhanced_controls_enabled\":false}\n",
+      "stderr": ""
+    }
+  ],
+  "messages": [
+    "Not logged in. Running login now.",
+    "The login needs a browser step. Please open this URL and finish signing in: https://dashboard.composio.test?cliKey=00000000-0000-4000-8000-000000050001\n\nI'll wait for the login to complete.",
+    "The Composio CLI was not logged in. I ran `composio login`, you completed the browser step, and `composio login --poll` saved the credentials. `composio whoami` now confirms the session:\n\n- **Account:** dev@acme-e2e.test (human)\n- **Current org:** Acme E2E\n\nAnother org, Globex E2E, is also available. To switch to it, run `composio orgs switch --org-id ok_e2eglobex001`."
+  ],
+  "replies": []
+}

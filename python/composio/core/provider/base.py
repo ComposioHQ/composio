@@ -122,11 +122,7 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
             )
 
         # Imported here: the tools module imports this one.
-        from composio.core.models.tools import is_execution_successful
+        from composio.core.models.tools import tool_execution_response_from_session
 
         result = target.execute(tool_slug=slug, arguments=arguments)
-        return {
-            "data": t.cast(t.Dict, result.data),
-            "error": result.error,
-            "successful": is_execution_successful(result.result_type),
-        }
+        return tool_execution_response_from_session(result)

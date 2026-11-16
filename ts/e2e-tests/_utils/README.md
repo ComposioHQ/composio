@@ -24,7 +24,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.23.4', '24.22.1', '26.12.1'], // optional, defaults to mise.toml
+    node: ['22.23.5', '24.22.3', '26.13.1'], // optional, defaults to mise.toml
     cli: ['current'], // optional, defaults to CLI package.json version
   },
   env: { MY_VAR: 'value' }, // optional env vars
@@ -126,6 +126,28 @@ expect(result.files['out.txt']).toBe('0.1.24');
 
 The files are copied out of the container after execution and returned as a map in the result.
 
+### `startJourneyContainer`
+
+One CLI container that stays up while a test runs several commands in it, so a login or a cache file written by one command is there for the next. Unlike `runCmd`, it mounts no host `~/.composio` and passes through no API key.
+
+```typescript
+import { startJourneyContainer } from '@e2e-tests/utils';
+
+const journey = await startJourneyContainer({ env: { COMPOSIO_BASE_URL: mockUrl } });
+const first = await journey.exec('composio login --user-api-key uk_test');
+const second = await journey.exec('composio whoami', { timeoutSeconds: 30 });
+await journey.writeFile('/work/app/.composio/project.json', '{}');
+await journey.stop();
+```
+
+| Member                                        | Description                                                                                                                                                                            |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exec(command, options?)`                     | Runs a POSIX `sh` command line. Options: `env`, `stdin`, `cwd` (defaults to the home), `timeoutSeconds` (default 60; exit code 124 on expiry), `user` (`uid:gid`, to run without root) |
+| `writeFile(path, content)` / `readFile(path)` | Write or read a file inside the container                                                                                                                                              |
+| `steps()` / `writeDebugLog(path)`             | The commands run so far with their results                                                                                                                                             |
+| `home`                                        | The home directory (default `/home/journey`), created empty when the journey starts                                                                                                    |
+| `stop()`                                      | Removes the container                                                                                                                                                                  |
+
 ### `E2ETestResultWithSetup`
 
 Extended result when `runFixture` is called with a `setup` option:
@@ -189,9 +211,9 @@ Node.js versions to test are resolved in this order:
 
 The following versions are pre-defined in `const.ts`:
 
-- `22.23.4`
-- `24.22.1`
-- `26.12.1`
+- `22.23.5`
+- `24.22.3`
+- `26.13.1`
 - `current` (resolves to `mise.toml` version)
 
 ### CLI image freshness
@@ -269,13 +291,13 @@ Each test suite generates a `DEBUG.log` file with structured output grouped by r
 E2E Test: openai-zod4-compat
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/openai-zod4-compat/e2e.test.ts
-Runtime versions: Node.js 22.23.4, Node.js 24.22.1, Node.js 26.12.1
+Runtime versions: Node.js 22.23.5, Node.js 24.22.3, Node.js 26.13.1
 ================================================================================
 
 ################################################################################
-### Node.js 22.23.4
+### Node.js 22.23.5
 ################################################################################
-Image: composio-e2e-node:22.23.4
+Image: composio-e2e-node:22.23.5
 
 --- Phase 1/2: setup ---
 Container: e2e-openai-zod4-compat-22-22-3-1769775520382-setup
@@ -306,9 +328,9 @@ All packages work together!
 ================================================================================
 Summary
 ================================================================================
-Node.js 22.23.4: PASS (2 phases, 3.11s total)
-Node.js 24.22.1: PASS (2 phases, 3.09s total)
-Node.js 26.12.1: PASS (2 phases, 3.08s total)
+Node.js 22.23.5: PASS (2 phases, 3.11s total)
+Node.js 24.22.3: PASS (2 phases, 3.09s total)
+Node.js 26.13.1: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

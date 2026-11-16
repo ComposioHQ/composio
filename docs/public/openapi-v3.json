@@ -207,6 +207,11 @@
             "maxLength": 255,
             "description": "The name of the integration"
           },
+          "managed_app_id": {
+            "type": "string",
+            "format": "managedAppId",
+            "description": "The Composio-managed app to use, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Omit to use the toolkit's default app."
+          },
           "credentials": {
             "type": "object",
             "properties": {
@@ -2644,6 +2649,11 @@
                           "type": "boolean",
                           "description": "Whether the auth config is managed by Composio"
                         },
+                        "managed_app_id": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "The Composio-managed app this auth config uses, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Null when the auth config is not linked to a managed app. Use is_composio_managed to tell managed from custom."
+                        },
                         "restrict_to_following_tools": {
                           "type": "array",
                           "items": {
@@ -2657,7 +2667,8 @@
                       "required": [
                         "id",
                         "auth_scheme",
-                        "is_composio_managed"
+                        "is_composio_managed",
+                        "managed_app_id"
                       ]
                     }
                   },
@@ -2905,6 +2916,11 @@
                             "type": "boolean",
                             "description": "Whether this authentication configuration is managed by Composio or the user"
                           },
+                          "managed_app_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The Composio-managed app this auth config uses, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Null when the auth config is not linked to a managed app. Use is_composio_managed to tell managed from custom."
+                          },
                           "credentials": {
                             "type": "object",
                             "additionalProperties": {},
@@ -3057,6 +3073,7 @@
                           "type",
                           "toolkit",
                           "name",
+                          "managed_app_id",
                           "status",
                           "no_of_connections",
                           "tool_access_config"
@@ -3243,6 +3260,11 @@
                       "type": "boolean",
                       "description": "Whether this authentication configuration is managed by Composio or the user"
                     },
+                    "managed_app_id": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The Composio-managed app this auth config uses, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Null when the auth config is not linked to a managed app. Use is_composio_managed to tell managed from custom."
+                    },
                     "credentials": {
                       "type": "object",
                       "additionalProperties": {},
@@ -3395,6 +3417,7 @@
                     "type",
                     "toolkit",
                     "name",
+                    "managed_app_id",
                     "status",
                     "no_of_connections",
                     "tool_access_config"
@@ -7068,11 +7091,15 @@
                         "type": "boolean"
                       },
                       "logo_url": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "URL of the logo shown to end users on the hosted Connect Link page. Use a publicly reachable https image URL. The Composio logo is shown when omitted.",
+                        "example": "https://example.com/logo.png"
                       },
                       "display_name": {
                         "type": "string",
-                        "maxLength": 75
+                        "maxLength": 75,
+                        "description": "App name shown to end users on the hosted Connect Link page, up to 75 characters. The page shows Composio when omitted.",
+                        "example": "Acme Assistant"
                       },
                       "mask_secret_keys_in_connected_account": {
                         "type": "boolean"
@@ -7113,7 +7140,7 @@
                         "description": "Enable Zero Data Retention for the new project. Hobby cannot enable it. Enterprise defaults to enabled; other paid plans default to disabled. An explicit value overrides the default."
                       }
                     },
-                    "description": "Configuration for the project. Use zdr_enabled for Zero Data Retention; log_visibility_setting remains supported for existing clients. Do not send both fields."
+                    "description": "Configuration for the project. Use display_name and logo_url to brand the hosted Connect Link page. Use zdr_enabled for Zero Data Retention; log_visibility_setting remains supported for existing clients. Do not send both fields."
                   }
                 },
                 "required": [
@@ -7124,6 +7151,15 @@
                 "Simple project": {
                   "value": {
                     "name": "my_production_api"
+                  }
+                },
+                "Project with a branded Connect Link page": {
+                  "value": {
+                    "name": "acme_production",
+                    "config": {
+                      "display_name": "Acme Assistant",
+                      "logo_url": "https://example.com/logo.png"
+                    }
                   }
                 }
               }
@@ -10538,6 +10574,16 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "managed_app_id": {
+                            "type": "string",
+                            "description": "Unique id of this Composio-managed app.",
+                            "example": "ma_V1StGXR8_Z5j"
+                          },
+                          "is_default": {
+                            "type": "boolean",
+                            "description": "Whether this is the toolkit's default Composio-managed app.",
+                            "example": true
+                          },
                           "mode": {
                             "type": "string",
                             "description": "Authentication mode for the Composio-managed auth config",
@@ -10589,11 +10635,13 @@
                           }
                         },
                         "required": [
+                          "managed_app_id",
+                          "is_default",
                           "mode",
                           "scopes"
                         ]
                       },
-                      "description": "Managed-auth-only metadata, including the supported OAuth scope ceiling."
+                      "description": "One entry per Composio-managed app, the default first, each with its supported OAuth scope ceiling."
                     },
                     "is_local_toolkit": {
                       "type": "boolean",
@@ -17809,7 +17857,7 @@
     "/api/v3/files/upload/request": {
       "post": {
         "summary": "Create presigned URL for request file upload to S3",
-        "description": "Generates a presigned URL for uploading a file to S3. This endpoint handles deduplication by checking if a file with the same MD5 hash already exists.",
+        "description": "Generates a presigned URL for uploading a file to S3. Every request returns a new file ID and storage key, including repeat uploads of the same file.",
         "tags": [
           "Files"
         ],
@@ -17843,7 +17891,7 @@
                   },
                   "md5": {
                     "type": "string",
-                    "description": "MD5 hash of the file for deduplication and integrity verification. Example: \"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6\""
+                    "description": "MD5 hash of the file for integrity verification. Example: \"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6\""
                   }
                 },
                 "required": [

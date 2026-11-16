@@ -17,15 +17,17 @@ inputs:
   cache-dependency-glob:
     description: 'Workspace-relative files used to invalidate the uv cache'
     required: false
-    # Mirrors setup-uv v9 defaults; recheck when updating the pinned action.
+    # Extend setup-uv defaults with legacy package metadata and our toolchain lock.
     default: |
       **/*requirements*.txt
       **/*requirements*.in
       **/*constraints*.txt
       **/*constraints*.in
       **/pyproject.toml
+      **/setup.py
       **/uv.lock
       **/*.py.lock
+      mise.lock
 
 outputs:
   python-version:
@@ -61,6 +63,7 @@ runs:
         echo "uv=$uv_version" >> "$GITHUB_OUTPUT"
 
     - name: Setup Python
+      id: python
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: ${{ steps.tool-versions.outputs.python }}
@@ -70,7 +73,10 @@ runs:
       with:
         version: ${{ steps.tool-versions.outputs.uv }}
         enable-cache: ${{ inputs.enable-caching }}
+        # Keep restores scoped to these dependency files and tool versions.
+        # A fallback to older dependencies can hide newly published releases.
         cache-dependency-glob: ${{ inputs.cache-dependency-glob }}
+        cache-suffix: py-${{ steps.python.outputs.python-version }}-uv-${{ steps.tool-versions.outputs.uv }}
         prune-cache: true
 
     - name: Report versions

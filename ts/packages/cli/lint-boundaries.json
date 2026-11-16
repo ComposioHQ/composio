@@ -1,4 +1,11 @@
 {
+  "src/effects/install-skill.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "FileSystem.symlink cannot create a Windows junction, the only directory link that works without Developer Mode or administrator rights.",
+      "target": "import { symlink } from 'node:fs/promises';"
+    }
+  ],
   "src/services/composio-clients.ts": [
     {
       "rule": "no-restricted-imports",
