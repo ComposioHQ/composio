@@ -98,7 +98,7 @@ describe('CommandSurface: the dev group shares --user-id and --project-name', ()
       baseConfigProvider: ConfigProvider.fromEnv({
         env: {
           COMPOSIO_USER_API_KEY: 'test_api_key',
-          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_ORG_ID: 'org_test',
           COMPOSIO_PROJECT_ID: 'dev_project_test',
         },
       }),
@@ -251,7 +251,7 @@ describe('CommandSurface: playground-execute --parallel keeps the shared flags',
       baseConfigProvider: ConfigProvider.fromEnv({
         env: {
           COMPOSIO_USER_API_KEY: 'test_api_key',
-          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_ORG_ID: 'org_test',
           COMPOSIO_PROJECT_ID: 'dev_project_test',
         },
       }),
@@ -311,7 +311,7 @@ describe('CommandSurface: playground-execute --parallel finds its command name',
       baseConfigProvider: ConfigProvider.fromEnv({
         env: {
           COMPOSIO_USER_API_KEY: 'test_api_key',
-          COMPOSIO_ORG_ID: 'dev_org_test',
+          COMPOSIO_ORG_ID: 'org_test',
           COMPOSIO_PROJECT_ID: 'dev_project_test',
         },
       }),
@@ -350,37 +350,28 @@ describe('CommandSurface: playground-execute --parallel finds its command name',
   });
 });
 
-// `dev logs tools|triggers` honor --user-id as their filter and reject only --project-name.
-// `dev logs`, `dev auth-configs` and `dev projects` declare the flags unsupported for every
-// command under them; the message still names the command that ran.
+// Commands that act on no project or for no user reject the shared flag they cannot honor.
+// `dev init` and `dev projects` declare both unsupported for every command under them, and
+// `dev auth-configs` declares --user-id so; the message still names the command that ran.
 const rejectingCommands = [
   { command: ['init'], args: [], flags: ['--project-name', '--user-id'] },
-  { command: ['logs', 'tools'], args: [], flags: ['--project-name'] },
-  { command: ['logs', 'triggers'], args: [], flags: ['--project-name'] },
-  { command: ['auth-configs', 'list'], args: [], flags: ['--project-name', '--user-id'] },
+  { command: ['auth-configs', 'list'], args: [], flags: ['--user-id'] },
+  { command: ['auth-configs', 'info'], args: ['ac_1'], flags: ['--user-id'] },
+  { command: ['auth-configs', 'create'], args: ['--toolkit', 'gmail'], flags: ['--user-id'] },
   { command: ['projects', 'list'], args: [], flags: ['--project-name', '--user-id'] },
   { command: ['toolkits', 'search'], args: ['email'], flags: ['--project-name', '--user-id'] },
   { command: ['toolkits', 'version'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
-  {
-    command: ['connected-accounts', 'info'],
-    args: ['ca_1'],
-    flags: ['--project-name', '--user-id'],
-  },
-  {
-    command: ['connected-accounts', 'whoami'],
-    args: ['ca_1'],
-    flags: ['--project-name', '--user-id'],
-  },
+  { command: ['connected-accounts', 'info'], args: ['ca_1'], flags: ['--user-id'] },
+  { command: ['connected-accounts', 'whoami'], args: ['ca_1'], flags: ['--user-id'] },
   { command: ['triggers', 'list'], args: ['gmail'], flags: ['--project-name', '--user-id'] },
   {
     command: ['triggers', 'info'],
     args: ['GMAIL_NEW_GMAIL_MESSAGE'],
     flags: ['--project-name', '--user-id'],
   },
-  { command: ['triggers', 'status'], args: [], flags: ['--project-name', '--user-id'] },
-  { command: ['triggers', 'create'], args: ['GMAIL_NEW_GMAIL_MESSAGE'], flags: ['--project-name'] },
-  { command: ['triggers', 'enable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
-  { command: ['triggers', 'disable'], args: ['ti_1'], flags: ['--project-name', '--user-id'] },
+  { command: ['triggers', 'status'], args: [], flags: ['--user-id'] },
+  { command: ['triggers', 'enable'], args: ['ti_1'], flags: ['--user-id'] },
+  { command: ['triggers', 'disable'], args: ['ti_1'], flags: ['--user-id'] },
 ].flatMap(({ command, args, flags }) =>
   flags.flatMap(flag =>
     (['before', 'after'] as const).map(position => {

@@ -95,3 +95,54 @@ export const countingToolkitsRepository = (
 
   return { layer, calls: () => calls, projectCalls: () => projectCalls };
 };
+
+/** The repository methods that act on a developer project's resources; each takes its scope first. */
+const PROJECT_RESOURCE_METHODS = [
+  'listAuthConfigs',
+  'getAuthConfig',
+  'createAuthConfig',
+  'getConnectedAccount',
+  'listActiveTriggers',
+  'createTrigger',
+  'enableTrigger',
+  'disableTrigger',
+] as const;
+
+type ProjectResourceMethod = (typeof PROJECT_RESOURCE_METHODS)[number];
+
+/** One project resource call: the method and the scope it was asked to act on. */
+export interface RecordedRepositoryScope {
+  readonly method: ProjectResourceMethod;
+  readonly scope: unknown;
+}
+
+/**
+ * A layer over a test layer's `ComposioToolkitsRepository` that records the scope every project
+ * resource call names (its first argument), then answers as the test layer does.
+ */
+export const recordRepositoryScopes = () => {
+  const calls: Array<RecordedRepositoryScope> = [];
+  const layer = Layer.effect(
+    ComposioToolkitsRepository,
+    Effect.gen(function* () {
+      const base = yield* ComposioToolkitsRepository;
+      const recording = Object.fromEntries(
+        PROJECT_RESOURCE_METHODS.map(method => {
+          const call = base[method] as (
+            ...args: ReadonlyArray<unknown>
+          ) => Effect.Effect<unknown, unknown>;
+          return [
+            method,
+            (...args: ReadonlyArray<unknown>) =>
+              Effect.suspend(() => {
+                calls.push({ method, scope: args[0] });
+                return call(...args);
+              }),
+          ];
+        })
+      ) as Partial<ComposioToolkitsRepositoryShape>;
+      return ComposioToolkitsRepository.of({ ...base, ...recording });
+    })
+  );
+  return { calls, layer };
+};

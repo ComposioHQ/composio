@@ -15,7 +15,7 @@ import {
 import { Base64Url } from 'effect/encoding';
 import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
-import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
+import { APP_CONFIG, TELEMETRY_CONFIG, telemetryDisabled } from 'src/config';
 import { resolveBackend, withoutTrailingSlashes } from 'src/config/backend';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
@@ -75,8 +75,6 @@ type ConsumerShortTermCacheState = Record<
   }
 >;
 
-const analyticsDisabled = Effect.orDie(TELEMETRY_CONFIG.DISABLED);
-
 const getPostHogConfig = Effect.orDie(
   Effect.all({
     ingestUrl: TELEMETRY_CONFIG.POSTHOG_INGEST_URL,
@@ -85,7 +83,7 @@ const getPostHogConfig = Effect.orDie(
 );
 
 const postHogEnabled = Effect.gen(function* () {
-  if (yield* analyticsDisabled) {
+  if (yield* telemetryDisabled) {
     return false;
   }
   const { projectKey } = yield* getPostHogConfig;
@@ -536,7 +534,7 @@ const buildPostHogBody = (envelope: AnalyticsEnvelope, projectKey: string) => ({
 
 const captureToPostHog = (envelope: AnalyticsEnvelope) =>
   Effect.gen(function* () {
-    const disabled = yield* analyticsDisabled;
+    const disabled = yield* telemetryDisabled;
     const { ingestUrl, projectKey } = yield* getPostHogConfig;
     if (disabled || projectKey.length === 0) {
       yield* telemetryDebugLog('posthog_delivery_skipped', {
@@ -617,7 +615,7 @@ export const createCliCodactFailureBody = (
 const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
-    const disabled = yield* analyticsDisabled;
+    const disabled = yield* telemetryDisabled;
     if (disabled) {
       yield* telemetryDebugLog('codact_delivery_skipped', {
         reason: 'disabled',
@@ -689,7 +687,7 @@ export const trackCliEventEffect = (event: TrackEvent) =>
 
     if (!(yield* postHogEnabled)) {
       yield* telemetryDebugLog('skip', {
-        reason: (yield* analyticsDisabled) ? 'disabled' : 'missing_project_key',
+        reason: (yield* telemetryDisabled) ? 'disabled' : 'missing_project_key',
         eventName: event.name,
       });
       return;
@@ -861,7 +859,7 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const userApiKey = yield* getUserApiKey;
-    const disabled = yield* analyticsDisabled;
+    const disabled = yield* telemetryDisabled;
     if (disabled || !userApiKey) {
       yield* telemetryDebugLog('codact_skip', {
         reason: disabled ? 'disabled' : 'missing_user_api_key',

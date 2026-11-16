@@ -106,12 +106,15 @@ export type ConnectedAccountRepositoryMethods = Pick<
 export const authConfigRepositoryMethods = (
   authConfigsData: ResolvedAuthConfigsTestData
 ): AuthConfigRepositoryMethods => ({
-  listAuthConfigs: (params: {
-    search?: string;
-    toolkit_slug?: string;
-    limit?: number;
-    show_disabled?: boolean;
-  }) => {
+  listAuthConfigs: (
+    _scope,
+    params: {
+      search?: string;
+      toolkit_slug?: string;
+      limit?: number;
+      show_disabled?: boolean;
+    }
+  ) => {
     let results = [...authConfigsData.items];
 
     if (params.toolkit_slug) {
@@ -136,14 +139,14 @@ export const authConfigRepositoryMethods = (
       next_cursor: null,
     });
   },
-  getAuthConfig: (nanoid: string) =>
+  getAuthConfig: (_scope, nanoid: string) =>
     findById(authConfigsData.items, nanoid, () =>
       notFoundError(`Auth config "${nanoid}" not found`, {
         message: `Auth config "${nanoid}" not found.`,
         suggested_fix: 'Check the auth config ID and try again.',
       })
     ),
-  createAuthConfig: (params: AuthConfigCreateParams) => {
+  createAuthConfig: (_scope, params: AuthConfigCreateParams) => {
     authConfigsData.onCreate?.(params);
     return Effect.succeed(
       authConfigsData.createResponse ?? {
@@ -163,7 +166,7 @@ export const connectedAccountRepositoryMethods = (
   connectedAccountsData: ResolvedConnectedAccountsTestData
 ): ConnectedAccountRepositoryMethods => ({
   ...authConfigRepositoryMethods(authConfigsData),
-  getConnectedAccount: (nanoid: string) =>
+  getConnectedAccount: (_scope, nanoid: string) =>
     findById(connectedAccountsData.items, nanoid, () =>
       notFoundError(`Connected account "${nanoid}" not found`, {
         message: `Connected account "${nanoid}" not found.`,

@@ -67,6 +67,10 @@ const isImportGraphFile = (relativePath: string) => /\.(?:m?js|ts)$/.test(relati
 const fileExists = (fs: FileSystem.FileSystem, filePath: string) =>
   fs.exists(filePath).pipe(Effect.orElseSucceed(() => false));
 
+export const isBunVirtualPath = (filePath: string): boolean =>
+  /^(?:\/?[A-Za-z]:)?[/\\]\$bunfs[/\\]/.test(filePath) ||
+  /^\/?[A-Za-z]:[/\\]~BUN[/\\]/.test(filePath);
+
 const filePathFromUrl = (path: Path.Path, url: string): Effect.Effect<string> =>
   Schema.decodeUnknownEffect(Schema.URLFromString)(url).pipe(
     Effect.flatMap(path.fromFileUrl),
@@ -157,7 +161,7 @@ export const collectExpectedRunCompanionAssetRelativePaths = (
     return [...collected].sort();
   });
 
-const resolveBinaryAssetName = ({
+export const resolveBinaryAssetName = ({
   platform = process.platform,
   arch = process.arch,
 }: {
@@ -173,6 +177,8 @@ const resolveBinaryAssetName = ({
       return 'composio-linux-x64.zip';
     case 'linux-arm64':
       return 'composio-linux-aarch64.zip';
+    case 'win32-x64':
+      return 'composio-windows-x64.zip';
     default:
       return undefined;
   }
@@ -428,7 +434,7 @@ export const repairMissingInstalledRunCompanionModules = ({
     const path = yield* Path.Path;
 
     const currentFilePath = yield* filePathFromUrl(path, callerImportMetaUrl);
-    if (!currentFilePath.startsWith('/$bunfs/')) {
+    if (!isBunVirtualPath(currentFilePath)) {
       return { repaired: false as const };
     }
 
@@ -608,7 +614,7 @@ export const resolveRunCompanionModulePath = ({
 
     const found = yield* Effect.findFirst(candidates, candidate => fileExists(fs, candidate));
     return Option.getOrElse(found, () =>
-      currentFilePath.startsWith('/$bunfs/')
+      isBunVirtualPath(currentFilePath)
         ? path.resolve(executableDirectory, `${baseName}.mjs`)
         : path.resolve(currentDirectory, `${baseName}.mjs`)
     );

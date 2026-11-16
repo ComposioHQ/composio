@@ -37,7 +37,7 @@ import { z } from 'zod';
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: 22.23.4, 24.22.1, 26.12.1.
+**Docker** with Node.js versions: 22.23.5, 24.22.3, 26.13.1.
 
 ## Running
 

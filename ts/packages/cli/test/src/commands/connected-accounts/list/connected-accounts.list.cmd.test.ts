@@ -66,7 +66,7 @@ const connectedAccountsData = {
 const testDevConfigProvider = ConfigProvider.fromEnv({
   env: {
     COMPOSIO_USER_API_KEY: 'test_api_key',
-    COMPOSIO_ORG_ID: 'dev_org_test',
+    COMPOSIO_ORG_ID: 'org_test',
     COMPOSIO_PROJECT_ID: 'dev_project_test',
   },
 });
@@ -168,17 +168,24 @@ describe('CLI: composio dev connected-accounts list', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testDevConfigProvider }))(
-    '[Given] no org in user context [Then] warns user to login',
-    it => {
-      it.effect('warns user to login', () =>
-        Effect.gen(function* () {
-          const error = yield* Effect.flip(cli(['dev', 'connected-accounts', 'list']));
-          expect(String(error)).toContain('No current org configured');
-        })
-      );
-    }
-  );
+  // A key from `COMPOSIO_USER_API_KEY` stores no org; the directory's project names its own.
+  layer(
+    TestLive({
+      baseConfigProvider: testDevConfigProvider,
+      connectedAccountsData,
+      // The directory's org is checked against the key's orgs.
+      accountData: { organizations: [{ id: 'org_test', name: 'Test Org' }] },
+    })
+  )('[Given] no stored org [Then] lists the accounts of the directory project', it => {
+    it.effect('lists the accounts of the directory project', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'connected-accounts', 'list']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).not.toContain('No current org configured');
+        expect(output).toContain('Listing 3 of 3 connected accounts');
+      })
+    );
+  });
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.effect('warns user to login', () =>

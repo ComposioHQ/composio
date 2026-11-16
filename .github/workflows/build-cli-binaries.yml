@@ -8,6 +8,8 @@ on:
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
+      - '.github/workflows/cli.windows.yml'
+      - 'install.ps1'
       - 'install.sh'
       - 'install/**'
       - 'mise.toml'
@@ -176,15 +178,23 @@ jobs:
           path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
           retention-days: 7
 
+  windows:
+    name: Windows x64
+    needs: prepare
+    uses: ./.github/workflows/cli.windows.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.release_tag }}
+
   release:
     name: Release (draft → verify → publish)
-    needs: [prepare, build]
+    needs: [prepare, build, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write # create/edit the GitHub Release and upload assets
-    # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built,
-    # so a partial set can never reach the release path.
-    if: needs.build.result == 'success'
+    # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built.
+    # Windows is experimental, so a failed Windows job does not block the release: it ships
+    # without the Windows archive instead (see "Drop unverified Windows archive").
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     # Serialize runs that target the SAME release tag (e.g. two quick pushes, or a re-run
     # racing the original) so they cannot interleave uploads. Keyed on the resolved tag so
     # unrelated beta builds are not serialized behind each other. Job-level concurrency may
@@ -219,6 +229,14 @@ jobs:
         with:
           path: ts/packages/cli/dist/binaries
           merge-multiple: true
+
+      # The Windows build job uploads its archive before the native checks run, so a failed
+      # check leaves an unverified archive behind. Never publish that one.
+      - name: Drop unverified Windows archive
+        if: needs.windows.result != 'success'
+        run: |
+          echo "::warning::Windows x64 verification did not pass. Releasing without composio-windows-x64.zip."
+          rm -f ts/packages/cli/dist/binaries/composio-windows-x64.zip
 
       # Package skills BEFORE generating checksums so composio-skill.zip is included in
       # checksums.txt alongside the platform binaries (generate-checksums hashes every .zip
@@ -264,6 +282,8 @@ jobs:
       # An asset can appear in the list while still processing (`state != "uploaded"`), which is
       # exactly how a release ends up serving 404s, so we require state == "uploaded".
       - name: Verify all release assets are present and uploaded
+        env:
+          WINDOWS_VERIFIED: ${{ needs.windows.result == 'success' && 'true' || 'false' }}
         run: bash "$RELEASE_HELPERS_DIR/verify-assets.sh"
 
       # Publishing is the ONLY step that exposes the release. Do not edit the body here: a known
@@ -274,11 +294,12 @@ jobs:
 
   test-installation:
     name: Test Installation
-    needs: [prepare, release]
+    needs: [prepare, windows, release]
     if: always() && !cancelled() && needs.release.result == 'success'
     uses: ./.github/workflows/cli.test-installation.yml
     with:
       version: ${{ needs.prepare.outputs.release_tag }}
+      windows: ${{ needs.windows.result == 'success' && 'true' || 'false' }}
 
   create-install-instructions:
     name: Create Install Instructions
@@ -306,6 +327,20 @@ jobs:
           your login shell (`$SHELL`) is zsh, bash, or fish, it adds the CLI's
           directory to `PATH` in that shell's startup file. Re-running the installer
           never duplicates the entry.
+
+          ### Windows x64 (experimental)
+
+          Run in PowerShell:
+
+          ```powershell
+          $env:COMPOSIO_INSTALL_VERSION = "RELEASE_TAG_PLACEHOLDER"; irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+          ```
+
+          This verifies the archive, installs the complete bundle in
+          `$HOME\.composio`, and adds it to your User PATH. No administrator
+          access is needed. Keep `composio.exe` with its support files.
+          Windows support is experimental: commands other than `run`,
+          `upgrade`, and `setup` may not work yet.
 
           ### Install without shell setup
 
@@ -364,8 +399,7 @@ jobs:
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
-          **Not supported:**
-          - Windows: use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the installer inside your WSL distribution
+          - Windows: x64, experimental (Windows 10 1809+), installed with PowerShell. Requires an SSE4.2-capable CPU.
           EOF
           sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
