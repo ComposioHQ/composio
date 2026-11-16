@@ -97,6 +97,16 @@ Then run the integration's own script or API route with the same project key and
 
 For an authorized write action, verify the resulting object or state through a follow-up read or the provider's UI. Record the tool slug, sanitized result, and returned log ID if present. If only the Hacker News check succeeds, report that check separately from the requested integration action. If app authorization is unavailable, report the remaining connection step and leave the action unverified.
 
+## Hand the account to a human
+
+To let a person manage the agent's organization later, invite them as an admin from the machine that holds the agent identity:
+
+```bash
+composio agent claim person@example.com
+```
+
+The command uses the saved agent key and fails if the CLI is signed in as a human user. `composio agent whoami` reports the claiming admin in `claimed_by`, or `null` until the claim completes. Claiming is optional; the agent account works without it.
+
 ## Log in with a human
 
 When a human is available but your terminal cannot open a browser, print a login URL:

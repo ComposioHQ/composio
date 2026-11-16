@@ -28,7 +28,7 @@ setup(
         "pysher==1.0.8",
         "websocket-client<2",
         "pydantic>=2.11.9,<3",
-        "composio-client==2.1.17",
+        "composio-client==2.1.32",
         "typing-extensions>=4.16.0,<5",
         "openai>=2.48.0,<4",
         "json-schema-to-pydantic>=0.4.11,<1",
