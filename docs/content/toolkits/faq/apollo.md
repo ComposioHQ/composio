@@ -1,3 +1,24 @@
+## How do I connect Apollo with an API key?
+
+Apollo uses API key authentication. There's no OAuth flow and no scopes; Apollo enforces access based on your plan and the key's settings.
+
+### Create the Apollo API key
+
+1. Sign in to [Apollo](https://app.apollo.io/) with an account that has admin access.
+2. Go to **Admin Settings** > **Integrations**, then open **API** > **API Keys**.
+3. Click **Create a new key** and give it a name.
+4. Turn on **Set as master key** so the key can reach every endpoint Composio's tools call.
+5. Copy the key and store it somewhere safe. You may not be able to view it again.
+
+### Create the auth config in Composio
+
+1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Apollo**.
+2. Make sure the authentication type is **API Key**, then create the auth config.
+3. Click **Connect Account**, paste your Apollo API key, and click **Connect Account**.
+4. Confirm the account shows as **Active**. To test it, run a search tool such as `APOLLO_ORGANIZATION_SEARCH` from the playground.
+
+See [Custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow.
+
 ## Why can Apollo search or enrichment tools return HTTP 403?
 
 Apollo API keys can be limited to specific endpoint groups. A tool can return HTTP 403 or `Forbidden` when the underlying Apollo API rejects the key for that operation, even if the same key works for other Apollo tools.

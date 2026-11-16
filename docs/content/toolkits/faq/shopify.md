@@ -1,6 +1,30 @@
 ## How do I set up custom OAuth credentials for Shopify?
 
-For a step-by-step guide on creating and configuring your own Shopify OAuth credentials with Composio, see [How to create OAuth credentials for Shopify](https://composio.dev/auth/shopify).
+Use your own app from the Shopify Dev Dashboard when you want to choose the scopes and the app name merchants see, or when the default app isn't available.
+
+### Create the Shopify app
+
+1. Sign in to your Shopify admin. If you don't have a store, start one at [shopify.com](https://www.shopify.com/).
+2. Search for **App Development** in the admin search bar and open it, then click **Build apps in Dev Dashboard**.
+3. Click **Create App**, enter an app name, and click **Create**. Shopify opens the app's version configuration.
+4. Set **App URL** to your application's URL.
+5. Select the access scopes your tools need, such as `read_products`, `write_products`, `read_orders`, `write_orders`, `read_customers`, and `read_inventory`.
+6. Set the redirect URL to `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the auth config's `oauth_redirect_uri` field.
+7. Click **Release**, optionally add a version name and message, and click **Release** again.
+8. Open **Settings** in the left sidebar and copy the **Client ID** and **Client Secret**.
+
+### Create the auth config in Composio
+
+1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Shopify**.
+2. Choose **OAuth2** and your own credentials, then paste the Client ID and Client Secret. Keep the redirect URI as the value you registered in Shopify. Click **Create Auth Config**.
+3. Click **Connect Account** and enter the store subdomain: the permanent `myshopify.com` name, not a custom domain. For `https://acme.myshopify.com`, enter `acme`. You can find it under **Settings** → **Domains** in the Shopify admin.
+4. Install the app on the store and grant the permissions. Confirm the account shows **Active** on the auth config's **Connected Accounts** tab.
+
+See [custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow.
+
+### Scopes
+
+The default auth config requests read and write access to products, orders, customers, inventory, fulfillments, content, themes, discounts, draft orders, metaobjects, webhooks, and more. Select the same scopes on the Shopify app, and remove the ones you don't need from both.
 
 ## Why am I seeing "App not found" when connecting Shopify?
 

@@ -8,7 +8,33 @@ Composio executes API calls on behalf of your connected account. All data is enc
 
 ## How do I set up custom OAuth credentials for Slack?
 
-For a step-by-step guide on creating and configuring your own Slack OAuth credentials with Composio, see [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
+Composio-managed auth works without any setup: create a Slack auth config, choose **Composio Managed**, and connect. Use your own Slack app when you want your own branding, specific scopes, or full control over the app, or when a workspace blocks apps that aren't in the Slack Marketplace.
+
+### Create the Slack app
+
+1. Go to [Slack API: Your Apps](https://api.slack.com/apps) and click **Create New App** → **From scratch**.
+2. Enter an **App Name**, select your workspace, and click **Create App**.
+3. Open **OAuth & Permissions**. Under **Redirect URLs**, click **Add New Redirect URL**, enter `https://backend.composio.dev/api/v1/auth-apps/add`, click **Add**, then **Save URLs**. It must exactly match the auth config's `oauth_redirect_uri` field.
+4. On the same page, under **Scopes**, add the scopes your auth config will request. For example, `channels:history` reads channel messages, `chat:write` sends messages, and `users:read` reads user info.
+5. Open **Basic Information** and scroll to **App Credentials**. Copy the **Client ID**, **Client Secret**, and, if you'll use Slack triggers, the **Verification Token**.
+
+### Create the auth config in Composio
+
+1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Slack**.
+2. Under **Credentials**, choose **Your Own Credentials** and paste the Client ID and Client Secret. Keep the redirect URI as the value you added in Slack.
+3. Paste the **Verification Token** if you need Slack triggers, choose the scopes, and click **Create Auth Config**.
+4. Click **Connect Account**, select your workspace on the Slack page, review the permissions, and click **Allow**. Confirm the account shows **Active** on the auth config's **Accounts** tab.
+
+See [custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow, and [custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks) for trigger setup with your own app.
+
+### Scopes
+
+The default auth config requests a broad set covering channels, groups, DMs, chat, files, reactions, pins, reminders, search, usergroups, and users. Request only what your workflow needs; an agent that only sends messages may need just `chat:write`. Every scope the auth config requests must also be added to the Slack app, or users see scope errors. See Slack's [scopes reference](https://docs.slack.dev/reference/scopes/).
+
+### Revoke access
+
+- In Composio, delete the connected account from the auth config, or disable the auth config.
+- In Slack, a workspace admin can remove the app under **Settings & administration** → **Manage apps**, which revokes its tokens right away.
 
 ## When do users see "This app isn't listed in the Slack Marketplace…"?
 
@@ -27,7 +53,7 @@ Because **Require approved apps** is enabled in the workspace's **App Management
 Two ways:
 
 - Disable both **Require apps from Slack Marketplace** and **Require approved apps** in the workspace's app management settings.
-- Use the workspace's own OAuth app, which is recommended and safest. See [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
+- Use the workspace's own OAuth app, which is recommended and safest. See **How do I set up custom OAuth credentials for Slack?** on this page.
 
 ## What is the difference between Slack and Slackbot toolkits?
 

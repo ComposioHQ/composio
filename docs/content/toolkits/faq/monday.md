@@ -12,9 +12,23 @@ We are working on making this flow smoother so developers do not need to manuall
 
 ## How do I set up custom OAuth credentials for Monday.com?
 
-For a step-by-step guide on creating and configuring your own Monday.com OAuth credentials, see [How to create OAuth2 credentials for Monday](https://composio.dev/auth/monday).
+Use your own Monday app when you want users to see your app's name on the consent screen and control the credentials yourself.
 
-For a custom Monday OAuth app, add the Composio redirect URL/callback URL to the Monday app settings. After the OAuth flow completes, the access token is populated automatically.
+### Create the Monday app
+
+1. Sign in to the [Monday developer center](https://monday.com/developers/apps) and click **Create App**.
+2. Give the app a name, such as `Composio-Monday`. Monday generates a **Client ID**, **Client Secret**, and **Signing Secret** at the bottom of the page. Copy all three.
+3. In the app's **Redirect URLs** section, add `https://backend.composio.dev/api/v1/auth-apps/add` with `https` and no trailing slash. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
+4. Select the scopes your integration needs, such as `boards:read`, `boards:write`, `workspaces:read`, `users:read`, and `me:read`.
+
+### Create the auth config in Composio
+
+1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Monday**.
+2. Set the authentication type to **OAuth2** (not Bearer Token) and choose **Use your own developer authentication**.
+3. Paste the **Client ID** and **Client Secret**. If **New OAuth Flow** is enabled for your Monday app, set `use_oauth2_1` to `true`; leave it `false` for legacy OAuth 2.0. To use Monday triggers, paste the app's Signing Secret into `webhook_signing_secret` (it's not the Client Secret). Then click **Create Monday Auth Config**.
+4. Have a Monday workspace admin install your app in the workspace (see the "App is not installed" question above). Then click **Connect Account**, authorize, and confirm the account shows as **Active**.
+
+See [Custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow. After the OAuth flow completes, Composio stores the access token automatically.
 
 ## How do Monday scopes work?
 
