@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import authGuideRegistry from '@/kb/external-sources/auth-guides.json';
 import type { AlgoliaDocsRecord } from '@/lib/search-index';
 import {
@@ -8,33 +9,26 @@ import {
 export interface AuthGuideRegistryEntry {
   slug: string;
   toolkitSlug: string;
-  canonicalUrl: `https://composio.dev/auth/${string}`;
+  canonicalUrl: `https://docs.composio.dev/toolkits/${string}`;
   title: string;
   description: string;
 }
 
 function parseRegistry(value: unknown): AuthGuideRegistryEntry[] {
-  if (!Array.isArray(value)) throw new Error('OAuth guide registry must be an array');
-
-  const entries = value.map((candidate, index) => {
-    if (!candidate || typeof candidate !== 'object') {
-      throw new Error(`OAuth guide registry entry ${index} must be an object`);
-    }
-    const entry = candidate as Record<string, unknown>;
-    const slug = typeof entry.slug === 'string' ? entry.slug.trim() : '';
-    const toolkitSlug = typeof entry.toolkitSlug === 'string' ? entry.toolkitSlug.trim() : '';
-    const canonicalUrl = typeof entry.canonicalUrl === 'string' ? entry.canonicalUrl.trim() : '';
-    const title = typeof entry.title === 'string' ? entry.title.trim() : '';
-    const description = typeof entry.description === 'string' ? entry.description.trim() : '';
-
-    if (!/^[a-z0-9-]+$/.test(slug)) throw new Error(`Invalid OAuth guide slug at entry ${index}`);
-    if (!toolkitSlug) throw new Error(`Missing OAuth guide toolkit slug for ${slug}`);
-    if (canonicalUrl !== `https://composio.dev/auth/${slug}`) {
-      throw new Error(`Invalid OAuth guide canonical URL for ${slug}`);
-    }
-    if (!title || !description) throw new Error(`Missing OAuth guide copy for ${slug}`);
-
-    return { slug, toolkitSlug, canonicalUrl, title, description } as AuthGuideRegistryEntry;
+  // The imported snapshot retains landing URLs. Resolve destinations here so
+  // refreshing that snapshot cannot restore retired routes to the search index.
+  const entries = z.array(z.object({
+    slug: z.string().trim().regex(/^[a-z0-9-]+$/),
+    toolkitSlug: z.string().trim().regex(/^[a-z0-9_-]+$/),
+    title: z.string().trim().min(1),
+    description: z.string().trim().min(1),
+  })).parse(value).map((entry): AuthGuideRegistryEntry => {
+    const toolkitSlug = entry.toolkitSlug === 'googleapps' ? 'googlesuper' : entry.toolkitSlug;
+    return {
+      ...entry,
+      toolkitSlug,
+      canonicalUrl: `https://docs.composio.dev/toolkits/${toolkitSlug}`,
+    };
   });
 
   if (new Set(entries.map((entry) => entry.slug)).size !== entries.length) {

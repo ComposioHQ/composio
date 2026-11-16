@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { getAllToolkitsSync } from '@/lib/toolkit-data';
 import {
   getAuthGuideRegistry,
   getAuthGuideSearchRecords,
@@ -20,12 +21,19 @@ describe('OAuth guide indexing', () => {
     const entries = getAuthGuideRegistry();
 
     expect(entries.length).toBeGreaterThan(0);
+    const toolkitSlugs = new Set(getAllToolkitsSync().map(toolkit => toolkit.slug));
+    expect(entries.every(entry => toolkitSlugs.has(entry.toolkitSlug))).toBe(true);
     expect(new Set(entries.map((entry) => entry.slug)).size).toBe(entries.length);
     expect(new Set(entries.map((entry) => entry.canonicalUrl)).size).toBe(entries.length);
-    expect(entries.every((entry) => entry.canonicalUrl === `https://composio.dev/auth/${entry.slug}`))
+    expect(entries.every((entry) => entry.canonicalUrl === `https://docs.composio.dev/toolkits/${entry.toolkitSlug}`))
       .toBe(true);
     expect(entries.every((entry) => entry.title.trim() && entry.description.trim()))
       .toBe(true);
+  });
+
+  test('resolves the legacy Google Apps alias to a real toolkit', () => {
+    expect(getAuthGuideRegistry().find(entry => entry.slug === 'googleapps'))
+      .toMatchObject({ toolkitSlug: 'googlesuper', canonicalUrl: 'https://docs.composio.dev/toolkits/googlesuper' });
   });
 
   test('creates one normalized OAuth search record per guide', () => {
@@ -40,7 +48,7 @@ describe('OAuth guide indexing', () => {
     expect(records.map(record => record.canonical_url))
       .toEqual(entries.map(entry => entry.canonicalUrl));
     expect(records.every((record, index) =>
-      record.toolkit_slugs[0] === entries[index]?.slug && record.page_rank === 1_700))
+      record.toolkit_slugs[0] === entries[index]?.toolkitSlug && record.page_rank === 1_700))
       .toBe(true);
   });
 
@@ -52,7 +60,7 @@ describe('OAuth guide indexing', () => {
     };
 
     await expect(validateAuthGuideUrls(entries, fetchImpl as typeof fetch))
-      .rejects.toThrow('https://composio.dev/auth/gong');
+      .rejects.toThrow('https://docs.composio.dev/toolkits/gong');
   });
 
   test('builds the full replacement only after every registered URL validates', async () => {
@@ -92,7 +100,7 @@ describe('OAuth guide indexing', () => {
 
   test('rejects a registered guide that redirects to a generic auth page', async () => {
     const [entry] = getAuthGuideRegistry();
-    const fetchImpl = async () => responseAt('https://composio.dev/auth');
+    const fetchImpl = async () => responseAt('https://docs.composio.dev/toolkits');
 
     await expect(validateAuthGuideUrls([entry], fetchImpl as typeof fetch))
       .rejects.toThrow(entry.canonicalUrl);
