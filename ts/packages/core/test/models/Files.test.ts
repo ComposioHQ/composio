@@ -124,6 +124,26 @@ describe('Files request cancellation', () => {
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });
 
+    it('rejects with ComposioRequestCancelledError when aborted while reading a URL', async () => {
+      const controller = new AbortController();
+      mockFetch.mockImplementationOnce(transferUntilAborted);
+
+      const upload = files.upload(
+        { ...uploadParams, file: 'https://files.example.com/report.pdf' },
+        { signal: controller.signal }
+      );
+      await vi.waitFor(() =>
+        expect(mockFetch).toHaveBeenCalledWith(
+          'https://files.example.com/report.pdf',
+          expect.objectContaining({ signal: controller.signal })
+        )
+      );
+      controller.abort();
+
+      await expect(upload).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    });
+
     it('keeps a failure that is not an abort as-is', async () => {
       mockFetch.mockResolvedValueOnce(new Response(null, { status: 403, statusText: 'Forbidden' }));
 
@@ -153,6 +173,20 @@ describe('Files request cancellation', () => {
         files.download(downloadParams, { signal: AbortSignal.timeout(10) })
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
       expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('rejects with ComposioRequestCancelledError when aborted with a custom reason', async () => {
+      const controller = new AbortController();
+      mockFetch.mockImplementationOnce(transferUntilAborted);
+
+      const download = files.download(downloadParams, { signal: controller.signal });
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalled());
+      controller.abort('caller gave up');
+
+      const error = await download.catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ComposioRequestCancelledError);
+      expect((error as Error).message).toBe('Request was cancelled by the caller');
+      expect((error as Error).cause).toBeUndefined();
     });
 
     it('downloads the file when the signal does not abort', async () => {
