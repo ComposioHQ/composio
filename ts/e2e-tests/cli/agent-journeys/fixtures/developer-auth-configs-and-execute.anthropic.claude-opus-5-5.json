@@ -1,0 +1,162 @@
+{
+  "$comment": "Recorded from anthropic claude-opus-5-5 by record.ts. Do not edit by hand; record again.",
+  "fixtures": [
+    {
+      "match": {
+        "turnIndex": 0,
+        "userMessage": "I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post \"hello from dev\" in #general.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01EeMhtrZbPm6vQsK7eQygXq",
+            "name": "shell",
+            "arguments": "{\"command\":\"cat /skills/composio-cli/references/composio-dev.md\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2689,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 94
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 1,
+        "userMessage": "I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post \"hello from dev\" in #general.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01EeMhtrZbPm6vQsK7eQygXq",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01CziAJ2Rd7jxguoAjDdhAb8",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio dev auth-configs list; echo ---; composio dev connected-accounts list; echo ---; composio dev --help\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3591,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 84
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 2,
+        "userMessage": "I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post \"hello from dev\" in #general.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01CziAJ2Rd7jxguoAjDdhAb8",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01YD8N3UU1CDVH3xSXpGNTAL",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio dev playground-execute --help; composio dev playground-execute SLACK_SEND_MESSAGE --get-schema\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 4935,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 86
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 3,
+        "userMessage": "I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post \"hello from dev\" in #general.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01YD8N3UU1CDVH3xSXpGNTAL",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_013GTDHe6gGd2mGJ56sgpun9",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio dev playground-execute SLACK_SEND_MESSAGE -d '{ \\\"channel\\\": \\\"general\\\", \\\"text\\\": \\\"hello from dev\\\" }'\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 6451,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 93
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 4,
+        "userMessage": "I am building an app on Composio. In my developer project, list the auth configs, then execute SLACK_SEND_MESSAGE as my test user to post \"hello from dev\" in #general.",
+        "model": "claude-opus-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_013GTDHe6gGd2mGJ56sgpun9",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "usage": {
+          "input_tokens": 6706,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 576
+        },
+        "content": "I listed your project's auth configs and posted \"hello from dev\" to #general as your test user.\n\n**Auth configs** (`composio dev auth-configs list`): all three are Composio-managed, use OAuth2 and are enabled.\n\n| ID | Name | Toolkit | Connections |\n|---|---|---|---|\n| `ac_e2e0001` | slack-developer | slack | 1 |\n| `ac_e2e0002` | github-developer | github | 0 |\n| `ac_e2e0003` | gmail-developer | gmail | 0 |\n\n**Sending the message:** Your project has one connected account, an active Slack account (`ca_e2e0001`, word_id `slack_e2e_0001`) for test user `pg-test-00000000-0000-4000-8000-00000000a001`, using `slack-developer`. I checked the tool's inputs (`channel` and `text`), then ran:\n\n```bash\ncomposio dev playground-execute SLACK_SEND_MESSAGE -d '{ \"channel\": \"general\", \"text\": \"hello from dev\" }'\n```\n\nSlack returned `ok: true`. The message timestamp is `1767225600.000100` and the log ID is `log_e2e0001`.\n\nI didn't pass `--user-id`, so the command used the default test user. The output didn't say which user that was, but the project's only Slack connection belongs to the test user above, so that's the one that posted. To pick the user explicitly, add `--user-id <id>`. You can see the run with `composio dev logs tools`.\n\nGitHub and Gmail have no connected accounts yet. Before you test those tools, connect an account with `composio dev connected-accounts link`."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    }
+  ]
+}
