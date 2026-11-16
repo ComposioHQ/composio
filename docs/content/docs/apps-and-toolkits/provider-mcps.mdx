@@ -1,0 +1,53 @@
+---
+title: What are Provider MCPs
+description: How Provider MCP toolkits use a product's hosted MCP server, with separate tool slugs and authentication
+keywords: [provider mcp, provider mcps, notion_mcp, mcp toolkit, dcr oauth, mcp server, toolkit versions latest, custom mcp]
+isNew: true
+---
+
+A **Provider MCP** toolkit connects to an MCP server that the product's own team hosts and maintains. Composio acts as the MCP client, syncs the tools that server publishes, and wraps them as an ordinary toolkit.
+
+That means you use one the same way you use any other toolkit. It appears in the same catalog and tool search, authenticates through the same Connect Link flow, and executes and logs the same way. Use the same session APIs with the exact toolkit slug, but check its supported authentication methods.
+
+## How to spot one
+
+Look for the **Provider MCP** type in the catalog.
+
+Many Provider MCP slugs end in `_mcp`, such as `notion_mcp`. Use the catalog type to identify Provider MCP toolkits, and copy exact toolkit and tool slugs from discovery. Do not classify or group toolkits by their suffix.
+
+Its tools carry the toolkit prefix plus the tool name the product publishes, as in this example:
+
+| | Composio Built | Provider MCP |
+| --- | --- | --- |
+| Slug | `notion` | `notion_mcp` |
+| A tool | `NOTION_CREATE_PAGE` | `NOTION_MCP_NOTION_CREATE_PAGES` |
+
+## What to expect
+
+- **Auth varies per toolkit.** A toolkit may use [DCR OAuth](/reference/glossary#dcr-oauth), an API key, OAuth2, or no authentication. Read what the toolkit declares rather than assuming from the label.
+- **No [triggers](/docs/triggers).** Triggers exist only on toolkits Composio builds. If your agent needs an event, check the Composio Built toolkit for that specific trigger.
+- **Tools come from the product.** Tool names, descriptions, and schemas are limited to what the upstream server publishes, and Composio imports them during synchronization. A sync imports updated tool definitions into a dated toolkit version.
+
+<Callout type="info" title="DCR OAuth and managed auth are different">
+DCR OAuth registers a client with the server during the connection flow. It does not require a Composio-managed OAuth app. Follow the toolkit's connection instructions; other authentication schemes can require credentials or a custom auth config.
+</Callout>
+
+<Callout type="warn" title="If a v3 tool listing is empty">
+A v3 tool listing can select a pinned version that predates the imported MCP tools. If `GET /api/v3/tools?toolkit_slug=notion_mcp` is empty, check the version before treating it as a sync failure. Add `toolkit_versions=latest`, or use v3.1, which defaults to the latest version. Session discovery does not use that v3 listing request. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+</Callout>
+
+<Callout type="info" title="Provider MCP toolkits and MCP gateway are separate">
+Provider MCP describes a toolkit in the catalog. Composio's MCP gateway is a separate product for connecting AI clients to Composio. This guide covers toolkit types and grouping.
+</Callout>
+
+## Your own server is Custom MCP, not Provider MCP
+
+A Provider MCP toolkit is a catalog toolkit backed by the product's server, available to every project. If you want to bring _your own_ remote MCP server, that's [Custom MCP](/docs/extending-sessions/custom-mcp): you register the server into your project and get a `CUSTOM_*` toolkit shared within the project or private to one user. Custom toolkits remain separate from catalog App groups. The two behave alike at runtime, since Composio is the MCP client in both.
+
+## Related guides
+
+<Cards>
+  <Card icon={<RouteIcon />} title="Composio Built vs Provider MCPs" href="/docs/apps-and-toolkits/composio-built-vs-provider-mcp" description="Which sibling to use when a product ships more than one" />
+  <Card icon={<Blocks />} title="Apps vs toolkits" href="/docs/apps-and-toolkits" description="How an App groups the toolkits that exist for one product" />
+  <Card icon={<Terminal />} title="Custom MCP" href="/docs/extending-sessions/custom-mcp" description="Register your own remote MCP server into a project" />
+</Cards>

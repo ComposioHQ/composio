@@ -2,6 +2,7 @@
   "title": "Migration guides",
   "pages": [
     "no-auth-to-instant",
+    "managed-to-own-app",
     "direct-to-sessions",
     "mcp-servers-to-sessions",
     "tool-router-beta",

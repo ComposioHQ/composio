@@ -1,4 +1,4 @@
-import { APIError } from '@composio/client';
+import { APIError, type APIErrorBody } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 import { ComposioConnectedAccountNotFoundError } from './ConnectedAccountsErrors';
 import { getRetryAfterSeconds, isRateLimitResponse } from '../utils/rateLimit';
@@ -146,17 +146,36 @@ export class ComposioInvalidModifierError extends ComposioError {
   }
 }
 
+/** Options for a `ComposioToolExecutionError`. */
+export type ComposioToolExecutionErrorOptions = ComposioErrorOptions & {
+  /** The numeric `error.code` of the Composio API error response. */
+  apiErrorCode?: number;
+};
+
 export class ComposioToolExecutionError extends ComposioError {
-  constructor(message: string = 'Tool execution error', options: ComposioErrorOptions = {}) {
+  /**
+   * The numeric `error.code` the Composio API sent when it rejected the execution.
+   * `code` stays the SDK's `TS-SDK::` code.
+   */
+  declare public readonly apiErrorCode?: number;
+
+  constructor(
+    message: string = 'Tool execution error',
+    options: ComposioToolExecutionErrorOptions = {}
+  ) {
+    const { apiErrorCode, ...errorOptions } = options;
     super(message, {
-      ...options,
-      code: options.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,
-      cause: options.cause,
-      possibleFixes: options.possibleFixes || [
+      ...errorOptions,
+      code: errorOptions.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,
+      cause: errorOptions.cause,
+      possibleFixes: errorOptions.possibleFixes || [
         'Ensure the tool is correctly configured and the input is valid',
         'Ensure the userId is correct and has an active connected account for the user in case of non NoAuth toolkits',
       ],
     });
+    if (apiErrorCode !== undefined) {
+      this.apiErrorCode = apiErrorCode;
+    }
 
     this.name = 'ComposioToolExecutionError';
   }
@@ -320,32 +339,45 @@ export class ComposioToolVersionRequiredError extends ComposioError {
     this.name = 'ComposioToolVersionRequiredError';
   }
 }
-export interface ComposioAPIServerErrorBody {
-  error: {
-    message: string;
-    code: number;
-    status: number;
-    request_id: string;
-    suggested_fix: string;
-  };
-}
+/** The error envelope of a Composio API error response, as `@composio/client` validates it. */
+export type ComposioAPIServerErrorBody = APIErrorBody;
 
 // Map of error codes to their corresponding error constructors
-const ERROR_CODE_HANDLERS = new Map<number, (message: string) => ComposioError>([
-  [1803, msg => new ComposioConnectedAccountNotFoundError(msg)],
+const ERROR_CODE_HANDLERS = new Map<number, (message: string, cause: APIError) => ComposioError>([
+  [1803, (msg, cause) => new ComposioConnectedAccountNotFoundError(msg, { cause })],
   // Add more error code handlers here as needed
 ]);
 
-export const handleToolExecutionError = (tool: string, actualError: Error): ComposioError => {
-  // Handle specific API error codes
-  if (actualError instanceof APIError && actualError.error) {
-    const errorBody = actualError.error as ComposioAPIServerErrorBody;
-    const errorCode = errorBody?.error?.code;
-    const errorMessage = errorBody?.error?.message;
+/** What to try when the API rejected an execution without a `suggested_fix`, by HTTP status. */
+const fallbackExecutionFixes = (status: number | undefined): string[] => {
+  if (status === 401) {
+    return ['Ensure you are using a valid Composio API key for this project'];
+  }
+  if (status === 402) {
+    return ['Check the plan and billing limits of your Composio organization'];
+  }
+  if (status === 403) {
+    return ['Ensure your API key and the connected account are allowed to run this tool'];
+  }
+  if (status === 410) {
+    return ['The tool or the resource it acts on is no longer available; see the error message'];
+  }
+  if (status !== undefined && status >= 500) {
+    return [
+      'The Composio API failed to process the request; retry later',
+      'If it keeps failing, contact Composio support with the request id',
+    ];
+  }
+  return ['Ensure the tool slug is correct and the input arguments for the tool is valid'];
+};
 
-    if (errorCode && ERROR_CODE_HANDLERS.has(errorCode)) {
-      return ERROR_CODE_HANDLERS.get(errorCode)!(errorMessage || 'An error occurred');
-    }
+export const handleToolExecutionError = (tool: string, actualError: Error): ComposioError => {
+  const apiError = actualError instanceof APIError ? actualError : undefined;
+  const details = apiError?.details;
+
+  // Handle specific API error codes
+  if (apiError && details && ERROR_CODE_HANDLERS.has(details.code)) {
+    return ERROR_CODE_HANDLERS.get(details.code)!(details.message || 'An error occurred', apiError);
   }
 
   if (isRateLimitResponse(actualError)) {
@@ -357,10 +389,18 @@ export const handleToolExecutionError = (tool: string, actualError: Error): Comp
   }
 
   // Default error for all other cases
-  return new ComposioToolExecutionError(`Error executing the tool ${tool}`, {
-    cause: actualError,
-    possibleFixes: [
-      'Ensure the tool slug is correct and the input arguments for the tool is valid',
-    ],
-  });
+  const serverMessage = details?.message;
+  return new ComposioToolExecutionError(
+    serverMessage
+      ? `Error executing the tool ${tool}: ${serverMessage}`
+      : `Error executing the tool ${tool}`,
+    {
+      cause: actualError,
+      statusCode: apiError?.status,
+      apiErrorCode: details?.code,
+      possibleFixes: details?.suggested_fix
+        ? [details.suggested_fix]
+        : fallbackExecutionFixes(apiError?.status),
+    }
+  );
 };
