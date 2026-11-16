@@ -12,6 +12,7 @@
  *   "GMAIL";version="20250114_00";deprecated=@1779840000;sunset=@1787788800;reason="lifecycle"
  */
 import { z } from 'zod';
+import type { IncomingTriggerPayload } from '../types/triggers.types';
 import logger from './logger';
 import { normalizeToolkitSlug } from './toolkitVersion';
 
@@ -216,26 +217,67 @@ export function formatToolkitDeprecationWarnings(
 }
 
 /**
- * Parses the header on `response`, drops versions already warned about in this
- * process, records the new ones and warns once per formatted line.
+ * Parses a header value and returns the entries whose `keyOf` key was not yet
+ * warned about in this process, recording those keys. A value that is too long
+ * or holds a control character yields nothing.
  */
-const warnDeprecatedToolkits = (response: Response): void => {
-  const value = response.headers.get(TOOLKIT_DEPRECATION_HEADER);
-  if (value === null || value.length === 0) return;
-  if (value.length > MAX_HEADER_LENGTH || CONTROL_CHARACTERS.test(value)) return;
-  if (warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS) return;
+const takeUnwarnedEntries = (
+  value: string | null | undefined,
+  keyOf: (entry: DeprecatedToolkitEntry) => string
+): DeprecatedToolkitEntry[] => {
+  if (value === null || value === undefined || value.length === 0) return [];
+  if (value.length > MAX_HEADER_LENGTH || CONTROL_CHARACTERS.test(value)) return [];
+  if (warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS) return [];
   const fresh: DeprecatedToolkitEntry[] = [];
   for (const entry of parseDeprecatedToolkitsHeader(value)) {
-    const key = dedupeKey(entry);
+    const key = keyOf(entry);
     if (warnedToolkitVersions.has(key) || warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS)
       continue;
     warnedToolkitVersions.add(key);
     fresh.push(entry);
   }
+  return fresh;
+};
+
+/** Warns once per formatted line for the versions on `response` not yet warned about. */
+const warnDeprecatedToolkits = (response: Response): void => {
+  const fresh = takeUnwarnedEntries(response.headers.get(TOOLKIT_DEPRECATION_HEADER), dedupeKey);
   for (const line of formatToolkitDeprecationWarnings(fresh)) {
     logger.warn(line);
   }
 };
+
+const formatTriggerWarning = (
+  trigger: Pick<IncomingTriggerPayload, 'id' | 'triggerSlug'>,
+  entry: DeprecatedToolkitEntry
+): string => {
+  let sentence = `Trigger ${trigger.triggerSlug} (${trigger.id}) runs on ${entry.slug.toUpperCase()} version ${entry.version}`;
+  if (entry.deprecatedAt === undefined) sentence += ', which is deprecated.';
+  else sentence += `, deprecated on ${isoDate(entry.deprecatedAt)}.`;
+  if (entry.sunsetAt !== undefined)
+    sentence += ` It will be retired on ${isoDate(entry.sunsetAt)}.`;
+  return sentence;
+};
+
+/**
+ * Warns once per process for each deprecated toolkit version a trigger
+ * delivery's `Composio-Deprecated-Toolkits` header names. These are remembered
+ * apart from the API response warnings, so seeing one does not silence the
+ * other. Never throws.
+ */
+export function warnDeprecatedTriggerToolkits(
+  value: string | undefined,
+  trigger: Pick<IncomingTriggerPayload, 'id' | 'triggerSlug'>
+): void {
+  try {
+    for (const entry of takeUnwarnedEntries(value, entry => `trigger:${dedupeKey(entry)}`)) {
+      logger.warn(formatTriggerWarning(trigger, entry));
+    }
+    // ast-grep-ignore: ts-empty-catch
+  } catch {
+    // A warning must never fail the parse. Only the logger can throw here, so there is nowhere to report it.
+  }
+}
 
 /**
  * Wraps a `fetch` implementation so every response is checked for the

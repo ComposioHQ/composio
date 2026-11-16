@@ -8,6 +8,7 @@ import logging
 import pathlib
 import threading
 import time
+import warnings
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
@@ -27,6 +28,7 @@ from composio.core.models.triggers import (
     _SubcriptionBuilder,
     _truncate_frame,
 )
+from composio.utils import toolkit_deprecation
 
 
 class TestTriggers:
@@ -1373,6 +1375,118 @@ class TestParseWebhook:
             triggers.parse(body=payload, headers={}, verify_secret=test_secret)
 
         assert "missing signature header" in str(exc_info.value)
+
+    DEPRECATED_GITHUB = (
+        '"GITHUB";version="20251027_00";deprecated=@1793242800;'
+        'sunset=@1801191600;reason="lifecycle"'
+    )
+
+    @pytest.fixture
+    def fresh_deprecation_warnings(self):
+        """Forget the deprecation warnings earlier tests issued."""
+        toolkit_deprecation._reset_for_tests()
+        yield
+        toolkit_deprecation._reset_for_tests()
+
+    @staticmethod
+    def _deprecation_messages(caught):
+        return [
+            str(w.message)
+            for w in caught
+            if issubclass(w.category, exceptions.ComposioDeprecationWarning)
+        ]
+
+    def test_parse_warns_once_about_the_deprecated_version_the_trigger_runs_on(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        payload = json.dumps(mock_v3_payload)
+        headers = {"Composio-Deprecated-Toolkits": self.DEPRECATED_GITHUB}
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            triggers.parse(body=payload, headers=headers)
+            triggers.parse(body=payload, headers=headers)
+
+        assert self._deprecation_messages(caught) == [
+            "Trigger GITHUB_PUSH_EVENT (trigger-nano-123) runs on GITHUB version "
+            "20251027_00, deprecated on 2026-10-29. It will be retired on 2027-01-29."
+        ]
+
+    def test_parse_warning_ends_at_the_deprecation_date_without_a_sunset(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        headers = {
+            "composio-deprecated-toolkits": (
+                '"GITHUB";version="20251027_00";deprecated=@1793242800'
+            )
+        }
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            triggers.parse(body=json.dumps(mock_v3_payload), headers=headers)
+
+        assert self._deprecation_messages(caught) == [
+            "Trigger GITHUB_PUSH_EVENT (trigger-nano-123) runs on GITHUB version "
+            "20251027_00, deprecated on 2026-10-29."
+        ]
+
+    def test_parse_warns_even_after_a_tool_call_warned_about_the_same_version(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        headers = {"composio-deprecated-toolkits": self.DEPRECATED_GITHUB}
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            toolkit_deprecation.warn_deprecated_toolkits(httpx.Headers(headers))
+            triggers.parse(body=json.dumps(mock_v3_payload), headers=headers)
+
+        messages = self._deprecation_messages(caught)
+        assert len(messages) == 2
+        assert messages[1].startswith(
+            "Trigger GITHUB_PUSH_EVENT (trigger-nano-123) runs on GITHUB version "
+            "20251027_00"
+        )
+
+    def test_parse_warns_only_once_the_signature_checks_out(
+        self,
+        triggers,
+        test_secret,
+        test_webhook_id,
+        test_timestamp,
+        mock_v3_payload,
+        fresh_deprecation_warnings,
+    ):
+        payload = json.dumps(mock_v3_payload)
+        headers = {
+            "webhook-id": test_webhook_id,
+            "webhook-timestamp": test_timestamp,
+            "webhook-signature": "v1,not-a-valid-signature",
+            "composio-deprecated-toolkits": self.DEPRECATED_GITHUB,
+        }
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            with pytest.raises(exceptions.WebhookSignatureVerificationError):
+                triggers.parse(body=payload, headers=headers, verify_secret=test_secret)
+            assert self._deprecation_messages(caught) == []
+
+            headers["webhook-signature"] = self.create_signature(
+                test_webhook_id, test_timestamp, payload, test_secret
+            )
+            triggers.parse(body=payload, headers=headers, verify_secret=test_secret)
+
+        assert len(self._deprecation_messages(caught)) == 1
+
+    def test_parse_returns_the_payload_when_warnings_are_errors(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        headers = {"composio-deprecated-toolkits": self.DEPRECATED_GITHUB}
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = triggers.parse(body=json.dumps(mock_v3_payload), headers=headers)
+
+        assert result["payload"]["trigger_slug"] == "GITHUB_PUSH_EVENT"
 
 
 class TestTriggerSubscriptionParsing:

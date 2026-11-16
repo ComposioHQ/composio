@@ -264,23 +264,71 @@ def format_warnings(
     ]
 
 
-def warn_deprecated_toolkits(headers: httpx.Headers, docs_url: str = DOCS_URL) -> None:
-    """Warn once per process for each deprecated toolkit version in ``headers``."""
-    value = headers.get(HEADER)
+def _take_unwarned(
+    value: t.Optional[str], key: t.Callable[[DeprecatedToolkit], str]
+) -> list[DeprecatedToolkit]:
+    """Parse a header value and return the entries whose ``key`` was not yet
+    warned about in this process, recording those keys.
+
+    A value that is too long or holds a control character yields nothing.
+    """
     if not value:
-        return
+        return []
     if len(value) > _MAX_HEADER_LENGTH or _CONTROL_CHARACTERS.search(value):
-        return
+        return []
     entries = parse_deprecated_toolkits_header(value)
     fresh: list[DeprecatedToolkit] = []
     with _lock:
         for entry in entries:
-            if entry.key in _warned or len(_warned) >= _MAX_TRACKED_VERSIONS:
+            entry_key = key(entry)
+            if entry_key in _warned or len(_warned) >= _MAX_TRACKED_VERSIONS:
                 continue
-            _warned.add(entry.key)
+            _warned.add(entry_key)
             fresh.append(entry)
+    return fresh
+
+
+def warn_deprecated_toolkits(headers: httpx.Headers, docs_url: str = DOCS_URL) -> None:
+    """Warn once per process for each deprecated toolkit version in ``headers``."""
+    fresh = _take_unwarned(headers.get(HEADER), lambda entry: entry.key)
     for line in format_warnings(fresh, docs_url):
         warnings.warn(line, ComposioDeprecationWarning, stacklevel=2)
+
+
+def _format_trigger_warning(
+    trigger_slug: str, trigger_id: str, entry: DeprecatedToolkit
+) -> str:
+    sentence = (
+        f"Trigger {trigger_slug} ({trigger_id}) runs on {entry.slug.upper()} "
+        f"version {entry.version}"
+    )
+    if entry.deprecated_at is None:
+        sentence += ", which is deprecated."
+    else:
+        sentence += f", deprecated on {_iso_date(entry.deprecated_at)}."
+    if entry.sunset_at is not None:
+        sentence += f" It will be retired on {_iso_date(entry.sunset_at)}."
+    return sentence
+
+
+def warn_deprecated_trigger_toolkits(
+    value: t.Optional[str], *, trigger_slug: str, trigger_id: str
+) -> None:
+    """Warn once per process for each deprecated toolkit version a trigger
+    delivery's ``Composio-Deprecated-Toolkits`` header names.
+
+    These are remembered apart from the API response warnings, so seeing one
+    does not silence the other. Never raises.
+    """
+    try:
+        for entry in _take_unwarned(value, lambda entry: f"trigger:{entry.key}"):
+            warnings.warn(
+                _format_trigger_warning(trigger_slug, trigger_id, entry),
+                ComposioDeprecationWarning,
+                stacklevel=3,
+            )
+    except Exception:  # noqa: BLE001 - a warning must never fail a parse
+        _logger.debug("Failed to inspect the toolkit deprecation header", exc_info=True)
 
 
 def response_hook(response: httpx.Response) -> None:

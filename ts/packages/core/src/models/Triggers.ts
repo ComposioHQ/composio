@@ -59,6 +59,10 @@ import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { invokeUserCallback } from '../utils/userCallback';
+import {
+  TOOLKIT_DEPRECATION_HEADER,
+  warnDeprecatedTriggerToolkits,
+} from '../utils/toolkitDeprecation';
 
 /**
  * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
@@ -748,6 +752,11 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Next.js Pages Router `req`). The signature headers (`webhook-id`,
    * `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
    *
+   * When the delivery's `Composio-Deprecated-Toolkits` header says the trigger
+   * runs on a deprecated toolkit version, a warning is logged once per process
+   * for that version. With `verifySecret`, it is logged only for a verified
+   * delivery.
+   *
    * @param {WebhookRequestLike} request - The incoming webhook HTTP request
    * @param {ParseWebhookOptions} [options] - Parse options
    * @param {string} [options.verifySecret] - Webhook secret; when set, the signature is verified
@@ -832,6 +841,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     if (optedOutOfVerification) {
       // No secret requested: parse without verifying the signature.
       const { version, rawPayload, normalizedPayload } = this.parseWebhookPayload(body);
+      warnDeprecatedTriggerToolkits(
+        getHeader(headers, TOOLKIT_DEPRECATION_HEADER),
+        normalizedPayload
+      );
       return {
         version,
         payload: normalizedPayload,
@@ -867,7 +880,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       );
     }
 
-    return this.verifyWebhook({
+    const verified = await this.verifyWebhook({
       payload: body,
       signature,
       id,
@@ -875,6 +888,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       secret: verifySecret,
       tolerance: options?.tolerance,
     });
+    warnDeprecatedTriggerToolkits(getHeader(headers, TOOLKIT_DEPRECATION_HEADER), verified.payload);
+    return verified;
   }
 
   /**

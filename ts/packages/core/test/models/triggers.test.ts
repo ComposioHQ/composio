@@ -16,6 +16,10 @@ import {
   ComposioTriggerTypeNotFoundError,
   ComposioWebhookSignatureVerificationError,
 } from '../../src/errors/TriggerErrors';
+import {
+  _resetToolkitDeprecationWarningsForTests,
+  createToolkitDeprecationFetch,
+} from '../../src/utils/toolkitDeprecation';
 
 // Mock dependencies
 vi.mock('../../src/utils/logger');
@@ -437,6 +441,109 @@ describe('Triggers', () => {
       await expect(
         triggers.parse({ body, headers: {} }, { verifySecret: webhookSecret })
       ).rejects.toThrow(/missing signature header/i);
+    });
+
+    describe('deprecated toolkit version warning', () => {
+      const deprecatedGmail =
+        '"GMAIL";version="20250114_00";deprecated=@1793242800;sunset=@1801191600;reason="lifecycle"';
+      const body = JSON.stringify(v3Payload);
+
+      const signedRequest = async (signature?: string): Promise<Request> => {
+        const timestamp = String(Math.floor(Date.now() / 1000));
+        return new Request('https://example.com/webhooks/composio', {
+          method: 'POST',
+          headers: {
+            'webhook-id': webhookId,
+            'webhook-timestamp': timestamp,
+            'webhook-signature': signature ?? (await createSignature(timestamp, body)),
+            'Composio-Deprecated-Toolkits': deprecatedGmail,
+          },
+          body,
+        });
+      };
+
+      beforeEach(() => {
+        _resetToolkitDeprecationWarningsForTests();
+      });
+
+      afterEach(() => {
+        _resetToolkitDeprecationWarningsForTests();
+      });
+
+      it('warns once per process about the deprecated version the trigger runs on', async () => {
+        const delivery = { body, headers: { 'composio-deprecated-toolkits': deprecatedGmail } };
+
+        await triggers.parse(delivery);
+        await triggers.parse(delivery);
+
+        expect(vi.mocked(logger.warn).mock.calls).toEqual([
+          [
+            'Trigger GMAIL_NEW_GMAIL_MESSAGE (trigger-456) runs on GMAIL version 20250114_00, deprecated on 2026-10-29. It will be retired on 2027-01-29.',
+          ],
+        ]);
+      });
+
+      it('ends at the deprecation date when the version has no sunset', async () => {
+        await triggers.parse({
+          body,
+          headers: {
+            'composio-deprecated-toolkits': '"GMAIL";version="20250114_00";deprecated=@1793242800',
+          },
+        });
+
+        expect(vi.mocked(logger.warn).mock.calls).toEqual([
+          [
+            'Trigger GMAIL_NEW_GMAIL_MESSAGE (trigger-456) runs on GMAIL version 20250114_00, deprecated on 2026-10-29.',
+          ],
+        ]);
+      });
+
+      it('warns even after a tool call warned about the same version', async () => {
+        const apiFetch = createToolkitDeprecationFetch(
+          async () =>
+            new Response('{}', { headers: { 'composio-deprecated-toolkits': deprecatedGmail } })
+        );
+        await apiFetch('https://backend.composio.test/api/v3/tools/execute/GMAIL_SEND_EMAIL');
+
+        await triggers.parse({
+          body,
+          headers: { 'composio-deprecated-toolkits': deprecatedGmail },
+        });
+
+        expect(vi.mocked(logger.warn)).toHaveBeenCalledTimes(2);
+        expect(String(vi.mocked(logger.warn).mock.calls[1]?.[0])).toMatch(
+          /^Trigger GMAIL_NEW_GMAIL_MESSAGE \(trigger-456\) runs on GMAIL version 20250114_00/
+        );
+      });
+
+      it('warns only once the signature checks out when verifying', async () => {
+        await expect(
+          triggers.parse(await signedRequest('v1,not-a-valid-signature'), {
+            verifySecret: webhookSecret,
+          })
+        ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
+        expect(logger.warn).not.toHaveBeenCalled();
+
+        await triggers.parse(await signedRequest(), { verifySecret: webhookSecret });
+
+        expect(logger.warn).toHaveBeenCalledTimes(1);
+      });
+
+      it('still returns the payload when the logger throws', async () => {
+        vi.mocked(logger.warn).mockImplementation(() => {
+          throw new Error('sink failed');
+        });
+        vi.mocked(logger.debug).mockImplementation(() => {
+          throw new Error('sink failed');
+        });
+
+        const result = await triggers.parse({
+          body,
+          headers: { 'composio-deprecated-toolkits': deprecatedGmail },
+        });
+
+        expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
+      });
     });
   });
 

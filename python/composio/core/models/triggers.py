@@ -37,6 +37,8 @@ from composio.core.types import ToolkitVersionParam
 from composio.exceptions import ComposioSDKTimeoutError
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import none_to_omit
+from composio.utils.toolkit_deprecation import HEADER as TOOLKIT_DEPRECATION_HEADER
+from composio.utils.toolkit_deprecation import warn_deprecated_trigger_toolkits
 
 PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
 
@@ -1487,6 +1489,12 @@ class Triggers(Resource):
         ``.headers``. Because this SDK is synchronous, async frameworks must pass
         an already-read raw body, for example via ``body=await request.body()``.
 
+        When the delivery's ``Composio-Deprecated-Toolkits`` header says the
+        trigger runs on a deprecated toolkit version, a
+        ``ComposioDeprecationWarning`` is issued once per process for that
+        version. With ``verify_secret``, it is issued only for a verified
+        delivery.
+
         :param request: The incoming webhook request object (Flask/Django/FastAPI)
         :param body: The raw request body (str/bytes/parsed mapping); overrides ``request``
         :param headers: The request headers as a mapping; overrides ``request``
@@ -1537,6 +1545,11 @@ class Triggers(Resource):
             version, raw_payload, normalized_payload = self._parse_webhook_payload(
                 payload
             )
+            warn_deprecated_trigger_toolkits(
+                self._get_header(raw_headers, TOOLKIT_DEPRECATION_HEADER),
+                trigger_slug=normalized_payload["trigger_slug"],
+                trigger_id=normalized_payload["id"],
+            )
             return {
                 "version": version,
                 "payload": normalized_payload,
@@ -1574,7 +1587,7 @@ class Triggers(Resource):
                 "To parse without verifying, omit `verify_secret`."
             )
 
-        return self.verify_webhook(
+        verified = self.verify_webhook(
             id=t.cast(str, webhook_id),
             payload=payload,
             secret=verify_secret,
@@ -1582,6 +1595,12 @@ class Triggers(Resource):
             timestamp=t.cast(str, timestamp),
             tolerance=tolerance,
         )
+        warn_deprecated_trigger_toolkits(
+            self._get_header(raw_headers, TOOLKIT_DEPRECATION_HEADER),
+            trigger_slug=verified["payload"]["trigger_slug"],
+            trigger_id=verified["payload"]["id"],
+        )
+        return verified
 
     @staticmethod
     def _extract_request_body(request: t.Any) -> t.Union[str, bytes, None]:
