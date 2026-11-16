@@ -1,4 +1,7 @@
-import type { ToolListResponse, ToolRetrieveResponse } from '@composio/client/resources/_internal/logs';
+import type {
+  LogCreateToolExecutionResponse,
+  LogRetrieveToolExecutionResponse,
+} from '@composio/client/resources/logs';
 import { describe, expect, it } from 'vitest';
 import {
   formatTriggerLogInfo,
@@ -12,8 +15,8 @@ import {
 } from 'src/commands/logs/trigger-log-record';
 import { green, red } from 'src/ui/colors';
 
-type ToolLog = ToolListResponse['data'][number];
-type ToolLogDetailed = ToolRetrieveResponse;
+type ToolLog = LogCreateToolExecutionResponse['logs'][number];
+type ToolLogDetailed = LogRetrieveToolExecutionResponse;
 
 const makeTriggerLog = (createdAt: string | number): TriggerLogRecord =>
   decodeTriggerLogRecord({
@@ -33,37 +36,46 @@ const makeTriggerLog = (createdAt: string | number): TriggerLogRecord =>
   });
 
 const makeToolLog = (
-  createdAt: ToolLog['createdAt'] | null,
+  createdAt: number | string | null,
   overrides: {
     status?: string;
     connectedAccountId?: string | null;
+    metrics?: Record<string, unknown>;
   } = {}
 ): ToolLog =>
   ({
     id: 'tool_log_1',
-    createdAt,
+    type: 'tool.execution',
+    level: 'info',
+    parent: null,
+    timestamp: typeof createdAt === 'number' ? new Date(createdAt).toISOString() : createdAt,
     status: overrides.status ?? 'success',
-    app: { name: 'gmail' },
-    actionKey: 'GMAIL_SEND_EMAIL',
-    executionTime: 20,
-    connectedAccountId:
-      overrides.connectedAccountId === undefined ? 'conn_123' : overrides.connectedAccountId,
+    metadata: {
+      toolkit: { slug: 'gmail' },
+      tool: { slug: 'GMAIL_SEND_EMAIL' },
+      connected_account_id:
+        overrides.connectedAccountId === undefined ? 'conn_123' : overrides.connectedAccountId,
+    },
+    metrics: overrides.metrics ?? { duration_ms: 20 },
   }) as ToolLog;
 
 const makeToolLogDetailed = (
-  overrides: Partial<{ startTime: number | null; endTime: number | null }> = {}
+  overrides: Partial<{
+    startTime: number | null;
+    endTime: number | null;
+    metrics: Record<string, unknown>;
+  }> = {}
 ): ToolLogDetailed =>
   ({
-    actionLogId: 'tool_log_1',
-    actionId: 'GMAIL_SEND_EMAIL',
+    id: 'tool_log_1',
     status: 'success',
-    app: null,
-    connection: null,
-    startTime: overrides.startTime === undefined ? 0 : overrides.startTime,
-    endTime: overrides.endTime === undefined ? 0 : overrides.endTime,
-    totalDuration: '20ms',
-    version: '20260101_00',
-    steps: null,
+    metadata: {},
+    timings: {
+      start_time: overrides.startTime === undefined ? 0 : overrides.startTime,
+      end_time: overrides.endTime === undefined ? 0 : overrides.endTime,
+    },
+    metrics: overrides.metrics ?? { duration_ms: 20 },
+    data: {},
   }) as unknown as ToolLogDetailed;
 
 describe('formatTriggerLogsTable', () => {
@@ -128,6 +140,16 @@ describe('formatToolLogsTable', () => {
     expect(output).toContain(red('failed  '.padEnd(8)));
   });
 
+  it.each([
+    { metrics: { duration_ms: 20 }, expected: '20ms' },
+    { metrics: {}, expected: '-' },
+  ])('[Given] metrics $metrics [Then] Exec Time is $expected', ({ metrics, expected }) => {
+    const [header, row] = stripAnsi(formatToolLogsTable([makeToolLog(0, { metrics })])).split('\n');
+    const column = header.indexOf('Exec Time');
+
+    expect(row.slice(column, column + 12).trim()).toBe(expected);
+  });
+
   it('[Given] null connected account [Then] it renders dash', () => {
     const output = stripAnsi(formatToolLogsTable([makeToolLog(0, { connectedAccountId: null })]));
     const [, rowLine] = output.split('\n');
@@ -145,7 +167,7 @@ describe('formatToolLogInfo', () => {
     expect(plain).toContain('toolkit: -');
     expect(plain).toContain('Connection ID: -');
     expect(plain).toContain('Entity: -');
-    expect(plain).toContain('Steps: 0');
+    expect(plain).toContain('Version: -');
   });
 
   it('[Given] null start/end time [Then] it renders dashes for timestamps', () => {
@@ -154,6 +176,11 @@ describe('formatToolLogInfo', () => {
     expect(plain).toContain('Start Time: -');
     expect(plain).toContain('End Time: -');
     expect(plain).not.toContain('1970-01-01T00:00:00.000Z');
+  });
+
+  it('[Given] no recorded duration [Then] it renders a dash', () => {
+    const plain = stripAnsi(formatToolLogInfo(makeToolLogDetailed({ metrics: {} })));
+    expect(plain).toContain('Total Duration: -');
   });
 });
 
