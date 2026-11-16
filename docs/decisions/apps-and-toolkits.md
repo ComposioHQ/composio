@@ -16,9 +16,9 @@ An **App** groups related catalog toolkits for comparison. Each toolkit retains 
 
 ## Documentation scope
 
-The three guides cover App grouping, Provider MCP behavior, and choosing a toolkit. Session configuration, the glossary, agent instructions, LLM guardrails, and the Composio skill use the same terminology. Session MCP transport remains separate from Provider MCP toolkits.
+The three guides cover App grouping, Provider MCP behavior, and choosing a toolkit. The glossary, toolkit guidance for agents, and the Composio skill use the same catalog terminology. MCP gateway is a separate product. Session and gateway docs, their Native Tools terminology, and their Markdown rendering remain unchanged.
 
-The replacement for PR #4336 carries the content onto the current `next` branch. It preserves the newer Custom MCP scope and session configuration docs and moves the agent guidance into `docs/agent/instructions/context.ts`.
+The replacement for PR #4336 carries the content onto the current `next` branch. It adds toolkit guidance to the current `docs/agent/instructions/context.ts`.
 
 The September staging screenshots are omitted because they contain personal workspace details, old counts, and grouping examples that no longer match the backend-owned contract. Fresh demo-workspace screenshots can be added separately.
 

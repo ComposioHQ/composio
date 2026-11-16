@@ -16,9 +16,9 @@ A provider adapts Composio tools into the shape your AI framework expects. Compo
 
 The userID scopes connected accounts and tool executions and isolates users from each other. Use a stable identifier such as your database UUID or primary key. Avoid email addresses (they change) and never use `default` in production, since that exposes one user's connections to others.
 
-## Direct tools (provider package) vs MCP transport (/docs/sessions-via-mcp)
+## Native tools vs MCP (/docs/sessions-via-mcp)
 
-By default a session gives your agent direct tools, called through a provider package (previously called native tools); this integrates with your framework and supports modifiers and custom tools. Creating a session with `{ mcp: true }` also exposes `session.mcp.url` and `session.mcp.headers` for any MCP-compatible client. MCP transport is more portable across clients, but modifiers and custom tools do not apply over the MCP surface.
+By default a session gives your agent tools it calls directly through a provider package; this integrates with your framework and supports modifiers and custom tools. Creating a session with `{ mcp: true }` also exposes `session.mcp.url` and `session.mcp.headers` for any MCP-compatible client. MCP is more portable across clients, but modifiers and custom tools do not apply over the MCP surface.
 
 ## Apps: Composio Built vs Provider MCP toolkits (/docs/apps-and-toolkits)
 

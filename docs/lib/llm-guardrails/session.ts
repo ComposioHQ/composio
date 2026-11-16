@@ -28,11 +28,11 @@ export const SESSION_GUARDRAILS = `
 
 ## 1. Recommended Integration: Sessions
 
-For agent tool delivery, Composio supports **direct tools** (through a provider package) and **MCP** (no provider package needed).
+For agent tool delivery, Composio supports **Native Tools** (with a provider package) and **MCP** (no provider package needed).
 
 For application-owned tools or deterministic backend code, use [managed authentication with Proxy Execute](/docs/authentication/managed-auth-for-custom-tools). A session can provide a user-scoped runtime context without an LLM or MCP. Composio authenticates provider requests server-side; connected-account reads redact credentials and aren't a supported token-export workflow.
 
-### Direct tools (provider package)
+### Native Tools
 
 #### Python
 
@@ -90,8 +90,6 @@ Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible clie
 ---
 
 ## 2. Integration Notes
-
-- App grouping does not combine toolkit connections or tools. Configure exact toolkit slugs, such as \`notion\` or \`notion_mcp\`, and use the one the request names.
 
 - \`composio.create(user_id)\` is the standard entry point for agent integrations. Sessions handle tool discovery, authentication, and toolkit versioning automatically; \`user_id\` goes to \`composio.create()\` — individual tool calls in session mode don't take one.
 - Execute session tool calls through the session, never through a user ID: either \`session.execute(tool_slug, arguments=...)\` / \`session.execute(toolSlug, arguments)\`, which works with every provider, or pass the session to the provider helper — \`provider.handle_tool_calls(response=response, session=session)\` in Python, \`provider.handleToolCalls(session, response)\` in TypeScript. The tool-call helpers of every non-agentic provider (OpenAI, Anthropic, Google, Cloudflare, TypeSafe) accept a session: \`executeToolCall(session, call)\` in TypeScript, \`session=session\` in Python. Agentic providers execute session tools on their own. Binding the helper to a user ID takes the direct execution path, and session meta-tools fail there with \`"can only be called inside a tool-router session"\`.
