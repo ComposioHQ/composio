@@ -1,7 +1,16 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { TestClock } from 'effect/testing';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { cli, cliExit, MockConsole, TestLive } from 'test/__utils__';
+import {
+  DIRECTORY_PROJECT_SCOPE,
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+} from 'test/__utils__/layers/developer-project';
 import { stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import { log } from './logs.tools.fixtures';
 
@@ -174,6 +183,43 @@ describe('CLI: composio dev logs tools', () => {
         expect(yield* cli(['dev', 'logs', 'tools']).pipe(Effect.flip)).toMatchObject({
           _tag: 'commands/NotLoggedInError',
         });
+      })
+    );
+  });
+});
+
+// The request goes to the developer project the command resolved, never to the one the backend
+// would pick for the key.
+describe('CLI: composio dev logs tools acts on the developer project', () => {
+  const config = ConfigProvider.fromEnv({ env: { COMPOSIO_USER_API_KEY: 'test_api_key' } });
+
+  layer(TestLive({ ...inDeveloperProjectDirectory, baseConfigProvider: config }))(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] reads the logs of that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const stub = stubClientResources(['logs'], () => Response.json({ logs: [], next_cursor: null }));
+        yield* cli([...['dev', 'logs', 'tools'], ...args]).pipe(Effect.provide(stub.layer));
+
+        expect(stub.scopes).toEqual([scope]);
+      })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: config, accountData: defaultDeveloperProjectAccountData() }))(it => {
+    it.effect('[Given] a directory set up for no project [Then] reads the logs of the default developer project', () =>
+      Effect.gen(function* () {
+        yield* loginWithoutDeveloperProject;
+        const stub = stubClientResources(['logs'], () => Response.json({ logs: [], next_cursor: null }));
+        const { exitCode } = yield* cliExit(['dev', 'logs', 'tools']).pipe(Effect.provide(stub.layer));
+
+        expect(exitCode).toBe(0);
+        expect(stub.scopes).toEqual([DEFAULT_PROJECT_SCOPE]);
       })
     );
   });

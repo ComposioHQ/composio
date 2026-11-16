@@ -1,11 +1,10 @@
 import type { LogCreateToolExecutionParams } from '@composio/client/resources/logs';
 import { Array as Arr, Clock, Effect, Option, String as Str } from 'effect';
 import { commandInputError } from 'src/commands/errors';
-import { CommandSurface } from 'src/commands/surface';
+import { CommandSurface, developerProjectClient } from 'src/commands/surface';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { failedWith } from 'src/effects/request-error';
 import { commandHintStep } from 'src/services/command-hints';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { idempotent } from 'src/services/composio-request';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { nonEmptyOrUndefined, optionalParams } from 'src/utils/optional-params';
@@ -78,7 +77,7 @@ const buildToolLogFilters = (
 const showToolLog = (toolLogId: string) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const client = yield* (yield* ComposioClientSingleton).get();
+    const client = yield* developerProjectClient;
     const toolLog = yield* ui.withSpinner(
       `Fetching tool log "${toolLogId}"...`,
       client.logs
@@ -152,7 +151,7 @@ const listToolLogs = ({
         : undefined;
     const filters = buildToolLogFilters(filterInput);
 
-    const client = yield* (yield* ComposioClientSingleton).get();
+    const client = yield* developerProjectClient;
     // The client names this read-only search POST createToolExecution.
     const response = yield* ui.withSpinner(
       'Fetching tool logs...',

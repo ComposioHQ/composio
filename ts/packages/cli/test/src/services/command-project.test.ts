@@ -6,21 +6,28 @@ import { APIConnectionError } from '@composio/client/effect';
 import { ConfigProvider, Effect, Fiber, Layer, Option } from 'effect';
 import { TestClock } from 'effect/testing';
 import * as tempy from 'tempy';
-import { ProjectResolutionError, resolveCommandProject } from 'src/services/command-project';
+import {
+  ProjectResolutionError,
+  resolveCommandProject,
+  resolveDeveloperProjectOrDefault,
+} from 'src/services/command-project';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
-import { makeOrgProject } from 'test/__utils__/models/account';
+import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 
 const BASE_URL = 'https://backend.composio.dev';
 
-const userContext = (orgId: Option.Option<string>) =>
+const userContext = (
+  orgId: Option.Option<string>,
+  apiKey: Option.Option<string> = Option.some('uak_test')
+) =>
   Layer.succeed(
     ComposioUserContext,
     ComposioUserContext.of({
       data: {
-        apiKey: Option.some('uak_test'),
+        apiKey,
         baseURL: BASE_URL,
         webURL: 'https://app.composio.dev',
         orgId,
@@ -70,6 +77,23 @@ const projectsPage = (names: ReadonlyArray<string>) =>
     current_page: 1,
     total_items: names.length,
   });
+
+const localProject = (orgId: string) =>
+  Layer.succeed(
+    ProjectContext,
+    ProjectContext.of({
+      resolve: Effect.succeed(
+        Option.some({
+          orgId,
+          projectId: 'pr_local',
+          projectName: Option.some('local-app'),
+          orgName: Option.none(),
+          email: Option.none(),
+          testUserId: Option.none(),
+        })
+      ),
+    })
+  );
 
 describe('resolveCommandProject', () => {
   afterEach(() => {
@@ -182,5 +206,170 @@ describe('resolveCommandProject', () => {
       expect(error).not.toBeInstanceOf(ProjectResolutionError);
       expect(error).toBeInstanceOf(APIConnectionError);
     }).pipe(Effect.provide(testLayer))
+  );
+});
+
+// The backend's default developer project, as session info reports it.
+const defaultProjectInfo = (orgId: string) =>
+  jsonResponse(makeSessionInfo({ orgId, projectNanoId: 'pr_newest', projectName: 'Newest App' }));
+
+const requestOf = (call: ReadonlyArray<unknown> | undefined) => {
+  const [input, init] = call ?? [];
+  return {
+    path: new URL(String(input)).pathname,
+    headers: new Headers((init as RequestInit | undefined)?.headers),
+  };
+};
+
+const SESSION_INFO_PATH = '/api/v3.1/auth/session/info';
+
+describe('resolveDeveloperProjectOrDefault', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.effect('uses the directory project, with no notice and no request, when it is usable', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const { project, notice } = yield* resolveDeveloperProjectOrDefault({});
+
+      expect(project).toMatchObject({ projectId: 'pr_local', source: 'developer-local-config' });
+      expect(notice).toEqual(Option.none());
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.some('org_1')), localProject('org_1'))
+      )
+    )
+  );
+
+  it.effect(
+    'falls back to the default developer project of the logged-in org when the directory has none',
+    () =>
+      Effect.gen(function* () {
+        const fetchSpy = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValue(defaultProjectInfo('org_1'));
+
+        const { project, notice } = yield* resolveDeveloperProjectOrDefault({});
+
+        expect(project).toEqual({
+          orgId: 'org_1',
+          projectId: 'pr_newest',
+          projectName: 'Newest App',
+          projectType: 'DEVELOPER',
+          source: 'developer-default',
+        });
+        expect(notice).toEqual(
+          Option.some(
+            'No developer project is set up for this directory; using "Newest App" (pr_newest), the newest developer project in the org you are logged in to, instead. Run `composio dev init` to choose one, or pass --project-name.'
+          )
+        );
+        // One session-info read, scoped to the stored org so `composio orgs switch` holds.
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        const request = requestOf(fetchSpy.mock.calls[0]);
+        expect(request.path).toBe(SESSION_INFO_PATH);
+        expect(request.headers.get('x-org-id')).toBe('org_1');
+        expect(request.headers.has('x-project-id')).toBe(false);
+      }).pipe(Effect.provide(testLayer))
+  );
+
+  it.effect('asks for the key’s default developer project when no org is stored', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(defaultProjectInfo('org_joined_last'));
+
+      const { project, notice } = yield* resolveDeveloperProjectOrDefault({});
+
+      expect(project).toMatchObject({
+        orgId: 'org_joined_last',
+        projectId: 'pr_newest',
+        source: 'developer-default',
+      });
+      expect(Option.getOrThrow(notice)).toContain(
+        'the newest developer project in the org you joined most recently'
+      );
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(requestOf(fetchSpy.mock.calls[0]).headers.has('x-org-id')).toBe(false);
+    }).pipe(Effect.provide(Layer.mergeAll(singleton, userContext(Option.none()), noLocalProject)))
+  );
+
+  it.effect.each([
+    {
+      given: 'session info without a project',
+      response: () => jsonResponse({ ...makeSessionInfo(), project: null }),
+    },
+    {
+      given: 'an API error',
+      response: () =>
+        jsonResponse(
+          { error: { slug: 'NotFound', status: 404, code: 404, message: 'No project found.' } },
+          404
+        ),
+    },
+  ])(
+    '[Given] $given [Then] fails saying no developer project was found, naming `composio dev init`',
+    ({ response }) =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(response());
+
+        const error = yield* resolveDeveloperProjectOrDefault({}).pipe(Effect.flip);
+
+        expect(error).toBeInstanceOf(ProjectResolutionError);
+        expect(error).toMatchObject({
+          reason: 'missing_developer_project',
+          message:
+            'No developer project is set up for this directory, and no developer project was found in your org to use instead. Run `composio dev init` to set one up.',
+        });
+      }).pipe(Effect.provide(testLayer))
+  );
+
+  it.effect.each([
+    { status: 401, message: 'Invalid API key' },
+    { status: 403, message: 'Access denied' },
+    { status: 500, message: 'Session service unavailable' },
+  ])(
+    'preserves a $status session lookup failure instead of recommending setup',
+    ({ status, message }) =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          jsonResponse({ error: { status, code: status, message } }, status)
+        );
+
+        const error = yield* resolveDeveloperProjectOrDefault({}).pipe(Effect.flip);
+
+        expect(error).toMatchObject({ reason: 'request_failed', message, cause: { status } });
+      }).pipe(Effect.provide(testLayer))
+  );
+
+  it.effect('resolves --project-name as before, never falling back', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(projectsPage(['Other']));
+
+      const error = yield* resolveDeveloperProjectOrDefault({ projectName: 'Missing' }).pipe(
+        Effect.flip
+      );
+
+      expect(error).toMatchObject({ reason: 'project_not_found' });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(requestOf(fetchSpy.mock.calls[0]).path).not.toBe(SESSION_INFO_PATH);
+    }).pipe(Effect.provide(testLayer))
+  );
+
+  it.effect('fails with missing_org before any request when there is no API key', () =>
+    Effect.gen(function* () {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      const error = yield* resolveDeveloperProjectOrDefault({}).pipe(Effect.flip);
+
+      expect(error).toMatchObject({ reason: 'missing_org' });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(singleton, userContext(Option.none(), Option.none()), noLocalProject)
+      )
+    )
   );
 });
