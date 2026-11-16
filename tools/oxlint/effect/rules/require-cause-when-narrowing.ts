@@ -106,6 +106,22 @@ function constructedErrors(
       consider(expression.argument);
       return;
     }
+    if (expression.type === 'ConditionalExpression') {
+      consider(expression.consequent);
+      consider(expression.alternate);
+      return;
+    }
+    if (expression.type === 'LogicalExpression') {
+      // An object constructor is truthy, so && cannot return its left operand.
+      if (expression.operator !== '&&') consider(expression.left);
+      consider(expression.right);
+      return;
+    }
+    if (expression.type === 'SequenceExpression') {
+      const last = expression.expressions.at(-1);
+      if (last !== undefined) consider(last);
+      return;
+    }
     if (isErrorConstruction(expression, names)) found.push(expression);
   };
   for (const returned of returnedExpressions(handler)) consider(returned);

@@ -48,6 +48,15 @@ tester.run('anti-slop-effect/no-ordie-in-service-construction', noOrDieInService
 		const program = Effect.gen(function* () {
 			yield* risky.pipe(Effect.orDie);
 		});`,
+    `${imports}
+    class Store extends Context.Service<Store, StoreShape>()("Store", {
+      make: Effect.gen(function* () {
+        return {
+          nested: { later: Effect.gen(function* () { return yield* load.pipe(Effect.orDie); }) },
+          [key]: load.pipe(Effect.orDie),
+        };
+      }),
+    }) {}`,
     {
       filename: 'store.test.ts',
       code: `${imports}
@@ -59,6 +68,19 @@ tester.run('anti-slop-effect/no-ordie-in-service-construction', noOrDieInService
 		const layer = live.pipe(Layer.orDie);`,
   ],
   invalid: [
+    {
+      code: `${imports}
+      class Client extends Context.Service<Client, ClientShape>()("Client", {
+        make: Effect.gen(function* () {
+          return {
+            token: yield* load.pipe(Effect.orDie),
+            nested: { token: yield* load.pipe(Effect.orDie) },
+            [yield* key.pipe(Effect.orDie)]: true,
+          };
+        }),
+      }) {}`,
+      errors: [constructionOrDie, constructionOrDie, constructionOrDie],
+    },
     {
       code: `import { Context as Ctx, Effect as Fx, Layer as L } from "effect";
         class Client extends Ctx.Service<Client, {}>()("Client") {

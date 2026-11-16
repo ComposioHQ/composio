@@ -88,8 +88,8 @@ function isOperationDefinition(node: ESTree.Node, names: EffectModuleNames): boo
 
 /**
  * Whether `node` runs while the service is constructed. Construction stops at operation boundaries: functions other
- * than Effect.gen generators and suspend/sync thunks, Effect.fn definitions, object-literal properties (operations in
- * the returned service or callbacks in options), and effects a generator defines without yielding.
+ * than Effect.gen generators and suspend/sync thunks, Effect.fn definitions, object-literal properties without a
+ * delegated yield (operations in the returned service or callbacks in options), and effects a generator defines without yielding.
  */
 function isInServiceConstruction(node: ESTree.Node, names: EffectModuleNames): boolean {
   let child: ESTree.Node = node;
@@ -108,7 +108,7 @@ function isInServiceConstruction(node: ESTree.Node, names: EffectModuleNames): b
       }
     } else if (isConstructionRoot(current, child, names)) {
       return true;
-    } else if (current.type === 'Property' || isOperationDefinition(current, names)) {
+    } else if ((current.type === 'Property' && !yielded) || isOperationDefinition(current, names)) {
       return false;
     } else if (current.type === 'YieldExpression' && current.delegate) {
       yielded = true;

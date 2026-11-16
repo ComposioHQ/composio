@@ -36,12 +36,41 @@ tester.run('anti-slop-effect/require-cause-when-narrowing', requireCauseWhenNarr
 		const a = load.pipe(Effect.orElse(() => Effect.succeed(new Fallback())));
 		const b = load.pipe(Effect.catch(() => Effect.sync(() => new Fallback())));
 		const c = load.pipe(Effect.catch(() => Effect.succeed(Option.make(1))));`,
+    `${imports}
+    const preserved = load.pipe(Effect.mapError(() => retryable
+      ? new RetryFailed({ cause })
+      : Failed.make({ cause })));
+    const recovered = load.pipe(Effect.catch(() => retryable
+      ? Effect.succeed(new Fallback())
+      : Effect.sync(() => new OtherFallback())));
+    const deferred = load.pipe(Effect.catch(() => () => retryable
+      ? new RetryFailed()
+      : new Failed()));
+    const discarded = load.pipe(Effect.mapError(() => (new Discarded(), Failed.make({ cause }))));
+    const truthy = load.pipe(Effect.mapError(() => new Discarded() && Failed.make({ cause })));`,
     // Not Effect's Effect.
     `
 		import * as Effect from "other-library";
 		const a = load.pipe(Effect.mapError(() => new Failed()));`,
   ],
   invalid: [
+    {
+      code: `${imports}
+      const conditional = load.pipe(Effect.mapError(() => retryable ? new RetryFailed() : new Failed()));
+      const nested = load.pipe(Effect.mapError(() => retryable
+        ? Failed.make({ cause })
+        : offline ? Failed.make({ cause }) : new Offline()));
+      const logical = load.pipe(Effect.mapError(() => fallback ?? new Missing()));
+      const sequence = load.pipe(Effect.mapError(() => (record(), new Failed())));
+      const failed = load.pipe(Effect.catch(() => Effect.fail(retryable ? new RetryFailed() : new Failed())));`,
+      errors: [
+        missingCause('Effect.mapError', 'RetryFailed'),
+        missingCause('Effect.mapError', 'Offline'),
+        missingCause('Effect.mapError', 'Missing'),
+        missingCause('Effect.mapError', 'Failed'),
+        missingCause('Effect.catch', 'RetryFailed'),
+      ],
+    },
     {
       code: `import { Effect as Fx } from "effect";
         const result = load.pipe(Fx.mapError(() => new Failed()));`,
