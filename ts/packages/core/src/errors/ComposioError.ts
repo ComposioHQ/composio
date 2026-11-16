@@ -10,7 +10,7 @@
  */
 import pc from 'picocolors';
 import { ZodError } from 'zod/v3';
-import { BadRequestError } from '@composio/client';
+import { APIError } from '@composio/client';
 import logger from '../utils/logger';
 
 /**
@@ -31,8 +31,10 @@ export interface ErrorHandleOptions {
 export type ComposioErrorOptions = {
   /** Error code for categorizing errors */
   code?: string;
-  /** HTTP status code associated with the error */
+  /** HTTP status code associated with the error. Defaults to the status of an `APIError` cause. */
   statusCode?: number;
+  /** Request id the API assigned. Defaults to the request id of an `APIError` cause. */
+  requestId?: string;
   /** The underlying cause of the error */
   cause?: unknown;
   /** Additional metadata associated with the error */
@@ -67,6 +69,10 @@ export class ComposioError extends Error {
   public code?: string;
   public possibleFixes?: string[];
   public errorId?: string;
+  /** HTTP status of the response behind the error, when there was one. */
+  declare public readonly statusCode?: number;
+  /** Request id the Composio API assigned to the request behind the error, when it sent one. */
+  declare public readonly requestId?: string;
 
   /**
    * Creates a new ComposioError
@@ -81,10 +87,10 @@ export class ComposioError extends Error {
       Error.captureStackTrace(this, this.constructor);
     }
 
-    // Process the status code - either from options or from the cause if it's a BadRequestError
-    const statusCode =
-      options.statusCode ||
-      (options.cause instanceof BadRequestError ? options.cause.status : undefined);
+    // Transport metadata: explicit options win, otherwise read it from an API error cause
+    const apiCause = options.cause instanceof APIError ? options.cause : undefined;
+    const statusCode = options.statusCode ?? apiCause?.status;
+    const requestId = options.requestId ?? apiCause?.requestId;
 
     this.code = `TS-SDK::${options.code}`;
     // format the possible fixes
@@ -93,6 +99,7 @@ export class ComposioError extends Error {
     // Only define properties that have values to avoid showing undefined in error display
     // Node.js by default shows all the properties of the error object, so we are doing it conditionally
     this.definePropertyIfExists('statusCode', statusCode);
+    this.definePropertyIfExists('requestId', requestId);
     this.definePropertyIfExists('cause', options.cause);
 
     const combinedStack =
