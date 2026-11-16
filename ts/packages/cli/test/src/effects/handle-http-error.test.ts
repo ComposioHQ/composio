@@ -5,12 +5,15 @@ import {
   BadRequestError as ClientBadRequestError,
   ConfigurationError as ClientConfigurationError,
   DecodeError as ClientDecodeError,
+  InternalServerError as ClientInternalServerError,
+  RateLimitError as ClientRateLimitError,
   type ComposioError,
 } from '@composio/client/effect';
 import { describe, expect, it } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { ReportedFailure } from 'src/effects/report-failure';
+import { retryHint, TEMPORARY_FAILURE_EXIT_CODE } from 'src/effects/retry-advice';
 import { CLIENT_API_ERROR_TAGS } from 'src/services/composio-errors';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { exitCodeOf } from 'test/__utils__/exit-code';
@@ -88,13 +91,13 @@ describe('handleClientApiError', () => {
   it.effect.each([
     new ClientAPIConnectionError({
       message: 'Connection error.',
-      method: 'GET',
+      method: 'POST',
       url,
       reason: 'TransportError',
       description: 'fetch failed',
     }),
-    new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'GET', url }),
-  ])('prints the fallback message for $_tag', error =>
+    new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'POST', url }),
+  ])('prints the fallback message for $_tag of a request that may have taken effect', error =>
     Effect.gen(function* () {
       const { ui, lines } = recordingUI();
 
@@ -105,6 +108,58 @@ describe('handleClientApiError', () => {
         'stderr: Browse available auth configs:\n> composio dev auth-configs list',
       ]);
       expect(exitCodeOf(exit)).toBe(1);
+    })
+  );
+
+  it.effect.each([
+    new ClientAPIConnectionError({
+      message: 'Connection error.',
+      method: 'GET',
+      url,
+      reason: 'TransportError',
+      description: 'fetch failed',
+    }),
+    new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'GET', url }),
+    new ClientInternalServerError({
+      message: '503 Service Unavailable',
+      method: 'GET',
+      url,
+      status: 503,
+      requestId: undefined,
+      details: undefined,
+      body: undefined,
+    }),
+  ])('says a $_tag of a GET is safe to run again and exits 75', error =>
+    Effect.gen(function* () {
+      const { ui, lines } = recordingUI();
+
+      const exit = yield* Effect.exit(handleClientApiError(ui, options)(error));
+
+      expect(lines).toStrictEqual([
+        'stderr: Failed to fetch auth config "ac_missing".',
+        `stderr: ${retryHint('safe')}`,
+      ]);
+      expect(exitCodeOf(exit)).toBe(TEMPORARY_FAILURE_EXIT_CODE);
+    })
+  );
+
+  it.effect('says a rate-limited POST is safe to run again, since it did not run', () =>
+    Effect.gen(function* () {
+      const { ui, lines } = recordingUI();
+      const rateLimited = new ClientRateLimitError({
+        message: '429 Too many requests',
+        method: 'POST',
+        url,
+        status: 429,
+        requestId: undefined,
+        details: { message: 'Too many requests', code: 429, slug: 'RateLimited', status: 429 },
+        body: undefined,
+      });
+
+      const exit = yield* Effect.exit(handleClientApiError(ui, options)(rateLimited));
+
+      expect(lines).toStrictEqual(['stderr: Too many requests', `stderr: ${retryHint('safe')}`]);
+      expect(exitCodeOf(exit)).toBe(TEMPORARY_FAILURE_EXIT_CODE);
     })
   );
 
@@ -181,12 +236,12 @@ describe('Effect.catchTag(CLIENT_API_ERROR_TAGS, handleClientApiError(...))', ()
     clientDecodeError,
     new ClientAPIConnectionError({
       message: 'Connection error.',
-      method: 'GET',
+      method: 'POST',
       url,
       reason: 'TransportError',
       description: 'fetch failed',
     }),
-    new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'GET', url }),
+    new ClientAPIConnectionTimeoutError({ message: 'Request timed out.', method: 'POST', url }),
   ])('reports $_tag and fails already reported', error =>
     Effect.gen(function* () {
       const { ui, lines } = recordingUI();

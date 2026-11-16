@@ -5,6 +5,7 @@ import type { TerminalUI } from 'src/services/terminal-ui';
 import { reportFailure, type ReportedFailure } from 'src/effects/report-failure';
 import { describeDecodeError, isClientDecodeError } from 'src/utils/api-error-extraction';
 import { isUnauthorized, unauthorizedHint } from 'src/effects/rejected-user-api-key';
+import { isSafeToRetry, retryHint } from 'src/effects/retry-advice';
 
 export interface Suggestion {
   readonly label: string;
@@ -24,10 +25,17 @@ interface ErrorReport {
   readonly suggestedFix?: string;
   // Set when the failure has its own remedy, which replaces the caller's hint.
   readonly hint?: string;
+  // Set when running the same command again is safe and may pass.
+  readonly retryable?: boolean;
 }
 
 const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
   if (isClientDecodeError(e)) return Effect.succeed(describeDecodeError(e));
+  // A temporary failure's remedy is to run the command again, whatever the caller's hint says.
+  if (isSafeToRetry(e)) {
+    const message = isAPIError(e) ? e.details?.message : undefined;
+    return Effect.succeed({ message, hint: retryHint('safe'), retryable: true });
+  }
   if (isAPIError(e)) {
     const statusReport = { message: e.details?.message, suggestedFix: e.details?.suggested_fix };
     return isUnauthorized(e)
@@ -50,7 +58,9 @@ const reportOf = (e: ClientApiError): Effect.Effect<ErrorReport> => {
  * The final rendering is `reportFailure`'s (`src/effects/report-failure.ts`):
  * the message and hint reach stderr as plain lines when it is not a TTY, and
  * the handler fails with a `ReportedFailure`, so the process exits 1 and
- * callers such as scripts and agents can detect the failure. The handler never
+ * callers such as scripts and agents can detect the failure. A failure that is
+ * safe to run again as it is (see `src/effects/retry-advice.ts`) says so in
+ * place of the hint and exits 75. The handler never
  * succeeds, so the recovered effect keeps the request's own success type and
  * the caller reads the result straight through.
  *
@@ -108,5 +118,5 @@ export const handleClientApiError =
         }
       }
 
-      return yield* reportFailure(ui, message, withHint(hint));
+      return yield* reportFailure(ui, message, withHint(hint), { retryable: report.retryable });
     });
