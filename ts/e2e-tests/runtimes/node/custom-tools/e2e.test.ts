@@ -3,7 +3,7 @@
  *
  * Verifies local tool execution, Zod validation, session context, error handling,
  * mixed local+remote chaining, and edge cases against the live Composio API.
- * Uses weathermap toolkit (no auth needed).
+ * Uses the hackernews toolkit (public, no auth needed).
  * Requires COMPOSIO_API_KEY in environment.
  */
 

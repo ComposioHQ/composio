@@ -201,6 +201,7 @@ export const DOCS_PRODUCTS = {
                 url: '/docs/authentication/managing-multiple-connected-accounts',
                 label: 'Multiple connected accounts',
               },
+              { url: '/docs/authentication/session-cant-find-account' },
               { url: '/docs/authentication/controlling-scopes' },
               { url: '/docs/authentication/manually-authenticating' },
               { url: '/docs/authentication/programmatic-auth-configs' },

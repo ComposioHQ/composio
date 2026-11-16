@@ -1,4 +1,5 @@
 // Use direct imports from collections to avoid top-level await in lib/source.ts.
+import { resolveToolkitCount } from './toolkit-count';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -541,7 +542,7 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
     if (!route) return [];
     if (isExcludedFromSearch(route.url)) return [];
 
-    const source = readFileSync(file, 'utf8');
+    const source = resolveToolkitCount(readFileSync(file, 'utf8'));
     const frontmatter = getFrontmatter(source);
     const title = getFrontmatterValue(frontmatter, 'title');
     if (!title) return [];

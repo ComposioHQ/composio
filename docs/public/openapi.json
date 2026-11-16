@@ -25652,6 +25652,16 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "managed_app_id": {
+                            "type": "string",
+                            "description": "Unique id of this Composio-managed app.",
+                            "example": "ma_V1StGXR8_Z5j"
+                          },
+                          "is_default": {
+                            "type": "boolean",
+                            "description": "Whether this is the toolkit's default Composio-managed app.",
+                            "example": true
+                          },
                           "mode": {
                             "type": "string",
                             "description": "Authentication mode for the Composio-managed auth config",
@@ -25703,11 +25713,13 @@
                           }
                         },
                         "required": [
+                          "managed_app_id",
+                          "is_default",
                           "mode",
                           "scopes"
                         ]
                       },
-                      "description": "Managed-auth-only metadata, including the supported OAuth scope ceiling."
+                      "description": "One entry per Composio-managed app, the default first, each with its supported OAuth scope ceiling."
                     },
                     "is_local_toolkit": {
                       "type": "boolean",

@@ -3,7 +3,7 @@
  * Tests local execution, remote execution, mixed routing, error handling,
  * and SessionContext chaining against the live Composio API.
  *
- * Uses weathermap toolkit (no auth needed, active connection).
+ * Uses the hackernews toolkit (public, no auth needed).
  * Requires COMPOSIO_API_KEY in environment.
  */
 import { Composio, experimental_createTool as createCustomTool } from '@composio/core';
@@ -64,22 +64,22 @@ const strictTool = createCustomTool('STRICT_TOOL', {
 });
 
 // Tool that chains into a remote tool via SessionContext.execute()
-const weatherChain = createCustomTool('WEATHER_CHAIN', {
-  name: 'Weather chain',
-  description: 'Fetches weather via remote tool and enriches with local context',
+const hackerNewsChain = createCustomTool('HACKERNEWS_CHAIN', {
+  name: 'Hacker News chain',
+  description: 'Fetches a Hacker News profile via a remote tool and enriches it locally',
   inputParams: z.object({
-    city: z.string(),
+    username: z.string(),
   }),
   execute: async (input, ctx) => {
-    // Call remote WEATHERMAP_WEATHER tool through SessionContext
-    const weather = await ctx.execute('WEATHERMAP_WEATHER', {
-      location: input.city,
+    // Call remote HACKERNEWS_GET_USER tool through SessionContext
+    const profile = await ctx.execute('HACKERNEWS_GET_USER', {
+      username: input.username,
     });
     return {
-      city: input.city,
+      username: input.username,
       userId: ctx.userId,
-      weatherData: weather.data,
-      weatherError: weather.error,
+      remoteData: profile.data,
+      remoteError: profile.error,
     };
   },
 });
@@ -92,10 +92,10 @@ async function main() {
   const userId = `e2e-custom-tools-${Date.now()}`;
 
   const session = await composio.create(userId, {
-    toolkits: ['weathermap'],
+    toolkits: ['hackernews'],
     manageConnections: false,
     experimental: {
-      customTools: [getUserContext, enrichedSearch, throwingTool, strictTool, weatherChain],
+      customTools: [getUserContext, enrichedSearch, throwingTool, strictTool, hackerNewsChain],
     },
   });
 
@@ -190,21 +190,21 @@ async function main() {
 
   // ── Test 9: SessionContext.execute() chaining — local tool calls remote tool ──
   // This is mixed local+remote execution: local tool runs in-process,
-  // then calls WEATHERMAP_WEATHER on the backend via session.execute()
+  // then calls HACKERNEWS_GET_USER on the backend via session.execute()
   {
-    const result = await session.execute('WEATHER_CHAIN', { city: 'London' });
+    const result = await session.execute('HACKERNEWS_CHAIN', { username: 'pg' });
     if (result.error) {
       throw new Error(`CHAINED_EXECUTE failed: ${result.error}`);
     }
-    if (result.data?.city !== 'London') {
-      throw new Error(`CHAINED_EXECUTE city mismatch: ${JSON.stringify(result)}`);
+    if (result.data?.username !== 'pg') {
+      throw new Error(`CHAINED_EXECUTE username mismatch: ${JSON.stringify(result)}`);
     }
     if (!result.data?.userId) {
       throw new Error(`CHAINED_EXECUTE missing userId: ${JSON.stringify(result)}`);
     }
-    // The chained remote call should have returned weather data
-    if (!result.data?.weatherData) {
-      throw new Error(`CHAINED_EXECUTE missing weatherData: ${JSON.stringify(result)}`);
+    // The chained remote call should have returned the Hacker News profile
+    if (!result.data?.remoteData) {
+      throw new Error(`CHAINED_EXECUTE missing remoteData: ${JSON.stringify(result)}`);
     }
     console.log('CHAINED_EXECUTE_OK');
   }

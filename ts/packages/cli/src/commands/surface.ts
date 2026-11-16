@@ -4,9 +4,11 @@ import { ExpectedFailure } from 'src/effects/expected-failure';
 import type { CommandIdentity, SharedFlagName } from 'src/invocation/command-identity';
 import {
   resolveCommandProject,
+  resolveDeveloperProjectOrDefault,
   type ProjectMode,
   type ResolvedCommandProject,
 } from 'src/services/command-project';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -56,6 +58,49 @@ export const resolveSurfaceProject = (mode: ProjectMode) =>
     });
   });
 
+/**
+ * A warning that reaches stderr even off a terminal, where `ui.log.*` decoration is dropped: a
+ * script or agent reading stderr must see a fallback that affects the result.
+ */
+export const warnOnStderr = (message: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    if ((yield* ui.capabilities).canDecorate) {
+      yield* ui.log.warn(message);
+    } else {
+      yield* ui.error(`Warning: ${message}`);
+    }
+  });
+
+/**
+ * The developer project of a dev command that reads or writes the project's resources (auth
+ * configs, connected accounts, trigger instances, logs): `--project-name`'s, else the
+ * directory's, else the backend's default developer project, named on stderr every time
+ * (`resolveDeveloperProjectOrDefault`). These commands once sent no project and let the backend
+ * pick that default, so a directory without a usable project of its own keeps working; a command
+ * that always required one uses `resolveSurfaceProject('developer')`. Resolved once, so every
+ * request of the command names the same project.
+ */
+export const resolveDeveloperResourceProject = Effect.gen(function* () {
+  const { projectName } = yield* CommandSurface;
+  const { project, notice } = yield* resolveDeveloperProjectOrDefault({
+    projectName: Option.getOrUndefined(projectName),
+  });
+  yield* Effect.transposeOption(Option.map(notice, warnOnStderr));
+  return project;
+});
+
+/**
+ * The client for the developer project a dev command acts on (`resolveDeveloperResourceProject`),
+ * for a command whose requests all read or write that project's resources: they name it rather
+ * than leaving the backend to pick the key's default project.
+ */
+export const developerProjectClient = Effect.gen(function* () {
+  const project = yield* resolveDeveloperResourceProject;
+  const clientSingleton = yield* ComposioClientSingleton;
+  return yield* clientSingleton.getFor({ orgId: project.orgId, projectId: project.projectId });
+});
+
 // --- acting user ------------------------------------------------------------------------------
 
 /** Which step of the acting-user rule picked the user. */
@@ -63,12 +108,12 @@ export type ActingUserSource = 'consumer' | 'flag' | 'directory-test-user' | 'gl
 
 /**
  * The user a command acts as (glossary "Acting user"), with the project it was resolved
- * against. `actingUserOption` leaves the project optional; see there.
+ * against.
  */
-export interface ActingUser<Project = ResolvedCommandProject> {
+export interface ActingUser {
   readonly userId: string;
   readonly source: ActingUserSource;
-  readonly project: Project;
+  readonly project: ResolvedCommandProject;
 }
 
 /** No step of the acting-user rule found a user for the command. */
@@ -99,22 +144,20 @@ const missingUserMessage = (tree: CommandTree, projectName: Option.Option<string
 
 /**
  * The test user the directory configures (`.composio/project.json`), for a command that runs
- * against the directory's project. A `--project-name` that names another project does not
- * borrow it, so the command falls back to the global test user; `namedProjectId` is the id of
- * the project `--project-name` resolved to, or none without the flag.
+ * against the directory's project (`projectId`, the project the command resolved). Another
+ * project, one `--project-name` names or the default developer project standing in for the
+ * directory's, does not borrow it, so the command falls back to the global test user.
  */
 const directoryTestUserId = (
   directoryProject: Option.Option<{
     readonly projectId: string;
     readonly testUserId: Option.Option<string>;
   }>,
-  namedProjectId: Option.Option<string>
+  projectId: string
 ): Option.Option<string> =>
   pipe(
     directoryProject,
-    Option.filter(
-      keys => Option.isNone(namedProjectId) || Option.contains(namedProjectId, keys.projectId)
-    ),
+    Option.filter(keys => keys.projectId === projectId),
     Option.flatMap(keys => keys.testUserId)
   );
 
@@ -164,8 +207,8 @@ const consumerUser = (project: ResolvedCommandProject) =>
     Option.map(userId => ({ userId, source: 'consumer' as const }))
   );
 
-/** The dev tree's user for a project, `namedProjectId` being the `--project-name` project's id. */
-const devUser = (namedProjectId: Option.Option<string>) =>
+/** The dev tree's user for the developer project `projectId` the command resolved. */
+const devUser = (projectId: string) =>
   Effect.gen(function* () {
     const surface = yield* CommandSurface;
     const userContext = yield* ComposioUserContext;
@@ -176,7 +219,7 @@ const devUser = (namedProjectId: Option.Option<string>) =>
     );
     return devActingUser({
       flag: surface.userId,
-      directoryTestUserId: directoryTestUserId(directoryProject, namedProjectId),
+      directoryTestUserId: directoryTestUserId(directoryProject, projectId),
       globalTestUserId: userContext.data.testUserId,
     });
   });
@@ -198,10 +241,7 @@ export const actingUser = () =>
         ? { mode: 'consumer' }
         : { mode: 'developer', projectName: Option.getOrUndefined(projectName) }
     );
-    const user =
-      tree === 'root'
-        ? consumerUser(project)
-        : yield* devUser(Option.as(projectName, project.projectId));
+    const user = tree === 'root' ? consumerUser(project) : yield* devUser(project.projectId);
     yield* announceFallback(user);
     if (Option.isNone(user)) {
       return yield* new MissingActingUserError({
@@ -214,37 +254,52 @@ export const actingUser = () =>
   });
 
 /**
- * The acting user for a command that also runs without one, by the same rule as `actingUser`.
- * On the dev tree it resolves only the project `--project-name` names, so `project` is none when
- * the command runs against the directory's project through the default client; on the root
- * tree it is the consumer project. Names a test user standing in on stderr, as `actingUser`
- * does. Fails only when that project cannot be resolved.
+ * The dev tree's acting user for a command that also runs without one, against the developer
+ * project the command resolved (`resolveSurfaceProject('developer')`), by the same rule as
+ * `actingUser`: `--user-id`, then the directory test user (only for the directory's own project),
+ * then the global test user. Names a test user standing in on stderr, as `actingUser` does; none
+ * when no step finds a user.
  */
-export const actingUserOption = () =>
+export const devActingUserOption = (project: ResolvedCommandProject) =>
   Effect.gen(function* () {
-    const surface = yield* CommandSurface;
-    if (surface.tree === 'root') {
-      const project = yield* resolveCommandProject({ mode: 'consumer' });
-      return Option.map(
-        consumerUser(project),
-        (user): ActingUser<Option.Option<ResolvedCommandProject>> => ({
-          ...user,
-          project: Option.some(project),
-        })
-      );
-    }
-    const namedProject = yield* Effect.transposeOption(
-      Option.map(surface.projectName, projectName =>
-        resolveCommandProject({ mode: 'developer', projectName })
-      )
-    );
-    const user = yield* devUser(Option.map(namedProject, project => project.projectId));
+    const user = yield* devUser(project.projectId);
     yield* announceFallback(user);
-    return Option.map(user, (found): ActingUser<Option.Option<ResolvedCommandProject>> => ({
-      ...found,
-      project: namedProject,
-    }));
+    return Option.map(user, (found): ActingUser => ({ ...found, project }));
   });
+
+/**
+ * The developer project and acting user of a dev command whose main work needs neither (it only
+ * adds a user's connection status): the user is none when the project is. The backend's default
+ * developer project stands in for the directory's (`resolveDeveloperResourceProject`, named on
+ * stderr) only when it can serve a user: `--user-id` or the global test user, since the
+ * directory's test user belongs to the directory's own project. Without `--project-name`, a
+ * project that cannot be resolved, for whatever reason, is none; a `--project-name` that cannot
+ * be resolved still fails.
+ */
+export const resolveSurfaceProjectAndUserOption = Effect.gen(function* () {
+  const surface = yield* CommandSurface;
+  const userContext = yield* ComposioUserContext;
+  const userBeyondDirectory = Option.orElse(surface.userId, () => userContext.data.testUserId);
+  const resolved = (
+    Option.isSome(userBeyondDirectory)
+      ? resolveDeveloperResourceProject
+      : resolveSurfaceProject('developer')
+  ).pipe(Effect.map(Option.some));
+  const project = yield* Option.isSome(surface.projectName)
+    ? resolved
+    : resolved.pipe(
+        Effect.catch(error =>
+          Effect.logDebug('No developer project for connection status:', error).pipe(
+            Effect.as(Option.none<ResolvedCommandProject>())
+          )
+        )
+      );
+  const user = yield* Effect.map(
+    Effect.transposeOption(Option.map(project, devActingUserOption)),
+    Option.flatten
+  );
+  return { project, user };
+});
 
 /** A shared flag of the `dev` group. */
 export type SharedFlag = '--user-id' | '--project-name';

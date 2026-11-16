@@ -132,6 +132,20 @@ describe('CLI: composio listen', () => {
         })
     );
 
+    // No --max-events or --timeout: only the closed stdout can stop this run.
+    it.effect('[When] the reader closes stdout [Then] it stops listening and exits 0', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI({ stdoutReaderClosed: true });
+        const exit = yield* Effect.exit(
+          cli(['listen', 'composio.connected_account.expired']).pipe(Effect.provide(terminal.layer))
+        );
+
+        expect(exitCodeOf(exit)).toBe(0);
+        expect(terminal.stdout()).toBe('');
+      })
+    );
+
     it.effect('[Then] a bare --stream flag prints the whole event payload inline', () =>
       Effect.gen(function* () {
         yield* enableListen;
