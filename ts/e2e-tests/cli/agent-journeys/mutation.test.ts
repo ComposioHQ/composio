@@ -8,6 +8,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   CONSUMER_PROJECT,
   CONSUMER_USER_ID,
+  DEVELOPER_PROJECT,
   World,
   type JournalEntry,
 } from '@e2e-tests/cli-fake-backend';
@@ -88,6 +89,12 @@ describe('the scripted path', () => {
     });
     expect(heard[1]).toEqual(['Open the page, I will wait.', true]);
   });
+
+  it('stops as the script ending when the person answers its last turn', async () => {
+    const { transcript, ran } = await play(scriptedAdapter(turns), () => 'Thanks.');
+    expect(ran).toEqual(['composio whoami', 'composio login --poll', 'composio whoami']);
+    expect(transcript.stop).toEqual({ provider: 'script-ended' });
+  });
 });
 
 describe('runAgent with an adapter that does not say whether more turns follow', () => {
@@ -109,6 +116,29 @@ describe('runAgent with an adapter that does not say whether more turns follow',
     expect(ran).toEqual([]);
     expect(transcript.stop).toBe('finished');
   });
+});
+
+/** A made-up journal entry: a request that changed nothing, unless `fields` say otherwise. */
+const entry = (fields: Partial<JournalEntry>): JournalEntry => ({
+  seq: 1,
+  role: 'backend',
+  method: 'POST',
+  path: '/',
+  query: {},
+  route: null,
+  keyClass: 'user',
+  keyKnown: true,
+  orgId: null,
+  project: CONSUMER_PROJECT.label,
+  requestedProject: null,
+  projectFrom: null,
+  userId: null,
+  body: null,
+  status: 200,
+  effect: null,
+  tool: null,
+  fault: null,
+  ...fields,
 });
 
 // Made-up evidence: what the verdicts read is the checks and the outcome.
@@ -172,27 +202,6 @@ describe('verdicts', () => {
   });
 
   it('counts a tool that ran in the outcome, and a request that changed nothing not', () => {
-    const entry = (fields: Partial<JournalEntry>): JournalEntry => ({
-      seq: 1,
-      role: 'backend',
-      method: 'POST',
-      path: '/',
-      query: {},
-      route: null,
-      keyClass: 'user',
-      keyKnown: true,
-      orgId: null,
-      project: CONSUMER_PROJECT.label,
-      requestedProject: null,
-      projectFrom: null,
-      userId: null,
-      body: null,
-      status: 200,
-      effect: null,
-      tool: null,
-      fault: null,
-      ...fields,
-    });
     const quiet = outcomeOf(evidenceWith(new World()));
     expect(outcomeOf(evidenceWith(new World(), [entry({ route: 'tools.list' })]))).toBe(quiet);
     expect(
@@ -202,6 +211,77 @@ describe('verdicts', () => {
         ])
       )
     ).not.toBe(quiet);
+  });
+  // Every field the outcome compares, one at a time: if `outcomeOf` stopped
+  // reading one, a run that ended elsewhere in that way would be called `unused`.
+  describe('an outcome that differs in one thing', () => {
+    const sentToGeneral = (fields: Partial<JournalEntry> = {}) =>
+      entry({
+        effect: 'tool-executed',
+        userId: CONSUMER_USER_ID,
+        tool: { slug: 'SLACK_SEND_MESSAGE', arguments: { channel: 'general' } },
+        ...fields,
+      });
+    const ended = (
+      options: {
+        login?: 'pending' | 'linked';
+        connection?: 'begun' | 'connected';
+        execution?: JournalEntry;
+        whoamiAfter?: ShellOutcome;
+      } = {}
+    ): Evidence => {
+      const world = new World();
+      const session = world.createLoginSession();
+      if ((options.login ?? 'linked') === 'linked') world.linkLoginSession(session.id);
+      if ((options.connection ?? 'connected') === 'connected') {
+        world.connect(CONSUMER_PROJECT.label, CONSUMER_USER_ID, 'slack');
+      } else {
+        world.beginConnection({
+          projectLabel: CONSUMER_PROJECT.label,
+          userId: CONSUMER_USER_ID,
+          toolkit: 'slack',
+        });
+      }
+      return {
+        ...evidenceWith(world, [options.execution ?? sentToGeneral()]),
+        whoamiAfter: options.whoamiAfter ?? OK,
+      };
+    };
+
+    it('is the same outcome when nothing differs', () => {
+      expect(outcomeOf(ended())).toBe(outcomeOf(ended()));
+    });
+
+    const differences: ReadonlyArray<[string, Evidence]> = [
+      ['the login was never linked', ended({ login: 'pending' })],
+      [
+        'the next whoami finds no login',
+        ended({ whoamiAfter: { exitCode: 1, stdout: '', stderr: 'not logged in' } }),
+      ],
+      ['the connection was begun but never authorized', ended({ connection: 'begun' })],
+      [
+        'the tool ran with other arguments',
+        ended({
+          execution: sentToGeneral({
+            tool: { slug: 'SLACK_SEND_MESSAGE', arguments: { channel: 'random' } },
+          }),
+        }),
+      ],
+      [
+        'the tool ran on another project',
+        ended({ execution: sentToGeneral({ project: DEVELOPER_PROJECT.label }) }),
+      ],
+      [
+        'the tool ran as another user',
+        ended({ execution: sentToGeneral({ userId: 'someone-else' }) }),
+      ],
+    ];
+
+    for (const [name, run] of differences) {
+      it(`is another outcome when ${name}`, () => {
+        expect(outcomeOf(run)).not.toBe(outcomeOf(ended()));
+      });
+    }
   });
 });
 
