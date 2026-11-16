@@ -1410,8 +1410,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0
       tla-ts:
-        specifier: 0.0.8
-        version: 0.0.8
+        specifier: 0.0.10
+        version: 0.0.10
       tsdown:
         specifier: 'catalog:'
         version: 0.23.7(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.25)(tsx@4.23.15)(unrun@0.2.27(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2))
@@ -6397,8 +6397,8 @@ packages:
     resolution: {integrity: sha512-LgO3D9yZJjApUiuUfl9iFAwrtaX4+lok3wJIqttGoKCHlWUqHqbQpnxCf82L8FjgKsh4iGo78hqJwgL8F6To2A==}
     engines: {node: '>=14.0.0'}
 
-  tla-ts@0.0.8:
-    resolution: {integrity: sha512-o6l6mvlV+o81B6ZRN/k1Jb4De788F4584vzm13U+EBgEIqifeyHjBNvCiUJtZFFM/GV3LugdKhhnCS/cAbA3qg==}
+  tla-ts@0.0.10:
+    resolution: {integrity: sha512-Ki4mbMjn3Gq8BjxlRVUISDQJCwZlPUsj3cSgg365eckHpoZMbqi3v0vRZ1ZPNcWfcRMzvC8S9lERtOQlNTD30A==}
     hasBin: true
 
   toidentifier@1.0.1:
@@ -11665,8 +11665,9 @@ snapshots:
 
   tinyrainbow@3.2.0: {}
 
-  tla-ts@0.0.8:
+  tla-ts@0.0.10:
     dependencies:
+      '@typescript/typescript6': 6.0.2
       fflate: 0.8.3
 
   toidentifier@1.0.1: {}

@@ -232,7 +232,11 @@ const modelBehaviors = async (): Promise<ReadonlyArray<Behavior>> => {
   const written = new Map<string, string>();
   const result = await modelCheck(runnerTransition, {
     dump: { path: 'states.dot', dot: true, actionLabels: true },
-    writeFile: (file, content) => void written.set(file, content),
+    writeFile: (file, content) =>
+      void written.set(
+        file,
+        typeof content === 'string' ? content : new TextDecoder().decode(content)
+      ),
   });
   if (result.status !== 'success') {
     throw new Error(`The runner model failed: ${result.status}`);
