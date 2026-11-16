@@ -3064,7 +3064,7 @@ describe('ToolRouter', () => {
       const error = await session.execute('GMAIL_SEND_EMAIL').catch(e => e);
 
       expect(error).toBeInstanceOf(ComposioToolExecutionError);
-      expect(error.message).toBe('Error executing the tool GMAIL_SEND_EMAIL');
+      expect(error.message).toBe('Error executing the tool GMAIL_SEND_EMAIL: Execute failed');
       expect(error.cause).toBe(cause);
     });
 
@@ -3235,7 +3235,7 @@ describe('ToolRouter', () => {
       const error = await session.executeMeta('COMPOSIO_SEARCH_TOOLS').catch(e => e);
 
       expect(error).toBeInstanceOf(ComposioToolExecutionError);
-      expect(error.message).toBe('Error executing the tool COMPOSIO_SEARCH_TOOLS');
+      expect(error.message).toBe('Error executing the tool COMPOSIO_SEARCH_TOOLS: Execute failed');
       expect(error.cause).toBe(cause);
     });
 

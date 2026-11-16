@@ -879,7 +879,8 @@ export class Tools<
         throw new ComposioToolFetchRateLimitError(
           withApiErrorMessage(
             `Rate limited while retrieving tool with slug ${slug}`,
-            error.details
+            error.details,
+            error.message
           ),
           error,
           { slug }
@@ -899,8 +900,14 @@ export class Tools<
         );
       }
       const details = error instanceof APIError ? error.details : undefined;
+      const originalMessage =
+        error instanceof APIError && error.status !== undefined
+          ? undefined
+          : error instanceof Error
+            ? error.message
+            : undefined;
       throw new ComposioToolFetchError(
-        withApiErrorMessage(`Unable to retrieve tool with slug ${slug}`, details),
+        withApiErrorMessage(`Unable to retrieve tool with slug ${slug}`, details, originalMessage),
         {
           meta: { slug },
           cause: error,

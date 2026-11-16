@@ -382,16 +382,25 @@ export const handleToolExecutionError = (tool: string, actualError: Error): Comp
 
   if (isRateLimitResponse(actualError)) {
     return new ComposioToolExecutionRateLimitError(
-      withApiErrorMessage(`Rate limited while executing the tool ${tool}`, actualError.details),
+      withApiErrorMessage(
+        `Rate limited while executing the tool ${tool}`,
+        actualError.details,
+        actualError.message
+      ),
       actualError,
       { slug: tool }
     );
   }
 
+  // Keep the reason of a failure that never reached the API (timeout,
+  // connection error, a non-API throw). An HTTP response without the error
+  // envelope keeps the tool context alone, as its raw body is unvalidated.
+  const originalMessage = apiError?.status === undefined ? actualError.message : undefined;
+
   // Default error for all other cases. `statusCode`, `requestId` and `apiErrorCode`
   // come from the APIError cause.
   return new ComposioToolExecutionError(
-    withApiErrorMessage(`Error executing the tool ${tool}`, details),
+    withApiErrorMessage(`Error executing the tool ${tool}`, details, originalMessage),
     {
       cause: actualError,
       possibleFixes: apiErrorSuggestedFixes(details) ?? fallbackExecutionFixes(apiError?.status),

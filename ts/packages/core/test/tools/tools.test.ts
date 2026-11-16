@@ -1714,7 +1714,7 @@ describe('Tools', () => {
           .catch(e => e);
 
         expect(error).toBeInstanceOf(ComposioToolExecutionError);
-        expect(error.message).toBe('Error executing the tool NONEXISTENT_TOOL');
+        expect(error.message).toBe('Error executing the tool NONEXISTENT_TOOL: Tool not found');
         expect(error.cause).toBe(apiError);
       });
 

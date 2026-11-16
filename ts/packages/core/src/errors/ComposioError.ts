@@ -12,6 +12,7 @@ import pc from 'picocolors';
 import { ZodError } from 'zod/v3';
 import { APIError } from '@composio/client';
 import logger from '../utils/logger';
+import { sanitizeApiErrorText } from './apiErrorDetails';
 
 /**
  * Options for error handling
@@ -174,10 +175,15 @@ export class ComposioError extends Error {
 
     const { cause, code, stack, statusCode, apiErrorCode, meta, possibleFixes } = this;
 
-    // Format cause properly if it exists
+    // Format cause properly if it exists. An API cause is server-controlled text.
     if (cause !== undefined) {
       const rawCause = cause;
-      data.cause = rawCause instanceof Error ? rawCause.message : String(rawCause);
+      data.cause =
+        rawCause instanceof APIError
+          ? sanitizeApiErrorText(rawCause.message)
+          : rawCause instanceof Error
+            ? rawCause.message
+            : sanitizeApiErrorText(String(rawCause));
     }
 
     // Add code if exists

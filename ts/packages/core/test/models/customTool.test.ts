@@ -824,6 +824,17 @@ describe('SessionContextImpl', () => {
     });
   });
 
+  it('keeps the original reason when the backend cannot be reached', async () => {
+    mockClient.toolRouter.session.execute.mockRejectedValue(new Error('socket hang up'));
+
+    const ctx = new SessionContextImpl(mockClient, 'user_1', 'sess_1');
+    const error = await ctx.execute('GMAIL_SEND_EMAIL', {}).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolExecutionError);
+    expect(error.message).toBe('Error executing the tool GMAIL_SEND_EMAIL: socket hang up');
+    expect(error.cause).toBeInstanceOf(Error);
+  });
+
   it('surfaces the server details when the backend rejects the execution', async () => {
     mockClient.toolRouter.session.execute.mockRejectedValue(
       new APIError(

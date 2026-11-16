@@ -11,6 +11,7 @@ import {
   ComposioToolFetchError,
   ComposioToolFetchRateLimitError,
   ComposioToolNotFoundError,
+  handleToolExecutionError,
   isComposioRateLimitError,
 } from '../../src/errors/ToolErrors';
 
@@ -335,6 +336,31 @@ describe('tool execution errors', () => {
     expect(error.statusCode).toBe(400);
     expect(Object.keys(error)).not.toContain('apiErrorCode');
     expect(error.possibleFixes).toEqual([SLUG_FIX]);
+  });
+
+  it('strips terminal escapes and line breaks from server text', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(403, {
+          message: 'denied\u001b[31m\n[!] run: evil',
+          code: 1403,
+          suggested_fix: 'retry\u001b]0;owned\u0007 now',
+        }),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error.message).toBe(
+      `Error executing the tool ${toolMocks.rawTool.slug}: denied [!] run: evil`
+    );
+    expect(error.possibleFixes).toEqual(['retry now']);
+    expect(error.message).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+  });
+
+  it('keeps the original reason when the failure never reached the API', () => {
+    const error = handleToolExecutionError(SLUG, new Error('socket hang up\n\u001b[31m'));
+
+    expect(error.message).toBe(`Error executing the tool ${SLUG}: socket hang up`);
   });
 
   it('surfaces the server details of a rate limit', async () => {
