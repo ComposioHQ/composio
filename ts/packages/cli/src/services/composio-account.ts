@@ -90,6 +90,35 @@ export const listOrganizations = (params: {
   });
 
 /**
+ * Whether the user key belongs to `orgId`, reading every page of its org list. A missing org
+ * is only known after the last page.
+ */
+export const userKeyBelongsToOrg = (params: {
+  apiKey: string;
+  orgId: string;
+}): Effect.Effect<boolean, ClientError, ComposioClientSingleton> =>
+  Effect.gen(function* () {
+    const clientSingleton = yield* ComposioClientSingleton;
+    const client = yield* clientSingleton.getFor({ userApiKey: params.apiKey });
+    const fromPage = (cursor: string | undefined): Effect.Effect<boolean, ClientError> =>
+      client.org
+        .list(
+          { limit: 100, ...(cursor === undefined ? {} : { cursor }) },
+          { ...idempotent, ...validated }
+        )
+        .pipe(
+          Effect.flatMap(page =>
+            page.organizations.some(organization => organization.id === params.orgId)
+              ? Effect.succeed(true)
+              : page.next_cursor
+                ? fromPage(page.next_cursor)
+                : Effect.succeed(false)
+          )
+        );
+    return yield* fromPage(undefined);
+  });
+
+/**
  * Lists projects for a specific organization.
  *
  * Project lists are not client-decoded: the CLI reads a project's ids, name,

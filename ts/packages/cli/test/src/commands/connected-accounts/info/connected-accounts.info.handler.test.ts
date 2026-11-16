@@ -8,6 +8,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { redact } from 'src/ui/redact';
 import { ConnectedAccountsTest, MockConsole } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
+import { DirectoryProjectTest } from 'test/__utils__/layers/developer-project';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
 const EXPIRED_ACCOUNT: ConnectedAccountItem = {
@@ -38,6 +39,7 @@ const infoTest = (items: ReadonlyArray<ConnectedAccountItem> = [EXPIRED_ACCOUNT]
   const outputs: Array<string> = [];
   const layer = Layer.mergeAll(
     Layer.effect(Console.Console, MockConsole.make),
+    DirectoryProjectTest,
     Layer.succeed(
       TerminalUI,
       TerminalUI.of({

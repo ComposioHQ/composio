@@ -126,6 +126,28 @@ expect(result.files['out.txt']).toBe('0.1.24');
 
 The files are copied out of the container after execution and returned as a map in the result.
 
+### `startJourneyContainer`
+
+One CLI container that stays up while a test runs several commands in it, so a login or a cache file written by one command is there for the next. Unlike `runCmd`, it mounts no host `~/.composio` and passes through no API key.
+
+```typescript
+import { startJourneyContainer } from '@e2e-tests/utils';
+
+const journey = await startJourneyContainer({ env: { COMPOSIO_BASE_URL: mockUrl } });
+const first = await journey.exec('composio login --user-api-key uk_test');
+const second = await journey.exec('composio whoami', { timeoutSeconds: 30 });
+await journey.writeFile('/work/app/.composio/project.json', '{}');
+await journey.stop();
+```
+
+| Member                                        | Description                                                                                                                                                                            |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exec(command, options?)`                     | Runs a POSIX `sh` command line. Options: `env`, `stdin`, `cwd` (defaults to the home), `timeoutSeconds` (default 60; exit code 124 on expiry), `user` (`uid:gid`, to run without root) |
+| `writeFile(path, content)` / `readFile(path)` | Write or read a file inside the container                                                                                                                                              |
+| `steps()` / `writeDebugLog(path)`             | The commands run so far with their results                                                                                                                                             |
+| `home`                                        | The home directory (default `/home/journey`), created empty when the journey starts                                                                                                    |
+| `stop()`                                      | Removes the container                                                                                                                                                                  |
+
 ### `E2ETestResultWithSetup`
 
 Extended result when `runFixture` is called with a `setup` option:

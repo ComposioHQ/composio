@@ -8,6 +8,7 @@ import {
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
 import * as constants from 'src/constants';
+import { retryHint, type RetryAdvice } from 'src/effects/retry-advice';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import {
@@ -83,6 +84,7 @@ export const emitExecuteFailureTelemetry = (params: {
         error: params.error,
         toolkit: toolkitSlug,
         toolSlug: params.toolSlug,
+        tree: params.surface,
       });
     const apiDetails = mapped.apiDetails;
     const message = mapped.message;
@@ -229,7 +231,12 @@ export const handleExecutionError = (
 ) =>
   Effect.gen(function* () {
     const toolkit = yield* toolkitFromToolSlug(context.toolSlug, context.projectScope);
-    const mapped = mapComposioError({ error, toolkit, toolSlug: context.toolSlug });
+    const mapped = mapComposioError({
+      error,
+      toolkit,
+      toolSlug: context.toolSlug,
+      tree: context.surface,
+    });
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
       yield* emitExecuteFailureTelemetry({
@@ -287,3 +294,20 @@ export const handleExecutionError = (
 
     return { error: mapped.message, slug: slugValue };
   });
+
+/**
+ * Tells the reader on a terminal whether the failed execution can be run again. Off a terminal it
+ * prints nothing, like the rest of the failure: the JSON result on stdout carries it as `retry`.
+ * In the developer tree, a request that may have taken effect also names where recent executions
+ * are listed.
+ */
+export const printExecuteRetryAdvice = (
+  ui: TerminalUI,
+  advice: RetryAdvice,
+  surface: 'root' | 'dev'
+) =>
+  ui.log.step(
+    advice === 'check-first' && surface === 'dev'
+      ? `${retryHint(advice)}\nRecent tool executions:\n> composio dev logs tools`
+      : retryHint(advice)
+  );
