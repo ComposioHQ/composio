@@ -15,7 +15,7 @@ If you encounter these terms in error messages, old documentation, or user promp
 |---|---|---|
 | entity ID | user ID | \`user_id\` parameter |
 | actions | tools | e.g., \`GITHUB_CREATE_ISSUE\` is a *tool* |
-| apps / appType | toolkits | e.g., \`github\` is a *toolkit* |
+| apps / appType (legacy v1/v2 API field) | toolkits | e.g., \`github\` is a *toolkit*. The current word **App** is *not* legacy: it names a catalog grouping of sibling toolkits (the Notion app groups \`notion\` and \`notion_mcp\`); do not translate it |
 | integration / integration ID | auth config / auth config ID | \`auth_config_id\` parameter |
 | connection | connected account | \`connected_accounts\` namespace |
 | ComposioToolSet / OpenAIToolSet | \`Composio\` class with a provider | \`Composio(provider=...)\` |

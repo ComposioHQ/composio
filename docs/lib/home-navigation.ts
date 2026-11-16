@@ -128,6 +128,7 @@ export const DOCS_PRODUCTS = {
       '/docs/production-readiness',
       '/docs/providers',
       '/docs/how-composio-works',
+      '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
       '/docs/session-configs',
       '/docs/governance/approvals',
@@ -177,6 +178,7 @@ export const DOCS_PRODUCTS = {
             label: 'Toolkits & Tools',
             links: [
               { url: '/docs/toolkits' },
+              { type: 'folder', path: 'apps-and-toolkits' },
               { url: '/docs/instant-tools' },
               { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
