@@ -6,15 +6,23 @@ Use your own GitLab OAuth application when you want users to see your app's name
 
 1. Sign in to GitLab, click your avatar in the top-right corner, and select **Edit profile**.
 2. In the left sidebar, click **Applications** (direct link on GitLab.com: `https://gitlab.com/-/profile/applications`). On a self-managed instance, use the same path on your own host.
+
+   ![GitLab user settings Applications page with the Add new application button](/images/toolkits/gitlab/applications-page.webp)
 3. Click **New application** and enter a name, such as `Composio GitLab Integration`.
 4. In **Redirect URI**, paste `https://backend.composio.dev/api/v1/auth-apps/add` with no trailing `/`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
+
+   ![GitLab Add new application form with the Composio redirect URI and the api scope selected](/images/toolkits/gitlab/new-application-form.webp)
 5. Select the scopes your integration needs, then click **Save application**.
 6. Copy the **Application ID** (your Client ID) and the **Secret** (your Client Secret). GitLab shows the secret only once.
+
+   ![GitLab application page with a redacted Application ID, hidden Secret and the Composio callback URL](/images/toolkits/gitlab/application-credentials.webp)
 
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **GitLab**.
 2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
+
+   ![Composio GitLab auth config form with OAUTH2 selected and the default scopes listed](/images/toolkits/gitlab/composio-auth-config-scopes.webp)
 3. Paste the Application ID as **Client ID** and the Secret as **Client Secret**. Add the same scopes you selected in GitLab, then click **Create GitLab Auth Config**.
 4. Click **Connect Account**, approve the permissions on the GitLab consent screen, and confirm the account shows as **Active**.
 

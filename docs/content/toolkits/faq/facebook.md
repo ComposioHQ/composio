@@ -6,7 +6,13 @@ Use your own Meta app when you want users to see your app's name on the consent 
 
 1. Sign in to [Meta for Developers](https://developers.facebook.com/) and register as a developer if you haven't. Your app must be linked to a [business portfolio](https://business.facebook.com/).
 2. Click **Create App**. Enter the app details, select the use cases your workflow needs, and on the business step select your business portfolio. Complete the remaining fields and create the app.
+
+   ![Meta for Developers Apps page with the Create App button](/images/toolkits/facebook/create-app.webp)
+
+   ![Meta Create an app business step for choosing a business portfolio](/images/toolkits/facebook/business-portfolio.webp)
 3. In **App settings** > **Basic**, copy the **App ID** (client ID) and **App Secret** (client secret).
+
+   ![Meta App settings Basic page with App ID and App secret](/images/toolkits/facebook/app-settings-basic.webp)
 4. Add `https://backend.composio.dev/api/v1/auth-apps/add` to the app's OAuth redirect allow list (in **App settings** > **Advanced**, or **Valid OAuth Redirect URIs** in the Facebook Login settings). It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
 5. Publish the app.
 
@@ -14,6 +20,8 @@ Use your own Meta app when you want users to see your app's name on the consent 
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Facebook**.
 2. Keep the authentication type as **OAuth2** and choose **Use your own developer authentication**.
+
+   ![Use your own developer credentials toggle turned on in the Facebook auth config form](/images/toolkits/facebook/own-credentials-toggle.webp)
 3. Paste the **App ID** as the **Client ID** and the **App Secret** as the **Client Secret**, then click **Create Facebook Auth Config**.
 4. Click **Connect Account**, approve access in Facebook, and confirm the account shows as **Active**.
 

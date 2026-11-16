@@ -6,8 +6,14 @@ Use your own Gong OAuth integration when you want users to see your integration'
 
 1. Sign in to Gong, expand the left sidebar, and click **Admin center** at the bottom.
 2. In the **Ecosystem** section, click **API**, then switch from the **API Keys** tab to the **Integrations** tab. OAuth apps live under **Integrations**.
+
+   ![Gong Admin center with API highlighted in the Ecosystem section](/images/toolkits/gong/admin-center-api.webp)
 3. Click **Create Integration** and fill in the name, description, short description, and logos.
+
+   ![Gong Create Integration form with name, description, short description and logo fields](/images/toolkits/gong/integration-basic-details.webp)
 4. Under **Required authorization scopes**, select the scopes your integration needs (see Scopes below).
+
+   ![Gong Required authorization scopes list with scopes checked](/images/toolkits/gong/integration-scopes.webp)
 5. In **Redirect URI**, enter `https://backend.composio.dev/api/v1/auth-apps/add` with no trailing slash. It must exactly match the `oauth_redirect_uri` field in your Composio auth config. Fill in the remaining required fields (privacy and terms links, help article, contact email, domain).
 6. Click **Save**. Back on the **Integrations** list, copy the **Client ID** from the table, then click **Show secret** in the **Client Secret** column and copy the secret. Store it now; if you lose it, regenerate it from the integration's menu and update your auth config.
 7. Add Composio's IP addresses to the integration's trusted IP lists, as described in the IP allowlist question below.
@@ -17,7 +23,9 @@ Use your own Gong OAuth integration when you want users to see your integration'
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Gong**.
 2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
 3. Paste the **Client ID** and **Client Secret**, enter the same scopes you selected in Gong, then create the auth config.
-4. Click **Connect Account**. When asked for the API base URL, keep `https://api.gong.io` unless your Gong admin gives you a tenant-specific address such as `https://company-17.api.gong.io`. Don't use the web app URL from your browser (for example `us-35894.app.gong.io`).
+4. Click **Connect Account**. When asked for the API base URL, keep `https://api.gong.io` unless your Gong admin gives you a tenant-specific address such as `https://company-17.api.gong.io`. Don't use the web app URL from your browser (for example `us-12345.app.gong.io`).
+
+   ![Composio connect screen with https://api.gong.io in the API Base URL field](/images/toolkits/gong/api-base-url.webp)
 5. Review the permissions on Gong's consent screen, click **Allow**, and confirm the account shows as **Active**.
 
 See [Custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow.

@@ -7,13 +7,31 @@ You need a Google Workspace or Cloud Identity organization. A Workspace administ
 ### Create the Google OAuth app
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), select the project that will own the OAuth client, or create one.
+
+   ![Google Cloud console project picker](/images/toolkits/shared/9j8wjr2HocIhIsgedntpgb4m8Y.webp)
+
 2. Open **APIs & Services** → **Library**, search for **Data Studio API** (`datastudio.googleapis.com`), and select **Enable**. If the page shows **Manage**, the API is already enabled.
 3. Open **Google Auth Platform** → **Branding**. If Google shows **Get started**, enter the app name, user support email, and developer contact email, then save.
+
+   ![Google Auth Platform Branding page with app name and user support email](/images/toolkits/shared/Q8INvnJoiCMyajqrrAtq6ovCE5U.webp)
+
 4. Open **Audience**. Choose **Internal** to limit the app to users in your Google Workspace organization, or **External** for consumer accounts and users outside it. While an external app's publishing status is **Testing**, only accounts listed under **Test users** can connect, so add every account you'll test with.
+
+   ![Google Auth Platform Audience page with Testing status, External user type, and Test users](/images/toolkits/shared/BetTxXqa2c1dgg4QeV4g9RV008.webp)
+
 5. Leave the Data Studio scopes out of **Data Access**. Google's instructions keep them out of the OAuth client's Data Access setup, because your Workspace administrator authorizes them in the Admin console instead (step 9).
 6. Open **Clients** → **Create client**, choose **Web application**, and give it a name.
+
+   ![Create OAuth client ID form with Web application selected](/images/toolkits/shared/S7mFFv6C5mCP4y0ScTzRzQd8Nc.webp)
+
 7. Under **Authorized redirect URIs**, add `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field on your Composio auth config.
+
+   ![OAuth client form with the Composio redirect URI under Authorized redirect URIs](/images/toolkits/shared/1qh7A0aEGRUU1K19aU37FrcxTY.webp)
+
 8. Select **Create**. Copy the **Client ID** and **Client secret**. Google shows the full secret only once, so save it before you close the dialog.
+
+   ![Google OAuth web client details with Client ID and Client secret](/images/toolkits/shared/TmVTLOgVKQDqamjQVxKDBXJtPQ.webp)
+
 9. Have a Workspace administrator open the [Google Admin console](https://admin.google.com/) → **Security** → **Access and data control** → **API controls** → **Manage Domain Wide Delegation**. Under **API clients**, select **Add new**, enter the OAuth client ID, add the Data Studio scopes your app needs, and authorize the client. Follow Google's [Data Studio API instructions](https://developers.google.com/data-studio/integrate/api) for this grant.
 
 ### Create the auth config in Composio

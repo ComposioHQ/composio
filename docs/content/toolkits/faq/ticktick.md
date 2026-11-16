@@ -14,7 +14,15 @@ Use your own TickTick OAuth app when you want users to see your app's name on th
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **TickTick**.
+
+   ![Composio Auth Configs page with the Create Auth Config button](/images/toolkits/shared/wIAvY0hheAM7HQEF4kG2KTYATY.webp)
+
+   ![Composio toolkit picker with TickTick selected](/images/toolkits/ticktick/select-toolkit.webp)
 2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
+
+   ![TickTick auth config form with OAUTH2 and the tasks:read and tasks:write scopes](/images/toolkits/ticktick/oauth2-auth-method.webp)
+
+   ![Use your own developer credentials toggle turned on](/images/toolkits/ticktick/own-credentials-toggle.webp)
 3. Paste the **Client ID** and **Client Secret**, then click **Create TickTick Auth Config**.
 4. Click **Connect Account**, approve access in TickTick, and confirm the account shows as **Active**.
 

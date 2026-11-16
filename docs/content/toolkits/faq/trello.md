@@ -6,8 +6,19 @@ Composio connects Trello with OAuth 1.0a. Use your own Trello API key and secret
 
 1. Sign in to Trello and open the [Power-Ups admin portal](https://trello.com/power-ups/admin). The old `https://trello.com/app-key` page redirects here.
 2. Click **New** and fill in the form: an app name, any workspace you belong to, an email and support contact, an author, and an **Iframe connector URL**. A placeholder such as `https://example.com` works if you aren't building a Power-Up UI. Click **Create**.
+
+   ![Trello Power-Ups admin portal Your Apps page with the New button](/images/toolkits/trello/power-ups-admin.webp)
+
+   ![Trello New App form with app name, workspace, email, support contact, author, and Iframe connector URL](/images/toolkits/trello/new-app-form.webp)
+
 3. Open the Power-Up, go to the **API Key** tab, and click **Generate a new API Key**.
+
+   ![Trello Power-Up API key tab with the Generate a new API Key button](/images/toolkits/trello/generate-api-key.webp)
+
 4. Copy the **API Key**, then reveal and copy the **Secret**.
+
+   ![Trello API key page with the API key, Allowed origins, and Secret fields (redacted)](/images/toolkits/trello/api-key-secret.webp)
+
 5. **Allowed origins** lists the origins Trello may redirect users back to after they authorize. Trello blocks redirects to any origin not on the list. If authorization fails at the redirect step, add `https://backend.composio.dev`.
 
 ### Create the auth config in Composio

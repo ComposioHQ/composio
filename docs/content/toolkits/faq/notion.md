@@ -9,12 +9,22 @@ Use your own Notion integration when you want your own name and logo on the cons
 3. Set the integration type to **Public**. Composio's OAuth flow requires a public integration.
 4. Under **OAuth domains & URIs**, add the redirect URI `https://backend.composio.dev/api/v1/auth-apps/add`. Use it exactly as shown: HTTPS, no trailing slash, no fragments or wildcards. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
 5. Under **Capabilities**, select only what your integration needs, such as **Read content**, **Update content**, **Insert content**, and **Read user information**. Notion uses capabilities instead of OAuth scopes.
+
+   ![Notion integration Capabilities section with content and user capabilities](/images/toolkits/notion/capabilities.webp)
 6. Save, then copy the **Client ID** and **Client Secret**.
+
+   ![Notion integration configuration with redacted OAuth Client ID and hidden Client Secret](/images/toolkits/notion/oauth-credentials.webp)
 
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Notion**.
+
+   ![Composio Auth Configs page with the Create Auth Config button](/images/toolkits/shared/wIAvY0hheAM7HQEF4kG2KTYATY.webp)
+
+   ![Create Auth Config search results showing Notion](/images/toolkits/notion/composio-search-notion.webp)
 2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
+
+   ![Notion auth config with OAUTH2 selected and the Use your own developer credentials toggle](/images/toolkits/notion/oauth2-auth-config.webp)
 3. Paste the **Client ID** and **Client Secret** and click **Create Notion Auth Config**. Leave scopes empty.
 4. Click **Connect Account**, choose the pages to share during Notion's authorization, and confirm the account shows as **Active**.
 
@@ -28,6 +38,10 @@ Use an internal integration secret when you connect your own workspace, don't ne
 2. Copy the integration secret. It starts with `ntn_` or `secret_`.
 3. Share the pages and databases you want Composio to reach with the integration. The integration can only access pages shared with it.
 4. In the Composio dashboard, create a **Notion** auth config with the **API Key** auth type. Click **Connect Account**, paste the secret, and confirm the account shows as **Active**.
+
+   ![Notion auth config with API KEY selected as the authentication method](/images/toolkits/notion/api-key-auth-config.webp)
+
+   ![Composio connect screen with a redacted Notion API key](/images/toolkits/notion/connect-api-key.webp)
 
 ## Why do Notion operations show "Composio" instead of the user's name?
 

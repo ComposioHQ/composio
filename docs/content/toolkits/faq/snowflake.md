@@ -7,6 +7,8 @@ Snowflake has no Composio-managed OAuth app, so you create an OAuth security int
 You need the `ACCOUNTADMIN` role, or a role with the privilege to create integrations.
 
 1. Sign in to [Snowflake](https://app.snowflake.com/) and open a SQL worksheet.
+
+   ![Snowflake sign-in page asking for the account identifier](/images/toolkits/snowflake/sign-in.webp)
 2. Run this command to create a confidential OAuth client that points at Composio:
 
    ```sql
@@ -21,6 +23,8 @@ You need the `ACCOUNTADMIN` role, or a role with the privilege to create integra
    ```
 
    `OAUTH_REDIRECT_URI` must exactly match the `oauth_redirect_uri` field in your Composio auth config.
+
+   ![Snowflake worksheet with the CREATE SECURITY INTEGRATION command and the Composio redirect URI](/images/toolkits/snowflake/create-security-integration.webp)
 3. Run `DESC SECURITY INTEGRATION oauth_custom_all_roles;` and copy the `OAUTH_CLIENT_ID` value.
 4. Run the following command and copy the `OAUTH_CLIENT_SECRET` value from the result:
 
@@ -31,8 +35,16 @@ You need the `ACCOUNTADMIN` role, or a role with the privilege to create integra
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Snowflake**.
+
+   ![Composio Auth Configs page with the Create Auth Config button](/images/toolkits/snowflake/create-auth-config.webp)
+
+   ![Composio toolkit picker with Snowflake selected](/images/toolkits/snowflake/select-toolkit.webp)
 2. Keep the authentication type as **OAuth2**.
+
+   ![Snowflake auth config form with OAUTH2 selected and the refresh_token scope](/images/toolkits/snowflake/oauth2-auth-method.webp)
 3. Paste the `OAUTH_CLIENT_ID` into **Client ID** and the `OAUTH_CLIENT_SECRET` into **Client Secret**, then click **Create Auth Config**.
+
+   ![Snowflake auth config with redacted client ID and secret and the Composio redirect URI](/images/toolkits/snowflake/client-credentials.webp)
 4. Click **Connect Account** and enter your Snowflake account identifier in `orgname-accountname` format, for example `myorg-account123`. In Snowsight, click your account in the bottom left and choose **View account details** to find it.
 5. Sign in to Snowflake, approve access, and confirm the account shows as **Active**.
 

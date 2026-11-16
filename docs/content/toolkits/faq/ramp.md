@@ -6,10 +6,28 @@ Ramp has no Composio-managed app, so you register your own OAuth app in Ramp and
 
 1. Sign in to Ramp. Click your profile icon in the top-right corner and select **Settings**.
 2. In the left sidebar, expand **Company** and click **Developer**.
+
+   ![Ramp Settings sidebar with Company expanded and Developer at the bottom](/images/toolkits/ramp/company-developer-menu.webp)
+
 3. Under **My apps**, click **Create new app**. Enter an **App name**, accept the Developer Terms of Service, and click **Create app**.
+
+   ![Ramp Developer page with Create new app under My apps](/images/toolkits/ramp/developer-page.webp)
+
+   ![Ramp Create a new app dialog with the app name and Developer Terms checkbox](/images/toolkits/ramp/create-app-dialog.webp)
+
 4. Ramp emails you a 6-digit verification code. Enter it and click **Verify**. The code expires after 5 minutes; click **Resend** for a new one.
 5. Open the new app from **My apps**. Under **Redirect URIs**, click **+ Add new URI**, enter `https://backend.composio.dev/api/v1/auth-apps/add`, and click **Add**. It must exactly match the auth config's `oauth_redirect_uri` field, with no trailing slash.
+
+   ![Ramp My apps list showing the new app](/images/toolkits/ramp/my-apps-list.webp)
+
+   ![Ramp app detail page with the Composio redirect URI under Redirect URIs](/images/toolkits/ramp/redirect-uris.webp)
+
+   ![Ramp Add new URI dialog with the Composio redirect URI](/images/toolkits/ramp/add-redirect-uri.webp)
+
 6. Under **Grant types**, turn on **Authorization code**, **Client credentials**, and **Refresh token**. Without the refresh token grant, connections stop working when the access token expires.
+
+   ![Ramp Grant types section with Authorization code, Client credentials and Refresh token turned on](/images/toolkits/ramp/grant-types.webp)
+
 7. Copy the **Client ID**. Reveal the **Client secret** with the eye icon and copy it. If you lose it, click **Rotate client secret**, then update the auth config and reconnect affected accounts.
 8. Under **Scopes**, click **Configure allowed scopes**, turn on the scopes you'll request, and click **Set**.
 

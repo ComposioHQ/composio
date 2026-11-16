@@ -5,8 +5,14 @@ Use your own LinkedIn app for production, to avoid the shared app's rate limits 
 ### Create the LinkedIn app
 
 1. Go to [LinkedIn Developers](https://developer.linkedin.com/) and click **Create app**.
+
+   ![LinkedIn Developers home page with the Create app button](/images/toolkits/linkedin/create-app.webp)
 2. Enter the app name, your company's LinkedIn page URL, and the logo users see when they authorize. Agree to the legal terms and click **Create app**.
+
+   ![LinkedIn Create an app form with app name, LinkedIn Page, logo and legal agreement](/images/toolkits/linkedin/app-details.webp)
 3. Open the app's **Auth** tab. Under **Application credentials**, copy the **Client ID** and **Client Secret**.
+
+   ![LinkedIn app Auth tab with Application credentials showing Client ID and Primary Client Secret](/images/toolkits/linkedin/auth-credentials.webp)
 4. In the same tab, under **OAuth 2.0 settings**, add the authorized redirect URL `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
 
 ### Create the auth config in Composio

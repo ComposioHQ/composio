@@ -5,10 +5,22 @@ Use your own Pipedrive OAuth app when the managed app isn't available to your us
 ### Create the Pipedrive app
 
 1. Sign in to the [Pipedrive Developer Hub](https://app.pipedrive.com/developer-hub) with your developer sandbox account and click **Create an app**.
+
+   ![Pipedrive Developer Sandbox welcome page with the Create an app button](/images/toolkits/pipedrive/create-an-app.webp)
+
 2. Choose the app type. A **Private** app works only for users you select and doesn't need Pipedrive's review. A **Public** app is open to any Pipedrive user, needs a name that's unique across Pipedrive, and must be approved by Pipedrive before others can use it.
+
+   ![Pipedrive Select app type dialog comparing public and private apps](/images/toolkits/pipedrive/select-app-type.webp)
+
 3. On the **Basic info** tab, enter an **App name** and set **Callback URL** to `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the auth config's `oauth_redirect_uri` field. Click **Save**.
 4. On the **OAuth & access scopes** tab, under **Access scopes**, choose **Read only** or **Full access** for each area your tools need, such as deals, contacts, activities, leads, products, or projects. By default, Pipedrive grants only basic access to the user's settings.
+
+   ![Pipedrive Access scopes with per-area toggles and Read only or Full access options](/images/toolkits/pipedrive/access-scopes.webp)
+
 5. Scroll down to **OAuth credentials** and copy the **Client ID** and **Client Secret**.
+
+   ![Pipedrive OAuth & access scopes tab showing the Client ID and Client secret](/images/toolkits/pipedrive/oauth-credentials.webp)
+
 6. For a public app, submit it from the **App review info** tab. Private apps skip review.
 
 ### Create the auth config in Composio

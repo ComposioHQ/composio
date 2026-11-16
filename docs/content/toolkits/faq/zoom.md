@@ -5,7 +5,11 @@ Use your own Zoom OAuth app when you want users to see your app's name on the co
 ### Create the Zoom app
 
 1. Go to the [Zoom App Marketplace](https://marketplace.zoom.us/develop/create) and create a **General** app. Composio connects users through the OAuth authorization flow, which a General app supports.
+
+   ![Zoom App Marketplace dialog asking what kind of app you are creating, with General App selected](/images/toolkits/zoom/choose-general-app.webp)
 2. On the app's **Basic Information** tab, under **App Credentials**, copy the **Client ID** and **Client Secret**. You can set the app name and developer details separately for the **Development** and **Production** environments.
+
+   ![Zoom app header with the Development and Production environment tabs](/images/toolkits/zoom/development-production-tabs.webp)
 3. In the **OAuth Information** section below the credentials, add `https://backend.composio.dev/api/v1/auth-apps/add` as the redirect URL. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
 4. Open the **Scopes** tab and click **+ Add Scopes**. Zoom enables no scopes by default, so add every scope your tools need (see below).
 

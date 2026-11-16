@@ -14,6 +14,8 @@ You use up to three values:
 2. Copy the **Client ID**. It's the same for Sandbox and Production.
 3. Copy the secret for the environment you'll use. A Sandbox secret on a Production connection fails on every call, and the reverse.
 
+   ![Plaid Dashboard Keys page with the Client ID, Sandbox secret and Production secret](/images/toolkits/plaid/keys-page.webp)
+
 ### Decide whether you need an access token
 
 Institution tools, such as searching or listing institutions, work with only the Client ID and secret. Tools that read accounts, balances, transactions, identity, liabilities, investments, or statements also need an access token.
@@ -31,12 +33,20 @@ Sandbox tokens start with `access-sandbox-` and Production tokens with `access-p
 ### Create the auth config and connect
 
 1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create**, select **Plaid** (API Key is the only method), and click **Create Auth Config**.
+
+   ![Composio Create Auth Config dialog with Plaid and its API Key badge](/images/toolkits/plaid/create-auth-config.webp)
+
+   ![Plaid auth config with API Key as the only authentication method](/images/toolkits/plaid/api-key-method.webp)
+
 2. Open the auth config and click **Connect Account**.
 3. Fill in the form:
    - **Environment**: `sandbox` (the default) or `production`.
    - **Client ID** and **Secret**: the values from the Keys page. The secret must match the environment.
    - **Item access token**: optional. Leave it empty if you only need institution tools.
    - **Legacy user token**: leave empty. It's only for Plaid integrations created before December 10, 2025 that use Plaid's old User API.
+
+   ![Composio connect form for Plaid with Client ID, Secret and Item access token fields](/images/toolkits/plaid/connect-form.webp)
+
 4. Click **Connect Account**. The account shows **Active** on the auth config's **Connected Accounts** tab.
 
 **Active** only means the connection was saved. Composio can't check Plaid keys when you connect, so a wrong secret still shows Active. Run an institution search tool to test the Client ID and secret, and the get accounts tool to test the access token.

@@ -13,17 +13,48 @@ Composio-managed auth works without any setup: create a Slack auth config, choos
 ### Create the Slack app
 
 1. Go to [Slack API: Your Apps](https://api.slack.com/apps) and click **Create New App** → **From scratch**.
+
+   ![Slack API Your Apps page with the Create an App button](/images/toolkits/slack/create-an-app.webp)
+
+   ![Slack Create an app dialog with the From scratch option](/images/toolkits/slack/from-scratch.webp)
+
 2. Enter an **App Name**, select your workspace, and click **Create App**.
+
+   ![Slack Name app and choose workspace dialog with the Create App button](/images/toolkits/slack/name-and-workspace.webp)
+
 3. Open **OAuth & Permissions**. Under **Redirect URLs**, click **Add New Redirect URL**, enter `https://backend.composio.dev/api/v1/auth-apps/add`, click **Add**, then **Save URLs**. It must exactly match the auth config's `oauth_redirect_uri` field.
+
+   ![Slack OAuth & Permissions Redirect URLs with the Composio redirect URL and Save URLs button](/images/toolkits/slack/redirect-urls.webp)
+
 4. On the same page, under **Scopes**, add the scopes your auth config will request. For example, `channels:history` reads channel messages, `chat:write` sends messages, and `users:read` reads user info.
+
+   ![Slack Scopes section listing channels:history, chat:write and users:read](/images/toolkits/slack/oauth-scopes.webp)
+
 5. Open **Basic Information** and scroll to **App Credentials**. Copy the **Client ID**, **Client Secret**, and, if you'll use Slack triggers, the **Verification Token**.
+
+   ![Slack Basic Information App Credentials with Client ID, Client Secret and Signing Secret](/images/toolkits/slack/app-credentials.webp)
 
 ### Create the auth config in Composio
 
 1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Slack**.
+
+   ![Composio Auth Configs page with the Create button](/images/toolkits/slack/auth-configs-create.webp)
+
+   ![Composio Create Auth Config dialog with Slack and Slackbot in the search results](/images/toolkits/slack/search-slack.webp)
+
 2. Under **Credentials**, choose **Your Own Credentials** and paste the Client ID and Client Secret. Keep the redirect URI as the value you added in Slack.
+
+   ![Composio Slack auth config with Your Own Credentials selected and Client id and Client secret fields](/images/toolkits/slack/own-credentials.webp)
+
 3. Paste the **Verification Token** if you need Slack triggers, choose the scopes, and click **Create Auth Config**.
+
+   ![Composio Slack auth config Verification Token field and selected scopes](/images/toolkits/slack/verification-token-scopes.webp)
+
 4. Click **Connect Account**, select your workspace on the Slack page, review the permissions, and click **Allow**. Confirm the account shows **Active** on the auth config's **Accounts** tab.
+
+   ![Slack authorization page with workspace picker, requested permissions and the Allow button](/images/toolkits/slack/consent-screen.webp)
+
+   ![Composio Slack auth config Accounts tab with a connected account showing Active](/images/toolkits/slack/active-account.webp)
 
 See [custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow, and [custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks) for trigger setup with your own app.
 

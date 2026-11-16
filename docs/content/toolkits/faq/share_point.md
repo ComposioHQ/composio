@@ -8,9 +8,27 @@ Use your own Microsoft Entra ID app registration when you want the Microsoft con
 2. Enter a **Name**. Under **Supported account types**, choose an organizational option: **Accounts in this organizational directory only** (single tenant) or **Accounts in any organizational directory** (multitenant). Allowing personal accounts doesn't give them access to an organizational SharePoint site.
 3. Under **Redirect URI**, select the **Web** platform, enter `https://backend.composio.dev/api/v1/auth-apps/add`, and click **Register**.
 4. On the app's **Overview** page, copy the **Application (client) ID**.
+
+   ![Entra app Overview page with the client, object and tenant IDs censored](/images/toolkits/shared/XrRJcE8kllnTRDHzOTTTl8s9oxc.webp)
+
 5. Open **Certificates & secrets** and click **New client secret**. Add a description, choose an expiry that fits your rotation policy (for example, 180 days), and click **Add**. Rotate the secret before it expires.
+
+   ![Add a client secret panel with a description and the 180-day expiry](/images/toolkits/shared/eZiGGdUoPbOHKz4sCPqGdS04k.webp)
+
 6. Copy the secret **Value** right away. Use the **Value**, not the **Secret ID**. Azure shows the full value only once; if you lose it, create a new secret.
+
+   ![Client secrets list with the Value and Secret ID columns censored](/images/toolkits/shared/hiQJlSSKAljLV6UM2Wu8e5sUCzU.webp)
+
 7. Open **API permissions**, click **Add a permission**, select **SharePoint** (not Microsoft Graph), and choose **Delegated permissions**. Add the permissions your tools need, for example `AllSites.Read` for read-only access, and click **Add permissions**. Write, list-management, and admin operations can need more permissions and site or tenant roles.
+
+   ![API permissions page with the Add a permission button](/images/toolkits/share_point/add-a-permission.webp)
+
+   ![Request API permissions panel with SharePoint under Microsoft APIs](/images/toolkits/share_point/sharepoint-api.webp)
+
+   ![SharePoint delegated permissions with AllSites.Read selected](/images/toolkits/share_point/allsites-read-permission.webp)
+
+   ![Configured SharePoint AllSites.Read delegated permission details](/images/toolkits/share_point/allsites-read-details.webp)
+
 8. Keep **Allow public client flows** disabled on the **Authentication** page. This is a confidential Web client.
 9. If your tenant restricts user consent, have a tenant admin click **Grant admin consent for** your tenant on the **API permissions** page. Adding a permission to the app registration doesn't grant consent by itself.
 
@@ -19,10 +37,34 @@ The redirect URI you register must exactly match the `oauth_redirect_uri` field 
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create**, and select **SharePoint**. Enter a config name and click **Next**.
+
+   ![Composio Auth Configs page with the Create button](/images/toolkits/share_point/composio-auth-configs.webp)
+
+   ![Create Auth Config search showing SharePoint and SharePoint Graph as separate toolkits](/images/toolkits/share_point/composio-toolkit-picker.webp)
+
+   ![Auth config name field with the Next button](/images/toolkits/share_point/composio-config-name.webp)
+
 2. Select **OAuth 2.0** and **Your Own Credentials**. Paste the Application (client) ID into **Client id** and the secret value into **Client secret**. Leave **Redirect URI** as shown.
+
+   ![Composio auth config form with OAuth 2.0 and Your Own Credentials selected](/images/toolkits/share_point/composio-own-credentials.webp)
+
 3. Under **Scopes**, keep the default `.default` and `offline_access` scopes. The `.default` scope picks up the SharePoint permissions you added in Azure. Click **Create Auth Config**.
+
+   ![Composio auth config with the v1 redirect URI and the tenant-templated .default and offline_access scopes](/images/toolkits/share_point/composio-scopes.webp)
+
 4. Open the auth config and click **Connect Account**. Enter the **Tenant Name** (`subdomain`) and, optionally, the **SharePoint Subsite** (`generic_id`), then click **Connect Account**. Sign in with a work or school account that can access the site, check that the consent prompt shows your app's name, and click **Accept**. Leave **Consent on behalf of your organization** unchecked unless you're an admin granting tenant-wide consent. An **unverified** label is expected for a custom app without a verified publisher.
+
+   ![SharePoint auth config page with the Connect Account button](/images/toolkits/share_point/composio-connect-account.webp)
+
+   ![Composio connection form with a censored Tenant Name and an empty SharePoint Subsite field](/images/toolkits/share_point/tenant-and-subsite-fields.webp)
+
+   ![Microsoft Pick an account page with the accounts censored](/images/toolkits/shared/1dBnBBEYr17c671yWVLvqnS4k.webp)
+
+   ![Composio page confirming the SharePoint connection](/images/toolkits/share_point/connection-success.webp)
+
 5. Back on the auth config's **Connected Accounts** tab, confirm the account shows **Active**. The **Enabled** label at the top of the page describes the auth config, not the account.
+
+   ![Connected Accounts tab with the SharePoint account showing Active](/images/toolkits/share_point/connected-account-active.webp)
 
 For the general flow, see [custom auth configs](/docs/auth-configuration/custom-auth-configs).
 

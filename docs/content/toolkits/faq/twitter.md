@@ -5,20 +5,40 @@ Composio has no managed OAuth app for Twitter, so you need your own X developer 
 ### Create the X app
 
 1. Sign in to the [X Developer Console](https://console.x.com/), open **Apps**, and click **Create App**. Enter an **Application Name**, select at least one existing project under **Project Access**, pick the environment, and click **Create**.
+
+   ![X Developer Console Apps page with the Create App button](/images/toolkits/twitter/apps-list.webp)
+
+   ![Create New Client Application dialog with an app name and a project selected](/images/toolkits/twitter/create-app.webp)
 2. Open the app's **Settings** and find **User authentication settings**. In the older console, click **Set up** or **Edit** under that heading.
 3. Under **App permissions**, choose the access your workflow needs. For **Type of App**, select **Web App, Automated App or Bot**. This confidential client type issues OAuth 2.0 credentials.
+
+   ![X user authentication settings with Read permissions and Web App, Automated App or Bot selected](/images/toolkits/twitter/user-auth-settings.webp)
 4. Under **App info**, set **Callback URI / Redirect URL** to `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config. Enter your public **Website URL**, fill in any other required fields, and click **Save Changes**.
+
+   ![X app info with the Composio callback URL and a website URL, ready to save](/images/toolkits/twitter/callback-url.webp)
 5. Open **Keys & Tokens**. Copy the **Client ID** and **Client Secret** under **OAuth 2.0 Keys**, and the **Bearer Token** under **App-Only Authentication**.
+
+   ![X Keys and Tokens tab showing the Bearer Token, OAuth 1.0 keys, and OAuth 2.0 Client ID and Client Secret](/images/toolkits/twitter/keys-and-tokens.webp)
 
 The **API Key** and **API Key Secret** shown when you create the app are not the OAuth 2.0 Client ID and Client Secret.
 
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create**, and select **Twitter**.
+
+   ![Composio Create Auth Config dialog with Twitter in the search results](/images/toolkits/twitter/select-toolkit.webp)
+
+   ![Twitter auth config name field](/images/toolkits/twitter/config-name.webp)
 2. Use OAuth 2.0. Paste the **Client id** and **Client secret**, and paste the app-only Bearer Token into **Application Bearer Token**. All three values must come from the same X app. Composio uses the Bearer Token for app-only actions such as recent search and post lookup.
 3. Trim the scopes to what your tools need (see below), then click **Create Auth Config**.
+
+   ![Twitter auth config with the Application Bearer Token field, the Composio redirect URI, and three scopes selected](/images/toolkits/twitter/bearer-token-and-scopes.webp)
 4. Click **Connect Account**, sign in to X, check the app name and permissions, and click **Authorize app**.
+
+   ![X consent screen listing the requested permissions with an Authorize app button](/images/toolkits/twitter/authorize-app.webp)
 5. Open **Accounts** and confirm the connected account shows as **Active**. The auth config's **Enabled** label alone doesn't confirm a connection.
+
+   ![Composio auth config Accounts tab with a connected account marked Active](/images/toolkits/twitter/connected-account-active.webp)
 
 See [Custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow.
 

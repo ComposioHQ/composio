@@ -15,7 +15,13 @@ Use your own Zendesk OAuth client when you want users to see your app's name on 
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Zendesk**.
+
+   ![Composio Auth Configs page with the Create Auth Config button](/images/toolkits/shared/wIAvY0hheAM7HQEF4kG2KTYATY.webp)
+
+   ![Composio Create Auth Config dialog with Zendesk in the search results](/images/toolkits/zendesk/select-toolkit.webp)
 2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
+
+   ![Zendesk auth config form with OAUTH2, the default scopes, and Use your own developer credentials enabled](/images/toolkits/zendesk/oauth2-own-credentials.webp)
 3. Paste the client ID and secret, then click **Create Zendesk Auth Config**.
 4. Click **Connect Account** and enter your Zendesk subdomain, the part before `.zendesk.com` (for example `acme` in `acme.zendesk.com`).
 5. Approve access in Zendesk and confirm the account shows as **Active**.

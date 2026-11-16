@@ -15,7 +15,13 @@ Use your own Stripe Connect OAuth app when you want users to see your platform's
 ### Create the auth config in Composio
 
 1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Stripe**.
+
+   ![Composio Auth Configs page with the Create Auth Config button](/images/toolkits/shared/wIAvY0hheAM7HQEF4kG2KTYATY.webp)
+
+   ![Composio toolkit picker with Stripe selected](/images/toolkits/stripe/select-toolkit.webp)
 2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
+
+   ![Stripe auth config form with OAUTH2 selected, the read_write scope, and Use your own developer credentials enabled](/images/toolkits/stripe/oauth2-own-credentials.webp)
 3. Paste the **Client ID** and the secret key as the **Client Secret**, then click **Create Stripe Auth Config**.
 4. Click **Connect Account**, approve access in Stripe, and confirm the account shows as **Active**.
 
@@ -29,7 +35,11 @@ Stripe OAuth has two scopes: `read_only` and `read_write`. The default auth conf
 
 1. In the [Stripe Dashboard](https://dashboard.stripe.com/apikeys), go to **Developers** → **API keys**.
 2. Under **Standard keys**, copy the **Secret key**. It starts with `sk_live_`, or `sk_test_` in test mode. Don't use the publishable `pk_` key.
+
+   ![Stripe Developers API keys page with the publishable and secret keys redacted](/images/toolkits/stripe/api-keys.webp)
 3. In Composio, go to **Auth Configs**, click **Create Auth Config**, select **Stripe**, and choose **API Key** as the authentication type. Click **Create Stripe Auth Config**.
+
+   ![Stripe auth config form with API KEY selected](/images/toolkits/stripe/api-key-auth-method.webp)
 4. Click **Connect Account**, paste the secret key, and confirm the account shows as **Active**.
 
 Keep the secret key out of client-side code.

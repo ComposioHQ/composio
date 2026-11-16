@@ -5,13 +5,21 @@ Use your own Canva integration when you want users to see your app's name on the
 ### Create the Canva integration
 
 1. Sign in to the [Canva developer portal](https://www.canva.com/developers/), open [Your integrations](https://www.canva.com/developers/integrations), and click **Create an integration**.
+
+   ![Canva developer portal Your integrations page with the Create an integration button](/images/toolkits/canva/your-integrations.webp)
 2. Choose the integration type:
    - **Public**: anyone on Canva can use it, but Canva must review and approve it first.
    - **Private**: only your team can use it. Requires a Canva Enterprise plan.
+
+   ![Canva dialog to choose a Public or Private integration](/images/toolkits/canva/integration-type.webp)
 3. Open the integration. On the **Configuration** tab, under **Credentials**, copy the **Client ID** and **Client Secret**.
+
+   ![Canva integration Configuration tab with the Credentials section](/images/toolkits/canva/credentials.webp)
 4. On the **Authentication** tab, under **Authorized redirects**, add `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
 5. On the **Scopes** tab, enable the scopes your auth config will request (see below).
 6. For a public integration, submit it for review.
+
+   ![Canva integration Submit for review checklist](/images/toolkits/canva/submit-for-review.webp)
 
 ### Create the auth config in Composio
 

@@ -8,6 +8,9 @@ PostHog connects with a personal API key. There's no OAuth option.
 2. Click **Settings**, then scroll to **Personal API keys** and start a new key.
 3. Give the key a descriptive label.
 4. Choose its scopes. You can limit the key to specific projects or organizations and to the resources your tools need. Avoid full access unless you need it.
+
+   ![PostHog Create personal API key dialog with label, organization and project access, and the scopes menu](/images/toolkits/posthog/create-personal-api-key.webp)
+
 5. Click **Create** and copy the key right away. It starts with `phx_` and PostHog shows it only once. Don't use the `phc_` project key.
 
 ### Create the auth config in Composio

@@ -6,6 +6,8 @@ Use your own Linear OAuth application when you want users to see your app's name
 
 1. Sign in to [Linear](https://linear.app/) and open your workspace's [API settings](https://linear.app/settings/api).
 2. Create a new OAuth application and give it a name.
+
+   ![Linear API settings page with the New OAuth application button](/images/toolkits/linear/api-settings.webp)
 3. In **Callback URLs**, enter `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
 4. Fill in the remaining required fields and create the application.
 5. On the application page that opens, copy the **Client ID** and **Client Secret**.

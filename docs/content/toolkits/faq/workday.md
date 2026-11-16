@@ -14,7 +14,13 @@ Workday has no Composio-managed OAuth app, so you register an API client in your
    - **Redirection URI**: `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config, or the connection fails with `redirect_uri_mismatch`.
    - **Non-Expiring Refresh Tokens**: enable.
    - **Scopes**: select the areas your tools need, and check **Include Workday Owned Scope**.
+
+   ![Workday Register API Client form with the client name, Authorization Code Grant, Bearer token type, and redirection URI](/images/toolkits/workday/register-api-client-form.webp)
+
+   ![Workday Register API Client form with Non-Expiring Refresh Tokens, functional scopes, and Include Workday Owned Scope checked](/images/toolkits/workday/register-api-client-scopes.webp)
 4. Click **OK**, review the summary, and click **Done**.
+
+   ![Workday registered API client summary with the Composio redirection URI](/images/toolkits/workday/registered-client-summary.webp)
 5. On the client detail page, copy five values: **Client ID**, **Client Secret**, **REST API Endpoint**, **Token Endpoint**, and **Authorization Endpoint**. Copy them now; the secret can be masked once you leave the page, and you'd have to regenerate it.
 
 ### Create the auth config in Composio

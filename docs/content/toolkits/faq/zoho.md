@@ -10,6 +10,8 @@ Use your own Zoho OAuth client when you want the consent screen to show your app
 4. In **Authorized Redirect URIs**, enter `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the auth config's `oauth_redirect_uri` field.
 5. Click **Create**, then open the **Client Secret** tab and copy the **Client ID** and **Client Secret**.
 
+   ![Zoho API Console Client Secret tab with the Client ID and Client Secret fields](/images/toolkits/zoho/client-secret.webp)
+
 ### Create the auth config in Composio
 
 1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Zoho CRM**.
