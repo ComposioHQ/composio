@@ -36,7 +36,7 @@ You need a Google Workspace or Cloud Identity organization. A Workspace administ
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Data Studio**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-google_data_studio), open **Auth Configs** → **Create** and select **Google Data Studio**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in with a Google account in the authorized organization. If Google reports `invalid_scope`, ask the administrator to check the authorized client ID and scope list.
 4. Open **Accounts** on the auth config and confirm the connected account shows **Active**. The auth config's own **Enabled** label doesn't confirm a connection.

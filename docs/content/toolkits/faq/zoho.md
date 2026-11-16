@@ -14,7 +14,7 @@ Use your own Zoho OAuth client when you want the consent screen to show your app
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Zoho CRM**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-zoho), go to **Auth Configs** → **Create** and select **Zoho CRM**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste the Client ID and Client Secret.
 3. Adjust the scopes if needed (see below) and click **Create Auth Config**.
 4. Click **Connect Account**, enter your data center code in **Region**, and accept the permissions on Zoho's consent screen. Check that the account shows **Active**.

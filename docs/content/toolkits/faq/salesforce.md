@@ -45,7 +45,7 @@ If you don't have an org to test in, sign up for a free [Salesforce Developer Ed
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Salesforce**. Salesforce Data 360 and Salesforce Service Cloud are separate toolkits.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-salesforce), go to **Auth Configs** → **Create** and select **Salesforce**. Salesforce Data 360 and Salesforce Service Cloud are separate toolkits.
 
    ![Composio dashboard sidebar with Auth Configs](/images/toolkits/salesforce/composio-auth-configs-nav.webp)
 

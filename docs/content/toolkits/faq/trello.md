@@ -23,7 +23,7 @@ Composio connects Trello with OAuth 1.0a. Use your own Trello API key and secret
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Trello**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-trello), go to **Auth Configs** → **Create** and select **Trello**.
 2. Choose your own credentials. Paste the API key into the consumer key field (`consumer_key`) and the secret into the consumer secret field (`consumer_secret`).
 3. Click **Create Auth Config**, then click **Connect Account**.
 4. Click **Allow** on Trello's authorization screen and check that the account shows **Active**.

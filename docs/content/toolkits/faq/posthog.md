@@ -15,7 +15,7 @@ PostHog connects with a personal API key. There's no OAuth option.
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create**, select **PostHog**, and click **Create Auth Config**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-posthog), go to **Auth Configs** → **Create**, select **PostHog**, and click **Create Auth Config**.
 2. Click **Connect Account**. Paste the personal API key and set the region (see the next question). The default is `us`.
 3. Confirm the account shows **Active** on the auth config's **Connected Accounts** tab.
 

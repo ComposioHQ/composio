@@ -23,7 +23,7 @@ Composio-managed OAuth works for ServiceM8 without any setup. Use your own Servi
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **ServiceM8**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-servicem8), go to **Auth Configs** → **Create** and select **ServiceM8**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/servicem8/auth-configs-create.webp)
 

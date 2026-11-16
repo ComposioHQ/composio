@@ -26,7 +26,7 @@ Use your own Zoho OAuth client when you want the consent screen to show your app
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Zoho Mail**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-zoho_mail), go to **Auth Configs** → **Create** and select **Zoho Mail**.
 
    ![Composio Create Auth Config dialog with Zoho Mail selected](/images/toolkits/zoho_mail/select-toolkit.webp)
 

@@ -42,7 +42,7 @@ Use your own Google OAuth app when you need scopes that Composio's managed Googl
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Google Super**. Enter a config name and click **Next**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googlesuper), go to **Auth Configs** → **Create** and select **Google Super**. Enter a config name and click **Next**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/shared/DUtMN0UWIU2kEqnvS5DvD7qhWU.webp)
 
@@ -70,6 +70,8 @@ To add another Google toolkit later, enable its API in the same project and reus
 ### Scopes
 
 The default Google Super auth config requests broad scopes across products: `https://mail.google.com/`, `drive`, `documents`, `spreadsheets`, `presentations`, `calendar`, `tasks`, `contacts.readonly`, `analytics`, `analytics.readonly`, `adwords`, the Photos `appcreateddata` read and edit scopes, `userinfo.email`, and `userinfo.profile`. Remove the ones for products you don't use, and prefer narrower scopes where they cover your tools. For example, listing Drive file metadata only needs `drive.metadata.readonly`. See Google's [OAuth 2.0 scope list](https://developers.google.com/identity/protocols/oauth2/scopes).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 If you change the scopes later, reconnect the account so the user grants the new access.
 

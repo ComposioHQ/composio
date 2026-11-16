@@ -25,7 +25,7 @@ Use your own Pipedrive OAuth app when the managed app isn't available to your us
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Pipedrive**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-pipedrive), go to **Auth Configs** → **Create** and select **Pipedrive**.
 2. Choose **OAuth2** and your own credentials, then paste the Client ID and Client Secret. Keep the redirect URI as the value you registered in Pipedrive.
 3. Click **Create Auth Config**, then click **Connect Account** and approve access in Pipedrive. Confirm the account shows **Active** on the auth config's **Connected Accounts** tab.
 

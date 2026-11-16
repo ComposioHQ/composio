@@ -35,7 +35,7 @@ Connect with a Google account that owns or manages the Business Profile. Your Go
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Business Profile**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-google_business_profile), open **Auth Configs** → **Create** and select **Google Business Profile**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in with the Google account that manages the profile. If the Account Management API is unavailable or shows a quota of zero, the project's Business Profile API access hasn't been approved. OAuth app verification and Business Profile API approval are separate.
 
@@ -48,6 +48,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests `https://www.googleapis.com/auth/business.manage`. Account listing requires it, and it can authorize changes to any profile the signed-in user can manage.
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Publish and verify the app
 

@@ -43,7 +43,7 @@ Connect with a Business or Enterprise Google Workspace account that has Google C
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Chat**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-google_chat), open **Auth Configs** → **Create** and select **Google Chat**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in with the Google account you want to connect. Review the requested permissions before you continue.
 
@@ -56,6 +56,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests `chat.spaces`, `chat.messages`, `chat.messages.create`, `chat.memberships`, and `chat.users`, plus read-only variants of spaces, messages, and memberships, all under `https://www.googleapis.com/auth/`. For read-only use, `https://www.googleapis.com/auth/chat.spaces.readonly` is enough to view the spaces the user belongs to. Remove scopes you don't need. See Google's [Chat scope reference](https://developers.google.com/workspace/chat/authenticate-authorize).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Publish and verify the app
 

@@ -33,7 +33,7 @@ Use your own app from the Shopify Dev Dashboard when you want to choose the scop
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Shopify**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-shopify), go to **Auth Configs** → **Create** and select **Shopify**.
 2. Choose **OAuth2** and your own credentials, then paste the Client ID and Client Secret. Keep the redirect URI as the value you registered in Shopify. Click **Create Auth Config**.
 
    ![Composio Shopify auth config Client id, Client secret and Composio redirect URI fields](/images/toolkits/shopify/own-credentials.webp)

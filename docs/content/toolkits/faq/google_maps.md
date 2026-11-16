@@ -35,7 +35,7 @@ Use a Google Cloud project with Maps billing enabled, and confirm your team is a
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Maps**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-google_maps), open **Auth Configs** → **Create** and select **Google Maps**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in. The connection check looks up a place through Places API (New), which can count toward Maps usage. Google requires a billing-enabled quota project for OAuth requests, so if Google rejects the connection, check API enablement, quota-project permissions, and billing.
 
@@ -48,6 +48,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests `https://www.googleapis.com/auth/cloud-platform`. Google requires it for OAuth requests to Places API (New) and Routes API. It can grant broad access to any Google Cloud resources the signed-in user can reach, so review that user's project permissions before you connect.
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Use an API key instead
 

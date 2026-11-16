@@ -26,9 +26,7 @@ Composio-managed auth works without any setup: create a Slack auth config, choos
 
    ![Slack OAuth & Permissions Redirect URLs with the Composio redirect URL and Save URLs button](/images/toolkits/slack/redirect-urls.webp)
 
-4. On the same page, under **Scopes**, add the scopes your auth config will request. For example, `channels:history` reads channel messages, `chat:write` sends messages, and `users:read` reads user info.
-
-   ![Slack Scopes section listing channels:history, chat:write and users:read](/images/toolkits/slack/oauth-scopes.webp)
+4. On the same page, under **Scopes** → **User Token Scopes**, add the scopes your auth config will request. The Slack toolkit acts as the connecting user, and some default scopes, such as `search:read`, exist only as user scopes. For example, `channels:history` reads channel messages, `chat:write` sends messages, and `users:read` reads user info. For a bot that posts as itself, use the [Slackbot](/toolkits/slackbot) toolkit instead.
 
 5. Open **Basic Information** and scroll to **App Credentials**. Copy the **Client ID**, **Client Secret**, and, if you'll use Slack triggers, the **Verification Token**.
 
@@ -36,7 +34,7 @@ Composio-managed auth works without any setup: create a Slack auth config, choos
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Slack**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-slack), go to **Auth Configs** → **Create** and select **Slack**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/slack/auth-configs-create.webp)
 

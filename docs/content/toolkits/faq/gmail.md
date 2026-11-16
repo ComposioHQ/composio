@@ -42,7 +42,7 @@ Use your own Google OAuth app when you want your app's name on Google's consent 
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Gmail**. Enter a config name and click **Next**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-gmail), go to **Auth Configs** → **Create** and select **Gmail**. Enter a config name and click **Next**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/shared/DUtMN0UWIU2kEqnvS5DvD7qhWU.webp)
 
@@ -68,6 +68,8 @@ For the general flow, see [custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default Gmail auth config requests `https://mail.google.com/` (full mailbox access), `userinfo.email`, `userinfo.profile`, and People API read scopes such as `contacts.readonly`, `contacts.other.readonly`, and `user.emails.read`. Request only what your tools need. For example, `gmail.readonly` reads messages and settings but can't send or modify mail. See Google's [Gmail scope reference](https://developers.google.com/workspace/gmail/api/auth/scopes).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 If you change the scopes later, reconnect the account so the user grants the new access.
 

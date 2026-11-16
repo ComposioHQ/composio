@@ -41,7 +41,7 @@ You need a Google Ads account you can access and its 10-digit Customer ID. Live-
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Ads**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googleads), open **Auth Configs** → **Create** and select **Google Ads**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/shared/DUtMN0UWIU2kEqnvS5DvD7qhWU.webp)
 
@@ -66,6 +66,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests `https://www.googleapis.com/auth/adwords`. It's the only Google Ads API scope and includes account-management access, so it isn't read-only. The user's Google Ads account role still limits what they can do. See Google's [OAuth overview for Google Ads](https://developers.google.com/google-ads/api/docs/oauth/overview).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Developer token
 

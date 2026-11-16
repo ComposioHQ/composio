@@ -42,7 +42,7 @@ Use your own Google OAuth app when you want your app's name on Google's consent 
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Google Tasks**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googletasks), go to **Auth Configs** → **Create** and select **Google Tasks**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**. Paste the **Client ID** and **Client secret**, and leave **Redirect URI** set to `https://backend.composio.dev/api/v1/auth-apps/add`.
 3. Choose the scopes your tools need, matching the ones you added under **Data Access**, then click **Create Auth Config**.
 4. Click **Connect Account**, sign in with a Google account that can use the app (a test user while the app is in **Testing**), and approve the consent screen. Under **Accounts**, confirm the connection shows **Active**.
@@ -56,6 +56,8 @@ For the general flow, see [custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default Google Tasks auth config requests `https://www.googleapis.com/auth/tasks`. If your tools only read task lists and tasks, use `tasks.readonly` instead; it can't create, complete, change, or delete tasks. See Google's [Tasks scope reference](https://developers.google.com/workspace/tasks/auth).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 If you change the scopes later, reconnect the account so the user grants the new access.
 

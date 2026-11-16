@@ -38,7 +38,7 @@ Use your own Google OAuth app when you want your app name on the consent screen,
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **YouTube**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-youtube), open **Auth Configs** → **Create** and select **YouTube**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/shared/DUtMN0UWIU2kEqnvS5DvD7qhWU.webp)
 
@@ -61,6 +61,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests these scopes under `https://www.googleapis.com/auth/`: `youtube`, `youtube.readonly`, `youtube.force-ssl`, `youtube.upload`, `youtube.channel-memberships.creator`, `youtubepartner`, and `youtubepartner-channel-audit`. To only read channel data, `youtube.readonly` is enough. Uploads, content management, memberships, and partner operations need their own scopes and, for some, YouTube eligibility. See Google's [YouTube authentication guide](https://developers.google.com/youtube/v3/guides/authentication).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Publish and verify the app
 

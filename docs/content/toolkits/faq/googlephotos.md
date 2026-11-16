@@ -34,7 +34,7 @@ Use your own Google OAuth app when you want your app's name on Google's consent 
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Google Photos**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googlephotos), go to **Auth Configs** → **Create** and select **Google Photos**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**. Paste the **Client ID** and **Client secret**, and leave **Redirect URI** set to `https://backend.composio.dev/api/v1/auth-apps/add`.
 3. Choose the scopes your tools need, matching the ones you added under **Data Access**, then click **Create Auth Config**.
 4. Click **Connect Account**, sign in with a Google account that can use the app (a test user while the app is in **Testing**), and approve the consent screen. Under **Accounts**, confirm the connection shows **Active**.
@@ -48,6 +48,8 @@ For the general flow, see [custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default Google Photos auth config requests `https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata` and `https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata`. Google removed the library-wide read and sharing scopes in March 2025, so the Library API only sees albums and media your app created. A new OAuth app returns an empty album list until it creates content. To let users pick items from their whole library, Google offers the separate Photos Picker API. See Google's [Photos scope reference](https://developers.google.com/photos/overview/authorization) and [API changes](https://developers.google.com/photos/support/updates).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 If you change the scopes later, reconnect the account so the user grants the new access.
 

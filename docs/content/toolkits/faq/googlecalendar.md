@@ -42,7 +42,7 @@ Use your own Google OAuth app when you want your app's name on Google's consent 
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Google Calendar**. Enter a config name and click **Next**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googlecalendar), go to **Auth Configs** → **Create** and select **Google Calendar**. Enter a config name and click **Next**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/shared/DUtMN0UWIU2kEqnvS5DvD7qhWU.webp)
 
@@ -68,6 +68,8 @@ For the general flow, see [custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default Google Calendar auth config requests `https://www.googleapis.com/auth/calendar` and `https://www.googleapis.com/auth/calendar.events`. For read-only event access, `calendar.events.readonly` is enough. Calendar discovery, availability, and event changes need other scopes. See Google's [Calendar scope reference](https://developers.google.com/workspace/calendar/api/auth).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 If you change the scopes later, reconnect the account so the user grants the new access.
 

@@ -34,7 +34,7 @@ The Google account you connect needs IAM access to the BigQuery projects and dat
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google BigQuery**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googlebigquery), open **Auth Configs** → **Create** and select **Google BigQuery**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in with the Google account you want to connect. Review the requested permissions before you continue.
 
@@ -49,6 +49,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests `https://www.googleapis.com/auth/cloud-platform`, `https://www.googleapis.com/auth/userinfo.email`. Composio uses `userinfo.email` to identify the connected account, so keep it. To list projects with less access, you can use `https://www.googleapis.com/auth/bigquery.readonly` with `userinfo.email` instead. Add job or data-write scopes only if your workflow runs queries or loads data. See Google's [projects.list reference](https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/projects/list) for the required permissions.
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### IAM, billing, and missing projects
 

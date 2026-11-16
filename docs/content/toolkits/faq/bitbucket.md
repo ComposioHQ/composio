@@ -32,7 +32,7 @@ Use your own Bitbucket OAuth client when you want the consent screen to show you
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Bitbucket**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-bitbucket), go to **Auth Configs** → **Create** and select **Bitbucket**.
 
    ![Composio Auth Configs page with the Create button](/images/toolkits/bitbucket/auth-configs.webp)
 

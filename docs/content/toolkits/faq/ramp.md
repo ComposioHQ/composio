@@ -33,7 +33,7 @@ Ramp has no Composio-managed app, so you register your own OAuth app in Ramp and
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Ramp**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-ramp), go to **Auth Configs** → **Create** and select **Ramp**.
 2. Paste the Client ID and Client Secret. Set the scopes to the same set you allowed on the Ramp app.
 3. Check **Base URL** and **Authorization URL**. The defaults, `https://api.ramp.com/developer/v1` and `https://app.ramp.com/v1/authorize`, are for production Ramp accounts. If you registered the app on a Ramp demo account (your browser shows `demo.ramp.com`), use the `demo-api.ramp.com` and `demo.ramp.com` hosts instead. The wrong environment makes the token exchange fail.
 4. Click **Create Auth Config**, then **Connect Account**. Review the permissions on Ramp's consent screen and click **Allow**. Confirm the account shows **Active** on the auth config's **Connected Accounts** tab.

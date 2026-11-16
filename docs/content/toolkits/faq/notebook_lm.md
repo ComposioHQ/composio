@@ -34,7 +34,7 @@ NotebookLM connects to an existing Gemini Notebook Enterprise deployment in the 
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **NotebookLM**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-notebook_lm), open **Auth Configs** → **Create** and select **NotebookLM**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and enter the Google Cloud project ID or numeric project number that hosts the Notebook Enterprise deployment. Then sign in. If the connection fails, check the Global location, the user's license, the Discovery Engine API, and IAM access in that project.
 
@@ -47,6 +47,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests `https://www.googleapis.com/auth/discoveryengine.readwrite`. It can authorize Discovery Engine writes within the user's IAM permissions. See the [notebook listing reference](https://docs.cloud.google.com/gemini/enterprise/docs/reference/rest/v1alpha/projects.locations.notebooks/listRecentlyViewed) for the required scopes and IAM permissions.
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Publish and verify the app
 

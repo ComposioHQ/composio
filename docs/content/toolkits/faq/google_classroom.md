@@ -40,7 +40,7 @@ Connect with a Google account that has Classroom access. Course access follows t
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Classroom**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-google_classroom), open **Auth Configs** → **Create** and select **Google Classroom**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in with the Google account you want to connect. Review the requested permissions before you continue.
 
@@ -53,6 +53,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests these scopes under `https://www.googleapis.com/auth/`: `classroom.courses.readonly`, `classroom.coursework.students`, `classroom.courseworkmaterials`, `classroom.topics`, `classroom.rosters.readonly`, `classroom.announcements`, and `classroom.course-work`. Keep `classroom.rosters.readonly`: Composio uses it to check the signed-in Classroom profile. It lets the app view rosters but not change them. For read-only use, `classroom.courses.readonly` plus `classroom.rosters.readonly` is enough. See Google's [Classroom scope reference](https://developers.google.com/workspace/classroom/guides/auth).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Publish and verify the app
 

@@ -24,7 +24,7 @@ Use your own Atlassian OAuth 2.0 (3LO) app when you want the consent screen to s
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **Confluence**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-confluence), go to **Auth Configs** → **Create** and select **Confluence**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste the Client ID and Secret.
 
 3. Remove any scopes you didn't add on the app's **Permissions** tab, then click **Create Auth Config**.

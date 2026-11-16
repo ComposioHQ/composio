@@ -31,7 +31,7 @@ You need the **Admin** or **Account Owner** role in PagerDuty to see **App Regis
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create** and select **PagerDuty** with the **OAuth2** badge.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-pagerduty), go to **Auth Configs** → **Create** and select **PagerDuty** with the **OAuth2** badge.
 2. Choose your own credentials and paste the Client ID and Client Secret. Keep the redirect URI as the value you registered in PagerDuty. Click **Create Auth Config**.
 3. Click **Connect Account**, enter a user ID, and sign in to PagerDuty with the account you want to connect.
 4. If the user belongs to more than one PagerDuty account (subdomain), PagerDuty lists them. Pick the one whose incidents and services the agent should manage.

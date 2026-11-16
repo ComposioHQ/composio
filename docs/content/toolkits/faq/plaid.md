@@ -32,7 +32,7 @@ Sandbox tokens start with `access-sandbox-` and Production tokens with `access-p
 
 ### Create the auth config and connect
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create**, select **Plaid** (API Key is the only method), and click **Create Auth Config**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-plaid), go to **Auth Configs** → **Create**, select **Plaid** (API Key is the only method), and click **Create Auth Config**.
 
    ![Composio Create Auth Config dialog with Plaid and its API Key badge](/images/toolkits/plaid/create-auth-config.webp)
 

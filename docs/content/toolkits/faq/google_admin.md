@@ -34,7 +34,7 @@ Connect with a Google Workspace administrator account that has the Directory pri
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), open **Auth Configs** → **Create** and select **Google Admin**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-google_admin), open **Auth Configs** → **Create** and select **Google Admin**.
 2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
 3. Open the auth config, select **Connect Account**, and sign in with the Workspace administrator account. If Google returns an access error, check the account's Directory privileges and your organization's app-access policy. A valid OAuth grant doesn't add admin privileges.
 
@@ -47,6 +47,8 @@ For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-
 ### Scopes
 
 The default auth config requests read and write Directory API scopes for users, user aliases, groups, group members, org units, and domains, such as `https://www.googleapis.com/auth/admin.directory.user` and `https://www.googleapis.com/auth/admin.directory.user.readonly`. To only list users, `https://www.googleapis.com/auth/admin.directory.user.readonly` is enough. Remove group, member, or write scopes your workflow doesn't use. See the [users.list reference](https://developers.google.com/workspace/admin/directory/reference/rest/v1/users/list).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
 
 ### Publish and verify the app
 

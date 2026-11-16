@@ -18,7 +18,7 @@ Rocketlane API keys have no scopes. A key can reach whatever the issuing user ca
 
 ### Create the auth config in Composio
 
-1. In the [Composio dashboard](https://dashboard.composio.dev/), go to **Auth Configs** → **Create**, select **Rocketlane**, and click **Create Auth Config**.
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-rocketlane), go to **Auth Configs** → **Create**, select **Rocketlane**, and click **Create Auth Config**.
 2. Click **Connect Account**, enter a user ID, and paste the API key.
 3. Confirm the account shows **Active** on the auth config's **Connected Accounts** tab.
 
