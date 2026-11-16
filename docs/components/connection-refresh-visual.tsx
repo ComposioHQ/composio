@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, RefreshCw } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const LOGO_CDN = 'https://logos.composio.dev/api';
