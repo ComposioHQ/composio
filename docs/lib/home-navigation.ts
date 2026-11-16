@@ -177,8 +177,8 @@ export const DOCS_PRODUCTS = {
             type: 'group',
             label: 'Toolkits & Tools',
             links: [
-              { type: 'folder', path: 'apps-and-toolkits' },
               { url: '/docs/toolkits' },
+              { type: 'folder', path: 'apps-and-toolkits' },
               { url: '/docs/instant-tools' },
               { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
