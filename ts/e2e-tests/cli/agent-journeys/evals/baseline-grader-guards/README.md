@@ -15,6 +15,8 @@ bun run eval.ts keep <batch> baseline-grader-guards
 
 Claude Code 2.1.310, `claude-haiku-5-5`, 5 runs per journey and arm, 50 runs, $0.096. Harness `edbcd56c3084`, skill `25e724edfae2`, CLI `6710a5ed`; the batch records `dirty: false`. `--force` reused no earlier run. The batch is `2026-11-16T18-57-32-claude-code-claude-haiku-5-5-baseline`.
 
+`2026-11-16T17-52-05-…` is kept beside it and is **not** the baseline: it is the same harness, skill and CLI over three runs, and it is here only because the last section below compares the two. Read a rate from the five-run batch.
+
 | split   | journey                            | arm      | passed | pass@1          | pass^k | wrong tree |
 | ------- | ---------------------------------- | -------- | ------ | --------------- | ------ | ---------- |
 | train   | consumer-slack-message             | no-skill | 0/5    | 0% (0%–43%)     | 0%     | 0%         |
@@ -41,7 +43,7 @@ Claude Code 2.1.310, `claude-haiku-5-5`, 5 runs per journey and arm, 50 runs, $0
 - **`consumer-slack-message` shows the mechanism, not just the gap.** With the skill, 5/5 runs ran `composio` and sent the message, in 5 to 10 model turns. Without it, 0/5: every run spent its one or two commands on `env | grep -i slack` or `which slack`, concluded there was no Slack tool here, and stopped. None of the five ran `composio` at all. The skill's worth on this journey is the sentence that names the CLI.
 - **`first-run-login` is the exception and is partly a timeout rate.** 2/5 with the skill against 3/5 without it. Three of the five skill runs and two of the five no-skill runs ended at the six-minute wall-clock deadline before reporting a turn (`stop: deadline`, no model turns), which the checks record as four failures: no login session, no key, no stored login, and the model not finishing by itself. Only the other runs graded how the agent logged in.
 - **The holdout split cannot separate the arms.** Both arms are 5/5 on both journeys. The one wrong-tree count is a single no-skill run of `developer-auth-configs-and-execute` that took two detours on its way and still passed every check, so the rate is a count of one.
-- **The no-skill arm did not behave the same way in the batch before this one.** That batch (`2026-11-16T17-52-05-…`, 3 runs) records the same `agentVersion`, `model`, `skillSha256`, `harnessSha256` and `cliSha256`, and `dirty: false`, yet `consumer-slack-message` no-skill passed 3/3 there: each of its runs ran `composio --help` on its own and sent the message. Here it is 0/5. Nothing the batch records differs, so the difference is model behaviour the batch does not capture. Treat a rate from fewer than five runs as provisional, and re-run the baseline next to a change rather than comparing against one batch.
+- **The no-skill arm did not behave the same way in the batch before this one.** That batch (`2026-11-16T17-52-05-…`, kept here, 3 runs) records the same `agentVersion`, `model`, `skillSha256`, `harnessSha256` and `cliSha256`, and `dirty: false`, yet `consumer-slack-message` no-skill passed 3/3 there: each of its runs ran `composio --help` on its own and sent the message. Here it is 0/5. Nothing the batch records differs, so the difference is model behaviour the batch does not capture. Treat a rate from fewer than five runs as provisional, and re-run the baseline next to a change rather than comparing against one batch.
 
 ## What it does not say
 
