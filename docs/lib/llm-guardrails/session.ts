@@ -28,7 +28,7 @@ export const SESSION_GUARDRAILS = `
 
 ## 1. Recommended Integration: Sessions
 
-For agent tool delivery, Composio supports **direct tools through a provider package** (with a provider package) and **MCP** (no provider package needed).
+For agent tool delivery, Composio supports **direct tools** (through a provider package) and **MCP** (no provider package needed).
 
 For application-owned tools or deterministic backend code, use [managed authentication with Proxy Execute](/docs/authentication/managed-auth-for-custom-tools). A session can provide a user-scoped runtime context without an LLM or MCP. Composio authenticates provider requests server-side; connected-account reads redact credentials and aren't a supported token-export workflow.
 
