@@ -230,6 +230,7 @@ jobs:
         run: >-
           pnpm exec turbo test:e2e:cli
           --filter=@e2e-tests/cli-fake-backend
+          --filter=@e2e-tests/cli-operations
 
       # After the keyless step, so a missing key cannot keep those suites from running.
       - name: Check API keys
@@ -264,6 +265,7 @@ jobs:
           pnpm exec turbo test:e2e:cli
           --filter='@e2e-tests/cli-*'
           --filter='!@e2e-tests/cli-fake-backend'
+          --filter='!@e2e-tests/cli-operations'
 
   # Cloudflare Workerd E2E tests
   test-e2e-cloudflare:
