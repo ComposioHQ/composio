@@ -78,6 +78,8 @@ export class ComposioError extends Error {
   declare public readonly requestId?: string;
   /** Numeric `error.code` the Composio API sent, when the response carried one. */
   declare public readonly apiErrorCode?: number;
+  /** Additional metadata associated with the error. */
+  declare public readonly meta?: Record<string, unknown>;
 
   /**
    * Creates a new ComposioError
@@ -170,16 +172,7 @@ export class ComposioError extends Error {
       message: this.message,
     };
 
-    const { cause, code, stack, statusCode, apiErrorCode, meta, possibleFixes } =
-      this as unknown as {
-        cause: unknown;
-        code: string | undefined;
-        stack: string | undefined;
-        statusCode: number | undefined;
-        apiErrorCode: number | undefined;
-        meta: Record<string, unknown> | undefined;
-        possibleFixes: string[] | undefined;
-      };
+    const { cause, code, stack, statusCode, apiErrorCode, meta, possibleFixes } = this;
 
     // Format cause properly if it exists
     if (cause !== undefined) {
