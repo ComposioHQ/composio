@@ -28,6 +28,28 @@ You can also provide your own OAuth app to show your app name on the consent scr
 
 See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for setup steps and trade-offs.
 
+## Slack managed apps
+
+Slack is the one toolkit with two Composio managed apps. You don't register anything with Slack for either one. Slack has approved Standard but not Legacy. The two apps get different Slack rate limits and receive different triggers.
+
+| App | Approved by Slack | Slack rate limits | Triggers |
+|---|---|---|---|
+| Standard | Yes | Higher | Every Slack trigger except the four below |
+| Legacy | No | Lower | Every Slack trigger |
+
+Slack gives approved apps higher limits on its API methods than unapproved ones. See [Slack's rate limits](https://docs.slack.dev/apis/web-api/rate-limits) for the numbers.
+
+Standard does not receive these message triggers:
+
+- `SLACK_CHANNEL_MESSAGE_RECEIVED`
+- `SLACK_DIRECT_MESSAGE_RECEIVED`
+- `SLACK_RECEIVE_BOT_MESSAGE`
+- `SLACK_RECEIVE_MESSAGE`
+
+Use Standard unless your product reacts to new Slack messages. Pick Legacy when you need one of these four triggers and your traffic fits under the lower limits.
+
+Use your own Slack app when you need message triggers and your app name on the Slack consent screen, or scopes that neither managed app requests. Follow the [Slack OAuth guide](https://composio.dev/auth/slack), then [create a custom auth config](/docs/authentication/custom-app-vs-managed-app#create-a-custom-auth-config).
+
 ## Find an OAuth toolkit
 
 Search for a toolkit to check whether Composio provides a managed OAuth app.
