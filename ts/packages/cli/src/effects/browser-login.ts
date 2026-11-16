@@ -3,10 +3,12 @@
  * `composio dev init` (project scope): create the session, show or open its URL, wait for it
  * to be linked, then store the user API key it carries.
  */
-import { Data, DateTime, Effect, Option, pipe } from 'effect';
+import { Data, DateTime, Effect, Option, Predicate, pipe } from 'effect';
+import { formatLoginStillPending } from 'src/commands/login/login.format';
 import {
   AUTHORIZATION_TIMEOUT_MINUTES,
-  authorizationPollSchedule,
+  AUTHORIZATION_TIMEOUT_SECONDS,
+  authorizationPollScheduleFor,
 } from 'src/effects/authorization-poll';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import open from 'open';
@@ -44,7 +46,14 @@ class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenE
 
 export type LinkedSession = Extract<RetrievedSession, { readonly status: 'linked' }>;
 
-const POLL_COMMAND = 'composio login --poll';
+/** The command that completes a browser login another process cached. */
+export const POLL_COMMAND = 'composio login --poll';
+
+/**
+ * The bound the login instructions teach an agent, in seconds: short enough to fit inside a turn
+ * of the caller's own deadline, long enough not to give up while a person finds the page.
+ */
+const AGENT_POLL_TIMEOUT_SECONDS = 120;
 
 // --- presentation -----------------------------------------------------------------------------
 
@@ -59,7 +68,7 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to ${AUTHORIZATION_TIMEOUT_MINUTES} minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+hint: For agents: Show the URL above to the user to click, then run \`${params.pollCommand} --timeout ${AGENT_POLL_TIMEOUT_SECONDS}\`. It waits at most that long and exits once credentials are saved; the pending login lives ${AUTHORIZATION_TIMEOUT_MINUTES} minutes. If it exits with the login still pending, it prints the URL again — wait for the user to click, then run the same command again. Do not ask the user whether to poll — they already requested login.
 
 hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
@@ -115,32 +124,53 @@ export const playgroundTestUserId = (
     Option.getOrUndefined
   );
 
-/** The session, or a `poll` failure naming its status while it is not linked yet. */
-const requireLinkedSession = (session: RetrievedSession) =>
+/** The URL a person opens to link the CLI session `sessionId`. */
+export const loginUrlFor = (webURL: string, sessionId: string) => `${webURL}?cliKey=${sessionId}`;
+
+/** Where a waiting login sends the person when it runs out, and how to pick it up again. */
+export type PendingLoginAnswer = {
+  /** The URL that finishes this login. */
+  readonly loginUrl: string;
+  /** The command that resumes the wait on the same login. */
+  readonly resumeCommand: string;
+};
+
+/** The session, or a `poll` failure carrying the status it is waiting on and where to finish it. */
+const requireLinkedSession = (session: RetrievedSession, pending: PendingLoginAnswer) =>
   session.status === 'linked'
     ? Effect.succeed(session)
     : Effect.fail(
         new LoginSessionError({
-          message: `Session status is still '${session.status}', waiting for 'linked'`,
+          message: formatLoginStillPending({ status: session.status, ...pending }),
           operation: 'poll',
           status: session.status,
         })
       );
 
 /**
- * Checks the session behind a spinner until it is linked, on `authorizationPollSchedule`: for
- * up to `AUTHORIZATION_TIMEOUT_MINUTES`, which is also how long a pending login lives.
+ * Checks the session behind a spinner until it is linked, on `authorizationPollScheduleFor`:
+ * `timeoutSeconds` at most, a pending login's own lifetime by default. A wait that runs out fails
+ * with the status it last saw and where to finish the login, and never stores anything.
  */
-export const waitForLinkedSession = <E, R>(getSession: Effect.Effect<RetrievedSession, E, R>) =>
+export const waitForLinkedSession = <E, R>(
+  getSession: Effect.Effect<RetrievedSession, E, R>,
+  pending: PendingLoginAnswer & { readonly timeoutSeconds?: number }
+) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
       Effect.retry(
-        Effect.flatMap(getSession, requireLinkedSession),
-        authorizationPollSchedule
+        Effect.flatMap(getSession, session => requireLinkedSession(session, pending)),
+        authorizationPollScheduleFor(pending.timeoutSeconds ?? AUTHORIZATION_TIMEOUT_SECONDS)
       ).pipe(
         Effect.tap(() => spinner.stop('Login successful')),
-        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
+        Effect.tapError(error =>
+          spinner.error(
+            Predicate.isTagged(error, 'commands/LoginSessionError')
+              ? 'Login still pending'
+              : 'Login failed'
+          )
+        )
       )
     );
   });
@@ -326,7 +356,7 @@ export const browserLogin = (params: {
     const session = yield* client.createSession({ scope: params.scope });
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
-    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
+    const url = loginUrlFor(ctx.data.webURL, session.id);
     yield* pendingLogin.write({
       key: session.id,
       loginUrl: url,
@@ -360,7 +390,10 @@ export const browserLogin = (params: {
       yield* openLoginUrl(url);
     }
 
-    const linkedSession = yield* waitForLinkedSession(client.getSession({ id: session.id }));
+    const linkedSession = yield* waitForLinkedSession(client.getSession({ id: session.id }), {
+      loginUrl: url,
+      resumeCommand: POLL_COMMAND,
+    });
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
 
     // e.g., "uak_b813ydmoEYdB_xBxGHeW"

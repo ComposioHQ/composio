@@ -1,13 +1,17 @@
 import { Array as Arr, Data, Effect, Match, Option, Predicate, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { APP_VERSION } from 'src/constants';
+import { AUTHORIZATION_TIMEOUT_SECONDS } from 'src/effects/authorization-poll';
 import {
   browserLogin,
   emitLoginComplete,
+  loginUrlFor,
   LoginSessionError,
   playgroundTestUserId,
+  POLL_COMMAND,
   storeCredentials,
   waitForLinkedSession,
+  type PendingLoginAnswer,
 } from 'src/effects/browser-login';
 import type { RetrievedSession } from 'src/models/session';
 import { completeAgentLogin } from 'src/effects/complete-agent-login';
@@ -37,6 +41,7 @@ import {
   ALREADY_LOGGED_IN_MESSAGE,
   ALREADY_LOGGED_IN_OUTRO,
   INVALID_ORGANIZATION_MESSAGE,
+  invalidTimeoutMessage,
   KEY_AND_USER_API_KEY_MESSAGE,
   ORG_WITHOUT_USER_API_KEY_MESSAGE,
   POLL_WITH_OTHER_FLAGS_MESSAGE,
@@ -44,6 +49,7 @@ import {
   SESSION_NOT_FOUND_MESSAGE,
   SESSION_NOT_LINKED_HINT,
   SESSION_NOT_LINKED_MESSAGE,
+  TIMEOUT_WITHOUT_POLL_MESSAGE,
   USER_API_KEY_WITH_SESSION_FLAGS_MESSAGE,
   formatPollLoginComplete,
   formatPollLoginJson,
@@ -55,6 +61,7 @@ import {
 export type LoginParams = {
   readonly noBrowser: boolean;
   readonly poll: boolean;
+  readonly timeout: Option.Option<string>;
   readonly noWait: boolean;
   readonly key: Option.Option<string>;
   readonly userApiKey: Option.Option<string>;
@@ -77,6 +84,25 @@ const LoginFlow = Data.taggedEnum<LoginFlow>();
 const invalidOptionValue = commandInputError('login');
 
 // --- shared steps -----------------------------------------------------------------------------
+
+/**
+ * Seconds `composio login --poll` may wait: a whole number from 1 to a pending login's lifetime,
+ * which is also the default. A longer wait would outlive the login it waits for.
+ */
+const parsePollTimeout = (timeout: Option.Option<string>) =>
+  Effect.gen(function* () {
+    if (Option.isNone(timeout)) {
+      return AUTHORIZATION_TIMEOUT_SECONDS;
+    }
+    const trimmed = timeout.value.trim();
+    const seconds = /^\d+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+    if (seconds >= 1 && seconds <= AUTHORIZATION_TIMEOUT_SECONDS) {
+      return seconds;
+    }
+    return yield* Effect.fail(
+      invalidOptionValue(invalidTimeoutMessage(AUTHORIZATION_TIMEOUT_SECONDS), '--timeout')
+    );
+  });
 
 /** Installs the composio-cli skill after a login, unless skipped or nobody can answer a prompt. */
 const offerSkillInstall = (skip: boolean) =>
@@ -115,6 +141,10 @@ const loginWithKey = (params: {
   readonly noWait: boolean;
   readonly announce: boolean;
   readonly defaultToFirstOrg?: boolean;
+  /** Where the person finishes this login, and how a wait that runs out resumes it. */
+  readonly pending: PendingLoginAnswer;
+  /** How long to wait for the session to link; a pending login's lifetime when omitted. */
+  readonly timeoutSeconds?: number;
 }) =>
   Effect.gen(function* () {
     const client = yield* ComposioSessionRepository;
@@ -128,7 +158,10 @@ const loginWithKey = (params: {
     );
     const linkedSession = yield* params.noWait
       ? Effect.flatMap(getSession, requireLinkedNow)
-      : waitForLinkedSession(getSession);
+      : waitForLinkedSession(getSession, {
+          ...params.pending,
+          timeoutSeconds: params.timeoutSeconds,
+        });
 
     const uakApiKey = linkedSession.api_key;
     const sessionInfo = yield* getSessionInfoByUserApiKey({ userApiKey: uakApiKey });
@@ -216,10 +249,15 @@ const reusableStoredAgent = (requestedExplicitLoginFlow: boolean) =>
 
 // --- flows ------------------------------------------------------------------------------------
 
-/** `login --poll`: completes the browser login a headless `login` cached. */
-export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
+/**
+ * `login --poll`: completes the browser login a headless `login` cached, waiting at most
+ * `--timeout` seconds. A wait that runs out leaves the cached login in place and fails with the
+ * status it saw, the URL, and the same command to run again.
+ */
+export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall' | 'timeout'>) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
+    const timeoutSeconds = yield* parsePollTimeout(params.timeout);
     const pendingLoginSession = yield* PendingLoginSession;
     const pendingLogin = yield* pendingLoginSession.read;
     const result = yield* loginWithKey({
@@ -227,6 +265,11 @@ export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
       noWait: false,
       announce: false,
       defaultToFirstOrg: true,
+      pending: {
+        loginUrl: pendingLogin.loginUrl,
+        resumeCommand: `${POLL_COMMAND} --timeout ${timeoutSeconds}`,
+      },
+      timeoutSeconds,
     });
     yield* pendingLoginSession.clear;
 
@@ -259,9 +302,19 @@ const handleAgentLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
 export const handleSessionKeyLogin = (
   params: Pick<LoginParams, 'noWait' | 'noSkillInstall'> & { readonly key: string }
 ) =>
-  loginWithKey({ key: params.key, noWait: params.noWait, announce: true }).pipe(
-    Effect.andThen(offerSkillInstall(params.noSkillInstall))
-  );
+  Effect.gen(function* () {
+    const ctx = yield* ComposioUserContext;
+    yield* loginWithKey({
+      key: params.key,
+      noWait: params.noWait,
+      announce: true,
+      pending: {
+        loginUrl: loginUrlFor(ctx.data.webURL, params.key),
+        resumeCommand: `composio login --key ${params.key}`,
+      },
+    });
+    yield* offerSkillInstall(params.noSkillInstall);
+  });
 
 /** `login --user-api-key [--org]`: stores a user API key without a browser. */
 export const handleDirectLogin = (
@@ -348,6 +401,7 @@ const selectLoginFlow = (params: LoginParams) => {
     org: Option.isSome(params.org),
     browserOrSession: params.noBrowser || params.noWait,
     poll: params.poll,
+    timeout: Option.isSome(params.timeout),
     agent: params.agent,
   };
   type Flags = typeof flags;
@@ -358,6 +412,10 @@ const selectLoginFlow = (params: LoginParams) => {
     Match.when(
       (f: Flags) => f.poll && (f.browserOrSession || f.key || f.userApiKey || f.agent),
       () => reject(POLL_WITH_OTHER_FLAGS_MESSAGE, '--poll')
+    ),
+    Match.when(
+      (f: Flags) => f.timeout && !f.poll,
+      () => reject(TIMEOUT_WITHOUT_POLL_MESSAGE, '--timeout')
     ),
     Match.when(
       (f: Flags) => f.agent && (f.browserOrSession || f.key || f.userApiKey),
