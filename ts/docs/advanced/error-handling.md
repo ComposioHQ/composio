@@ -48,9 +48,13 @@ try {
   });
 } catch (error) {
   if (error instanceof ComposioToolExecutionError) {
+    // The message names the tool and ends with the API's own message, when it sent one
     console.error('Tool execution error:', error.message);
-    console.error('Tool:', error.context.toolSlug);
-    console.error('Execution params:', error.context.body);
+    console.error('HTTP status:', error.statusCode); // e.g. 403, 410
+    console.error('API error code:', error.apiErrorCode);
+    console.error('Request id:', error.requestId);
+    console.error('Try:', error.possibleFixes);
+    console.error('Client error:', error.cause);
   }
 }
 ```
