@@ -21,3 +21,10 @@ export {
   type ExecResult,
   type InstallImage,
 } from './image-lifecycle';
+export {
+  startJourneyContainer,
+  type JourneyContainer,
+  type JourneyExecOptions,
+  type JourneyOptions,
+  type JourneyStep,
+} from './journey';

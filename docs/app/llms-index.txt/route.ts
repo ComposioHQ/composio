@@ -176,7 +176,7 @@ ${legacyReferencePages.map(formatPage).join('\n')}
 
     const index = `# Composio Documentation
 
-> Composio powers ${TOOLKIT_COUNT_LABEL} toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
+> Composio powers ${TOOLKIT_COUNT_LABEL} apps, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
 
 For a shorter routing map, start at [llms.txt](https://docs.composio.dev/llms.txt).
 

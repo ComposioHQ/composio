@@ -10,12 +10,15 @@ import { transformerTwoslash } from '@shikijs/twoslash';
 import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs';
 import { remarkMdxMermaid } from 'fumadocs-core/mdx-plugins';
 import { z } from 'zod';
+import { resolveToolkitCount } from './lib/toolkit-count';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
 // see https://fumadocs.dev/docs/mdx/collections
 
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
+  title: z.string().transform(resolveToolkitCount),
+  description: z.string().transform(resolveToolkitCount).optional(),
   keywords: z.array(z.string()).optional(),
   productAreas: z
     .array(
@@ -173,6 +176,16 @@ export const changelog = defineCollections({
 });
 
 export default defineConfig({
+  plugins: [
+    {
+      name: 'toolkit-count',
+      doc: {
+        vfile(file) {
+          file.value = resolveToolkitCount(String(file.value));
+        },
+      },
+    },
+  ],
   mdxOptions: {
     remarkPlugins: [remarkMdxMermaid],
     rehypeCodeOptions: {
