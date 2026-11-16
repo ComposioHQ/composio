@@ -15,6 +15,7 @@ from .custom_tool_types import (
     ToolRouterSessionProxyExecuteResponse,
 )
 from .experimental import (
+    CustomToolkits,
     ExperimentalAPI,
     ExperimentalCustomToolkits,
     ExperimentalUsage,
@@ -61,6 +62,7 @@ __all__ = [
     "ConnectionState",
     "ConnectionStatusEnum",
     "CustomTool",
+    "CustomToolkits",
     "ExperimentalAPI",
     "ExperimentalCustomToolkits",
     "ExperimentalToolkit",

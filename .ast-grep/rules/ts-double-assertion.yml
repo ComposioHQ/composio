@@ -1,0 +1,28 @@
+id: ts-double-assertion
+language: Tsx
+severity: error
+message: Parse or narrow the value instead of casting through unknown or any.
+files: ['ts/packages/**', 'ts/scripts/**', 'scripts/**', '.github/scripts/**']
+ignores:
+  - '**/node_modules/**'
+  - '**/dist/**'
+  - '**/generated/**'
+  - '**/.generated/**'
+  - '**/pack/**'
+  - '**/*.d.ts'
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - '**/__tests__/**'
+  - '**/test/**'
+  - '**/tests/**'
+rule:
+  kind: as_expression
+  has:
+    any:
+      - pattern: $VALUE as unknown
+      - pattern: $VALUE as any
+      - kind: parenthesized_expression
+        has:
+          any:
+            - pattern: $VALUE as unknown
+            - pattern: $VALUE as any

@@ -5,6 +5,7 @@
     "overview",
     "audit-logs",
     "token-custody",
+    "outbound-ips",
     "data-retention",
     "zero-data-retention"
   ]

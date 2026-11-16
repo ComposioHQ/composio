@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "openai-agents>=0.18.3,<1",
-    "composio",
+    "composio>=0.32.0",
 ]
 
 [project.urls]

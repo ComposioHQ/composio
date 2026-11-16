@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { cliRequestHeaders } from './client-provenance';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
@@ -865,7 +866,7 @@ export const installRunHelpers = async ({
   // This preload runs in the user's child process, outside the CLI runtime.
   // Resolve the live services once at that boundary and keep all writes centralized.
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
-  const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+  const path = Effect.runSync(Path.Path.pipe(Effect.provide(BunPath.layer)));
   const nodeOs = Effect.runSync(NodeOs.pipe(Effect.provide(NodeOs.Default)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
 

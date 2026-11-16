@@ -266,7 +266,9 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * @param toolUse - The tool use object from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
-   * @returns The result of the tool execution as a JSON string
+   * @returns A JSON string: data when error is null, otherwise { error }. This
+   * projection omits the execution status; use session.execute or direct
+   * execution when application logic needs resultType or successful.
    *
    * @example
    * ```typescript
@@ -337,7 +339,9 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * @param message - The message response from Anthropic
    * @param options - Additional options for tool execution
    * @param modifiers - Modifiers for tool execution
-   * @returns Array of tool execution results as JSON strings
+   * @returns Ready-to-append user messages containing ordered tool_result blocks,
+   * each correlated by tool_use_id. Content is the JSON projection returned by
+   * executeToolCall, not a full execution response or a success discriminator.
    *
    * @example
    * ```typescript

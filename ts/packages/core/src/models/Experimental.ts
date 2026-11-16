@@ -144,13 +144,8 @@ export class Experimental {
   usage: Usage;
 
   /**
-   * Register and manage project-owned custom toolkits (`create()` / `update()` / `sync()` / `delete()`).
-   * **Experimental — custom toolkits are in pilot; shape may change.**
-   *
-   * @example
-   * ```typescript
-   * await composio.experimental.customToolkits.sync('CUSTOM_MY_TOOLKIT');
-   * ```
+   * Same object as `composio.customToolkits`.
+   * @deprecated Use `composio.customToolkits` instead. Custom toolkits are no longer experimental; this alias is kept for backwards compatibility.
    */
   customToolkits: CustomToolkits;
 

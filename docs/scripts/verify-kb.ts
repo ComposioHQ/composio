@@ -68,11 +68,9 @@ function parseOptions(argumentsList: string[]): CliOptions {
 }
 
 /**
- * `buildKbCatalog` throws when any published guide's review window has expired,
- * because the docs build must not ship unreviewed content. This tool has to keep
- * working in exactly that state — an expired window is a finding to report, not a
- * reason to go blind — so catalog assembly runs with a floor date and expiry is
- * re-checked against the real clock inside `verifyKb`.
+ * `buildKbCatalog` rejects expired time-sensitive guides. The verifier must still
+ * report them, so catalog assembly runs with a floor date and `verifyKb` checks
+ * every published guide's review deadline against the real clock.
  */
 function loadCatalogIgnoringExpiry() {
   const manifest = JSON.parse(readFileSync(join(KB_ROOT, 'manifest.json'), 'utf8')) as KbManifest;

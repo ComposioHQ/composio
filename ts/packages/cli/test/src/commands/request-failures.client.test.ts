@@ -244,10 +244,6 @@ describe('CLI: a rejected request the command recovers from', () => {
 
   const LISTING = '/api/v3.1/connected_accounts?';
   const withoutExistingAccounts = () => stubClientResources(['connectedAccounts'], forbidden);
-  const redirect = [
-    'Open this URL in your browser to authorize',
-    '[Redirect URL] https://app.composio.dev/link?token=lt_test_token',
-  ];
   const pending = (fields: Record<string, string>) =>
     JSON.stringify(
       {
@@ -270,7 +266,7 @@ describe('CLI: a rejected request the command recovers from', () => {
 
         expect(lines).toEqual([
           'Linking gmail...',
-          ...redirect,
+          // Off a terminal `--no-wait` prints the URL only in its JSON.
           pending({ toolkit: 'gmail', project_type: 'CONSUMER' }),
         ]);
         expect(stub.requests.map(request => request.path)).toEqual([
@@ -297,11 +293,7 @@ describe('CLI: a rejected request the command recovers from', () => {
         ]).pipe(Effect.provide(stub.layer));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
-        expect(lines).toEqual([
-          'Creating link session...',
-          ...redirect,
-          pending({ project_type: 'DEVELOPER' }),
-        ]);
+        expect(lines).toEqual(['Creating link session...', pending({ project_type: 'DEVELOPER' })]);
         expect(stub.requests.map(request => request.path)).toEqual([
           `${LISTING}user_ids=user_1&auth_config_ids=ac_1&statuses=ACTIVE&limit=50`,
         ]);

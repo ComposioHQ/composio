@@ -15,6 +15,18 @@ from composio.utils.shared import (
 )
 
 
+class AnthropicToolExecutionResponse(ToolExecutionResponse):
+    """Execution dictionary correlated with the originating Anthropic tool use.
+
+    Not a ``tool_result`` block. Use ``tool_use_id`` for the block's ID,
+    ``json.dumps(result)`` for its content, and ``not result["successful"]``
+    for ``is_error``. Session execution also retains ``result_type``,
+    ``log_id``, and any returned ``instant_charge``.
+    """
+
+    tool_use_id: str
+
+
 class AnthropicProvider(
     NonAgenticProvider[ToolParam, list[ToolParam]],
     name="anthropic",
@@ -86,7 +98,7 @@ class AnthropicProvider(
         user_id: str,
         tool_call: ToolUseBlock,
         modifiers: t.Optional[Modifiers] = None,
-    ) -> ToolExecutionResponse: ...
+    ) -> AnthropicToolExecutionResponse: ...
 
     @t.overload
     def execute_tool_call(
@@ -94,7 +106,7 @@ class AnthropicProvider(
         *,
         session: ToolCallSession,
         tool_call: ToolUseBlock,
-    ) -> ToolExecutionResponse: ...
+    ) -> AnthropicToolExecutionResponse: ...
 
     def execute_tool_call(
         self,
@@ -103,15 +115,20 @@ class AnthropicProvider(
         modifiers: t.Optional[Modifiers] = None,
         *,
         session: t.Optional[ToolCallSession] = None,
-    ) -> ToolExecutionResponse:
+    ) -> AnthropicToolExecutionResponse:
         """
-        Execute a tool call.
+        Execute one tool use and retain its ID with the execution result.
 
         :param user_id: User ID for direct tool execution.
         :param session: Tool Router session that produced session tools.
         :param tool_call: Tool call metadata.
         :param modifiers: Modifiers to use for executing function calls.
-        :return: Object containing output data from the tool call.
+        :return: A dictionary with ``tool_use_id``, ``data``, ``error``, and
+            ``successful``. Session calls also retain ``result_type``,
+            ``log_id``, and any returned ``instant_charge``. Check
+            ``successful`` explicitly, even if ``error`` is empty.
+            Transport/auth/input exceptions propagate, rather than becoming
+            returned tool failures.
         """
         if tool_call is None:
             raise TypeError("tool_call is required")
@@ -124,12 +141,13 @@ class AnthropicProvider(
         aliases = self._aliases.get(tool_call.name)
         if aliases is not None:
             arguments = aliases.restore_arguments(arguments)
-        return self.execute_tool_for_target(
+        result = self.execute_tool_for_target(
             target=target,
             slug=tool_call.name,
             arguments=arguments,
             modifiers=modifiers,
         )
+        return {**result, "tool_use_id": tool_call.id}
 
     @t.overload
     def handle_tool_calls(
@@ -137,7 +155,7 @@ class AnthropicProvider(
         user_id: str,
         response: t.Union[dict, ToolsBetaMessage],
         modifiers: t.Optional[Modifiers] = None,
-    ) -> t.List[ToolExecutionResponse]: ...
+    ) -> t.List[AnthropicToolExecutionResponse]: ...
 
     @t.overload
     def handle_tool_calls(
@@ -145,7 +163,7 @@ class AnthropicProvider(
         *,
         session: ToolCallSession,
         response: t.Union[dict, ToolsBetaMessage],
-    ) -> t.List[ToolExecutionResponse]: ...
+    ) -> t.List[AnthropicToolExecutionResponse]: ...
 
     def handle_tool_calls(
         self,
@@ -154,16 +172,21 @@ class AnthropicProvider(
         modifiers: t.Optional[Modifiers] = None,
         *,
         session: t.Optional[ToolCallSession] = None,
-    ) -> t.List[ToolExecutionResponse]:
+    ) -> t.List[AnthropicToolExecutionResponse]:
         """
         Handle tool calls from Anthropic Claude chat completion object.
 
-        :param response: Chat completion object from
-            `anthropic.Anthropic.beta.tools.messages.create` function call.
+        :param response: Message returned by ``anthropic.Anthropic.messages.create``.
         :param user_id: User ID for direct tool execution.
         :param session: Tool Router session that produced session tools.
         :param modifiers: Modifiers to use for executing function calls.
-        :return: A list of output objects from the tool calls.
+        :return: Execution dictionaries in tool-use order, each retaining the
+            matching ``tool_use_id``. These are not Anthropic content blocks.
+            Build each block with ``type="tool_result"``, the result's
+            ``tool_use_id``, ``content=json.dumps(result)``, and
+            ``is_error=not result["successful"]``. Unlike the TypeScript
+            helper, this method does not return ready-to-append messages.
+            Exceptions stop the batch; earlier calls may already have run.
         """
         if response is None:
             raise TypeError("response is required")
@@ -175,7 +198,7 @@ class AnthropicProvider(
         if isinstance(response, dict):
             response = ToolsBetaMessage(**response)
 
-        outputs = []
+        outputs: t.List[AnthropicToolExecutionResponse] = []
         for content in response.content:
             if isinstance(content, (ToolUseBlock, BetaToolUseBlock)):
                 result = (

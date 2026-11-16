@@ -483,7 +483,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const UpgradeBinaryTest = Layer.provide(
       UpgradeBinary.Default,
-      Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+      Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer, NodeOsTest)
     );
 
     const StdinTest = Layer.succeed(

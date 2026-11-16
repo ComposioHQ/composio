@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ComposioClient from '@composio/client';
+import { Composio } from '../../src/composio';
 import { CustomToolkits } from '../../src/models/CustomToolkits';
 import { Experimental } from '../../src/models/Experimental';
 import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+import { MockProvider } from '../utils/mocks/provider.mock';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
@@ -19,6 +21,21 @@ const createMockClient = () => ({
     sync: vi.fn(),
     deleteToolkit: vi.fn(),
   },
+});
+
+describe('composio.customToolkits', () => {
+  it('is the same object as the deprecated composio.experimental.customToolkits', () => {
+    const composio = new Composio({
+      apiKey: 'ak_test',
+      baseURL: 'https://api.test.com',
+      provider: new MockProvider(),
+      allowTracking: false,
+      disableVersionCheck: true,
+    });
+
+    expect(composio.customToolkits).toBeInstanceOf(CustomToolkits);
+    expect(composio.experimental.customToolkits).toBe(composio.customToolkits);
+  });
 });
 
 describe('Experimental.customToolkits', () => {

@@ -36,6 +36,29 @@ const session = await composio.use(sessionId);
 
 See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
 
+## Execution results
+
+`session.execute(toolSlug, arguments)` returns a plain `ToolRouterSessionExecuteResponse` object:
+
+```typescript
+const result = await session.execute('COMPOSIO_SEARCH_TOOLS', {
+  queries: [{ use_case: 'find recent emails' }],
+});
+if (result.resultType === 'completed') {
+  console.log(result.data);
+} else { // 'failed' or 'blocked', even if error is empty
+  console.error(result.resultType, result.error);
+}
+```
+
+Read `resultType`, not `successful`, on a session result. It also includes `data`, `error`, and `logId`; serialize with `JSON.stringify(result)`. A direct session call has no model tool-call ID, so keep that ID separately when constructing provider messages.
+
+`composio.tools.execute(toolSlug, { arguments, userId })` and `afterExecute` modifiers instead use `ToolExecuteResponse` objects with a `successful` boolean. Check `result.successful` there. Session provider adapters derive it from `resultType === 'completed'`. An `afterExecute` modifier receives `{ toolSlug, toolkitSlug, result }` and returns the result. Calling `session.execute` directly doesn't run callbacks supplied to `session.tools()`.
+
+Transport/authentication errors and requests for user input can throw instead of returning a tool result. Handle authentication recovery separately from returned failures. A non-throwing call, empty error, or log ID isn't proof of a provider-side action. Check the explicit outcome and tool-specific `data`; retry and idempotency policy stays in your application.
+
+Provider helpers serialize differently. The Anthropic `executeToolCall` returns a JSON string; `handleToolCalls` returns correlated `user` messages containing `tool_result` blocks. These payload projections aren't the session/modifier outcome contract. See the provider package's execution contract before using a helper result to make application decisions.
+
 ## Providers
 
 A provider formats session tools for your agent framework and wires up execution:

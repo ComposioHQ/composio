@@ -59,7 +59,7 @@ export function HomeFeatures() {
         />
         <FeatureCard
           title="Run arbitrary code, safely."
-          description={`A sandbox pre-wired with your user's connected accounts and ${TOOLKIT_COUNT_LABEL} tools.`}
+          description={`A sandbox pre-wired with your user's connected accounts and ${TOOLKIT_COUNT_LABEL} apps.`}
           href="/docs/sandbox"
           visual={<SandboxVisual />}
         />

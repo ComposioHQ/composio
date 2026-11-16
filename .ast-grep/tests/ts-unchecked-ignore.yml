@@ -1,0 +1,9 @@
+id: ts-unchecked-ignore
+valid:
+  - '// @ts-expect-error: upstream overload excludes this validated input'
+  - 'const help = "// @ts-ignore";'
+  - '// Discuss @ts-ignore with the API owner.'
+invalid:
+  - '// @ts-ignore'
+  - '// @ts-ignore: force it through'
+  - '/* @ts-nocheck */'

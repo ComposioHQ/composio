@@ -28,6 +28,15 @@ fi
 # its assets. Refuse to mutate a tag that is already published.
 if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
   echo "Draft $RELEASE_TAG already exists — re-uploading assets with --clobber"
+  # An earlier attempt may have attached an asset this run does not ship, such as a Windows
+  # archive that has since failed its checks. The new checksums.txt does not cover it, so
+  # remove it instead of publishing it.
+  while IFS= read -r asset; do
+    if [[ ! -e "$binaries_dir/$asset" ]]; then
+      echo "Removing stale asset $asset from draft $RELEASE_TAG"
+      gh release delete-asset "$RELEASE_TAG" "$asset" --yes
+    fi
+  done < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
   gh release upload "$RELEASE_TAG" \
     "$binaries_dir"/*.zip \
     "$binaries_dir/checksums.txt" --clobber

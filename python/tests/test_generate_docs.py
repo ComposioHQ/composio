@@ -217,7 +217,7 @@ def test_format_type_keeps_nested_generics_intact(annotation, expected):
     assert generate_docs.format_type(annotation, max_length=None) == expected
 
 
-def test_generated_mdx_renders_optional_literal_in_signature_and_table():
+def test_generated_mdx_renders_keyword_only_parameters_with_descriptions():
     generate_docs = load_generate_docs_module()
 
     rendered_type = generate_docs.format_type(
@@ -238,10 +238,18 @@ def test_generated_mdx_renders_optional_literal_in_signature_and_table():
                 "parameters": [
                     {
                         "name": "type",
+                        "kind": "keyword-only",
                         "type": rendered_type,
                         "optional": True,
                         "description": "",
-                    }
+                    },
+                    {
+                        "name": "polling_interval",
+                        "kind": "keyword-only",
+                        "type": "int | None",
+                        "optional": True,
+                        "description": 'Minutes between polls. Overrides `trigger_config["interval"]`.',
+                    },
                 ],
                 "return_type": "Any",
                 "return_description": "",
@@ -253,5 +261,12 @@ def test_generated_mdx_renders_optional_literal_in_signature_and_table():
 
     mdx = generate_docs.generate_class_mdx(info)
 
-    assert "def create(type: Literal['webhook', 'poll'] | None = ...)" in mdx
+    assert (
+        "def create(*, type: Literal['webhook', 'poll'] | None = ..., "
+        "polling_interval: int | None = ...)" in mdx
+    )
     assert "| `type?` | `Literal['webhook', 'poll'] \\| None` |" in mdx
+    assert (
+        "| `polling_interval?` | `int \\| None` | Minutes between polls. "
+        'Overrides `trigger_config["interval"]`. |' in mdx
+    )
