@@ -108,16 +108,34 @@ export const reportJourney = (input: {
 };
 
 /**
- * 1 when an unmutated path failed: the harness or the CLI is broken, and no
- * verdict means anything. With `strict`, also 1 when a step is not `needed`.
+ * Why a run exits non-zero, in the order a reader would fix them. An
+ * unmutated path that fails means the harness or the CLI is broken, and no
+ * verdict means anything. With `strict`, a `check-too-weak` step also fails:
+ * the run ended somewhere else and no check noticed.
+ *
+ * `unused` never fails. A read, a `--help`, or a command that fails on purpose
+ * changes nothing for a check to notice, and the checks grade the outcome, so
+ * a journey made only of `needed` steps is not a state worth aiming at.
  */
-export const exitCodeOf = (reports: ReadonlyArray<JourneyReport>, strict: boolean): number => {
-  if (reports.some(report => !report.unmutated.ok)) return 1;
-  if (strict && reports.some(report => report.steps.some(step => step.verdict !== 'needed'))) {
-    return 1;
-  }
-  return 0;
-};
+export const failuresOf = (
+  reports: ReadonlyArray<JourneyReport>,
+  strict: boolean
+): ReadonlyArray<string> => [
+  ...reports
+    .filter(report => !report.unmutated.ok)
+    .map(report => `${report.journey}: the unmutated path failed a check`),
+  ...(strict
+    ? reports.flatMap(report =>
+        report.steps
+          .filter(step => step.verdict === 'check-too-weak')
+          .map(step => `${report.journey}: step ${step.step} (${step.command}) is check-too-weak`)
+      )
+    : []),
+];
+
+/** 1 when `failuresOf` is not empty, else 0. */
+export const exitCodeOf = (reports: ReadonlyArray<JourneyReport>, strict: boolean): number =>
+  failuresOf(reports, strict).length > 0 ? 1 : 0;
 
 const COMMAND_WIDTH = 60;
 

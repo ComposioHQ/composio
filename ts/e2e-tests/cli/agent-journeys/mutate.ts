@@ -14,8 +14,10 @@
  * anything about a real model.
  *
  * Exits 1 when an unmutated path fails a check, and with `--strict` also when
- * a step is `unused` or `check-too-weak`. Results go to `results/<batch>/`
- * (git-ignored). Needs Docker; spends nothing.
+ * a step is `check-too-weak`: a way to end somewhere else that no check
+ * noticed. `unused` is reported and never fails, because a read or a command
+ * that fails on purpose changes nothing for an outcome check to notice.
+ * Results go to `results/<batch>/` (git-ignored). Needs Docker; spends nothing.
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -25,6 +27,7 @@ import { HAND_AUTHORED, listFixtures } from './src/fixtures';
 import { journeyById, JOURNEYS, type Journey } from './src/journeys';
 import {
   exitCodeOf,
+  failuresOf,
   grade,
   renderReports,
   reportJourney,
@@ -99,4 +102,6 @@ writeFileSync(join(directory, 'summary.txt'), table);
 
 process.stdout.write(values.json ? `${JSON.stringify(reports, null, 2)}\n` : table);
 console.error(`written   ${relative(process.cwd(), directory)}`);
+const failures = failuresOf(reports, values.strict ?? false);
+for (const failure of failures) console.error(`failed    ${failure}`);
 process.exit(exitCodeOf(reports, values.strict ?? false));

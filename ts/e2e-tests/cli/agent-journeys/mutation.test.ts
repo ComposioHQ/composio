@@ -17,6 +17,7 @@ import { fixturePath, HAND_AUTHORED } from './src/fixtures';
 import type { Check, Evidence, Journey } from './src/journeys';
 import {
   exitCodeOf,
+  failuresOf,
   grade,
   outcomeOf,
   renderReports,
@@ -327,9 +328,25 @@ describe('reports', () => {
     ]);
   });
 
-  it('exits 0 by default, and 1 with --strict when a step is not needed', () => {
+  // `report` has one step of each verdict: needed, unused, check-too-weak.
+  it('exits 0 by default, whatever the verdicts are', () => {
     expect(exitCodeOf([report], false)).toBe(0);
+    expect(failuresOf([report], false)).toEqual([]);
+  });
+
+  it('exits 1 with --strict on a check-too-weak step, and says which', () => {
     expect(exitCodeOf([report], true)).toBe(1);
+    expect(failuresOf([report], true)).toEqual([
+      'made-up: step 3 (composio link slack) is check-too-weak',
+    ]);
+  });
+
+  // A read, a `--help`, or a command that fails on purpose changes nothing for
+  // an outcome check to notice, so `unused` is not a grader defect.
+  it('exits 0 with --strict when the only steps that are not needed are unused', () => {
+    const withoutWeak = { ...report, steps: report.steps.slice(0, 2) };
+    expect(exitCodeOf([withoutWeak], true)).toBe(0);
+    expect(failuresOf([withoutWeak], true)).toEqual([]);
   });
 
   it('exits 0 with --strict when every step is needed', () => {
@@ -363,6 +380,11 @@ describe('reports', () => {
     it('exits 1 with or without --strict', () => {
       expect(exitCodeOf([report, broken], false)).toBe(1);
       expect(exitCodeOf([broken], true)).toBe(1);
+    });
+
+    it('names the journey whose path broke, in both modes', () => {
+      expect(failuresOf([broken], false)).toEqual(['made-up: the unmutated path failed a check']);
+      expect(failuresOf([broken], true)).toEqual(['made-up: the unmutated path failed a check']);
     });
 
     it('says so in the table', () => {

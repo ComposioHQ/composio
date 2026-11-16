@@ -34,7 +34,7 @@ A replay on its own proves nothing: aimock answers the same whether a command su
 - `unused`: every check passed, and the run left the same outcome as the whole path: the same tools ran with the same arguments, as the same user on the same project; the same connections and logins were made; the next `composio whoami` found the same login. A read the checks do not depend on lands here.
 - `check-too-weak`: every check passed, but the outcome differs. The run ended somewhere else and no check noticed.
 
-When the whole path fails a check, the tool says so, drops nothing, and exits 1; `--strict` also exits 1 on any `unused` or `check-too-weak` step, so with the `unused` steps listed below it fails on four of the five journeys today. Results go to `results/<batch>/`.
+When the whole path fails a check, the tool says so, drops nothing, and exits 1. `--strict` also exits 1 when a step is `check-too-weak` and names it, which is the gate worth having: it fails only when a way to end somewhere else went unnoticed. It passes on every journey today. An `unused` step never fails, because a read or a command that fails on purpose changes nothing for an outcome check to notice — see the steps listed below. Results go to `results/<batch>/`.
 
 What it proves: whether the checks notice that one step of the taught path is missing. What it does not prove: that they catch a wrong path the hand-authored file never takes (another command in place of a dropped one, two steps missing, the right step on the wrong project), or anything about a real model. The outcome compares only what is listed above; a difference elsewhere in the fake's state is not seen.
 
