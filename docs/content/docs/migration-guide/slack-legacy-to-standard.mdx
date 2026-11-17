@@ -99,7 +99,9 @@ curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
 </Tab>
 </Tabs>
 
-Copy the returned auth config ID, for example `ac_your_standard_slack_config`. If you set custom scopes on your Legacy config, pass the same scopes in `auth_config.credentials`.
+Copy the returned auth config ID, for example `ac_your_standard_slack_config`.
+
+If you set custom scopes on your Legacy config, pass them again in `auth_config.credentials`: bot scopes in `scopes` and user-token scopes in `user_scopes`. First check that Standard offers each one: its entry in `composio_managed_auth` lists the scopes it can request in `scopes.available`. If Standard doesn't offer a scope you need, stay on Legacy or [move to your own Slack app](/docs/migration-guide/managed-to-own-app).
 </Step>
 
 <Step>
@@ -252,7 +254,7 @@ Use the same user ID the Legacy connection has. A different user ID creates a co
 <Step>
 <StepTitle>Recreate triggers on the new connection</StepTitle>
 
-Triggers stay attached to the Legacy connected account. List them and create each one on the new connected account with the same trigger config. Skip the four message triggers, because Standard doesn't receive them. Keep a map from each old trigger ID to its new one:
+Triggers stay attached to the Legacy connected account. List them and create each one on the new connected account with the same trigger config, delivery type, and polling interval. Skip the four message triggers, because Standard doesn't receive them. The list is cursor-paginated, so the code reads every page. Keep a map from each old trigger ID to its new one, and leave the old triggers enabled for now:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -268,24 +270,28 @@ NOT_ON_STANDARD = {
     "SLACK_RECEIVE_MESSAGE",
 }
 
-old_triggers = composio.triggers.list_active(
-    connected_account_ids=["ca_old_legacy_account"],
-)
-
 new_trigger_ids = {}
-for trigger in old_triggers.items:
-    if trigger.trigger_name in NOT_ON_STANDARD:
-        continue
-    new_trigger = composio.triggers.create(
-        slug=trigger.trigger_name,
-        connected_account_id="ca_new_standard_account",
-        trigger_config=trigger.trigger_config,
+cursor = None
+while True:
+    page = composio.triggers.list_active(
+        connected_account_ids=["ca_old_legacy_account"],
+        cursor=cursor,
     )
-    new_trigger_ids[trigger.id] = new_trigger.trigger_id
-
-# After your event filters use the new IDs, disable the old instances
-for old_trigger_id in new_trigger_ids:
-    composio.triggers.disable(trigger_id=old_trigger_id)
+    for trigger in page.items:
+        if trigger.trigger_name in NOT_ON_STANDARD:
+            continue
+        new_trigger = composio.triggers.create(
+            slug=trigger.trigger_name,
+            connected_account_id="ca_new_standard_account",
+            trigger_config=trigger.trigger_config,
+            # A fallback to polling is left for Composio to decide again
+            type=None if trigger.fallback_reason else trigger.type,
+            polling_interval=trigger.polling_interval,
+        )
+        new_trigger_ids[trigger.id] = new_trigger.trigger_id
+    cursor = page.next_cursor
+    if not cursor:
+        break
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -301,41 +307,79 @@ const NOT_ON_STANDARD = new Set([
   'SLACK_RECEIVE_MESSAGE',
 ]);
 
-const oldTriggers = await composio.triggers.listActive({
-  connectedAccountIds: ['ca_old_legacy_account'],
-});
-
 const newTriggerIds = new Map<string, string>();
-for (const trigger of oldTriggers.items) {
-  if (NOT_ON_STANDARD.has(trigger.triggerName)) continue;
-  const newTrigger = await composio.triggers.create('user_123', trigger.triggerName, {
-    connectedAccountId: 'ca_new_standard_account',
-    triggerConfig: trigger.triggerConfig,
+let cursor: string | undefined;
+do {
+  const page = await composio.triggers.listActive({
+    connectedAccountIds: ['ca_old_legacy_account'],
+    cursor,
   });
-  newTriggerIds.set(trigger.id, newTrigger.triggerId);
-}
+  for (const trigger of page.items) {
+    if (NOT_ON_STANDARD.has(trigger.triggerName)) continue;
+    const newTrigger = await composio.triggers.create('user_123', trigger.triggerName, {
+      connectedAccountId: 'ca_new_standard_account',
+      triggerConfig: trigger.triggerConfig,
+      // A fallback to polling is left for Composio to decide again
+      type: trigger.fallbackReason ? undefined : trigger.type,
+      pollingInterval: trigger.pollingInterval ?? undefined,
+    });
+    newTriggerIds.set(trigger.id, newTrigger.triggerId);
+  }
+  cursor = page.nextCursor ?? undefined;
+} while (cursor);
+```
+</Tab>
+<Tab value="API">
+```bash
+# List triggers on the Legacy connection. Repeat with &cursor=<next_cursor> until next_cursor is null.
+curl -s "https://backend.composio.dev/api/v3.1/trigger_instances/active?connected_account_ids=ca_old_legacy_account" \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq '{next_cursor, items: [.items[] | {id, trigger_name, trigger_config, type, fallback_reason, polling_interval, egress_url}]}'
 
-// After your event filters use the new IDs, disable the old instances
-for (const oldTriggerId of newTriggerIds.keys()) {
+# For each one that Standard receives, create the same trigger type on the new connection.
+# Use its trigger_name in the URL. Copy its trigger_config, polling_interval, and egress_url,
+# and its type unless fallback_reason is set. Save the returned trigger_id.
+curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_MESSAGE_REACTION_ADDED/upsert \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "connected_account_id": "ca_new_standard_account", "trigger_config": {}, "type": "poll", "polling_interval": 15, "egress_url": "https://your-app.com/webhooks/slack"}' \
+  | jq '{trigger_id, type, polling_interval}'
+```
+</Tab>
+</Tabs>
+
+The SDK `create` calls don't copy a per-trigger webhook URL (`egress_url`). If an old trigger has one, set it on the new trigger with [Update trigger instance](/reference/api-reference/triggers/patchTriggerInstancesManageByTriggerId) now, before any old trigger is disabled. The API tab passes it in the create call.
+
+Events from the new triggers carry the new trigger ID and connected account ID. Update anything that matches on the old values: [event subscriptions filtered by trigger ID](/docs/setting-up-triggers/subscribing-to-events), webhook handlers, and any stored links between a user and their trigger or connected account.
+
+Expect duplicate events while both triggers are enabled. Once events arrive from each new trigger, disable the old one. Disable it rather than delete it, so you can switch back if something goes wrong:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Old trigger IDs from the map you saved above
+for old_trigger_id in ["ti_old_trigger"]:
+    composio.triggers.disable(trigger_id=old_trigger_id)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Old trigger IDs from the map you saved above
+for (const oldTriggerId of ['ti_old_trigger']) {
   await composio.triggers.disable(oldTriggerId);
 }
 ```
 </Tab>
 <Tab value="API">
 ```bash
-# List triggers on the Legacy connection
-curl -s "https://backend.composio.dev/api/v3.1/trigger_instances/active?connected_account_ids=ca_old_legacy_account" \
-  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.items[] | {id, trigger_name, trigger_config}'
-
-# For each one that Standard receives, create the same trigger type on the new connection.
-# Use its trigger_name in the URL and copy its trigger_config. Save the returned trigger_id.
-curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_MESSAGE_REACTION_ADDED/upsert \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "user_123", "connected_account_id": "ca_new_standard_account", "trigger_config": {}}' \
-  | jq '{trigger_id}'
-
-# After your event filters use the new trigger_id, disable the old instance
 curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_old_trigger \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -344,13 +388,6 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_
 </Tab>
 </Tabs>
 
-Results are cursor-paginated. If the list returns a next cursor, fetch the next page as shown in [Listing active triggers](/docs/setting-up-triggers/managing-triggers#listing-active-triggers).
-
-Events from the new triggers carry the new trigger ID and connected account ID. Before you disable the old instances, update anything that matches on the old values: [event subscriptions filtered by trigger ID](/docs/setting-up-triggers/subscribing-to-events), webhook handlers, and any stored links between a user and their trigger or connected account.
-
-Keep the old trigger enabled until events arrive from the new one, and expect duplicate events while both are enabled. Then disable the old trigger rather than delete it, so you can switch back if something goes wrong.
-
-If you set a per-trigger webhook URL (`egress_url`) on an old trigger, set it again on the new one with [Update trigger instance](/reference/api-reference/triggers/patchTriggerInstancesManageByTriggerId). The create calls above don't copy it.
 </Step>
 
 <Step>
@@ -360,8 +397,9 @@ After a user's new connection works, [disable](/docs/auth-configuration/connecte
 
 Once you're confident, clean up in this order:
 
-1. [Delete the old triggers](/docs/setting-up-triggers/managing-triggers#deleting-triggers).
-2. [Delete the Legacy connected account](/docs/auth-configuration/connected-accounts#delete-accounts). This removes it from Composio and is permanent.
+1. Optionally, [revoke the Legacy token](/docs/auth-configuration/connected-accounts#revoke-accounts) so Slack invalidates it. Revoking needs the connected account to still exist, so do it before you delete. Once you delete the account, you can't revoke its token through Composio.
+2. [Delete the old triggers](/docs/setting-up-triggers/managing-triggers#deleting-triggers).
+3. [Delete the Legacy connected account](/docs/auth-configuration/connected-accounts#delete-accounts). This removes it from Composio and is permanent.
 
 When no active connections remain on the Legacy config, every user is on Standard. You can then pass the Standard config in every session and drop the routing logic.
 </Step>
