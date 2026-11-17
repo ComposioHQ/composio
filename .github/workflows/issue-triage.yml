@@ -465,21 +465,29 @@ jobs:
             }
 
             // Account, billing, usage and hosted-product issues need the reporter's org, so they go through the dashboard.
-            // A reopened issue is the reporter disagreeing with the redirect: forward it instead of closing again.
-            const redirectToDashboard = category === "support" && context.payload.action !== "reopened";
-            if (redirectToDashboard && issue.state === "open") {
+            const redirectMarker = "<!-- composio-support-redirected -->";
+            const forwardMarker = "<!-- composio-support-forwarded -->";
+            const botComments = isSupport
+              ? (await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number }))
+                  .filter(comment => comment.user?.login === "github-actions[bot]")
+              : [];
+            // Redirect once: if the reporter reopens, the next maintainer triage forwards it instead of closing it again.
+            const alreadyRedirected = botComments.some(comment => comment.body?.includes(redirectMarker));
+            const redirectToDashboard = category === "support" && !alreadyRedirected && issue.state === "open";
+            if (redirectToDashboard) {
               await github.rest.issues.createComment({
                 owner,
                 repo,
                 issue_number,
                 body: [
+                  redirectMarker,
                   "🤖 beep boop — this looks like a support request rather than a bug in this repository's SDKs, CLI, or docs.",
                   "",
                   `Please open a ticket from the Support page in your Composio dashboard: ${SUPPORT_URL}. Tickets filed there are tied to your account, so the team can look at your connections and logs and reply to you directly.`,
                   "",
                   "I've tagged this as `support` and closed it here.",
                   "",
-                  "If you think I got this wrong, feel free to reopen the issue.",
+                  "If you think I got this wrong, reopen the issue and a maintainer will take a look.",
                 ].join("\n"),
               });
 
@@ -491,7 +499,8 @@ jobs:
               });
             }
 
-            if (isSupport && !redirectToDashboard) {
+            // An edit to an issue that was redirected and is still closed must not create a Plain thread.
+            if (isSupport && !redirectToDashboard && !(alreadyRedirected && issue.state === "closed")) {
               if (!process.env.PLAIN_API_KEY) throw new Error("PLAIN_API_KEY is not configured; support forwarding cannot complete.");
               for (let attempt = 1; ; attempt++) {
                 try {
@@ -504,14 +513,12 @@ jobs:
                   await new Promise(resolve => setTimeout(resolve, attempt * 1000));
                 }
               }
-              const marker = "<!-- composio-support-forwarded -->";
-              const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
-              if (!comments.some(comment => comment.user?.login === "github-actions[bot]" && comment.body?.includes(marker))) {
+              if (!botComments.some(comment => comment.body?.includes(forwardMarker))) {
                 await github.rest.issues.createComment({
                   owner,
                   repo,
                   issue_number,
-                  body: `${marker}\nThis issue requires coordination with another team or repository. It is labeled \`support\` and has been forwarded to Plain for triage.`,
+                  body: `${forwardMarker}\nThis issue requires coordination with another team or repository. It is labeled \`support\` and has been forwarded to Plain for triage.`,
                 });
               }
             }

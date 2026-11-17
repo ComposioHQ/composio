@@ -570,8 +570,54 @@ const support = {
   ...modelText,
 };
 
+// Cross-team work that stays in this repository is forwarded to Plain.
+const forwarded = { ...support, category: 'other' };
+
+const redirectNote = {
+  user: { login: 'github-actions[bot]' },
+  body: '<!-- composio-support-redirected -->',
+};
+
+test('a support request is labeled, pointed at the dashboard Support page, and closed without Plain', async () => {
+  const { plainRequests, named } = await runApply({ result: support, plainApiKey: '' });
+  expect(named('addLabels')).toEqual([{ ...target, labels: ['bug', 'support'] }]);
+  const comments = named('createComment');
+  expect(comments).toHaveLength(1);
+  expect(comments[0].body).toContain('https://dashboard.composio.dev/~/org/support');
+  expect(comments[0].body).not.toContain('Model-written');
+  expect(named('update')).toEqual([{ ...target, state: 'closed' }]);
+  expect(plainRequests).toEqual([]);
+});
+
+test('a redirected issue the reporter reopened is forwarded to Plain instead of closed again', async () => {
+  const { plainRequests, named } = await runApply({ result: support, comments: [redirectNote] });
+  expect(plainRequests).toHaveLength(3);
+  expect(named('update')).toEqual([]);
+  expect(named('createComment')[0].body).toContain('forwarded to Plain');
+});
+
+test('an edit to a redirected issue that is still closed does not reach Plain', async () => {
+  const { plainRequests, named } = await runApply({
+    result: forwarded,
+    state: 'closed',
+    labels: ['support'],
+    comments: [redirectNote],
+  });
+  expect(plainRequests).toEqual([]);
+  expect(named('createComment')).toEqual([]);
+  expect(named('update')).toEqual([]);
+});
+
+test('a reporter cannot skip the redirect by posting its marker', async () => {
+  const { named } = await runApply({
+    result: support,
+    comments: [{ ...redirectNote, user: { login: 'reporter' } }],
+  });
+  expect(named('update')).toEqual([{ ...target, state: 'closed' }]);
+});
+
 test('a support bug retains its type and routing, is forwarded to Plain, and gets the fixed note', async () => {
-  const { plainRequests, named } = await runApply({ result: support });
+  const { plainRequests, named } = await runApply({ result: forwarded });
   expect(named('removeLabel')).toEqual([]);
   expect(named('removeAssignees')).toEqual([]);
   expect(named('addLabels')).toEqual([{ ...target, labels: ['bug', 'support'] }]);
@@ -596,7 +642,7 @@ test('a support bug retains its type and routing, is forwarded to Plain, and get
 });
 
 test('a missing Plain key fails visibly instead of claiming forwarding succeeded', async () => {
-  await expect(runApply({ result: support, plainApiKey: '' })).rejects.toThrow('PLAIN_API_KEY');
+  await expect(runApply({ result: forwarded, plainApiKey: '' })).rejects.toThrow('PLAIN_API_KEY');
 });
 
 for (const [label, structuredOutput] of [
@@ -732,7 +778,7 @@ test('an existing support label is retained even if classification suggests repo
 test('an ambiguous create timeout is recovered through lookup, without a second thread', async () => {
   const queries: string[] = [];
   const { plainRequests, named } = await runApply({
-    result: support,
+    result: forwarded,
     plainResponse: (query, data) => {
       queries.push(query);
       if (query.includes('mutation createThread')) throw new Error('Response lost after commit');
@@ -747,9 +793,9 @@ test('an ambiguous create timeout is recovered through lookup, without a second 
 
 test('reruns reuse the Plain thread and do not duplicate a bot forwarding note', async () => {
   const plainState = { thread: null as { id: string; ref: string } | null };
-  const first = await runApply({ result: support, plainState });
+  const first = await runApply({ result: forwarded, plainState });
   const second = await runApply({
-    result: support,
+    result: forwarded,
     plainState,
     comments: [
       {
@@ -764,7 +810,7 @@ test('reruns reuse the Plain thread and do not duplicate a bot forwarding note',
 
 test('a reporter cannot suppress the bot note by posting its marker', async () => {
   const { named } = await runApply({
-    result: support,
+    result: forwarded,
     comments: [{ user: { login: 'reporter' }, body: '<!-- composio-support-forwarded -->' }],
   });
   expect(named('createComment')).toHaveLength(1);
@@ -774,7 +820,7 @@ test('Plain GraphQL failures are retried three times, then fail visibly', async 
   let requests = 0;
   await expect(
     runApply({
-      result: support,
+      result: forwarded,
       plainResponse: () => {
         requests++;
         return { errors: [{ message: 'Unavailable' }] };
@@ -789,7 +835,7 @@ for (const code of ['FORBIDDEN', 'RATE_LIMITED', 'GRAPHQL_VALIDATION_FAILED']) {
     let failure;
     try {
       await runApply({
-        result: support,
+        result: forwarded,
         plainResponse: () => ({
           errors: [
             {
@@ -815,7 +861,7 @@ for (const code of ['FORBIDDEN', 'RATE_LIMITED', 'GRAPHQL_VALIDATION_FAILED']) {
 test('Plain diagnostics omit unknown error codes and raw response values', async () => {
   await expect(
     runApply({
-      result: support,
+      result: forwarded,
       plainResponse: () => ({
         errors: [
           {
@@ -832,7 +878,7 @@ test('Plain non-JSON failures retain HTTP context without exposing parser respon
   let failure;
   try {
     await runApply({
-      result: support,
+      result: forwarded,
       plainHttpStatus: 503,
       plainJsonError: 'plain-secret-sentinel',
     });
@@ -848,7 +894,7 @@ test('a Plain HTTP failure leaves support and triage labels in place without a s
   const calls: [string, Record<string, unknown>][] = [];
   await expect(
     runApply({
-      result: support,
+      result: forwarded,
       labels: ['triage'],
       plainHttpStatus: 503,
       calls,
@@ -862,7 +908,7 @@ test('Plain mutation-level failures cannot be reported as successful forwarding'
   const calls: [string, Record<string, unknown>][] = [];
   await expect(
     runApply({
-      result: support,
+      result: forwarded,
       calls,
       plainResponse: (query, data) =>
         query.includes('upsertCustomer')
@@ -874,6 +920,6 @@ test('Plain mutation-level failures cannot be reported as successful forwarding'
 });
 
 test('a triage request is cleared only after successful forwarding', async () => {
-  const { named } = await runApply({ result: support, labels: ['triage'] });
+  const { named } = await runApply({ result: forwarded, labels: ['triage'] });
   expect(named('removeLabel')).toEqual([{ ...target, name: 'triage' }]);
 });
