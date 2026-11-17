@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import ComposioClient from '@composio/client';
+import ComposioClient, { APIError } from '@composio/client';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { Tool, ToolListParams, ToolExecuteParams } from '../../src/types/tool.types';
@@ -14,6 +14,7 @@ import {
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import {
+  ComposioToolExecutionError,
   ComposioToolFetchError,
   ComposioToolNotFoundError,
   ComposioToolSchemaInvalidError,
@@ -738,7 +739,7 @@ describe('Tools', () => {
       const slug = 'SLACK_FETCH_CONVERSATION_HISTORY';
       const unauthorized = new ComposioClient.AuthenticationError(
         401,
-        { error: { message: 'Invalid API key', code: 801, status: 401 } },
+        { error: { message: 'Invalid API key', code: 801, slug: 'UNAUTHORIZED', status: 401 } },
         undefined,
         new Headers()
       );
@@ -750,7 +751,9 @@ describe('Tools', () => {
       expect(error).toBeInstanceOf(ComposioToolFetchError);
       expect(error).not.toBeInstanceOf(ComposioToolNotFoundError);
       expect(error.name).toBe('ComposioToolFetchError');
-      expect(error.message).toBe(`Unable to retrieve tool with slug ${slug}`);
+      expect(error.message).toBe(`Unable to retrieve tool with slug ${slug}: Invalid API key`);
+      expect(error.statusCode).toBe(401);
+      expect(error.apiErrorCode).toBe(801);
       expect(error.cause).toBe(unauthorized);
       expect(error.cause.status).toBe(401);
     });
@@ -1699,16 +1702,54 @@ describe('Tools', () => {
         ).rejects.toThrow('Invalid tool execute session parameters');
       });
 
-      it('should throw error if tool is not found', async () => {
+      it('wraps a failed session execution with the tool context', async () => {
         const apiError = new Error('Tool not found');
         mockClient.toolRouter.session.execute.mockRejectedValueOnce(apiError);
 
-        await expect(
-          context.tools.executeSessionTool('NONEXISTENT_TOOL', {
+        const error = await context.tools
+          .executeSessionTool('NONEXISTENT_TOOL', {
             sessionId,
             arguments: { query: 'test' },
           })
-        ).rejects.toThrow('Tool not found');
+          .catch(e => e);
+
+        expect(error).toBeInstanceOf(ComposioToolExecutionError);
+        expect(error.message).toBe('Error executing the tool NONEXISTENT_TOOL: Tool not found');
+        expect(error.cause).toBe(apiError);
+      });
+
+      it('surfaces the server details of a rejected session execution', async () => {
+        const apiError = new APIError(
+          410,
+          {
+            error: {
+              message: 'Toolkit version 20250101_00 is retired',
+              code: 1410,
+              slug: 'TOOLKIT_VERSION_RETIRED',
+              status: 410,
+              suggested_fix: 'Pin 20250909_00',
+            },
+          },
+          undefined,
+          new Headers({ 'x-request-id': 'req_session_410' })
+        );
+        mockClient.toolRouter.session.execute.mockRejectedValueOnce(apiError);
+
+        const error = await context.tools
+          .executeSessionTool('GMAIL_SEND_EMAIL', {
+            sessionId,
+            arguments: { query: 'test' },
+          })
+          .catch(e => e);
+
+        expect(error).toBeInstanceOf(ComposioToolExecutionError);
+        expect(error.message).toBe(
+          'Error executing the tool GMAIL_SEND_EMAIL: Toolkit version 20250101_00 is retired'
+        );
+        expect(error.statusCode).toBe(410);
+        expect(error.apiErrorCode).toBe(1410);
+        expect(error.requestId).toBe('req_session_410');
+        expect(error.possibleFixes).toEqual(['Pin 20250909_00']);
       });
 
       it('should apply beforeExecute modifier', async () => {

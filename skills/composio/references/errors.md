@@ -47,6 +47,10 @@ This appears on a real tool execution after the project and session reached the 
 
 Keep the same project key and application user ID. Generate a fresh Connect Link for that integration, reconnect the provider account, and retry the safe call. If a link expired, request a new one.
 
+### No active connection on a sibling toolkit
+
+A `NoActiveConnection` error can appear when the user connected one toolkit of a product's App but the execution targets its sibling: the connection is on `notion` while the tool belongs to `notion_mcp`, or the reverse. Sibling toolkits never share a connection. Link the exact toolkit the tool belongs to. If you choose an already-connected sibling instead, rediscover its tools and inspect their schemas before calling them; sibling tool slugs and inputs are not interchangeable.
+
 ### For You client authentication
 
 If the MCP client itself cannot authenticate, verify the consumer endpoint, OAuth session, or `ck_...` header path from the For You guide. Do not substitute a Platform project key.
@@ -62,7 +66,7 @@ If the MCP client itself cannot authenticate, verify the consumer endpoint, OAut
 
 ## Branding and production auth
 
-Managed auth is intended to make initial development easy. Before launch, move integrations that require the application's branding, scopes, or dedicated quotas onto its own OAuth apps.
+Managed auth works in production and is the fastest way to start. Recommend your own OAuth app when the application needs its own branding, its own scopes, or dedicated provider rate limits.
 
 When someone asks to remove Composio branding, identify the surface first: Connect Link page, provider consent screen, secured badge, callback domain, or success page. They have different fixes. Fetch `white-labeling-authentication.md` before proposing an implementation.
 

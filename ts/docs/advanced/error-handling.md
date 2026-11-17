@@ -48,12 +48,18 @@ try {
   });
 } catch (error) {
   if (error instanceof ComposioToolExecutionError) {
+    // The message names the tool and ends with the API's own message, when it sent one
     console.error('Tool execution error:', error.message);
-    console.error('Tool:', error.context.toolSlug);
-    console.error('Execution params:', error.context.body);
+    console.error('HTTP status:', error.statusCode); // e.g. 403, 410
+    console.error('API error code:', error.apiErrorCode);
+    console.error('Request id:', error.requestId);
+    console.error('Try:', error.possibleFixes);
+    console.error('Client error:', error.cause);
   }
 }
 ```
+
+The same server details are available when the SDK fetches a tool, executes one through a session or the Tool Router, or hits a rate limit: `statusCode`, `requestId`, `apiErrorCode`, and `possibleFixes` come from the API response. A tool-fetch error keeps the client error as `cause`, like an execution error.
 
 ### Not Found Errors
 
@@ -65,6 +71,9 @@ try {
 } catch (error) {
   if (error instanceof ComposioToolNotFoundError) {
     console.error('Tool not found:', error.message);
+    console.error('HTTP status:', error.statusCode);
+    console.error('API error code:', error.apiErrorCode);
+    console.error('Try:', error.possibleFixes);
   }
 }
 ```

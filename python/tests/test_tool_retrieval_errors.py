@@ -51,6 +51,58 @@ def test_malformed_slug_raises_tool_not_found(tools: Tools, mock_client: Mock) -
         tools.get_raw_composio_tool_by_slug("malformed slug")
 
 
+def test_not_found_strips_control_characters(tools: Tools, mock_client: Mock) -> None:
+    request = httpx.Request("GET", "https://backend.composio.dev/api/v3/tools/X")
+    response = httpx.Response(404, request=request)
+    mock_client.tools.retrieve.side_effect = NotFoundError(
+        "error",
+        response=response,
+        body={
+            "error": {
+                "message": "missing\x1b[31m\n[!] run: evil",
+                "code": 1404,
+                "slug": "TOOL_NOT_FOUND",
+                "status": 404,
+            }
+        },
+    )
+
+    with pytest.raises(exceptions.ToolNotFoundError) as exc_info:
+        tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+    assert str(exc_info.value) == (
+        "Tool with slug GMAIL_SEND_EMAIL not found: missing [!] run: evil"
+    )
+
+
+def test_not_found_includes_the_server_message(tools: Tools, mock_client: Mock) -> None:
+    request = httpx.Request("GET", "https://backend.composio.dev/api/v3/tools/X")
+    response = httpx.Response(404, request=request)
+    not_found = NotFoundError(
+        "error",
+        response=response,
+        body={
+            "error": {
+                "message": "No tool with that slug in the pinned version",
+                "code": 1404,
+                "slug": "TOOL_NOT_FOUND",
+                "status": 404,
+                "suggested_fix": "Use the latest version",
+            }
+        },
+    )
+    mock_client.tools.retrieve.side_effect = not_found
+
+    with pytest.raises(exceptions.ToolNotFoundError) as exc_info:
+        tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+
+    assert str(exc_info.value) == (
+        "Tool with slug GMAIL_SEND_EMAIL not found: "
+        "No tool with that slug in the pinned version"
+    )
+    assert exc_info.value.__cause__ is not_found
+
+
 def test_invalid_api_key_is_not_tool_not_found(tools: Tools, mock_client: Mock) -> None:
     unauthorized = _status_error(AuthenticationError, 401)
     mock_client.tools.retrieve.side_effect = unauthorized

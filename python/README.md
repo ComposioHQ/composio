@@ -84,6 +84,31 @@ Provider helpers have provider-specific return contracts. The [Python Anthropic 
 
 Transport/authentication errors and requests for user input can raise instead of returning a result. Keep authentication recovery separate from returned tool failures. A non-throwing call, empty `error`, or execution-log ID isn't proof of a provider-side action. Check the explicit outcome and tool-specific `data`; your application owns retry and idempotency decisions.
 
+## Error handling
+
+API rejections raise a `composio_client` status error, which is also a `ComposioError`. The message carries the server's explanation, and the error exposes the HTTP status, request id, numeric API error code, and a suggested fix:
+
+```python
+from composio import api_error_details
+from composio_client import APIStatusError
+
+try:
+    composio.tools.execute(
+        slug="GMAIL_SEND_EMAIL",
+        arguments={"to": "user@example.com", "subject": "Hi", "body": "Hello"},
+        user_id="user_123",
+    )
+except APIStatusError as error:
+    details = api_error_details(error)
+    print(details.message)          # 410 toolkit GMAIL version 20250114_00 is retired ...
+    print(details.status_code)      # 410
+    print(details.api_error_code)   # 1410
+    print(details.request_id)       # req_...
+    print(details.possible_fixes)   # ["Pin 20261101_00"] or status-specific guidance
+```
+
+`api_error_details()` returns the typed view of the same exception, so type checkers see these fields. `details.possible_fixes` uses the server's `suggested_fix` when present. Without one, it returns a fix chosen for the HTTP status, so a 401, 402, 403, 410, or 5xx doesn't tell you to check the tool slug and arguments. `details.details` still exposes the validated error envelope.
+
 ## Use with an agent framework
 
 Provider packages adapt `session.tools()` to your framework's native tool format. With [OpenAI Agents](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai_agents):

@@ -824,6 +824,8 @@ When executing a tool, the session selects the connected account in this order:
 
 When a user has multiple connected accounts for a toolkit, the session uses the most recently connected one.
 
+If an account exists but the session doesn't use it, see [When a session can't find a connected account](/docs/authentication/session-cant-find-account).
+
 ## Disabling the sandbox
 
 By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:

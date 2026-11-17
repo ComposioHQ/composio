@@ -1,0 +1,162 @@
+---
+title: When a session can't find a connected account
+description: Diagnose user ID, status, and auth config mismatches, then reconnect the account under the right user
+keywords: [user id, user_id, reconnect, connected account not found, NoActiveConnection, is_enabled_for_tool_router, dashboard, playground]
+---
+
+A session only sees connected accounts that match its project and its `user_id`. An account can show as active in the dashboard and still be invisible to your session if it was created under a different user ID or auth config.
+
+## How the pieces fit
+
+- **Project.** Your API key picks the project. Auth configs, connected accounts, and sessions never cross projects.
+- **Auth config.** How a toolkit authenticates: Composio managed auth or your own credentials. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app).
+- **Connected account.** One user's credentials for one auth config. Each account stores the `user_id` it was created for.
+- **Session.** Created for one `user_id`. At execution time it picks an `ACTIVE` account that belongs to that user, unless you pin one with [`connectedAccounts`](/docs/configuring-sessions#account-selection).
+
+Use your application's own stable user ID everywhere: when you create sessions and when you connect accounts. See [userID best practices](/docs/how-composio-works#users).
+
+## Find the user ID that owns the account
+
+Look up the account by its ID (`ca_...`, shown in the dashboard) and read its `user_id`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+account = composio.connected_accounts.get("ca_123")
+
+print(account.user_id, account.status, account.auth_config.id)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// connectedAccounts.get() doesn't return user_id, so use the raw API client
+const account = await composio.getClient().connectedAccounts.retrieve('ca_123');
+
+console.log(account.user_id, account.status, account.auth_config.id);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -s https://backend.composio.dev/api/v3.1/connected_accounts/ca_123 \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq '{user_id, status, auth_config: .auth_config.id}'
+```
+</Tab>
+</Tabs>
+
+If the `user_id` isn't the one your session uses, the session won't find the account. This happens most often with accounts connected outside your app, such as from the dashboard or a developer tool. For example, `composio dev init` writes a playground test user (`pg-test-<your member ID>`) to `COMPOSIO_TEST_USER_ID`, which is not one of your application's users.
+
+You can't change the `user_id` of an existing connected account. [Reconnect it](#reconnect-under-the-right-user) under the right user instead.
+
+## Check the rest of the match
+
+If the user ID matches and the session still can't use the account, check these in order:
+
+1. **Status.** The account must be `ACTIVE` and not disabled. `INITIATED` means the user never finished the flow. `EXPIRED` means it needs a new grant. See [connection status](/docs/authentication#connection-lifecycle).
+2. **Toolkit restrictions.** If the session sets `toolkits`, the toolkit must be allowed. Toolkit restrictions apply before account lookup.
+3. **Auth config.** If the session passes [`authConfigs`](/docs/configuring-sessions#custom-auth-configs) for the toolkit, the account must belong to that auth config.
+4. **Tool Router flag.** Auth configs that sessions create are enabled for Tool Router automatically. If you created the auth config yourself, in the dashboard or the API, set `is_enabled_for_tool_router` to `true` so sessions can match its accounts by `user_id`.
+5. **Pinned account.** If the session passes `connectedAccounts` for the toolkit, it uses exactly that account and never falls back to another one. Update the session or create a new one to change it.
+
+Enable the Tool Router flag on an auth config you created:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+composio.auth_configs.update(
+    "ac_your_config",
+    options={"type": "custom", "is_enabled_for_tool_router": True},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+await composio.authConfigs.update('ac_your_config', {
+  type: 'custom',
+  isEnabledForToolRouter: true,
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3.1/auth_configs/ac_your_config \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "custom", "is_enabled_for_tool_router": true}'
+```
+</Tab>
+</Tabs>
+
+## Reconnect under the right user
+
+Create a session for your application's user ID, then authorize the toolkit from that session. The new connected account belongs to that user, so this session and later sessions for the same user can use it. Pass `authConfigs` if the toolkit uses your own auth config.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={"gmail": "ac_your_config"},
+)
+
+connection_request = session.authorize("gmail")
+print(connection_request.redirect_url)  # Send the user here
+
+connection_request.wait_for_connection(60)
+
+# Confirm the session sees the account
+for toolkit in session.toolkits(is_connected=True).items:
+    account = toolkit.connection and toolkit.connection.connected_account
+    print(toolkit.slug, account.id if account else None)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  authConfigs: { gmail: 'ac_your_config' },
+});
+
+const connectionRequest = await session.authorize('gmail');
+console.log(connectionRequest.redirectUrl); // Send the user here
+
+await connectionRequest.waitForConnection(60000);
+
+// Confirm the session sees the account
+const connected = await session.toolkits({ isConnected: true });
+connected.items.forEach((toolkit) => {
+  console.log(toolkit.slug, toolkit.connection?.connectedAccount?.id);
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "auth_configs": {"gmail": "ac_your_config"}}' | jq -r '.session_id')
+
+# Send the user to redirect_url
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "gmail"}' | jq -r '.redirect_url'
+
+# After the user finishes, confirm the session sees the account
+curl -s "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?is_connected=true" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
+
+Only send the Connect Link to the person who owns that user ID. Whoever completes the flow decides which external account gets attached to `user_123`.
+
+Once the new account is active, delete or disable the old one under the wrong user ID if nobody needs it. See [Connected accounts](/docs/auth-configuration/connected-accounts#delete-accounts).

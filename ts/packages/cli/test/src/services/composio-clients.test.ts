@@ -13,7 +13,11 @@ import {
   listOrganizations,
   listOrgProjects,
 } from 'src/services/composio-account';
-import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioClientSingleton,
+  ComposioToolkitsRepository,
+  type ComposioToolkitsRepositoryShape,
+} from 'src/services/composio-clients';
 import { InvalidToolkitsError } from 'src/services/toolkit-version-validation';
 import { handleClientApiError } from 'src/effects/handle-http-error';
 import { isClientApiError } from 'src/utils/api-error-extraction';
@@ -44,6 +48,9 @@ vi.mock('@composio/cli-keyring/effect', async importOriginal => {
 });
 
 const BASE_URL = 'https://backend.composio.dev';
+
+// The developer project a project resource call names.
+const PROJECT_SCOPE = { orgId: 'org_test', projectId: 'proj_test' };
 
 const platformLayer = () =>
   Layer.mergeAll(
@@ -545,7 +552,9 @@ describe('composio-clients', () => {
         );
         const repository = yield* ComposioToolkitsRepository;
 
-        const error = yield* repository.getAuthConfig('ac_missing').pipe(Effect.flip);
+        const error = yield* repository
+          .getAuthConfig(PROJECT_SCOPE, 'ac_missing')
+          .pipe(Effect.flip);
 
         expect(error).toMatchObject({
           _tag: '@composio/client/NotFoundError',
@@ -562,7 +571,7 @@ describe('composio-clients', () => {
         );
         const repository = yield* ComposioToolkitsRepository;
 
-        const error = yield* repository.getAuthConfig('ac_1').pipe(Effect.flip);
+        const error = yield* repository.getAuthConfig(PROJECT_SCOPE, 'ac_1').pipe(Effect.flip);
 
         expect(error).toMatchObject({ status: 502, details: undefined });
       }).pipe(Effect.provide(withRepository))
@@ -574,7 +583,7 @@ describe('composio-clients', () => {
           errorResponse(400, errorEnvelope({ message: 'Bad input', code: 1001 }))
         );
         const repository = yield* ComposioToolkitsRepository;
-        const error = yield* repository.getAuthConfig('ac_1').pipe(Effect.flip);
+        const error = yield* repository.getAuthConfig(PROJECT_SCOPE, 'ac_1').pipe(Effect.flip);
         expect(error).toMatchObject({ details: { message: 'Bad input', code: 1001 } });
         assert(isClientApiError(error));
 
@@ -647,8 +656,8 @@ describe('composio-clients', () => {
           .mockResolvedValueOnce(jsonResponse(connectedAccount));
         const repository = yield* ComposioToolkitsRepository;
 
-        const decodedAuthConfig = yield* repository.getAuthConfig('ac_1');
-        const account = yield* repository.getConnectedAccount('con_1');
+        const decodedAuthConfig = yield* repository.getAuthConfig(PROJECT_SCOPE, 'ac_1');
+        const account = yield* repository.getConnectedAccount(PROJECT_SCOPE, 'con_1');
 
         expect(JSON.stringify(decodedAuthConfig)).not.toContain('secret');
         expect(JSON.stringify(account)).not.toContain('secret');
@@ -663,7 +672,7 @@ describe('composio-clients', () => {
         );
         const repository = yield* ComposioToolkitsRepository;
 
-        const triggers = yield* repository.listActiveTriggers({});
+        const triggers = yield* repository.listActiveTriggers(PROJECT_SCOPE, {});
 
         expect(triggers).toMatchObject({
           total_items: 2,
@@ -690,7 +699,9 @@ describe('composio-clients', () => {
         );
         const repository = yield* ComposioToolkitsRepository;
 
-        const created = yield* repository.createAuthConfig({ toolkit: { slug: 'gmail' } });
+        const created = yield* repository.createAuthConfig(PROJECT_SCOPE, {
+          toolkit: { slug: 'gmail' },
+        });
 
         expect(created).toEqual({
           auth_config: { id: 'ac_new', auth_scheme: 'OAUTH2', is_composio_managed: false },
@@ -822,6 +833,68 @@ describe('ComposioToolkitsRepository toolkit lists', () => {
       expect(url.searchParams.has('managed_by')).toBe(false);
       expect(headers.has('x-org-id')).toBe(false);
       expect(headers.has('x-project-id')).toBe(false);
+    }).pipe(Effect.provide(repositoryLayer()))
+  );
+
+  // Auth configs, connected accounts and trigger instances belong to a project, so every call
+  // names the one the command resolved instead of leaving it to the key's default.
+  const scope = { orgId: 'org_scoped', projectId: 'pr_scoped' };
+  it.effect.each<{
+    readonly method: string;
+    readonly call: (repository: ComposioToolkitsRepositoryShape) => Effect.Effect<unknown, unknown>;
+  }>([
+    {
+      method: 'listAuthConfigs',
+      call: (repository: ComposioToolkitsRepositoryShape) => repository.listAuthConfigs(scope, {}),
+    },
+    {
+      method: 'getAuthConfig',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.getAuthConfig(scope, 'ac_1'),
+    },
+    {
+      method: 'createAuthConfig',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.createAuthConfig(scope, { toolkit: { slug: 'gmail' } }),
+    },
+    {
+      method: 'getConnectedAccount',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.getConnectedAccount(scope, 'con_1'),
+    },
+    {
+      method: 'listActiveTriggers',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.listActiveTriggers(scope, {}),
+    },
+    {
+      method: 'createTrigger',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.createTrigger(scope, 'GMAIL_NEW_GMAIL_MESSAGE', {}),
+    },
+    {
+      method: 'enableTrigger',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.enableTrigger(scope, 'ti_1'),
+    },
+    {
+      method: 'disableTrigger',
+      call: (repository: ComposioToolkitsRepositoryShape) =>
+        repository.disableTrigger(scope, 'ti_1'),
+    },
+  ])('[Given] a scope [Then] $method sends its org and project', ({ call }) =>
+    Effect.gen(function* () {
+      const fetchSpy = spyOnToolkitsFetch();
+      const repository = yield* ComposioToolkitsRepository;
+
+      // What is asserted is the request; the empty answer may not decode.
+      yield* Effect.exit(call(repository));
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const { headers } = requestOf(fetchSpy);
+      expect(headers.get('x-user-api-key')).toBe('uak_test');
+      expect(headers.get('x-org-id')).toBe('org_scoped');
+      expect(headers.get('x-project-id')).toBe('pr_scoped');
     }).pipe(Effect.provide(repositoryLayer()))
   );
 });
