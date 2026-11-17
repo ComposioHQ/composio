@@ -3,7 +3,7 @@
  * `composio dev init` (project scope): create the session, show or open its URL, wait for it
  * to be linked, then store the user API key it carries.
  */
-import { Data, DateTime, Effect, Option, Predicate, pipe } from 'effect';
+import { Data, DateTime, Duration, Effect, Option, Predicate, Ref, pipe } from 'effect';
 import { formatLoginStillPending } from 'src/commands/login/login.format';
 import {
   AUTHORIZATION_TIMEOUT_MINUTES,
@@ -135,22 +135,28 @@ export type PendingLoginAnswer = {
   readonly resumeCommand: string;
 };
 
+/** The answer a wait gives about a session that is still not linked. */
+const pendingLoginError = (status: string, pending: PendingLoginAnswer) =>
+  new LoginSessionError({
+    message: formatLoginStillPending({ status, ...pending }),
+    operation: 'poll',
+    status,
+  });
+
 /** The session, or a `poll` failure carrying the status it is waiting on and where to finish it. */
 const requireLinkedSession = (session: RetrievedSession, pending: PendingLoginAnswer) =>
   session.status === 'linked'
     ? Effect.succeed(session)
-    : Effect.fail(
-        new LoginSessionError({
-          message: formatLoginStillPending({ status: session.status, ...pending }),
-          operation: 'poll',
-          status: session.status,
-        })
-      );
+    : Effect.fail(pendingLoginError(session.status, pending));
 
 /**
  * Checks the session behind a spinner until it is linked, on `authorizationPollScheduleFor`:
  * `timeoutSeconds` at most, a pending login's own lifetime by default. A wait that runs out fails
  * with the status it last saw and where to finish the login, and never stores anything.
+ *
+ * The schedule bounds the retries, not a check already in flight: a slow answer, and the client's
+ * own retries of it, would outlast the bound. So the wait also gets a deadline of its own, and
+ * reports the last status it saw rather than nothing.
  */
 export const waitForLinkedSession = <E, R>(
   getSession: Effect.Effect<RetrievedSession, E, R>,
@@ -158,11 +164,25 @@ export const waitForLinkedSession = <E, R>(
 ) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
+    const timeoutSeconds = pending.timeoutSeconds ?? AUTHORIZATION_TIMEOUT_SECONDS;
+    const lastStatus = yield* Ref.make('pending');
     return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
       Effect.retry(
-        Effect.flatMap(getSession, session => requireLinkedSession(session, pending)),
-        authorizationPollScheduleFor(pending.timeoutSeconds ?? AUTHORIZATION_TIMEOUT_SECONDS)
+        Effect.flatMap(getSession, session =>
+          Effect.andThen(
+            Ref.set(lastStatus, session.status),
+            requireLinkedSession(session, pending)
+          )
+        ),
+        authorizationPollScheduleFor(timeoutSeconds)
       ).pipe(
+        Effect.timeoutOrElse({
+          duration: Duration.seconds(timeoutSeconds),
+          orElse: () =>
+            Effect.flatMap(Ref.get(lastStatus), status =>
+              Effect.fail(pendingLoginError(status, pending))
+            ),
+        }),
         Effect.tap(() => spinner.stop('Login successful')),
         Effect.tapError(error =>
           spinner.error(

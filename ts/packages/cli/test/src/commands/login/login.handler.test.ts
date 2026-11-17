@@ -496,6 +496,35 @@ describe('handlePollLogin', () => {
   );
 
   it.effect(
+    '[Given] a lookup slower than the whole bound [When] --timeout runs out [Then] reports it still pending without waiting for the answer',
+    () => {
+      // A check in flight is not interrupted by the retry schedule, so without a deadline of its
+      // own the wait would sit on this one answer long past its bound.
+      const { layer, logins, pending } = loginHandlerTest({
+        pending: Option.some(cachedLogin),
+        session: Effect.never,
+      });
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          runWithAdvancingClock(
+            handlePollLogin({ noSkillInstall: true, timeout: Option.some('5') })
+          )
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginSessionError',
+          operation: 'poll',
+          status: 'pending',
+        });
+        expect(error.message).toContain('Login still pending');
+        expect(error.message).toContain('composio login --poll --timeout 5');
+        expect(logins).toEqual([]);
+        expect(pending.current()).toEqual(Option.some(cachedLogin));
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
     '[Given] a session that never links [When] the --timeout runs out [Then] reports it still pending, with the URL and the command to run again, and keeps the cached login',
     () => {
       const { layer, logins, outputs, sessionLookups, pending } = loginHandlerTest({
