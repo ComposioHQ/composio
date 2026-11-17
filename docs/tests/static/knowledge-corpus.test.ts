@@ -38,6 +38,21 @@ function listFiles(root: string): string[] {
 }
 
 describe('unified public knowledge corpus', () => {
+  test('publishes vendor security review as docs and retires its KB URL', async () => {
+    const canonical = '/docs/security/vendor-security-review';
+    const retired = '/kb/guide/platform-compliance-data-handling';
+    const records = await getAlgoliaSearchDocuments();
+    expect(records.some(record => record.canonical_url === canonical && record.source_type === 'docs')).toBe(true);
+    expect(records.some(record => record.canonical_url === retired)).toBe(false);
+    expect(await getLocalKnowledgeDiscoveryPaths()).not.toContain(retired);
+    const sitemapUrls = (await sitemap()).map(entry => entry.url);
+    expect(sitemapUrls).toContain(`https://docs.composio.dev${canonical}`);
+    expect(sitemapUrls).not.toContain(`https://docs.composio.dev${retired}`);
+    const llmsIndex = await (await getLlmsIndex()).text();
+    expect(llmsIndex).toContain(canonical);
+    expect(llmsIndex).not.toContain(retired);
+  });
+
   test('does not interpret fenced code comments as document headings', () => {
     const recordsFromMarkdownPage = (
       searchIndexModule as {

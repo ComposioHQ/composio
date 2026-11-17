@@ -176,7 +176,7 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
-      '/kb/guide/platform-compliance-data-handling',
+      '/docs/security/vendor-security-review',
       'https://trust.composio.dev',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
@@ -204,7 +204,7 @@ describe('Docs product navigation', () => {
     expect(securityPages.slice(1).map(node => node.type)).toEqual(['folder', 'folder', 'folder']);
     const compliance = securityPages[1];
     if (compliance.type !== 'folder') throw new Error('Compliance group missing');
-    expect(compliance.index).toBeUndefined();
+    expect(compliance.index?.url).toBe('/docs/security/vendor-security-review');
     expect(compliance.children).toContainEqual(expect.objectContaining({
       type: 'page', url: 'https://trust.composio.dev', external: true,
     }));
@@ -212,9 +212,10 @@ describe('Docs product navigation', () => {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
       expect(forYouUrls).not.toContain(url);
     }
-    expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])?.url).toBe(
-      '/kb/guide/platform-compliance-data-handling',
+    expect(source.getPage(['security', 'vendor-security-review'])?.url).toBe(
+      '/docs/security/vendor-security-review',
     );
+    expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])).toBeUndefined();
     const governance = platformTree.children.find(
       node => node.type === 'folder' && node.name === 'Governance',
     );

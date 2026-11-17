@@ -258,8 +258,8 @@ export const DOCS_PRODUCTS = {
             label: 'Compliance',
             links: [
               {
-                type: 'link',
-                url: '/kb/guide/platform-compliance-data-handling',
+                type: 'page',
+                url: '/docs/security/vendor-security-review',
                 label: 'Vendor security review',
               },
               { type: 'link', url: 'https://trust.composio.dev', label: 'Trust Center', external: true },

@@ -38,7 +38,7 @@
     "auth-configuration",
     "---Security and Compliance---",
     "security/overview",
-    "[Vendor security review](/kb/guide/platform-compliance-data-handling)",
+    "security/vendor-security-review",
     "security/token-custody",
     "security/data-retention",
     "security/zero-data-retention",
