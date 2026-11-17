@@ -52,6 +52,11 @@ class AuthConfigs(Resource):
         self, toolkit: str, options: ComposioManagedAuthConfigOptions
     ) -> auth_config_create_response.AuthConfig: ...
 
+    @t.overload
+    def create(
+        self, toolkit: str, options: auth_config_create_params.AuthConfigUnionMember0
+    ) -> auth_config_create_response.AuthConfig: ...
+
     def create(
         self,
         toolkit: str,
