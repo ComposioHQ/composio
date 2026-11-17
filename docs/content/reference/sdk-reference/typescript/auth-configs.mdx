@@ -37,6 +37,15 @@ async create(toolkit: string, options?: CreateAuthConfigParams, requestOptions?:
 **Example**
 
 ```typescript
+// Use a specific Composio-managed app; omit managedAppId for the toolkit's default
+const { composioManagedAuth } = await composio.toolkits.get('slack');
+const slackAuthConfig = await authConfigs.create('slack', {
+  type: AuthConfigTypes.COMPOSIO_MANAGED,
+  managedAppId: composioManagedAuth?.find(app => !app.isDefault)?.managedAppId,
+});
+```
+
+```typescript
 const authConfig = await authConfigs.create('my-toolkit', {
   type: AuthConfigTypes.CUSTOM,
   name: 'My Custom Auth Config',
