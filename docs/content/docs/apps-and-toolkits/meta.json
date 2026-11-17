@@ -1,0 +1,9 @@
+{
+  "title": "Apps and toolkits",
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "provider-mcps",
+    "composio-built-vs-provider-mcp"
+  ]
+}

@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { retryHint } from 'src/effects/retry-advice';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { makeOrgProject } from 'test/__utils__/models/account';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
@@ -70,7 +71,7 @@ describe('CLI: composio dev init', () => {
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
 
           expect(result._tag).toBe('Failure');
-          expect(lines.slice(0, -1)).toEqual([
+          expect(lines.slice(0, -2)).toEqual([
             '-- composio dev init --',
             'Could not fetch projects from the server.',
             projectGuidance,
@@ -80,8 +81,9 @@ describe('CLI: composio dev init', () => {
             '--  --',
           ]);
           // The command fails with the client's error after its guidance, which the invocation
-          // reports as a defect.
-          expect(lines.at(-1)).toContain('@composio/client/APIConnectionError');
+          // reports as a defect, then says the request is safe to send again.
+          expect(lines.at(-2)).toContain('@composio/client/APIConnectionError');
+          expect(lines.at(-1)).toBe(retryHint('safe'));
         })
       );
     });

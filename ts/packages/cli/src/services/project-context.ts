@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { Effect, Option, Context, Layer } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -155,6 +156,6 @@ export class ProjectContext extends Context.Service<ProjectContext, ProjectConte
   'services/ProjectContext'
 ) {
   static readonly Default = Layer.effect(ProjectContext, makeProjectContext).pipe(
-    Layer.provide(Path.layer)
+    Layer.provide(BunPath.layer)
   );
 }

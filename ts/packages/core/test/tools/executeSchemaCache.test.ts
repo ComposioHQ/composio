@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
+import ComposioClient, { APIError, Auth, createFetchTransport } from '@composio/client';
 import { Tools } from '../../src/models/Tools';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
+import { ComposioConnectedAccountNotFoundError } from '../../src/errors/ConnectedAccountsErrors';
 import {
   ComposioToolExecutionError,
   ComposioToolExecutionRateLimitError,
   ComposioToolFetchError,
   ComposioToolFetchRateLimitError,
+  ComposioToolNotFoundError,
+  handleToolExecutionError,
   isComposioRateLimitError,
 } from '../../src/errors/ToolErrors';
 
@@ -193,6 +196,7 @@ describe('rate limit errors', () => {
     expect(isComposioRateLimitError(error)).toBe(true);
     expect(error.retryAfterSeconds).toBe(7);
     expect(error.statusCode).toBe(429);
+    expect(error.message).toBe(`Rate limited while retrieving tool with slug ${SLUG}`);
     expect(error.possibleFixes).toEqual([
       'Wait 7 seconds, then retry',
       'Reduce how many requests your organization sends per minute',
@@ -210,6 +214,7 @@ describe('rate limit errors', () => {
     expect(isComposioRateLimitError(error)).toBe(true);
     expect(error.retryAfterSeconds).toBe(7);
     expect(error.statusCode).toBe(429);
+    expect(error.message).toBe(`Rate limited while executing the tool ${toolMocks.rawTool.slug}`);
     expect(execute).toHaveBeenCalledTimes(1);
   });
 
@@ -234,5 +239,277 @@ describe('rate limit errors', () => {
 
     expect(error).toBeInstanceOf(ComposioToolFetchError);
     expect(isComposioRateLimitError(error)).toBe(false);
+  });
+});
+
+describe('transport metadata on errors', () => {
+  it('reads the status and request id of a rejected schema fetch from its cause', async () => {
+    const { tools } = createTools({
+      retrieve: () =>
+        json(
+          { error: { message: 'bad key', code: 1001, slug: 'UNAUTHORIZED', status: 401 } },
+          401,
+          { 'x-request-id': 'req_fetch_401' }
+        ),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolFetchError);
+    expect(error.statusCode).toBe(401);
+    expect(error.requestId).toBe('req_fetch_401');
+    expect(error.cause).toBeInstanceOf(APIError);
+  });
+});
+
+describe('tool execution errors', () => {
+  const rejected = (
+    status: number,
+    error: Record<string, unknown>,
+    headers: Record<string, string> = {}
+  ) => json({ error: { slug: 'ERROR', status, ...error } }, status, headers);
+  const SLUG_FIX = 'Ensure the tool slug is correct and the input arguments for the tool is valid';
+
+  it('surfaces the server message, suggested fix and codes of a 410', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(
+          410,
+          {
+            message: 'Toolkit version 20250101_00 is retired',
+            code: 1410,
+            suggested_fix: 'Pin 20250909_00',
+          },
+          { 'x-request-id': 'req_410' }
+        ),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolExecutionError);
+    expect(error.message).toBe(
+      `Error executing the tool ${toolMocks.rawTool.slug}: Toolkit version 20250101_00 is retired`
+    );
+    expect(error.code).toBe('TS-SDK::TOOL_EXECUTION_ERROR');
+    expect(error.statusCode).toBe(410);
+    expect(error.apiErrorCode).toBe(1410);
+    expect(error.requestId).toBe('req_410');
+    expect(error.possibleFixes).toEqual(['Pin 20250909_00']);
+    expect(error.cause).toBeInstanceOf(APIError);
+    expect(error.cause.status).toBe(410);
+  });
+
+  it('falls back to a status-specific fix for a 403 without a suggested fix', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(403, { message: 'Connected account belongs to another project', code: 1403 }),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolExecutionError);
+    expect(error.message).toBe(
+      `Error executing the tool ${toolMocks.rawTool.slug}: Connected account belongs to another project`
+    );
+    expect(error.statusCode).toBe(403);
+    expect(error.apiErrorCode).toBe(1403);
+    expect(error.possibleFixes).toEqual([
+      'Ensure your API key and the connected account are allowed to run this tool',
+    ]);
+    expect(error.cause).toBeInstanceOf(APIError);
+  });
+
+  it.each([402, 410, 500, 503])('never blames the slug or arguments for a %i', async status => {
+    const { tools } = createTools({ execute: () => rejected(status, { message: 'no', code: 1 }) });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error.statusCode).toBe(status);
+    expect(error.possibleFixes).not.toContain(SLUG_FIX);
+  });
+
+  it('keeps the tool context alone when the body is not the error envelope', async () => {
+    const { tools } = createTools({ execute: () => json({ unexpected: true }, 400) });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolExecutionError);
+    expect(error.message).toBe(`Error executing the tool ${toolMocks.rawTool.slug}`);
+    expect(error.statusCode).toBe(400);
+    expect(Object.keys(error)).not.toContain('apiErrorCode');
+    expect(error.possibleFixes).toEqual([SLUG_FIX]);
+  });
+
+  it('strips terminal escapes and line breaks from server text', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(403, {
+          message: 'denied\u001b[31m\n[!] run: evil',
+          code: 1403,
+          suggested_fix: 'retry\u001b]0;owned\u0007 now',
+        }),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error.message).toBe(
+      `Error executing the tool ${toolMocks.rawTool.slug}: denied [!] run: evil`
+    );
+    expect(error.possibleFixes).toEqual(['retry now']);
+    expect(error.message).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+  });
+
+  it('keeps the original reason when the failure never reached the API', () => {
+    const error = handleToolExecutionError(SLUG, new Error('socket hang up\n\u001b[31m'));
+
+    expect(error.message).toBe(`Error executing the tool ${SLUG}: socket hang up`);
+  });
+
+  it('surfaces the server details of a rate limit', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(
+          429,
+          { message: 'slow down', code: 1429, suggested_fix: 'Wait an hour' },
+          { 'retry-after': '7' }
+        ),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolExecutionRateLimitError);
+    expect(error.message).toBe(
+      `Rate limited while executing the tool ${toolMocks.rawTool.slug}: slow down`
+    );
+    expect(error.statusCode).toBe(429);
+    expect(error.apiErrorCode).toBe(1429);
+    expect(error.possibleFixes).toEqual(['Wait an hour']);
+    expect(error.retryAfterSeconds).toBe(7);
+  });
+
+  it('strips terminal escapes from the missing-account message', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(400, {
+          message: 'No connected account\u001b[31m\n[!] connect',
+          code: 1803,
+        }),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioConnectedAccountNotFoundError);
+    expect(error.message).toBe('No connected account [!] connect');
+    expect(error.message).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+  });
+
+  it('keeps the server status, fix and code of a missing connected account', async () => {
+    const { tools } = createTools({
+      execute: () =>
+        rejected(400, {
+          message: 'No connected account found',
+          code: 1803,
+          suggested_fix: 'Connect Gmail first',
+        }),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioConnectedAccountNotFoundError);
+    expect(error.message).toBe('No connected account found');
+    expect(error.statusCode).toBe(400);
+    expect(error.apiErrorCode).toBe(1803);
+    expect(error.possibleFixes).toEqual(['Connect Gmail first']);
+    expect(error.cause).toBeInstanceOf(APIError);
+    expect(error.cause.status).toBe(400);
+  });
+});
+
+describe('tool fetch errors', () => {
+  it('surfaces the server details of a 429', async () => {
+    const { tools } = createTools({
+      retrieve: () =>
+        json(
+          {
+            error: {
+              message: 'slow down',
+              code: 1429,
+              slug: 'RATE_LIMITED',
+              status: 429,
+              suggested_fix: 'Wait an hour',
+            },
+          },
+          429,
+          { 'retry-after': '7', 'retry-after-ms': '1' }
+        ),
+    });
+
+    const error = await run(tools).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolFetchRateLimitError);
+    expect(error.message).toBe(`Rate limited while retrieving tool with slug ${SLUG}: slow down`);
+    expect(error.statusCode).toBe(429);
+    expect(error.apiErrorCode).toBe(1429);
+    expect(error.possibleFixes).toEqual(['Wait an hour']);
+    expect(error.retryAfterSeconds).toBe(7);
+  });
+
+  it('surfaces the server details of a 410', async () => {
+    const { tools, execute } = createTools({
+      retrieve: () =>
+        json(
+          {
+            error: {
+              message: 'Toolkit version 20250101_00 is retired',
+              code: 1410,
+              slug: 'TOOLKIT_VERSION_RETIRED',
+              status: 410,
+              suggested_fix: 'Pin 20250909_00',
+            },
+          },
+          410,
+          { 'x-request-id': 'req_fetch_410' }
+        ),
+    });
+
+    const error = await tools.getRawComposioToolBySlug(SLUG).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolFetchError);
+    expect(error.message).toBe(
+      `Unable to retrieve tool with slug ${SLUG}: Toolkit version 20250101_00 is retired`
+    );
+    expect(error.statusCode).toBe(410);
+    expect(error.apiErrorCode).toBe(1410);
+    expect(error.requestId).toBe('req_fetch_410');
+    expect(error.possibleFixes).toEqual(['Pin 20250909_00']);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('surfaces the server details of a 404', async () => {
+    const { tools } = createTools({
+      retrieve: () =>
+        json(
+          {
+            error: {
+              message: 'No tool with that slug in the pinned version',
+              code: 1404,
+              slug: 'TOOL_NOT_FOUND',
+              status: 404,
+              suggested_fix: 'Use the latest version',
+            },
+          },
+          404
+        ),
+    });
+
+    const error = await tools.getRawComposioToolBySlug(SLUG).catch(e => e);
+
+    expect(error).toBeInstanceOf(ComposioToolNotFoundError);
+    expect(error.message).toBe(
+      `Tool with slug ${SLUG} not found: No tool with that slug in the pinned version`
+    );
+    expect(error.statusCode).toBe(404);
+    expect(error.apiErrorCode).toBe(1404);
+    expect(error.possibleFixes).toEqual(['Use the latest version']);
   });
 });

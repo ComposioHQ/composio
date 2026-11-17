@@ -4,6 +4,65 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.33 to include the latest API changes.
+
+- A failed request that is safe to send again now exits 75 (`EX_TEMPFAIL`) instead of 1 and says so on stderr: one the API refused with a 429, or a read that timed out, lost its connection, or got a 408 or 5xx. Scripts and agents can retry on 75 without guessing. A failed `composio execute` adds `"retry": "safe"`, or `"retry": "check-first"` when the tool may have run before the request failed, to its `{ "successful": false }` result, and the `composio-cli` skill tells agents what both mean. Every other failed request still exits 1.
+
+- `composio dev toolkits list` and `info` now read a user's connection status in the resolved developer project. When no directory project applies, `--user-id` or the global test user can use the default developer project. A failed project lookup leaves the catalog available and warns when `--connected` cannot be applied.
+
+- A directory developer project must belong to the stored login's org, checked before any request. With no stored org, the CLI checks every page of the active key's org list. Resource commands refuse a project outside that boundary and name why they use the default developer project instead.
+
+- `composio dev` resource commands now act on the directory's developer project or `--project-name`, rather than leaving the backend to choose. Without a directory project they keep working by resolving the default developer project once from session info and naming it on stderr, including in scripts. Project lookup failures preserve their cause and recovery advice.
+
+- A command whose stdout reader stops reading early, as in
+  `composio search "send a slack message" | head -1`, now drops the rest of
+  its output and exits as it would have. It printed an `EPIPE: broken pipe`
+  stack trace on stderr and exited 1, so a pipeline that only wanted the first
+  lines looked like a failure. `composio listen` and `composio dev listen`
+  stop listening at their next write once that reader is gone and exit 0,
+  where they would keep running with nobody reading. Other stdout write
+  failures still fail the command.
+
+- `composio search` now fails with "The API response for
+  'toolRouter.session.search' is not in the shape this version of the CLI
+  expects" and `composio upgrade` as the way out when the API answers 200 with
+  JSON it cannot read or with an empty body. It crashed with a raw `TypeError`
+  naming a minified variable, which told an agent nothing it could act on.
+
+- `composio whoami` now exits 1 when it cannot read the account (the backend
+  rejects the stored key, cannot be reached, or fails), with nothing on stdout
+  and the reason on stderr; a rejected key also names `composio login`. It
+  exited 0 and printed a JSON object of nulls, so checking a login with
+  `composio whoami` passed on a key that no longer worked. A session it reads
+  only in part still prints, with the missing fields as `null`.
+
+- A command the Composio API answers with 401 now prints the API's message
+  and how to recover: `composio logout && composio login` when the stored
+  login's key may have expired, `composio agent login <composio_agent_key>`
+  with the key from `~/.composio/agent.json` when that login is the saved
+  Composio agent identity's, or replacing `COMPOSIO_USER_API_KEY` when the key
+  came from there. Agent recovery reuses the identity without signing up a
+  replacement or printing its key. `composio search` and other commands printed only the
+  API's `Invalid API key` (inside a defect report), so an agent had no command
+  to get unstuck. The hint was shown only when the API said the user API key
+  itself was rejected; any other 401 now names the login as the likely cause.
+
+- The `composio-cli` skill now says how to run a tool inside a developer
+  project: `composio dev playground-execute`, with
+  `composio dev connected-accounts link <toolkit>` for a missing connection.
+  Agents on developer tasks used to fall back to `composio execute`, which acts
+  on the consumer project; in live runs with `claude-haiku-5-5` that happened
+  on every developer run, and no longer does.
+
+- `composio dev playground-execute` without a connection now names
+  `composio dev connected-accounts link <toolkit>` as the fix. It used to name
+  `composio link <toolkit>`, which connects the consumer user and leaves the
+  developer project's test user unconnected, so the retry failed the same way.
+  The `composio-cli` skill's developer reference now lists `composio orgs list`
+  in place of `composio dev orgs list`, which does not exist.
+
+- Update @composio/client to 2.1.32 to include the latest API changes.
+
 - `composio dev connected-accounts link --help` now shows
   `composio dev connected-accounts link …` examples. It showed root
   `composio link …` examples, which link the consumer user, not a user of the
@@ -37,6 +96,12 @@
 
 ### Minor Changes
 
+- Add experimental native Windows x64 CLI binaries, installed from PowerShell
+  with a checksum-verified one-liner. Installation, `composio run`, and
+  `composio upgrade` are checked on Windows in the beta and stable release
+  workflows; other commands may not work yet. Windows requires Windows 10 1809
+  or newer and an SSE4.2-capable x64 CPU.
+
 - A signal now ends each command the way its work ends. A one-shot command,
   `composio login` and `composio upgrade` stopped with Ctrl-C (SIGINT), SIGTERM
   or a closed terminal (SIGHUP) exit 130, 143 or 129. They used to exit 0, so a
@@ -52,6 +117,14 @@
   signal, or a stop that takes longer than 10 seconds, ends the CLI at once:
   128 plus the signal's number, or, for `composio run`, the script's process
   group is killed and the CLI is killed by that signal.
+
+- `composio dev logs tools` now searches and retrieves logs through the public
+  tool execution logs API. Pages are capped at 100. Piped JSON uses the public
+  `logs` / `next_cursor` envelope and unified log detail fields. The public API
+  does not support `--case-sensitive` or the legacy `--session-id` filter;
+  these now fail with an explanation. `--tool-router-session-id` remains supported.
+  Each filter flag takes one value; a comma-separated list now fails instead of
+  matching nothing.
 
 - `composio dev connected-accounts link <toolkit>` (with or without `--list`)
   now acts on your developer project, like the other `composio dev` commands:

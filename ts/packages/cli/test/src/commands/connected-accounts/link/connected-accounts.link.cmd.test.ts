@@ -80,6 +80,7 @@ const RecordingTerminalUI = TerminalUI.of({
         data,
       })
     ),
+  stdoutClosed: Effect.never,
   error: data => Console.error(data),
   intro: title => Console.log(title),
   outro: message => Console.log(message),

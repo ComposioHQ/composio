@@ -52,6 +52,9 @@ jobs:
       - name: Test anti-slop rules and enforcement
         run: pnpm test:antislop
 
+      - name: Typecheck Effect lint rules
+        run: pnpm typecheck:effect-rules
+
       - name: Reject new anti-slop findings
         run: pnpm lint:antislop
 

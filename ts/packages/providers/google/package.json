@@ -1,6 +1,6 @@
 {
   "name": "@composio/google",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Google GenAI Provider for Composio SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -47,7 +47,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.16.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
-    "@google/genai": "^1.1.0"
+    "@google/genai": "^1.6.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",

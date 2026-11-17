@@ -103,7 +103,7 @@ export const describe = (state: ReleaseState) =>
       `The release planned in run ${release} merged into \`next\` but was never tagged. If a gate bug refused it and the fix is on \`next\`, dispatch **SDK release** with action \`regate\`; otherwise revert its release PR on \`next\`. Then request this release again. See ${RECOVERY_RUNBOOK}`,
     Empty: () => 'Nothing to release: no pending changesets for the selected languages.',
     InReview: ({ pull }) =>
-      `Release PR: ${pull}\n\nA writer other than the requester approves it. Merging it tags and publishes the release.`,
+      `Release PR: ${pull}\n\nA repository writer approves it. The requester may approve only with repository admin permission. Merging it tags and publishes the release.`,
     Abandoned: ({ pull }) =>
       `${pull} closed without merging, so nothing was tagged or published. Request a new release when ready.`,
     Refused: ({ pull, reason }) =>

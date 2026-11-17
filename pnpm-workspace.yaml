@@ -29,38 +29,40 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/mcp': ^2.0.80
+  '@ai-sdk/mcp': ^2.0.93
   '@ai-sdk/openai': ^4.0.72
   '@arethetypeswrong/cli': ^0.18.5
-  '@clack/core': '^1.5.1'
-  '@clack/prompts': '^1.8.1'
+  '@clack/core': '^1.6.0'
+  '@clack/prompts': '^1.9.0'
   '@cloudflare/vitest-pool-workers': 0.23.0
-  '@cloudflare/workers-types': ^5.20261019.1
-  '@composio/client': 2.1.17
+  '@cloudflare/workers-types': ^5.20261110.1
+  '@composio/client': 2.1.33
+  # Same version as harness/run.mjs (AIMOCK_VERSION); move both together.
+  '@copilotkit/aimock': 1.47.0
   '@effect/language-service': ^0.87.5
-  '@effect/platform-bun': ^4.1.0
-  '@effect/vitest': ^4.1.0
+  '@effect/platform-bun': ^4.1.3
+  '@effect/vitest': ^4.1.3
   # Bisected against ts/examples/mastra's `cf:dry-run`: 1.54.0 moved the
   # workspace/sandbox subsystem behind `@mastra/core/agent`, which drags execa
   # (-> npm-run-path -> unicorn-magic) into the Workers bundle and fails to
   # link. 1.53.0 is the newest release that still bundles for workerd.
   '@mastra/core': 1.53.0
-  '@modelcontextprotocol/sdk': ^1.32.1
-  '@types/bun': ^1.4.3
-  ai: ^7.0.146
-  dotenv: ^18.0.8
-  effect: ^4.1.0
-  hono: ^4.13.13
-  openai: ^7.39.0
+  '@modelcontextprotocol/sdk': ^1.32.2
+  '@types/bun': ^1.4.4
+  ai: ^7.0.166
+  dotenv: ^18.0.10
+  effect: ^4.1.3
+  hono: ^4.13.18
+  openai: ^7.55.0
   picocolors: ^1.1.1
   publint: ^0.3.25
-  tsdown: ^0.23.1
+  tsdown: ^0.23.7
   tsx: ^4.23.15
   typescript: ^7.0.2
-  '@vitest/ui': ^5.0.5
-  vitest: ^5.0.5
-  wrangler: ^4.151.2
-  zod: ^4.5.4
+  '@vitest/ui': ^5.1.0
+  vitest: ^5.1.0
+  wrangler: ^4.159.0
+  zod: ^4.6.7
   zod-to-json-schema: ^3.25.2
 
 catalogs:
@@ -68,7 +70,8 @@ catalogs:
   # Workers test projects on the latest compatible v4 while the rest of the
   # workspace, including @effect/vitest, runs on Vitest 5.
   vitest4:
-    vitest: ^4.1.11
+    '@vitest/ui': ^4.1.12
+    vitest: ^4.1.12
   # TS7 (tsgo) ships no JS compiler API; consumers of that API pin TS6 here.
   # `typescript` rebinds the compiler-API import for @composio/cli's generate
   # pipeline and @composio/core's typedoc docgen (their typechecks still run the
@@ -100,6 +103,12 @@ minimumReleaseAgeExclude:
   # scripts were checked by hand for this exact version only, so later releases
   # still wait out the cooldown. Remove once 0.6.0 is older than the cutoff.
   - '@typesafe-ai/sdk@0.6.0'
+  # temporary: 0.7.0 (2026-11-11) is the first release with `uniku/uuid/v5`,
+  # which the CLI uses to derive agent session IDs. Publisher (GitHub Actions),
+  # npm provenance, and the absence of install scripts were checked by hand for
+  # this exact version only, so later releases still wait out the cooldown.
+  # Remove once 0.7.0 is older than the cutoff (after 2026-11-14).
+  - uniku@0.7.0
 
 peerDependencyRules:
   allowedVersions:
@@ -136,14 +145,16 @@ overrides:
   # temporary: @modelcontextprotocol/sdk depends on the 1.x line, which
   # GHSA-frvp-7c67-39w9 (serve-static path traversal) patches only in 2.0.5.
   # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
-  # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
-  '@hono/node-server@<2.0.10': '>=2.0.10 <3'
+  # in 2.0.10), and GHSA-jpvv-r467-5p4w / GHSA-qv5m-9pm6-hqp3 raised the
+  # patched floor to 2.1.6; drop when the SDK depends on >=2.1.6 itself.
+  '@hono/node-server@<2.1.6': '>=2.1.6 <3'
   # temporary: GHSA-7p8r-x3mc-p8w7, then GHSA-f65p-4m7j-42xc /
   # GHSA-jqff-g426-hqxp / GHSA-fph4-wmhf-6fwf / GHSA-5jgf-p345-68v8, then
-  # GHSA-hrr3-gc8f-f4qj raised the patched floor to 3.1.8. ajv accepts the
-  # patched 3.x line. Drop when its lockfile resolution is >=3.1.8 without an
-  # override.
-  'fast-uri@>=3.0.0 <3.1.8': '>=3.1.8 <4'
+  # GHSA-hrr3-gc8f-f4qj, then GHSA-333x-w4r6-6crp / GHSA-w74x-v6f9-j3xg /
+  # GHSA-wjr9-j795-jxcr / GHSA-xhq7-xmqj-769h raised the patched floor to
+  # 3.1.9. ajv accepts the patched 3.x line. Drop when its lockfile resolution
+  # is >=3.1.9 without an override.
+  'fast-uri@>=3.0.0 <3.1.9': '>=3.1.9 <4'
   # temporary: GHSA-mwp4-54f8-5fhr, then GHSA-rpw4-54j3-4h4q /
   # GHSA-2vr4-cq9g-pvrc / GHSA-j6r3-76f7-8jcv / GHSA-h3mg-xc3c-68pw raised the
   # patched floor to 10.7.1. express-rate-limit accepts the patched 10.x line.
@@ -189,11 +200,36 @@ overrides:
   # temporary: miniflare (via wrangler and @cloudflare/vitest-pool-workers in the
   # Cloudflare e2e fixtures) exact-pins sharp 0.35.2, which bundles a libheif
   # with GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545. Nothing here imports
-  # sharp; miniflare only uses it to emulate the Images binding. Drop when
-  # miniflare pins >=0.35.4.
-  'sharp@<0.35.4': '>=0.35.4 <0.36'
-  'vite@<=7.3.4': 7.3.5
+  # sharp; miniflare only uses it to emulate the Images binding.
+  # GHSA-wq5f-xc86-pv6w (bundled librsvg) raised the patched floor to 0.35.5.
+  # Drop when miniflare pins >=0.35.5.
+  'sharp@<0.35.5': '>=0.35.5 <0.36'
+  # GHSA-9jrq-w75r-8gcw, GHSA-rq7h-c2jc-7f22, and the bundled launch-editor
+  # advisories are patched in 7.3.7. Drop when vitest resolves >=7.3.7 itself.
+  'vite@<7.3.7': 7.3.7
   'esbuild@>=0.27.3 <0.28.1': 0.28.1
+  # temporary: GHSA-r825-w8mm-5pxw, GHSA-698v-4r3x-3vcv, and GHSA-587h-7wmj-h5pm
+  # (launch-editor, via @changesets/cli) and GHSA-pqg4-j6r4-53mv (shell-quote,
+  # via launch-editor). Both parents accept the patched lines. Drop when the
+  # lockfile resolves launch-editor >=2.14.2 and shell-quote >=1.11.0 without
+  # an override.
+  'launch-editor@<2.14.2': '>=2.14.2 <3'
+  'shell-quote@<1.11.0': '>=1.11.0 <2'
+  # temporary: GHSA-253c-mchw-3w2r, GHSA-r7fv-28h4-cvq7, GHSA-gfr2-rv44-r23c,
+  # and GHSA-vfgh-jcmw-g37q raised the patched floor to 14.3.3. typedoc accepts
+  # ^14.3.0. Drop when its lockfile resolution is >=14.3.3 without an override.
+  'markdown-it@>=14.0.0 <14.3.3': '>=14.3.3 <15'
+  # temporary: GHSA-3gg2-335m-rxc6, GHSA-46wx-v44x-9hh2, GHSA-4h7h-rv7c-7m2v,
+  # GHSA-4m76-xfj5-7975, and GHSA-h7mg-cq63-vhpq raised the patched floor to
+  # 4.13.16. @modelcontextprotocol/sdk and @modelcontextprotocol/node accept
+  # ^4.11.4. Drop when their lockfile resolution is >=4.13.16 without an
+  # override.
+  'hono@<4.13.18': '>=4.13.18 <5'
+  # temporary: eve (dev and peer dependency of @composio/experimental)
+  # exact-pins undici 8.10.2; GHSA-2m5v-pch6-74hx, GHSA-4w7w-5xrc-9h26, and six
+  # other advisories raised the patched 8.x floor to 8.12.2. Drop when eve
+  # depends on >=8.12.2 itself.
+  'undici@>=8.0.0 <8.12.2': '>=8.12.2 <9'
 
 auditConfig:
   ignoreGhsas:

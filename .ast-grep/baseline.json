@@ -217,12 +217,6 @@
   },
   {
     "ruleId": "ts-double-assertion",
-    "file": "ts/packages/core/src/errors/ComposioError.ts",
-    "source": "    const { cause, code, stack, statusCode, meta, possibleFixes } = this as unknown as {\n      cause: unknown;\n      code: string | undefined;\n      stack: string | undefined;\n      statusCode: number | undefined;\n      meta: Record<string, unknown> | undefined;\n      possibleFixes: string[] | undefined;\n    };",
-    "count": 1
-  },
-  {
-    "ruleId": "ts-double-assertion",
     "file": "ts/packages/core/src/models/Triggers.ts",
     "source": "      originalPayload: payload as unknown as Record<string, unknown>,",
     "count": 1
@@ -333,12 +327,6 @@
     "ruleId": "ts-double-assertion",
     "file": "ts/packages/providers/cloudflare/src/index.ts",
     "source": "      parameters: inputParameters as unknown as {\n        type: 'object';\n        properties: {\n          [key: string]: {\n            type: string;\n            description?: string;\n          };\n        };\n        required: string[];\n      },",
-    "count": 1
-  },
-  {
-    "ruleId": "ts-double-assertion",
-    "file": "ts/packages/providers/google/src/index.ts",
-    "source": "      parameters: {\n        type: 'object',\n        description: tool.description || '',\n        properties: inputParameters?.properties || {},\n        required: inputParameters?.required || [],\n      } as unknown as Schema,",
     "count": 1
   },
   {

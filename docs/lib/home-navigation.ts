@@ -128,6 +128,7 @@ export const DOCS_PRODUCTS = {
       '/docs/production-readiness',
       '/docs/providers',
       '/docs/how-composio-works',
+      '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
       '/docs/session-configs',
       '/docs/governance/approvals',
@@ -177,6 +178,7 @@ export const DOCS_PRODUCTS = {
             label: 'Toolkits & Tools',
             links: [
               { url: '/docs/toolkits' },
+              { type: 'folder', path: 'apps-and-toolkits' },
               { url: '/docs/instant-tools' },
               { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
@@ -201,6 +203,7 @@ export const DOCS_PRODUCTS = {
                 url: '/docs/authentication/managing-multiple-connected-accounts',
                 label: 'Multiple connected accounts',
               },
+              { url: '/docs/authentication/session-cant-find-account' },
               { url: '/docs/authentication/controlling-scopes' },
               { url: '/docs/authentication/manually-authenticating' },
               { url: '/docs/authentication/programmatic-auth-configs' },
@@ -244,7 +247,42 @@ export const DOCS_PRODUCTS = {
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
           { type: 'folder', path: 'poc-to-prod' },
-          { type: 'folder', path: 'security', label: 'Security and data' },
+        ],
+      },
+      {
+        label: 'Security and Compliance',
+        items: [
+          { type: 'page', url: '/docs/security/overview' },
+          {
+            type: 'group',
+            label: 'Compliance',
+            links: [
+              {
+                type: 'page',
+                url: '/docs/security/vendor-security-review',
+                label: 'Vendor security review',
+              },
+              { type: 'link', url: 'https://trust.composio.dev', label: 'Trust Center', external: true },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Data privacy',
+            links: [
+              { url: '/docs/security/data-retention' },
+              { url: '/docs/security/zero-data-retention' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Security controls',
+            links: [
+              { url: '/docs/security/token-custody' },
+              { url: '/docs/security/byoc' },
+              { url: '/docs/security/audit-logs' },
+              { url: '/docs/security/outbound-ips' },
+            ],
+          },
         ],
       },
       {

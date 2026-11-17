@@ -45,6 +45,7 @@ const TOP_LEVEL_COMMANDS = new Set([
   'listen',
   'login',
   'logout',
+  'orgs',
   'proxy',
   'run',
   'search',

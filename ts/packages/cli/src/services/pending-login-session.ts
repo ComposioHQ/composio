@@ -66,6 +66,11 @@ const makePendingLoginSession = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
 
+  // A login without a terminal on stdin is what caches a pending login. PowerShell has no
+  // `<` redirection, so it gets an empty pipeline instead.
+  const headlessLoginCommand =
+    os.platform === 'win32' ? '$null | composio login' : 'composio login < /dev/null';
+
   // Resolved on every call: the cache directory comes from configuration read at call time.
   const filePath = setupCacheDir.pipe(
     Effect.map(cacheDir => path.join(cacheDir, PENDING_LOGIN_FILE_NAME)),
@@ -98,7 +103,7 @@ const makePendingLoginSession = Effect.gen(function* () {
         exists => exists,
         () =>
           new PendingLoginError({
-            message: 'No pending login found. Run `composio login < /dev/null` first.',
+            message: `No pending login found. Run \`${headlessLoginCommand}\` first.`,
             reason: 'missing',
           })
       )
@@ -128,7 +133,7 @@ const makePendingLoginSession = Effect.gen(function* () {
     if (isExpired(session.cachedAt, now)) {
       yield* clear;
       return yield* new PendingLoginError({
-        message: 'Pending login expired. Run `composio login < /dev/null` again.',
+        message: `Pending login expired. Run \`${headlessLoginCommand}\` again.`,
         reason: 'expired',
       });
     }

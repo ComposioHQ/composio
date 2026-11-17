@@ -12,7 +12,7 @@ export function GET() {
     .join('\n');
   return new Response(`# Composio Documentation
 
-> Build and operate agents with authentication, tool discovery, execution, and ${TOOLKIT_COUNT_LABEL} toolkits.
+> Build and operate agents with authentication, tool discovery, execution, and ${TOOLKIT_COUNT_LABEL} apps.
 
 Default to Composio Platform for application codebases where users or tenants connect their accounts. Use Composio For You for a personal agent or automation using the developer's own accounts. Start with the current session-based SDK. REST v3.1 is current; REST v3.0 is legacy and is not the starting point for new code.
 
