@@ -2700,6 +2700,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found",
             "content": {
@@ -3409,6 +3419,11 @@
                     "is_enabled_for_tool_router": {
                       "type": "boolean",
                       "description": "Whether this auth config is enabled for tool router"
+                    },
+                    "keyring_routed": {
+                      "type": "boolean",
+                      "description": "[EXPERIMENTAL] Whether the auth config is bound to a keyring encryption key, customer-hosted or Composio-operated.",
+                      "x-experimental": true
                     }
                   },
                   "required": [
@@ -3420,7 +3435,8 @@
                     "managed_app_id",
                     "status",
                     "no_of_connections",
-                    "tool_access_config"
+                    "tool_access_config",
+                    "keyring_routed"
                   ]
                 }
               }
@@ -5018,6 +5034,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found",
             "content": {
@@ -6568,6 +6594,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying connected accounts",
             "content": {
               "application/json": {
                 "schema": {
@@ -17664,6 +17700,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying connected accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "MCP server or instance not found.",
             "content": {
@@ -20501,11 +20547,11 @@
             "schema": {
               "type": "string",
               "format": "toolRouterSessionId",
-              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "description": "The unique identifier of the tool router session.",
               "example": "trs_LX9uJKBinWWr"
             },
             "required": false,
-            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "description": "Tool router session ID",
             "name": "session_id",
             "in": "path"
           }
@@ -20740,11 +20786,11 @@
             "schema": {
               "type": "string",
               "format": "toolRouterSessionId",
-              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "description": "The unique identifier of the tool router session.",
               "example": "trs_LX9uJKBinWWr"
             },
             "required": false,
-            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "description": "Tool router session ID",
             "name": "session_id",
             "in": "path"
           }
@@ -24309,11 +24355,11 @@
             "schema": {
               "type": "string",
               "format": "toolRouterSessionId",
-              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "description": "The unique identifier of the tool router session.",
               "example": "trs_LX9uJKBinWWr"
             },
             "required": false,
-            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "description": "Tool router session ID",
             "name": "session_id",
             "in": "path"
           }
