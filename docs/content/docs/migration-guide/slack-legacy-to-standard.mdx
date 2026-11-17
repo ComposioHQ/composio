@@ -1,0 +1,386 @@
+---
+title: Move Slack to the Standard managed app
+description: Create a Slack auth config on the Standard managed app, reconnect existing users, and recreate their triggers
+keywords: [migrate, slack, managed app, standard, legacy, managed_app_id, reconnect, slack marketplace, rate limits]
+---
+
+Slack has two Composio managed apps. Slack has approved Standard, gives it higher rate limits, and shows no Marketplace warning when users connect. Legacy is not approved by Slack and gets lower rate limits, but it receives every Slack trigger. See [Slack managed apps](/toolkits/managed-auth#slack-managed-apps) for the full comparison.
+
+Use this guide to move your users from Legacy to Standard. Legacy connections keep working while you switch, so you can move users on your own schedule.
+
+## Check your triggers first
+
+Standard does not receive these four message triggers:
+
+- `SLACK_CHANNEL_MESSAGE_RECEIVED`
+- `SLACK_DIRECT_MESSAGE_RECEIVED`
+- `SLACK_RECEIVE_BOT_MESSAGE`
+- `SLACK_RECEIVE_MESSAGE`
+
+If your product depends on any of them, don't move to Standard. Stay on Legacy, or [move to your own Slack app](/docs/migration-guide/managed-to-own-app).
+
+## Slack managed app IDs
+
+An auth config picks its managed app with `managed_app_id`.
+
+| App | `managed_app_id` |
+|---|---|
+| Standard | `ma_dyXxx6Il7ZK_` |
+| Legacy | `ma_aF51zqFNTs79` |
+
+In your code, read the IDs from the API instead of hardcoding them. Fetch the Slack toolkit and read `composio_managed_auth`. It has one entry per managed app, with its `managed_app_id`, `is_default` flag, and the scopes it can request.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+<Callout type="info">
+The Python SDK's toolkit model doesn't return `composio_managed_auth` yet. Use the API tab or [Get toolkit by slug](/reference/api-reference/toolkits/getToolkitsBySlug).
+</Callout>
+</Tab>
+<Tab value="TypeScript">
+<Callout type="info">
+The TypeScript SDK's toolkit model doesn't return `composio_managed_auth` yet. Use the API tab or [Get toolkit by slug](/reference/api-reference/toolkits/getToolkitsBySlug).
+</Callout>
+</Tab>
+<Tab value="API">
+```bash
+curl -s https://backend.composio.dev/api/v3.1/toolkits/slack \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  | jq '.composio_managed_auth[] | {managed_app_id, is_default}'
+```
+</Tab>
+</Tabs>
+
+## What carries over
+
+- **Your user IDs, sessions, and agent code.** Only the Slack auth config your sessions use changes.
+- **Existing connected accounts.** Legacy connections keep working and refreshing until you disable or delete them.
+
+## What doesn't carry over
+
+Existing users must reconnect. Slack issues OAuth tokens to one app, so a token granted to Legacy doesn't work with Standard.
+
+You can't switch an existing auth config to another managed app. You set `managed_app_id` when you create the auth config, so you create a new one for Standard.
+
+Trigger instances belong to a connected account, so each reconnected user needs new triggers too.
+
+## Migrating
+
+<Steps>
+<Step>
+<StepTitle>Create an auth config on Standard</StepTitle>
+
+Create a Slack auth config with the Standard `managed_app_id`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+<Callout type="info">
+The Python SDK's auth config types don't include `managed_app_id` yet. Use the API tab or [Create auth config](/reference/api-reference/auth-configs/postAuthConfigs).
+</Callout>
+</Tab>
+<Tab value="TypeScript">
+<Callout type="info">
+The TypeScript SDK's `authConfigs.create` doesn't accept `managed_app_id` yet. Use the API tab or [Create auth config](/reference/api-reference/auth-configs/postAuthConfigs).
+</Callout>
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/auth_configs \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolkit": {"slug": "slack"},
+    "auth_config": {
+      "type": "use_composio_managed_auth",
+      "name": "Slack Standard",
+      "managed_app_id": "ma_dyXxx6Il7ZK_"
+    }
+  }' | jq '.auth_config.id'
+```
+</Tab>
+</Tabs>
+
+Copy the returned auth config ID, for example `ac_your_standard_slack_config`. If you set custom scopes on your Legacy config, pass the same scopes in `auth_config.credentials`.
+</Step>
+
+<Step>
+<StepTitle>Send new connections to Standard</StepTitle>
+
+A session uses an auth config only when you pass it in `auth_configs` (Python) or `authConfigs` (TypeScript), keyed by toolkit. The session then finds or creates the user's connection on that config. See [Precedence](/docs/configuring-sessions#precedence).
+
+A session pointed at Standard asks an existing Legacy user to connect again. To keep existing users working, choose the config per user: Standard for anyone with an active connection on it or no Legacy connection at all, and Legacy for everyone else.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+STANDARD_CONFIG = "ac_your_standard_slack_config"
+LEGACY_CONFIG = "ac_your_legacy_slack_config"
+
+
+def has_active_connection(user_id: str, auth_config_id: str) -> bool:
+    accounts = composio.connected_accounts.list(
+        user_ids=[user_id],
+        auth_config_ids=[auth_config_id],
+        statuses=["ACTIVE"],
+    )
+    return len(accounts.items) > 0
+
+
+def slack_auth_config_for(user_id: str) -> str:
+    if has_active_connection(user_id, STANDARD_CONFIG):
+        return STANDARD_CONFIG
+    if has_active_connection(user_id, LEGACY_CONFIG):
+        return LEGACY_CONFIG
+    return STANDARD_CONFIG
+
+
+session = composio.create(
+    user_id="user_123",
+    auth_configs={"slack": slack_auth_config_for("user_123")},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const STANDARD_CONFIG = 'ac_your_standard_slack_config';
+const LEGACY_CONFIG = 'ac_your_legacy_slack_config';
+
+async function hasActiveConnection(userId: string, authConfigId: string): Promise<boolean> {
+  const accounts = await composio.connectedAccounts.list({
+    userIds: [userId],
+    authConfigIds: [authConfigId],
+    statuses: ['ACTIVE'],
+  });
+  return accounts.items.length > 0;
+}
+
+async function slackAuthConfigFor(userId: string): Promise<string> {
+  if (await hasActiveConnection(userId, STANDARD_CONFIG)) return STANDARD_CONFIG;
+  if (await hasActiveConnection(userId, LEGACY_CONFIG)) return LEGACY_CONFIG;
+  return STANDARD_CONFIG;
+}
+
+const session = await composio.create('user_123', {
+  authConfigs: { slack: await slackAuthConfigFor('user_123') },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+STANDARD_CONFIG="ac_your_standard_slack_config"
+LEGACY_CONFIG="ac_your_legacy_slack_config"
+
+# Count the user's active connections on each config
+ON_STANDARD=$(curl -s "https://backend.composio.dev/api/v3.1/connected_accounts?user_ids=user_123&auth_config_ids=$STANDARD_CONFIG&statuses=ACTIVE" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.items | length')
+ON_LEGACY=$(curl -s "https://backend.composio.dev/api/v3.1/connected_accounts?user_ids=user_123&auth_config_ids=$LEGACY_CONFIG&statuses=ACTIVE" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.items | length')
+
+SLACK_CONFIG=$STANDARD_CONFIG
+if [ "$ON_STANDARD" -eq 0 ] && [ "$ON_LEGACY" -gt 0 ]; then
+  SLACK_CONFIG=$LEGACY_CONFIG
+fi
+
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"user_id\": \"user_123\", \"auth_configs\": {\"slack\": \"$SLACK_CONFIG\"}}"
+```
+</Tab>
+</Tabs>
+
+Store which config each user is on in your own database if you'd rather not look it up on every session.
+</Step>
+
+<Step>
+<StepTitle>Reconnect existing users</StepTitle>
+
+Ask each existing user to connect again, for example with an in-app banner or at their next sign-in. Generate a Connect Link on the Standard config:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+request = composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_your_standard_slack_config",
+    callback_url="https://your-app.com/connections/callback",
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const request = await composio.connectedAccounts.link(
+  'user_123',
+  'ac_your_standard_slack_config',
+  { callbackUrl: 'https://your-app.com/connections/callback' },
+);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl --request POST \
+  --url https://backend.composio.dev/api/v3.1/connected_accounts/link \
+  --header "x-api-key: $COMPOSIO_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "auth_config_id": "ac_your_standard_slack_config",
+    "user_id": "user_123",
+    "callback_url": "https://your-app.com/connections/callback"
+  }' | jq '{connected_account_id, redirect_url}'
+```
+</Tab>
+</Tabs>
+
+Send the browser to the returned redirect URL. Once the new connection is `ACTIVE`, the routing from the previous step sends that user's sessions to Standard.
+
+Use the same user ID the Legacy connection has. A different user ID creates a connection that your sessions and triggers won't match to the existing user.
+</Step>
+
+<Step>
+<StepTitle>Recreate triggers on the new connection</StepTitle>
+
+Triggers stay attached to the Legacy connected account. List them and create each one on the new connected account with the same trigger config. Skip the four message triggers, because Standard doesn't receive them. Keep a map from each old trigger ID to its new one:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+NOT_ON_STANDARD = {
+    "SLACK_CHANNEL_MESSAGE_RECEIVED",
+    "SLACK_DIRECT_MESSAGE_RECEIVED",
+    "SLACK_RECEIVE_BOT_MESSAGE",
+    "SLACK_RECEIVE_MESSAGE",
+}
+
+old_triggers = composio.triggers.list_active(
+    connected_account_ids=["ca_old_legacy_account"],
+)
+
+new_trigger_ids = {}
+for trigger in old_triggers.items:
+    if trigger.trigger_name in NOT_ON_STANDARD:
+        continue
+    new_trigger = composio.triggers.create(
+        slug=trigger.trigger_name,
+        connected_account_id="ca_new_standard_account",
+        trigger_config=trigger.trigger_config,
+    )
+    new_trigger_ids[trigger.id] = new_trigger.trigger_id
+
+# After your event filters use the new IDs, disable the old instances
+for old_trigger_id in new_trigger_ids:
+    composio.triggers.disable(trigger_id=old_trigger_id)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const NOT_ON_STANDARD = new Set([
+  'SLACK_CHANNEL_MESSAGE_RECEIVED',
+  'SLACK_DIRECT_MESSAGE_RECEIVED',
+  'SLACK_RECEIVE_BOT_MESSAGE',
+  'SLACK_RECEIVE_MESSAGE',
+]);
+
+const oldTriggers = await composio.triggers.listActive({
+  connectedAccountIds: ['ca_old_legacy_account'],
+});
+
+const newTriggerIds = new Map<string, string>();
+for (const trigger of oldTriggers.items) {
+  if (NOT_ON_STANDARD.has(trigger.triggerName)) continue;
+  const newTrigger = await composio.triggers.create('user_123', trigger.triggerName, {
+    connectedAccountId: 'ca_new_standard_account',
+    triggerConfig: trigger.triggerConfig,
+  });
+  newTriggerIds.set(trigger.id, newTrigger.triggerId);
+}
+
+// After your event filters use the new IDs, disable the old instances
+for (const oldTriggerId of newTriggerIds.keys()) {
+  await composio.triggers.disable(oldTriggerId);
+}
+```
+</Tab>
+<Tab value="API">
+```bash
+# List triggers on the Legacy connection
+curl -s "https://backend.composio.dev/api/v3.1/trigger_instances/active?connected_account_ids=ca_old_legacy_account" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq '.items[] | {id, trigger_name, trigger_config}'
+
+# For each one that Standard receives, create the same trigger type on the new connection.
+# Use its trigger_name in the URL and copy its trigger_config. Save the returned trigger_id.
+curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_MESSAGE_REACTION_ADDED/upsert \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "connected_account_id": "ca_new_standard_account", "trigger_config": {}}' \
+  | jq '{trigger_id}'
+
+# After your event filters use the new trigger_id, disable the old instance
+curl -X PATCH https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_old_trigger \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "disable"}'
+```
+</Tab>
+</Tabs>
+
+Results are cursor-paginated. If the list returns a next cursor, fetch the next page as shown in [Listing active triggers](/docs/setting-up-triggers/managing-triggers#listing-active-triggers).
+
+Events from the new triggers carry the new trigger ID and connected account ID. Before you disable the old instances, update anything that matches on the old values: [event subscriptions filtered by trigger ID](/docs/setting-up-triggers/subscribing-to-events), webhook handlers, and any stored links between a user and their trigger or connected account.
+
+Keep the old trigger enabled until events arrive from the new one, and expect duplicate events while both are enabled. Then disable the old trigger rather than delete it, so you can switch back if something goes wrong.
+
+If you set a per-trigger webhook URL (`egress_url`) on an old trigger, set it again on the new one with [Update trigger instance](/reference/api-reference/triggers/patchTriggerInstancesManageByTriggerId). The create calls above don't copy it.
+</Step>
+
+<Step>
+<StepTitle>Retire the Legacy connections</StepTitle>
+
+After a user's new connection works, [disable](/docs/auth-configuration/connected-accounts#enable-and-disable-accounts) their Legacy connected account. Disabling an account also disables its triggers, and you can re-enable it if something goes wrong.
+
+Once you're confident, clean up in this order:
+
+1. [Delete the old triggers](/docs/setting-up-triggers/managing-triggers#deleting-triggers).
+2. [Delete the Legacy connected account](/docs/auth-configuration/connected-accounts#delete-accounts). This removes it from Composio and is permanent.
+
+When no active connections remain on the Legacy config, every user is on Standard. You can then pass the Standard config in every session and drop the routing logic.
+</Step>
+</Steps>
+
+## Checklist
+
+1. Your product doesn't need the four message triggers.
+2. A Slack auth config exists on the Standard managed app.
+3. Sessions route each user to the right config, and new users land on Standard.
+4. Existing users have a way to reconnect, under the same user ID.
+5. Triggers exist on each new connection, and the old ones are disabled.
+6. Legacy connected accounts are disabled or deleted once their replacements work.
+7. A connected-account list filtered to the Legacy config shows no active accounts.
+
+## Next
+
+<Cards>
+  <Card icon={<Key />} title="Managed OAuth apps" href="/toolkits/managed-auth#slack-managed-apps" description="How the two Slack managed apps differ" />
+  <Card icon={<Key />} title="Move to your own OAuth app" href="/docs/migration-guide/managed-to-own-app" description="Use your own Slack app for message triggers and your own branding" />
+  <Card icon={<Zap />} title="Avoid and recover from rate limits" href="/docs/poc-to-prod/avoid-rate-limits" description="Spot which limit you hit, retry well, and shape traffic" />
+</Cards>
