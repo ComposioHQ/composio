@@ -1,7 +1,7 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, Fiber, FileSystem, Layer, Option, Path, PlatformError } from 'effect';
+import { Clock, Effect, Fiber, FileSystem, Layer, Option, Path, PlatformError } from 'effect';
 import { TestClock } from 'effect/testing';
 import { AtomicReplaceError, atomicReplaceFile } from 'src/utils/atomic-replace';
 
@@ -109,13 +109,16 @@ describe('atomic replace', () => {
           method: 'rename',
           pathOrDescriptor: targetPath,
         });
-        let attempts = 0;
+        const attemptTimes: number[] = [];
         const lockedFs = FileSystem.make({
           ...fs,
           rename: (from, to) =>
             Effect.gen(function* () {
-              if (from === targetPath && to === backupPath && ++attempts <= scenario.failures) {
-                return yield* Effect.fail(lockedError);
+              if (from === targetPath && to === backupPath) {
+                attemptTimes.push(yield* Clock.currentTimeMillis);
+                if (attemptTimes.length <= scenario.failures) {
+                  return yield* Effect.fail(lockedError);
+                }
               }
               return yield* fs.rename(from, to);
             }),
@@ -133,7 +136,11 @@ describe('atomic replace', () => {
         );
         const result = yield* Fiber.join(fiber);
 
-        expect(attempts).toBe(scenario.attempts);
+        expect(attemptTimes).toHaveLength(scenario.attempts);
+        const firstAttempt = attemptTimes[0];
+        expect(attemptTimes.map(time => time - firstAttempt)).toEqual(
+          Array.from({ length: scenario.attempts }, (_, index) => index * 200)
+        );
         if (scenario.failures === 2) {
           expect(yield* fs.readFileString(targetPath)).toBe('new binary');
           expect(yield* fs.readFileString(backupPath)).toBe('old binary');
