@@ -4,7 +4,10 @@
   // everything except no-restricted-syntax, which runs through the
   // oxlint-plugin-eslint JS plugin as eslint-js/no-restricted-syntax.
   "plugins": ["typescript", "unicorn", "oxc"],
-  "jsPlugins": [{ "name": "eslint-js", "specifier": "oxlint-plugin-eslint" }],
+  "jsPlugins": [
+    { "name": "eslint-js", "specifier": "oxlint-plugin-eslint" },
+    { "name": "composio-effect", "specifier": "./tools/oxlint/effect/index.ts" }
+  ],
   "categories": {
     "correctness": "error"
   },
@@ -114,6 +117,24 @@
         "typescript/ban-ts-comment": "off",
         "typescript/no-empty-object-type": "off",
         "typescript/no-namespace": "off"
+      }
+    },
+    {
+      "files": ["ts/packages/cli/src/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**",
+        "**/test/**",
+        "**/tests/**",
+        "**/__fixtures__/**",
+        "**/fixtures/**",
+        "**/generated/**",
+        "**/.generated/**"
+      ],
+      "rules": {
+        "composio-effect/require-cause-when-narrowing": "error",
+        "composio-effect/no-ordie-in-service-construction": "error"
       }
     },
     {
