@@ -65,6 +65,34 @@ const REDIRECTS = [
   { from: "/docs/authentication/overview", to: "/docs/authentication" },
 ];
 
+describe('Vendor security review - retired KB routes', () => {
+  const retiredPaths = [
+    '/kb/guide/platform-compliance-data-handling',
+    '/kb/security-and-trust/platform-compliance-data-handling',
+    '/kb/sdk-and-api/platform-compliance-data-handling',
+    '/kb/guide/canonical-public-sources',
+    '/kb/guide/model-training',
+    '/kb/guide/third-party-providers',
+    '/kb/guide/zero-data-retention-and-no-training-requirements',
+  ];
+  for (const path of retiredPaths) {
+    for (const from of [path, `${path}.md`, `${path}.mdx`, `/llms.mdx${path}`]) {
+      test(`${from} permanently redirects into docs`, async () => {
+        const markdown = from !== path;
+        const to = `/docs/security/vendor-security-review${markdown ? '.md' : ''}`;
+        const redirect = await fetchNoRedirect(from);
+        expect(redirect.status).toBe(308);
+        expect(new URL(redirect.headers.get('location')!, BASE_URL).pathname).toBe(to);
+        const response = await fetchPage(from);
+        expect(response.status).toBe(200);
+        expect(new URL(response.url).pathname).toBe(to);
+        expect(response.headers.get('content-type')).toContain(markdown ? 'text/markdown' : 'text/html');
+        expect(await response.text()).toContain('Zero data retention and no-training requirements');
+      });
+    }
+  }
+});
+
 describe("Redirects - key patterns", () => {
   for (const { from, to } of REDIRECTS) {
     test(`${from} → ${to}`, async () => {
