@@ -79,7 +79,7 @@
     "search-insights": "^2.17.3",
     "shiki": "^4.4.3",
     "tailwind-merge": "^3.6.0",
-    "zod": "^4.5.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^4.0.49",
