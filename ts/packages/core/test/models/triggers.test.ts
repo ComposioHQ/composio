@@ -544,6 +544,50 @@ describe('Triggers', () => {
 
         expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
       });
+
+      it('logs nothing when the trigger slug holds a control character', async () => {
+        const forged = {
+          ...v3Payload,
+          metadata: {
+            ...v3Payload.metadata,
+            trigger_slug: 'GMAIL_NEW_GMAIL_MESSAGE\n[Deprecation] forged',
+          },
+        };
+
+        await triggers.parse({
+          body: JSON.stringify(forged),
+          headers: { 'composio-deprecated-toolkits': deprecatedGmail },
+        });
+
+        expect(logger.warn).not.toHaveBeenCalled();
+      });
+
+      it('keeps tool-call warnings working after many trigger deliveries', async () => {
+        for (let batch = 0; batch < 16; batch++) {
+          const versions = Array.from(
+            { length: 70 },
+            (_, index) => `"GMAIL";version="v${batch}_${index}"`
+          );
+          await triggers.parse({
+            body,
+            headers: { 'composio-deprecated-toolkits': versions.join(', ') },
+          });
+        }
+        vi.mocked(logger.warn).mockClear();
+
+        const apiFetch = createToolkitDeprecationFetch(
+          async () =>
+            new Response('{}', {
+              headers: { 'composio-deprecated-toolkits': '"STRAVA";version="20240902_00"' },
+            })
+        );
+        await apiFetch('https://backend.composio.test/api/v3/tools/execute/STRAVA_GET_ATHLETE');
+
+        expect(vi.mocked(logger.warn).mock.calls).toHaveLength(1);
+        expect(String(vi.mocked(logger.warn).mock.calls[0]?.[0])).toContain(
+          'STRAVA version 20240902_00'
+        );
+      });
     });
   });
 

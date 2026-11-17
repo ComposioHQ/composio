@@ -214,6 +214,11 @@ Remix) or a plain `{ body, headers }` object (Express with `express.raw`,
 Next.js Pages Router `req`). The signature headers (`webhook-id`,
 `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
 
+When the delivery's `Composio-Deprecated-Toolkits` header says the trigger
+runs on a deprecated toolkit version, a warning is logged once per process
+for that version. With `verifySecret`, it is logged only for a verified
+delivery.
+
 ```typescript
 async parse(request: WebhookRequestLike, options?: ParseWebhookOptions): Promise<VerifyWebhookResult>
 ```

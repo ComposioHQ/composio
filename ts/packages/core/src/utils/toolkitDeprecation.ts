@@ -30,9 +30,9 @@ const MAX_VERSIONS_PER_LINE = 5;
  * The three limits below mirror the `@composio/client` deprecation module,
  * which reads the same kind of server-controlled header.
  */
-/** A header longer than this is ignored whole rather than parsed. */
+/** A header, or a trigger slug or id, longer than this is ignored whole rather than logged. */
 const MAX_HEADER_LENGTH = 2048;
-/** A header holding any of these is ignored whole, so nothing partially cleaned reaches the log. */
+/** A value holding any of these is ignored whole, so nothing partially cleaned reaches the log. */
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 /** Keys the process will ever record; past this, new versions are neither recorded nor warned about. */
 const MAX_TRACKED_VERSIONS = 1024;
@@ -49,6 +49,11 @@ export type DeprecatedToolkitEntry = z.infer<typeof DeprecatedToolkitEntrySchema
 
 /** Keys (`UPPER(slug)@version`) already warned about in this process. */
 const warnedToolkitVersions = new Set<string>();
+/** The same for trigger deliveries, kept apart so neither kind can use up or silence the other. */
+const warnedTriggerToolkitVersions = new Set<string>();
+
+const isLoggable = (value: string): boolean =>
+  value.length <= MAX_HEADER_LENGTH && !CONTROL_CHARACTERS.test(value);
 
 const dedupeKey = (entry: Pick<DeprecatedToolkitEntry, 'slug' | 'version'>): string =>
   `${entry.slug.toUpperCase()}@${entry.version}`;
@@ -217,23 +222,20 @@ export function formatToolkitDeprecationWarnings(
 }
 
 /**
- * Parses a header value and returns the entries whose `keyOf` key was not yet
- * warned about in this process, recording those keys. A value that is too long
- * or holds a control character yields nothing.
+ * Parses a header value and returns the entries not yet in `warned`, adding
+ * them. A value that is too long or holds a control character yields nothing.
  */
 const takeUnwarnedEntries = (
   value: string | null | undefined,
-  keyOf: (entry: DeprecatedToolkitEntry) => string
+  warned: Set<string>
 ): DeprecatedToolkitEntry[] => {
   if (value === null || value === undefined || value.length === 0) return [];
-  if (value.length > MAX_HEADER_LENGTH || CONTROL_CHARACTERS.test(value)) return [];
-  if (warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS) return [];
+  if (!isLoggable(value) || warned.size >= MAX_TRACKED_VERSIONS) return [];
   const fresh: DeprecatedToolkitEntry[] = [];
   for (const entry of parseDeprecatedToolkitsHeader(value)) {
-    const key = keyOf(entry);
-    if (warnedToolkitVersions.has(key) || warnedToolkitVersions.size >= MAX_TRACKED_VERSIONS)
-      continue;
-    warnedToolkitVersions.add(key);
+    const key = dedupeKey(entry);
+    if (warned.has(key) || warned.size >= MAX_TRACKED_VERSIONS) continue;
+    warned.add(key);
     fresh.push(entry);
   }
   return fresh;
@@ -241,7 +243,10 @@ const takeUnwarnedEntries = (
 
 /** Warns once per formatted line for the versions on `response` not yet warned about. */
 const warnDeprecatedToolkits = (response: Response): void => {
-  const fresh = takeUnwarnedEntries(response.headers.get(TOOLKIT_DEPRECATION_HEADER), dedupeKey);
+  const fresh = takeUnwarnedEntries(
+    response.headers.get(TOOLKIT_DEPRECATION_HEADER),
+    warnedToolkitVersions
+  );
   for (const line of formatToolkitDeprecationWarnings(fresh)) {
     logger.warn(line);
   }
@@ -263,14 +268,16 @@ const formatTriggerWarning = (
  * Warns once per process for each deprecated toolkit version a trigger
  * delivery's `Composio-Deprecated-Toolkits` header names. These are remembered
  * apart from the API response warnings, so seeing one does not silence the
- * other. Never throws.
+ * other. A trigger slug or id that is too long or holds a control character
+ * gets no warning, since an unverified delivery chooses both. Never throws.
  */
 export function warnDeprecatedTriggerToolkits(
   value: string | undefined,
   trigger: Pick<IncomingTriggerPayload, 'id' | 'triggerSlug'>
 ): void {
   try {
-    for (const entry of takeUnwarnedEntries(value, entry => `trigger:${dedupeKey(entry)}`)) {
+    if (!isLoggable(trigger.triggerSlug) || !isLoggable(trigger.id)) return;
+    for (const entry of takeUnwarnedEntries(value, warnedTriggerToolkitVersions)) {
       logger.warn(formatTriggerWarning(trigger, entry));
     }
     // ast-grep-ignore: ts-empty-catch
@@ -310,4 +317,5 @@ export function createToolkitDeprecationFetch(
 /** Clears the once-per-process record. Tests only. */
 export function _resetToolkitDeprecationWarningsForTests(): void {
   warnedToolkitVersions.clear();
+  warnedTriggerToolkitVersions.clear();
 }

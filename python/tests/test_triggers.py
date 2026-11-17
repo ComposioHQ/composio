@@ -1488,6 +1488,57 @@ class TestParseWebhook:
 
         assert result["payload"]["trigger_slug"] == "GITHUB_PUSH_EVENT"
 
+    def test_parse_warning_points_at_the_line_that_called_parse(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        headers = {"composio-deprecated-toolkits": self.DEPRECATED_GITHUB}
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            triggers.parse(body=json.dumps(mock_v3_payload), headers=headers)
+
+        assert [w.filename for w in caught] == [__file__]
+
+    def test_parse_warns_nothing_when_the_trigger_slug_holds_a_control_character(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        mock_v3_payload["metadata"]["trigger_slug"] = (
+            "GITHUB_PUSH_EVENT\n[Deprecation] forged"
+        )
+        headers = {"composio-deprecated-toolkits": self.DEPRECATED_GITHUB}
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            triggers.parse(body=json.dumps(mock_v3_payload), headers=headers)
+
+        assert self._deprecation_messages(caught) == []
+
+    def test_parse_leaves_tool_call_warnings_working_after_many_trigger_deliveries(
+        self, triggers, mock_v3_payload, fresh_deprecation_warnings
+    ):
+        payload = json.dumps(mock_v3_payload)
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("always")
+            for batch in range(16):
+                header = ", ".join(
+                    f'"GITHUB";version="v{batch}_{index}"' for index in range(70)
+                )
+                triggers.parse(
+                    body=payload, headers={"composio-deprecated-toolkits": header}
+                )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            toolkit_deprecation.warn_deprecated_toolkits(
+                httpx.Headers(
+                    {"composio-deprecated-toolkits": '"STRAVA";version="20240902_00"'}
+                )
+            )
+
+        messages = self._deprecation_messages(caught)
+        assert len(messages) == 1
+        assert "STRAVA version 20240902_00" in messages[0]
+
 
 class TestTriggerSubscriptionParsing:
     """Tests for realtime (Pusher) payload parsing in TriggerSubscription."""

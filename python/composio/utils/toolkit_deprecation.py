@@ -41,9 +41,9 @@ _MAX_VERSIONS_PER_LINE = 5
 
 #: The three limits below mirror the ``composio_client._deprecation`` module,
 #: which reads the same kind of server-controlled header.
-#: A header longer than this is ignored whole rather than parsed.
+#: A header, or a trigger slug or id, longer than this is ignored whole rather than logged.
 _MAX_HEADER_LENGTH = 2048
-#: A header holding any of these is ignored whole, so nothing partially cleaned reaches the log.
+#: A value holding any of these is ignored whole, so nothing partially cleaned reaches the log.
 _CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
 #: Keys the process will ever record; past this, new versions are neither recorded nor warned about.
 _MAX_TRACKED_VERSIONS = 1024
@@ -72,7 +72,13 @@ class DeprecatedToolkit:
 
 
 _warned: set[str] = set()
+#: The same for trigger deliveries, kept apart so neither kind can use up or silence the other.
+_warned_triggers: set[str] = set()
 _lock = threading.Lock()
+
+
+def _is_loggable(value: str) -> bool:
+    return len(value) <= _MAX_HEADER_LENGTH and not _CONTROL_CHARACTERS.search(value)
 
 
 def _split_outside_quotes(value: str, delimiter: str) -> list[str]:
@@ -264,33 +270,28 @@ def format_warnings(
     ]
 
 
-def _take_unwarned(
-    value: t.Optional[str], key: t.Callable[[DeprecatedToolkit], str]
-) -> list[DeprecatedToolkit]:
-    """Parse a header value and return the entries whose ``key`` was not yet
-    warned about in this process, recording those keys.
+def _take_unwarned(value: t.Optional[str], warned: set[str]) -> list[DeprecatedToolkit]:
+    """Parse a header value and return the entries not yet in ``warned``,
+    adding them.
 
     A value that is too long or holds a control character yields nothing.
     """
-    if not value:
-        return []
-    if len(value) > _MAX_HEADER_LENGTH or _CONTROL_CHARACTERS.search(value):
+    if not value or not _is_loggable(value):
         return []
     entries = parse_deprecated_toolkits_header(value)
     fresh: list[DeprecatedToolkit] = []
     with _lock:
         for entry in entries:
-            entry_key = key(entry)
-            if entry_key in _warned or len(_warned) >= _MAX_TRACKED_VERSIONS:
+            if entry.key in warned or len(warned) >= _MAX_TRACKED_VERSIONS:
                 continue
-            _warned.add(entry_key)
+            warned.add(entry.key)
             fresh.append(entry)
     return fresh
 
 
 def warn_deprecated_toolkits(headers: httpx.Headers, docs_url: str = DOCS_URL) -> None:
     """Warn once per process for each deprecated toolkit version in ``headers``."""
-    fresh = _take_unwarned(headers.get(HEADER), lambda entry: entry.key)
+    fresh = _take_unwarned(headers.get(HEADER), _warned)
     for line in format_warnings(fresh, docs_url):
         warnings.warn(line, ComposioDeprecationWarning, stacklevel=2)
 
@@ -318,17 +319,26 @@ def warn_deprecated_trigger_toolkits(
     delivery's ``Composio-Deprecated-Toolkits`` header names.
 
     These are remembered apart from the API response warnings, so seeing one
-    does not silence the other. Never raises.
+    does not silence the other. A trigger slug or id that is too long or holds
+    a control character gets no warning, since an unverified delivery chooses
+    both. Never raises.
     """
     try:
-        for entry in _take_unwarned(value, lambda entry: f"trigger:{entry.key}"):
+        if not (_is_loggable(trigger_slug) and _is_loggable(trigger_id)):
+            return
+        for entry in _take_unwarned(value, _warned_triggers):
+            # Past this function, Triggers.parse() and its trace wrapper, to the caller.
             warnings.warn(
                 _format_trigger_warning(trigger_slug, trigger_id, entry),
                 ComposioDeprecationWarning,
-                stacklevel=3,
+                stacklevel=4,
             )
-    except Exception:  # noqa: BLE001 - a warning must never fail a parse
-        _logger.debug("Failed to inspect the toolkit deprecation header", exc_info=True)
+    # A warning must never fail the parse. Only issuing it can raise here, with
+    # warnings as errors or a warnings handler that raises, so there is nowhere
+    # to report it.
+    # ast-grep-ignore: py-empty-except
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def response_hook(response: httpx.Response) -> None:
@@ -358,3 +368,4 @@ def _reset_for_tests() -> None:
     """Clear the once-per-process record. Tests only."""
     with _lock:
         _warned.clear()
+        _warned_triggers.clear()
