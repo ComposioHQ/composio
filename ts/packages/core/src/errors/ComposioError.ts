@@ -12,6 +12,7 @@ import pc from 'picocolors';
 import { ZodError } from 'zod/v3';
 import { APIError } from '@composio/client';
 import logger from '../utils/logger';
+import { sanitizeApiErrorText } from './apiErrorDetails';
 
 /**
  * Options for error handling
@@ -35,6 +36,8 @@ export type ComposioErrorOptions = {
   statusCode?: number;
   /** Request id the API assigned. Defaults to the request id of an `APIError` cause. */
   requestId?: string;
+  /** Numeric `error.code` of a Composio API error response. Defaults to the code of an `APIError` cause. */
+  apiErrorCode?: number;
   /** The underlying cause of the error */
   cause?: unknown;
   /** Additional metadata associated with the error */
@@ -54,6 +57,7 @@ interface ErrorFormatData {
   message: string;
   code?: string;
   statusCode?: number;
+  apiErrorCode?: number;
   cause?: string;
   meta?: Record<string, unknown>;
   possibleFixes?: string[];
@@ -73,6 +77,10 @@ export class ComposioError extends Error {
   declare public readonly statusCode?: number;
   /** Request id the Composio API assigned to the request behind the error, when it sent one. */
   declare public readonly requestId?: string;
+  /** Numeric `error.code` the Composio API sent, when the response carried one. */
+  declare public readonly apiErrorCode?: number;
+  /** Additional metadata associated with the error. */
+  declare public readonly meta?: Record<string, unknown>;
 
   /**
    * Creates a new ComposioError
@@ -91,6 +99,7 @@ export class ComposioError extends Error {
     const apiCause = options.cause instanceof APIError ? options.cause : undefined;
     const statusCode = options.statusCode ?? apiCause?.status;
     const requestId = options.requestId ?? apiCause?.requestId;
+    const apiErrorCode = options.apiErrorCode ?? apiCause?.details?.code;
 
     this.code = `TS-SDK::${options.code}`;
     // format the possible fixes
@@ -100,6 +109,7 @@ export class ComposioError extends Error {
     // Node.js by default shows all the properties of the error object, so we are doing it conditionally
     this.definePropertyIfExists('statusCode', statusCode);
     this.definePropertyIfExists('requestId', requestId);
+    this.definePropertyIfExists('apiErrorCode', apiErrorCode);
     this.definePropertyIfExists('cause', options.cause);
 
     const combinedStack =
@@ -163,19 +173,17 @@ export class ComposioError extends Error {
       message: this.message,
     };
 
-    const { cause, code, stack, statusCode, meta, possibleFixes } = this as unknown as {
-      cause: unknown;
-      code: string | undefined;
-      stack: string | undefined;
-      statusCode: number | undefined;
-      meta: Record<string, unknown> | undefined;
-      possibleFixes: string[] | undefined;
-    };
+    const { cause, code, stack, statusCode, apiErrorCode, meta, possibleFixes } = this;
 
-    // Format cause properly if it exists
+    // Format cause properly if it exists. An API cause is server-controlled text.
     if (cause !== undefined) {
       const rawCause = cause;
-      data.cause = rawCause instanceof Error ? rawCause.message : String(rawCause);
+      data.cause =
+        rawCause instanceof APIError
+          ? sanitizeApiErrorText(rawCause.message)
+          : rawCause instanceof Error
+            ? rawCause.message
+            : sanitizeApiErrorText(String(rawCause));
     }
 
     // Add code if exists
@@ -186,6 +194,11 @@ export class ComposioError extends Error {
     // Add status code if exists
     if (statusCode !== undefined) {
       data.statusCode = statusCode;
+    }
+
+    // Add the API's numeric error code if exists
+    if (apiErrorCode !== undefined) {
+      data.apiErrorCode = apiErrorCode;
     }
 
     // Add meta if exists
@@ -231,6 +244,10 @@ export class ComposioError extends Error {
 
     if (data.statusCode !== undefined) {
       output += pc.yellow(`Status: ${data.statusCode}`) + '\n';
+    }
+
+    if (data.apiErrorCode !== undefined) {
+      output += pc.yellow(`API Error Code: ${data.apiErrorCode}`) + '\n';
     }
 
     if (data.cause) {

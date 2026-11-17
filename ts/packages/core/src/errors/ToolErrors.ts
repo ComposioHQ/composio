@@ -2,6 +2,11 @@ import { APIError, type APIErrorBody } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 import { ComposioConnectedAccountNotFoundError } from './ConnectedAccountsErrors';
 import { getRetryAfterSeconds, isRateLimitResponse } from '../utils/rateLimit';
+import {
+  apiErrorSuggestedFixes,
+  sanitizeApiErrorText,
+  withApiErrorMessage,
+} from './apiErrorDetails';
 
 export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
@@ -103,7 +108,7 @@ const rateLimitOptions = (cause: APIError, meta: Record<string, unknown>) => {
     cause,
     statusCode: 429,
     meta: retryAfterSeconds === undefined ? meta : { ...meta, retryAfterSeconds },
-    possibleFixes: [
+    possibleFixes: apiErrorSuggestedFixes(cause.details) ?? [
       retryAfterSeconds === undefined
         ? 'Wait before retrying'
         : `Wait ${Math.ceil(retryAfterSeconds)} seconds, then retry`,
@@ -147,35 +152,22 @@ export class ComposioInvalidModifierError extends ComposioError {
 }
 
 /** Options for a `ComposioToolExecutionError`. */
-export type ComposioToolExecutionErrorOptions = ComposioErrorOptions & {
-  /** The numeric `error.code` of the Composio API error response. */
-  apiErrorCode?: number;
-};
+export type ComposioToolExecutionErrorOptions = ComposioErrorOptions;
 
 export class ComposioToolExecutionError extends ComposioError {
-  /**
-   * The numeric `error.code` the Composio API sent when it rejected the execution.
-   * `code` stays the SDK's `TS-SDK::` code.
-   */
-  declare public readonly apiErrorCode?: number;
-
   constructor(
     message: string = 'Tool execution error',
     options: ComposioToolExecutionErrorOptions = {}
   ) {
-    const { apiErrorCode, ...errorOptions } = options;
     super(message, {
-      ...errorOptions,
-      code: errorOptions.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,
-      cause: errorOptions.cause,
-      possibleFixes: errorOptions.possibleFixes || [
+      ...options,
+      code: options.code || ToolErrorCodes.TOOL_EXECUTION_ERROR,
+      cause: options.cause,
+      possibleFixes: options.possibleFixes || [
         'Ensure the tool is correctly configured and the input is valid',
         'Ensure the userId is correct and has an active connected account for the user in case of non NoAuth toolkits',
       ],
     });
-    if (apiErrorCode !== undefined) {
-      this.apiErrorCode = apiErrorCode;
-    }
 
     this.name = 'ComposioToolExecutionError';
   }
@@ -342,9 +334,25 @@ export class ComposioToolVersionRequiredError extends ComposioError {
 /** The error envelope of a Composio API error response, as `@composio/client` validates it. */
 export type ComposioAPIServerErrorBody = APIErrorBody;
 
+type APIErrorDetails = NonNullable<APIError['details']>;
+
 // Map of error codes to their corresponding error constructors
-const ERROR_CODE_HANDLERS = new Map<number, (message: string, cause: APIError) => ComposioError>([
-  [1803, (msg, cause) => new ComposioConnectedAccountNotFoundError(msg, { cause })],
+const ERROR_CODE_HANDLERS = new Map<
+  number,
+  (details: APIErrorDetails, cause: APIError) => ComposioError
+>([
+  [
+    1803,
+    (details, cause) =>
+      new ComposioConnectedAccountNotFoundError(
+        sanitizeApiErrorText(details.message || 'An error occurred'),
+        {
+          cause,
+          statusCode: cause.status,
+          possibleFixes: apiErrorSuggestedFixes(details),
+        }
+      ),
+  ],
   // Add more error code handlers here as needed
 ]);
 
@@ -372,35 +380,39 @@ const fallbackExecutionFixes = (status: number | undefined): string[] => {
 };
 
 export const handleToolExecutionError = (tool: string, actualError: Error): ComposioError => {
+  // Already an SDK error, including a caller cancellation: keep its type.
+  if (actualError instanceof ComposioError) {
+    return actualError;
+  }
+
   const apiError = actualError instanceof APIError ? actualError : undefined;
   const details = apiError?.details;
 
   // Handle specific API error codes
   if (apiError && details && ERROR_CODE_HANDLERS.has(details.code)) {
-    return ERROR_CODE_HANDLERS.get(details.code)!(details.message || 'An error occurred', apiError);
+    return ERROR_CODE_HANDLERS.get(details.code)!(details, apiError);
   }
 
   if (isRateLimitResponse(actualError)) {
     return new ComposioToolExecutionRateLimitError(
-      `Rate limited while executing the tool ${tool}`,
+      withApiErrorMessage(`Rate limited while executing the tool ${tool}`, actualError.details),
       actualError,
       { slug: tool }
     );
   }
 
-  // Default error for all other cases
-  const serverMessage = details?.message;
+  // Keep the reason of a failure that never reached the API (timeout,
+  // connection error, a non-API throw). An HTTP response without the error
+  // envelope keeps the tool context alone, as its raw body is unvalidated.
+  const originalMessage = apiError?.status === undefined ? actualError.message : undefined;
+
+  // Default error for all other cases. `statusCode`, `requestId` and `apiErrorCode`
+  // come from the APIError cause.
   return new ComposioToolExecutionError(
-    serverMessage
-      ? `Error executing the tool ${tool}: ${serverMessage}`
-      : `Error executing the tool ${tool}`,
+    withApiErrorMessage(`Error executing the tool ${tool}`, details, originalMessage),
     {
       cause: actualError,
-      statusCode: apiError?.status,
-      apiErrorCode: details?.code,
-      possibleFixes: details?.suggested_fix
-        ? [details.suggested_fix]
-        : fallbackExecutionFixes(apiError?.status),
+      possibleFixes: apiErrorSuggestedFixes(details) ?? fallbackExecutionFixes(apiError?.status),
     }
   );
 };
