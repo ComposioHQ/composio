@@ -23,12 +23,15 @@ export function FaqSection({ faq }: FaqSectionProps) {
         {faq.map((item) => (
           <details key={item.question}>
             <summary
-              id={item.question.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}
-              className="cursor-pointer scroll-m-24 px-3 py-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-fd-ring"
+              className="cursor-pointer px-3 py-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-fd-ring"
             >
               {item.question}
             </summary>
-            <div className="px-4 pb-2">
+            {/* Target the answer so native fragment navigation opens its details. */}
+            <div
+              id={item.question.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}
+              className="scroll-m-24 px-4 pb-2"
+            >
               {item.answer.map((part, index) => part.type === 'html' ? (
                 <div key={index}
                   className="prose prose-sm prose-fd max-w-none text-fd-muted-foreground"

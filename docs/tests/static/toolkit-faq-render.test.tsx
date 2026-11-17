@@ -12,5 +12,7 @@ test('closed toolkit FAQs retain setup instructions in server-rendered HTML', ()
   expect(html).toContain('Register application');
   expect(html).toContain('Organization access');
   expect(html).toContain('<summary');
-  expect(html).toContain('id="how-do-i-set-up-custom-oauth-credentials-for-github"');
+  // A fragment inside the answer triggers native details ancestor revealing.
+  expect(html).toMatch(/<details><summary[^>]*>How do I set up custom OAuth credentials for GitHub\?<\/summary><div id="how-do-i-set-up-custom-oauth-credentials-for-github"/);
+  expect(html).not.toMatch(/<summary[^>]* id=/);
 });
