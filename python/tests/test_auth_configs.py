@@ -468,3 +468,41 @@ def test_mutation_response_through_generated_client(
     assert result.success is True
     assert result.message == payload["message"]
     assert result.model_dump(exclude_unset=True) == payload
+
+
+def test_create_on_named_managed_app_through_generated_client():
+    """managed_app_id reaches the API and the response says which app was used."""
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            201,
+            json={
+                "toolkit": {"slug": "slack"},
+                "auth_config": {
+                    "id": "ac_test",
+                    "auth_scheme": "OAUTH2",
+                    "is_composio_managed": True,
+                    "restrict_to_following_tools": [],
+                    "managed_app_id": "ma_second00001",
+                },
+            },
+        )
+
+    with HttpClient(
+        provider="test",
+        auth=ProjectAuth("test"),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    ) as client:
+        result = AuthConfigs(client).create(
+            "slack",
+            {"type": "use_composio_managed_auth", "managed_app_id": "ma_second00001"},
+        )
+
+    assert json.loads(requests[0].content)["auth_config"] == {
+        "type": "use_composio_managed_auth",
+        "managed_app_id": "ma_second00001",
+    }
+    assert result.id == "ac_test"
+    assert result.managed_app_id == "ma_second00001"

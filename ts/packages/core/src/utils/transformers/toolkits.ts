@@ -156,6 +156,15 @@ export const transformToolkitRetrieveResponse = (
       },
       isLocalToolkit: response.is_local_toolkit,
       composioManagedAuthSchemes: response.composio_managed_auth_schemes,
+      composioManagedAuth: response.composio_managed_auth?.map(app => ({
+        managedAppId: app.managed_app_id,
+        isDefault: app.is_default,
+        mode: app.mode,
+        scopes: { available: app.scopes.available },
+        ...(app.user_scopes !== undefined && {
+          userScopes: { available: app.user_scopes.available },
+        }),
+      })),
       authConfigDetails: response.auth_config_details?.map(authConfig => ({
         name: authConfig.name,
         mode: authConfig.mode,
