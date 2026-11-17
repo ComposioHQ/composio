@@ -303,6 +303,36 @@ for (const [permission, allowed] of [
   });
 }
 
+for (const [action, allowed] of [
+  ['opened', 'true'],
+  ['edited', 'false'],
+  ['reopened', 'false'],
+] as const) {
+  test(`an issue ${action} by someone without write access authorizes triage as ${allowed}`, async () => {
+    const outputs: Record<string, string> = {};
+    await runInNewContext(`(async () => {\n${authorizationStep.with.script}\n})()`, {
+      context: {
+        actor: 'outsider',
+        eventName: 'issues',
+        repo: { owner: 'ComposioHQ', repo: 'composio' },
+        payload: { action },
+      },
+      github: {
+        rest: {
+          repos: { getCollaboratorPermissionLevel: async () => ({ data: { permission: 'read' } }) },
+        },
+      },
+      core: {
+        setOutput: (name: string, value: string) => {
+          outputs[name] = value;
+        },
+        info: () => {},
+      },
+    });
+    expect(outputs.allowed).toBe(allowed);
+  });
+}
+
 for (const status of [404, 403, 500] as const) {
   test(`permission lookup HTTP ${status} cannot authorize classification or write-back`, async () => {
     const outputs: Record<string, string> = {};

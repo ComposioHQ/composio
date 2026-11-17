@@ -2,7 +2,7 @@ name: Issue Triage
 
 on:
   issues:
-    # Maintainers can add `triage` to classify, or `support` to forward directly.
+    # New issues are triaged once. Maintainers can add `triage` to reclassify, or `support` to forward directly.
     types: [opened, reopened, edited, labeled]
   workflow_dispatch:
     inputs:
@@ -20,7 +20,7 @@ jobs:
     outputs:
       allowed: ${{ steps.authorize.outputs.allowed }}
     steps:
-      - name: Require a maintainer to initiate triage
+      - name: Allow new issues, and require a maintainer for everything else
         id: authorize
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -28,6 +28,12 @@ jobs:
             if (context.payload.action === "labeled" &&
                 !["triage", "support"].includes(context.payload.label?.name)) {
               core.setOutput("allowed", "false");
+              return;
+            }
+            // A new issue is triaged once for anyone: the classifier has no tools and apply only posts fixed text.
+            // Edits, reopens, labels, and dispatches still need a maintainer, so a reporter cannot re-run it.
+            if (context.eventName === "issues" && context.payload.action === "opened") {
+              core.setOutput("allowed", "true");
               return;
             }
             let allowed = false;
