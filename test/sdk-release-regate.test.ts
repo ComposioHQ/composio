@@ -26,6 +26,14 @@ const tagged = Exit.succeed({ _tag: 'Tagged', tag: 'sdk-release/8' } as const);
 const controller = (options: ControllerOptions = {}) => fakeController(options);
 
 describe('regate', () => {
+  test('accepts an admin requester approval when re-gating a merged release', async () => {
+    const github = controller({ reviewer: 'requester', reviewerPermission: 'admin' });
+    expect(await regate(github.fetcher)).toEqual(tagged);
+    expect(github.writes).toEqual([
+      { method: 'POST', path: '/git/refs', body: { ref: 'refs/tags/sdk-release/8', sha: head } },
+    ]);
+  });
+
   test('tags the merged, untagged release on next at its reviewed head', async () => {
     const github = controller();
     expect(await regate(github.fetcher)).toEqual(tagged);

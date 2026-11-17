@@ -6,7 +6,7 @@ run-name: SDK release (${{ github.event_name }}, ${{ github.actor }})
 #   1. request   a ComposioHQ member opens an `[SDK release]` issue or dispatches this workflow;
 #                the bot plans versions on protected next and opens one release PR.
 #                sdk.release.candidates.yml builds and smoke-tests the files on the release PR;
-#                a writer who did not request the release approves, and a person merges.
+#                an eligible repository writer approves, and a person merges.
 #   2. review    when the release PR closes, the bot re-checks approval and checks, then tags the
 #                reviewed head. A PR closed without merging is abandoned. A `regate` dispatch
 #                from next re-runs that gate, as next has it now, for a merged release that a

@@ -13,7 +13,7 @@ export const ReleaseBatch = Schema.Struct({
   id: RunId,
   /** The protected `next` commit the release is planned from. */
   inputBase: Sha,
-  /** The member who requested this release; they may not approve it. */
+  /** The member who requested this release; they may approve it only as a repository admin. */
   requestedBy: Schema.String,
   /** The issue that tracks this release. */
   issue: PositiveInt,

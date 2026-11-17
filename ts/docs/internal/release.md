@@ -43,10 +43,10 @@ A beta goes through the same release PR, approval, gate and tag as a stable rele
 
 ## Review and approve
 
-The release PR description lists each package's old and new version, the changesets it consumes or leaves for later, and links to the changelogs and regenerated references. It names the requester, who may not approve.
+The release PR description lists each package's old and new version, the changesets it consumes or leaves for later, and links to the changelogs and regenerated references. It names the requester, who may approve only with repository admin permission.
 
 1. Wait for the `SDK candidate (<language>)` and `SDK candidate smoke (<language>)` checks. The first builds the exact files that will be published. The second installs them in a clean project like a user would; for Python it also tests the new core with the latest published providers. A stable release also runs `SDK candidate docs`: it installs the docs against the candidate packages through a job-local registry, then runs the docs lint, type, snippet and build checks, so a guide that breaks against the new SDK blocks the release. The ordinary docs checks skip release PRs.
-2. A repository writer who did not request the release approves the head.
+2. A repository writer other than the PR author approves the head. If you requested the release, you may approve it only while you have repository `admin` permission. The gate checks your current permission through GitHub when tagging or re-gating; `write` and `maintain` permission do not qualify for this exception. Any writer's outstanding change request still blocks the release.
 
 Do not push to the release branch. The tag step accepts only the bot's commit, so a pushed commit (including **Update branch**) makes the merge fail the gate. To change the notes, fix the changesets on `next`, close the release PR, and request a new release.
 
@@ -76,7 +76,7 @@ Pick the row that matches what happened.
 | The candidate artifacts expired (30 days after the candidate build)                 | Revert the release PR on `next`, then request the release again.                    |
 | The tag exists but publishing failed                                                | Open the tag run and choose **Re-run failed jobs**.                                 |
 
-A re-run of the tag job runs the gate as `next` had it before the merge, so it repeats a gate bug. `regate` runs the gate as `next` has it now. It finds the release from the plan `next` carries and its release PR from the branch name, so it cannot be pointed at another PR or commit, and it applies exactly the same checks: the bot's head, an independent approval of that head, and green candidate checks. It tags the reviewed head if the release passes, does nothing if that tag already exists, and shares a concurrency group with the tag job. The new tag starts publishing as usual, and the request issue reopens.
+A re-run of the tag job runs the gate as `next` had it before the merge, so it repeats a gate bug. `regate` runs the gate as `next` has it now. It finds the release from the plan `next` carries and its release PR from the branch name, so it cannot be pointed at another PR or commit, and it applies exactly the same checks: the bot's head, an eligible approval of that head, and green candidate checks. It tags the reviewed head if the release passes, does nothing if that tag already exists, and shares a concurrency group with the tag job. The new tag starts publishing as usual, and the request issue reopens.
 
 A re-run of the tag run publishes the same pinned files, skips files already published, and uploads the rest. This works while the candidate artifacts exist, 30 days from the candidate build. If a registry already serves different bytes, add changesets for the affected packages on `next` and request a new release. It plans from the versions in `next`, so the unpublished versions are skipped and the packages move to the next version.
 
