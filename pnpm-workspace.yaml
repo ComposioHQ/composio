@@ -70,6 +70,7 @@ catalogs:
   # Workers test projects on the latest compatible v4 while the rest of the
   # workspace, including @effect/vitest, runs on Vitest 5.
   vitest4:
+    '@vitest/ui': ^4.1.12
     vitest: ^4.1.12
   # TS7 (tsgo) ships no JS compiler API; consumers of that API pin TS6 here.
   # `typescript` rebinds the compiler-API import for @composio/cli's generate
