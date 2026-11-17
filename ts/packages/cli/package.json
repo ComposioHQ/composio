@@ -77,7 +77,6 @@
     "effect": "catalog:",
     "extract-zip": "^2.0.1",
     "fast-string-width": "^3.0.2",
-    "indent-string": "^5.0.0",
     "json5": "^2.2.3",
     "mime": "^4.1.2",
     "open": "^11.0.4",
@@ -86,7 +85,6 @@
     "pusher-js": "^8.6.0",
     "semver": "^7.8.6",
     "source-map-js": "^1.2.2",
-    "superjson": "^2.2.6",
     "uniku": "^0.7.0",
     "zod": "catalog:"
   },

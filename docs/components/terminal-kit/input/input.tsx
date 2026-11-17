@@ -1,6 +1,6 @@
 "use client"
 
-import { IconBolt as Zap } from "nucleo-pixel"
+import { Zap } from "lucide-react"
 import * as React from "react"
 
 import { useResolvedTerminalTheme } from "@/hooks/use-resolved-terminal-theme"

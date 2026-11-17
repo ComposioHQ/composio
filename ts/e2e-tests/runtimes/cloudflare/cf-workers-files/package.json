@@ -12,6 +12,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
+    "@vitest/ui": "catalog:vitest4",
     "dotenv": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:vitest4",
