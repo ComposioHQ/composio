@@ -104,6 +104,14 @@ export class AuthConfigs {
    * @returns {Promise<CreateAuthConfigResponse>} Created auth config
    *
    * @example
+   * // Use a specific Composio-managed app; omit managedAppId for the toolkit's default
+   * const { composioManagedAuth } = await composio.toolkits.get('slack');
+   * const slackAuthConfig = await authConfigs.create('slack', {
+   *   type: AuthConfigTypes.COMPOSIO_MANAGED,
+   *   managedAppId: composioManagedAuth?.find(app => !app.isDefault)?.managedAppId,
+   * });
+   *
+   * @example
    * const authConfig = await authConfigs.create('my-toolkit', {
    *   type: AuthConfigTypes.CUSTOM,
    *   name: 'My Custom Auth Config',
@@ -162,6 +170,7 @@ export class AuthConfigs {
                       parsedOptions.data.toolAccessConfig.toolsForConnectedAccountCreation,
                   }
                 : undefined,
+              managed_app_id: parsedOptions.data.managedAppId,
             },
     };
     const result = await withCancellation(

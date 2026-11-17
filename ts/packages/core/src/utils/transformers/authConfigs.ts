@@ -13,7 +13,21 @@ import {
   AuthConfigRetrieveResponse as RawAuthConfigRetrieveResponse,
   AuthConfigCreateResponse as RawCreateAuthConfigResponse,
 } from '@composio/client/resources/auth-configs';
+import { z } from 'zod/v3';
 import { transform } from '../transform';
+
+/**
+ * `managed_app_id` on auth config responses, which the generated client does
+ * not declare.
+ */
+const RawManagedAppIdSchema = z.object({
+  managed_app_id: z.string().nullable().optional(),
+});
+
+function readManagedAppId(raw: unknown): string | null | undefined {
+  const parsed = RawManagedAppIdSchema.safeParse(raw);
+  return parsed.success ? parsed.data.managed_app_id : undefined;
+}
 
 /**
  * Transforms an auth config response from API format to SDK format.
@@ -56,6 +70,7 @@ export function transformAuthConfigRetrieveResponse(
               authConfig.tool_access_config.tools_for_connected_account_creation,
           }
         : undefined,
+      managedAppId: readManagedAppId(authConfig),
     }));
 }
 
@@ -103,5 +118,6 @@ export function transformCreateAuthConfigResponse(
       authScheme: response.auth_config.auth_scheme,
       isComposioManaged: response.auth_config.is_composio_managed,
       toolkit: response.toolkit.slug,
+      managedAppId: readManagedAppId(response.auth_config),
     }));
 }
