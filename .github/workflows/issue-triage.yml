@@ -141,7 +141,7 @@ jobs:
             Choose py only when the issue is primarily about Python SDK code in this repository.
             Choose ts only when the issue is primarily about TypeScript SDK code or TS packages other than the CLI in this repository.
             Choose docs only when the issue is primarily about documentation.
-            Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug. If the broken existing integration/tool does not identify an SDK, CLI, docs, or Python code defect in this repository, choose support so it is forwarded to Plain.
+            Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug. If the broken existing integration/tool does not identify an SDK, CLI, docs, or Python code defect in this repository, choose support so the reporter is pointed to the dashboard Support page.
             Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior, including support-routed hosted integration/tool bugs.
             Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
             Set should_comment to true when the issue appears incorrect, non-actionable, missing the information needed to reproduce or investigate, or when category is support.
@@ -236,6 +236,7 @@ jobs:
               issue_number,
             });
 
+            const SUPPORT_URL = "https://dashboard.composio.dev/~/org/support";
             const labels = [];
             const assignees = [];
             const suppressToolRequestHandling = isBug && category === "tool-request";
@@ -463,7 +464,34 @@ jobs:
               return thread;
             }
 
-            if (isSupport) {
+            // Account, billing, usage and hosted-product issues need the reporter's org, so they go through the dashboard.
+            // A reopened issue is the reporter disagreeing with the redirect: forward it instead of closing again.
+            const redirectToDashboard = category === "support" && context.payload.action !== "reopened";
+            if (redirectToDashboard && issue.state === "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: [
+                  "🤖 beep boop — this looks like a support request rather than a bug in this repository's SDKs, CLI, or docs.",
+                  "",
+                  `Please open a ticket from the Support page in your Composio dashboard: ${SUPPORT_URL}. Tickets filed there are tied to your account, so the team can look at your connections and logs and reply to you directly.`,
+                  "",
+                  "I've tagged this as `support` and closed it here.",
+                  "",
+                  "If you think I got this wrong, feel free to reopen the issue.",
+                ].join("\n"),
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: "closed",
+              });
+            }
+
+            if (isSupport && !redirectToDashboard) {
               if (!process.env.PLAIN_API_KEY) throw new Error("PLAIN_API_KEY is not configured; support forwarding cannot complete.");
               for (let attempt = 1; ; attempt++) {
                 try {
