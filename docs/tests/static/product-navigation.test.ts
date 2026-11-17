@@ -106,6 +106,30 @@ describe('Docs product navigation', () => {
     expect(shouldAnimateDocsProductSwitch(true, true)).toBe(false);
   });
 
+  test('nests the connection guide in a collapsed Troubleshooting folder for both products', () => {
+    for (const product of ['for-you', 'platform'] as const) {
+      const tree = buildProductPageTree(source.pageTree, product);
+      const folder = tree.children.find(node =>
+        node.type === 'folder' && node.$ref?.folder === 'troubleshooting'
+      );
+      expect(folder).toMatchObject({
+        type: 'folder',
+        name: 'Troubleshooting',
+        defaultOpen: false,
+      });
+      if (folder?.type !== 'folder') throw new Error('Troubleshooting folder is missing');
+      expect(folder.children.map(node => node.type === 'page' ? node.url : null)).toEqual(
+        ['/docs/oauth-mcp-troubleshooting'],
+      );
+      expect(tree.children.some(node =>
+        node.type === 'page' && node.url === '/docs/oauth-mcp-troubleshooting'
+      )).toBe(false);
+      expect(pageTreeUrls(tree).filter(url =>
+        url === '/docs/oauth-mcp-troubleshooting'
+      )).toHaveLength(1);
+    }
+  });
+
   test('fades the outgoing product snapshot while revealing the incoming product', async () => {
     const globalCss = await Bun.file(
       new URL('../../app/global.css', import.meta.url),
