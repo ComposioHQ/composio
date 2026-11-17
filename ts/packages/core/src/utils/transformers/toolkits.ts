@@ -160,10 +160,8 @@ export const transformToolkitRetrieveResponse = (
         managedAppId: app.managed_app_id,
         isDefault: app.is_default,
         mode: app.mode,
-        scopes: { available: app.scopes.available },
-        ...(app.user_scopes !== undefined && {
-          userScopes: { available: app.user_scopes.available },
-        }),
+        scopes: app.scopes,
+        ...(app.user_scopes != null && { userScopes: app.user_scopes }),
       })),
       authConfigDetails: response.auth_config_details?.map(authConfig => ({
         name: authConfig.name,
