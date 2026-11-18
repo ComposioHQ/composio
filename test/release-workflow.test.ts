@@ -52,6 +52,10 @@ const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
 );
+const cliUnixWorkflow = readFileSync(
+  new URL('../.github/workflows/cli.unix.yml', import.meta.url),
+  'utf8'
+);
 const cliBuildSharedScript = readFileSync(
   new URL('../ts/packages/cli/scripts/_shared.ts', import.meta.url),
   'utf8'
@@ -683,8 +687,13 @@ if (generatedWindowsInstallGuidance !== canonicalWindowsInstallGuidance) {
 
 // A single failed platform must never publish a partial set: fail-fast: false makes the build
 // job `success` only when every matrix leg passes, gating the release job.
-if (!buildCliWorkflow.includes('fail-fast: false')) {
-  throw new Error('build-cli-binaries.yml build matrix must set fail-fast: false');
+if (!buildCliWorkflow.includes('uses: ./.github/workflows/cli.unix.yml')) {
+  throw new Error(
+    'build-cli-binaries.yml must build the macOS and Linux archives with cli.unix.yml'
+  );
+}
+if (!cliUnixWorkflow.includes('fail-fast: false')) {
+  throw new Error('cli.unix.yml build matrix must set fail-fast: false');
 }
 
 // The release must be built as a draft and only flipped to published after verification, so no
@@ -1009,7 +1018,12 @@ if (!resolveTargetScript.includes('--exclude-drafts')) {
     'resolve-release-target.sh must exclude draft stable releases from beta base selection'
   );
 }
-if (!buildCliWorkflow.includes('RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}')) {
+if (
+  !buildCliWorkflow.includes('release_tag: ${{ needs.prepare.outputs.release_tag }}') ||
+  !cliUnixWorkflow.includes(
+    "RELEASE_TAG: ${{ inputs.release_tag || '@composio/cli@0.0.0-beta.0' }}"
+  )
+) {
   throw new Error('CLI binary builds must receive the resolved GitHub release tag');
 }
 if (
@@ -1017,14 +1031,12 @@ if (
 ) {
   throw new Error('CLI binary compilation must embed the resolved GitHub release version');
 }
-if (
-  !buildCliWorkflow.includes(
-    "- name: Verify binary version\n        if: matrix.target == 'bun-linux-x64'"
-  )
-) {
-  throw new Error('CLI binary version verification must run only on a native target');
+// Every macOS and Linux leg builds on a runner of its own platform, so every archive is
+// smoke-tested, its baked version included, by the executable that ships.
+if (!cliUnixWorkflow.includes('- name: Smoke-test archive\n        working-directory:')) {
+  throw new Error('cli.unix.yml must smoke-test every archive, with no per-target condition');
 }
-if (!buildCliWorkflow.includes('expected_version#@composio/cli@')) {
+if (!cliUnixWorkflow.includes('EXPECTED_VERSION="${RELEASE_TAG#@composio/cli@}"')) {
   throw new Error('CLI binary version verification must strip the release tag prefix');
 }
 
