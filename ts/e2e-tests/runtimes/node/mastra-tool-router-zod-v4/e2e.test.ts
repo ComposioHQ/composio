@@ -8,7 +8,7 @@
 
 import { Composio } from '@composio/core';
 import { MastraProvider } from '@composio/mastra';
-import { MCPClient } from '@mastra/mcp';
+import { getMcpCallToolMeta, MCPClient } from '@mastra/mcp';
 import { Agent } from '@mastra/core/agent';
 import { e2e } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
@@ -18,6 +18,58 @@ import { stepCountIs } from 'ai';
 import { z } from 'zod';
 
 const MCP_CONNECT_TIMEOUT_MS = 15_000;
+const KARMA_SCHEMA = z.object({ karma: z.number() });
+const SEARCH_TOOL = 'myHttpClient_COMPOSIO_SEARCH_TOOLS';
+const EXECUTE_TOOL = 'myHttpClient_COMPOSIO_MULTI_EXECUTE_TOOL';
+
+// Allowlist for failure logs: Zod strips every other field.
+const idsSchema = z.object({ log_id: z.string().optional(), request_id: z.string().optional() });
+const searchResponseSchema = idsSchema.extend({
+  data: z
+    .object({
+      results: z.array(z.object({ primary_tool_slugs: z.array(z.string()).optional() })).optional(),
+      tool_schemas: z
+        .object({
+          HACKERNEWS_GET_USER: z
+            .object({
+              input_schema: z.object({ required: z.array(z.string()).optional() }).nullish(),
+            })
+            .optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+const executeArgsSchema = z.object({
+  tools: z.array(z.object({ tool_slug: z.string(), arguments: z.record(z.string(), z.unknown()) })),
+});
+const mcpTextResultSchema = z.object({
+  _meta: idsSchema.optional(),
+  content: z.array(z.object({ type: z.literal('text'), text: z.string() })),
+});
+
+/** Flat log record for one search result, given as a structured value or an MCP text envelope. */
+function searchRecord(payload: { toolCallId: string; isError?: boolean; result: unknown }) {
+  const envelope = mcpTextResultSchema.safeParse(payload.result).data;
+  let value: unknown = payload.result;
+  if (envelope) {
+    try {
+      value = JSON.parse(envelope.content.map(part => part.text).join(''));
+    } catch {
+      value = undefined;
+    }
+  }
+  const response = searchResponseSchema.safeParse(value).data;
+  const meta = idsSchema.safeParse(getMcpCallToolMeta(payload.result) ?? envelope?._meta).data;
+  return {
+    toolCallId: payload.toolCallId,
+    isError: payload.isError,
+    log_id: meta?.log_id ?? response?.log_id,
+    request_id: meta?.request_id ?? response?.request_id,
+    requiredInput: response?.data?.tool_schemas?.HACKERNEWS_GET_USER?.input_schema?.required,
+    matchedSlugs: response?.data?.results?.flatMap(r => r.primary_tool_slugs ?? []),
+  };
+}
 
 declare module 'bun' {
   interface Env {
@@ -70,39 +122,51 @@ e2e(import.meta.url, {
             },
           });
 
-          const tools = await mcpClient.listTools();
-          const openai = createOpenAI({ apiKey: Bun.env.OPENAI_API_KEY });
+          try {
+            const tools = await mcpClient.listTools();
+            expect(Object.keys(tools).length).toBeGreaterThan(0);
+            const openai = createOpenAI({ apiKey: Bun.env.OPENAI_API_KEY });
 
-          const hackernewsAgent = new Agent({
-            id: 'test',
-            name: 'test',
-            instructions: `You're a helpful Hackernews agent, able to finding information about users.`,
-            model: openai('gpt-5.1'),
-            tools,
-          });
+            const hackernewsAgent = new Agent({
+              id: 'test',
+              name: 'test',
+              instructions: `You're a helpful Hackernews agent, able to finding information about users.`,
+              model: openai('gpt-5.1'),
+              tools,
+            });
 
-          const result = await hackernewsAgent.generate(
-            'Look up user "pg", and tell me their karma score.',
-            {
-              structuredOutput: {
-                schema: z.object({
-                  karma: z.number(),
-                }),
-              },
-              stopWhen: stepCountIs(10),
+            const result = await hackernewsAgent.generate(
+              'Look up user "pg", and tell me their karma score.',
+              { structuredOutput: { schema: KARMA_SCHEMA }, stopWhen: stepCountIs(10) }
+            );
+
+            const parsed = KARMA_SCHEMA.safeParse(result.object);
+            if (!parsed.success) {
+              const diagnostics = {
+                finishReason: result.finishReason,
+                toolCalls: result.toolCalls.map(({ payload }) => payload.toolName),
+                searches: result.toolResults
+                  .filter(({ payload }) => payload.toolName === SEARCH_TOOL)
+                  .map(({ payload }) => searchRecord(payload)),
+                executions: result.toolCalls
+                  .filter(({ payload }) => payload.toolName === EXECUTE_TOOL)
+                  .map(({ payload }) => executeArgsSchema.safeParse(payload.args).data?.tools),
+                steps: result.steps.map(step => ({
+                  finishReason: step.finishReason,
+                  usage: step.usage,
+                  providerMetadata: step.providerMetadata,
+                })),
+                warnings: result.warnings,
+              };
+              console.error('Tool Router search diagnostics', JSON.stringify(diagnostics, null, 2));
+              throw parsed.error;
             }
-          );
 
-          const toolCalls = result.toolCalls.flatMap(toolCall => toolCall.payload.toolName);
-          const toolCount = Object.keys(tools).length;
-
-          expect(toolCount).toBeGreaterThan(0);
-          expect(toolCalls).toBeDefined();
-          expect(result.error).toBeUndefined();
-          expect(result.object).toBeDefined();
-          expect(result.object.karma).toBeGreaterThanOrEqual(0);
-
-          await mcpClient.disconnect();
+            expect(result.error).toBeUndefined();
+            expect(parsed.data.karma).toBeGreaterThanOrEqual(0);
+          } finally {
+            await mcpClient.disconnect();
+          }
         },
         {
           timeout: TIMEOUTS.LLM_LONG,

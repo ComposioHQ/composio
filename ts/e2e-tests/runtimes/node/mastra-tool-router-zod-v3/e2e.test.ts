@@ -41,7 +41,7 @@ const searchResponseSchema = idsSchema.extend({
     .optional(),
 });
 const executeArgsSchema = z.object({
-  tools: z.array(z.object({ tool_slug: z.string(), arguments: z.record(z.unknown()) })),
+  tools: z.array(z.object({ tool_slug: z.string(), arguments: z.record(z.string(), z.unknown()) })),
 });
 const mcpTextResultSchema = z.object({
   _meta: idsSchema.optional(),
