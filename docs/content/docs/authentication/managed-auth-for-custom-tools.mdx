@@ -4,13 +4,17 @@ description: Connect each user's accounts and call provider APIs from your own t
 keywords: [auth-only, per-user OAuth, multi-tenant agents, custom tools, managed authentication, API proxy, token custody]
 ---
 
-Use Composio to connect your users' accounts and authenticate API requests from your own tools. Your tool definitions and business logic stay in your application. Composio stores and refreshes credentials, sends requests to the provider, and returns the response. You don't need predefined Composio tools, MCP, or an LLM.
+Use Composio to connect your users' accounts and authenticate API requests from your own tools. Your tool definitions and business logic stay in your application. Composio stores credentials, refreshes OAuth tokens where the provider supports refresh, sends requests to the provider, and returns the response. You don't need predefined Composio tools, MCP, or an LLM.
+
+This is an auth-only integration using Connect Link + Proxy Execute. For an MCP server with its own GitHub, Google Calendar, or Slack tools, keep those tools and send their outbound provider requests through Composio. This handles authentication to third-party APIs. Your application still authenticates callers to your own server.
 
 ## Connect an account and call its API
 
 This example connects GitHub and reads the connected account's profile through `GET /user`. Install the SDK with `pip install composio` or `npm install @composio/core`. Set `COMPOSIO_API_KEY` in your backend environment. The API example also needs Bash and `jq`.
 
 For a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), enable **Session management → Write only**, **Connected accounts → Read only**, and **Proxy execute (Legacy) → Write only**. Default full-access project keys already include these permissions. Keep the key server-side.
+
+Use the exact **Proxy execute (Legacy)** permission label when configuring a scoped key. The same permission also grants the current session proxy route. The label does not require a v3.0 API or a legacy SDK; the examples below use v3.1.
 
 The example uses `org_42:user_7` as an illustrative connection owner. In your application, derive this value from the authenticated request after checking workspace membership. Never accept a model-supplied or browser-supplied owner ID as authorization. See [B2B connection ownership](/docs/b2b-agents#choose-the-connection-owner) for member-owned and workspace-owned connections.
 
@@ -145,6 +149,7 @@ Keep Composio-managed OAuth apps in production when their consent branding, scop
 This is managed authentication for your own tools, not a token-export service. Connected-account reads redact credentials and aren't a supported way to retrieve access or refresh tokens. A custom OAuth app doesn't move token custody out of Composio Cloud. If your local vendor SDK requires a raw token, this proxy pattern doesn't supply one. Review [token custody and deployment options](/docs/security/token-custody) instead of attempting to extract credentials from account state.
 </Callout>
 
+- **Auth schemes and refresh:** Check [managed auth support](/toolkits/managed-auth) for your toolkit's OAuth app availability. The example above uses GitHub OAuth. Refresh depends on the provider and its credentials; revoked or expired authorization can require the user to reconnect.
 - **Provider scope:** Use relative paths for the connected provider. Proxy Execute is not an arbitrary authenticated HTTP relay; absolute URLs must keep the connected provider's scheme and registrable domain.
 - **Authorization:** Proxy permission can allow operations beyond predefined tool schemas. Validate endpoints and inputs in your own tools, enforce your application's tenant and role checks, and request only the provider scopes you need.
 - **Deployment:** Private VPC and self-hosted deployments are Enterprise arrangements. Customer-managed keys require a separate deployment design with Composio. Confirm operator access, decryption, logs, and backups against your requirements.

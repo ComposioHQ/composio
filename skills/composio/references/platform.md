@@ -73,6 +73,8 @@ Do not introduce another LLM framework solely to demonstrate Composio.
 
 ## Integrate sessions
 
+If the application or MCP server already has its own tools and needs only per-user third-party authentication, follow [managed authentication for your own tools](https://docs.composio.dev/docs/authentication/managed-auth-for-custom-tools.md). Create a Connect Link with `session.authorize()`, then call provider endpoints with `composio.tools.proxyExecute()` in TypeScript or `composio.tools.proxy()` in Python. Keep the existing tool definitions and business logic. Skip `session.tools()` and catalog tool selection for this path. The proxy returns provider responses, not access or refresh tokens. Your application still authenticates its own callers.
+
 A session is the runtime context for one application user. It carries identity, connections, tool scope, and sandbox configuration.
 
 Trace the application's existing authenticated user or tenant ID and use that stable identifier. Do not add a parallel user system or share one placeholder identity across users.

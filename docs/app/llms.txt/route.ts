@@ -12,9 +12,9 @@ export function GET() {
     .join('\n');
   return new Response(`# Composio Documentation
 
-> Build and operate agents with authentication, tool discovery, execution, and ${TOOLKIT_COUNT_LABEL} apps.
+> Connect users to ${TOOLKIT_COUNT_LABEL} apps. Use Composio only for auth with your own tools, or add tool discovery and execution to an agent.
 
-Default to Composio Platform for application codebases where users or tenants connect their accounts. Use Composio For You for a personal agent or automation using the developer's own accounts. Start with the current session-based SDK. REST v3.1 is current; REST v3.0 is legacy and is not the starting point for new code.
+Use Composio Platform when users or tenants connect accounts to your application. Use Composio For You for personal automation with your own accounts. Use the current session SDK. REST v3.1 is current; REST v3.0 is legacy.
 
 ## Before you implement
 
@@ -28,6 +28,7 @@ If unclear, distinguish application integration from connecting apps to the codi
 
 - [Platform or For You](https://docs.composio.dev/docs.md): Choose between building an application and using your own connected apps.
 - [Set up a coding agent](https://docs.composio.dev/docs/agent-setup.md): Install the Composio skill to add Composio to an existing project.
+- [Auth for your own tools](https://docs.composio.dev/docs/authentication/managed-auth-for-custom-tools.md): Per-user OAuth with Connect Link + Proxy Execute. Keep your backend or MCP tools; receive responses, not tokens.
 - [SDK quickstart](https://docs.composio.dev/docs/quickstart.md): Install Python or TypeScript packages, create a session, and run an agent.
 - [Authenticate an unattended agent](https://docs.composio.dev/docs/agent-setup/unattended-authentication.md): When no human is available, use \`composio login --agent\`, configure a project API key, and verify a live tool call. Human account access still requires authorization.
 - [Native agent plugins](https://docs.composio.dev/docs/agent-plugins.md): Use your own apps from Codex or Claude Code.
@@ -37,7 +38,6 @@ If unclear, distinguish application integration from connecting apps to the codi
 
 - [Core concepts](https://docs.composio.dev/docs/how-composio-works.md): Understand users, sessions, toolkits, and tool execution.
 - [Authentication](https://docs.composio.dev/docs/authentication.md): Distinguish auth configs from connected accounts and connect your application's users.
-- [Auth for your own tools](https://docs.composio.dev/docs/authentication/managed-auth-for-custom-tools.md): Per-user OAuth without provider tokens, predefined tools, MCP, or an LLM.
 - [B2B agents](https://docs.composio.dev/docs/b2b-agents.md): Tenant/member connection ownership and authorization.
 - [Token custody](https://docs.composio.dev/docs/security/token-custody.md): Credential storage, redaction, VPC, self-hosting, and customer-managed keys.
 - [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
