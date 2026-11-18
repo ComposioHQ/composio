@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.35 to include the latest API changes.
+
 - `composio upgrade` on Windows now retries a busy executable rename for up to two seconds, allowing a brief file lock after a previous upgrade to clear before replacing the binary.
 
 - Update @composio/client to 2.1.33 to include the latest API changes.
