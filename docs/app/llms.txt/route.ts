@@ -12,7 +12,7 @@ export function GET() {
     .join('\n');
   return new Response(`# Composio Documentation
 
-> Connect users to ${TOOLKIT_COUNT_LABEL} apps. Use Composio only for auth with your own tools, or add tool discovery and execution to an agent.
+> Connect users to ${TOOLKIT_COUNT_LABEL} apps. Use Composio for auth with your own tools, or add tool discovery and execution to an agent.
 
 Use Composio Platform when users or tenants connect accounts to your application. Use Composio For You for personal automation with your own accounts. Use the current session SDK. REST v3.1 is current; REST v3.0 is legacy.
 
