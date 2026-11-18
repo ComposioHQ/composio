@@ -31,6 +31,8 @@ unzip -q "$archive" -d "$root"
 cli="$root/$ARTIFACT/composio"
 test -x "$cli" || fail "$ARTIFACT/composio is missing or not executable"
 
+# The executable acts as Bun itself under BUN_BE_BUN, and BUN_OPTIONS adds runtime flags.
+unset BUN_BE_BUN BUN_OPTIONS BUN_BYTECODE_ORDER_OUT
 export HOME="$root/home"
 export COMPOSIO_CACHE_DIR="$root/home/.composio"
 export COMPOSIO_DISABLE_TELEMETRY=1

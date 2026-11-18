@@ -67,6 +67,10 @@ const runScenario = (
       extendEnv: true,
       env: {
         BUN_BYTECODE_ORDER_OUT: profilePath,
+        // An empty value masks an inherited BUN_BE_BUN (a build started from a
+        // `composio run` script), which would make the executable act as Bun itself.
+        BUN_BE_BUN: '',
+        BUN_OPTIONS: '',
         COMPOSIO_CACHE_DIR: path.join(home, '.composio'),
         COMPOSIO_DISABLE_TELEMETRY: '1',
         HOME: home,
