@@ -158,14 +158,14 @@ describe('reportInvocationFailure', () => {
   );
 
   it.effect(
-    '[Given] a defect with remote text in its message [Then] the error title escapes it',
+    '[Given] a multiline defect message [Then] the error title preserves line breaks and escapes unsafe controls',
     () =>
       Effect.gen(function* () {
-        const { exit, stderr } = yield* report(Cause.die(new Error(`boom\n${remoteText}`)));
+        const { exit, stderr } = yield* report(Cause.die(new Error(`boom\n${remoteText}\rdone`)));
 
         expect(exitCodeOf(exit)).toBe(1);
         expect(stderr).toHaveLength(1);
-        expect(stderr[0]).toContain('boom\\u000aremote\\u0007text\\u007f\\u0085');
+        expect(stderr[0]).toContain('boom\nremote\\u0007text\\u007f\\u0085\\u000ddone');
         expect(stderr[0]).not.toMatch(/[\u0007\u007f\u0085]/u);
       })
   );
