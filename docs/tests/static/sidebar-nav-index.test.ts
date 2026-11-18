@@ -62,17 +62,23 @@ describe('buildSidebarNavIndex', () => {
   });
 
   test('governance guides stay top-level within the Governance section', () => {
-    expect(index['/docs/governance/tool-hints']).toEqual({
+    expect(index['/docs/governance/action-permissions']).toEqual({
       group: 'Governance',
       folder: null,
       depth: 1,
       position: 1,
     });
-    expect(index['/docs/governance/approvals']).toEqual({
+    expect(index['/docs/governance/tool-hints']).toEqual({
       group: 'Governance',
       folder: null,
       depth: 1,
       position: 2,
+    });
+    expect(index['/docs/governance/approvals']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 3,
     });
   });
 
