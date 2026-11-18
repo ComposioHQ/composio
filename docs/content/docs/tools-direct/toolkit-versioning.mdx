@@ -138,7 +138,7 @@ curl -X GET "https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&
 </Tab>
 </Tabs>
 
-The base version never ages out. The daily deprecation job skips it, so its age never triggers a [deprecation warning](#deprecation-and-sunset) on unpinned v3 calls. Composio can still deprecate or retire a base version by hand. When Composio retired every `BROWSER_TOOL` version on 2026-11-13, the base version included, unpinned v3 calls for that toolkit started failing with `410 Gone`. Don't rely on the base version: pin a dated version, or call v3.1, which defaults to the latest version.
+The base version isn't on the [deprecation schedule](#deprecation-and-sunset), so unpinned v3 calls don't warn you as it ages. Composio can still retire it. For example, Composio retired every `BROWSER_TOOL` version on 2026-11-13, including the base version, so unpinned v3 calls for that toolkit now fail with HTTP `410 Gone`. Pin a dated version, or call v3.1, which defaults to the latest version.
 
 ## Configuration methods
 
@@ -233,7 +233,7 @@ As a rule of thumb: if an LLM reads the output, use `latest`. If your code parse
 
 Most agentic applications, including all [session-based](/docs/configuring-sessions) workflows, use `latest` by default and benefit from always having the most up-to-date tools. If you're building structured data pipelines or integrations with fixed response parsing, pin a tested version and upgrade it before it retires.
 
-A pin has a deadline set by the version's age, not by when you pinned it. Composio deprecates a version 12 months after it's published and retires it 3 months after that, so a pin on a version that's already 11 months old leaves you about 4 months to upgrade. See [Deprecation and sunset](#deprecation-and-sunset) for the warning you get first and what stops working.
+A pinned version doesn't last forever. Composio deprecates each version 12 months after publishing it and retires it 3 months later, counting from the version's publish date, not from when you pinned it. Pin an 11-month-old version and you have about 4 months to upgrade. See [Deprecation and sunset](#deprecation-and-sunset).
 
 ## Version resolution order
 
@@ -285,17 +285,49 @@ Call `composio.toolkits.changelog()` in Python or `await composio.toolkits.chang
 
 ## Deprecation and sunset
 
-Composio-managed toolkit versions are deprecated 12 months after they're published and retired 3 months after that. A daily job deprecates and retires versions on that schedule. It never deprecates a toolkit's newest version, so `latest` stays clear of the schedule, and it never deprecates the [base version](#default-version-behavior) that unpinned v3 calls use. Composio can also deprecate or retire a version [early](#early-deprecation-and-retirement).
+Composio deprecates each version of its toolkits 12 months after publishing it, and retires it 3 months later, on its sunset date. A deprecated version keeps working and warns you. A retired version stops running tools.
 
-When a request resolves to a deprecated version, the API adds a `Composio-Deprecated-Toolkits` response header alongside the normal response:
+| Stage | When | What happens |
+| --- | --- | --- |
+| Active | From publishing | Everything works. |
+| Deprecated | 12 months after publishing | Everything works. Responses carry a [deprecation header](#deprecation-header), and the SDKs log a warning. |
+| Retired | On the sunset date, 3 months after deprecation | Running tools and creating polling triggers fail with HTTP `410 Gone`. Reading the version still works. |
+
+Two versions stay off this schedule:
+
+- A toolkit's latest version, so `latest` and [sessions](/docs/configuring-sessions) aren't affected.
+- The [base version](#default-version-behavior) that v3 uses when you don't pass a version.
+
+Composio can still deprecate or retire any version [early](#early-deprecation-and-retirement).
+
+<Callout type="warn">
+The first deprecated versions reach their sunset date on 2027-01-29. If you pin toolkit versions, move off any deprecated version before then.
+</Callout>
+
+### Deprecation header
+
+When a request uses a deprecated version, the response carries a `Composio-Deprecated-Toolkits` header:
 
 ```http
 Composio-Deprecated-Toolkits: "GMAIL";version="20250114_00";deprecated=@1779840000;sunset=@1787788800;reason="lifecycle"
 ```
 
-The header is an RFC 9651 structured-field list. Each item names the toolkit slug and the resolved `version`, plus optional `deprecated` and `sunset` dates (Unix seconds, prefixed with `@`) and a `reason`. The reason is `lifecycle` when the daily job deprecated the version, `manual` when Composio deprecated it by hand, and `security` when Composio deprecated it for a security issue. A version deprecated without dates, as some older hand deprecations were, carries only `version`. Without a `sunset`, the daily job never retires it.
+The header is an RFC 9651 structured-field list with one item per deprecated toolkit version. Each item names the toolkit slug and has these parameters:
 
-Any response that resolved a deprecated version carries the header, error responses included. That covers toolkit get, tool get, tool execute, text-to-request, trigger type get, trigger upsert, and trigger enable. The tools list and the trigger types list carry it when they return items from a deprecated version, which happens when you pin one. Responses that don't resolve a version, such as the toolkit list and the toolkit changelog, never carry it. Neither do MCP server responses.
+- `version`: the deprecated version.
+- `deprecated` and `sunset`: when the version was deprecated and when it retires, in Unix seconds prefixed with `@`.
+- `reason`: `lifecycle` for the 12-month schedule, `manual` for an early deprecation, or `security` for a security issue.
+
+`deprecated`, `sunset`, and `reason` are optional. Some older deprecations carry only `version`, and a version without a `sunset` has no retirement date yet.
+
+The header appears on any response that uses a deprecated version, even when the request fails:
+
+- Fetching a toolkit, tool, or trigger type
+- Executing a tool or generating its inputs
+- Creating or enabling a trigger
+- Listing tools or trigger types, when the list returns items from a deprecated version. That happens when you pin one.
+
+The toolkit list, the toolkit changelog, and MCP responses never include it.
 
 ### SDK warning
 
@@ -332,40 +364,43 @@ const composio = new Composio({ logLevel: 'error' });
   </Tab>
 </Tabs>
 
-When the header omits `reason` or `sunset`, the warning omits those clauses too. The date after "will stop working" is the sunset: from then on, new calls on that version fail, as [After the sunset date](#after-the-sunset-date) describes.
+When the header omits `reason` or `sunset`, the warning omits those clauses too. "Will stop working" refers to the sunset date: from then on, new calls on that version fail. See [After the sunset date](#after-the-sunset-date).
 
 ### Moving off a deprecated version
 
-Pick a newer version from the [dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) or `toolkits.get()`, then pin it the same way you pin any version: at [SDK initialization](#sdk-initialization), through an [environment variable](#environment-variables), or [per execute call](#per-execution-override). The warning stops as soon as requests resolve to a version that isn't deprecated.
+Pick a newer version from the [dashboard](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-tools-direct-toolkit-versioning) or `toolkits.get()`, then pin it the same way you pin any version: at [SDK initialization](#sdk-initialization), through an [environment variable](#environment-variables), or [per execute call](#per-execution-override). The warning stops as soon as your requests use a version that isn't deprecated.
 
 ### After the sunset date
 
-Once a version's sunset passes, Composio retires it within a day. A retired version refuses new work:
+Once a version's sunset date passes, Composio retires it. A retired version refuses new work:
 
-- **Tool execution** fails with HTTP `410 Gone` from `tools.execute()`, `session.execute()`, and the execute API. Over MCP, the tool call returns the same message as an error result. The error names the toolkit and the retired version. Pin a supported version to run the tool again.
-- **Proxy execute** fails with HTTP `410 Gone` once the toolkit's newest version is retired. A proxy call doesn't take a version, so retiring older versions doesn't affect it.
-- **Polling triggers** can't be created or enabled on the retired version. Those calls fail with HTTP `410 Gone`. See [Triggers on deprecated and retired versions](#triggers-on-deprecated-and-retired-versions).
+- **Tool execution** fails with HTTP `410 Gone` from `tools.execute()`, `session.execute()`, and the execute API. The error names the toolkit and the retired version. Over MCP, the tool call returns the same message as an error. Pin a supported version to run the tool again.
+- **Proxy execute** fails with HTTP `410 Gone` once the toolkit's latest version is retired. Proxy calls don't take a version, so retiring older versions doesn't affect them.
+- **Polling triggers** can't be created or enabled on a retired version. See [Triggers on deprecated and retired versions](#triggers-on-deprecated-and-retired-versions).
 
-Reads keep working. You can still fetch the toolkit, its tools, and its trigger types at a retired version by passing that version, and the toolkit's `available_versions` can still list it.
+Reading still works. You can fetch a toolkit, its tools, and its trigger types at a retired version, and the version can still appear in `available_versions`.
 
 ### Triggers on deprecated and retired versions
 
-You don't need to move triggers off a deprecated version. Composio keeps them running:
+You don't need to move triggers off a deprecated version. Composio handles it:
 
-- **Webhook triggers** run at the toolkit's latest version, whatever version you created them with, so retiring that version doesn't affect them. The exception is a webhook trigger that reads its changes by polling, such as the Gmail and Google Calendar triggers: the webhook only tells Composio that something changed, so these triggers move forward the same way polling triggers do.
-- **Polling triggers** move themselves forward. On each poll, a polling trigger moves to the newest active version of its trigger that can read its saved polling state. When its version is deprecated and no such version is left, the next poll moves it to the trigger's latest version and keeps the same trigger ID. Composio starts polling the new version before it stops polling the old one, so you don't lose events, though a few can arrive twice.
+- **Webhook triggers** run the toolkit's latest version, so retiring the version you created them with doesn't affect them.
+- **Polling triggers** move on their own. Once a trigger's version is deprecated, Composio moves the trigger to a newer version on its next poll. The trigger keeps its ID, and you don't lose events, though a few can arrive twice.
+- **Gmail and Google Calendar triggers** move the same way as polling triggers, even when they use a webhook.
 
-A polling trigger can't move when its config fails the latest version's schema, or when the trigger doesn't poll at the latest version. It stays on its version until that version is retired. Composio then disables it with the reason `toolkit_version_retired` and sends a [`composio.trigger.disabled`](/reference/api-reference/webhook-events/composio_trigger_disabled) event if you subscribe to it. To get its events again, create the trigger again on the latest version, with a config that version accepts.
+Composio can't move a polling trigger when the latest version rejects its configuration or no longer supports polling for it. That trigger keeps running on its version until the version retires. Composio then disables it with the reason `toolkit_version_retired`, and sends a [`composio.trigger.disabled`](/reference/api-reference/webhook-events/composio_trigger_disabled) event if you subscribe to it. To get its events again, create the trigger on the latest version with a configuration that version accepts.
 
-Creating or enabling a trigger on a deprecated version works. The response carries the `Composio-Deprecated-Toolkits` header, so the SDKs warn, and a polling trigger moves forward on its next poll. Creating or enabling a polling trigger on a retired version fails with HTTP `410 Gone`. The error names the newest active version, when there is one, and tells you to upsert with `toolkit_versions` set to `"latest"` or to a version that isn't retired.
+Creating or enabling a trigger on a deprecated version still works. The response carries the deprecation header, so the SDKs warn, and Composio moves a polling trigger to a newer version on its next poll.
 
-For triggers, "will stop working" in the SDK warning applies to new calls: from the sunset date, you can't create or enable a polling trigger on that version. Polling triggers that are already running keep working, because Composio moves them off the version on their first poll after it's deprecated.
+Creating or enabling a polling trigger on a retired version fails with HTTP `410 Gone`. When the toolkit has an active version, the error message names the newest one. Create the trigger on that version or on `latest` instead.
+
+The SDK warning says a deprecated version "will stop working" on its sunset date. For triggers, that means you can't create or enable a polling trigger on the version from that date. Polling triggers that are already running keep working, because Composio moves them off the version once it's deprecated.
 
 ### Early deprecation and retirement
 
-Composio can deprecate or retire any version early, with less than 3 months' notice. The header's `reason` is then `manual`, or `security` for a security issue. Newer hand deprecations also carry their own `deprecated` and `sunset` dates. For example, Composio deprecated the remaining `HIGHLEVEL` versions by hand on 2026-11-16, so their header items carry `reason="manual"` and a sunset on 2027-02-16.
+Composio can deprecate or retire a version early, with less than 3 months' notice. An early deprecation carries `reason="manual"`, or `reason="security"` for a security issue. For example, Composio deprecated the remaining `HIGHLEVEL` versions on 2026-11-16 with `reason="manual"` and a sunset date of 2027-02-16.
 
-A polling trigger moves to the latest version only while its version is deprecated. If Composio retires a version without deprecating it first, a polling trigger on it with no newer version that can read its saved state is disabled with the reason `toolkit_version_retired`.
+If Composio retires a version without deprecating it first, Composio disables the polling triggers on it that can't move to a newer version, with the reason `toolkit_version_retired`.
 
 ## Next
 
