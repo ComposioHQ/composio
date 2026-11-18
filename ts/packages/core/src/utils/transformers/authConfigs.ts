@@ -15,19 +15,21 @@ import {
 } from '@composio/client/resources/auth-configs';
 import { transform } from '../transform';
 
+type RawAuthConfig = RawAuthConfigRetrieveResponse | RawAuthConfigListResponse['items'][number];
+
 /**
  * Transforms an auth config response from API format to SDK format.
  *
  * This method converts property names from snake_case to camelCase and reorganizes
  * the data structure to match the SDK's standardized format for auth configurations.
  *
- * @param {RawAuthConfigRetrieveResponse} authConfig - The raw API response to transform
+ * @param {RawAuthConfig} authConfig - The raw retrieve response or list item to transform
  * @returns {AuthConfigRetrieveResponse} The transformed auth config data
  *
  * @private
  */
 export function transformAuthConfigRetrieveResponse(
-  authConfig: RawAuthConfigRetrieveResponse
+  authConfig: RawAuthConfig
 ): AuthConfigRetrieveResponse {
   return transform(authConfig)
     .with(AuthConfigRetrieveResponseSchema)
