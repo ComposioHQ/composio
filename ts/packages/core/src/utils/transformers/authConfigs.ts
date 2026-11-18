@@ -58,6 +58,7 @@ export function transformAuthConfigRetrieveResponse(
               authConfig.tool_access_config.tools_for_connected_account_creation,
           }
         : undefined,
+      managedAppId: authConfig.managed_app_id,
     }));
 }
 
@@ -105,5 +106,6 @@ export function transformCreateAuthConfigResponse(
       authScheme: response.auth_config.auth_scheme,
       isComposioManaged: response.auth_config.is_composio_managed,
       toolkit: response.toolkit.slug,
+      managedAppId: response.auth_config.managed_app_id,
     }));
 }

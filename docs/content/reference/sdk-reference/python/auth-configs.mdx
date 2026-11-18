@@ -30,7 +30,7 @@ def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_
 Create a new auth config
 
 ```python
-def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_config_create_response.AuthConfig
+def create(toolkit: str, options: Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]) -> auth_config_create_response.AuthConfig
 ```
 
 **Parameters**
@@ -38,11 +38,22 @@ def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkit` | `str` | The toolkit to create the auth config for. |
-| `options` | `auth_config_create_params.AuthConfig` | The options to create the auth config with. |
+| `options` | `Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]` | The options to create the auth config with. For a Composio-managed auth config, `managed_app_id` picks the app. |
 
 **Returns**
 
 `auth_config_create_response.AuthConfig` — The created auth config.
+
+**Example**
+
+```python
+toolkit = composio.toolkits.get("slack")
+app = next(a for a in toolkit.composio_managed_auth if not a.is_default)
+composio.auth_configs.create(
+    "slack",
+    {"type": "use_composio_managed_auth", "managed_app_id": app.managed_app_id},
+)
+```
 
 ---
 
@@ -147,4 +158,4 @@ def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateS
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/auth_configs.py#L21)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/auth_configs.py#L31)
