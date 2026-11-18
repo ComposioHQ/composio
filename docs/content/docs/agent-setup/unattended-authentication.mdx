@@ -115,10 +115,10 @@ When a human is available but your terminal cannot open a browser, print a login
 composio login --no-wait
 ```
 
-Share the URL with the human so they can sign in to their account, then complete login:
+Share the URL with the human so they can sign in to their account, then complete login. Bound the poll so it returns before your turn ends:
 
 ```bash
-composio login --poll
+composio login --poll --timeout 120
 ```
 
-The pending login expires after ten minutes. Run `composio login --no-wait` again if it expires. For a human account, obtain a [project API key](/reference/authenticating-to-composio#project-api-key) from the dashboard.
+`--timeout` takes seconds, from 1 to 600. A poll that runs out exits non-zero, prints the login URL again, and says to run the same command again once the human has clicked. The pending login expires after ten minutes; run `composio login --no-wait` again if it expires. For a human account, obtain a [project API key](/reference/authenticating-to-composio#project-api-key) from the dashboard.
