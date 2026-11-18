@@ -265,3 +265,9 @@ auditConfig:
     # as `^3.25 || ^4`, which breaks the zod 3 fixtures' peers. Drop once zod
     # ships a patched 3.x or those paths leave the graph.
     - GHSA-mrhx-c7xc-m3w5
+    # picomatch ReDoS in repeated extglobs (high). 4.0.7 is the latest
+    # published version and GitHub lists no patched release. Every flagged
+    # production-audit path goes through @mastra/core in the private Anthropic
+    # and Mastra examples or the Mastra Zod 3/4 E2E fixtures. Remove this
+    # exception once those paths resolve to a patched version.
+    - GHSA-fc5q-39xc-vjpf
