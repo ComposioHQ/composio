@@ -16,7 +16,6 @@
  */
 
 import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
 import { Console, Effect } from 'effect';
@@ -38,7 +37,7 @@ export const BYTECODE_ORDER_SCENARIOS: ReadonlyArray<ReadonlyArray<string>> = [
   ['tools', '--help'],
 ];
 
-const ORDER_DIR = './dist/bytecode-order';
+const ORDER_ROOT = path.join('dist', 'bytecode-order');
 
 const hostExecutableName = (name: string): string =>
   process.platform === 'win32' ? `${name}.exe` : name;
@@ -100,32 +99,36 @@ const runScenario = (
  * the recorded profiles for `--bytecode-order`, most common first. Fails on any
  * scenario that exits non-zero or records nothing, rather than building without a
  * profile.
+ *
+ * Each call works in a directory of its own under `ORDER_ROOT`, removed when the
+ * caller's scope closes, so overlapping builds in one checkout never share or delete
+ * each other's profiles. The returned paths are relative to the package: Bun splits
+ * `--bytecode-order` at every comma, and a relative path keeps the checkout's own
+ * location out of the argument.
  */
 export const recordBytecodeOrder = <E, R>(
   compile: (outfile: string) => Effect.Effect<unknown, E, R>
 ) =>
   Effect.gen(function* () {
-    yield* Effect.tryPromise(async () => {
-      await rm(ORDER_DIR, { force: true, recursive: true });
-      await mkdir(ORDER_DIR, { recursive: true });
-    });
-    const executable = path.resolve(ORDER_DIR, hostExecutableName('composio-profile'));
+    const workDir = yield* Effect.acquireRelease(
+      Effect.tryPromise(async () => {
+        await mkdir(ORDER_ROOT, { recursive: true });
+        return mkdtemp(path.join(ORDER_ROOT, 'run-'));
+      }),
+      dir => Effect.promise(() => rm(dir, { force: true, recursive: true }))
+    );
+    const home = path.join(workDir, 'home');
+    yield* Effect.tryPromise(() => mkdir(home, { recursive: true }));
+
+    const executable = path.resolve(workDir, hostExecutableName('composio-profile'));
     yield* Console.log(`Compiling the bytecode profile executable ${executable}...`);
     yield* compile(executable);
 
-    const home = yield* Effect.tryPromise(() =>
-      mkdtemp(path.join(os.tmpdir(), 'composio-bytecode-order-'))
-    );
     const profiles: string[] = [];
     for (const args of BYTECODE_ORDER_SCENARIOS) {
-      const profilePath = path.resolve(ORDER_DIR, `${scenarioName(args)}.order`);
-      yield* runScenario(executable, args, profilePath, home);
-      profiles.push(profilePath);
+      const profile = path.join(workDir, `${scenarioName(args)}.order`);
+      yield* runScenario(executable, args, path.resolve(profile), path.resolve(home));
+      profiles.push(profile);
     }
-    // The profiles stay in `ORDER_DIR` for inspection; the 100 MiB executable does not.
-    yield* Effect.tryPromise(async () => {
-      await rm(home, { force: true, recursive: true });
-      await rm(executable, { force: true });
-    });
     return profiles;
   });
