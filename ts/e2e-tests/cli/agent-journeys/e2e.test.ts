@@ -9,6 +9,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { LLMock } from '@copilotkit/aimock';
+import { summarize, worldHash } from '@e2e-tests/cli-fake-backend';
+import { startCliRig } from '@e2e-tests/cli-fake-backend/rig';
 import { join } from 'node:path';
 import { adapterFor } from './src/adapters';
 import { HAND_AUTHORED, listFixtures } from './src/fixtures';
@@ -21,6 +23,41 @@ const JOURNEY_TIMEOUT_MS = 1_200_000;
 process.env.AIMOCK_STRICT_TURN_INDEX = '1';
 
 const fixtures = listFixtures();
+
+/**
+ * How long the idle rig is left alone. Only a request sent on its own within
+ * this window is seen; a slower timer would get past the guard.
+ */
+const IDLE_MS = 5_000;
+
+/** The world each attempt of a journey started from, by journey id. */
+const startingWorlds = new Map<string, Array<{ fixture: string; hash: string }>>();
+
+describe('the rig', () => {
+  // A journey's journal is read as what the agent did. If the binary, or what a
+  // setup started, kept sending requests once the setup was over, those would
+  // land in the run's journal and be graded as the agent's.
+  it(
+    'left alone after a login, records no request, changes nothing, and still runs commands',
+    async () => {
+      const rig = await startCliRig({ label: 'idle' });
+      try {
+        await rig.login();
+        const mark = rig.fake.journal.mark();
+        const before = worldHash(rig.fake.world);
+        await Bun.sleep(IDLE_MS);
+        expect(summarize(rig.fake.journal.since(mark))).toEqual([]);
+        expect(worldHash(rig.fake.world)).toBe(before);
+        const alive = await rig.run('echo alive');
+        expect(alive.exitCode).toBe(0);
+        expect(alive.stdout.trim()).toBe('alive');
+      } finally {
+        await rig.stop();
+      }
+    },
+    JOURNEY_TIMEOUT_MS
+  );
+});
 
 describe('the fixture set', () => {
   it('has no fixture for a journey that does not exist', () => {
@@ -61,6 +98,12 @@ for (const journey of JOURNEYS) {
           mock.loadFixtureFile(fixture.path);
           const baseURL = await mock.start();
           run = await runJourney(journey, adapterFor(fixture.provider, fixture.model, baseURL));
+          const attempts = startingWorlds.get(journey.id) ?? [];
+          attempts.push({
+            fixture: `${fixture.provider} ${fixture.model}`,
+            hash: run.startingWorldHash,
+          });
+          startingWorlds.set(journey.id, attempts);
         }, JOURNEY_TIMEOUT_MS);
 
         afterAll(async () => {
@@ -115,3 +158,17 @@ for (const journey of JOURNEYS) {
     }
   });
 }
+
+// Runs after every journey above: bun runs a file's tests in the order they are
+// defined. pass^k compares attempts of one journey, which says nothing about
+// the agent if the fake handed them different starting worlds.
+describe('attempt isolation', () => {
+  it('started every attempt of a journey from the same world', () => {
+    // An empty map would pass the comparison below without comparing anything.
+    expect(startingWorlds.size).toBeGreaterThan(0);
+    const differing = [...startingWorlds].filter(
+      ([, attempts]) => new Set(attempts.map(attempt => attempt.hash)).size > 1
+    );
+    expect(Object.fromEntries(differing)).toEqual({});
+  });
+});

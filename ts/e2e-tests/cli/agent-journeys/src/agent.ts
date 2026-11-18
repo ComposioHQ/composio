@@ -50,6 +50,11 @@ export interface ModelAdapter {
   say(message: string): void;
   /** Tokens and cost so far, for an adapter that talks to a real provider. */
   usage?(): Usage;
+  /**
+   * Whether a turn that asked for no command still leaves turns to play. Only
+   * a scripted path knows that; for a model, such a turn is its last.
+   */
+  hasMore?(): boolean;
 }
 
 export interface ExecutedCommand extends ShellOutcome {
@@ -114,6 +119,7 @@ export const runAgent = async (options: {
     const reply = options.hear?.(text, waiting);
     if (waiting) {
       if (reply === undefined) {
+        if (options.adapter.hasMore?.() === true) continue;
         return { commands, messages, replies, stop: 'finished', modelTurns: turn };
       }
       replies.push({ afterModelTurn: turn, text: reply });

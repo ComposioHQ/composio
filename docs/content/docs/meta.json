@@ -20,6 +20,7 @@
     "triggers",
     "skills",
     "---Governance---",
+    "governance/action-permissions",
     "governance/tool-hints",
     "governance/approvals",
     "firewall",

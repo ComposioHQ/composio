@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.35 to include the latest API changes.
+
+- `composio upgrade` on Windows now retries a busy executable rename for up to two seconds, allowing a brief file lock after a previous upgrade to clear before replacing the binary.
+
 - Update @composio/client to 2.1.33 to include the latest API changes.
 
 - A failed request that is safe to send again now exits 75 (`EX_TEMPFAIL`) instead of 1 and says so on stderr: one the API refused with a 429, or a read that timed out, lost its connection, or got a 408 or 5xx. Scripts and agents can retry on 75 without guessing. A failed `composio execute` adds `"retry": "safe"`, or `"retry": "check-first"` when the tool may have run before the request failed, to its `{ "successful": false }` result, and the `composio-cli` skill tells agents what both mean. Every other failed request still exits 1.
