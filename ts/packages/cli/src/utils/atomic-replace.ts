@@ -1,4 +1,4 @@
-import { Data, Effect, FileSystem, Path, Scope } from 'effect';
+import { Data, Effect, FileSystem, Path, Predicate, Schedule, Scope } from 'effect';
 
 export class AtomicReplaceError extends Data.TaggedError('utils/AtomicReplaceError')<{
   readonly targetPath: string;
@@ -46,19 +46,23 @@ export const atomicReplaceFile = ({
     // until the next upgrade, when the process using it has exited.
     yield* fs.remove(backupPath, { force: true });
     yield* Effect.uninterruptible(
-      fs
-        .rename(targetPath, backupPath)
-        .pipe(
-          Effect.andThen(
-            fs
-              .rename(stagedPath, targetPath)
-              .pipe(
-                Effect.catch(cause =>
-                  fs.rename(backupPath, targetPath).pipe(Effect.andThen(Effect.fail(cause)))
-                )
+      fs.rename(targetPath, backupPath).pipe(
+        // Windows can briefly lock the new executable after a preceding upgrade.
+        Effect.retry({
+          times: 10,
+          schedule: Schedule.spaced('200 millis'),
+          while: error => Predicate.isTagged(error.reason, 'Busy'),
+        }),
+        Effect.andThen(
+          fs
+            .rename(stagedPath, targetPath)
+            .pipe(
+              Effect.catch(cause =>
+                fs.rename(backupPath, targetPath).pipe(Effect.andThen(Effect.fail(cause)))
               )
-          )
+            )
         )
+      )
     );
   }).pipe(
     Effect.mapError(
