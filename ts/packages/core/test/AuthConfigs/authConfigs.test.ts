@@ -107,21 +107,6 @@ describe('AuthConfigs', () => {
     //   }).toThrow(ValidationError);
     // });
 
-    it('maps managed_app_id to managedAppId, keeping null', () => {
-      expect(
-        transformAuthConfigRetrieveResponse({
-          ...mockComposioAuthConfigResponse,
-          managed_app_id: 'ma_default0001',
-        } as ComposioAuthConfigRetrieveResponse).managedAppId
-      ).toBe('ma_default0001');
-      expect(
-        transformAuthConfigRetrieveResponse({
-          ...mockComposioAuthConfigResponse,
-          managed_app_id: null,
-        } as ComposioAuthConfigRetrieveResponse).managedAppId
-      ).toBeNull();
-    });
-
     it('should handle optional fields correctly', () => {
       const responseWithOptionalFields = {
         id: 'auth_12345',
@@ -377,13 +362,10 @@ describe('AuthConfigs', () => {
       });
     });
 
-    it('sends managedAppId as managed_app_id and returns the app the config uses', async () => {
-      mockClient.authConfigs.create.mockResolvedValueOnce({
-        ...mockCreateResponse,
-        auth_config: { ...mockCreateResponse.auth_config, managed_app_id: 'ma_second00001' },
-      });
+    it('sends managedAppId as managed_app_id', async () => {
+      mockClient.authConfigs.create.mockResolvedValueOnce(mockCreateResponse);
 
-      const result = await authConfigs.create('slack', {
+      await authConfigs.create('slack', {
         type: 'use_composio_managed_auth',
         managedAppId: 'ma_second00001',
       });
@@ -391,7 +373,6 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.create.mock.calls[0][0].auth_config.managed_app_id).toBe(
         'ma_second00001'
       );
-      expect(result.managedAppId).toBe('ma_second00001');
     });
 
     it('omits managed_app_id when managedAppId is not given', async () => {

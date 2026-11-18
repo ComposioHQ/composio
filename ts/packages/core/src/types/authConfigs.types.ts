@@ -95,19 +95,11 @@ export const CreateAuthConfigParamsSchema = z.discriminatedUnion('type', [
 
 export type CreateAuthConfigParams = z.infer<typeof CreateAuthConfigParamsSchema>;
 
-/**
- * The Composio-managed app an auth config uses, as
- * `composioManagedAuth[].managedAppId` from `composio.toolkits.get(slug)`.
- * `null` when the auth config is not linked to a managed app.
- */
-const AuthConfigManagedAppIdSchema = z.string().nullable().optional();
-
 export const CreateAuthConfigResponseSchema = z.object({
   id: z.string(),
   authScheme: z.string(),
   isComposioManaged: z.boolean(),
   toolkit: z.string(),
-  managedAppId: AuthConfigManagedAppIdSchema,
 });
 export type CreateAuthConfigResponse = z.infer<typeof CreateAuthConfigResponseSchema>;
 
@@ -133,7 +125,6 @@ export const AuthConfigRetrieveResponseSchema = z.object({
   createdAt: z.string().optional(),
   lastUpdatedAt: z.string().optional(),
   toolAccessConfig: AuthConfigToolAccessConfigSchema.optional(),
-  managedAppId: AuthConfigManagedAppIdSchema,
 });
 export type AuthConfigRetrieveResponse = z.infer<typeof AuthConfigRetrieveResponseSchema>;
 
