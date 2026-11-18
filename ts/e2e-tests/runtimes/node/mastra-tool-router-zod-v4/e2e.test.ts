@@ -125,7 +125,35 @@ e2e(import.meta.url, {
           try {
             const tools = await mcpClient.listTools();
             expect(Object.keys(tools).length).toBeGreaterThan(0);
-            const openai = createOpenAI({ apiKey: Bun.env.OPENAI_API_KEY });
+            const openai = createOpenAI({
+              apiKey: Bun.env.OPENAI_API_KEY,
+              fetch: (async (url: RequestInfo | URL, init?: RequestInit) => {
+                const response = await fetch(url, init);
+                const request = JSON.parse(String(init?.body ?? '{}'));
+                const body = await response
+                  .clone()
+                  .json()
+                  .catch(() => ({}));
+                console.error(
+                  'OpenAI exchange',
+                  JSON.stringify({
+                    requestKeys: Object.keys(request),
+                    max_output_tokens: request.max_output_tokens,
+                    previous_response_id: request.previous_response_id,
+                    store: request.store,
+                    reasoning: request.reasoning,
+                    inputItems: request.input?.length,
+                    status: response.status,
+                    responseStatus: body.status,
+                    incomplete_details: body.incomplete_details,
+                    error: body.error,
+                    outputTypes: body.output?.map((item: { type: string }) => item.type),
+                    usage: body.usage,
+                  })
+                );
+                return response;
+              }) as typeof fetch,
+            });
 
             const hackernewsAgent = new Agent({
               id: 'test',
